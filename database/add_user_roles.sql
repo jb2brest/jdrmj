@@ -50,6 +50,19 @@ CREATE TABLE campaign_members (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- Candidatures aux campagnes publiques
+CREATE TABLE campaign_applications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    campaign_id INT NOT NULL,
+    player_id INT NOT NULL,
+    message TEXT,
+    status ENUM('pending','approved','declined','cancelled') DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_application (campaign_id, player_id),
+    FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE,
+    FOREIGN KEY (player_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 -- Lier les sessions de jeu à une campagne (optionnel)
 ALTER TABLE game_sessions ADD COLUMN campaign_id INT NULL AFTER dm_id;
 ALTER TABLE game_sessions ADD CONSTRAINT fk_game_sessions_campaign
@@ -123,6 +136,8 @@ CREATE INDEX idx_game_sessions_status ON game_sessions(status);
 CREATE INDEX idx_game_sessions_campaign ON game_sessions(campaign_id);
 CREATE INDEX idx_campaigns_dm_id ON campaigns(dm_id);
 CREATE INDEX idx_campaign_members_user ON campaign_members(user_id);
+CREATE INDEX idx_campaign_applications_campaign ON campaign_applications(campaign_id);
+CREATE INDEX idx_campaign_applications_player ON campaign_applications(player_id);
 CREATE INDEX idx_session_registrations_session_id ON session_registrations(session_id);
 CREATE INDEX idx_session_registrations_player_id ON session_registrations(player_id);
 CREATE INDEX idx_messages_recipient_id ON messages(recipient_id);

@@ -116,6 +116,28 @@ try {
         echo "<p style='color: blue;'>ℹ Table 'campaign_members' existe déjà</p>";
     }
 
+    // Candidatures aux campagnes
+    $stmt = $pdo->query("SHOW TABLES LIKE 'campaign_applications'");
+    if ($stmt->rowCount() == 0) {
+        echo "<p>Création de la table 'campaign_applications'...</p>";
+        $pdo->exec("
+            CREATE TABLE campaign_applications (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                campaign_id INT NOT NULL,
+                player_id INT NOT NULL,
+                message TEXT,
+                status ENUM('pending','approved','declined','cancelled') DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY uniq_application (campaign_id, player_id),
+                FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE,
+                FOREIGN KEY (player_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        ");
+        echo "<p style='color: green;'>✓ Table 'campaign_applications' créée</p>";
+    } else {
+        echo "<p style='color: blue;'>ℹ Table 'campaign_applications' existe déjà</p>";
+    }
+
     // Vérifier si la table game_sessions existe déjà
     $stmt = $pdo->query("SHOW TABLES LIKE 'game_sessions'");
     if ($stmt->rowCount() == 0) {

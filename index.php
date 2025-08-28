@@ -58,6 +58,9 @@ require_once 'includes/functions.php';
                         <li class="nav-item">
                             <a class="nav-link" href="characters.php">Mes Personnages</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="public_campaigns.php">Campagnes Publiques</a>
+                        </li>
                         <?php if (isDM()): ?>
                         <li class="nav-item">
                             <a class="nav-link" href="campaigns.php">Mes Campagnes</a>
@@ -114,6 +117,9 @@ require_once 'includes/functions.php';
                 <div class="d-flex justify-content-center gap-3">
                     <a href="characters.php" class="btn btn-dnd btn-lg">
                         <i class="fas fa-users me-2"></i>Mes Personnages
+                    </a>
+                    <a href="public_campaigns.php" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-book-open me-2"></i>Campagnes Publiques
                     </a>
                     <?php if (isDM()): ?>
                     <a href="campaigns.php" class="btn btn-outline-light btn-lg">
