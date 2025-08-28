@@ -329,7 +329,7 @@ $applications = $stmt->fetchAll();
                                                 · Places: <?php echo $s['max_players']; ?>
                                             </div>
                                         </div>
-                                        <a href="view_session.php?id=<?php echo $s['id']; ?>" class="btn btn-sm btn-outline-primary"><i class="fas fa-eye"></i></a>
+                                        <a href="view_session.php?id=<?php echo $s['id']; ?>" class="btn btn-sm btn-outline-primary view-session-btn" data-session-id="<?php echo $s['id']; ?>"><i class="fas fa-eye"></i></a>
                                     </li>
                                 <?php endforeach; ?>
                             </ul>
@@ -423,6 +423,51 @@ $applications = $stmt->fetchAll();
         </div>
     </div>
 
+    <!-- Session Detail Modal -->
+    <div class="modal fade" id="sessionDetailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Détail de la session</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div id="sessionDetailContent">
+                        <div class="text-center p-5 text-muted">Chargement...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var modalEl = document.getElementById('sessionDetailModal');
+        var modal = modalEl ? new bootstrap.Modal(modalEl) : null;
+        document.querySelectorAll('.view-session-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                var sessionId = this.getAttribute('data-session-id');
+                if (!sessionId || !modal) return;
+                var url = 'view_session.php?id=' + encodeURIComponent(sessionId) + '&modal=1';
+                var container = document.getElementById('sessionDetailContent');
+                if (container) {
+                    container.innerHTML = '<div class="text-center p-5 text-muted">Chargement...</div>';
+                }
+                fetch(url, { credentials: 'same-origin' })
+                    .then(function(resp) { return resp.text(); })
+                    .then(function(html) {
+                        if (container) { container.innerHTML = html; }
+                        modal.show();
+                    })
+                    .catch(function() {
+                        if (container) { container.innerHTML = '<div class="text-danger p-3">Erreur de chargement.</div>'; }
+                        modal.show();
+                    });
+            });
+        });
+    });
+    </script>
 </body>
 </html>

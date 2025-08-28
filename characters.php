@@ -286,3 +286,4 @@ $characters = $stmt->fetchAll();
 </body>
 </html>
 
+

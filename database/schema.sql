@@ -139,3 +139,4 @@ INSERT INTO classes (name, description, hit_die, primary_ability, saving_throw_p
 ('Artificier', 'Inventeur qui utilise la magie pour créer des objets magiques.', 8, 'Intelligence', 'Constitution, Intelligence');
 
 
+

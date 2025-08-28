@@ -279,6 +279,7 @@ try {
                 title VARCHAR(120) NOT NULL,
                 map_url VARCHAR(255),
                 notes TEXT,
+                position INT DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 FOREIGN KEY (session_id) REFERENCES game_sessions(id) ON DELETE CASCADE
@@ -287,6 +288,13 @@ try {
         echo "<p style='color: green;'>✓ Table 'scenes' créée</p>";
     } else {
         echo "<p style='color: blue;'>ℹ Table 'scenes' existe déjà</p>";
+        // Ajouter la colonne position si manquante
+        $col = $pdo->query("SHOW COLUMNS FROM scenes LIKE 'position'");
+        if ($col->rowCount() == 0) {
+            echo "<p>Ajout de la colonne 'position' à la table scenes...</p>";
+            $pdo->exec("ALTER TABLE scenes ADD COLUMN position INT DEFAULT 0 AFTER notes");
+            echo "<p style='color: green;'>✓ Colonne 'position' ajoutée</p>";
+        }
     }
 
     $stmt = $pdo->query("SHOW TABLES LIKE 'scene_players'");
@@ -323,6 +331,20 @@ try {
         echo "<p style='color: green;'>✓ Table 'scene_npcs' créée</p>";
     } else {
         echo "<p style='color: blue;'>ℹ Table 'scene_npcs' existe déjà</p>";
+    }
+
+    // Vérifier la table scene_npcs et ajouter npc_character_id si absente
+    $stmt = $pdo->query("SHOW TABLES LIKE 'scene_npcs'");
+    if ($stmt->rowCount() > 0) {
+        $col = $pdo->query("SHOW COLUMNS FROM scene_npcs LIKE 'npc_character_id'");
+        if ($col->rowCount() == 0) {
+            echo "<p>Ajout de la colonne 'npc_character_id' à la table scene_npcs...</p>";
+            $pdo->exec("ALTER TABLE scene_npcs ADD COLUMN npc_character_id INT NULL AFTER description");
+            $pdo->exec("ALTER TABLE scene_npcs ADD CONSTRAINT fk_scene_npcs_character FOREIGN KEY (npc_character_id) REFERENCES characters(id) ON DELETE SET NULL");
+            echo "<p style='color: green;'>✓ Colonne 'npc_character_id' ajoutée</p>";
+        } else {
+            echo "<p style='color: blue;'>ℹ Colonne 'npc_character_id' existe déjà</p>";
+        }
     }
 
     echo "<h2 style='color: green;'>✓ Mise à jour terminée avec succès !</h2>";

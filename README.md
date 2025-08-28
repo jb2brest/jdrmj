@@ -106,3 +106,8 @@ Ce projet est sous licence MIT. Libre d'utilisation, modification et distributio
 ---
 
 **Développé avec ❤️ pour la communauté D&D**
+
+
+## Changelog
+<version_tag>
+- 0.0.11 : Gestion de scène

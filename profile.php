@@ -355,3 +355,4 @@ $unread_notifications = $stmt->fetch()['unread_count'];
 </body>
 </html>
 
+
