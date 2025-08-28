@@ -268,6 +268,63 @@ try {
         echo "<p style='color: blue;'>ℹ Table 'notifications' existe déjà</p>";
     }
 
+    // Tables de scènes de session
+    $stmt = $pdo->query("SHOW TABLES LIKE 'scenes'");
+    if ($stmt->rowCount() == 0) {
+        echo "<p>Création de la table 'scenes'...</p>";
+        $pdo->exec("
+            CREATE TABLE scenes (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                session_id INT NOT NULL,
+                title VARCHAR(120) NOT NULL,
+                map_url VARCHAR(255),
+                notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (session_id) REFERENCES game_sessions(id) ON DELETE CASCADE
+            )
+        ");
+        echo "<p style='color: green;'>✓ Table 'scenes' créée</p>";
+    } else {
+        echo "<p style='color: blue;'>ℹ Table 'scenes' existe déjà</p>";
+    }
+
+    $stmt = $pdo->query("SHOW TABLES LIKE 'scene_players'");
+    if ($stmt->rowCount() == 0) {
+        echo "<p>Création de la table 'scene_players'...</p>";
+        $pdo->exec("
+            CREATE TABLE scene_players (
+                scene_id INT NOT NULL,
+                player_id INT NOT NULL,
+                character_id INT,
+                PRIMARY KEY (scene_id, player_id),
+                FOREIGN KEY (scene_id) REFERENCES scenes(id) ON DELETE CASCADE,
+                FOREIGN KEY (player_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE SET NULL
+            )
+        ");
+        echo "<p style='color: green;'>✓ Table 'scene_players' créée</p>";
+    } else {
+        echo "<p style='color: blue;'>ℹ Table 'scene_players' existe déjà</p>";
+    }
+
+    $stmt = $pdo->query("SHOW TABLES LIKE 'scene_npcs'");
+    if ($stmt->rowCount() == 0) {
+        echo "<p>Création de la table 'scene_npcs'...</p>";
+        $pdo->exec("
+            CREATE TABLE scene_npcs (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                scene_id INT NOT NULL,
+                name VARCHAR(120) NOT NULL,
+                description TEXT,
+                FOREIGN KEY (scene_id) REFERENCES scenes(id) ON DELETE CASCADE
+            )
+        ");
+        echo "<p style='color: green;'>✓ Table 'scene_npcs' créée</p>";
+    } else {
+        echo "<p style='color: blue;'>ℹ Table 'scene_npcs' existe déjà</p>";
+    }
+
     echo "<h2 style='color: green;'>✓ Mise à jour terminée avec succès !</h2>";
     echo "<p><a href='index.php'>Retour à l'accueil</a></p>";
 

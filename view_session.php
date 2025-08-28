@@ -105,6 +105,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         $success_message = "Contexte de début sauvegardé.";
         $session['start_context'] = $start_context;
     }
+
+    // Créer une scène
+    if (isset($_POST['action']) && $_POST['action'] === 'create_scene') {
+        $scene_title = trim($_POST['scene_title'] ?? '');
+        $map_url = trim($_POST['map_url'] ?? '');
+        $npcs_raw = trim($_POST['npcs'] ?? '');
+        if ($scene_title === '') {
+            $error_message = "Le titre de la scène est obligatoire.";
+        } else {
+            $stmt = $pdo->prepare("INSERT INTO scenes (session_id, title, map_url) VALUES (?, ?, ?)");
+            $stmt->execute([$session_id, $scene_title, $map_url]);
+            $scene_id = (int)$pdo->lastInsertId();
+            // Ajouter par défaut tous les joueurs approuvés de la session
+            $players = $pdo->prepare("SELECT player_id, character_id FROM session_registrations WHERE session_id = ? AND status = 'approved'");
+            $players->execute([$session_id]);
+            foreach ($players->fetchAll() as $p) {
+                $ins = $pdo->prepare("INSERT IGNORE INTO scene_players (scene_id, player_id, character_id) VALUES (?, ?, ?)");
+                $ins->execute([$scene_id, (int)$p['player_id'], (int)$p['character_id']]);
+            }
+            // Ajouter PNJ (séparés par lignes)
+            if ($npcs_raw !== '') {
+                $lines = preg_split("/\r?\n/", $npcs_raw);
+                foreach ($lines as $line) {
+                    $name = trim($line);
+                    if ($name !== '') {
+                        $ins = $pdo->prepare("INSERT INTO scene_npcs (scene_id, name) VALUES (?, ?)");
+                        $ins->execute([$scene_id, $name]);
+                    }
+                }
+            }
+            $success_message = "Scène créée.";
+        }
+    }
 }
 
 // Récupérer les inscriptions
@@ -118,6 +151,29 @@ if (!empty($session['campaign_id']) && $isOwnerDM) {
     $stmt = $pdo->prepare("SELECT ca.id, ca.player_id, ca.character_id, u.username, ch.name AS character_name FROM campaign_applications ca JOIN users u ON ca.player_id = u.id LEFT JOIN characters ch ON ca.character_id = ch.id WHERE ca.campaign_id = ? AND ca.status = 'approved' AND ca.character_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM session_registrations sr WHERE sr.session_id = ? AND sr.player_id = ca.player_id)");
     $stmt->execute([$session['campaign_id'], $session_id]);
     $approvedApplications = $stmt->fetchAll();
+}
+
+// Récupérer scènes et associations
+$scenes = [];
+$stmt = $pdo->prepare("SELECT * FROM scenes WHERE session_id = ? ORDER BY created_at DESC");
+$stmt->execute([$session_id]);
+$scenes = $stmt->fetchAll();
+
+$scenePlayers = [];
+$sceneNpcs = [];
+if (!empty($scenes)) {
+    $sceneIds = array_column($scenes, 'id');
+    $in = implode(',', array_fill(0, count($sceneIds), '?'));
+    $sp = $pdo->prepare("SELECT sp.scene_id, u.username, ch.name AS character_name FROM scene_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.scene_id IN ($in)");
+    $sp->execute($sceneIds);
+    foreach ($sp->fetchAll() as $row) {
+        $scenePlayers[$row['scene_id']][] = $row;
+    }
+    $sn = $pdo->prepare("SELECT scene_id, name, description FROM scene_npcs WHERE scene_id IN ($in)");
+    $sn->execute($sceneIds);
+    foreach ($sn->fetchAll() as $row) {
+        $sceneNpcs[$row['scene_id']][] = $row;
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -291,7 +347,7 @@ if (!empty($session['campaign_id']) && $isOwnerDM) {
         <?php if ($isOwnerDM): ?>
         <div class="row g-4 mt-1">
             <div class="col-lg-12">
-                <div class="card">
+                <div class="card mb-4">
                     <div class="card-header">Contexte de début de session</div>
                     <div class="card-body">
                         <form method="POST">
@@ -303,9 +359,89 @@ if (!empty($session['campaign_id']) && $isOwnerDM) {
                         </form>
                     </div>
                 </div>
+
+                <div class="card">
+                    <div class="card-header">Ajouter une scène</div>
+                    <div class="card-body">
+                        <form method="POST">
+                            <input type="hidden" name="action" value="create_scene">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Titre</label>
+                                    <input type="text" class="form-control" name="scene_title" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Carte (URL)</label>
+                                    <input type="url" class="form-control" name="map_url" placeholder="https://...">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">PNJ (un par ligne)</label>
+                                    <textarea class="form-control" name="npcs" rows="4" placeholder="Barman de la Taverne
+Garde de la Porte
+Capitaine Eloria"></textarea>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <button class="btn btn-success"><i class="fas fa-plus me-1"></i>Créer la scène</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
         <?php endif; ?>
+
+        <div class="row g-4 mt-1">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-header">Scènes de la session</div>
+                    <div class="card-body">
+                        <?php if (empty($scenes)): ?>
+                            <p class="text-muted">Aucune scène pour le moment.</p>
+                        <?php else: ?>
+                            <div class="row g-3">
+                                <?php foreach ($scenes as $sc): ?>
+                                    <div class="col-md-6">
+                                        <div class="card h-100">
+                                            <div class="card-body">
+                                                <h5 class="card-title mb-2"><i class="fas fa-photo-video me-2"></i><?php echo htmlspecialchars($sc['title']); ?></h5>
+                                                <?php if (!empty($sc['map_url'])): ?>
+                                                    <div class="mb-2"><a href="<?php echo htmlspecialchars($sc['map_url']); ?>" target="_blank" rel="noopener noreferrer">Ouvrir la carte</a></div>
+                                                <?php endif; ?>
+                                                <div class="mb-2">
+                                                    <strong>Joueurs présents:</strong>
+                                                    <?php if (empty($scenePlayers[$sc['id']] ?? [])): ?>
+                                                        <span class="text-muted">—</span>
+                                                    <?php else: ?>
+                                                        <ul class="mb-0">
+                                                            <?php foreach (($scenePlayers[$sc['id']] ?? []) as $sp): ?>
+                                                                <li><?php echo htmlspecialchars($sp['username']); ?><?php echo $sp['character_name'] ? ' — ' . htmlspecialchars($sp['character_name']) : ''; ?></li>
+                                                            <?php endforeach; ?>
+                                                        </ul>
+                                                    <?php endif; ?>
+                                                </div>
+                                                <div>
+                                                    <strong>PNJ:</strong>
+                                                    <?php if (empty($sceneNpcs[$sc['id']] ?? [])): ?>
+                                                        <span class="text-muted">—</span>
+                                                    <?php else: ?>
+                                                        <ul class="mb-0">
+                                                            <?php foreach (($sceneNpcs[$sc['id']] ?? []) as $sn): ?>
+                                                                <li><?php echo htmlspecialchars($sn['name']); ?></li>
+                                                            <?php endforeach; ?>
+                                                        </ul>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
