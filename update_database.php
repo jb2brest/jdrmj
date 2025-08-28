@@ -160,6 +160,7 @@ try {
                 dm_id INT NOT NULL,
                 title VARCHAR(100) NOT NULL,
                 description TEXT,
+                start_context TEXT,
                 game_system VARCHAR(50) DEFAULT 'D&D 5e',
                 max_players INT DEFAULT 6,
                 current_players INT DEFAULT 0,
@@ -188,6 +189,15 @@ try {
             echo "<p style='color: green;'>✓ Colonne 'campaign_id' ajoutée</p>";
         } else {
             echo "<p style='color: blue;'>ℹ Colonne 'campaign_id' existe déjà</p>";
+        }
+        // Ajouter la colonne start_context si manquante
+        $stmt = $pdo->query("SHOW COLUMNS FROM game_sessions LIKE 'start_context'");
+        if ($stmt->rowCount() == 0) {
+            echo "<p>Ajout de la colonne 'start_context' à la table game_sessions...</p>";
+            $pdo->exec("ALTER TABLE game_sessions ADD COLUMN start_context TEXT AFTER description");
+            echo "<p style='color: green;'>✓ Colonne 'start_context' ajoutée</p>";
+        } else {
+            echo "<p style='color: blue;'>ℹ Colonne 'start_context' existe déjà</p>";
         }
     }
 
