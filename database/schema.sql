@@ -137,3 +137,5 @@ INSERT INTO classes (name, description, hit_die, primary_ability, saving_throw_p
 ('Moine', 'Maître des arts martiaux, utilisant la puissance du corps en harmonie avec l\'esprit.', 8, 'Dextérité et Sagesse', 'Force, Dextérité'),
 ('Rôdeur', 'Guerrier qui utilise la puissance primordiale de la nature.', 10, 'Dextérité et Sagesse', 'Force, Dextérité'),
 ('Artificier', 'Inventeur qui utilise la magie pour créer des objets magiques.', 8, 'Intelligence', 'Constitution, Intelligence');
+
+

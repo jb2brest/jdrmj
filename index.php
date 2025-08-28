@@ -58,6 +58,11 @@ require_once 'includes/functions.php';
                         <li class="nav-item">
                             <a class="nav-link" href="characters.php">Mes Personnages</a>
                         </li>
+                        <?php if (isDM()): ?>
+                        <li class="nav-item">
+                            <a class="nav-link" href="campaigns.php">Mes Campagnes</a>
+                        </li>
+                        <?php endif; ?>
                         <li class="nav-item">
                             <a class="nav-link" href="create_character.php">Créer un Personnage</a>
                         </li>
@@ -110,6 +115,11 @@ require_once 'includes/functions.php';
                     <a href="characters.php" class="btn btn-dnd btn-lg">
                         <i class="fas fa-users me-2"></i>Mes Personnages
                     </a>
+                    <?php if (isDM()): ?>
+                    <a href="campaigns.php" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-book me-2"></i>Mes Campagnes
+                    </a>
+                    <?php endif; ?>
                     <a href="create_character.php" class="btn btn-outline-light btn-lg">
                         <i class="fas fa-plus me-2"></i>Créer un Personnage
                     </a>
@@ -217,3 +227,4 @@ require_once 'includes/functions.php';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+

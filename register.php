@@ -9,6 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $email = sanitizeInput($_POST['email']);
     $password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
+    $role = sanitizeInput($_POST['role'] ?? 'player');
     
     // Validation
     $errors = [];
@@ -29,6 +30,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $errors[] = "Les mots de passe ne correspondent pas.";
     }
     
+    if (!in_array($role, ['player', 'dm'])) {
+        $errors[] = "Rôle invalide.";
+    }
+    
     // Vérifier si l'utilisateur existe déjà
     $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ? OR email = ?");
     $stmt->execute([$username, $email]);
@@ -40,8 +45,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $password_hash = password_hash($password, PASSWORD_DEFAULT);
         
         try {
-            $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)");
-            $stmt->execute([$username, $email, $password_hash]);
+            $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$username, $email, $password_hash, $role]);
             
             $message = displayMessage("Inscription réussie ! Vous pouvez maintenant vous connecter.", "success");
         } catch (PDOException $e) {
@@ -121,11 +126,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <div class="form-text">Au moins 6 caractères</div>
                         </div>
                         
-                        <div class="mb-4">
+                        <div class="mb-3">
                             <label for="confirm_password" class="form-label">
                                 <i class="fas fa-lock me-2"></i>Confirmer le mot de passe
                             </label>
                             <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="role" class="form-label">
+                                <i class="fas fa-user-tag me-2"></i>Rôle
+                            </label>
+                            <select class="form-select" id="role" name="role" required>
+                                <option value="player" <?php echo (isset($_POST['role']) && $_POST['role'] === 'player') ? 'selected' : ''; ?>>
+                                    <i class="fas fa-user me-2"></i>Joueur
+                                </option>
+                                <option value="dm" <?php echo (isset($_POST['role']) && $_POST['role'] === 'dm') ? 'selected' : ''; ?>>
+                                    <i class="fas fa-crown me-2"></i>Maître du Jeu
+                                </option>
+                            </select>
+                            <div class="form-text">
+                                <strong>Joueur :</strong> Créez et gérez vos personnages<br>
+                                <strong>Maître du Jeu :</strong> Créez des sessions et dirigez des parties
+                            </div>
                         </div>
                         
                         <button type="submit" class="btn btn-dnd w-100 mb-3">
@@ -146,3 +169,4 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+
