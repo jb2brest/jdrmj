@@ -125,17 +125,29 @@ try {
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 campaign_id INT NOT NULL,
                 player_id INT NOT NULL,
+                character_id INT NULL,
                 message TEXT,
                 status ENUM('pending','approved','declined','cancelled') DEFAULT 'pending',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE KEY uniq_application (campaign_id, player_id),
                 FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE,
-                FOREIGN KEY (player_id) REFERENCES users(id) ON DELETE CASCADE
+                FOREIGN KEY (player_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE SET NULL
             )
         ");
         echo "<p style='color: green;'>✓ Table 'campaign_applications' créée</p>";
     } else {
         echo "<p style='color: blue;'>ℹ Table 'campaign_applications' existe déjà</p>";
+        // Ajouter la colonne character_id si manquante
+        $stmt = $pdo->query("SHOW COLUMNS FROM campaign_applications LIKE 'character_id'");
+        if ($stmt->rowCount() == 0) {
+            echo "<p>Ajout de la colonne 'character_id' à 'campaign_applications'...</p>";
+            $pdo->exec("ALTER TABLE campaign_applications ADD COLUMN character_id INT NULL AFTER player_id");
+            $pdo->exec("ALTER TABLE campaign_applications ADD CONSTRAINT fk_campaign_applications_character FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE SET NULL");
+            echo "<p style='color: green;'>✓ Colonne 'character_id' ajoutée</p>";
+        } else {
+            echo "<p style='color: blue;'>ℹ Colonne 'character_id' existe déjà</p>";
+        }
     }
 
     // Vérifier si la table game_sessions existe déjà

@@ -52,6 +52,121 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$dm_id, $title, $session_date, $location, $is_online, $meeting_link, $max_players, $campaign_id]);
         $success_message = "Session créée.";
     }
+
+    // Approuver une candidature
+    if (isset($_POST['action']) && $_POST['action'] === 'approve_application' && isset($_POST['application_id'])) {
+        $application_id = (int)$_POST['application_id'];
+        // Vérifier que la candidature correspond à cette campagne du MJ
+        $stmt = $pdo->prepare("SELECT ca.player_id FROM campaign_applications ca JOIN campaigns c ON ca.campaign_id = c.id WHERE ca.id = ? AND ca.campaign_id = ? AND c.dm_id = ?");
+        $stmt->execute([$application_id, $campaign_id, $dm_id]);
+        $app = $stmt->fetch();
+        if ($app) {
+            $player_id = (int)$app['player_id'];
+            $pdo->beginTransaction();
+            try {
+                // Mettre à jour le statut
+                $stmt = $pdo->prepare("UPDATE campaign_applications SET status = 'approved' WHERE id = ?");
+                $stmt->execute([$application_id]);
+                // Ajouter comme membre si pas déjà présent
+                $stmt = $pdo->prepare("INSERT IGNORE INTO campaign_members (campaign_id, user_id, role) VALUES (?, ?, 'player')");
+                $stmt->execute([$campaign_id, $player_id]);
+                // Notification au joueur
+                $title = 'Candidature acceptée';
+                $message = 'Votre candidature à la campagne "' . $campaign['title'] . '" a été acceptée.';
+                $stmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, related_id) VALUES (?, 'system', ?, ?, ?)");
+                $stmt->execute([$player_id, $title, $message, $campaign_id]);
+                $pdo->commit();
+                $success_message = "Candidature approuvée et joueur ajouté à la campagne.";
+            } catch (Exception $e) {
+                $pdo->rollBack();
+                $error_message = "Erreur lors de l'approbation.";
+            }
+        } else {
+            $error_message = "Candidature introuvable.";
+        }
+    }
+
+    // Refuser une candidature
+    if (isset($_POST['action']) && $_POST['action'] === 'decline_application' && isset($_POST['application_id'])) {
+        $application_id = (int)$_POST['application_id'];
+        // Récupérer le player_id et vérifier droits MJ
+        $stmt = $pdo->prepare("SELECT ca.player_id FROM campaign_applications ca JOIN campaigns c ON ca.campaign_id = c.id WHERE ca.id = ? AND ca.campaign_id = ? AND c.dm_id = ?");
+        $stmt->execute([$application_id, $campaign_id, $dm_id]);
+        $app = $stmt->fetch();
+        if ($app) {
+            $player_id = (int)$app['player_id'];
+            $stmt = $pdo->prepare("UPDATE campaign_applications SET status = 'declined' WHERE id = ?");
+            $stmt->execute([$application_id]);
+            // Notification au joueur
+            $title = 'Candidature refusée';
+            $message = 'Votre candidature à la campagne "' . $campaign['title'] . '" a été refusée.';
+            $stmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, related_id) VALUES (?, 'system', ?, ?, ?)");
+            $stmt->execute([$player_id, $title, $message, $campaign_id]);
+            $success_message = "Candidature refusée.";
+        } else {
+            $error_message = "Candidature introuvable.";
+        }
+    }
+
+    // Annuler l'acceptation (revenir à 'pending' et retirer le joueur des membres)
+    if (isset($_POST['action']) && $_POST['action'] === 'revoke_application' && isset($_POST['application_id'])) {
+        $application_id = (int)$_POST['application_id'];
+        // Récupérer player_id et vérifier que la candidature est approuvée pour cette campagne du MJ
+        $stmt = $pdo->prepare("SELECT ca.player_id FROM campaign_applications ca JOIN campaigns c ON ca.campaign_id = c.id WHERE ca.id = ? AND ca.campaign_id = ? AND c.dm_id = ? AND ca.status = 'approved'");
+        $stmt->execute([$application_id, $campaign_id, $dm_id]);
+        $app = $stmt->fetch();
+        if ($app) {
+            $player_id = (int)$app['player_id'];
+            $pdo->beginTransaction();
+            try {
+                // Revenir à pending
+                $stmt = $pdo->prepare("UPDATE campaign_applications SET status = 'pending' WHERE id = ?");
+                $stmt->execute([$application_id]);
+                // Retirer le membre de la campagne s'il y est
+                $stmt = $pdo->prepare("DELETE FROM campaign_members WHERE campaign_id = ? AND user_id = ?");
+                $stmt->execute([$campaign_id, $player_id]);
+                // Notifier le joueur
+                $title = 'Acceptation annulée';
+                $message = 'Votre acceptation dans la campagne "' . $campaign['title'] . '" a été annulée par le MJ. Votre candidature est de nouveau en attente.';
+                $stmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, related_id) VALUES (?, 'system', ?, ?, ?)");
+                $stmt->execute([$player_id, $title, $message, $campaign_id]);
+                $pdo->commit();
+                $success_message = "Acceptation annulée. Candidature remise en attente et joueur retiré.";
+            } catch (Exception $e) {
+                $pdo->rollBack();
+                $error_message = "Erreur lors de l'annulation de l'acceptation.";
+            }
+        } else {
+            $error_message = "Candidature approuvée introuvable.";
+        }
+    }
+
+    // Exclure un membre (joueur) de la campagne
+    if (isset($_POST['action']) && $_POST['action'] === 'remove_member' && isset($_POST['member_user_id'])) {
+        $member_user_id = (int)$_POST['member_user_id'];
+        // Ne pas autoriser la suppression du MJ propriétaire
+        if ($member_user_id === $dm_id) {
+            $error_message = "Impossible d'exclure le MJ de sa propre campagne.";
+        } else {
+            // Vérifier que l'utilisateur est bien membre de cette campagne
+            $stmt = $pdo->prepare("SELECT role FROM campaign_members WHERE campaign_id = ? AND user_id = ?");
+            $stmt->execute([$campaign_id, $member_user_id]);
+            $member = $stmt->fetch();
+            if ($member) {
+                // Supprimer le membre
+                $stmt = $pdo->prepare("DELETE FROM campaign_members WHERE campaign_id = ? AND user_id = ?");
+                $stmt->execute([$campaign_id, $member_user_id]);
+                // Notifier le joueur
+                $title = 'Exclusion de la campagne';
+                $message = 'Vous avez été exclu de la campagne "' . $campaign['title'] . '" par le MJ.';
+                $stmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, related_id) VALUES (?, 'system', ?, ?, ?)");
+                $stmt->execute([$member_user_id, $title, $message, $campaign_id]);
+                $success_message = "Joueur exclu de la campagne.";
+            } else {
+                $error_message = "Ce joueur n'est pas membre de la campagne.";
+            }
+        }
+    }
 }
 
 // Récupérer membres
@@ -63,6 +178,11 @@ $members = $stmt->fetchAll();
 $stmt = $pdo->prepare("SELECT * FROM game_sessions WHERE campaign_id = ? ORDER BY session_date DESC, created_at DESC");
 $stmt->execute([$campaign_id]);
 $sessions = $stmt->fetchAll();
+
+// Récupérer candidatures
+$stmt = $pdo->prepare("SELECT ca.id, ca.player_id, ca.character_id, ca.message, ca.status, ca.created_at, u.username, ch.name AS character_name FROM campaign_applications ca JOIN users u ON ca.player_id = u.id LEFT JOIN characters ch ON ca.character_id = ch.id WHERE ca.campaign_id = ? ORDER BY ca.created_at DESC");
+$stmt->execute([$campaign_id]);
+$applications = $stmt->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -131,7 +251,18 @@ $sessions = $stmt->fetchAll();
                                             <i class="fas fa-user me-2"></i><?php echo htmlspecialchars($m['username']); ?>
                                             <span class="badge bg-<?php echo $m['role'] === 'dm' ? 'danger' : 'primary'; ?> ms-2"><?php echo $m['role'] === 'dm' ? 'MJ' : 'Joueur'; ?></span>
                                         </span>
-                                        <small class="text-muted">Depuis <?php echo date('d/m/Y', strtotime($m['joined_at'])); ?></small>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <small class="text-muted">Depuis <?php echo date('d/m/Y', strtotime($m['joined_at'])); ?></small>
+                                            <?php if ($m['role'] !== 'dm'): ?>
+                                                <form method="POST" onsubmit="return confirm('Exclure ce joueur de la campagne ?');">
+                                                    <input type="hidden" name="action" value="remove_member">
+                                                    <input type="hidden" name="member_user_id" value="<?php echo (int)$m['id']; ?>">
+                                                    <button class="btn btn-sm btn-outline-danger" title="Exclure">
+                                                        <i class="fas fa-user-slash"></i>
+                                                    </button>
+                                                </form>
+                                            <?php endif; ?>
+                                        </div>
                                     </li>
                                 <?php endforeach; ?>
                             </ul>
@@ -202,6 +333,86 @@ $sessions = $stmt->fetchAll();
                                     </li>
                                 <?php endforeach; ?>
                             </ul>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mt-1">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header"><i class="fas fa-inbox me-2"></i>Candidatures</div>
+                    <div class="card-body">
+                        <?php if (empty($applications)): ?>
+                            <p class="text-muted">Aucune candidature pour le moment.</p>
+                        <?php else: ?>
+                            <div class="table-responsive">
+                                <table class="table align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Joueur</th>
+                                            <th>Personnage</th>
+                                            <th>Message</th>
+                                            <th>Statut</th>
+                                            <th>Date</th>
+                                            <th class="text-end">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($applications as $a): ?>
+                                            <tr>
+                                                <td>
+                                                    <i class="fas fa-user me-1"></i><?php echo htmlspecialchars($a['username']); ?>
+                                                </td>
+                                                <td>
+                                                    <?php if (!empty($a['character_id'])): ?>
+                                                        <span class="badge bg-secondary">#<?php echo (int)$a['character_id']; ?></span>
+                                                        <?php echo htmlspecialchars($a['character_name'] ?? 'Personnage'); ?>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">—</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td class="small" style="max-width: 400px;">
+                                                    <?php echo nl2br(htmlspecialchars($a['message'] ?: '—')); ?>
+                                                </td>
+                                                <td>
+                                                    <?php
+                                                        $badge = 'secondary';
+                                                        if ($a['status'] === 'pending') $badge = 'warning';
+                                                        if ($a['status'] === 'approved') $badge = 'primary';
+                                                        if ($a['status'] === 'declined') $badge = 'danger';
+                                                    ?>
+                                                    <span class="badge bg-<?php echo $badge; ?> text-uppercase"><?php echo $a['status']; ?></span>
+                                                </td>
+                                                <td><small class="text-muted"><?php echo date('d/m/Y H:i', strtotime($a['created_at'])); ?></small></td>
+                                                <td class="text-end">
+                                                    <?php if ($a['status'] === 'pending'): ?>
+                                                        <form method="POST" class="d-inline">
+                                                            <input type="hidden" name="action" value="approve_application">
+                                                            <input type="hidden" name="application_id" value="<?php echo $a['id']; ?>">
+                                                            <button class="btn btn-sm btn-success"><i class="fas fa-check me-1"></i>Accepter</button>
+                                                        </form>
+                                                        <form method="POST" class="d-inline" onsubmit="return confirm('Refuser cette candidature ?');">
+                                                            <input type="hidden" name="action" value="decline_application">
+                                                            <input type="hidden" name="application_id" value="<?php echo $a['id']; ?>">
+                                                            <button class="btn btn-sm btn-outline-danger"><i class="fas fa-times me-1"></i>Refuser</button>
+                                                        </form>
+                                                    <?php elseif ($a['status'] === 'approved'): ?>
+                                                        <form method="POST" class="d-inline" onsubmit="return confirm('Annuler l\'acceptation de cette candidature ? Le joueur sera retiré de la campagne.');">
+                                                            <input type="hidden" name="action" value="revoke_application">
+                                                            <input type="hidden" name="application_id" value="<?php echo $a['id']; ?>">
+                                                            <button class="btn btn-sm btn-outline-warning"><i class="fas fa-undo me-1"></i>Annuler l'acceptation</button>
+                                                        </form>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">—</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
                         <?php endif; ?>
                     </div>
                 </div>
