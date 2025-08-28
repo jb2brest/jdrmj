@@ -367,8 +367,11 @@ $applications = $stmt->fetchAll();
                                                 </td>
                                                 <td>
                                                     <?php if (!empty($a['character_id'])): ?>
-                                                        <span class="badge bg-secondary">#<?php echo (int)$a['character_id']; ?></span>
-                                                        <?php echo htmlspecialchars($a['character_name'] ?? 'Personnage'); ?>
+                                                        <a href="view_character.php?id=<?php echo (int)$a['character_id']; ?>&dm_campaign_id=<?php echo (int)$campaign_id; ?>" class="text-decoration-none">
+                                                            <span class="badge bg-secondary">#<?php echo (int)$a['character_id']; ?></span>
+                                                            <?php echo htmlspecialchars($a['character_name'] ?? 'Personnage'); ?>
+                                                            <i class="fas fa-external-link-alt ms-1 small"></i>
+                                                        </a>
                                                     <?php else: ?>
                                                         <span class="text-muted">—</span>
                                                     <?php endif; ?>

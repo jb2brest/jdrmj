@@ -10,20 +10,55 @@ if (!isset($_GET['id'])) {
 }
 
 $character_id = (int)$_GET['id'];
+$dm_campaign_id = isset($_GET['dm_campaign_id']) ? (int)$_GET['dm_campaign_id'] : null;
 
-// Récupération du personnage avec ses détails
+// Récupération du personnage avec ses détails (sans filtrer par propriétaire)
 $stmt = $pdo->prepare("
     SELECT c.*, r.name as race_name, r.description as race_description, r.ability_score_bonus, r.traits,
            cl.name as class_name, cl.description as class_description, cl.hit_die, cl.primary_ability
     FROM characters c 
     JOIN races r ON c.race_id = r.id 
     JOIN classes cl ON c.class_id = cl.id 
-    WHERE c.id = ? AND c.user_id = ?
+    WHERE c.id = ?
 ");
-$stmt->execute([$character_id, $_SESSION['user_id']]);
+$stmt->execute([$character_id]);
 $character = $stmt->fetch();
 
 if (!$character) {
+    header('Location: characters.php');
+    exit();
+}
+
+// Contrôle d'accès: propriétaire OU MJ de la campagne liée
+$canView = ($character['user_id'] == $_SESSION['user_id']);
+
+if (!$canView && isDM() && $dm_campaign_id) {
+    // Vérifier que la campagne appartient au MJ connecté
+    $stmt = $pdo->prepare("SELECT id FROM campaigns WHERE id = ? AND dm_id = ?");
+    $stmt->execute([$dm_campaign_id, $_SESSION['user_id']]);
+    $ownsCampaign = (bool)$stmt->fetch();
+
+    if ($ownsCampaign) {
+        // Vérifier que le joueur propriétaire du personnage est membre ou a candidaté à cette campagne
+        $owner_user_id = (int)$character['user_id'];
+        $isMember = false;
+        $hasApplied = false;
+
+        $stmt = $pdo->prepare("SELECT 1 FROM campaign_members WHERE campaign_id = ? AND user_id = ? LIMIT 1");
+        $stmt->execute([$dm_campaign_id, $owner_user_id]);
+        $isMember = (bool)$stmt->fetch();
+
+        if (!$isMember) {
+            $stmt = $pdo->prepare("SELECT 1 FROM campaign_applications WHERE campaign_id = ? AND player_id = ? LIMIT 1");
+            $stmt->execute([$dm_campaign_id, $owner_user_id]);
+            $hasApplied = (bool)$stmt->fetch();
+        }
+
+        $canView = ($isMember || $hasApplied);
+    }
+}
+
+if (!$canView) {
     header('Location: characters.php');
     exit();
 }
@@ -152,12 +187,15 @@ $armorClass = $character['armor_class'];
                 <i class="fas fa-user me-2"></i><?php echo htmlspecialchars($character['name']); ?>
             </h1>
             <div>
-                <a href="edit_character.php?id=<?php echo $character['id']; ?>" class="btn btn-warning">
-                    <i class="fas fa-edit me-2"></i>Modifier
-                </a>
-                <a href="characters.php" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left me-2"></i>Retour
-                </a>
+                <?php if ($dm_campaign_id): ?>
+                    <a href="view_campaign.php?id=<?php echo $dm_campaign_id; ?>" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Retour à la campagne
+                    </a>
+                <?php else: ?>
+                    <a href="characters.php" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Retour
+                    </a>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -182,14 +220,14 @@ $armorClass = $character['armor_class'];
                     <div class="row">
                         <div class="col-6">
                             <div class="stat-box">
-                                <div class="hp-display"><?php echo $character['hit_points_current']; ?></div>
+                                <div class="hp-display">&nbsp;<?php echo $character['hit_points_current']; ?></div>
                                 <div class="stat-label">Points de Vie</div>
                                 <small class="text-muted">/ <?php echo $character['hit_points_max']; ?></small>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="stat-box">
-                                <div class="ac-display"><?php echo $armorClass; ?></div>
+                                <div class="ac-display">&nbsp;<?php echo $armorClass; ?></div>
                                 <div class="stat-label">Classe d'Armure</div>
                             </div>
                         </div>
@@ -203,43 +241,43 @@ $armorClass = $character['armor_class'];
                 <div class="row">
                     <div class="col-md-2">
                         <div class="stat-box">
-                            <div class="stat-value"><?php echo $character['strength']; ?></div>
-                            <div class="stat-modifier"><?php echo ($strengthMod >= 0 ? '+' : '') . $strengthMod; ?></div>
+                            <div class="stat-value">&nbsp;<?php echo $character['strength']; ?></div>
+                            <div class="stat-modifier">&nbsp;<?php echo ($strengthMod >= 0 ? '+' : '') . $strengthMod; ?></div>
                             <div class="stat-label">Force</div>
                         </div>
                     </div>
                     <div class="col-md-2">
                         <div class="stat-box">
-                            <div class="stat-value"><?php echo $character['dexterity']; ?></div>
-                            <div class="stat-modifier"><?php echo ($dexterityMod >= 0 ? '+' : '') . $dexterityMod; ?></div>
+                            <div class="stat-value">&nbsp;<?php echo $character['dexterity']; ?></div>
+                            <div class="stat-modifier">&nbsp;<?php echo ($dexterityMod >= 0 ? '+' : '') . $dexterityMod; ?></div>
                             <div class="stat-label">Dextérité</div>
                         </div>
                     </div>
                     <div class="col-md-2">
                         <div class="stat-box">
-                            <div class="stat-value"><?php echo $character['constitution']; ?></div>
-                            <div class="stat-modifier"><?php echo ($constitutionMod >= 0 ? '+' : '') . $constitutionMod; ?></div>
+                            <div class="stat-value">&nbsp;<?php echo $character['constitution']; ?></div>
+                            <div class="stat-modifier">&nbsp;<?php echo ($constitutionMod >= 0 ? '+' : '') . $constitutionMod; ?></div>
                             <div class="stat-label">Constitution</div>
                         </div>
                     </div>
                     <div class="col-md-2">
                         <div class="stat-box">
-                            <div class="stat-value"><?php echo $character['intelligence']; ?></div>
-                            <div class="stat-modifier"><?php echo ($intelligenceMod >= 0 ? '+' : '') . $intelligenceMod; ?></div>
+                            <div class="stat-value">&nbsp;<?php echo $character['intelligence']; ?></div>
+                            <div class="stat-modifier">&nbsp;<?php echo ($intelligenceMod >= 0 ? '+' : '') . $intelligenceMod; ?></div>
                             <div class="stat-label">Intelligence</div>
                         </div>
                     </div>
                     <div class="col-md-2">
                         <div class="stat-box">
-                            <div class="stat-value"><?php echo $character['wisdom']; ?></div>
-                            <div class="stat-modifier"><?php echo ($wisdomMod >= 0 ? '+' : '') . $wisdomMod; ?></div>
+                            <div class="stat-value">&nbsp;<?php echo $character['wisdom']; ?></div>
+                            <div class="stat-modifier">&nbsp;<?php echo ($wisdomMod >= 0 ? '+' : '') . $wisdomMod; ?></div>
                             <div class="stat-label">Sagesse</div>
                         </div>
                     </div>
                     <div class="col-md-2">
                         <div class="stat-box">
-                            <div class="stat-value"><?php echo $character['charisma']; ?></div>
-                            <div class="stat-modifier"><?php echo ($charismaMod >= 0 ? '+' : '') . $charismaMod; ?></div>
+                            <div class="stat-value">&nbsp;<?php echo $character['charisma']; ?></div>
+                            <div class="stat-modifier">&nbsp;<?php echo ($charismaMod >= 0 ? '+' : '') . $charismaMod; ?></div>
                             <div class="stat-label">Charisme</div>
                         </div>
                     </div>
@@ -251,16 +289,16 @@ $armorClass = $character['armor_class'];
                 <h3><i class="fas fa-sword me-2"></i>Combat</h3>
                 <div class="row">
                     <div class="col-md-3">
-                        <strong>Initiative:</strong> <?php echo ($initiative >= 0 ? '+' : '') . $initiative; ?>
+                        <strong>Initiative:</strong> &nbsp;<?php echo ($initiative >= 0 ? '+' : '') . $initiative; ?>
                     </div>
                     <div class="col-md-3">
-                        <strong>Vitesse:</strong> <?php echo $character['speed']; ?> pieds
+                        <strong>Vitesse:</strong> &nbsp;<?php echo $character['speed']; ?> pieds
                     </div>
                     <div class="col-md-3">
-                        <strong>Bonus de maîtrise:</strong> +<?php echo $character['proficiency_bonus']; ?>
+                        <strong>Bonus de maîtrise:</strong> &nbsp;+<?php echo $character['proficiency_bonus']; ?>
                     </div>
                     <div class="col-md-3">
-                        <strong>Points d'expérience:</strong> <?php echo number_format($character['experience_points']); ?>
+                        <strong>Points d'expérience:</strong> &nbsp;<?php echo number_format($character['experience_points']); ?>
                     </div>
                 </div>
             </div>
@@ -271,16 +309,16 @@ $armorClass = $character['armor_class'];
                     <div class="info-section">
                         <h3><i class="fas fa-dragon me-2"></i>Race: <?php echo htmlspecialchars($character['race_name']); ?></h3>
                         <p><?php echo htmlspecialchars($character['race_description']); ?></p>
-                        <p><strong>Bonus de caractéristiques:</strong> <?php echo htmlspecialchars($character['ability_score_bonus']); ?></p>
-                        <p><strong>Traits:</strong> <?php echo htmlspecialchars($character['traits']); ?></p>
+                        <p><strong>Bonus de caractéristiques:</strong> &nbsp;<?php echo htmlspecialchars($character['ability_score_bonus']); ?></p>
+                        <p><strong>Traits:</strong> &nbsp;<?php echo htmlspecialchars($character['traits']); ?></p>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="info-section">
                         <h3><i class="fas fa-shield-alt me-2"></i>Classe: <?php echo htmlspecialchars($character['class_name']); ?></h3>
                         <p><?php echo htmlspecialchars($character['class_description']); ?></p>
-                        <p><strong>Dé de vie:</strong> d<?php echo $character['hit_die']; ?></p>
-                        <p><strong>Caractéristique principale:</strong> <?php echo htmlspecialchars($character['primary_ability']); ?></p>
+                        <p><strong>Dé de vie:</strong> &nbsp;d<?php echo $character['hit_die']; ?></p>
+                        <p><strong>Caractéristique principale:</strong> &nbsp;<?php echo htmlspecialchars($character['primary_ability']); ?></p>
                     </div>
                 </div>
             </div>
