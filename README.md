@@ -7,11 +7,15 @@ Un gestionnaire de feuilles de personnage pour Donjons & Dragons 5e, développé
 ### ✅ Implémentées
 - **Système d'authentification** : Inscription et connexion sécurisées
 - **Création de personnages** : Interface complète pour créer des personnages D&D 5e
+- **Photos de profil** : Upload et affichage de photos pour personnages et PNJ
 - **Gestion des races et classes** : Toutes les races et classes de base incluses
 - **Calcul automatique** : Statistiques, points de vie, bonus de maîtrise
 - **Interface responsive** : Design moderne avec Bootstrap 5
 - **Visualisation détaillée** : Feuilles de personnage complètes
 - **Gestion des personnages** : Liste, modification, suppression
+- **Gestion des campagnes et sessions** : Création, invitations, planification
+- **Gestion des scènes** : Création de scènes avec PNJ et joueurs
+- **Interface modale** : Affichage des détails en fenêtres modales
 
 ### 🔄 En développement
 - [ ] Édition de personnages
@@ -110,5 +114,7 @@ Ce projet est sous licence MIT. Libre d'utilisation, modification et distributio
 
 ## Changelog
 <version_tag>
+- 0.0.13 : Ajout photo Personnages
 - 0.0.12 : Gestion de scène
+- 0.0.13 : Photos de profil pour personnages et PNJ
 - 0.0.11 : Gestion de scène

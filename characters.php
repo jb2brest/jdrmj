@@ -25,7 +25,7 @@ if (isset($_POST['delete_character']) && isset($_POST['character_id'])) {
 
 // Récupération des personnages de l'utilisateur
 $stmt = $pdo->prepare("
-    SELECT c.*, r.name as race_name, cl.name as class_name
+    SELECT c.*, r.name as race_name, cl.name as class_name, c.profile_photo
     FROM characters c 
     JOIN races r ON c.race_id = r.id 
     JOIN classes cl ON c.class_id = cl.id 
@@ -158,11 +158,24 @@ $characters = $stmt->fetchAll();
                     <div class="col-md-6 col-lg-4">
                         <div class="card character-card h-100">
                             <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-3">
-                                    <h5 class="card-title mb-0">
-                                        <i class="fas fa-user me-2"></i><?php echo htmlspecialchars($character['name']); ?>
-                                    </h5>
-                                    <span class="badge level-badge">Niv. <?php echo $character['level']; ?></span>
+                                <div class="d-flex align-items-start mb-3">
+                                    <div class="me-3">
+                                        <?php if (!empty($character['profile_photo'])): ?>
+                                            <img src="<?php echo htmlspecialchars($character['profile_photo']); ?>" alt="Photo de <?php echo htmlspecialchars($character['name']); ?>" class="rounded" style="width: 60px; height: 60px; object-fit: cover;">
+                                        <?php else: ?>
+                                            <div class="bg-secondary rounded d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                                <i class="fas fa-user text-white" style="font-size: 1.5rem;"></i>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <h5 class="card-title mb-0">
+                                                <?php echo htmlspecialchars($character['name']); ?>
+                                            </h5>
+                                            <span class="badge level-badge">Niv. <?php echo $character['level']; ?></span>
+                                        </div>
+                                    </div>
                                 </div>
                                 
                                 <p class="card-text text-muted mb-3">

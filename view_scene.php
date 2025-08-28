@@ -44,7 +44,7 @@ $stmt->execute([$scene_id]);
 $scenePlayers = $stmt->fetchAll();
 
 // Récupérer les PNJ de cette scène
-$stmt = $pdo->prepare("SELECT name, description, npc_character_id FROM scene_npcs WHERE scene_id = ? ORDER BY name ASC");
+$stmt = $pdo->prepare("SELECT name, description, npc_character_id, profile_photo FROM scene_npcs WHERE scene_id = ? ORDER BY name ASC");
 $stmt->execute([$scene_id]);
 $sceneNpcs = $stmt->fetchAll();
 
@@ -57,14 +57,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         if ($npc_name === '') {
             $error_message = "Le nom du PNJ est obligatoire.";
         } else {
-            $stmt = $pdo->prepare("INSERT INTO scene_npcs (scene_id, name, description) VALUES (?, ?, ?)");
-            $stmt->execute([$scene_id, $npc_name, $npc_description]);
-            $success_message = "PNJ ajouté à la scène.";
+            // Upload de photo de profil si fournie
+            $profile_photo = null;
+            if (isset($_FILES['npc_photo']) && $_FILES['npc_photo']['error'] === UPLOAD_ERR_OK) {
+                $tmp = $_FILES['npc_photo']['tmp_name'];
+                $size = (int)$_FILES['npc_photo']['size'];
+                $originalName = $_FILES['npc_photo']['name'];
+                
+                // Vérifier la taille (limite à 2M pour correspondre à la config PHP)
+                if ($size > 2 * 1024 * 1024) {
+                    $error_message = "Image trop volumineuse (max 2 Mo).";
+                } else {
+                    $finfo = new finfo(FILEINFO_MIME_TYPE);
+                    $mime = $finfo->file($tmp);
+                    $allowed = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/gif' => 'gif', 'image/webp' => 'webp'];
+                    
+                    if (!isset($allowed[$mime])) {
+                        $error_message = "Format d'image non supporté. Formats acceptés: JPG, PNG, GIF, WebP.";
+                    } else {
+                        $ext = $allowed[$mime];
+                        $subdir = 'uploads/profiles/' . date('Y/m');
+                        $diskDir = __DIR__ . '/' . $subdir;
+                        
+                        // Créer le dossier s'il n'existe pas
+                        if (!is_dir($diskDir)) {
+                            if (!mkdir($diskDir, 0755, true)) {
+                                $error_message = "Impossible de créer le dossier d'upload.";
+                            }
+                        }
+                        
+                        if (!isset($error_message)) {
+                            $basename = bin2hex(random_bytes(8)) . '.' . $ext;
+                            $diskPath = $diskDir . '/' . $basename;
+                            $webPath = $subdir . '/' . $basename;
+                            
+                            if (move_uploaded_file($tmp, $diskPath)) {
+                                $profile_photo = $webPath;
+                            } else {
+                                $error_message = "Échec de l'upload de la photo. Vérifiez les permissions du dossier.";
+                            }
+                        }
+                    }
+                }
+            }
             
-            // Recharger les PNJ
-            $stmt = $pdo->prepare("SELECT name, description, npc_character_id FROM scene_npcs WHERE scene_id = ? ORDER BY name ASC");
-            $stmt->execute([$scene_id]);
-            $sceneNpcs = $stmt->fetchAll();
+            if (!isset($error_message)) {
+                $stmt = $pdo->prepare("INSERT INTO scene_npcs (scene_id, name, description, profile_photo) VALUES (?, ?, ?, ?)");
+                $stmt->execute([$scene_id, $npc_name, $npc_description, $profile_photo]);
+                $success_message = "PNJ ajouté à la scène.";
+                
+                // Recharger les PNJ
+                $stmt = $pdo->prepare("SELECT name, description, npc_character_id, profile_photo FROM scene_npcs WHERE scene_id = ? ORDER BY name ASC");
+                $stmt->execute([$scene_id]);
+                $sceneNpcs = $stmt->fetchAll();
+            }
         }
     }
     
@@ -83,7 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                 $success_message = "PNJ (personnage du MJ) ajouté à la scène.";
                 
                 // Recharger les PNJ
-                $stmt = $pdo->prepare("SELECT name, description, npc_character_id FROM scene_npcs WHERE scene_id = ? ORDER BY name ASC");
+                $stmt = $pdo->prepare("SELECT name, description, npc_character_id, profile_photo FROM scene_npcs WHERE scene_id = ? ORDER BY name ASC");
                 $stmt->execute([$scene_id]);
                 $sceneNpcs = $stmt->fetchAll();
             } else {
@@ -416,7 +462,7 @@ foreach ($allScenes as $s) {
                         <div class="collapse mb-3" id="addNpcForm">
                             <div class="card card-body">
                                 <h6>Ajouter un PNJ</h6>
-                                <form method="POST" class="row g-2">
+                                <form method="POST" class="row g-2" enctype="multipart/form-data">
                                     <input type="hidden" name="action" value="add_npc">
                                     <div class="col-md-6">
                                         <label class="form-label">Nom du PNJ</label>
@@ -425,6 +471,11 @@ foreach ($allScenes as $s) {
                                     <div class="col-md-6">
                                         <label class="form-label">Description (optionnel)</label>
                                         <input type="text" class="form-control" name="npc_description" placeholder="Brève description...">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Photo de profil (optionnel)</label>
+                                        <input type="file" class="form-control" name="npc_photo" accept="image/png,image/jpeg,image/webp,image/gif">
+                                        <div class="form-text">Formats acceptés: JPG, PNG, GIF, WebP (max 2 Mo)</div>
                                     </div>
                                     <div class="col-12">
                                         <button type="submit" class="btn btn-primary btn-sm">
@@ -467,14 +518,24 @@ foreach ($allScenes as $s) {
                             <?php foreach ($sceneNpcs as $npc): ?>
                                 <li class="list-group-item">
                                     <div class="d-flex justify-content-between align-items-start">
-                                        <div>
-                                            <i class="fas fa-user-tie me-2"></i><?php echo htmlspecialchars($npc['name']); ?>
-                                            <?php if (!empty($npc['npc_character_id'])): ?>
-                                                <span class="badge bg-info ms-1">perso MJ</span>
+                                        <div class="d-flex align-items-start">
+                                            <?php if (!empty($npc['profile_photo'])): ?>
+                                                <img src="<?php echo htmlspecialchars($npc['profile_photo']); ?>" alt="Photo de <?php echo htmlspecialchars($npc['name']); ?>" class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                                            <?php else: ?>
+                                                <div class="bg-secondary rounded me-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                    <i class="fas fa-user-tie text-white"></i>
+                                                </div>
                                             <?php endif; ?>
-                                            <?php if (!empty($npc['description'])): ?>
-                                                <br><small class="text-muted"><?php echo htmlspecialchars($npc['description']); ?></small>
-                                            <?php endif; ?>
+                                            <div>
+                                                <div class="fw-bold"><?php echo htmlspecialchars($npc['name']); ?>
+                                                    <?php if (!empty($npc['npc_character_id'])): ?>
+                                                        <span class="badge bg-info ms-1">perso MJ</span>
+                                                    <?php endif; ?>
+                                                </div>
+                                                <?php if (!empty($npc['description'])): ?>
+                                                    <small class="text-muted"><?php echo htmlspecialchars($npc['description']); ?></small>
+                                                <?php endif; ?>
+                                            </div>
                                         </div>
                                         <?php if ($isOwnerDM): ?>
                                             <form method="POST" class="d-inline" onsubmit="return confirm('Retirer <?php echo htmlspecialchars($npc['name']); ?> de cette scène ?');">

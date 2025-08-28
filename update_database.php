@@ -3,355 +3,307 @@ require_once 'config/database.php';
 
 echo "<h1>Mise à jour de la base de données</h1>";
 
-try {
-    // Vérifier si la colonne role existe déjà
-    $stmt = $pdo->query("SHOW COLUMNS FROM users LIKE 'role'");
-    if ($stmt->rowCount() == 0) {
+// Vérifier la table users et ajouter les rôles si absents
+$stmt = $pdo->query("SHOW TABLES LIKE 'users'");
+if ($stmt->rowCount() > 0) {
+    $col = $pdo->query("SHOW COLUMNS FROM users LIKE 'role'");
+    if ($col->rowCount() == 0) {
         echo "<p>Ajout de la colonne 'role' à la table users...</p>";
         $pdo->exec("ALTER TABLE users ADD COLUMN role ENUM('player', 'dm') DEFAULT 'player' AFTER email");
         echo "<p style='color: green;'>✓ Colonne 'role' ajoutée</p>";
     } else {
         echo "<p style='color: blue;'>ℹ Colonne 'role' existe déjà</p>";
     }
-
-    // Vérifier si la colonne bio existe déjà
-    $stmt = $pdo->query("SHOW COLUMNS FROM users LIKE 'bio'");
-    if ($stmt->rowCount() == 0) {
-        echo "<p>Ajout de la colonne 'bio' à la table users...</p>";
-        $pdo->exec("ALTER TABLE users ADD COLUMN bio TEXT AFTER role");
-        echo "<p style='color: green;'>✓ Colonne 'bio' ajoutée</p>";
-    } else {
-        echo "<p style='color: blue;'>ℹ Colonne 'bio' existe déjà</p>";
-    }
-
-    // Vérifier si la colonne avatar existe déjà
-    $stmt = $pdo->query("SHOW COLUMNS FROM users LIKE 'avatar'");
-    if ($stmt->rowCount() == 0) {
-        echo "<p>Ajout de la colonne 'avatar' à la table users...</p>";
-        $pdo->exec("ALTER TABLE users ADD COLUMN avatar VARCHAR(255) AFTER bio");
-        echo "<p style='color: green;'>✓ Colonne 'avatar' ajoutée</p>";
-    } else {
-        echo "<p style='color: blue;'>ℹ Colonne 'avatar' existe déjà</p>";
-    }
-
-    // Vérifier si la colonne experience_level existe déjà
-    $stmt = $pdo->query("SHOW COLUMNS FROM users LIKE 'experience_level'");
-    if ($stmt->rowCount() == 0) {
-        echo "<p>Ajout de la colonne 'experience_level' à la table users...</p>";
-        $pdo->exec("ALTER TABLE users ADD COLUMN experience_level ENUM('debutant', 'intermediaire', 'expert') DEFAULT 'debutant' AFTER avatar");
-        echo "<p style='color: green;'>✓ Colonne 'experience_level' ajoutée</p>";
-    } else {
-        echo "<p style='color: blue;'>ℹ Colonne 'experience_level' existe déjà</p>";
-    }
-
-    // Vérifier si la colonne preferred_game_system existe déjà
-    $stmt = $pdo->query("SHOW COLUMNS FROM users LIKE 'preferred_game_system'");
-    if ($stmt->rowCount() == 0) {
-        echo "<p>Ajout de la colonne 'preferred_game_system' à la table users...</p>";
-        $pdo->exec("ALTER TABLE users ADD COLUMN preferred_game_system VARCHAR(50) DEFAULT 'D&D 5e' AFTER experience_level");
-        echo "<p style='color: green;'>✓ Colonne 'preferred_game_system' ajoutée</p>";
-    } else {
-        echo "<p style='color: blue;'>ℹ Colonne 'preferred_game_system' existe déjà</p>";
-    }
-
-    // Vérifier si la colonne timezone existe déjà
-    $stmt = $pdo->query("SHOW COLUMNS FROM users LIKE 'timezone'");
-    if ($stmt->rowCount() == 0) {
-        echo "<p>Ajout de la colonne 'timezone' à la table users...</p>";
-        $pdo->exec("ALTER TABLE users ADD COLUMN timezone VARCHAR(50) DEFAULT 'Europe/Paris' AFTER preferred_game_system");
-        echo "<p style='color: green;'>✓ Colonne 'timezone' ajoutée</p>";
-    } else {
-        echo "<p style='color: blue;'>ℹ Colonne 'timezone' existe déjà</p>";
-    }
-
-    // Vérifier si la colonne is_active existe déjà
-    $stmt = $pdo->query("SHOW COLUMNS FROM users LIKE 'is_active'");
-    if ($stmt->rowCount() == 0) {
-        echo "<p>Ajout de la colonne 'is_active' à la table users...</p>";
-        $pdo->exec("ALTER TABLE users ADD COLUMN is_active BOOLEAN DEFAULT TRUE AFTER timezone");
-        echo "<p style='color: green;'>✓ Colonne 'is_active' ajoutée</p>";
-    } else {
-        echo "<p style='color: blue;'>ℹ Colonne 'is_active' existe déjà</p>";
-    }
-
-    // Créer les tables de campagne si absentes
-    $stmt = $pdo->query("SHOW TABLES LIKE 'campaigns'");
-    if ($stmt->rowCount() == 0) {
-        echo "<p>Création de la table 'campaigns'...</p>";
-        $pdo->exec("
-            CREATE TABLE campaigns (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                dm_id INT NOT NULL,
-                title VARCHAR(100) NOT NULL,
-                description TEXT,
-                game_system VARCHAR(50) DEFAULT 'D&D 5e',
-                is_public BOOLEAN DEFAULT TRUE,
-                invite_code VARCHAR(16) UNIQUE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                FOREIGN KEY (dm_id) REFERENCES users(id) ON DELETE CASCADE
-            )
-        ");
-        echo "<p style='color: green;'>✓ Table 'campaigns' créée</p>";
-    } else {
-        echo "<p style='color: blue;'>ℹ Table 'campaigns' existe déjà</p>";
-    }
-
-    $stmt = $pdo->query("SHOW TABLES LIKE 'campaign_members'");
-    if ($stmt->rowCount() == 0) {
-        echo "<p>Création de la table 'campaign_members'...</p>";
-        $pdo->exec("
-            CREATE TABLE campaign_members (
-                campaign_id INT NOT NULL,
-                user_id INT NOT NULL,
-                role ENUM('player', 'dm') DEFAULT 'player',
-                joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (campaign_id, user_id),
-                FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE,
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-            )
-        ");
-        echo "<p style='color: green;'>✓ Table 'campaign_members' créée</p>";
-    } else {
-        echo "<p style='color: blue;'>ℹ Table 'campaign_members' existe déjà</p>";
-    }
-
-    // Candidatures aux campagnes
-    $stmt = $pdo->query("SHOW TABLES LIKE 'campaign_applications'");
-    if ($stmt->rowCount() == 0) {
-        echo "<p>Création de la table 'campaign_applications'...</p>";
-        $pdo->exec("
-            CREATE TABLE campaign_applications (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                campaign_id INT NOT NULL,
-                player_id INT NOT NULL,
-                character_id INT NULL,
-                message TEXT,
-                status ENUM('pending','approved','declined','cancelled') DEFAULT 'pending',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE KEY uniq_application (campaign_id, player_id),
-                FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE,
-                FOREIGN KEY (player_id) REFERENCES users(id) ON DELETE CASCADE,
-                FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE SET NULL
-            )
-        ");
-        echo "<p style='color: green;'>✓ Table 'campaign_applications' créée</p>";
-    } else {
-        echo "<p style='color: blue;'>ℹ Table 'campaign_applications' existe déjà</p>";
-        // Ajouter la colonne character_id si manquante
-        $stmt = $pdo->query("SHOW COLUMNS FROM campaign_applications LIKE 'character_id'");
-        if ($stmt->rowCount() == 0) {
-            echo "<p>Ajout de la colonne 'character_id' à 'campaign_applications'...</p>";
-            $pdo->exec("ALTER TABLE campaign_applications ADD COLUMN character_id INT NULL AFTER player_id");
-            $pdo->exec("ALTER TABLE campaign_applications ADD CONSTRAINT fk_campaign_applications_character FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE SET NULL");
-            echo "<p style='color: green;'>✓ Colonne 'character_id' ajoutée</p>";
-        } else {
-            echo "<p style='color: blue;'>ℹ Colonne 'character_id' existe déjà</p>";
-        }
-    }
-
-    // Vérifier si la table game_sessions existe déjà
-    $stmt = $pdo->query("SHOW TABLES LIKE 'game_sessions'");
-    if ($stmt->rowCount() == 0) {
-        echo "<p>Création de la table 'game_sessions'...</p>";
-        $pdo->exec("
-            CREATE TABLE game_sessions (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                dm_id INT NOT NULL,
-                title VARCHAR(100) NOT NULL,
-                description TEXT,
-                start_context TEXT,
-                game_system VARCHAR(50) DEFAULT 'D&D 5e',
-                max_players INT DEFAULT 6,
-                current_players INT DEFAULT 0,
-                session_date DATETIME,
-                duration_hours INT DEFAULT 4,
-                location VARCHAR(100),
-                is_online BOOLEAN DEFAULT FALSE,
-                meeting_link VARCHAR(255),
-                status ENUM('planning', 'recruiting', 'in_progress', 'completed', 'cancelled') DEFAULT 'planning',
-                campaign_id INT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                FOREIGN KEY (dm_id) REFERENCES users(id) ON DELETE CASCADE,
-                FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE SET NULL
-            )
-        ");
-        echo "<p style='color: green;'>✓ Table 'game_sessions' créée</p>";
-    } else {
-        echo "<p style='color: blue;'>ℹ Table 'game_sessions' existe déjà</p>";
-        // Ajouter la colonne campaign_id si manquante
-        $stmt = $pdo->query("SHOW COLUMNS FROM game_sessions LIKE 'campaign_id'");
-        if ($stmt->rowCount() == 0) {
-            echo "<p>Ajout de la colonne 'campaign_id' à la table game_sessions...</p>";
-            $pdo->exec("ALTER TABLE game_sessions ADD COLUMN campaign_id INT NULL AFTER dm_id");
-            $pdo->exec("ALTER TABLE game_sessions ADD CONSTRAINT fk_game_sessions_campaign FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE SET NULL");
-            echo "<p style='color: green;'>✓ Colonne 'campaign_id' ajoutée</p>";
-        } else {
-            echo "<p style='color: blue;'>ℹ Colonne 'campaign_id' existe déjà</p>";
-        }
-        // Ajouter la colonne start_context si manquante
-        $stmt = $pdo->query("SHOW COLUMNS FROM game_sessions LIKE 'start_context'");
-        if ($stmt->rowCount() == 0) {
-            echo "<p>Ajout de la colonne 'start_context' à la table game_sessions...</p>";
-            $pdo->exec("ALTER TABLE game_sessions ADD COLUMN start_context TEXT AFTER description");
-            echo "<p style='color: green;'>✓ Colonne 'start_context' ajoutée</p>";
-        } else {
-            echo "<p style='color: blue;'>ℹ Colonne 'start_context' existe déjà</p>";
-        }
-    }
-
-    // Vérifier si la table session_registrations existe déjà
-    $stmt = $pdo->query("SHOW TABLES LIKE 'session_registrations'");
-    if ($stmt->rowCount() == 0) {
-        echo "<p>Création de la table 'session_registrations'...</p>";
-        $pdo->exec("
-            CREATE TABLE session_registrations (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                session_id INT NOT NULL,
-                player_id INT NOT NULL,
-                character_id INT,
-                status ENUM('pending', 'approved', 'declined', 'cancelled') DEFAULT 'pending',
-                registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (session_id) REFERENCES game_sessions(id) ON DELETE CASCADE,
-                FOREIGN KEY (player_id) REFERENCES users(id) ON DELETE CASCADE,
-                FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE SET NULL,
-                UNIQUE KEY unique_registration (session_id, player_id)
-            )
-        ");
-        echo "<p style='color: green;'>✓ Table 'session_registrations' créée</p>";
-    } else {
-        echo "<p style='color: blue;'>ℹ Table 'session_registrations' existe déjà</p>";
-    }
-
-    // Vérifier si la table messages existe déjà
-    $stmt = $pdo->query("SHOW TABLES LIKE 'messages'");
-    if ($stmt->rowCount() == 0) {
-        echo "<p>Création de la table 'messages'...</p>";
-        $pdo->exec("
-            CREATE TABLE messages (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                sender_id INT NOT NULL,
-                recipient_id INT NOT NULL,
-                subject VARCHAR(100),
-                message TEXT NOT NULL,
-                is_read BOOLEAN DEFAULT FALSE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
-                FOREIGN KEY (recipient_id) REFERENCES users(id) ON DELETE CASCADE
-            )
-        ");
-        echo "<p style='color: green;'>✓ Table 'messages' créée</p>";
-    } else {
-        echo "<p style='color: blue;'>ℹ Table 'messages' existe déjà</p>";
-    }
-
-    // Vérifier si la table notifications existe déjà
-    $stmt = $pdo->query("SHOW TABLES LIKE 'notifications'");
-    if ($stmt->rowCount() == 0) {
-        echo "<p>Création de la table 'notifications'...</p>";
-        $pdo->exec("
-            CREATE TABLE notifications (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT NOT NULL,
-                type ENUM('message', 'session_invite', 'session_update', 'character_comment', 'system') NOT NULL,
-                title VARCHAR(100) NOT NULL,
-                message TEXT NOT NULL,
-                related_id INT,
-                is_read BOOLEAN DEFAULT FALSE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-            )
-        ");
-        echo "<p style='color: green;'>✓ Table 'notifications' créée</p>";
-    } else {
-        echo "<p style='color: blue;'>ℹ Table 'notifications' existe déjà</p>";
-    }
-
-    // Tables de scènes de session
-    $stmt = $pdo->query("SHOW TABLES LIKE 'scenes'");
-    if ($stmt->rowCount() == 0) {
-        echo "<p>Création de la table 'scenes'...</p>";
-        $pdo->exec("
-            CREATE TABLE scenes (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                session_id INT NOT NULL,
-                title VARCHAR(120) NOT NULL,
-                map_url VARCHAR(255),
-                notes TEXT,
-                position INT DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                FOREIGN KEY (session_id) REFERENCES game_sessions(id) ON DELETE CASCADE
-            )
-        ");
-        echo "<p style='color: green;'>✓ Table 'scenes' créée</p>";
-    } else {
-        echo "<p style='color: blue;'>ℹ Table 'scenes' existe déjà</p>";
-        // Ajouter la colonne position si manquante
-        $col = $pdo->query("SHOW COLUMNS FROM scenes LIKE 'position'");
-        if ($col->rowCount() == 0) {
-            echo "<p>Ajout de la colonne 'position' à la table scenes...</p>";
-            $pdo->exec("ALTER TABLE scenes ADD COLUMN position INT DEFAULT 0 AFTER notes");
-            echo "<p style='color: green;'>✓ Colonne 'position' ajoutée</p>";
-        }
-    }
-
-    $stmt = $pdo->query("SHOW TABLES LIKE 'scene_players'");
-    if ($stmt->rowCount() == 0) {
-        echo "<p>Création de la table 'scene_players'...</p>";
-        $pdo->exec("
-            CREATE TABLE scene_players (
-                scene_id INT NOT NULL,
-                player_id INT NOT NULL,
-                character_id INT,
-                PRIMARY KEY (scene_id, player_id),
-                FOREIGN KEY (scene_id) REFERENCES scenes(id) ON DELETE CASCADE,
-                FOREIGN KEY (player_id) REFERENCES users(id) ON DELETE CASCADE,
-                FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE SET NULL
-            )
-        ");
-        echo "<p style='color: green;'>✓ Table 'scene_players' créée</p>";
-    } else {
-        echo "<p style='color: blue;'>ℹ Table 'scene_players' existe déjà</p>";
-    }
-
-    $stmt = $pdo->query("SHOW TABLES LIKE 'scene_npcs'");
-    if ($stmt->rowCount() == 0) {
-        echo "<p>Création de la table 'scene_npcs'...</p>";
-        $pdo->exec("
-            CREATE TABLE scene_npcs (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                scene_id INT NOT NULL,
-                name VARCHAR(120) NOT NULL,
-                description TEXT,
-                FOREIGN KEY (scene_id) REFERENCES scenes(id) ON DELETE CASCADE
-            )
-        ");
-        echo "<p style='color: green;'>✓ Table 'scene_npcs' créée</p>";
-    } else {
-        echo "<p style='color: blue;'>ℹ Table 'scene_npcs' existe déjà</p>";
-    }
-
-    // Vérifier la table scene_npcs et ajouter npc_character_id si absente
-    $stmt = $pdo->query("SHOW TABLES LIKE 'scene_npcs'");
-    if ($stmt->rowCount() > 0) {
-        $col = $pdo->query("SHOW COLUMNS FROM scene_npcs LIKE 'npc_character_id'");
-        if ($col->rowCount() == 0) {
-            echo "<p>Ajout de la colonne 'npc_character_id' à la table scene_npcs...</p>";
-            $pdo->exec("ALTER TABLE scene_npcs ADD COLUMN npc_character_id INT NULL AFTER description");
-            $pdo->exec("ALTER TABLE scene_npcs ADD CONSTRAINT fk_scene_npcs_character FOREIGN KEY (npc_character_id) REFERENCES characters(id) ON DELETE SET NULL");
-            echo "<p style='color: green;'>✓ Colonne 'npc_character_id' ajoutée</p>";
-        } else {
-            echo "<p style='color: blue;'>ℹ Colonne 'npc_character_id' existe déjà</p>";
-        }
-    }
-
-    echo "<h2 style='color: green;'>✓ Mise à jour terminée avec succès !</h2>";
-    echo "<p><a href='index.php'>Retour à l'accueil</a></p>";
-
-} catch (Exception $e) {
-    echo "<p style='color: red;'>❌ Erreur : " . $e->getMessage() . "</p>";
+} else {
+    echo "<p style='color: red;'>✗ Table 'users' n'existe pas</p>";
 }
+
+// Vérifier la table users et ajouter is_dm si absente
+$stmt = $pdo->query("SHOW TABLES LIKE 'users'");
+if ($stmt->rowCount() > 0) {
+    $col = $pdo->query("SHOW COLUMNS FROM users LIKE 'is_dm'");
+    if ($col->rowCount() == 0) {
+        echo "<p>Ajout de la colonne 'is_dm' à la table users...</p>";
+        $pdo->exec("ALTER TABLE users ADD COLUMN is_dm BOOLEAN DEFAULT FALSE AFTER role");
+        echo "<p style='color: green;'>✓ Colonne 'is_dm' ajoutée</p>";
+    } else {
+        echo "<p style='color: blue;'>ℹ Colonne 'is_dm' existe déjà</p>";
+    }
+} else {
+    echo "<p style='color: red;'>✗ Table 'users' n'existe pas</p>";
+}
+
+// Vérifier la table users et ajouter profile_photo si absente
+$stmt = $pdo->query("SHOW TABLES LIKE 'users'");
+if ($stmt->rowCount() > 0) {
+    $col = $pdo->query("SHOW COLUMNS FROM users LIKE 'profile_photo'");
+    if ($col->rowCount() == 0) {
+        echo "<p>Ajout de la colonne 'profile_photo' à la table users...</p>";
+        $pdo->exec("ALTER TABLE users ADD COLUMN profile_photo VARCHAR(255) NULL AFTER is_dm");
+        echo "<p style='color: green;'>✓ Colonne 'profile_photo' ajoutée</p>";
+    } else {
+        echo "<p style='color: blue;'>ℹ Colonne 'profile_photo' existe déjà</p>";
+    }
+} else {
+    echo "<p style='color: red;'>✗ Table 'users' n'existe pas</p>";
+}
+
+// Vérifier la table characters et ajouter profile_photo si absente
+$stmt = $pdo->query("SHOW TABLES LIKE 'characters'");
+if ($stmt->rowCount() > 0) {
+    $col = $pdo->query("SHOW COLUMNS FROM characters LIKE 'profile_photo'");
+    if ($col->rowCount() == 0) {
+        echo "<p>Ajout de la colonne 'profile_photo' à la table characters...</p>";
+        $pdo->exec("ALTER TABLE characters ADD COLUMN profile_photo VARCHAR(255) NULL AFTER flaws");
+        echo "<p style='color: green;'>✓ Colonne 'profile_photo' ajoutée</p>";
+    } else {
+        echo "<p style='color: blue;'>ℹ Colonne 'profile_photo' existe déjà</p>";
+    }
+} else {
+    echo "<p style='color: red;'>✗ Table 'characters' n'existe pas</p>";
+}
+
+// Vérifier la table scene_npcs et ajouter profile_photo si absente
+$stmt = $pdo->query("SHOW TABLES LIKE 'scene_npcs'");
+if ($stmt->rowCount() > 0) {
+    $col = $pdo->query("SHOW COLUMNS FROM scene_npcs LIKE 'profile_photo'");
+    if ($col->rowCount() == 0) {
+        echo "<p>Ajout de la colonne 'profile_photo' à la table scene_npcs...</p>";
+        $pdo->exec("ALTER TABLE scene_npcs ADD COLUMN profile_photo VARCHAR(255) NULL AFTER npc_character_id");
+        echo "<p style='color: green;'>✓ Colonne 'profile_photo' ajoutée</p>";
+    } else {
+        echo "<p style='color: blue;'>ℹ Colonne 'profile_photo' existe déjà</p>";
+    }
+} else {
+    echo "<p style='color: red;'>✗ Table 'scene_npcs' n'existe pas</p>";
+}
+
+// Vérifier la table campaigns
+$stmt = $pdo->query("SHOW TABLES LIKE 'campaigns'");
+if ($stmt->rowCount() == 0) {
+    echo "<p>Création de la table 'campaigns'...</p>";
+    $pdo->exec("
+        CREATE TABLE campaigns (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            dm_id INT NOT NULL,
+            title VARCHAR(100) NOT NULL,
+            description TEXT,
+            game_system VARCHAR(50) DEFAULT 'D&D 5e',
+            is_public BOOLEAN DEFAULT TRUE,
+            invite_code VARCHAR(20) UNIQUE NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            FOREIGN KEY (dm_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    ");
+    echo "<p style='color: green;'>✓ Table 'campaigns' créée</p>";
+} else {
+    echo "<p style='color: blue;'>ℹ Table 'campaigns' existe déjà</p>";
+}
+
+// Vérifier la table campaign_members
+$stmt = $pdo->query("SHOW TABLES LIKE 'campaign_members'");
+if ($stmt->rowCount() == 0) {
+    echo "<p>Création de la table 'campaign_members'...</p>";
+    $pdo->exec("
+        CREATE TABLE campaign_members (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            campaign_id INT NOT NULL,
+            user_id INT NOT NULL,
+            role ENUM('player', 'dm') DEFAULT 'player',
+            joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            UNIQUE KEY unique_campaign_user (campaign_id, user_id)
+        )
+    ");
+    echo "<p style='color: green;'>✓ Table 'campaign_members' créée</p>";
+} else {
+    echo "<p style='color: blue;'>ℹ Table 'campaign_members' existe déjà</p>";
+}
+
+// Vérifier la table campaign_applications
+$stmt = $pdo->query("SHOW TABLES LIKE 'campaign_applications'");
+if ($stmt->rowCount() == 0) {
+    echo "<p>Création de la table 'campaign_applications'...</p>";
+    $pdo->exec("
+        CREATE TABLE campaign_applications (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            campaign_id INT NOT NULL,
+            player_id INT NOT NULL,
+            character_id INT NULL,
+            message TEXT,
+            status ENUM('pending', 'approved', 'declined', 'cancelled') DEFAULT 'pending',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE,
+            FOREIGN KEY (player_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE SET NULL,
+            UNIQUE KEY unique_campaign_player (campaign_id, player_id)
+        )
+    ");
+    echo "<p style='color: green;'>✓ Table 'campaign_applications' créée</p>";
+} else {
+    echo "<p style='color: blue;'>ℹ Table 'campaign_applications' existe déjà</p>";
+}
+
+// Vérifier la table game_sessions
+$stmt = $pdo->query("SHOW TABLES LIKE 'game_sessions'");
+if ($stmt->rowCount() == 0) {
+    echo "<p>Création de la table 'game_sessions'...</p>";
+    $pdo->exec("
+        CREATE TABLE game_sessions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            dm_id INT NOT NULL,
+            title VARCHAR(100) NOT NULL,
+            description TEXT,
+            session_date DATETIME,
+            location VARCHAR(255),
+            is_online BOOLEAN DEFAULT FALSE,
+            meeting_link VARCHAR(255),
+            max_players INT DEFAULT 6,
+            status ENUM('planning', 'recruiting', 'in_progress', 'completed', 'cancelled') DEFAULT 'planning',
+            campaign_id INT NULL,
+            start_context TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            FOREIGN KEY (dm_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE SET NULL
+        )
+    ");
+    echo "<p style='color: green;'>✓ Table 'game_sessions' créée</p>";
+} else {
+    echo "<p style='color: blue;'>ℹ Table 'game_sessions' existe déjà</p>";
+}
+
+// Vérifier la table session_registrations
+$stmt = $pdo->query("SHOW TABLES LIKE 'session_registrations'");
+if ($stmt->rowCount() == 0) {
+    echo "<p>Création de la table 'session_registrations'...</p>";
+    $pdo->exec("
+        CREATE TABLE session_registrations (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            session_id INT NOT NULL,
+            player_id INT NOT NULL,
+            character_id INT NULL,
+            status ENUM('pending', 'approved', 'declined') DEFAULT 'pending',
+            registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (session_id) REFERENCES game_sessions(id) ON DELETE CASCADE,
+            FOREIGN KEY (player_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE SET NULL,
+            UNIQUE KEY unique_session_player (session_id, player_id)
+        )
+    ");
+    echo "<p style='color: green;'>✓ Table 'session_registrations' créée</p>";
+} else {
+    echo "<p style='color: blue;'>ℹ Table 'session_registrations' existe déjà</p>";
+}
+
+// Vérifier la table scenes
+$stmt = $pdo->query("SHOW TABLES LIKE 'scenes'");
+if ($stmt->rowCount() == 0) {
+    echo "<p>Création de la table 'scenes'...</p>";
+    $pdo->exec("
+        CREATE TABLE scenes (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            session_id INT NOT NULL,
+            title VARCHAR(100) NOT NULL,
+            map_url VARCHAR(255),
+            notes TEXT,
+            position INT DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            FOREIGN KEY (session_id) REFERENCES game_sessions(id) ON DELETE CASCADE
+        )
+    ");
+    echo "<p style='color: green;'>✓ Table 'scenes' créée</p>";
+} else {
+    echo "<p style='color: blue;'>ℹ Table 'scenes' existe déjà</p>";
+}
+
+// Vérifier la table scene_players
+$stmt = $pdo->query("SHOW TABLES LIKE 'scene_players'");
+if ($stmt->rowCount() == 0) {
+    echo "<p>Création de la table 'scene_players'...</p>";
+    $pdo->exec("
+        CREATE TABLE scene_players (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            scene_id INT NOT NULL,
+            player_id INT NOT NULL,
+            character_id INT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (scene_id) REFERENCES scenes(id) ON DELETE CASCADE,
+            FOREIGN KEY (player_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE SET NULL,
+            UNIQUE KEY unique_scene_player (scene_id, player_id)
+        )
+    ");
+    echo "<p style='color: green;'>✓ Table 'scene_players' créée</p>";
+} else {
+    echo "<p style='color: blue;'>ℹ Table 'scene_players' existe déjà</p>";
+}
+
+// Vérifier la table scene_npcs
+$stmt = $pdo->query("SHOW TABLES LIKE 'scene_npcs'");
+if ($stmt->rowCount() == 0) {
+    echo "<p>Création de la table 'scene_npcs'...</p>";
+    $pdo->exec("
+        CREATE TABLE scene_npcs (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            scene_id INT NOT NULL,
+            name VARCHAR(100) NOT NULL,
+            description TEXT,
+            npc_character_id INT NULL,
+            profile_photo VARCHAR(255) NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (scene_id) REFERENCES scenes(id) ON DELETE CASCADE,
+            FOREIGN KEY (npc_character_id) REFERENCES characters(id) ON DELETE SET NULL
+        )
+    ");
+    echo "<p style='color: green;'>✓ Table 'scene_npcs' créée</p>";
+} else {
+    echo "<p style='color: blue;'>ℹ Table 'scene_npcs' existe déjà</p>";
+}
+
+// Vérifier la table scene_npcs et ajouter npc_character_id si absente
+$stmt = $pdo->query("SHOW TABLES LIKE 'scene_npcs'");
+if ($stmt->rowCount() > 0) {
+    $col = $pdo->query("SHOW COLUMNS FROM scene_npcs LIKE 'npc_character_id'");
+    if ($col->rowCount() == 0) {
+        echo "<p>Ajout de la colonne 'npc_character_id' à la table scene_npcs...</p>";
+        $pdo->exec("ALTER TABLE scene_npcs ADD COLUMN npc_character_id INT NULL AFTER description");
+        $pdo->exec("ALTER TABLE scene_npcs ADD CONSTRAINT fk_scene_npcs_character FOREIGN KEY (npc_character_id) REFERENCES characters(id) ON DELETE SET NULL");
+        echo "<p style='color: green;'>✓ Colonne 'npc_character_id' ajoutée</p>";
+    } else {
+        echo "<p style='color: blue;'>ℹ Colonne 'npc_character_id' existe déjà</p>";
+    }
+} else {
+    echo "<p style='color: red;'>✗ Table 'scene_npcs' n'existe pas</p>";
+}
+
+// Vérifier la table notifications
+$stmt = $pdo->query("SHOW TABLES LIKE 'notifications'");
+if ($stmt->rowCount() == 0) {
+    echo "<p>Création de la table 'notifications'...</p>";
+    $pdo->exec("
+        CREATE TABLE notifications (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            type VARCHAR(50) NOT NULL,
+            title VARCHAR(100) NOT NULL,
+            message TEXT NOT NULL,
+            related_id INT NULL,
+            is_read BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+    ");
+    echo "<p style='color: green;'>✓ Table 'notifications' créée</p>";
+} else {
+    echo "<p style='color: blue;'>ℹ Table 'notifications' existe déjà</p>";
+}
+
+echo "<h2>Mise à jour terminée !</h2>";
+echo "<p><a href='index.php'>Retour à l'accueil</a></p>";
 ?>
 

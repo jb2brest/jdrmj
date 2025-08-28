@@ -203,18 +203,31 @@ $armorClass = $character['armor_class'];
             <!-- En-tête du personnage -->
             <div class="row mb-4">
                 <div class="col-md-8">
-                    <h2><?php echo htmlspecialchars($character['name']); ?></h2>
-                    <p class="text-muted">
-                        <?php echo htmlspecialchars($character['race_name']); ?> 
-                        <?php echo htmlspecialchars($character['class_name']); ?> 
-                        niveau <?php echo $character['level']; ?>
-                    </p>
-                    <?php if ($character['background']): ?>
-                        <p><strong>Historique:</strong> <?php echo htmlspecialchars($character['background']); ?></p>
-                    <?php endif; ?>
-                    <?php if ($character['alignment']): ?>
-                        <p><strong>Alignement:</strong> <?php echo htmlspecialchars($character['alignment']); ?></p>
-                    <?php endif; ?>
+                    <div class="d-flex align-items-start">
+                        <div class="me-4">
+                            <?php if (!empty($character['profile_photo'])): ?>
+                                <img src="<?php echo htmlspecialchars($character['profile_photo']); ?>" alt="Photo de <?php echo htmlspecialchars($character['name']); ?>" class="rounded" style="width: 120px; height: 120px; object-fit: cover;">
+                            <?php else: ?>
+                                <div class="bg-secondary rounded d-flex align-items-center justify-content-center" style="width: 120px; height: 120px;">
+                                    <i class="fas fa-user text-white" style="font-size: 3rem;"></i>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                        <div>
+                            <h2><?php echo htmlspecialchars($character['name']); ?></h2>
+                            <p class="text-muted">
+                                <?php echo htmlspecialchars($character['race_name']); ?> 
+                                <?php echo htmlspecialchars($character['class_name']); ?> 
+                                niveau <?php echo $character['level']; ?>
+                            </p>
+                            <?php if ($character['background']): ?>
+                                <p><strong>Historique:</strong> <?php echo htmlspecialchars($character['background']); ?></p>
+                            <?php endif; ?>
+                            <?php if ($character['alignment']): ?>
+                                <p><strong>Alignement:</strong> <?php echo htmlspecialchars($character['alignment']); ?></p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
                 </div>
                 <div class="col-md-4">
                     <div class="row">
