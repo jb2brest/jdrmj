@@ -33,6 +33,64 @@ function requireLogin() {
     }
 }
 
+// Fonction pour vérifier le rôle de l'utilisateur
+function getUserRole() {
+    return $_SESSION['role'] ?? 'player';
+}
+
+// Fonction pour vérifier si l'utilisateur est MJ
+function isDM() {
+    return getUserRole() === 'dm';
+}
+
+// Fonction pour vérifier si l'utilisateur est joueur
+function isPlayer() {
+    return getUserRole() === 'player';
+}
+
+// Fonction pour rediriger si l'utilisateur n'est pas MJ
+function requireDM() {
+    requireLogin();
+    if (!isDM()) {
+        header('Location: profile.php?error=dm_required');
+        exit();
+    }
+}
+
+// Fonction pour obtenir les informations complètes de l'utilisateur
+function getUserInfo($user_id) {
+    global $pdo;
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
+    $stmt->execute([$user_id]);
+    return $stmt->fetch();
+}
+
+// Fonction pour obtenir le niveau d'expérience en français
+function getExperienceLevelLabel($level) {
+    switch ($level) {
+        case 'debutant':
+            return 'Débutant';
+        case 'intermediaire':
+            return 'Intermédiaire';
+        case 'expert':
+            return 'Expert';
+        default:
+            return 'Débutant';
+    }
+}
+
+// Fonction pour obtenir le rôle en français
+function getRoleLabel($role) {
+    switch ($role) {
+        case 'player':
+            return 'Joueur';
+        case 'dm':
+            return 'Maître du Jeu';
+        default:
+            return 'Joueur';
+    }
+}
+
 // Fonction pour nettoyer les données d'entrée
 function sanitizeInput($data) {
     $data = trim($data);
@@ -126,3 +184,4 @@ function calculateArmorClass($dexterityModifier, $armor = null) {
     return $baseAC;
 }
 ?>
+
