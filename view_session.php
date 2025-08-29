@@ -335,6 +335,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
             $error_message = "Paramètres invalides pour l'ajout de PNJ.";
         }
     }
+
+    // Supprimer une scène
+    if (isset($_POST['action']) && $_POST['action'] === 'delete_scene' && isset($_POST['scene_id'])) {
+        $scene_id = (int)$_POST['scene_id'];
+        
+        // Vérifier que la scène appartient à cette session
+        $chk = $pdo->prepare("SELECT id, title FROM scenes WHERE id = ? AND session_id = ?");
+        $chk->execute([$scene_id, $session_id]);
+        $sceneToDelete = $chk->fetch();
+        
+        if (!$sceneToDelete) {
+            $error_message = "Scène introuvable ou accès refusé.";
+        } else {
+            // Supprimer la scène et toutes ses données associées
+            $pdo->beginTransaction();
+            try {
+                // Supprimer les joueurs de la scène
+                $pdo->prepare("DELETE FROM scene_players WHERE scene_id = ?")->execute([$scene_id]);
+                
+                // Supprimer les PNJ de la scène
+                $pdo->prepare("DELETE FROM scene_npcs WHERE scene_id = ?")->execute([$scene_id]);
+                
+                // Supprimer la scène elle-même
+                $pdo->prepare("DELETE FROM scenes WHERE id = ? AND session_id = ?")->execute([$scene_id, $session_id]);
+                
+                $pdo->commit();
+                $success_message = "Scène '" . htmlspecialchars($sceneToDelete['title']) . "' supprimée avec succès.";
+                
+                // Recharger les scènes
+                $stmt = $pdo->prepare("SELECT * FROM scenes WHERE session_id = ? ORDER BY position ASC, created_at ASC");
+                $stmt->execute([$session_id]);
+                $scenes = $stmt->fetchAll();
+                
+                // Recharger les associations
+                $scenePlayers = [];
+                $sceneNpcs = [];
+                if (!empty($scenes)) {
+                    $sceneIds = array_column($scenes, 'id');
+                    $in = implode(',', array_fill(0, count($sceneIds), '?'));
+                    $sp = $pdo->prepare("SELECT sp.scene_id, sp.player_id, u.username, ch.name AS character_name FROM scene_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.scene_id IN ($in)");
+                    $sp->execute($sceneIds);
+                    foreach ($sp->fetchAll() as $row) {
+                        $scenePlayers[$row['scene_id']][] = $row;
+                    }
+                    $sn = $pdo->prepare("SELECT scene_id, name, description, npc_character_id FROM scene_npcs WHERE scene_id IN ($in)");
+                    $sn->execute($sceneIds);
+                    foreach ($sn->fetchAll() as $row) {
+                        $sceneNpcs[$row['scene_id']][] = $row;
+                    }
+                }
+                
+            } catch (Exception $e) {
+                $pdo->rollBack();
+                $error_message = "Erreur lors de la suppression de la scène : " . $e->getMessage();
+            }
+        }
+    }
 }
 
 // Récupérer les inscriptions
@@ -653,6 +710,11 @@ Capitaine Eloria"></textarea>
                                                                 <input type="hidden" name="scene_id" value="<?php echo (int)$sc['id']; ?>">
                                                                 <input type="hidden" name="direction" value="down">
                                                                 <button class="btn btn-sm btn-outline-secondary" title="Descendre"><i class="fas fa-arrow-down"></i></button>
+                                                            </form>
+                                                            <form method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer la scène \'<?php echo htmlspecialchars($sc['title']); ?>\' ? Cette action est irréversible et supprimera tous les joueurs et PNJ associés.');">
+                                                                <input type="hidden" name="action" value="delete_scene">
+                                                                <input type="hidden" name="scene_id" value="<?php echo (int)$sc['id']; ?>">
+                                                                <button class="btn btn-sm btn-outline-danger" title="Supprimer la scène"><i class="fas fa-trash"></i></button>
                                                             </form>
                                                         <?php endif; ?>
                                                     </div>

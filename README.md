@@ -114,6 +114,7 @@ Ce projet est sous licence MIT. Libre d'utilisation, modification et distributio
 
 ## Changelog
 <version_tag>
+- 0.0.14 : Ajout photo Personnages
 - 0.0.13 : Ajout photo Personnages
 - 0.0.12 : Gestion de scène
 - 0.0.13 : Photos de profil pour personnages et PNJ

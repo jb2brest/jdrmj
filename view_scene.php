@@ -39,12 +39,12 @@ if (!$canView) {
 }
 
 // Récupérer les joueurs présents dans cette scène
-$stmt = $pdo->prepare("SELECT sp.player_id, u.username, ch.name AS character_name FROM scene_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.scene_id = ? ORDER BY u.username ASC");
+$stmt = $pdo->prepare("SELECT sp.player_id, u.username, ch.name AS character_name, ch.profile_photo FROM scene_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.scene_id = ? ORDER BY u.username ASC");
 $stmt->execute([$scene_id]);
 $scenePlayers = $stmt->fetchAll();
 
 // Récupérer les PNJ de cette scène
-$stmt = $pdo->prepare("SELECT name, description, npc_character_id, profile_photo FROM scene_npcs WHERE scene_id = ? ORDER BY name ASC");
+$stmt = $pdo->prepare("SELECT sn.name, sn.description, sn.npc_character_id, sn.profile_photo, c.profile_photo AS character_profile_photo FROM scene_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.scene_id = ? ORDER BY sn.name ASC");
 $stmt->execute([$scene_id]);
 $sceneNpcs = $stmt->fetchAll();
 
@@ -107,7 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                 $success_message = "PNJ ajouté à la scène.";
                 
                 // Recharger les PNJ
-                $stmt = $pdo->prepare("SELECT name, description, npc_character_id, profile_photo FROM scene_npcs WHERE scene_id = ? ORDER BY name ASC");
+                $stmt = $pdo->prepare("SELECT sn.name, sn.description, sn.npc_character_id, sn.profile_photo, c.profile_photo AS character_profile_photo FROM scene_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.scene_id = ? ORDER BY sn.name ASC");
                 $stmt->execute([$scene_id]);
                 $sceneNpcs = $stmt->fetchAll();
             }
@@ -129,7 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                 $success_message = "PNJ (personnage du MJ) ajouté à la scène.";
                 
                 // Recharger les PNJ
-                $stmt = $pdo->prepare("SELECT name, description, npc_character_id, profile_photo FROM scene_npcs WHERE scene_id = ? ORDER BY name ASC");
+                $stmt = $pdo->prepare("SELECT sn.name, sn.description, sn.npc_character_id, sn.profile_photo, c.profile_photo AS character_profile_photo FROM scene_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.scene_id = ? ORDER BY sn.name ASC");
                 $stmt->execute([$scene_id]);
                 $sceneNpcs = $stmt->fetchAll();
             } else {
@@ -148,7 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         $success_message = "Joueur retiré de la scène.";
         
         // Recharger les joueurs
-        $stmt = $pdo->prepare("SELECT sp.player_id, u.username, ch.name AS character_name FROM scene_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.scene_id = ? ORDER BY u.username ASC");
+        $stmt = $pdo->prepare("SELECT sp.player_id, u.username, ch.name AS character_name, ch.profile_photo FROM scene_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.scene_id = ? ORDER BY u.username ASC");
         $stmt->execute([$scene_id]);
         $scenePlayers = $stmt->fetchAll();
     }
@@ -161,9 +161,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         $success_message = "PNJ retiré de la scène.";
         
         // Recharger les PNJ
-        $stmt = $pdo->prepare("SELECT name, description, npc_character_id FROM scene_npcs WHERE scene_id = ? ORDER BY name ASC");
+        $stmt = $pdo->prepare("SELECT sn.name, sn.description, sn.npc_character_id, sn.profile_photo, c.profile_photo AS character_profile_photo FROM scene_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.scene_id = ? ORDER BY sn.name ASC");
         $stmt->execute([$scene_id]);
         $sceneNpcs = $stmt->fetchAll();
+    }
+    
+    // Mettre à jour le nom de la scène
+    if (isset($_POST['action']) && $_POST['action'] === 'update_title') {
+        $new_title = trim($_POST['scene_title'] ?? '');
+        
+        if ($new_title === '') {
+            $error_message = "Le nom de la scène ne peut pas être vide.";
+        } else {
+            // Vérifier que la scène existe et appartient à la bonne session
+            $check_stmt = $pdo->prepare("SELECT id, title FROM scenes WHERE id = ? AND session_id = ?");
+            $check_stmt->execute([$scene_id, $scene['session_id']]);
+            $current_scene = $check_stmt->fetch();
+            
+            if (!$current_scene) {
+                $error_message = "Scène introuvable ou accès refusé.";
+            } else {
+                $stmt = $pdo->prepare("UPDATE scenes SET title = ? WHERE id = ? AND session_id = ?");
+                $result = $stmt->execute([$new_title, $scene_id, $scene['session_id']]);
+                
+                if ($result && $stmt->rowCount() > 0) {
+                    $success_message = "Nom de la scène mis à jour avec succès.";
+                    
+                    // Recharger les données de la scène
+                    $stmt = $pdo->prepare("SELECT s.*, gs.title AS session_title, gs.id AS session_id, gs.dm_id, u.username AS dm_username FROM scenes s JOIN game_sessions gs ON s.session_id = gs.id JOIN users u ON gs.dm_id = u.id WHERE s.id = ?");
+                    $stmt->execute([$scene_id]);
+                    $scene = $stmt->fetch();
+                    
+                    if (!$scene) {
+                        $error_message = "Erreur lors du rechargement des données de la scène.";
+                    }
+                } else {
+                    $error_message = "Erreur lors de la mise à jour du nom de la scène. Aucune ligne modifiée.";
+                }
+            }
+        }
     }
     
     // Mettre à jour le plan de la scène
@@ -327,7 +363,31 @@ foreach ($allScenes as $s) {
     
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <h1><i class="fas fa-photo-video me-2"></i><?php echo htmlspecialchars($scene['title']); ?></h1>
+            <?php if ($isOwnerDM): ?>
+                <div class="d-flex align-items-center">
+                    <h1 class="me-3"><i class="fas fa-photo-video me-2"></i><?php echo htmlspecialchars($scene['title']); ?></h1>
+                    <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#editTitleForm">
+                        <i class="fas fa-edit me-1"></i>Modifier le nom
+                    </button>
+                </div>
+                <div class="collapse mt-2" id="editTitleForm">
+                    <div class="card card-body">
+                        <form method="POST" class="row g-2">
+                            <input type="hidden" name="action" value="update_title">
+                            <div class="col-md-8">
+                                <input type="text" class="form-control" name="scene_title" value="<?php echo htmlspecialchars($scene['title']); ?>" required>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-1"></i>Enregistrer
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            <?php else: ?>
+                <h1><i class="fas fa-photo-video me-2"></i><?php echo htmlspecialchars($scene['title']); ?></h1>
+            <?php endif; ?>
             <p class="text-muted mb-0">Session: <?php echo htmlspecialchars($scene['session_title']); ?> • MJ: <?php echo htmlspecialchars($scene['dm_username']); ?></p>
         </div>
         <div class="d-flex align-items-center gap-2">
@@ -425,12 +485,21 @@ foreach ($allScenes as $s) {
                     <?php else: ?>
                         <ul class="list-group list-group-flush">
                             <?php foreach ($scenePlayers as $player): ?>
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <i class="fas fa-user me-2"></i><?php echo htmlspecialchars($player['username']); ?>
-                                        <?php if ($player['character_name']): ?>
-                                            <br><small class="text-muted"><?php echo htmlspecialchars($player['character_name']); ?></small>
+                                <li class="list-group-item d-flex justify-content-between align-items-start">
+                                    <div class="d-flex align-items-start">
+                                        <?php if (!empty($player['profile_photo'])): ?>
+                                            <img src="<?php echo htmlspecialchars($player['profile_photo']); ?>" alt="Photo de <?php echo htmlspecialchars($player['character_name'] ?: $player['username']); ?>" class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                                        <?php else: ?>
+                                            <div class="bg-secondary rounded me-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                <i class="fas fa-user text-white"></i>
+                                            </div>
                                         <?php endif; ?>
+                                        <div>
+                                            <div class="fw-bold"><?php echo htmlspecialchars($player['username']); ?></div>
+                                            <?php if ($player['character_name']): ?>
+                                                <small class="text-muted"><?php echo htmlspecialchars($player['character_name']); ?></small>
+                                            <?php endif; ?>
+                                        </div>
                                     </div>
                                     <?php if ($isOwnerDM): ?>
                                         <form method="POST" class="d-inline" onsubmit="return confirm('Retirer <?php echo htmlspecialchars($player['username']); ?> de cette scène ?');">
@@ -519,8 +588,12 @@ foreach ($allScenes as $s) {
                                 <li class="list-group-item">
                                     <div class="d-flex justify-content-between align-items-start">
                                         <div class="d-flex align-items-start">
-                                            <?php if (!empty($npc['profile_photo'])): ?>
-                                                <img src="<?php echo htmlspecialchars($npc['profile_photo']); ?>" alt="Photo de <?php echo htmlspecialchars($npc['name']); ?>" class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                                            <?php 
+                                            // Utiliser la photo du PNJ si disponible, sinon la photo du personnage associé
+                                            $photo_to_show = !empty($npc['profile_photo']) ? $npc['profile_photo'] : (!empty($npc['character_profile_photo']) ? $npc['character_profile_photo'] : null);
+                                            ?>
+                                            <?php if (!empty($photo_to_show)): ?>
+                                                <img src="<?php echo htmlspecialchars($photo_to_show); ?>" alt="Photo de <?php echo htmlspecialchars($npc['name']); ?>" class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover;">
                                             <?php else: ?>
                                                 <div class="bg-secondary rounded me-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
                                                     <i class="fas fa-user-tie text-white"></i>
