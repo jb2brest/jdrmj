@@ -1,0 +1,4 @@
+Dans la liste des scènes dans le détail d'une session, le maitre du jeu doit pouvoir supprimer une scène après confirmation.
+Dans le détail d'une scène, le maitre du jeu doit pouvoir afficher la fiche d'un personnage non joueur ou d'un personnage joueur. 
+
+Le maitre du jeu doit pouvoir placer des pions pour chaque joueur et chaque PNJ pour les situer sur le plan. 
