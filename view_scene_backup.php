@@ -50,7 +50,69 @@ $sceneNpcs = $stmt->fetchAll();
 
 // Traitements POST pour ajouter des PNJ
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
-
+    if (isset($_POST['action']) && $_POST['action'] === 'add_npc') {
+        $npc_name = trim($_POST['npc_name'] ?? '');
+        $npc_description = trim($_POST['npc_description'] ?? '');
+        
+        if ($npc_name === '') {
+            $error_message = "Le nom du PNJ est obligatoire.";
+        } else {
+            // Upload de photo de profil si fournie
+            $profile_photo = null;
+            if (isset($_FILES['npc_photo']) && $_FILES['npc_photo']['error'] === UPLOAD_ERR_OK) {
+                $tmp = $_FILES['npc_photo']['tmp_name'];
+                $size = (int)$_FILES['npc_photo']['size'];
+                $originalName = $_FILES['npc_photo']['name'];
+                
+                // Vérifier la taille (limite à 2M pour correspondre à la config PHP)
+                if ($size > 2 * 1024 * 1024) {
+                    $error_message = "Image trop volumineuse (max 2 Mo).";
+                } else {
+                    $finfo = new finfo(FILEINFO_MIME_TYPE);
+                    $mime = $finfo->file($tmp);
+                    $allowed = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/gif' => 'gif', 'image/webp' => 'webp'];
+                    
+                    if (!isset($allowed[$mime])) {
+                        $error_message = "Format d'image non supporté. Formats acceptés: JPG, PNG, GIF, WebP.";
+                    } else {
+                        $ext = $allowed[$mime];
+                        $subdir = 'uploads/profiles/' . date('Y/m');
+                        $diskDir = __DIR__ . '/' . $subdir;
+                        
+                        // Créer le dossier s'il n'existe pas
+                        if (!is_dir($diskDir)) {
+                            if (!mkdir($diskDir, 0755, true)) {
+                                $error_message = "Impossible de créer le dossier d'upload.";
+                            }
+                        }
+                        
+                        if (!isset($error_message)) {
+                            $basename = bin2hex(random_bytes(8)) . '.' . $ext;
+                            $diskPath = $diskDir . '/' . $basename;
+                            $webPath = $subdir . '/' . $basename;
+                            
+                            if (move_uploaded_file($tmp, $diskPath)) {
+                                $profile_photo = $webPath;
+                            } else {
+                                $error_message = "Échec de l'upload de la photo. Vérifiez les permissions du dossier.";
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if (!isset($error_message)) {
+                $stmt = $pdo->prepare("INSERT INTO scene_npcs (scene_id, name, description, profile_photo) VALUES (?, ?, ?, ?)");
+                $stmt->execute([$scene_id, $npc_name, $npc_description, $profile_photo]);
+                $success_message = "PNJ ajouté à la scène.";
+                
+                // Recharger les PNJ
+                $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, c.profile_photo AS character_profile_photo FROM scene_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.scene_id = ? ORDER BY sn.name ASC");
+                $stmt->execute([$scene_id]);
+                $sceneNpcs = $stmt->fetchAll();
+            }
+        }
+    }
     
     // Ajouter un personnage du MJ comme PNJ
     if (isset($_POST['action']) && $_POST['action'] === 'add_dm_character_npc') {
@@ -60,8 +122,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
             $chk->execute([$character_id, $dm_id]);
             $char = $chk->fetch();
             if ($char) {
+                $npc_name = trim($_POST['npc_name'] ?? '');
+                if ($npc_name === '') { $npc_name = $char['name']; }
                 $ins = $pdo->prepare("INSERT INTO scene_npcs (scene_id, name, npc_character_id) VALUES (?, ?, ?)");
-                $ins->execute([$scene_id, $char['name'], $character_id]);
+                $ins->execute([$scene_id, $npc_name, $character_id]);
                 $success_message = "PNJ (personnage du MJ) ajouté à la scène.";
                 
                 // Recharger les PNJ
@@ -241,7 +305,38 @@ $stmt = $pdo->prepare("SELECT id, title, position FROM scenes WHERE session_id =
 $stmt->execute([$scene['session_id']]);
 $allScenes = $stmt->fetchAll();
 
-
+// Récupérer les positions des pions
+$sceneTokens = [];
+if ($isOwnerDM) {
+    $stmt = $pdo->prepare("
+        SELECT 
+            st.id,
+            st.token_type,
+            st.entity_id,
+            st.x_position,
+            st.y_position,
+            st.color,
+            st.label,
+            CASE 
+                WHEN st.token_type = 'player' THEN u.username
+                WHEN st.token_type = 'npc' THEN sn.name
+            END AS display_name,
+            CASE 
+                WHEN st.token_type = 'player' THEN ch.name
+                WHEN st.token_type = 'npc' THEN ch2.name
+            END AS character_name
+        FROM scene_tokens st
+        LEFT JOIN scene_players sp ON st.token_type = 'player' AND st.entity_id = sp.player_id AND sp.scene_id = st.scene_id
+        LEFT JOIN users u ON sp.player_id = u.id
+        LEFT JOIN characters ch ON sp.character_id = ch.id
+        LEFT JOIN scene_npcs sn ON st.token_type = 'npc' AND st.entity_id = sn.id AND sn.scene_id = st.scene_id
+        LEFT JOIN characters ch2 ON sn.npc_character_id = ch2.id
+        WHERE st.scene_id = ?
+        ORDER BY st.token_type, st.entity_id
+    ");
+    $stmt->execute([$scene_id]);
+    $sceneTokens = $stmt->fetchAll();
+}
 
 $currentPosition = $scene['position'];
 $prevScene = null;
@@ -385,7 +480,123 @@ foreach ($allScenes as $s) {
                     
                     <?php if (!empty($scene['map_url'])): ?>
                         <div class="text-center">
-                            <img src="<?php echo htmlspecialchars($scene['map_url']); ?>" class="img-fluid rounded" alt="Plan de la scène" style="max-height: 500px;">
+                            <?php if ($isOwnerDM): ?>
+                                <!-- Zone des pions disponibles -->
+                                <div class="mb-3">
+                                    <h6>Pions disponibles</h6>
+                                    <div class="d-flex flex-wrap gap-2 justify-content-center">
+                                        <!-- Pions des joueurs -->
+                                        <?php foreach ($scenePlayers as $player): ?>
+                                            <div class="token-source" 
+                                                 data-token-type="player"
+                                                 data-entity-id="<?php echo (int)$player['player_id']; ?>"
+                                                 data-entity-name="<?php echo htmlspecialchars($player['username']); ?>"
+                                                 data-character-name="<?php echo htmlspecialchars($player['character_name'] ?? ''); ?>"
+                                                 style="cursor: grab; display: inline-block; margin: 5px;">
+                                                <?php if (!empty($player['profile_photo'])): ?>
+                                                    <img src="<?php echo htmlspecialchars($player['profile_photo']); ?>" 
+                                                         alt="Photo de <?php echo htmlspecialchars($player['character_name'] ?: $player['username']); ?>" 
+                                                         class="rounded" 
+                                                         style="width: 40px; height: 40px; object-fit: cover; border: 2px solid #28a745;">
+                                                <?php else: ?>
+                                                    <div class="bg-secondary rounded d-flex align-items-center justify-content-center" 
+                                                         style="width: 40px; height: 40px; border: 2px solid #28a745;">
+                                                        <i class="fas fa-user text-white"></i>
+                                                    </div>
+                                                <?php endif; ?>
+                                                <div class="small text-center mt-1"><?php echo htmlspecialchars($player['username']); ?></div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                        
+                                        <!-- Pions des PNJ -->
+                                        <?php foreach ($sceneNpcs as $npc): ?>
+                                            <?php 
+                                            $photo_to_show = !empty($npc['profile_photo']) ? $npc['profile_photo'] : (!empty($npc['character_profile_photo']) ? $npc['character_profile_photo'] : null);
+                                            ?>
+                                            <div class="token-source" 
+                                                 data-token-type="npc"
+                                                 data-entity-id="<?php echo (int)$npc['id']; ?>"
+                                                 data-entity-name="<?php echo htmlspecialchars($npc['name']); ?>"
+                                                 data-character-name="<?php echo htmlspecialchars($npc['character_name'] ?? ''); ?>"
+                                                 style="cursor: grab; display: inline-block; margin: 5px;">
+                                                <?php if (!empty($photo_to_show)): ?>
+                                                    <img src="<?php echo htmlspecialchars($photo_to_show); ?>" 
+                                                         alt="Photo de <?php echo htmlspecialchars($npc['name']); ?>" 
+                                                         class="rounded" 
+                                                         style="width: 40px; height: 40px; object-fit: cover; border: 2px solid #dc3545;">
+                                                <?php else: ?>
+                                                    <div class="bg-secondary rounded d-flex align-items-center justify-content-center" 
+                                                         style="width: 40px; height: 40px; border: 2px solid #dc3545;">
+                                                        <i class="fas fa-user-tie text-white"></i>
+                                                    </div>
+                                                <?php endif; ?>
+                                                <div class="small text-center mt-1"><?php echo htmlspecialchars($npc['name']); ?></div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                                
+                                <!-- Boutons de contrôle -->
+                                <div class="mb-3">
+                                    <button type="button" class="btn btn-sm btn-outline-danger" id="clearTokens" title="Supprimer tous les pions du plan">
+                                        <i class="fas fa-trash"></i> Effacer tous les pions
+                                    </button>
+                                </div>
+                            <?php endif; ?>
+                            
+                            <!-- Zone du plan avec les pions placés -->
+                            <div id="mapContainer" class="position-relative d-inline-block" style="max-width: 100%;">
+                                <img id="sceneMap" src="<?php echo htmlspecialchars($scene['map_url']); ?>" class="img-fluid rounded" alt="Plan de la scène" style="max-height: 500px;">
+                                
+                                <?php if ($isOwnerDM): ?>
+                                    <!-- Pions placés sur le plan -->
+                                    <?php 
+                                    // Debug: afficher le nombre de tokens
+                                    echo "<!-- Debug: " . count($sceneTokens) . " tokens trouvés -->";
+                                    ?>
+                                    <?php foreach ($sceneTokens as $token): ?>
+                                        <div class="token-placed" 
+                                             data-token-id="<?php echo (int)$token['id']; ?>"
+                                             data-token-type="<?php echo htmlspecialchars($token['token_type']); ?>"
+                                             data-entity-id="<?php echo (int)$token['entity_id']; ?>"
+                                             data-x="<?php echo (float)$token['x_position']; ?>"
+                                             data-y="<?php echo (float)$token['y_position']; ?>"
+                                             style="position: absolute; width: 40px; height: 40px; cursor: move; z-index: 10;"
+                                             title="<?php echo htmlspecialchars($token['display_name'] . ($token['character_name'] ? ' (' . $token['character_name'] . ')' : '')); ?>">
+                                            <?php 
+                                            // Trouver la photo correspondante
+                                            $token_photo = null;
+                                            if ($token['token_type'] === 'player') {
+                                                foreach ($scenePlayers as $player) {
+                                                    if ($player['player_id'] == $token['entity_id']) {
+                                                        $token_photo = $player['profile_photo'];
+                                                        break;
+                                                    }
+                                                }
+                                            } else {
+                                                foreach ($sceneNpcs as $npc) {
+                                                    if ($npc['id'] == $token['entity_id']) {
+                                                        $token_photo = !empty($npc['profile_photo']) ? $npc['profile_photo'] : (!empty($npc['character_profile_photo']) ? $npc['character_profile_photo'] : null);
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                            ?>
+                                            <?php if (!empty($token_photo)): ?>
+                                                <img src="<?php echo htmlspecialchars($token_photo); ?>" 
+                                                     alt="Pion" 
+                                                     class="rounded" 
+                                                     style="width: 100%; height: 100%; object-fit: cover; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+                                            <?php else: ?>
+                                                <div class="bg-secondary rounded d-flex align-items-center justify-content-center" 
+                                                     style="width: 100%; height: 100%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+                                                    <i class="fas fa-<?php echo $token['token_type'] === 'player' ? 'user' : 'user-tie'; ?> text-white"></i>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </div>
                             
                             <div class="mt-2">
                                 <a href="<?php echo htmlspecialchars($scene['map_url']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary">
@@ -477,34 +688,50 @@ foreach ($allScenes as $s) {
                         <div class="collapse mb-3" id="addNpcForm">
                             <div class="card card-body">
                                 <h6>Ajouter un PNJ</h6>
+                                <form method="POST" class="row g-2" enctype="multipart/form-data">
+                                    <input type="hidden" name="action" value="add_npc">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Nom du PNJ</label>
+                                        <input type="text" class="form-control" name="npc_name" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Description (optionnel)</label>
+                                        <input type="text" class="form-control" name="npc_description" placeholder="Brève description...">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Photo de profil (optionnel)</label>
+                                        <input type="file" class="form-control" name="npc_photo" accept="image/png,image/jpeg,image/webp,image/gif">
+                                        <div class="form-text">Formats acceptés: JPG, PNG, GIF, WebP (max 2 Mo)</div>
+                                    </div>
+                                    <div class="col-12">
+                                        <button type="submit" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-plus me-1"></i>Ajouter
+                                        </button>
+                                    </div>
+                                </form>
+                                
                                 <?php if (!empty($dmCharacters)): ?>
-                                    <form method="POST" action="" class="row g-2">
+                                    <hr>
+                                    <h6>Ou ajouter un de vos personnages</h6>
+                                    <form method="POST" class="row g-2">
                                         <input type="hidden" name="action" value="add_dm_character_npc">
-                                        <div class="col-md-8">
-                                            <label class="form-label">Choisir un de vos personnages</label>
+                                        <div class="col-md-6">
                                             <select name="dm_character_id" class="form-select" required>
-                                                <option value="" disabled selected>Sélectionner un personnage</option>
+                                                <option value="" disabled selected>Choisir un personnage</option>
                                                 <?php foreach ($dmCharacters as $dc): ?>
                                                     <option value="<?php echo (int)$dc['id']; ?>"><?php echo htmlspecialchars($dc['name']); ?></option>
                                                 <?php endforeach; ?>
                                             </select>
                                         </div>
                                         <div class="col-md-4">
-                                            <label class="form-label">&nbsp;</label>
-                                            <button type="submit" class="btn btn-primary btn-sm w-100">
-                                                <i class="fas fa-user-plus"></i> Ajouter
+                                            <input type="text" name="npc_name" class="form-control" placeholder="Nom PNJ (optionnel)">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button type="submit" class="btn btn-outline-primary btn-sm w-100">
+                                                <i class="fas fa-user-plus"></i>
                                             </button>
                                         </div>
                                     </form>
-                                <?php else: ?>
-                                    <div class="alert alert-info">
-                                        <i class="fas fa-info-circle me-2"></i>
-                                        Vous devez d'abord créer des personnages dans votre profil pour pouvoir les utiliser comme PNJ.
-                                        <br>
-                                        <a href="characters.php" class="btn btn-sm btn-outline-primary mt-2">
-                                            <i class="fas fa-plus me-1"></i>Créer un personnage
-                                        </a>
-                                    </div>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -570,7 +797,304 @@ foreach ($allScenes as $s) {
 <?php if (!$isModal): ?>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
-
+    <?php if ($isOwnerDM): ?>
+    <script>
+    console.log('=== SCRIPT DE TOKENS CHARGÉ ===');
+    console.log('isOwnerDM = true');
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM chargé');
+        
+        // Test simple - vérifier que les éléments existent
+        const mapContainer = document.getElementById('mapContainer');
+        const clearTokens = document.getElementById('clearTokens');
+        
+        console.log('mapContainer trouvé:', !!mapContainer);
+        console.log('clearTokens trouvé:', !!clearTokens);
+        
+        if (!mapContainer) {
+            console.error('mapContainer non trouvé - arrêt du script');
+            return;
+        }
+        
+        // Données des joueurs et PNJ
+        const players = <?php echo json_encode($scenePlayers); ?>;
+        const npcs = <?php echo json_encode($sceneNpcs); ?>;
+        
+        console.log('Joueurs:', players.length);
+        console.log('PNJ:', npcs.length);
+        
+        // Test simple - juste afficher les tokens sources
+        const tokenSources = document.querySelectorAll('.token-source');
+        console.log('Tokens sources trouvés:', tokenSources.length);
+        
+        tokenSources.forEach((source, index) => {
+            console.log(`Token source ${index}:`, source.dataset);
+        });
+        
+        // Test de clic simple
+        tokenSources.forEach(source => {
+            source.addEventListener('click', function() {
+                console.log('Clic sur token source:', this.dataset);
+                alert('Clic détecté sur: ' + this.dataset.entityName);
+            });
+        });
+        
+        // Test du bouton clear
+        if (clearTokens) {
+            clearTokens.addEventListener('click', function() {
+                console.log('Bouton clear cliqué');
+                alert('Bouton clear cliqué');
+            });
+        }
+    });
+        
+        // Rendre un pion déplaçable
+        function makeTokenDraggable(token) {
+            let isDragging = false;
+            let startX, startY, startLeft, startTop;
+            
+            token.addEventListener('mousedown', function(e) {
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                startLeft = parseFloat(token.style.left);
+                startTop = parseFloat(token.style.top);
+                
+                token.style.zIndex = '20';
+                token.style.opacity = '0.8';
+                e.preventDefault();
+            });
+            
+            document.addEventListener('mousemove', function(e) {
+                if (!isDragging) return;
+                
+                const deltaX = e.clientX - startX;
+                const deltaY = e.clientY - startY;
+                
+                const containerRect = mapContainer.getBoundingClientRect();
+                const newLeft = Math.max(0, Math.min(100, startLeft + (deltaX / containerRect.width) * 100));
+                const newTop = Math.max(0, Math.min(100, startTop + (deltaY / containerRect.height) * 100));
+                
+                token.style.left = newLeft + '%';
+                token.style.top = newTop + '%';
+            });
+            
+            document.addEventListener('mouseup', function() {
+                if (isDragging) {
+                    isDragging = false;
+                    token.style.zIndex = '10';
+                    token.style.opacity = '1';
+                    
+                    // Sauvegarder la nouvelle position
+                    const x = parseFloat(token.style.left) / 100;
+                    const y = parseFloat(token.style.top) / 100;
+                    saveTokenPosition(token.dataset.tokenType, token.dataset.entityId, x, y);
+                }
+            });
+        }
+        
+        // Sauvegarder la position d'un pion
+        function saveTokenPosition(tokenType, entityId, x, y) {
+            fetch('save_token_position.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    scene_id: <?php echo $scene_id; ?>,
+                    token_type: tokenType,
+                    entity_id: parseInt(entityId),
+                    x_position: x,
+                    y_position: y
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Position sauvegardée');
+                } else {
+                    console.error('Erreur:', data.error);
+                    alert('Erreur lors de la sauvegarde: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la sauvegarde');
+            });
+        }
+        
+        // Gérer le glisser-déposer depuis les pions sources
+        function setupTokenSources() {
+            const tokenSources = document.querySelectorAll('.token-source');
+            console.log('Configuration de', tokenSources.length, 'tokens sources');
+            
+            tokenSources.forEach((source, index) => {
+                console.log(`Token source ${index}:`, source.dataset);
+                
+                source.addEventListener('mousedown', function(e) {
+                    console.log('Début du drag pour:', this.dataset);
+                    
+                    const tokenType = this.dataset.tokenType;
+                    const entityId = this.dataset.entityId;
+                    const entityName = this.dataset.entityName;
+                    
+                    if (!tokenType || !entityId) {
+                        console.error('Données manquantes pour le token source');
+                        return;
+                    }
+                    
+                    // Créer un clone pour le drag
+                    const clone = this.cloneNode(true);
+                    clone.style.position = 'fixed';
+                    clone.style.zIndex = '1000';
+                    clone.style.pointerEvents = 'none';
+                    clone.style.opacity = '0.8';
+                    document.body.appendChild(clone);
+                    
+                    let isDragging = true;
+                    let startX = e.clientX;
+                    let startY = e.clientY;
+                    
+                    function onMouseMove(e) {
+                        if (!isDragging) return;
+                        
+                        clone.style.left = (e.clientX - clone.offsetWidth / 2) + 'px';
+                        clone.style.top = (e.clientY - clone.offsetHeight / 2) + 'px';
+                    }
+                    
+                    function onMouseUp(e) {
+                        if (!isDragging) return;
+                        isDragging = false;
+                        
+                        console.log('Fin du drag, position:', e.clientX, e.clientY);
+                        
+                        // Vérifier si on est sur le plan
+                        const mapRect = mapContainer.getBoundingClientRect();
+                        console.log('Zone du plan:', mapRect);
+                        
+                        if (e.clientX >= mapRect.left && e.clientX <= mapRect.right &&
+                            e.clientY >= mapRect.top && e.clientY <= mapRect.bottom) {
+                            
+                            // Calculer la position relative sur le plan
+                            const x = (e.clientX - mapRect.left) / mapRect.width;
+                            const y = (e.clientY - mapRect.top) / mapRect.height;
+                            
+                            console.log('Position relative calculée:', x, y);
+                            
+                            // Créer le pion sur le plan
+                            createTokenOnMap(tokenType, entityId, entityName, x, y);
+                        } else {
+                            console.log('Drop en dehors du plan');
+                        }
+                        
+                        // Nettoyer
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+                        if (document.body.contains(clone)) {
+                            document.body.removeChild(clone);
+                        }
+                    }
+                    
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                    e.preventDefault();
+                });
+            });
+        }
+        
+        // Créer un pion sur le plan
+        function createTokenOnMap(tokenType, entityId, entityName, x, y) {
+            // Vérifier si un pion existe déjà pour cette entité
+            const existingToken = document.querySelector(`.token-placed[data-token-type="${tokenType}"][data-entity-id="${entityId}"]`);
+            if (existingToken) {
+                // Mettre à jour la position du pion existant
+                existingToken.style.left = (x * 100) + '%';
+                existingToken.style.top = (y * 100) + '%';
+                saveTokenPosition(tokenType, entityId, x, y);
+                return;
+            }
+            
+            // Créer un nouveau pion
+            const token = document.createElement('div');
+            token.className = 'token-placed';
+            token.dataset.tokenType = tokenType;
+            token.dataset.entityId = entityId;
+            token.dataset.x = x;
+            token.dataset.y = y;
+            token.style.position = 'absolute';
+            token.style.left = (x * 100) + '%';
+            token.style.top = (y * 100) + '%';
+            token.style.width = '40px';
+            token.style.height = '40px';
+            token.style.cursor = 'move';
+            token.style.zIndex = '10';
+            token.title = entityName;
+            
+            // Trouver la photo correspondante
+            let photoSrc = null;
+            if (tokenType === 'player') {
+                const player = players.find(p => p.player_id == entityId);
+                if (player && player.profile_photo) {
+                    photoSrc = player.profile_photo;
+                }
+            } else {
+                const npc = npcs.find(n => n.id == entityId);
+                if (npc) {
+                    photoSrc = npc.profile_photo || npc.character_profile_photo;
+                }
+            }
+            
+            if (photoSrc) {
+                const img = document.createElement('img');
+                img.src = photoSrc;
+                img.alt = 'Pion';
+                img.className = 'rounded';
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'cover';
+                img.style.border = '2px solid white';
+                img.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+                token.appendChild(img);
+            } else {
+                const icon = document.createElement('div');
+                icon.className = 'bg-secondary rounded d-flex align-items-center justify-content-center';
+                icon.style.width = '100%';
+                icon.style.height = '100%';
+                icon.style.border = '2px solid white';
+                icon.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+                icon.innerHTML = `<i class="fas fa-${tokenType === 'player' ? 'user' : 'user-tie'} text-white"></i>`;
+                token.appendChild(icon);
+            }
+            
+            mapContainer.appendChild(token);
+            makeTokenDraggable(token);
+            
+            // Sauvegarder la position
+            saveTokenPosition(tokenType, entityId, x, y);
+        }
+        
+        // Effacer tous les pions
+        clearTokens.addEventListener('click', function() {
+            if (confirm('Êtes-vous sûr de vouloir supprimer tous les pions du plan ?')) {
+                const tokens = document.querySelectorAll('.token-placed');
+                tokens.forEach(token => token.remove());
+                // TODO: Ajouter une API pour supprimer tous les pions
+            }
+        });
+        
+        // Initialiser
+        initializeTokens();
+        setupTokenSources();
+    });
+    </script>
+    <?php endif; ?>
+    
+    <script>
+    console.log('Script de debug - page chargée');
+    console.log('isOwnerDM = <?php echo $isOwnerDM ? 'true' : 'false'; ?>');
+    </script>
 </body>
 </html>
 <?php endif; ?>

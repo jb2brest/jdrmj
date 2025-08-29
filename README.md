@@ -114,6 +114,7 @@ Ce projet est sous licence MIT. Libre d'utilisation, modification et distributio
 
 ## Changelog
 <version_tag>
+- 0.0.16 : Modification PNJ
 - 0.0.16 : Accès au feuille de personnage
 - 0.0.15 : Modification publish
 - 0.0.14 : Ajout photo Personnages

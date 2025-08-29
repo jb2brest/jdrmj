@@ -281,6 +281,31 @@ if ($stmt->rowCount() > 0) {
     echo "<p style='color: red;'>✗ Table 'scene_npcs' n'existe pas</p>";
 }
 
+// Vérifier la table scene_tokens (positions des pions)
+$stmt = $pdo->query("SHOW TABLES LIKE 'scene_tokens'");
+if ($stmt->rowCount() == 0) {
+    echo "<p>Création de la table 'scene_tokens'...</p>";
+    $pdo->exec("
+        CREATE TABLE scene_tokens (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            scene_id INT NOT NULL,
+            token_type ENUM('player', 'npc') NOT NULL,
+            entity_id INT NOT NULL,
+            x_position DECIMAL(10,2) NOT NULL,
+            y_position DECIMAL(10,2) NOT NULL,
+            color VARCHAR(7) DEFAULT '#007bff',
+            label VARCHAR(100),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            FOREIGN KEY (scene_id) REFERENCES scenes(id) ON DELETE CASCADE,
+            UNIQUE KEY unique_scene_entity (scene_id, token_type, entity_id)
+        )
+    ");
+    echo "<p style='color: green;'>✓ Table 'scene_tokens' créée</p>";
+} else {
+    echo "<p style='color: blue;'>ℹ Table 'scene_tokens' existe déjà</p>";
+}
+
 // Vérifier la table notifications
 $stmt = $pdo->query("SHOW TABLES LIKE 'notifications'");
 if ($stmt->rowCount() == 0) {

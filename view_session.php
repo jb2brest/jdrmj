@@ -312,6 +312,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
     if (isset($_POST['action']) && $_POST['action'] === 'add_dm_character_npc') {
         $scene_id = (int)($_POST['scene_id'] ?? 0);
         $character_id = (int)($_POST['dm_character_id'] ?? 0);
+        
         if ($scene_id > 0 && $character_id > 0) {
             $chk = $pdo->prepare("SELECT 1 FROM scenes WHERE id = ? AND session_id = ?");
             $chk->execute([$scene_id, $session_id]);
