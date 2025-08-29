@@ -1,0 +1,313 @@
+<?php
+require_once 'config/database.php';
+require_once 'includes/functions.php';
+
+requireLogin();
+
+// Paramètres de recherche et filtrage
+$search = trim($_GET['search'] ?? '');
+$cr_min = isset($_GET['cr_min']) ? (float)$_GET['cr_min'] : null;
+$cr_max = isset($_GET['cr_max']) ? (float)$_GET['cr_max'] : null;
+$type = trim($_GET['type'] ?? '');
+$size = trim($_GET['size'] ?? '');
+
+// Construire la requête SQL
+$sql = "SELECT * FROM dnd_monsters WHERE 1=1";
+$params = [];
+
+if ($search !== '') {
+    $sql .= " AND (name LIKE ? OR type LIKE ? OR alignment LIKE ?)";
+    $searchParam = "%$search%";
+    $params[] = $searchParam;
+    $params[] = $searchParam;
+    $params[] = $searchParam;
+}
+
+if ($cr_min !== null) {
+    $sql .= " AND challenge_rating >= ?";
+    $params[] = $cr_min;
+}
+
+if ($cr_max !== null) {
+    $sql .= " AND challenge_rating <= ?";
+    $params[] = $cr_max;
+}
+
+if ($type !== '') {
+    $sql .= " AND type = ?";
+    $params[] = $type;
+}
+
+if ($size !== '') {
+    $sql .= " AND size = ?";
+    $params[] = $size;
+}
+
+$sql .= " ORDER BY name ASC";
+
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
+$monsters = $stmt->fetchAll();
+
+// Récupérer les types et tailles pour les filtres
+$stmt = $pdo->prepare("SELECT DISTINCT type FROM dnd_monsters WHERE type IS NOT NULL ORDER BY type");
+$stmt->execute();
+$types = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+$stmt = $pdo->prepare("SELECT DISTINCT size FROM dnd_monsters WHERE size IS NOT NULL ORDER BY size");
+$stmt->execute();
+$sizes = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+// Récupérer la collection du MJ
+$userCollection = [];
+if (isDM()) {
+    $stmt = $pdo->prepare("SELECT monster_id FROM user_monster_collection WHERE user_id = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $userCollection = $stmt->fetchAll(PDO::FETCH_COLUMN);
+}
+?>
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bestiaire D&D - JDR 4 MJ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="index.php"><i class="fas fa-dice-d20 me-2"></i>JDR 4 MJ</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="index.php">Accueil</a></li>
+                    <?php if (isDM()): ?>
+                        <li class="nav-item"><a class="nav-link" href="my_monsters.php">Ma Collection</a></li>
+                    <?php endif; ?>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-1"></i><?php echo htmlspecialchars($_SESSION['username']); ?>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="profile.php">Profil</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="logout.php">Déconnexion</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-dragon me-2"></i>Bestiaire D&D</h1>
+            <?php if (isDM()): ?>
+                <a href="my_monsters.php" class="btn btn-outline-primary">
+                    <i class="fas fa-bookmark me-1"></i>Ma Collection
+                </a>
+            <?php endif; ?>
+        </div>
+
+        <!-- Filtres de recherche -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-search me-2"></i>Recherche et filtres</h5>
+            </div>
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Recherche</label>
+                        <input type="text" class="form-control" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Nom, type, alignement...">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">CR min</label>
+                        <input type="number" class="form-control" name="cr_min" value="<?php echo $cr_min; ?>" step="0.25" min="0">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">CR max</label>
+                        <input type="number" class="form-control" name="cr_max" value="<?php echo $cr_max; ?>" step="0.25" min="0">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Type</label>
+                        <select class="form-select" name="type">
+                            <option value="">Tous</option>
+                            <?php foreach ($types as $t): ?>
+                                <option value="<?php echo htmlspecialchars($t); ?>" <?php echo $type === $t ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($t); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Taille</label>
+                        <select class="form-select" name="size">
+                            <option value="">Toutes</option>
+                            <?php foreach ($sizes as $s): ?>
+                                <option value="<?php echo htmlspecialchars($s); ?>" <?php echo $size === $s ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($s); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search me-1"></i>Rechercher
+                        </button>
+                        <a href="bestiary.php" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i>Effacer
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Résultats -->
+        <div class="row">
+            <?php foreach ($monsters as $monster): ?>
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0"><?php echo htmlspecialchars($monster['name']); ?></h6>
+                            <?php if (isDM()): ?>
+                                <form method="POST" action="add_to_collection.php" class="d-inline">
+                                    <input type="hidden" name="monster_id" value="<?php echo (int)$monster['id']; ?>">
+                                    <?php if (in_array($monster['id'], $userCollection)): ?>
+                                        <button type="submit" name="action" value="remove" class="btn btn-sm btn-outline-danger" title="Retirer de ma collection">
+                                            <i class="fas fa-bookmark"></i>
+                                        </button>
+                                    <?php else: ?>
+                                        <button type="submit" name="action" value="add" class="btn btn-sm btn-outline-primary" title="Ajouter à ma collection">
+                                            <i class="far fa-bookmark"></i>
+                                        </button>
+                                    <?php endif; ?>
+                                </form>
+                            <?php endif; ?>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-2">
+                                <div class="col-6">
+                                    <small class="text-muted">Type</small><br>
+                                    <strong><?php echo htmlspecialchars($monster['type']); ?></strong>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Taille</small><br>
+                                    <strong><?php echo htmlspecialchars($monster['size']); ?></strong>
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-6">
+                                    <small class="text-muted">CR</small><br>
+                                    <strong><?php echo htmlspecialchars($monster['challenge_rating']); ?></strong>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Alignement</small><br>
+                                    <strong><?php echo htmlspecialchars($monster['alignment']); ?></strong>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-6">
+                                    <small class="text-muted">PV</small><br>
+                                    <strong><?php echo htmlspecialchars($monster['hit_points']); ?></strong>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">CA</small><br>
+                                    <strong><?php echo htmlspecialchars($monster['armor_class']); ?></strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button type="button" class="btn btn-sm btn-outline-info w-100" data-bs-toggle="modal" data-bs-target="#monsterModal<?php echo $monster['id']; ?>">
+                                <i class="fas fa-eye me-1"></i>Voir détails
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal pour les détails -->
+                <div class="modal fade" id="monsterModal<?php echo $monster['id']; ?>" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title"><?php echo htmlspecialchars($monster['name']); ?></h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <strong>Type:</strong> <?php echo htmlspecialchars($monster['type']); ?><br>
+                                        <strong>Taille:</strong> <?php echo htmlspecialchars($monster['size']); ?><br>
+                                        <strong>CR:</strong> <?php echo htmlspecialchars($monster['challenge_rating']); ?><br>
+                                        <strong>Alignement:</strong> <?php echo htmlspecialchars($monster['alignment']); ?>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>PV:</strong> <?php echo htmlspecialchars($monster['hit_points']); ?><br>
+                                        <strong>CA:</strong> <?php echo htmlspecialchars($monster['armor_class']); ?><br>
+                                        <strong>Vitesse:</strong> <?php echo htmlspecialchars($monster['speed']); ?><br>
+                                        <strong>Bonus de prof:</strong> <?php echo htmlspecialchars($monster['proficiency_bonus']); ?>
+                                    </div>
+                                </div>
+                                
+                                <?php if (!empty($monster['description'])): ?>
+                                    <div class="mb-3">
+                                        <strong>Description:</strong><br>
+                                        <?php echo nl2br(htmlspecialchars($monster['description'])); ?>
+                                    </div>
+                                <?php endif; ?>
+
+                                <?php if (!empty($monster['actions'])): ?>
+                                    <div class="mb-3">
+                                        <strong>Actions:</strong><br>
+                                        <?php echo nl2br(htmlspecialchars($monster['actions'])); ?>
+                                    </div>
+                                <?php endif; ?>
+
+                                <?php if (!empty($monster['special_abilities'])): ?>
+                                    <div class="mb-3">
+                                        <strong>Capacités spéciales:</strong><br>
+                                        <?php echo nl2br(htmlspecialchars($monster['special_abilities'])); ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                            <div class="modal-footer">
+                                <?php if (isDM()): ?>
+                                    <form method="POST" action="add_to_collection.php" class="d-inline">
+                                        <input type="hidden" name="monster_id" value="<?php echo (int)$monster['id']; ?>">
+                                        <?php if (in_array($monster['id'], $userCollection)): ?>
+                                            <button type="submit" name="action" value="remove" class="btn btn-danger">
+                                                <i class="fas fa-bookmark me-1"></i>Retirer de ma collection
+                                            </button>
+                                        <?php else: ?>
+                                            <button type="submit" name="action" value="add" class="btn btn-primary">
+                                                <i class="far fa-bookmark me-1"></i>Ajouter à ma collection
+                                            </button>
+                                        <?php endif; ?>
+                                    </form>
+                                <?php endif; ?>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+
+        <?php if (empty($monsters)): ?>
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h4 class="text-muted">Aucun monstre trouvé</h4>
+                <p class="text-muted">Essayez de modifier vos critères de recherche.</p>
+            </div>
+        <?php endif; ?>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

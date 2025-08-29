@@ -328,6 +328,81 @@ if ($stmt->rowCount() == 0) {
     echo "<p style='color: blue;'>ℹ Table 'notifications' existe déjà</p>";
 }
 
+// Vérifier la table dnd_monsters
+$stmt = $pdo->query("SHOW TABLES LIKE 'dnd_monsters'");
+if ($stmt->rowCount() == 0) {
+    echo "<p>Création de la table 'dnd_monsters'...</p>";
+    $pdo->exec("
+        CREATE TABLE dnd_monsters (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            type VARCHAR(100),
+            size VARCHAR(20),
+            alignment VARCHAR(50),
+            challenge_rating DECIMAL(4,2),
+            hit_points INT,
+            armor_class INT,
+            speed VARCHAR(100),
+            proficiency_bonus INT,
+            description TEXT,
+            actions TEXT,
+            special_abilities TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_name (name),
+            INDEX idx_type (type),
+            INDEX idx_cr (challenge_rating)
+        )
+    ");
+    echo "<p style='color: green;'>✓ Table 'dnd_monsters' créée</p>";
+} else {
+    echo "<p style='color: blue;'>ℹ Table 'dnd_monsters' existe déjà</p>";
+    
+    // Vérifier et modifier la colonne challenge_rating si nécessaire
+    $stmt = $pdo->query("SHOW COLUMNS FROM dnd_monsters LIKE 'challenge_rating'");
+    $column = $stmt->fetch();
+    if ($column && strpos($column['Type'], 'decimal(3,2)') !== false) {
+        echo "<p>Modification de la colonne challenge_rating pour supporter les CR élevés...</p>";
+        $pdo->exec("ALTER TABLE dnd_monsters MODIFY COLUMN challenge_rating DECIMAL(4,2)");
+        echo "<p style='color: green;'>✓ Colonne challenge_rating modifiée</p>";
+    }
+}
+
+// Vérifier la table user_monster_collection
+$stmt = $pdo->query("SHOW TABLES LIKE 'user_monster_collection'");
+if ($stmt->rowCount() == 0) {
+    echo "<p>Création de la table 'user_monster_collection'...</p>";
+    $pdo->exec("
+        CREATE TABLE user_monster_collection (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            monster_id INT NOT NULL,
+            added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (monster_id) REFERENCES dnd_monsters(id) ON DELETE CASCADE,
+            UNIQUE KEY unique_collection (user_id, monster_id)
+        )
+    ");
+    echo "<p style='color: green;'>✓ Table 'user_monster_collection' créée</p>";
+} else {
+    echo "<p style='color: blue;'>ℹ Table 'user_monster_collection' existe déjà</p>";
+}
+
+// Vérifier la colonne monster_id dans scene_npcs
+$stmt = $pdo->query("SHOW TABLES LIKE 'scene_npcs'");
+if ($stmt->rowCount() > 0) {
+    $col = $pdo->query("SHOW COLUMNS FROM scene_npcs LIKE 'monster_id'");
+    if ($col->rowCount() == 0) {
+        echo "<p>Ajout de la colonne 'monster_id' à la table scene_npcs...</p>";
+        $pdo->exec("ALTER TABLE scene_npcs ADD COLUMN monster_id INT NULL AFTER npc_character_id");
+        $pdo->exec("ALTER TABLE scene_npcs ADD CONSTRAINT fk_scene_npcs_monster FOREIGN KEY (monster_id) REFERENCES dnd_monsters(id) ON DELETE SET NULL");
+        echo "<p style='color: green;'>✓ Colonne 'monster_id' ajoutée</p>";
+    } else {
+        echo "<p style='color: blue;'>ℹ Colonne 'monster_id' existe déjà</p>";
+    }
+} else {
+    echo "<p style='color: red;'>✗ Table 'scene_npcs' n'existe pas</p>";
+}
+
 echo "<h2>Mise à jour terminée !</h2>";
 echo "<p><a href='index.php'>Retour à l'accueil</a></p>";
 ?>

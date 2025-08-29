@@ -170,6 +170,47 @@ require_once 'includes/functions.php';
         </div>
     </section>
 
+    <!-- DM Features Section -->
+    <?php if (isDM()): ?>
+    <section class="bg-dark text-light py-5">
+        <div class="container">
+            <h2 class="text-center mb-5">Fonctionnalités Maître de Donjon</h2>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card bg-dark border-light h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-users fa-3x text-primary mb-3"></i>
+                            <h5 class="card-title">Mes Sessions</h5>
+                            <p class="card-text">Gérez vos sessions de jeu et vos campagnes.</p>
+                            <a href="campaigns.php" class="btn btn-primary">Voir mes sessions</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-dark border-light h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-dragon fa-3x text-success mb-3"></i>
+                            <h5 class="card-title">Bestiaire D&D</h5>
+                            <p class="card-text">Parcourez le bestiaire et créez votre collection de monstres.</p>
+                            <a href="bestiary.php" class="btn btn-success">Parcourir le bestiaire</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-dark border-light h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-bookmark fa-3x text-warning mb-3"></i>
+                            <h5 class="card-title">Ma Collection</h5>
+                            <p class="card-text">Gérez votre collection de monstres et créez des MNJ.</p>
+                            <a href="my_monsters.php" class="btn btn-warning">Ma collection</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <?php endif; ?>
+
     <!-- Stats Section -->
     <section class="bg-light py-5">
         <div class="container">

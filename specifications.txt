@@ -1,8 +1,7 @@
-Dans la liste des scènes dans le détail d'une session, le maitre du jeu doit pouvoir supprimer une scène après confirmation.
-Dans le détail d'une scène, le maitre du jeu doit pouvoir afficher la fiche d'un personnage non joueur ou d'un personnage joueur. 
 
-Dans le détail d'une scène, le maitre du jeu doit pouvoir placer des pions pour chaque joueur et chaque PNJ pour les positionner sur le plan. 
-Les pions doivent être superposés à l'image du plan. 
-Les pions sont représentés par la même image que dans la liste des personnages joueurs ou non joueurs. 
-A l'origine les pions sont disposé dans une zone à gauche et en dehors du plan. 
-Pour sélectionner un pion, le maitre du jeu clique dessus et le glisse sur le plan. 
+On va ajouter la possibilité de parcourir le bestaire de dongeon et dragon, pour créer un Monstre non joueur.
+Depuis la page d'index, le maitre du jeu peut avoir sa collection de monstre qu'il choisit dans le bestaire. 
+
+
+
+https://www.aidedd.org/dnd/images/aarakocra.jpg

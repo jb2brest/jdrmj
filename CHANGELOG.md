@@ -129,6 +129,21 @@
   - Lien direct vers la création de personnages si nécessaire
   - Suppression de la possibilité de renommer les PNJ (utilisation automatique du nom du personnage)
   - Nettoyage des commentaires de debug et simplification de l'interface
+- **Système de bestiaire D&D** : Collection de monstres pour les MJ
+  - Nouvelle page `bestiary.php` pour parcourir le bestiaire D&D
+  - Système de recherche et filtrage par CR, type, taille, alignement
+  - Page `my_monsters.php` pour gérer sa collection personnelle
+  - Statistiques de collection (nombre de monstres, CR moyen, types)
+  - Script `add_to_collection.php` pour ajouter/retirer des monstres
+  - Script `create_monster_npc.php` pour créer des MNJ depuis sa collection
+  - Tables `dnd_monsters` et `user_monster_collection` pour stocker les données
+  - Colonne `monster_id` ajoutée à `scene_npcs` pour lier les MNJ aux monstres
+  - Section spéciale MJ sur la page d'accueil avec liens vers le bestiaire
+  - Script `import_monsters.php` pour importer les données du fichier `monstres.csv`
+  - Gestion automatique des formats de données (CR avec virgules, validation)
+  - Statistiques d'import avec rapport d'erreurs
+  - Correction de la colonne `challenge_rating` : passage de DECIMAL(3,2) à DECIMAL(4,2)
+  - Script `fix_challenge_rating.php` pour corriger la structure de la base de données
 
 ### Technique
 - **Nouvelle table `scene_tokens`** : Stockage des positions des pions avec coordonnées X/Y
