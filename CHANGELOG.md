@@ -46,3 +46,13 @@
   - Suppression en cascade de toutes les données associées (joueurs, PNJ)
   - Gestion des erreurs avec rollback en cas de problème
   - Rechargement automatique de la liste des scènes après suppression
+
+## [2025-01-XX] - Accès aux fiches de personnages depuis une scène
+
+### Ajouté
+- **Boutons de visualisation des fiches de personnages** : Le maître du jeu peut maintenant accéder directement aux fiches des personnages depuis le détail d'une scène
+  - Bouton "Voir la fiche" pour les personnages des joueurs (quand un personnage est associé)
+  - Bouton "Voir la fiche" pour les personnages du MJ utilisés comme PNJ
+  - Ouverture des fiches dans un nouvel onglet pour ne pas perdre le contexte de la scène
+  - Icône de document pour identifier facilement l'action
+  - Positionnement cohérent à côté des autres actions (retirer de la scène)

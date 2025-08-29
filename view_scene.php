@@ -501,6 +501,13 @@ foreach ($allScenes as $s) {
                                             <?php endif; ?>
                                         </div>
                                     </div>
+                                    <div class="d-flex gap-1">
+                                        <?php if ($player['character_name']): ?>
+                                            <a href="view_character.php?id=<?php echo (int)$player['character_id']; ?>" class="btn btn-sm btn-outline-primary" title="Voir la fiche du personnage" target="_blank">
+                                                <i class="fas fa-file-alt"></i>
+                                            </a>
+                                        <?php endif; ?>
+                                    </div>
                                     <?php if ($isOwnerDM): ?>
                                         <form method="POST" class="d-inline" onsubmit="return confirm('Retirer <?php echo htmlspecialchars($player['username']); ?> de cette scène ?');">
                                             <input type="hidden" name="action" value="remove_player">
@@ -609,6 +616,13 @@ foreach ($allScenes as $s) {
                                                     <small class="text-muted"><?php echo htmlspecialchars($npc['description']); ?></small>
                                                 <?php endif; ?>
                                             </div>
+                                        </div>
+                                        <div class="d-flex gap-1">
+                                            <?php if (!empty($npc['npc_character_id'])): ?>
+                                                <a href="view_character.php?id=<?php echo (int)$npc['npc_character_id']; ?>" class="btn btn-sm btn-outline-primary" title="Voir la fiche du personnage" target="_blank">
+                                                    <i class="fas fa-file-alt"></i>
+                                                </a>
+                                            <?php endif; ?>
                                         </div>
                                         <?php if ($isOwnerDM): ?>
                                             <form method="POST" class="d-inline" onsubmit="return confirm('Retirer <?php echo htmlspecialchars($npc['name']); ?> de cette scène ?');">
