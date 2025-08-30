@@ -8,6 +8,7 @@ git add *.md
 git add *.sql
 git add *.txt
 git add *.htaccess
+git add *.py
 git commit -m "$2"
 git tag -a $1 -m "$2"
 git push
