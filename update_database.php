@@ -399,6 +399,16 @@ if ($stmt->rowCount() > 0) {
     } else {
         echo "<p style='color: blue;'>ℹ Colonne 'monster_id' existe déjà</p>";
     }
+    
+    // Vérifier la colonne quantity dans scene_npcs
+    $col = $pdo->query("SHOW COLUMNS FROM scene_npcs LIKE 'quantity'");
+    if ($col->rowCount() == 0) {
+        echo "<p>Ajout de la colonne 'quantity' à la table scene_npcs...</p>";
+        $pdo->exec("ALTER TABLE scene_npcs ADD COLUMN quantity INT DEFAULT 1 AFTER monster_id");
+        echo "<p style='color: green;'>✓ Colonne 'quantity' ajoutée</p>";
+    } else {
+        echo "<p style='color: blue;'>ℹ Colonne 'quantity' existe déjà</p>";
+    }
 } else {
     echo "<p style='color: red;'>✗ Table 'scene_npcs' n'existe pas</p>";
 }

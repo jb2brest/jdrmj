@@ -44,9 +44,14 @@ $stmt->execute([$scene_id]);
 $scenePlayers = $stmt->fetchAll();
 
 // Récupérer les PNJ de cette scène
-$stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, c.profile_photo AS character_profile_photo FROM scene_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.scene_id = ? ORDER BY sn.name ASC");
+$stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, c.profile_photo AS character_profile_photo FROM scene_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.scene_id = ? AND sn.monster_id IS NULL ORDER BY sn.name ASC");
 $stmt->execute([$scene_id]);
 $sceneNpcs = $stmt->fetchAll();
+
+// Récupérer les monstres de cette scène
+$stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM scene_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.scene_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
+$stmt->execute([$scene_id]);
+$sceneMonsters = $stmt->fetchAll();
 
 // Traitements POST pour ajouter des PNJ
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
@@ -97,9 +102,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         $success_message = "PNJ retiré de la scène.";
         
         // Recharger les PNJ
-        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, c.profile_photo AS character_profile_photo FROM scene_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.scene_id = ? ORDER BY sn.name ASC");
+        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, c.profile_photo AS character_profile_photo FROM scene_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.scene_id = ? AND sn.monster_id IS NULL ORDER BY sn.name ASC");
         $stmt->execute([$scene_id]);
         $sceneNpcs = $stmt->fetchAll();
+    }
+    
+    // Ajouter un monstre du bestiaire
+    if (isset($_POST['action']) && $_POST['action'] === 'add_monster') {
+        $monster_id = (int)($_POST['monster_id'] ?? 0);
+        $quantity = (int)($_POST['quantity'] ?? 1);
+        
+        if ($monster_id > 0 && $quantity > 0) {
+            // Récupérer les informations du monstre
+            $stmt = $pdo->prepare("SELECT name FROM dnd_monsters WHERE id = ?");
+            $stmt->execute([$monster_id]);
+            $monster = $stmt->fetch();
+            
+            if ($monster) {
+                $monster_name = $monster['name'];
+                if ($quantity > 1) {
+                    $monster_name .= " (x{$quantity})";
+                }
+                
+                $stmt = $pdo->prepare("INSERT INTO scene_npcs (scene_id, name, monster_id, quantity) VALUES (?, ?, ?, ?)");
+                $stmt->execute([$scene_id, $monster_name, $monster_id, $quantity]);
+                $success_message = "Monstre ajouté à la scène.";
+                
+                // Recharger les monstres
+                $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM scene_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.scene_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
+                $stmt->execute([$scene_id]);
+                $sceneMonsters = $stmt->fetchAll();
+            } else {
+                $error_message = "Monstre introuvable.";
+            }
+        } else {
+            $error_message = "Veuillez sélectionner un monstre et spécifier une quantité valide.";
+        }
+    }
+    
+    // Retirer un monstre de la scène
+    if (isset($_POST['action']) && $_POST['action'] === 'remove_monster' && isset($_POST['npc_id'])) {
+        $npc_id = (int)$_POST['npc_id'];
+        $stmt = $pdo->prepare("DELETE FROM scene_npcs WHERE scene_id = ? AND id = ? AND monster_id IS NOT NULL");
+        $stmt->execute([$scene_id, $npc_id]);
+        $success_message = "Monstre retiré de la scène.";
+        
+        // Recharger les monstres
+        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM scene_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.scene_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
+        $stmt->execute([$scene_id]);
+        $sceneMonsters = $stmt->fetchAll();
     }
     
     // Mettre à jour le nom de la scène
@@ -563,13 +614,219 @@ foreach ($allScenes as $s) {
                     <?php endif; ?>
                 </div>
             </div>
+            
+            <div class="card mt-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Monstres</span>
+                    <?php if ($isOwnerDM): ?>
+                        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#addMonsterModal">
+                            <i class="fas fa-plus me-1"></i>Ajouter monstre
+                        </button>
+                    <?php endif; ?>
+                </div>
+                <div class="card-body">
+                    <?php if (empty($sceneMonsters)): ?>
+                        <p class="text-muted">Aucun monstre dans cette scène.</p>
+                    <?php else: ?>
+                        <ul class="list-group list-group-flush">
+                            <?php foreach ($sceneMonsters as $monster): ?>
+                                <li class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="d-flex align-items-start">
+                                            <div class="bg-danger rounded me-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                <i class="fas fa-dragon text-white"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold"><?php echo htmlspecialchars($monster['name']); ?></div>
+                                                <small class="text-muted">
+                                                    <?php echo htmlspecialchars($monster['type']); ?> • 
+                                                    <?php echo htmlspecialchars($monster['size']); ?> • 
+                                                    CR <?php echo htmlspecialchars($monster['challenge_rating']); ?>
+                                                </small>
+                                                <br>
+                                                <small class="text-muted">
+                                                    CA <?php echo htmlspecialchars($monster['armor_class']); ?> • 
+                                                    PV <?php echo htmlspecialchars($monster['hit_points']); ?>
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex gap-1">
+                                            <a href="bestiary.php?search=<?php echo urlencode($monster['name']); ?>" class="btn btn-sm btn-outline-primary" title="Voir dans le bestiaire" target="_blank">
+                                                <i class="fas fa-book"></i>
+                                            </a>
+                                            <?php if ($isOwnerDM): ?>
+                                                <form method="POST" class="d-inline" onsubmit="return confirm('Retirer <?php echo htmlspecialchars($monster['name']); ?> de cette scène ?');">
+                                                    <input type="hidden" name="action" value="remove_monster">
+                                                    <input type="hidden" name="npc_id" value="<?php echo (int)$monster['id']; ?>">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Retirer de la scène">
+                                                        <i class="fas fa-user-minus"></i>
+                                                    </button>
+                                                </form>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
+<!-- Modal pour ajouter un monstre -->
+<?php if ($isOwnerDM): ?>
+<div class="modal fade" id="addMonsterModal" tabindex="-1" aria-labelledby="addMonsterModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addMonsterModalLabel">
+                    <i class="fas fa-dragon me-2"></i>Ajouter un monstre
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" id="addMonsterForm">
+                    <input type="hidden" name="action" value="add_monster">
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <label for="monsterSearch" class="form-label">Rechercher un monstre</label>
+                            <input type="text" class="form-control" id="monsterSearch" placeholder="Nom du monstre...">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="monsterQuantity" class="form-label">Quantité</label>
+                            <input type="number" class="form-control" id="monsterQuantity" name="quantity" value="1" min="1" max="100">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div id="monsterResults" class="list-group" style="max-height: 300px; overflow-y: auto;">
+                            <!-- Les résultats de recherche seront affichés ici -->
+                        </div>
+                    </div>
+                    
+                    <input type="hidden" name="monster_id" id="selectedMonsterId" required>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="submit" form="addMonsterForm" class="btn btn-primary" id="addMonsterBtn" disabled>
+                    <i class="fas fa-plus me-1"></i>Ajouter le monstre
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <?php if (!$isModal): ?>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
+    <script>
+    // Gestion de la recherche de monstres
+    document.addEventListener('DOMContentLoaded', function() {
+        const monsterSearch = document.getElementById('monsterSearch');
+        const monsterResults = document.getElementById('monsterResults');
+        const selectedMonsterId = document.getElementById('selectedMonsterId');
+        const addMonsterBtn = document.getElementById('addMonsterBtn');
+        let searchTimeout;
+
+        if (monsterSearch) {
+            monsterSearch.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const query = this.value.trim();
+                
+                if (query.length < 2) {
+                    monsterResults.innerHTML = '<div class="text-muted text-center p-3">Tapez au moins 2 caractères pour rechercher...</div>';
+                    return;
+                }
+
+                searchTimeout = setTimeout(function() {
+                    searchMonsters(query);
+                }, 300);
+            });
+        }
+
+        function searchMonsters(query) {
+            monsterResults.innerHTML = '<div class="text-center p-3"><i class="fas fa-spinner fa-spin"></i> Recherche en cours...</div>';
+            
+            fetch('search_monsters.php?q=' + encodeURIComponent(query), {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length === 0) {
+                        monsterResults.innerHTML = '<div class="text-muted text-center p-3">Aucun monstre trouvé.</div>';
+                    } else {
+                        displayMonsterResults(data);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur lors de la recherche:', error);
+                    monsterResults.innerHTML = '<div class="text-danger text-center p-3">Erreur lors de la recherche.</div>';
+                });
+        }
+
+        function displayMonsterResults(monsters) {
+            monsterResults.innerHTML = '';
+            
+            monsters.forEach(monster => {
+                const item = document.createElement('div');
+                item.className = 'list-group-item list-group-item-action';
+                item.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="fw-bold">${monster.name}</div>
+                            <small class="text-muted">
+                                ${monster.type} • ${monster.size} • CR ${monster.challenge_rating}
+                            </small>
+                            <br>
+                            <small class="text-muted">
+                                CA ${monster.armor_class} • PV ${monster.hit_points}
+                            </small>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary select-monster" 
+                                data-monster-id="${monster.id}" data-monster-name="${monster.name}">
+                            <i class="fas fa-plus me-1"></i>Sélectionner
+                        </button>
+                    </div>
+                `;
+                
+                item.querySelector('.select-monster').addEventListener('click', function() {
+                    const monsterId = this.getAttribute('data-monster-id');
+                    const monsterName = this.getAttribute('data-monster-name');
+                    
+                    selectedMonsterId.value = monsterId;
+                    monsterSearch.value = monsterName;
+                    addMonsterBtn.disabled = false;
+                    
+                    // Mettre en surbrillance la sélection
+                    monsterResults.querySelectorAll('.list-group-item').forEach(item => {
+                        item.classList.remove('active');
+                    });
+                    item.classList.add('active');
+                });
+                
+                monsterResults.appendChild(item);
+            });
+        }
+
+        // Réinitialiser la sélection quand la modale s'ouvre
+        const addMonsterModal = document.getElementById('addMonsterModal');
+        if (addMonsterModal) {
+            addMonsterModal.addEventListener('show.bs.modal', function() {
+                monsterSearch.value = '';
+                monsterResults.innerHTML = '<div class="text-muted text-center p-3">Tapez au moins 2 caractères pour rechercher...</div>';
+                selectedMonsterId.value = '';
+                addMonsterBtn.disabled = true;
+            });
+        }
+    });
+    </script>
 
 </body>
 </html>

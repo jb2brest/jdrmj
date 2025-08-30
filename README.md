@@ -114,6 +114,7 @@ Ce projet est sous licence MIT. Libre d'utilisation, modification et distributio
 
 ## Changelog
 <version_tag>
+- 0.0.18 : Récupération aidedd lot 1
 - 0.0.17 : Bestiaire
 - 0.0.16 : Modification PNJ
 - 0.0.16 : Accès au feuille de personnage

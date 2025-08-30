@@ -1,7 +1,14 @@
 
-On va ajouter la possibilité de parcourir le bestaire de dongeon et dragon, pour créer un Monstre non joueur.
-Depuis la page d'index, le maitre du jeu peut avoir sa collection de monstre qu'il choisit dans le bestaire. 
+Dans l'écran de détail d'une scène, le maitre du jeux doit pouvoir ajouter un ou plusieurs monstres du bestaire global à la scène. 
+Une zone "Monstre" du même type que la zone "Personnages non-joueurs", contient un bouton "Ajouter monstre".
+Lors du clic sur ce bouton, une fenêtre modale permet de rechercher un monstre dans le bestiaire, d'en sélectionner le nombre et de l'ajouter à la scène. 
+
 
 
 
 https://www.aidedd.org/dnd/images/aarakocra.jpg
+https://www.aidedd.org/dnd-filters/monsters.php
+https://www.dnd5eapi.co/
+
+
+

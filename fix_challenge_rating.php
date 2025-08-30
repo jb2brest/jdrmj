@@ -44,3 +44,4 @@ echo "<a href='bestiary.php' class='btn btn-success'>Parcourir le bestiaire</a> 
 echo "<a href='index.php' class='btn btn-secondary'>Retour à l'accueil</a>";
 echo "</div>";
 ?>
+
