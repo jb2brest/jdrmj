@@ -23,11 +23,14 @@ def main():
     #aide_dnd.monstres.purger_csv()
     #aide_dnd.monstres.exporter_monstres()
     print("Lancement de la récupération des données de Sorts")
-    #aide_dnd.sorts.charger_sorts()
-    url_sort = "https://www.aidedd.org/dnd/sorts.php?vf=amelioration-de-caracteristique"
-    sort = aide_dnd.sorts.charger_detail_sort(url_sort)
-    sort.afficher_sort()
-    aide_dnd.sorts.afficher_sorts()
+    #url_sort = "https://www.aidedd.org/dnd/sorts.php?vf=amelioration-de-caracteristique"
+    #url_sort = "https://www.aidedd.org/dnd/sorts.php?vf=animation-d-objets"
+    #url_sort = "https://www.aidedd.org/dnd/sorts.php?vf=convocation-de-fee"
+    #sort = aide_dnd.sorts.charger_detail_sort(url_sort)
+    #sort.afficher_sort()
+    aide_dnd.sorts.charger_sorts()
+    aide_dnd.sorts.purger_csv()
+    aide_dnd.sorts.exporter_sorts()
     print("Données récupérées avec succès")
 
 if __name__ == "__main__":

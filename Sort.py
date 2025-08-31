@@ -32,6 +32,20 @@ class Sort:
         print("Classe :" + self.classe)
         print("Source :" + self.source)
         print("___________")
+    
+    def exportcsv(self):
+        with open('./aidednddata/sorts.csv', 'a') as f:
+            writer = csv.writer(f)
+            writer.writerow([self.id, self.nom, self.cle, self.ecole, self.description, self.temps_incantation, self.portee, self.composantes, self.duree, self.classe, self.source])
+    
+
+    @staticmethod
+    def purger_csv():
+        with open('./aidednddata/sorts.csv', 'w') as f:
+            f.truncate(0)
+            writer = csv.writer(f)
+            writer.writerow(['Id', 'Nom', 'Cle', 'Ecole', 'Description', 'Temps d\'incantation', 'Portee', 'Composantes', 'Duree', 'Classe', 'Source'])
+         
 
 class Sorts:
     def __init__(self):
@@ -46,7 +60,7 @@ class Sorts:
     def charger_sorts(self):
         # URL à interroger
         url = "https://www.aidedd.org/dnd-filters/sorts.php"  # Remplace par l'URL de ton choix
-        limite = 1
+        limite = 10000
         compteur = 0
         # Envoi de la requête GET
         # on commence par récupérer la liste des monstres avec l'url d'accès à la liste détaillée. 
@@ -98,14 +112,12 @@ class Sorts:
             # Affichage du contenu brut
             print("Contenu de la réponse :\n")
             body_trouve = 0
-            print(response.text)
             for line in response.iter_lines(decode_unicode=True):
                 if "<body" in line:
                     body_trouve = 1
                 if body_trouve == 1:
                     ligne = line.split("<div")
                     for i in ligne:
-                        print("i :", i)
                         if "<h1>" in i:
                             i2 = i.split("<h1>")   
                             sort.nom = i2[1].split("</h1>")[0]  
@@ -145,3 +157,11 @@ class Sorts:
             return sort
         except requests.exceptions.RequestException as e:
             print(f"❌ Erreur lors de la requête : {e}")
+    
+    def exporter_sorts(self):
+        for sort in self.sorts_detail:
+            sort.exportcsv()
+
+    def purger_csv(self):
+        Sort.purger_csv()
+    
