@@ -1,4 +1,6 @@
 import requests
+import time
+import random
 from Monstre import Monstre
 from Monstre import AttSpecial
 from Monstre import Action
@@ -6,6 +8,7 @@ from Monstre import Sort
 
 class AideDND:
     def __init__(self):
+        self.monstre_last_id = 0
         self.monstres = []  
         self.monstres_detail = []
         self.classes = []
@@ -24,7 +27,7 @@ class AideDND:
     def charger_monstres(self):
         # URL à interroger
         url = "https://www.aidedd.org/dnd-filters/monstres.php"  # Remplace par l'URL de ton choix
-        limite = 1
+        limite = 10000
         compteur = 0
         # Envoi de la requête GET
         # on commence par récupérer la liste des monstres avec l'url d'accès à la liste détaillée. 
@@ -56,6 +59,7 @@ class AideDND:
                                             self.monstres.append(i6)
             for monstre in self.monstres:
                 self.monstres_detail.append(self.charger_detail_monstres(monstre))   
+                time.sleep(random.randint(500,1000)/1000)
         except requests.exceptions.RequestException as e:
             print(f"❌ Erreur lors de la requête : {e}")
 
@@ -66,8 +70,10 @@ class AideDND:
             headers = {
                 "User-Agent": "Mozilla/5.0"
             }
+            print(f"Appel: {monstre}")
             response = requests.get(monstre, headers=headers)
-            monstre = Monstre()
+            monstre = Monstre(self.monstre_last_id )
+            self.monstre_last_id += 1
             # Vérification du code HTTP
             print(f"Code HTTP : {response.status_code}")
 
@@ -83,8 +89,6 @@ class AideDND:
                 if body_trouve == 1:
                     ligne = line.split("<div")
                     for i in ligne:
-                       # print("######### 1 ##########")
-                        #print(i)
                         if "<h1>" in i:
                             i2 = i.split("<h1>")   
                             monstre.nom = i2[1].split("</h1>")[0]    
@@ -168,10 +172,6 @@ class AideDND:
             i2 = i.split("</strong>")
             return i2[1].replace("</div>", "")
   
-
-
-
-
     def charger_action(self, liste_action, i):
         if "<p><strong><em>" in i:
             cpt = 0
@@ -197,7 +197,7 @@ class AideDND:
                     att_special.nom = i3[0]
                     att_special.description = i3[1].split("</p>")[0]
                     monstre.att_special.append(att_special)
-                    if "sorts suivant" in j:
+                    if "sorts" in j and "suivants" in j:
                         self.identifie_sort(monstre, j)
                 cpt += 1
 
@@ -239,19 +239,12 @@ class AideDND:
                     monstre.nb_sorts_n10= self.cpt_sorts(i3)
                     self.liste_sorts(monstre.sorts_n10, i3)
         else:
-            print("i : " + i)
             i2 = i.split(":</p>")
-            print("i2/0: " + i2[0])
-            print("i2/1: " + i2[1])
             i3 = i2[1].split("<br>")
             cpt = 0
             for i4 in i3:
-                print("i4 : " + i4)
                 i5 = i4.split("<em>")
                 if (len(i5) > 1):
-                    monstre.nb_sorts_mineurs = i5[0]
-                    print("i5/0: " + i5[0])
-                    print("i5/1: " + i5[1])
                     if cpt == 0:
                         monstre.nb_sorts_mineurs = i5[0]
                         self.liste_sorts(monstre.sorts_mineurs, i5[1])
@@ -259,8 +252,6 @@ class AideDND:
                         monstre.nb_sorts_n1 = i5[0]
                         self.liste_sorts(monstre.sorts_n1, i5[1])
                     cpt += 1
-                    #monstre.nb_sorts_mineurs = i6[0]
-                    #self.liste_sorts(monstre.sorts_mineurs, i6[1])
 
 
     def cpt_sorts(self, i3):
@@ -278,27 +269,32 @@ class AideDND:
                 sort = Sort()
                 sort.cle = cle_sort
                 nom_sort=i5.split("\">")[1].replace("</a>", "").replace(",", "")
-                sort.nom = nom_sort
+                sort.nom = nom_sort.replace("</em>", "")
                 liste_sorts.append(sort)
             cpt += 1
 
+    def exporter_monstres(self):
+        for monstre in self.monstres_detail:
+            monstre.exportcsv()
 
-        
-
+    def purger_csv(self):
+        Monstre.purger_csv()
 
 def main():
     print("Lancement de la récupération des données de AideDND")
     aide_dnd = AideDND()
-    #aide_dnd.charger_monstres()    
-    nom_monstre = "aarakocra"
-    nom_monstre = "naga-gardien"  
-    nom_monstre = "dragon-blanc-ancien"  
-    nom_monstre = "dragon-blanc-ancien"  
-    nom_monstre = "githzerai-moine"  
-    url = "https://www.aidedd.org/dnd/monstres.php?vf=" + nom_monstre
-    aide_dnd.monstres_detail.append(aide_dnd.charger_detail_monstres(url))
+    aide_dnd.charger_monstres()    
+    #nom_monstre = "aarakocra"
+    #nom_monstre = "naga-gardien"  
+    #nom_monstre = "dragon-blanc-ancien"  
+    #nom_monstre = "dragon-blanc-ancien"  
+    #nom_monstre = "githzerai-moine"  
+    #url = "https://www.aidedd.org/dnd/monstres.php?vf=" + nom_monstre
+    #aide_dnd.monstres_detail.append(aide_dnd.charger_detail_monstres(url))
     print("Données récupérées avec succès")
-    aide_dnd.afficher_monstres()
+    #aide_dnd.afficher_monstres()
+    aide_dnd.purger_csv()
+    aide_dnd.exporter_monstres()
 
 if __name__ == "__main__":
     main()
