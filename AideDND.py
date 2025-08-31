@@ -2,6 +2,7 @@ import requests
 from Monstre import Monstre
 from Monstre import AttSpecial
 from Monstre import Action
+from Monstre import Sort
 
 class AideDND:
     def __init__(self):
@@ -74,6 +75,7 @@ class AideDND:
             print("Contenu de la réponse :\n")
             body_trouve = 0
             action_trouve = 0
+            action_legendaire_trouve = 0
             particularite_trouve = 0
             for line in response.iter_lines(decode_unicode=True):
                 if "<body>" in line:
@@ -81,8 +83,8 @@ class AideDND:
                 if body_trouve == 1:
                     ligne = line.split("<div")
                     for i in ligne:
-                        print("######### 1 ##########")
-                        print(i)
+                       # print("######### 1 ##########")
+                        #print(i)
                         if "<h1>" in i:
                             i2 = i.split("<h1>")   
                             monstre.nom = i2[1].split("</h1>")[0]    
@@ -117,25 +119,30 @@ class AideDND:
                             monstre.charisme = i2[1].split("</div>")[0]
                         if "<strong>Puissance</strong>" in i:
                             particularite_trouve = 1
-                            self.test(monstre, i)
+                            self.charger_particularites(monstre, i)
                         if "class='rub'>Actions</div>" in i:
-                            action_trouve = 1
-                        if particularite_trouve == 1 and action_trouve == 0:
-                            self.charger_att_special(monstre, i)
+                            action_trouve = 1                        
+                        if "class='rub'>Actions légendaires</div>" in i:
+                            action_legendaire_trouve = 1
+                        if particularite_trouve == 1 :
+                            if action_trouve == 0:
+                                self.charger_att_special(monstre, i)
+                            else:
+                                if action_legendaire_trouve == 0:
+                                    self.charger_action(monstre.action, i)
+                                else:
+                                    self.charger_action(monstre.action_legendaire, i)
 
-                        if particularite_trouve == 1 and action_trouve == 1:
-                            self.charger_action(monstre, i)
             return monstre
         except requests.exceptions.RequestException as e:
             print(f"❌ Erreur lors de la requête : {e}")
 
 
-    def test(self, monstre, i):
-        print("######### TEst ##########")
-        print(i)
+    def charger_particularites(self, monstre, i):
         i2 = i.split("<br><strong>")
         for i3 in i2:
-            print(i3)
+            if "Résistances aux dégâts</strong>" in i3:
+                monstre.resistances_aux_degats = self.format_particularite(i3)
             if "Jets de sauvegarde</strong>" in i3:
                 monstre.jets_de_sauvegarde = self.format_particularite(i3)
             if "Immunités aux dégâts</strong>" in i3:
@@ -150,9 +157,7 @@ class AideDND:
                 monstre.fp = self.format_particularite(i3)
             if "Compétences</strong>" in i3:
                 monstre.competences = self.format_particularite(i3)
-            if "</p>Sorts" in i3:
-                print("######### Sorts ##########")
-        print(monstre.nom)
+        
 
     def format_particularite(self, i):
         if "</svg></div>" in i:
@@ -164,22 +169,10 @@ class AideDND:
             return i2[1].replace("</div>", "")
   
 
-    def charger_particularites(self, monstre, i):
-        if "<p><strong><em>" in i:
-            cpt = 0
-            i2 = i.split("<p><strong><em>")
-            for j in i2:
-                if cpt > 0:
-                    i3 = j.split("</em></strong>.")
-                    particularite = Particularite()
-                    particularite.nom = i3[0]
-                    particularite.description = i3[1].split("</p>")[0]
-                    monstre.particularite.append(particularite)
-                cpt += 1
 
 
 
-    def charger_action(self, monstre, i):
+    def charger_action(self, liste_action, i):
         if "<p><strong><em>" in i:
             cpt = 0
             i2 = i.split("<p><strong><em>")
@@ -189,7 +182,7 @@ class AideDND:
                     action = Action()
                     action.nom = i3[0]
                     action.description = i3[1].split("</p>")[0]
-                    monstre.action.append(action)
+                    liste_action.append(action)
                 cpt += 1
             
 
@@ -204,7 +197,94 @@ class AideDND:
                     att_special.nom = i3[0]
                     att_special.description = i3[1].split("</p>")[0]
                     monstre.att_special.append(att_special)
+                    if "sorts suivant" in j:
+                        self.identifie_sort(monstre, j)
                 cpt += 1
+
+    def identifie_sort(self, monstre, i):
+        if "Sorts mineurs" in i:
+            i2 = i.split("</p>")[1].split("</em>")
+            for i3 in i2:
+                if "Sorts mineurs" in i3:
+                    monstre.nb_sorts_mineurs = self.cpt_sorts(i3)
+                    self.liste_sorts(monstre.sorts_mineurs, i3)
+                if "Niveau 1" in i3:
+                    monstre.nb_sorts_n1= self.cpt_sorts(i3)
+                    self.liste_sorts(monstre.sorts_n1, i3)
+                if "Niveau 2" in i3:
+                    monstre.nb_sorts_n2= self.cpt_sorts(i3)
+                    self.liste_sorts(monstre.sorts_n2, i3)
+                if "Niveau 3" in i3:
+                    monstre.nb_sorts_n3= self.cpt_sorts(i3)
+                    self.liste_sorts(monstre.sorts_n3, i3)
+                if "Niveau 4" in i3:
+                    monstre.nb_sorts_n4= self.cpt_sorts(i3)
+                    self.liste_sorts(monstre.sorts_n4, i3)
+                if "Niveau 5" in i3:
+                    monstre.nb_sorts_n5= self.cpt_sorts(i3)
+                    self.liste_sorts(monstre.sorts_n5, i3)
+                if "Niveau 6" in i3:
+                    monstre.nb_sorts_n6= self.cpt_sorts(i3)
+                    self.liste_sorts(monstre.sorts_n6, i3)
+                if "Niveau 7" in i3:
+                    monstre.nb_sorts_n7= self.cpt_sorts(i3)
+                    self.liste_sorts(monstre.sorts_n7, i3)
+                if "Niveau 8" in i3:
+                    monstre.nb_sorts_n8= self.cpt_sorts(i3)
+                    self.liste_sorts(monstre.sorts_n8, i3)
+                if "Niveau 9" in i3:
+                    monstre.nb_sorts_n9= self.cpt_sorts(i3)
+                    self.liste_sorts(monstre.sorts_n9, i3)
+                if "Niveau 10" in i3:
+                    monstre.nb_sorts_n10= self.cpt_sorts(i3)
+                    self.liste_sorts(monstre.sorts_n10, i3)
+        else:
+            print("i : " + i)
+            i2 = i.split(":</p>")
+            print("i2/0: " + i2[0])
+            print("i2/1: " + i2[1])
+            i3 = i2[1].split("<br>")
+            cpt = 0
+            for i4 in i3:
+                print("i4 : " + i4)
+                i5 = i4.split("<em>")
+                if (len(i5) > 1):
+                    monstre.nb_sorts_mineurs = i5[0]
+                    print("i5/0: " + i5[0])
+                    print("i5/1: " + i5[1])
+                    if cpt == 0:
+                        monstre.nb_sorts_mineurs = i5[0]
+                        self.liste_sorts(monstre.sorts_mineurs, i5[1])
+                    else:
+                        monstre.nb_sorts_n1 = i5[0]
+                        self.liste_sorts(monstre.sorts_n1, i5[1])
+                    cpt += 1
+                    #monstre.nb_sorts_mineurs = i6[0]
+                    #self.liste_sorts(monstre.sorts_mineurs, i6[1])
+
+
+    def cpt_sorts(self, i3):
+        i4 = i3.split("(")
+        nb_sorts = i4[1].split(")")[0]
+        return nb_sorts
+
+
+    def liste_sorts(self, liste_sorts, i3):        
+        i4 = i3.split("<a href=\"https://www.aidedd.org/dnd/sorts.php?vf=")
+        cpt=0
+        for i5 in i4:
+            if cpt > 0:
+                cle_sort=i5.split("\">")[0]
+                sort = Sort()
+                sort.cle = cle_sort
+                nom_sort=i5.split("\">")[1].replace("</a>", "").replace(",", "")
+                sort.nom = nom_sort
+                liste_sorts.append(sort)
+            cpt += 1
+
+
+        
+
 
 def main():
     print("Lancement de la récupération des données de AideDND")
@@ -212,6 +292,9 @@ def main():
     #aide_dnd.charger_monstres()    
     nom_monstre = "aarakocra"
     nom_monstre = "naga-gardien"  
+    nom_monstre = "dragon-blanc-ancien"  
+    nom_monstre = "dragon-blanc-ancien"  
+    nom_monstre = "githzerai-moine"  
     url = "https://www.aidedd.org/dnd/monstres.php?vf=" + nom_monstre
     aide_dnd.monstres_detail.append(aide_dnd.charger_detail_monstres(url))
     print("Données récupérées avec succès")
