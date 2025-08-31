@@ -150,6 +150,8 @@ class AideDND:
                 monstre.fp = self.format_particularite(i3)
             if "Compétences</strong>" in i3:
                 monstre.competences = self.format_particularite(i3)
+            if "</p>Sorts" in i3:
+                print("######### Sorts ##########")
         print(monstre.nom)
 
     def format_particularite(self, i):
