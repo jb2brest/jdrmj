@@ -7,6 +7,11 @@ Lors du clic sur ce bouton, une fenêtre modale permet de rechercher un monstre 
 
 
 https://www.aidedd.org/dnd/images/aarakocra.jpg
+https://www.aidedd.org/dnd/monstres.php?vf=aarakocra
+https://www.aidedd.org/dnd/monstres.php?vf=naga-gardien
+https://www.aidedd.org/dnd/monstres.php?vf=diable-a-chaines
+https://www.aidedd.org/dnd/monstres.php?vf=dragon-blanc-ancien
+
 https://www.aidedd.org/dnd-filters/monsters.php
 https://www.dnd5eapi.co/
 
