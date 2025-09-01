@@ -5,16 +5,16 @@ import random
 
 
 
-class Don:
+class ManifestationOcculte:
     def __init__(self, id):
         self.id = id
         self.nom = ""   
         self.cle = ""   
-        self.description = ""   
+        self.description = ""
         self.prerequis = ""
         self.source = ""
     
-    def afficher_don(self):
+    def afficher_manifestation_occulte(self):
         print("___________")
         print("Nom :" + self.nom)   
         print("Cle :" + self.cle)
@@ -24,33 +24,33 @@ class Don:
         print("___________")
     
     def exportcsv(self):
-        with open('./aidednddata/dons.csv', 'a') as f:
+        with open('./aidednddata/manifestation_occulte.csv', 'a') as f:
             writer = csv.writer(f)
             writer.writerow([self.id, self.nom, self.cle, self.description, self.prerequis, self.source])
     
 
     @staticmethod
     def purger_csv():
-        with open('./aidednddata/dons.csv', 'w') as f:
+        with open('./aidednddata/manifestation_occulte.csv', 'w') as f:
             f.truncate(0)
             writer = csv.writer(f)
             writer.writerow(['Id', 'Nom', 'Cle', 'Description', 'Prerequis', 'Source'])
          
 
-class Dons:
+class ManifestationOccultes:
     def __init__(self):
-        self.don_last_id = 0   
-        self.dons = []  
-        self.dons_detail = []
+        self.manifestation_occulte_last_id = 0   
+        self.manifestation_occulte = []  
+        self.manifestation_occulte_detail = []
 
-    def afficher_dons(self):
-        for don in self.dons_detail:
-            don.afficher_don()
+    def afficher_manifestation_occulte(self):
+        for manifestation_occulte in self.manifestation_occulte_detail:
+            manifestation_occulte.afficher_manifestation_occulte()
 
-    def charger_dons(self):
+    def charger_manifestation_occulte(self):
         # URL à interroger
-        url = "https://www.aidedd.org/dnd-filters/dons.php"  # Remplace par l'URL de ton choix
-        limite = 10000
+        url = "https://www.aidedd.org/dnd-filters/manifestations-occultes.php"  # Remplace par l'URL de ton choix
+        limite = 1
         compteur = 0
         # Envoi de la requête GET
         # on commence par récupérer la liste des monstres avec l'url d'accès à la liste détaillée. 
@@ -79,23 +79,23 @@ class Dons:
                                         i6 = i5.replace('"', '')
                                         if compteur < limite:   
                                             compteur += 1
-                                            self.dons.append(i6.split("class=''")[0])
-            for don in self.dons:
-                self.dons_detail.append(self.charger_detail_don(don))   
+                                            self.manifestation_occulte.append(i6.split("class=''")[0])
+            for manifestation_occulte in self.manifestation_occulte:
+                self.manifestation_occulte_detail.append(self.charger_detail_manifestation_occulte(manifestation_occulte))   
                 time.sleep(random.randint(500,1000)/1000)
         except requests.exceptions.RequestException as e:
             print(f"❌ Erreur lors de la requête : {e}")
 
-    def charger_detail_don(self, don1): 
+    def charger_detail_manifestation_occulte(self, manifestation_occulte1): 
         try:
             headers = {
                 "User-Agent": "Mozilla/5.0"
             }
-            print(f"Appel: {don1}")
-            response = requests.get(don1, headers=headers)
-            don = Don(self.don_last_id )
-            self.don_last_id += 1
-            don.cle = don1.split("https://www.aidedd.org/dnd/dons.php?vf=")[1]
+            print(f"Appel: {manifestation_occulte1}")
+            response = requests.get(manifestation_occulte1, headers=headers)
+            manifestation_occulte = ManifestationOcculte(self.manifestation_occulte_last_id )
+            self.manifestation_occulte_last_id += 1
+            manifestation_occulte.cle = manifestation_occulte1.split("https://www.aidedd.org/dnd/invocations.php?vf=")[1]
             # Vérification du code HTTP
             print(f"Code HTTP : {response.status_code}")
 
@@ -111,10 +111,10 @@ class Dons:
                     for i in ligne:
                         if "<h1>" in i:
                             i2 = i.split("<h1>")   
-                            don.nom = i2[1].split("</h1>")[0]   
+                            manifestation_occulte.nom = i2[1].split("</h1>")[0]    
                         if "class='prerequis'>" in i:
                             i2 = i.split("class='prerequis'>Prérequis : ")[1].split("</div>")[0]
-                            don.prerequis = i2 
+                            manifestation_occulte.prerequis = i2
                         if "class='description'>" in i:
                             description_commencee = 1
                             description = i.split("class='description'>")[1]  
@@ -124,7 +124,7 @@ class Dons:
                             description = description.replace("<em>", "")
                             description = description.replace("</em>", "") 
                             description = description.replace("</div>", "") 
-                            don.description = description 
+                            manifestation_occulte.description = description 
                         if description_commencee == 1:
                             if "</div>" in i:
                                 description_commencee = 0
@@ -135,20 +135,20 @@ class Dons:
                                 description = description.replace("<em>", "")
                                 description = description.replace("</em>", "") 
                                 description = description.replace("</div>", "") 
-                                don.description = don.description + "\n" + description
+                                manifestation_occulte.description = manifestation_occulte.description + "\n" + description
                         if "class='source'>" in i:
                             i2 = i.split("class='source'>")
                             source = i2[1].split("</div>")[0]
-                            don.source = source 
+                            manifestation_occulte.source = source 
 
-            return don
+            return manifestation_occulte
         except requests.exceptions.RequestException as e:
             print(f"❌ Erreur lors de la requête : {e}")
     
-    def exporter_dons(self):
-        for don in self.dons_detail:
-            don.exportcsv()
+    def exporter_manifestation_occulte(self):
+        for manifestation_occulte in self.manifestation_occulte_detail:
+            manifestation_occulte.exportcsv()
 
     def purger_csv(self):
-        Don.purger_csv()
+        ManifestationOcculte.purger_csv()
     

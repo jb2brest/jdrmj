@@ -5,51 +5,51 @@ import random
 
 
 
-class Don:
+class Poison:
     def __init__(self, id):
         self.id = id
         self.nom = ""   
         self.cle = ""   
         self.description = ""   
-        self.prerequis = ""
+        self.type = ""
         self.source = ""
     
-    def afficher_don(self):
+    def afficher_poison(self):
         print("___________")
         print("Nom :" + self.nom)   
         print("Cle :" + self.cle)
         print("Description :" + self.description)   
-        print("Prerequis :" + self.prerequis)
+        print("Type :" + self.type)
         print("Source :" + self.source)
         print("___________")
     
     def exportcsv(self):
-        with open('./aidednddata/dons.csv', 'a') as f:
+        with open('./aidednddata/poisons.csv', 'a') as f:
             writer = csv.writer(f)
-            writer.writerow([self.id, self.nom, self.cle, self.description, self.prerequis, self.source])
+            writer.writerow([self.id, self.nom, self.cle, self.description, self.type, self.source])
     
 
     @staticmethod
     def purger_csv():
-        with open('./aidednddata/dons.csv', 'w') as f:
+        with open('./aidednddata/poisons.csv', 'w') as f:
             f.truncate(0)
             writer = csv.writer(f)
-            writer.writerow(['Id', 'Nom', 'Cle', 'Description', 'Prerequis', 'Source'])
+            writer.writerow(['Id', 'Nom', 'Cle', 'Description', 'type', 'Source'])
          
 
-class Dons:
+class Poisons:
     def __init__(self):
-        self.don_last_id = 0   
-        self.dons = []  
-        self.dons_detail = []
+        self.poison_last_id = 0   
+        self.poisons = []  
+        self.poisons_detail = []
 
-    def afficher_dons(self):
-        for don in self.dons_detail:
-            don.afficher_don()
+    def afficher_poisons(self):
+        for poison in self.poisons_detail:
+            poison.afficher_poison()
 
-    def charger_dons(self):
+    def charger_poisons(self):
         # URL à interroger
-        url = "https://www.aidedd.org/dnd-filters/dons.php"  # Remplace par l'URL de ton choix
+        url = "https://www.aidedd.org/dnd-filters/poisons.php"  # Remplace par l'URL de ton choix
         limite = 10000
         compteur = 0
         # Envoi de la requête GET
@@ -79,23 +79,23 @@ class Dons:
                                         i6 = i5.replace('"', '')
                                         if compteur < limite:   
                                             compteur += 1
-                                            self.dons.append(i6.split("class=''")[0])
-            for don in self.dons:
-                self.dons_detail.append(self.charger_detail_don(don))   
+                                            self.poisons.append(i6.split("class=''")[0])
+            for poison in self.poisons:
+                self.poisons_detail.append(self.charger_detail_poison(poison))   
                 time.sleep(random.randint(500,1000)/1000)
         except requests.exceptions.RequestException as e:
             print(f"❌ Erreur lors de la requête : {e}")
 
-    def charger_detail_don(self, don1): 
+    def charger_detail_poison(self, poison1): 
         try:
             headers = {
                 "User-Agent": "Mozilla/5.0"
             }
-            print(f"Appel: {don1}")
-            response = requests.get(don1, headers=headers)
-            don = Don(self.don_last_id )
-            self.don_last_id += 1
-            don.cle = don1.split("https://www.aidedd.org/dnd/dons.php?vf=")[1]
+            print(f"Appel: {poison1}")
+            response = requests.get(poison1, headers=headers)
+            poison = Poison(self.poison_last_id )
+            self.poison_last_id += 1
+            poison.cle = poison1.split("https://www.aidedd.org/dnd/poisons.php?vf=")[1]
             # Vérification du code HTTP
             print(f"Code HTTP : {response.status_code}")
 
@@ -111,20 +111,21 @@ class Dons:
                     for i in ligne:
                         if "<h1>" in i:
                             i2 = i.split("<h1>")   
-                            don.nom = i2[1].split("</h1>")[0]   
-                        if "class='prerequis'>" in i:
-                            i2 = i.split("class='prerequis'>Prérequis : ")[1].split("</div>")[0]
-                            don.prerequis = i2 
+                            poison.nom = i2[1].split("</h1>")[0]   
+                        if "class='type'>" in i:
+                            i2 = i.split("class='type'>")[1].split("</div>")[0]
+                            poison.type = i2 
                         if "class='description'>" in i:
                             description_commencee = 1
                             description = i.split("class='description'>")[1]  
+                            description = description.split("height='64'>")[1]
                             description = description.replace("<br>", "\n")
                             description = description.replace("<strong>", "")
                             description = description.replace("</strong>", "") 
                             description = description.replace("<em>", "")
                             description = description.replace("</em>", "") 
                             description = description.replace("</div>", "") 
-                            don.description = description 
+                            poison.description = description 
                         if description_commencee == 1:
                             if "</div>" in i:
                                 description_commencee = 0
@@ -135,20 +136,20 @@ class Dons:
                                 description = description.replace("<em>", "")
                                 description = description.replace("</em>", "") 
                                 description = description.replace("</div>", "") 
-                                don.description = don.description + "\n" + description
+                                poison.description = poison.description + "\n" + description
                         if "class='source'>" in i:
                             i2 = i.split("class='source'>")
                             source = i2[1].split("</div>")[0]
-                            don.source = source 
+                            poison.source = source 
 
-            return don
+            return poison
         except requests.exceptions.RequestException as e:
             print(f"❌ Erreur lors de la requête : {e}")
     
-    def exporter_dons(self):
-        for don in self.dons_detail:
-            don.exportcsv()
+    def exporter_poisons(self):
+        for poison in self.poisons_detail:
+            poison.exportcsv()
 
     def purger_csv(self):
-        Don.purger_csv()
+        Poison.purger_csv()
     

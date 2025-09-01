@@ -5,51 +5,51 @@ import random
 
 
 
-class Don:
+class ObjetMagique:
     def __init__(self, id):
         self.id = id
         self.nom = ""   
         self.cle = ""   
         self.description = ""   
-        self.prerequis = ""
+        self.type = ""
         self.source = ""
     
-    def afficher_don(self):
+    def afficher_objet_magique(self):
         print("___________")
         print("Nom :" + self.nom)   
         print("Cle :" + self.cle)
         print("Description :" + self.description)   
-        print("Prerequis :" + self.prerequis)
+        print("type :" + self.type)
         print("Source :" + self.source)
         print("___________")
     
     def exportcsv(self):
-        with open('./aidednddata/dons.csv', 'a') as f:
+        with open('./aidednddata/objet_magiques.csv', 'a') as f:
             writer = csv.writer(f)
-            writer.writerow([self.id, self.nom, self.cle, self.description, self.prerequis, self.source])
+            writer.writerow([self.id, self.nom, self.cle, self.description, self.type, self.source])
     
 
     @staticmethod
     def purger_csv():
-        with open('./aidednddata/dons.csv', 'w') as f:
+        with open('./aidednddata/objet_magiques.csv', 'w') as f:
             f.truncate(0)
             writer = csv.writer(f)
-            writer.writerow(['Id', 'Nom', 'Cle', 'Description', 'Prerequis', 'Source'])
+            writer.writerow(['Id', 'Nom', 'Cle', 'Description', 'Source'])
          
 
-class Dons:
+class ObjetMagiques:
     def __init__(self):
-        self.don_last_id = 0   
-        self.dons = []  
-        self.dons_detail = []
+        self.objet_magique_last_id = 0   
+        self.objet_magiques = []  
+        self.objet_magiques_detail = []
 
-    def afficher_dons(self):
-        for don in self.dons_detail:
-            don.afficher_don()
+    def afficher_objet_magiques(self):
+        for objet_magique in self.objet_magiques_detail:
+            objet_magique.afficher_objet_magique()
 
-    def charger_dons(self):
+    def charger_objet_magiques(self):
         # URL à interroger
-        url = "https://www.aidedd.org/dnd-filters/dons.php"  # Remplace par l'URL de ton choix
+        url = "https://www.aidedd.org/dnd-filters/objets-magiques.php"  # Remplace par l'URL de ton choix
         limite = 10000
         compteur = 0
         # Envoi de la requête GET
@@ -79,23 +79,23 @@ class Dons:
                                         i6 = i5.replace('"', '')
                                         if compteur < limite:   
                                             compteur += 1
-                                            self.dons.append(i6.split("class=''")[0])
-            for don in self.dons:
-                self.dons_detail.append(self.charger_detail_don(don))   
+                                            self.objet_magiques.append(i6.split("class=''")[0])
+            for objet_magique in self.objet_magiques:
+                self.objet_magiques_detail.append(self.charger_detail_objet_magique(objet_magique))   
                 time.sleep(random.randint(500,1000)/1000)
         except requests.exceptions.RequestException as e:
             print(f"❌ Erreur lors de la requête : {e}")
 
-    def charger_detail_don(self, don1): 
+    def charger_detail_objet_magique(self, objet_magique1): 
         try:
             headers = {
                 "User-Agent": "Mozilla/5.0"
             }
-            print(f"Appel: {don1}")
-            response = requests.get(don1, headers=headers)
-            don = Don(self.don_last_id )
-            self.don_last_id += 1
-            don.cle = don1.split("https://www.aidedd.org/dnd/dons.php?vf=")[1]
+            print(f"Appel: {objet_magique1}")
+            response = requests.get(objet_magique1, headers=headers)
+            objet_magique = ObjetMagique(self.objet_magique_last_id )
+            self.objet_magique_last_id += 1
+            objet_magique.cle = objet_magique1.split("https://www.aidedd.org/dnd/om.php?vf=")[1]
             # Vérification du code HTTP
             print(f"Code HTTP : {response.status_code}")
 
@@ -111,10 +111,10 @@ class Dons:
                     for i in ligne:
                         if "<h1>" in i:
                             i2 = i.split("<h1>")   
-                            don.nom = i2[1].split("</h1>")[0]   
-                        if "class='prerequis'>" in i:
-                            i2 = i.split("class='prerequis'>Prérequis : ")[1].split("</div>")[0]
-                            don.prerequis = i2 
+                            objet_magique.nom = i2[1].split("</h1>")[0]   
+                        if "class='type'>" in i:
+                            i2 = i.split("class='type'>")[1].split("</div>")[0]
+                            objet_magique.type = i2 
                         if "class='description'>" in i:
                             description_commencee = 1
                             description = i.split("class='description'>")[1]  
@@ -124,7 +124,7 @@ class Dons:
                             description = description.replace("<em>", "")
                             description = description.replace("</em>", "") 
                             description = description.replace("</div>", "") 
-                            don.description = description 
+                            objet_magique.description = description 
                         if description_commencee == 1:
                             if "</div>" in i:
                                 description_commencee = 0
@@ -135,20 +135,20 @@ class Dons:
                                 description = description.replace("<em>", "")
                                 description = description.replace("</em>", "") 
                                 description = description.replace("</div>", "") 
-                                don.description = don.description + "\n" + description
+                                objet_magique.description = objet_magique.description + "\n" + description
                         if "class='source'>" in i:
                             i2 = i.split("class='source'>")
                             source = i2[1].split("</div>")[0]
-                            don.source = source 
+                            objet_magique.source = source 
 
-            return don
+            return objet_magique
         except requests.exceptions.RequestException as e:
             print(f"❌ Erreur lors de la requête : {e}")
     
-    def exporter_dons(self):
-        for don in self.dons_detail:
-            don.exportcsv()
+    def exporter_objet_magiques(self):
+        for objet_magique in self.objet_magiques_detail:
+            objet_magique.exportcsv()
 
     def purger_csv(self):
-        Don.purger_csv()
+        ObjetMagique.purger_csv()
     
