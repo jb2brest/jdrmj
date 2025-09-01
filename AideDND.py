@@ -1,5 +1,6 @@
 from Monstre import Monstres
 from Sort import Sorts
+from Don import Dons
 
 class AideDND:
     def __init__(self):
@@ -7,6 +8,7 @@ class AideDND:
         self.classes = []
         self.races = []
         self.sorts = Sorts()
+        self.dons = Dons()
         self.items = []
         self.npcs = []
         self.scenes = []
@@ -28,9 +30,16 @@ def main():
     #url_sort = "https://www.aidedd.org/dnd/sorts.php?vf=convocation-de-fee"
     #sort = aide_dnd.sorts.charger_detail_sort(url_sort)
     #sort.afficher_sort()
-    aide_dnd.sorts.charger_sorts()
-    aide_dnd.sorts.purger_csv()
-    aide_dnd.sorts.exporter_sorts()
+    #aide_dnd.sorts.charger_sorts()
+    #aide_dnd.sorts.purger_csv()
+    #aide_dnd.sorts.exporter_sorts() 
+    print("Lancement de la récupération des données de Dons")
+    aide_dnd.dons.charger_dons()
+    aide_dnd.dons.purger_csv()
+    aide_dnd.dons.exporter_dons()
+    #url_don = "https://www.aidedd.org/dnd/dons.php?vf=telekinesiste" 
+    #don = aide_dnd.dons.charger_detail_don(url_don)
+    #don.afficher_don()
     print("Données récupérées avec succès")
 
 if __name__ == "__main__":
