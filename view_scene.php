@@ -277,6 +277,130 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
             $scene = $stmt->fetch();
         }
     }
+    
+    // Attribuer un objet magique à un PNJ ou personnage joueur
+    if (isset($_POST['action']) && $_POST['action'] === 'assign_magical_item') {
+        $item_id = $_POST['item_id'];
+        $item_name = $_POST['item_name'];
+        $assign_target = $_POST['assign_target'];
+        $assign_notes = $_POST['assign_notes'] ?? '';
+        
+        if (!empty($assign_target)) {
+            // Décomposer la cible (player_123, npc_456, monster_789)
+            $target_parts = explode('_', $assign_target);
+            $target_type = $target_parts[0];
+            $target_id = (int)$target_parts[1];
+            
+            // Récupérer les informations de l'objet magique depuis la base de données
+            $stmt = $pdo->prepare("SELECT nom, type, description, source FROM magical_items WHERE csv_id = ?");
+            $stmt->execute([$item_id]);
+            $item_info = $stmt->fetch();
+            
+            if (!$item_info) {
+                $error_message = "Objet magique introuvable.";
+            } else {
+                $target_name = '';
+                $insert_success = false;
+                
+                switch ($target_type) {
+                    case 'player':
+                        // Récupérer les informations du personnage joueur
+                        $stmt = $pdo->prepare("SELECT u.username, ch.id AS character_id, ch.name AS character_name FROM scene_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.scene_id = ? AND sp.player_id = ?");
+                        $stmt->execute([$scene_id, $target_id]);
+                        $target = $stmt->fetch();
+                        
+                        if ($target && $target['character_id']) {
+                            // Ajouter l'objet à l'équipement du personnage
+                            $stmt = $pdo->prepare("INSERT INTO character_equipment (character_id, magical_item_id, item_name, item_type, item_description, item_source, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                            $stmt->execute([
+                                $target['character_id'],
+                                $item_id,
+                                $item_info['nom'],
+                                $item_info['type'],
+                                $item_info['description'],
+                                $item_info['source'],
+                                $assign_notes,
+                                'Attribution MJ - Scène ' . $scene['title']
+                            ]);
+                            $insert_success = true;
+                            $target_name = $target['character_name'] ?: $target['username'];
+                        } else {
+                            $error_message = "Personnage joueur invalide ou sans personnage créé.";
+                        }
+                        break;
+                        
+                    case 'npc':
+                        // Récupérer les informations du PNJ
+                        $stmt = $pdo->prepare("SELECT name FROM scene_npcs WHERE id = ? AND scene_id = ?");
+                        $stmt->execute([$target_id, $scene_id]);
+                        $target = $stmt->fetch();
+                        
+                        if ($target) {
+                            // Ajouter l'objet à l'équipement du PNJ
+                            $stmt = $pdo->prepare("INSERT INTO npc_equipment (npc_id, scene_id, magical_item_id, item_name, item_type, item_description, item_source, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                            $stmt->execute([
+                                $target_id,
+                                $scene_id,
+                                $item_id,
+                                $item_info['nom'],
+                                $item_info['type'],
+                                $item_info['description'],
+                                $item_info['source'],
+                                $assign_notes,
+                                'Attribution MJ - Scène ' . $scene['title']
+                            ]);
+                            $insert_success = true;
+                            $target_name = $target['name'];
+                        } else {
+                            $error_message = "PNJ introuvable.";
+                        }
+                        break;
+                        
+                    case 'monster':
+                        // Récupérer les informations du monstre
+                        $stmt = $pdo->prepare("SELECT name FROM scene_npcs WHERE id = ? AND scene_id = ?");
+                        $stmt->execute([$target_id, $scene_id]);
+                        $target = $stmt->fetch();
+                        
+                        if ($target) {
+                            // Ajouter l'objet à l'équipement du monstre
+                            $stmt = $pdo->prepare("INSERT INTO monster_equipment (monster_id, scene_id, magical_item_id, item_name, item_type, item_description, item_source, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                            $stmt->execute([
+                                $target_id,
+                                $scene_id,
+                                $item_id,
+                                $item_info['nom'],
+                                $item_info['type'],
+                                $item_info['description'],
+                                $item_info['source'],
+                                $assign_notes,
+                                'Attribution MJ - Scène ' . $target['name']
+                            ]);
+                            $insert_success = true;
+                            $target_name = $target['name'];
+                        } else {
+                            $error_message = "Monstre introuvable.";
+                        }
+                        break;
+                        
+                    default:
+                        $error_message = "Type de cible invalide.";
+                        break;
+                }
+                
+                if ($insert_success && $target_name) {
+                    $success_message = "L'objet magique \"{$item_name}\" a été attribué à {$target_name} et ajouté à son équipement.";
+                    if (!empty($assign_notes)) {
+                        $success_message .= " Notes: {$assign_notes}";
+                    }
+                } elseif (!$insert_success && !isset($error_message)) {
+                    $error_message = "Erreur lors de l'ajout de l'objet à l'équipement.";
+                }
+            }
+        } else {
+            $error_message = "Veuillez sélectionner un destinataire pour l'objet.";
+        }
+    }
 }
 
 // Récupérer la liste des personnages du MJ pour l'ajout en PNJ
@@ -381,6 +505,9 @@ foreach ($allScenes as $s) {
                 Session: <?php echo htmlspecialchars($scene['session_title']); ?> • MJ: <?php echo htmlspecialchars($scene['dm_username']); ?>
                 <button class="btn btn-sm btn-outline-danger ms-2" type="button" data-bs-toggle="modal" data-bs-target="#poisonSearchModal">
                     <i class="fas fa-skull-crossbones me-1"></i>Poison
+                </button>
+                <button class="btn btn-sm btn-outline-primary ms-2" type="button" data-bs-toggle="modal" data-bs-target="#magicalItemSearchModal">
+                    <i class="fas fa-gem me-1"></i>Objet Magique
                 </button>
             </p>
         </div>
@@ -757,6 +884,122 @@ foreach ($allScenes as $s) {
     </div>
 </div>
 
+<!-- Modal pour rechercher des objets magiques -->
+<div class="modal fade" id="magicalItemSearchModal" tabindex="-1" aria-labelledby="magicalItemSearchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="magicalItemSearchModalLabel">
+                    <i class="fas fa-gem me-2"></i>Recherche d'objets magiques
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <label for="magicalItemSearch" class="form-label">Rechercher un objet magique</label>
+                        <input type="text" class="form-control" id="magicalItemSearch" placeholder="Nom, type ou description de l'objet magique...">
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div id="magicalItemResults" class="list-group" style="max-height: 400px; overflow-y: auto;">
+                        <div class="text-muted text-center p-3">Tapez au moins 2 caractères pour rechercher...</div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Astuce :</strong> Cliquez sur le bouton "Attribuer" à côté d'un objet pour l'assigner à un PNJ ou un personnage joueur de cette scène.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour attribuer un objet magique -->
+<div class="modal fade" id="assignItemModal" tabindex="-1" aria-labelledby="assignItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="assignItemModalLabel">
+                    <i class="fas fa-gift me-2"></i>Attribuer un objet magique
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" id="assignItemForm">
+                    <input type="hidden" name="action" value="assign_magical_item">
+                    <input type="hidden" name="item_id" id="selectedItemId">
+                    <input type="hidden" name="item_name" id="selectedItemName">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Objet sélectionné</label>
+                        <div class="form-control-plaintext" id="selectedItemDisplay"></div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="assignTarget" class="form-label">Attribuer à</label>
+                        <select class="form-select" name="assign_target" id="assignTarget" required>
+                            <option value="">Sélectionner un destinataire...</option>
+                            
+                            <!-- Personnages joueurs -->
+                            <?php if (!empty($scenePlayers)): ?>
+                                <optgroup label="Personnages joueurs">
+                                    <?php foreach ($scenePlayers as $player): ?>
+                                        <option value="player_<?php echo (int)$player['player_id']; ?>">
+                                            <?php echo htmlspecialchars($player['username']); ?>
+                                            <?php if (!empty($player['character_name'])): ?>
+                                                (<?php echo htmlspecialchars($player['character_name']); ?>)
+                                            <?php endif; ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </optgroup>
+                            <?php endif; ?>
+                            
+                            <!-- PNJ -->
+                            <?php if (!empty($sceneNpcs)): ?>
+                                <optgroup label="PNJ">
+                                    <?php foreach ($sceneNpcs as $npc): ?>
+                                        <option value="npc_<?php echo (int)$npc['id']; ?>">
+                                            <?php echo htmlspecialchars($npc['name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </optgroup>
+                            <?php endif; ?>
+                            
+                            <!-- Monstres -->
+                            <?php if (!empty($sceneMonsters)): ?>
+                                <optgroup label="Monstres">
+                                    <?php foreach ($sceneMonsters as $monster): ?>
+                                        <option value="monster_<?php echo (int)$monster['id']; ?>">
+                                            <?php echo htmlspecialchars($monster['name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </optgroup>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="assignNotes" class="form-label">Notes (optionnel)</label>
+                        <textarea class="form-control" name="assign_notes" id="assignNotes" rows="3" placeholder="Comment l'objet a-t-il été obtenu ?..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="submit" form="assignItemForm" class="btn btn-primary">
+                    <i class="fas fa-gift me-1"></i>Attribuer l'objet
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?php if (!$isModal): ?>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
@@ -937,6 +1180,115 @@ foreach ($allScenes as $s) {
             poisonSearchModal.addEventListener('show.bs.modal', function() {
                 poisonSearch.value = '';
                 poisonResults.innerHTML = '<div class="text-muted text-center p-3">Tapez au moins 2 caractères pour rechercher...</div>';
+            });
+        }
+
+        // Gestion de la recherche d'objets magiques
+        const magicalItemSearch = document.getElementById('magicalItemSearch');
+        const magicalItemResults = document.getElementById('magicalItemResults');
+        let magicalItemSearchTimeout;
+
+        if (magicalItemSearch) {
+            magicalItemSearch.addEventListener('input', function() {
+                clearTimeout(magicalItemSearchTimeout);
+                const query = this.value.trim();
+                
+                if (query.length < 2) {
+                    magicalItemResults.innerHTML = '<div class="text-muted text-center p-3">Tapez au moins 2 caractères pour rechercher...</div>';
+                    return;
+                }
+
+                magicalItemSearchTimeout = setTimeout(function() {
+                    searchMagicalItems(query);
+                }, 300);
+            });
+        }
+
+        function searchMagicalItems(query) {
+            magicalItemResults.innerHTML = '<div class="text-center p-3"><i class="fas fa-spinner fa-spin"></i> Recherche en cours...</div>';
+            
+            fetch('search_magical_items.php?q=' + encodeURIComponent(query), {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length === 0) {
+                        magicalItemResults.innerHTML = '<div class="text-muted text-center p-3">Aucun objet magique trouvé.</div>';
+                    } else {
+                        displayMagicalItemResults(data);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur lors de la recherche:', error);
+                    magicalItemResults.innerHTML = '<div class="text-danger text-center p-3">Erreur lors de la recherche.</div>';
+                });
+        }
+
+        function displayMagicalItemResults(items) {
+            magicalItemResults.innerHTML = '';
+            
+            items.forEach(item => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'list-group-item';
+                itemElement.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="fw-bold text-primary">${item.nom}</div>
+                                <small class="text-muted">${item.type}</small>
+                            </div>
+                            <div class="text-muted small mb-2">Source: ${item.source}</div>
+                            <div class="mb-2">${item.description}</div>
+                            <div class="text-muted small">
+                                <strong>Clé:</strong> ${item.cle}
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <button type="button" class="btn btn-sm btn-outline-success assign-item-btn" 
+                                    data-item-id="${item.id}" 
+                                    data-item-name="${item.nom}"
+                                    data-item-type="${item.type}">
+                                <i class="fas fa-gift me-1"></i>Attribuer
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                // Ajouter l'événement click pour le bouton d'attribution
+                const assignBtn = itemElement.querySelector('.assign-item-btn');
+                assignBtn.addEventListener('click', function() {
+                    const itemId = this.getAttribute('data-item-id');
+                    const itemName = this.getAttribute('data-item-name');
+                    const itemType = this.getAttribute('data-item-type');
+                    
+                    // Remplir la modale d'attribution
+                    document.getElementById('selectedItemId').value = itemId;
+                    document.getElementById('selectedItemName').value = itemName;
+                    document.getElementById('selectedItemDisplay').innerHTML = `
+                        <strong>${itemName}</strong><br>
+                        <small class="text-muted">${itemType}</small>
+                    `;
+                    
+                    // Fermer la modale de recherche et ouvrir la modale d'attribution
+                    const searchModal = bootstrap.Modal.getInstance(document.getElementById('magicalItemSearchModal'));
+                    searchModal.hide();
+                    
+                    const assignModal = new bootstrap.Modal(document.getElementById('assignItemModal'));
+                    assignModal.show();
+                });
+                
+                magicalItemResults.appendChild(itemElement);
+            });
+        }
+
+        // Réinitialiser la recherche quand la modale des objets magiques s'ouvre
+        const magicalItemSearchModal = document.getElementById('magicalItemSearchModal');
+        if (magicalItemSearchModal) {
+            magicalItemSearchModal.addEventListener('show.bs.modal', function() {
+                magicalItemSearch.value = '';
+                magicalItemResults.innerHTML = '<div class="text-muted text-center p-3">Tapez au moins 2 caractères pour rechercher...</div>';
             });
         }
     });

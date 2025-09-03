@@ -34,7 +34,7 @@ class ObjetMagique:
         with open('./aidednddata/objet_magiques.csv', 'w') as f:
             f.truncate(0)
             writer = csv.writer(f)
-            writer.writerow(['Id', 'Nom', 'Cle', 'Description', 'Source'])
+            writer.writerow(['Id', 'Nom', 'Cle', 'Description', 'type', 'Source'])
          
 
 class ObjetMagiques:
@@ -76,10 +76,13 @@ class ObjetMagiques:
                                 i4 = i3.split("target='_blank'")
                                 for i5 in i4:
                                     if "http" in i5:
-                                        i6 = i5.replace('"', '')
-                                        if compteur < limite:   
-                                            compteur += 1
-                                            self.objet_magiques.append(i6.split("class=''")[0])
+                                        if "rel=\"alternate\" " not in i5:
+                                            print("i5 : ", i5)
+                                            i6 = i5.replace('"', '')
+                                            if compteur < limite:   
+                                                compteur += 1
+                                                print(i6.split("class=''")[0])
+                                                self.objet_magiques.append(i6.split("class=''")[0])
             for objet_magique in self.objet_magiques:
                 self.objet_magiques_detail.append(self.charger_detail_objet_magique(objet_magique))   
                 time.sleep(random.randint(500,1000)/1000)

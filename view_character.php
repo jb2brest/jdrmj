@@ -347,6 +347,12 @@ $armorClass = $character['armor_class'];
                         <?php else: ?>
                             <p class="text-muted">Aucun équipement enregistré</p>
                         <?php endif; ?>
+                        
+                        <div class="mt-3">
+                            <a href="view_character_equipment.php?id=<?php echo (int)$character_id; ?>" class="btn btn-primary">
+                                <i class="fas fa-gem me-2"></i>Voir l'équipement détaillé
+                            </a>
+                        </div>
                     </div>
                     <div class="col-md-4">
                         <p><strong>Argent:</strong></p>

@@ -20,7 +20,7 @@ try {
     // Recherche dans la base de données avec recherche fulltext
     $stmt = $pdo->prepare("
         SELECT id, csv_id, nom, cle, description, type, source 
-        FROM poisons 
+        FROM magical_items 
         WHERE MATCH(nom, cle, description, type) AGAINST(? IN BOOLEAN MODE)
         OR nom LIKE ? OR cle LIKE ? OR type LIKE ?
         ORDER BY nom ASC
@@ -29,22 +29,22 @@ try {
     
     $searchTerm = "%$query%";
     $stmt->execute([$query, $searchTerm, $searchTerm, $searchTerm]);
-    $poisons = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     // Formater les résultats pour la compatibilité
-    $formattedPoisons = [];
-    foreach ($poisons as $poison) {
-        $formattedPoisons[] = [
-            'id' => $poison['csv_id'], // Utiliser csv_id pour la compatibilité
-            'nom' => $poison['nom'],
-            'cle' => $poison['cle'],
-            'description' => $poison['description'],
-            'type' => $poison['type'],
-            'source' => $poison['source']
+    $formattedItems = [];
+    foreach ($items as $item) {
+        $formattedItems[] = [
+            'id' => $item['csv_id'], // Utiliser csv_id pour la compatibilité
+            'nom' => $item['nom'],
+            'cle' => $item['cle'],
+            'description' => $item['description'],
+            'type' => $item['type'],
+            'source' => $item['source']
         ];
     }
     
-    echo json_encode($formattedPoisons);
+    echo json_encode($formattedItems);
     
 } catch (PDOException $e) {
     // En cas d'erreur, fallback vers la recherche CSV
