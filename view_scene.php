@@ -48,10 +48,10 @@ $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_i
 $stmt->execute([$scene_id]);
 $sceneNpcs = $stmt->fetchAll();
 
-// Récupérer les monstres de cette scène
-$stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM scene_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.scene_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
-$stmt->execute([$scene_id]);
-$sceneMonsters = $stmt->fetchAll();
+                // Récupérer les monstres de cette scène
+                $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM scene_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.scene_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
+                $stmt->execute([$scene_id]);
+                $sceneMonsters = $stmt->fetchAll();
 
 // Traitements POST pour ajouter des PNJ
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
@@ -119,17 +119,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
             $monster = $stmt->fetch();
             
             if ($monster) {
-                $monster_name = $monster['name'];
-                if ($quantity > 1) {
-                    $monster_name .= " (x{$quantity})";
+                // Créer une ligne individuelle pour chaque monstre
+                for ($i = 0; $i < $quantity; $i++) {
+                    $monster_name = $monster['name'];
+                    if ($quantity > 1) {
+                        $monster_name .= " #" . ($i + 1);
+                    }
+                    
+                    $stmt = $pdo->prepare("INSERT INTO scene_npcs (scene_id, name, monster_id, quantity) VALUES (?, ?, ?, 1)");
+                    $stmt->execute([$scene_id, $monster_name, $monster_id]);
                 }
                 
-                $stmt = $pdo->prepare("INSERT INTO scene_npcs (scene_id, name, monster_id, quantity) VALUES (?, ?, ?, ?)");
-                $stmt->execute([$scene_id, $monster_name, $monster_id, $quantity]);
-                $success_message = "Monstre ajouté à la scène.";
+                $success_message = $quantity . " monstre(s) ajouté(s) à la scène.";
                 
                 // Recharger les monstres
-                $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM scene_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.scene_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
+                $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM scene_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.scene_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
                 $stmt->execute([$scene_id]);
                 $sceneMonsters = $stmt->fetchAll();
             } else {
@@ -148,7 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         $success_message = "Monstre retiré de la scène.";
         
         // Recharger les monstres
-        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM scene_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.scene_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
+        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM scene_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.scene_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
         $stmt->execute([$scene_id]);
         $sceneMonsters = $stmt->fetchAll();
     }

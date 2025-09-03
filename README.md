@@ -114,6 +114,7 @@ Ce projet est sous licence MIT. Libre d'utilisation, modification et distributio
 
 ## Changelog
 <version_tag>
+- 0.0.29 : Ajout des poisons
 - 0.0.28 : Ajout des poisons
 - 0.0.27 : Ajout des poisons
 - 0.0.26 : Récupération aidedd Objets, poisons, Herbes
