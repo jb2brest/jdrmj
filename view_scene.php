@@ -377,7 +377,12 @@ foreach ($allScenes as $s) {
             <?php else: ?>
                 <h1><i class="fas fa-photo-video me-2"></i><?php echo htmlspecialchars($scene['title']); ?></h1>
             <?php endif; ?>
-            <p class="text-muted mb-0">Session: <?php echo htmlspecialchars($scene['session_title']); ?> • MJ: <?php echo htmlspecialchars($scene['dm_username']); ?></p>
+            <p class="text-muted mb-0">
+                Session: <?php echo htmlspecialchars($scene['session_title']); ?> • MJ: <?php echo htmlspecialchars($scene['dm_username']); ?>
+                <button class="btn btn-sm btn-outline-danger ms-2" type="button" data-bs-toggle="modal" data-bs-target="#poisonSearchModal">
+                    <i class="fas fa-skull-crossbones me-1"></i>Poison
+                </button>
+            </p>
         </div>
         <div class="d-flex align-items-center gap-2">
             <?php if ($prevScene): ?>
@@ -721,6 +726,37 @@ foreach ($allScenes as $s) {
 </div>
 <?php endif; ?>
 
+<!-- Modal pour rechercher des poisons -->
+<div class="modal fade" id="poisonSearchModal" tabindex="-1" aria-labelledby="poisonSearchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="poisonSearchModalLabel">
+                    <i class="fas fa-skull-crossbones me-2"></i>Recherche de poisons
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <label for="poisonSearch" class="form-label">Rechercher un poison</label>
+                        <input type="text" class="form-control" id="poisonSearch" placeholder="Nom, type ou description du poison...">
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div id="poisonResults" class="list-group" style="max-height: 400px; overflow-y: auto;">
+                        <div class="text-muted text-center p-3">Tapez au moins 2 caractères pour rechercher...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?php if (!$isModal): ?>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
@@ -823,6 +859,84 @@ foreach ($allScenes as $s) {
                 monsterResults.innerHTML = '<div class="text-muted text-center p-3">Tapez au moins 2 caractères pour rechercher...</div>';
                 selectedMonsterId.value = '';
                 addMonsterBtn.disabled = true;
+            });
+        }
+
+        // Gestion de la recherche de poisons
+        const poisonSearch = document.getElementById('poisonSearch');
+        const poisonResults = document.getElementById('poisonResults');
+        let poisonSearchTimeout;
+
+        if (poisonSearch) {
+            poisonSearch.addEventListener('input', function() {
+                clearTimeout(poisonSearchTimeout);
+                const query = this.value.trim();
+                
+                if (query.length < 2) {
+                    poisonResults.innerHTML = '<div class="text-muted text-center p-3">Tapez au moins 2 caractères pour rechercher...</div>';
+                    return;
+                }
+
+                poisonSearchTimeout = setTimeout(function() {
+                    searchPoisons(query);
+                }, 300);
+            });
+        }
+
+        function searchPoisons(query) {
+            poisonResults.innerHTML = '<div class="text-center p-3"><i class="fas fa-spinner fa-spin"></i> Recherche en cours...</div>';
+            
+            fetch('search_poisons.php?q=' + encodeURIComponent(query), {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length === 0) {
+                        poisonResults.innerHTML = '<div class="text-muted text-center p-3">Aucun poison trouvé.</div>';
+                    } else {
+                        displayPoisonResults(data);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur lors de la recherche:', error);
+                    poisonResults.innerHTML = '<div class="text-danger text-center p-3">Erreur lors de la recherche.</div>';
+                });
+        }
+
+        function displayPoisonResults(poisons) {
+            poisonResults.innerHTML = '';
+            
+            poisons.forEach(poison => {
+                const item = document.createElement('div');
+                item.className = 'list-group-item';
+                item.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="fw-bold text-danger">${poison.nom}</div>
+                                <small class="text-muted">${poison.type}</small>
+                            </div>
+                            <div class="text-muted small mb-2">Source: ${poison.source}</div>
+                            <div class="mb-2">${poison.description}</div>
+                            <div class="text-muted small">
+                                <strong>Clé:</strong> ${poison.cle}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                poisonResults.appendChild(item);
+            });
+        }
+
+        // Réinitialiser la recherche quand la modale des poisons s'ouvre
+        const poisonSearchModal = document.getElementById('poisonSearchModal');
+        if (poisonSearchModal) {
+            poisonSearchModal.addEventListener('show.bs.modal', function() {
+                poisonSearch.value = '';
+                poisonResults.innerHTML = '<div class="text-muted text-center p-3">Tapez au moins 2 caractères pour rechercher...</div>';
             });
         }
     });

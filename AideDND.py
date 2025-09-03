@@ -64,9 +64,9 @@ def main():
     #objet_magique = aide_dnd.objet_magique.charger_detail_objet_magique(url_objet_magique)
     #objet_magique.afficher_objet_magique()
     print("Lancement de la récupération des données de Poison")
-    #aide_dnd.poison.charger_poison()
-    #aide_dnd.poison.purger_csv()
-    #aide_dnd.poison.exporter_poison()
+    aide_dnd.poison.charger_poisons()
+    aide_dnd.poison.purger_csv()
+    aide_dnd.poison.exporter_poisons()
     #url_poison = "https://www.aidedd.org/dnd/poisons.php?vf=arsenic" 
     #poison = aide_dnd.poison.charger_detail_poison(url_poison)
     #poison.afficher_poison()
@@ -74,10 +74,10 @@ def main():
     #aide_dnd.herbe.charger_herbe()
     #aide_dnd.herbe.purger_csv()
     #aide_dnd.herbe.exporter_herbe()
-    url_herbe = "https://www.aidedd.org/dnd/herbes.php?vf=aldaka" 
-    herbe = aide_dnd.herbe.charger_detail_herbe(url_herbe)
-    herbe.afficher_herbe()
-    print("Données récupérées avec succès")
+    #url_herbe = "https://www.aidedd.org/dnd/herbes.php?vf=aldaka" 
+    #herbe = aide_dnd.herbe.charger_detail_herbe(url_herbe)
+    #herbe.afficher_herbe()
+    print("Données récupérées avec succès") 
 
 if __name__ == "__main__":
     main()
