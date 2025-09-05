@@ -71,6 +71,7 @@ class Monstre:
         self.nb_sorts_n8 = ""
         self.nb_sorts_n9 = ""
         self.nb_sorts_n10 = ""
+        self.imageURL = ""
 
     def afficher_monstre(self):
         print("___________")
@@ -94,6 +95,7 @@ class Monstre:
         print("Sens :" + self.sens)
         print("Langues :" + self.langues)
         print("FP :" + self.fp)
+        print("Image URL :" + self.imageURL)
         print("___________")
         print("Att_special :")
         for i in self.att_special:
@@ -144,6 +146,13 @@ class Monstre:
             print("Nom :" + i.nom)
             print("Description :" + i.description)
         print("___________")  
+
+    
+    def recuperer_image(self):
+        if self.imageURL != "":
+            response = requests.get(self.imageURL)
+            with open('./images/' + str(self.id) + '.jpg', 'wb') as f:
+                f.write(response.content)
 
     def exportcsv(self):
         with open('./aidednddata/monstre.csv', 'a') as f:
@@ -224,7 +233,7 @@ class Monstres:
     def charger_monstres(self):
         # URL à interroger
         url = "https://www.aidedd.org/dnd-filters/monstres.php"  # Remplace par l'URL de ton choix
-        limite = 100000
+        limite = 10000
         compteur = 0
         # Envoi de la requête GET
         # on commence par récupérer la liste des monstres avec l'url d'accès à la liste détaillée. 
@@ -294,7 +303,10 @@ class Monstres:
                             i3 = i2[1].split("de taille")
                             monstre.type = i3[0]  
                             monstre.taille = i3[1].split(",")[0]
-                            monstre.alignement = i3[1].split(",")[1].split("</div>")[0]              
+                            monstre.alignement = i3[1].split(",")[1].split("</div>")[0]  
+                        if "class='picture'>" in i :
+                            i2 = i.split("<img src='")[1].split("' loading='lazy'")[0]
+                            monstre.imageURL = i2        
                         if "<strong>Classe d'armure</strong>" in i:
                             i2 = i.split("<strong>Classe d'armure</strong>")
                             i3 = i2[1].split("<br><strong>Points de vie</strong> ")
@@ -457,6 +469,7 @@ class Monstres:
         return nb_sorts
 
 
+
     def liste_sorts(self, liste_sorts, i3):        
         i4 = i3.split("<a href=\"https://www.aidedd.org/dnd/sorts.php?vf=")
         cpt=0
@@ -473,7 +486,7 @@ class Monstres:
     def exporter_monstres(self):
         for monstre in self.monstres_detail:
             monstre.exportcsv()
+            monstre.recuperer_image()   
 
     def purger_csv(self):
         Monstre.purger_csv()
-    

@@ -49,7 +49,7 @@ $stmt->execute([$scene_id]);
 $sceneNpcs = $stmt->fetchAll();
 
 // Récupérer les monstres de cette scène
-$stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM scene_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.scene_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
+$stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, sn.current_hit_points, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM scene_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.scene_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
 $stmt->execute([$scene_id]);
 $sceneMonsters = $stmt->fetchAll();
 
@@ -124,12 +124,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                     $monster_name .= " (x{$quantity})";
                 }
                 
-                $stmt = $pdo->prepare("INSERT INTO scene_npcs (scene_id, name, monster_id, quantity) VALUES (?, ?, ?, ?)");
-                $stmt->execute([$scene_id, $monster_name, $monster_id, $quantity]);
+                $stmt = $pdo->prepare("INSERT INTO scene_npcs (scene_id, name, monster_id, quantity, current_hit_points) VALUES (?, ?, ?, ?, ?)");
+                $stmt->execute([$scene_id, $monster_name, $monster_id, $quantity, $monster['hit_points']]);
                 $success_message = "Monstre ajouté à la scène.";
                 
                 // Recharger les monstres
-                $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM scene_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.scene_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
+                $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, sn.current_hit_points, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM scene_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.scene_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
                 $stmt->execute([$scene_id]);
                 $sceneMonsters = $stmt->fetchAll();
             } else {
@@ -148,7 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         $success_message = "Monstre retiré de la scène.";
         
         // Recharger les monstres
-        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM scene_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.scene_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
+        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, sn.current_hit_points, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM scene_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.scene_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
         $stmt->execute([$scene_id]);
         $sceneMonsters = $stmt->fetchAll();
     }
@@ -778,11 +778,20 @@ foreach ($allScenes as $s) {
                                                 <br>
                                                 <small class="text-muted">
                                                     CA <?php echo htmlspecialchars($monster['armor_class']); ?> • 
-                                                    PV <?php echo htmlspecialchars($monster['hit_points']); ?>
+                                                    PV <?php 
+                                                        $current_hp = $monster['current_hit_points'] ?? $monster['hit_points'];
+                                                        $max_hp = $monster['hit_points'];
+                                                        $hp_percentage = ($current_hp / $max_hp) * 100;
+                                                        $hp_color = $hp_percentage > 50 ? 'text-success' : ($hp_percentage > 25 ? 'text-warning' : 'text-danger');
+                                                        echo "<span class='{$hp_color}'>{$current_hp}</span>/{$max_hp}";
+                                                    ?>
                                                 </small>
                                             </div>
                                         </div>
                                         <div class="d-flex gap-1">
+                                            <a href="view_monster_sheet.php?id=<?php echo (int)$monster['id']; ?>&scene_id=<?php echo (int)$scene_id; ?>" class="btn btn-sm btn-outline-danger" title="Voir la feuille du monstre" target="_blank">
+                                                <i class="fas fa-dragon"></i>
+                                            </a>
                                             <a href="bestiary.php?search=<?php echo urlencode($monster['name']); ?>" class="btn btn-sm btn-outline-primary" title="Voir dans le bestiaire" target="_blank">
                                                 <i class="fas fa-book"></i>
                                             </a>

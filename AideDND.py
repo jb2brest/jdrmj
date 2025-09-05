@@ -29,9 +29,10 @@ def main():
     print("Lancement de la récupération des données de AideDND")
     aide_dnd = AideDND()
     print("Lancement de la récupération des données de Monstres")
-    #aide_dnd.monstres.charger_monstres()    
-    #aide_dnd.monstres.purger_csv()
-    #aide_dnd.monstres.exporter_monstres()
+    aide_dnd.monstres.charger_monstres()    
+    aide_dnd.monstres.purger_csv()
+    aide_dnd.monstres.exporter_monstres()
+    aide_dnd.monstres.afficher_monstres()
     print("Lancement de la récupération des données de Sorts")
     #url_sort = "https://www.aidedd.org/dnd/sorts.php?vf=amelioration-de-caracteristique"
     #url_sort = "https://www.aidedd.org/dnd/sorts.php?vf=animation-d-objets"
@@ -57,9 +58,9 @@ def main():
     #don = aide_dnd.dons.charger_detail_don(url_don)
     #don.afficher_don()
     print("Lancement de la récupération des données de Objet Magique")
-    aide_dnd.objet_magique.charger_objet_magiques()
-    aide_dnd.objet_magique.purger_csv()
-    aide_dnd.objet_magique.exporter_objet_magiques()
+    #aide_dnd.objet_magique.charger_objet_magiques()
+    #aide_dnd.objet_magique.purger_csv()
+    #aide_dnd.objet_magique.exporter_objet_magiques()
     #url_objet_magique = "https://www.aidedd.org/dnd/om.php?vf=amulette-d-antidetection" 
     #objet_magique = aide_dnd.objet_magique.charger_detail_objet_magique(url_objet_magique)
     #objet_magique.afficher_objet_magique()

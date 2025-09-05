@@ -114,6 +114,7 @@ Ce projet est sous licence MIT. Libre d'utilisation, modification et distributio
 
 ## Changelog
 <version_tag>
+- 0.0.31 : Ajout images
 - 0.0.30 : Objet magique dans l'inventaire
 - 0.0.29 : Ajout des poisons
 - 0.0.28 : Ajout des poisons
