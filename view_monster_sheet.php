@@ -95,6 +95,132 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 $success_message = "Points de vie réinitialisés au maximum : {$monster['max_hit_points']}";
                 break;
+                
+            case 'transfer_item':
+                $item_id = (int)$_POST['item_id'];
+                $target = $_POST['target'];
+                $notes = $_POST['notes'] ?? '';
+                
+                // Récupérer les informations de l'objet à transférer
+                $stmt = $pdo->prepare("SELECT * FROM monster_equipment WHERE id = ? AND monster_id = ? AND scene_id = ?");
+                $stmt->execute([$item_id, $monster_npc_id, $scene_id]);
+                $item = $stmt->fetch();
+                
+                if (!$item) {
+                    $error_message = "Objet introuvable.";
+                } else {
+                    // Analyser la cible
+                    $target_parts = explode('_', $target);
+                    $target_type = $target_parts[0];
+                    $target_id = (int)$target_parts[1];
+                    
+                    $transfer_success = false;
+                    $target_name = '';
+                    
+                    switch ($target_type) {
+                        case 'character':
+                            // Transférer vers un personnage
+                            $stmt = $pdo->prepare("SELECT name FROM characters WHERE id = ?");
+                            $stmt->execute([$target_id]);
+                            $target_char = $stmt->fetch();
+                            
+                            if ($target_char) {
+                                // Insérer dans character_equipment
+                                $stmt = $pdo->prepare("INSERT INTO character_equipment (character_id, magical_item_id, item_name, item_type, item_description, item_source, quantity, equipped, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                                $stmt->execute([
+                                    $target_id,
+                                    $item['magical_item_id'],
+                                    $item['item_name'],
+                                    $item['item_type'],
+                                    $item['item_description'],
+                                    $item['item_source'],
+                                    $item['quantity'],
+                                    0, // Toujours non équipé lors du transfert (0 = false)
+                                    $notes ?: $item['notes'],
+                                    'Transfert depuis ' . $monster['name']
+                                ]);
+                                
+                                // Supprimer de l'ancien propriétaire
+                                $stmt = $pdo->prepare("DELETE FROM monster_equipment WHERE id = ?");
+                                $stmt->execute([$item_id]);
+                                
+                                $transfer_success = true;
+                                $target_name = $target_char['name'];
+                            }
+                            break;
+                            
+                        case 'monster':
+                            // Transférer vers un autre monstre
+                            $stmt = $pdo->prepare("SELECT sn.name, sn.scene_id FROM scene_npcs sn WHERE sn.id = ?");
+                            $stmt->execute([$target_id]);
+                            $target_monster = $stmt->fetch();
+                            
+                            if ($target_monster) {
+                                // Insérer dans monster_equipment du nouveau propriétaire
+                                $stmt = $pdo->prepare("INSERT INTO monster_equipment (monster_id, scene_id, magical_item_id, item_name, item_type, item_description, item_source, quantity, equipped, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                                $stmt->execute([
+                                    $target_id,
+                                    $target_monster['scene_id'],
+                                    $item['magical_item_id'],
+                                    $item['item_name'],
+                                    $item['item_type'],
+                                    $item['item_description'],
+                                    $item['item_source'],
+                                    $item['quantity'],
+                                    0, // Toujours non équipé lors du transfert (0 = false)
+                                    $notes ?: $item['notes'],
+                                    'Transfert depuis ' . $monster['name']
+                                ]);
+                                
+                                // Supprimer de l'ancien propriétaire
+                                $stmt = $pdo->prepare("DELETE FROM monster_equipment WHERE id = ?");
+                                $stmt->execute([$item_id]);
+                                
+                                $transfer_success = true;
+                                $target_name = $target_monster['name'];
+                            }
+                            break;
+                            
+                        case 'npc':
+                            // Transférer vers un PNJ
+                            $stmt = $pdo->prepare("SELECT sn.name, sn.scene_id FROM scene_npcs sn WHERE sn.id = ?");
+                            $stmt->execute([$target_id]);
+                            $target_npc = $stmt->fetch();
+                            
+                            if ($target_npc) {
+                                // Insérer dans npc_equipment
+                                $stmt = $pdo->prepare("INSERT INTO npc_equipment (npc_id, scene_id, magical_item_id, item_name, item_type, item_description, item_source, quantity, equipped, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                                $stmt->execute([
+                                    $target_id,
+                                    $target_npc['scene_id'],
+                                    $item['magical_item_id'],
+                                    $item['item_name'],
+                                    $item['item_type'],
+                                    $item['item_description'],
+                                    $item['item_source'],
+                                    $item['quantity'],
+                                    0, // Toujours non équipé lors du transfert (0 = false)
+                                    $notes ?: $item['notes'],
+                                    'Transfert depuis ' . $monster['name']
+                                ]);
+                                
+                                // Supprimer de l'ancien propriétaire
+                                $stmt = $pdo->prepare("DELETE FROM monster_equipment WHERE id = ?");
+                                $stmt->execute([$item_id]);
+                                
+                                $transfer_success = true;
+                                $target_name = $target_npc['name'];
+                            }
+                            break;
+                    }
+                    
+                    if ($transfer_success) {
+                        $success_message = "Objet '{$item['item_name']}' transféré vers {$target_name} avec succès.";
+                    } else {
+                        $error_message = "Erreur lors du transfert de l'objet.";
+                    }
+                }
+                break;
         }
         
         // Recharger les données du monstre
@@ -425,6 +551,18 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
                                                         <?php echo htmlspecialchars($item['obtained_from']); ?>
                                                     </small>
                                                 </div>
+                                                <div class="mt-3">
+                                                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#transferModal" 
+                                                            data-item-id="<?php echo $item['id']; ?>"
+                                                            data-item-name="<?php echo htmlspecialchars($item['item_name']); ?>"
+                                                            data-current-owner="monster_<?php echo $monster_npc_id; ?>"
+                                                            data-current-owner-name="<?php echo htmlspecialchars($monster['name']); ?>"
+                                                            title="Transférer cet objet">
+                                                        <i class="fas fa-exchange-alt me-1"></i>Transférer à
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -509,6 +647,52 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
         </div>
     </div>
 
+    <!-- Modal pour Transfert d'Objets -->
+    <div class="modal fade" id="transferModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exchange-alt me-2"></i>
+                        Transférer un Objet Magique
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Objet :</strong> <span id="transferItemName"></span><br>
+                        <strong>Propriétaire actuel :</strong> <span id="transferCurrentOwner"></span>
+                    </div>
+                    
+                    <form id="transferForm" method="POST">
+                        <input type="hidden" name="action" value="transfer_item">
+                        <input type="hidden" name="item_id" id="transferItemId">
+                        <input type="hidden" name="current_owner" id="transferCurrentOwnerType">
+                        
+                        <div class="mb-3">
+                            <label for="transferTarget" class="form-label">Transférer vers :</label>
+                            <select class="form-select" name="target" id="transferTarget" required>
+                                <option value="">Sélectionner une cible...</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="transferNotes" class="form-label">Notes (optionnel) :</label>
+                            <textarea class="form-control" name="notes" id="transferNotes" rows="3" placeholder="Raison du transfert, conditions, etc."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmTransfer()">
+                        <i class="fas fa-exchange-alt me-1"></i>Transférer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function quickDamage(amount) {
@@ -520,6 +704,68 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
                     <input type="hidden" name="damage" value="${amount}">
                 `;
                 document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+        // Gestion du modal de transfert
+        document.getElementById('transferModal').addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const itemId = button.getAttribute('data-item-id');
+            const itemName = button.getAttribute('data-item-name');
+            const currentOwner = button.getAttribute('data-current-owner');
+            const currentOwnerName = button.getAttribute('data-current-owner-name');
+            
+            // Remplir les informations de base
+            document.getElementById('transferItemName').textContent = itemName;
+            document.getElementById('transferCurrentOwner').textContent = currentOwnerName;
+            document.getElementById('transferItemId').value = itemId;
+            document.getElementById('transferCurrentOwnerType').value = currentOwner;
+            
+            // Charger les cibles disponibles
+            loadTransferTargets(currentOwner);
+        });
+
+        function loadTransferTargets(currentOwner) {
+            const select = document.getElementById('transferTarget');
+            select.innerHTML = '<option value="">Chargement...</option>';
+            
+            // Simuler le chargement des cibles (à remplacer par un appel AJAX)
+            setTimeout(() => {
+                select.innerHTML = '<option value="">Sélectionner une cible...</option>';
+                
+                // Ajouter les personnages joueurs
+                select.innerHTML += '<optgroup label="Personnages Joueurs">';
+                select.innerHTML += '<option value="character_1">Hyphrédicte (Robin)</option>';
+                select.innerHTML += '<option value="character_2">Lieutenant Cameron (MJ)</option>';
+                select.innerHTML += '</optgroup>';
+                
+                // Ajouter les PNJ
+                select.innerHTML += '<optgroup label="PNJ">';
+                select.innerHTML += '<option value="npc_1">PNJ Test</option>';
+                select.innerHTML += '</optgroup>';
+                
+                // Ajouter les monstres
+                select.innerHTML += '<optgroup label="Monstres">';
+                select.innerHTML += '<option value="monster_10">Aboleth #1</option>';
+                select.innerHTML += '<option value="monster_11">Aboleth #2</option>';
+                select.innerHTML += '</optgroup>';
+            }, 500);
+        }
+
+        function confirmTransfer() {
+            const form = document.getElementById('transferForm');
+            const target = document.getElementById('transferTarget').value;
+            const itemName = document.getElementById('transferItemName').textContent;
+            
+            if (!target) {
+                alert('Veuillez sélectionner une cible pour le transfert.');
+                return;
+            }
+            
+            const targetName = document.getElementById('transferTarget').selectedOptions[0].text;
+            
+            if (confirm(`Confirmer le transfert de "${itemName}" vers "${targetName}" ?`)) {
                 form.submit();
             }
         }
