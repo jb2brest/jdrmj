@@ -162,11 +162,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
     $item_id = (int)$_POST['item_id'];
     $target = $_POST['target'];
     $notes = $_POST['notes'] ?? '';
+    $source = $_POST['source'] ?? 'character_equipment';
     
-    // Récupérer les informations de l'objet à transférer
-    $stmt = $pdo->prepare("SELECT * FROM character_equipment WHERE id = ? AND character_id = ?");
-    $stmt->execute([$item_id, $character_id]);
-    $item = $stmt->fetch();
+    // Récupérer les informations de l'objet à transférer selon la source
+    $item = null;
+    if ($source === 'npc_equipment') {
+        // Récupérer depuis npc_equipment via le personnage associé
+        $stmt = $pdo->prepare("
+            SELECT ne.*, sn.name as npc_name, sn.scene_id, s.title as scene_title
+            FROM npc_equipment ne
+            JOIN scene_npcs sn ON ne.npc_id = sn.id AND ne.scene_id = sn.scene_id
+            JOIN scenes s ON sn.scene_id = s.id
+            WHERE ne.id = ? AND sn.npc_character_id = ?
+        ");
+        $stmt->execute([$item_id, $character_id]);
+        $item = $stmt->fetch();
+    } else {
+        // Récupérer depuis character_equipment
+        $stmt = $pdo->prepare("SELECT * FROM character_equipment WHERE id = ? AND character_id = ?");
+        $stmt->execute([$item_id, $character_id]);
+        $item = $stmt->fetch();
+    }
     
     if (!$item) {
         $error_message = "Objet introuvable.";
@@ -202,8 +218,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                         'Transfert depuis ' . $character['name']
                     ]);
                     
-                    // Supprimer de l'ancien propriétaire
-                    $stmt = $pdo->prepare("DELETE FROM character_equipment WHERE id = ?");
+                    // Supprimer de l'ancien propriétaire selon la source
+                    if ($source === 'npc_equipment') {
+                        $stmt = $pdo->prepare("DELETE FROM npc_equipment WHERE id = ?");
+                    } else {
+                        $stmt = $pdo->prepare("DELETE FROM character_equipment WHERE id = ?");
+                    }
                     $stmt->execute([$item_id]);
                     
                     $transfer_success = true;
@@ -234,8 +254,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                         'Transfert depuis ' . $character['name']
                     ]);
                     
-                    // Supprimer de l'ancien propriétaire
-                    $stmt = $pdo->prepare("DELETE FROM character_equipment WHERE id = ?");
+                    // Supprimer de l'ancien propriétaire selon la source
+                    if ($source === 'npc_equipment') {
+                        $stmt = $pdo->prepare("DELETE FROM npc_equipment WHERE id = ?");
+                    } else {
+                        $stmt = $pdo->prepare("DELETE FROM character_equipment WHERE id = ?");
+                    }
                     $stmt->execute([$item_id]);
                     
                     $transfer_success = true;
@@ -266,8 +290,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                         'Transfert depuis ' . $character['name']
                     ]);
                     
-                    // Supprimer de l'ancien propriétaire
-                    $stmt = $pdo->prepare("DELETE FROM character_equipment WHERE id = ?");
+                    // Supprimer de l'ancien propriétaire selon la source
+                    if ($source === 'npc_equipment') {
+                        $stmt = $pdo->prepare("DELETE FROM npc_equipment WHERE id = ?");
+                    } else {
+                        $stmt = $pdo->prepare("DELETE FROM character_equipment WHERE id = ?");
+                    }
                     $stmt->execute([$item_id]);
                     
                     $transfer_success = true;
@@ -296,10 +324,78 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
     $character = $stmt->fetch();
 }
 
-// Récupérer l'équipement magique du personnage
-$stmt = $pdo->prepare("SELECT * FROM character_equipment WHERE character_id = ? ORDER BY obtained_at DESC");
+// Récupérer l'équipement magique du personnage (exclure les poisons)
+$stmt = $pdo->prepare("
+    SELECT ce.*, mi.nom as magical_item_nom, mi.type as magical_item_type, mi.description as magical_item_description, mi.source as magical_item_source
+    FROM character_equipment ce
+    LEFT JOIN magical_items mi ON ce.magical_item_id = mi.csv_id
+    WHERE ce.character_id = ? 
+    AND ce.magical_item_id NOT IN (SELECT csv_id FROM poisons)
+    ORDER BY ce.obtained_at DESC
+");
 $stmt->execute([$character_id]);
 $magicalEquipment = $stmt->fetchAll();
+
+// Récupérer les poisons du personnage (stockés dans character_equipment avec magical_item_id correspondant à un poison)
+$stmt = $pdo->prepare("
+    SELECT ce.*, p.nom as poison_nom, p.type as poison_type, p.description as poison_description, p.source as poison_source
+    FROM character_equipment ce
+    JOIN poisons p ON ce.magical_item_id = p.csv_id
+    WHERE ce.character_id = ? 
+    ORDER BY ce.obtained_at DESC
+");
+$stmt->execute([$character_id]);
+$characterPoisons = $stmt->fetchAll();
+
+// Récupérer l'équipement attribué aux PNJ associés à ce personnage
+$stmt = $pdo->prepare("
+    SELECT ne.*, sn.name as npc_name, sn.scene_id, s.title as scene_title
+    FROM npc_equipment ne
+    JOIN scene_npcs sn ON ne.npc_id = sn.id AND ne.scene_id = sn.scene_id
+    JOIN scenes s ON sn.scene_id = s.id
+    WHERE sn.npc_character_id = ?
+    ORDER BY ne.obtained_at DESC
+");
+$stmt->execute([$character_id]);
+$npcEquipment = $stmt->fetchAll();
+
+// Séparer les objets magiques et poisons des PNJ
+$npcMagicalEquipment = [];
+$npcPoisons = [];
+
+foreach ($npcEquipment as $item) {
+    // Vérifier d'abord si c'est un poison
+    $stmt = $pdo->prepare("SELECT nom, type, description, source FROM poisons WHERE csv_id = ?");
+    $stmt->execute([$item['magical_item_id']]);
+    $poison_info = $stmt->fetch();
+    
+    if ($poison_info) {
+        // C'est un poison
+        $item['poison_nom'] = $poison_info['nom'];
+        $item['poison_type'] = $poison_info['type'];
+        $item['poison_description'] = $poison_info['description'];
+        $item['poison_source'] = $poison_info['source'];
+        $npcPoisons[] = $item;
+    } else {
+        // Vérifier si c'est un objet magique
+        $stmt = $pdo->prepare("SELECT nom, type, description, source FROM magical_items WHERE csv_id = ?");
+        $stmt->execute([$item['magical_item_id']]);
+        $magical_info = $stmt->fetch();
+        
+        if ($magical_info) {
+            // C'est un objet magique
+            $item['magical_item_nom'] = $magical_info['nom'];
+            $item['magical_item_type'] = $magical_info['type'];
+            $item['magical_item_description'] = $magical_info['description'];
+            $item['magical_item_source'] = $magical_info['source'];
+            $npcMagicalEquipment[] = $item;
+        }
+    }
+}
+
+// Combiner les équipements du personnage et des PNJ
+$allMagicalEquipment = array_merge($magicalEquipment, $npcMagicalEquipment);
+$allPoisons = array_merge($characterPoisons, $npcPoisons);
 
 // Calcul des modificateurs
 $strengthMod = getAbilityModifier($character['strength']);
@@ -610,11 +706,11 @@ $armorClass = $character['armor_class'];
                         <?php endif; ?>
                         
                         <!-- Objets magiques attribués par le MJ -->
-                        <?php if (!empty($magicalEquipment)): ?>
+                        <?php if (!empty($allMagicalEquipment)): ?>
                             <div class="mt-4">
                                 <h5><i class="fas fa-gem me-2"></i>Objets Magiques</h5>
                                 <div class="row">
-                                    <?php foreach ($magicalEquipment as $item): ?>
+                                    <?php foreach ($allMagicalEquipment as $item): ?>
                                         <div class="col-md-6 mb-3">
                                             <div class="card h-100 <?php echo $item['equipped'] ? 'border-success' : 'border-secondary'; ?>">
                                                 <div class="card-header d-flex justify-content-between align-items-center">
@@ -635,6 +731,9 @@ $armorClass = $character['armor_class'];
                                                         <strong>Quantité:</strong> <?php echo (int)$item['quantity']; ?><br>
                                                         <strong>Obtenu:</strong> <?php echo date('d/m/Y', strtotime($item['obtained_at'])); ?><br>
                                                         <strong>Provenance:</strong> <?php echo htmlspecialchars($item['obtained_from']); ?>
+                                                        <?php if (isset($item['npc_name'])): ?>
+                                                            <br><strong>Via PNJ:</strong> <?php echo htmlspecialchars($item['npc_name']); ?> (<?php echo htmlspecialchars($item['scene_title']); ?>)
+                                                        <?php endif; ?>
                                                     </p>
                                                     <?php if (!empty($item['item_description'])): ?>
                                                         <p class="card-text">
@@ -658,7 +757,65 @@ $armorClass = $character['armor_class'];
                                                                 data-item-name="<?php echo htmlspecialchars($item['item_name']); ?>"
                                                                 data-current-owner="character_<?php echo $character_id; ?>"
                                                                 data-current-owner-name="<?php echo htmlspecialchars($character['name']); ?>"
+                                                                data-source="<?php echo isset($item['npc_name']) ? 'npc_equipment' : 'character_equipment'; ?>"
                                                                 title="Transférer cet objet">
+                                                            <i class="fas fa-exchange-alt me-1"></i>Transférer à
+                                                        </button>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <!-- Poisons attribués par le MJ -->
+                        <?php if (!empty($allPoisons)): ?>
+                            <div class="mt-4">
+                                <h5><i class="fas fa-skull-crossbones me-2"></i>Poisons</h5>
+                                <div class="row">
+                                    <?php foreach ($allPoisons as $poison): ?>
+                                        <div class="col-md-6 mb-3">
+                                            <div class="card h-100 border-danger">
+                                                <div class="card-header d-flex justify-content-between align-items-center bg-danger text-white">
+                                                    <h6 class="mb-0">
+                                                        <i class="fas fa-skull-crossbones me-1"></i>
+                                                        <?php echo htmlspecialchars($poison['poison_nom']); ?>
+                                                    </h6>
+                                                    <small class="text-light">
+                                                        <?php echo htmlspecialchars($poison['poison_type']); ?>
+                                                    </small>
+                                                </div>
+                                                <div class="card-body">
+                                                    <p class="card-text small">
+                                                        <?php echo htmlspecialchars($poison['poison_description']); ?>
+                                                    </p>
+                                                    <?php if ($poison['notes']): ?>
+                                                        <p class="card-text small text-muted">
+                                                            <strong>Notes:</strong> <?php echo htmlspecialchars($poison['notes']); ?>
+                                                        </p>
+                                                    <?php endif; ?>
+                                                    <p class="card-text small text-muted">
+                                                        <strong>Source:</strong> <?php echo htmlspecialchars($poison['poison_source']); ?><br>
+                                                        <strong>Obtenu:</strong> <?php echo htmlspecialchars($poison['obtained_from']); ?><br>
+                                                        <strong>Date:</strong> <?php echo date('d/m/Y H:i', strtotime($poison['obtained_at'])); ?>
+                                                        <?php if (isset($poison['npc_name'])): ?>
+                                                            <br><strong>Via PNJ:</strong> <?php echo htmlspecialchars($poison['npc_name']); ?> (<?php echo htmlspecialchars($poison['scene_title']); ?>)
+                                                        <?php endif; ?>
+                                                    </p>
+                                                </div>
+                                                <div class="card-footer">
+                                                    <?php if ($canModifyHP): ?>
+                                                        <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                                data-bs-toggle="modal" 
+                                                                data-bs-target="#transferModal" 
+                                                                data-item-id="<?php echo $poison['id']; ?>"
+                                                                data-item-name="<?php echo htmlspecialchars($poison['poison_nom']); ?>"
+                                                                data-current-owner="character_<?php echo $character_id; ?>"
+                                                                data-current-owner-name="<?php echo htmlspecialchars($character['name']); ?>"
+                                                                data-source="<?php echo isset($poison['npc_name']) ? 'npc_equipment' : 'character_equipment'; ?>"
+                                                                title="Transférer ce poison">
                                                             <i class="fas fa-exchange-alt me-1"></i>Transférer à
                                                         </button>
                                                     <?php endif; ?>
@@ -684,13 +841,13 @@ $armorClass = $character['armor_class'];
                             <li><?php echo $character['money_copper']; ?> PC (pièces de cuivre)</li>
                         </ul>
                         
-                        <?php if (!empty($magicalEquipment)): ?>
+                        <?php if (!empty($allMagicalEquipment)): ?>
                             <div class="mt-3">
                                 <p><strong>Objets Magiques:</strong></p>
                                 <ul class="list-unstyled">
-                                    <li><span class="badge bg-success"><?php echo count(array_filter($magicalEquipment, function($item) { return $item['equipped']; })); ?> Équipé(s)</span></li>
-                                    <li><span class="badge bg-secondary"><?php echo count(array_filter($magicalEquipment, function($item) { return !$item['equipped']; })); ?> Non équipé(s)</span></li>
-                                    <li><span class="badge bg-primary"><?php echo count($magicalEquipment); ?> Total</span></li>
+                                    <li><span class="badge bg-success"><?php echo count(array_filter($allMagicalEquipment, function($item) { return $item['equipped']; })); ?> Équipé(s)</span></li>
+                                    <li><span class="badge bg-secondary"><?php echo count(array_filter($allMagicalEquipment, function($item) { return !$item['equipped']; })); ?> Non équipé(s)</span></li>
+                                    <li><span class="badge bg-primary"><?php echo count($allMagicalEquipment); ?> Total</span></li>
                                 </ul>
                             </div>
                         <?php endif; ?>
@@ -859,6 +1016,7 @@ $armorClass = $character['armor_class'];
                         <input type="hidden" name="action" value="transfer_item">
                         <input type="hidden" name="item_id" id="transferItemId">
                         <input type="hidden" name="current_owner" id="transferCurrentOwnerType">
+                        <input type="hidden" name="source" id="transferSource">
                         
                         <div class="mb-3">
                             <label for="transferTarget" class="form-label">Transférer vers :</label>
@@ -918,12 +1076,14 @@ $armorClass = $character['armor_class'];
             const itemName = button.getAttribute('data-item-name');
             const currentOwner = button.getAttribute('data-current-owner');
             const currentOwnerName = button.getAttribute('data-current-owner-name');
+            const source = button.getAttribute('data-source');
             
             // Remplir les informations de base
             document.getElementById('transferItemName').textContent = itemName;
             document.getElementById('transferCurrentOwner').textContent = currentOwnerName;
             document.getElementById('transferItemId').value = itemId;
             document.getElementById('transferCurrentOwnerType').value = currentOwner;
+            document.getElementById('transferSource').value = source;
             
             // Charger les cibles disponibles
             loadTransferTargets(currentOwner);

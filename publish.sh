@@ -3,6 +3,7 @@
 sed -i "s|<version_tag>|<version_tag>\n- $1 : $2|g" README.md
 #git add *.php *.js *.md *.png *.jpg *.sh *.css
 git add *.php
+git add *.jpg
 git add *.sh
 git add *.md
 git add *.sql

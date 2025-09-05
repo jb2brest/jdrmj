@@ -30,10 +30,28 @@ if (!$monster) {
     exit();
 }
 
-// Récupérer l'équipement magique du monstre
-$stmt = $pdo->prepare("SELECT * FROM monster_equipment WHERE monster_id = ? AND scene_id = ? ORDER BY obtained_at DESC");
+// Récupérer l'équipement magique du monstre (exclure les poisons)
+$stmt = $pdo->prepare("
+    SELECT me.*, mi.nom as magical_item_nom, mi.type as magical_item_type, mi.description as magical_item_description, mi.source as magical_item_source
+    FROM monster_equipment me
+    LEFT JOIN magical_items mi ON me.magical_item_id = mi.csv_id
+    WHERE me.monster_id = ? AND me.scene_id = ? 
+    AND me.magical_item_id NOT IN (SELECT csv_id FROM poisons)
+    ORDER BY me.obtained_at DESC
+");
 $stmt->execute([$monster_npc_id, $scene_id]);
 $magicalEquipment = $stmt->fetchAll();
+
+// Récupérer les poisons du monstre (stockés dans monster_equipment avec magical_item_id correspondant à un poison)
+$stmt = $pdo->prepare("
+    SELECT me.*, p.nom as poison_nom, p.type as poison_type, p.description as poison_description, p.source as poison_source
+    FROM monster_equipment me
+    JOIN poisons p ON me.magical_item_id = p.csv_id
+    WHERE me.monster_id = ? AND me.scene_id = ?
+    ORDER BY me.obtained_at DESC
+");
+$stmt->execute([$monster_npc_id, $scene_id]);
+$monsterPoisons = $stmt->fetchAll();
 
 // Vérifier que l'utilisateur est le MJ de cette scène
 if ($monster['dm_id'] != $_SESSION['user_id']) {
@@ -573,6 +591,63 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
                                 <i class="fas fa-gem fa-3x text-muted mb-3"></i>
                                 <p class="text-muted">Aucun objet magique attribué à ce monstre</p>
                                 <p class="text-muted">Les objets magiques peuvent être attribués depuis la page de la scène</p>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <!-- Poisons attribués par le MJ -->
+                        <?php if (!empty($monsterPoisons)): ?>
+                            <div class="mt-4">
+                                <h6><i class="fas fa-skull-crossbones me-2"></i>Poisons</h6>
+                                <div class="row">
+                                    <?php foreach ($monsterPoisons as $poison): ?>
+                                        <div class="col-md-6 mb-3">
+                                            <div class="card h-100 border-danger">
+                                                <div class="card-header d-flex justify-content-between align-items-center bg-danger text-white">
+                                                    <h6 class="mb-0">
+                                                        <i class="fas fa-skull-crossbones me-1"></i>
+                                                        <?php echo htmlspecialchars($poison['poison_nom']); ?>
+                                                    </h6>
+                                                    <small class="text-light">
+                                                        <?php echo htmlspecialchars($poison['poison_type']); ?>
+                                                    </small>
+                                                </div>
+                                                <div class="card-body">
+                                                    <p class="card-text small">
+                                                        <?php echo htmlspecialchars($poison['poison_description']); ?>
+                                                    </p>
+                                                    <?php if ($poison['notes']): ?>
+                                                        <div class="alert alert-info mb-2">
+                                                            <i class="fas fa-sticky-note me-1"></i>
+                                                            <strong>Notes:</strong> <?php echo nl2br(htmlspecialchars($poison['notes'])); ?>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <small class="text-muted">
+                                                            <i class="fas fa-calendar me-1"></i>
+                                                            Obtenu le <?php echo date('d/m/Y à H:i', strtotime($poison['obtained_at'])); ?>
+                                                        </small>
+                                                        <small class="text-muted">
+                                                            <i class="fas fa-user me-1"></i>
+                                                            <?php echo htmlspecialchars($poison['obtained_from']); ?>
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                                <div class="card-footer">
+                                                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#transferModal" 
+                                                            data-item-id="<?php echo $poison['id']; ?>"
+                                                            data-item-name="<?php echo htmlspecialchars($poison['poison_nom']); ?>"
+                                                            data-current-owner="monster_<?php echo $monster_npc_id; ?>"
+                                                            data-current-owner-name="<?php echo htmlspecialchars($monster['name']); ?>"
+                                                            title="Transférer ce poison">
+                                                        <i class="fas fa-exchange-alt me-1"></i>Transférer à
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
                             </div>
                         <?php endif; ?>
                     </div>

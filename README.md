@@ -114,6 +114,7 @@ Ce projet est sous licence MIT. Libre d'utilisation, modification et distributio
 
 ## Changelog
 <version_tag>
+- 0.0.35 : correctifs
 - 0.0.34 : transfert objet
 - 0.0.33 : objet aux monstres
 - 0.0.32 : Affichages des images

@@ -12,15 +12,22 @@ if (!isset($_GET['id']) || !isset($_GET['scene_id'])) {
 $npc_id = (int)$_GET['id'];
 $scene_id = (int)$_GET['scene_id'];
 
+// DEBUG: Logs pour déboguer l'accès
+error_log("DEBUG view_npc_equipment.php - Accès avec NPC ID: $npc_id, Scene ID: $scene_id");
+error_log("DEBUG view_npc_equipment.php - User ID: " . ($_SESSION['user_id'] ?? 'NOT_SET'));
+
 // Vérifier que le MJ a accès à cette scène
 $stmt = $pdo->prepare("SELECT s.*, gs.dm_id FROM scenes s JOIN game_sessions gs ON s.session_id = gs.id WHERE s.id = ?");
 $stmt->execute([$scene_id]);
 $scene = $stmt->fetch();
 
 if (!$scene || $scene['dm_id'] != $_SESSION['user_id']) {
+    error_log("DEBUG view_npc_equipment.php - Accès refusé - Scene: " . ($scene ? 'found' : 'not_found') . ", DM ID: " . ($scene['dm_id'] ?? 'N/A') . ", User ID: " . ($_SESSION['user_id'] ?? 'NOT_SET'));
     header('Location: index.php');
     exit();
 }
+
+error_log("DEBUG view_npc_equipment.php - Accès autorisé - DM ID: " . $scene['dm_id'] . ", User ID: " . $_SESSION['user_id']);
 
 // Récupérer les informations du PNJ
 $stmt = $pdo->prepare("SELECT * FROM scene_npcs WHERE id = ? AND scene_id = ? AND monster_id IS NULL");
@@ -32,10 +39,48 @@ if (!$npc) {
     exit();
 }
 
-// Récupérer l'équipement du PNJ
+// Récupérer tous les équipements du PNJ
 $stmt = $pdo->prepare("SELECT * FROM npc_equipment WHERE npc_id = ? AND scene_id = ? ORDER BY obtained_at DESC");
 $stmt->execute([$npc_id, $scene_id]);
-$equipment = $stmt->fetchAll();
+$allEquipment = $stmt->fetchAll();
+
+error_log("DEBUG view_npc_equipment.php - Équipements récupérés: " . count($allEquipment) . " pour PNJ ID: $npc_id");
+
+// Séparer les objets magiques et les poisons
+$magicalEquipment = [];
+$npcPoisons = [];
+
+foreach ($allEquipment as $item) {
+    // Vérifier d'abord si c'est un objet magique
+    $stmt = $pdo->prepare("SELECT nom, type, description, source FROM magical_items WHERE csv_id = ?");
+    $stmt->execute([$item['magical_item_id']]);
+    $magical_info = $stmt->fetch();
+    
+    if ($magical_info) {
+        // C'est un objet magique
+        $item['magical_item_nom'] = $magical_info['nom'];
+        $item['magical_item_type'] = $magical_info['type'];
+        $item['magical_item_description'] = $magical_info['description'];
+        $item['magical_item_source'] = $magical_info['source'];
+        $magicalEquipment[] = $item;
+    } else {
+        // Vérifier si c'est un poison
+        $stmt = $pdo->prepare("SELECT nom, type, description, source FROM poisons WHERE csv_id = ?");
+        $stmt->execute([$item['magical_item_id']]);
+        $poison_info = $stmt->fetch();
+        
+        if ($poison_info) {
+            // C'est un poison
+            $item['poison_nom'] = $poison_info['nom'];
+            $item['poison_type'] = $poison_info['type'];
+            $item['poison_description'] = $poison_info['description'];
+            $item['poison_source'] = $poison_info['source'];
+            $npcPoisons[] = $item;
+        }
+    }
+}
+
+error_log("DEBUG view_npc_equipment.php - Séparation terminée - Objets magiques: " . count($magicalEquipment) . ", Poisons: " . count($npcPoisons));
 
 // Traitements POST pour gérer l'équipement
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -50,10 +95,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 $success_message = "Statut d'équipement mis à jour.";
                 
-                // Recharger l'équipement
+                // Recharger tous les équipements
                 $stmt = $pdo->prepare("SELECT * FROM npc_equipment WHERE npc_id = ? AND scene_id = ? ORDER BY obtained_at DESC");
                 $stmt->execute([$npc_id, $scene_id]);
-                $equipment = $stmt->fetchAll();
+                $allEquipment = $stmt->fetchAll();
+
+                // Séparer les objets magiques et les poisons
+                $magicalEquipment = [];
+                $npcPoisons = [];
+
+                foreach ($allEquipment as $item) {
+                    // Vérifier d'abord si c'est un objet magique
+                    $stmt = $pdo->prepare("SELECT nom, type, description, source FROM magical_items WHERE csv_id = ?");
+                    $stmt->execute([$item['magical_item_id']]);
+                    $magical_info = $stmt->fetch();
+                    
+                    if ($magical_info) {
+                        // C'est un objet magique
+                        $item['magical_item_nom'] = $magical_info['nom'];
+                        $item['magical_item_type'] = $magical_info['type'];
+                        $item['magical_item_description'] = $magical_info['description'];
+                        $item['magical_item_source'] = $magical_info['source'];
+                        $magicalEquipment[] = $item;
+                    } else {
+                        // Vérifier si c'est un poison
+                        $stmt = $pdo->prepare("SELECT nom, type, description, source FROM poisons WHERE csv_id = ?");
+                        $stmt->execute([$item['magical_item_id']]);
+                        $poison_info = $stmt->fetch();
+                        
+                        if ($poison_info) {
+                            // C'est un poison
+                            $item['poison_nom'] = $poison_info['nom'];
+                            $item['poison_type'] = $poison_info['type'];
+                            $item['poison_description'] = $poison_info['description'];
+                            $item['poison_source'] = $poison_info['source'];
+                            $npcPoisons[] = $item;
+                        }
+                    }
+                }
                 break;
                 
             case 'remove_item':
@@ -64,10 +143,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 $success_message = "Objet retiré de l'équipement.";
                 
-                // Recharger l'équipement
+                // Recharger tous les équipements
                 $stmt = $pdo->prepare("SELECT * FROM npc_equipment WHERE npc_id = ? AND scene_id = ? ORDER BY obtained_at DESC");
                 $stmt->execute([$npc_id, $scene_id]);
-                $equipment = $stmt->fetchAll();
+                $allEquipment = $stmt->fetchAll();
+
+                // Séparer les objets magiques et les poisons
+                $magicalEquipment = [];
+                $npcPoisons = [];
+
+                foreach ($allEquipment as $item) {
+                    // Vérifier d'abord si c'est un objet magique
+                    $stmt = $pdo->prepare("SELECT nom, type, description, source FROM magical_items WHERE csv_id = ?");
+                    $stmt->execute([$item['magical_item_id']]);
+                    $magical_info = $stmt->fetch();
+                    
+                    if ($magical_info) {
+                        // C'est un objet magique
+                        $item['magical_item_nom'] = $magical_info['nom'];
+                        $item['magical_item_type'] = $magical_info['type'];
+                        $item['magical_item_description'] = $magical_info['description'];
+                        $item['magical_item_source'] = $magical_info['source'];
+                        $magicalEquipment[] = $item;
+                    } else {
+                        // Vérifier si c'est un poison
+                        $stmt = $pdo->prepare("SELECT nom, type, description, source FROM poisons WHERE csv_id = ?");
+                        $stmt->execute([$item['magical_item_id']]);
+                        $poison_info = $stmt->fetch();
+                        
+                        if ($poison_info) {
+                            // C'est un poison
+                            $item['poison_nom'] = $poison_info['nom'];
+                            $item['poison_type'] = $poison_info['type'];
+                            $item['poison_description'] = $poison_info['description'];
+                            $item['poison_source'] = $poison_info['source'];
+                            $npcPoisons[] = $item;
+                        }
+                    }
+                }
                 break;
         }
     }
@@ -133,21 +246,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             
             <div class="col-md-8">
-                <div class="card">
+                <!-- Objets Magiques -->
+                <div class="card mb-4">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="fas fa-gem me-2"></i>Équipement et Objets Magiques</h5>
-                        <span class="badge bg-info"><?php echo count($equipment); ?> objet(s)</span>
+                        <h5 class="mb-0"><i class="fas fa-gem me-2"></i>Objets Magiques</h5>
+                        <span class="badge bg-primary"><?php echo count($magicalEquipment); ?> objet(s)</span>
                     </div>
                     <div class="card-body">
-                        <?php if (empty($equipment)): ?>
-                            <div class="text-center text-muted py-5">
-                                <i class="fas fa-gem fa-3x mb-3"></i>
-                                <p>Aucun objet dans l'équipement.</p>
+                        <?php if (empty($magicalEquipment)): ?>
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-gem fa-2x mb-3"></i>
+                                <p>Aucun objet magique dans l'équipement.</p>
                                 <p class="small">Les objets magiques attribués par le MJ apparaîtront ici.</p>
                             </div>
                         <?php else: ?>
                             <div class="row">
-                                <?php foreach ($equipment as $item): ?>
+                                <?php foreach ($magicalEquipment as $item): ?>
                                     <div class="col-md-6 mb-3">
                                         <div class="card h-100 <?php echo $item['equipped'] ? 'border-success' : 'border-secondary'; ?>">
                                             <div class="card-header d-flex justify-content-between align-items-center">
@@ -187,6 +301,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                                     <p class="card-text">
                                                         <strong>Notes:</strong><br>
                                                         <em><?php echo nl2br(htmlspecialchars($item['notes'])); ?></em>
+                                                    </p>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Poisons -->
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-skull-crossbones me-2"></i>Poisons</h5>
+                        <span class="badge bg-danger"><?php echo count($npcPoisons); ?> poison(s)</span>
+                    </div>
+                    <div class="card-body">
+                        <?php if (empty($npcPoisons)): ?>
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-skull-crossbones fa-2x mb-3"></i>
+                                <p>Aucun poison dans l'équipement.</p>
+                                <p class="small">Les poisons attribués par le MJ apparaîtront ici.</p>
+                            </div>
+                        <?php else: ?>
+                            <div class="row">
+                                <?php foreach ($npcPoisons as $poison): ?>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="card h-100 border-danger">
+                                            <div class="card-header d-flex justify-content-between align-items-center bg-danger text-white">
+                                                <h6 class="mb-0">
+                                                    <i class="fas fa-skull-crossbones me-1"></i>
+                                                    <?php echo htmlspecialchars($poison['poison_nom']); ?>
+                                                </h6>
+                                                <div class="btn-group btn-group-sm">
+                                                    <button type="button" class="btn btn-outline-light" 
+                                                            onclick="removeItem(<?php echo $poison['id']; ?>)">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="card-body">
+                                                <p class="card-text">
+                                                    <strong>Type:</strong> <?php echo htmlspecialchars($poison['poison_type']); ?><br>
+                                                    <strong>Source:</strong> <?php echo htmlspecialchars($poison['poison_source']); ?><br>
+                                                    <strong>Quantité:</strong> <?php echo (int)$poison['quantity']; ?><br>
+                                                    <strong>Obtenu:</strong> <?php echo date('d/m/Y H:i', strtotime($poison['obtained_at'])); ?><br>
+                                                    <strong>Provenance:</strong> <?php echo htmlspecialchars($poison['obtained_from']); ?>
+                                                </p>
+                                                <?php if (!empty($poison['poison_description'])): ?>
+                                                    <p class="card-text">
+                                                        <strong>Description:</strong><br>
+                                                        <?php echo nl2br(htmlspecialchars($poison['poison_description'])); ?>
+                                                    </p>
+                                                <?php endif; ?>
+                                                <?php if (!empty($poison['notes'])): ?>
+                                                    <p class="card-text">
+                                                        <strong>Notes:</strong><br>
+                                                        <em><?php echo nl2br(htmlspecialchars($poison['notes'])); ?></em>
                                                     </p>
                                                 <?php endif; ?>
                                             </div>

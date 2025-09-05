@@ -1,53 +1,65 @@
 <?php
+session_start();
 require_once 'config/database.php';
-header('Content-Type: application/json');
+require_once 'includes/functions.php';
 
-// Vérifier que c'est une requête AJAX
+// Vérifier que la requête est AJAX
 if (!isset($_SERVER['HTTP_X_REQUESTED_WITH']) || $_SERVER['HTTP_X_REQUESTED_WITH'] !== 'XMLHttpRequest') {
-    http_response_code(403);
-    exit(json_encode(['error' => 'Accès non autorisé']));
+    http_response_code(400);
+    exit('Requête invalide');
 }
 
-// Récupérer le paramètre de recherche
-$query = trim($_GET['q'] ?? '');
+// Vérifier que l'utilisateur est connecté
+if (!isset($_SESSION['user_id'])) {
+    http_response_code(401);
+    exit('Non autorisé');
+}
+
+// Récupérer le terme de recherche
+$query = $_GET['q'] ?? '';
 
 if (strlen($query) < 2) {
     echo json_encode([]);
-    exit();
+    exit;
 }
 
 try {
-    // Recherche dans la base de données avec recherche fulltext
+    // Rechercher les poisons
     $stmt = $pdo->prepare("
-        SELECT id, csv_id, nom, cle, description, type, source 
+        SELECT csv_id, nom, type, description, source 
         FROM poisons 
-        WHERE MATCH(nom, cle, description, type) AGAINST(? IN BOOLEAN MODE)
-        OR nom LIKE ? OR cle LIKE ? OR type LIKE ?
-        ORDER BY nom ASC
-        LIMIT 50
+        WHERE MATCH(nom, cle, description, type) AGAINST(? IN NATURAL LANGUAGE MODE)
+        OR nom LIKE ? 
+        OR type LIKE ?
+        ORDER BY 
+            CASE 
+                WHEN nom LIKE ? THEN 1
+                WHEN type LIKE ? THEN 2
+                ELSE 3
+            END,
+            nom ASC
+        LIMIT 20
     ");
     
-    $searchTerm = "%$query%";
-    $stmt->execute([$query, $searchTerm, $searchTerm, $searchTerm]);
+    $searchTerm = '%' . $query . '%';
+    $stmt->execute([$query, $searchTerm, $searchTerm, $searchTerm, $searchTerm]);
+    
     $poisons = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Formater les résultats pour la compatibilité
-    $formattedPoisons = [];
-    foreach ($poisons as $poison) {
-        $formattedPoisons[] = [
-            'id' => $poison['csv_id'], // Utiliser csv_id pour la compatibilité
-            'nom' => $poison['nom'],
-            'cle' => $poison['cle'],
-            'description' => $poison['description'],
-            'type' => $poison['type'],
-            'source' => $poison['source']
-        ];
+    // Nettoyer les données pour la sécurité
+    foreach ($poisons as &$poison) {
+        $poison['nom'] = htmlspecialchars($poison['nom']);
+        $poison['type'] = htmlspecialchars($poison['type']);
+        $poison['description'] = htmlspecialchars($poison['description']);
+        $poison['source'] = htmlspecialchars($poison['source']);
     }
     
-    echo json_encode($formattedPoisons);
+    header('Content-Type: application/json');
+    echo json_encode($poisons);
     
 } catch (PDOException $e) {
-    // En cas d'erreur, fallback vers la recherche CSV
-    echo json_encode([]);
+    error_log("Erreur lors de la recherche de poisons: " . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['error' => 'Erreur lors de la recherche']);
 }
 ?>

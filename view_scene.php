@@ -25,6 +25,12 @@ if (!$scene) {
 $dm_id = (int)$scene['dm_id'];
 $isOwnerDM = (isDM() && $_SESSION['user_id'] === $dm_id);
 
+// DEBUG: Logs pour déboguer les permissions
+error_log("DEBUG view_scene.php - User ID: " . ($_SESSION['user_id'] ?? 'NOT_SET'));
+error_log("DEBUG view_scene.php - DM ID: " . $dm_id);
+error_log("DEBUG view_scene.php - isDM(): " . (isDM() ? 'true' : 'false'));
+error_log("DEBUG view_scene.php - isOwnerDM: " . ($isOwnerDM ? 'true' : 'false'));
+
 // Autoriser également les joueurs inscrits à voir la scène
 $canView = $isOwnerDM;
 if (!$canView) {
@@ -401,6 +407,130 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
             $error_message = "Veuillez sélectionner un destinataire pour l'objet.";
         }
     }
+    
+    // Attribuer un poison à un PNJ ou personnage joueur
+    if (isset($_POST['action']) && $_POST['action'] === 'assign_poison') {
+        $poison_id = $_POST['poison_id'];
+        $poison_name = $_POST['poison_name'];
+        $assign_target = $_POST['assign_target'];
+        $assign_notes = $_POST['assign_notes'] ?? '';
+        
+        if (!empty($assign_target)) {
+            // Décomposer la cible (player_123, npc_456, monster_789)
+            $target_parts = explode('_', $assign_target);
+            $target_type = $target_parts[0];
+            $target_id = (int)$target_parts[1];
+            
+            // Récupérer les informations du poison depuis la base de données
+            $stmt = $pdo->prepare("SELECT nom, type, description, source FROM poisons WHERE csv_id = ?");
+            $stmt->execute([$poison_id]);
+            $poison_info = $stmt->fetch();
+            
+            if (!$poison_info) {
+                $error_message = "Poison introuvable.";
+            } else {
+                $target_name = '';
+                $insert_success = false;
+                
+                switch ($target_type) {
+                    case 'player':
+                        // Récupérer les informations du personnage joueur
+                        $stmt = $pdo->prepare("SELECT u.username, ch.id AS character_id, ch.name AS character_name FROM scene_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.scene_id = ? AND sp.player_id = ?");
+                        $stmt->execute([$scene_id, $target_id]);
+                        $target = $stmt->fetch();
+                        
+                        if ($target && $target['character_id']) {
+                            // Ajouter le poison à l'équipement du personnage
+                            $stmt = $pdo->prepare("INSERT INTO character_equipment (character_id, magical_item_id, item_name, item_type, item_description, item_source, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                            $stmt->execute([
+                                $target['character_id'],
+                                $poison_id,
+                                $poison_info['nom'],
+                                $poison_info['type'],
+                                $poison_info['description'],
+                                $poison_info['source'],
+                                $assign_notes,
+                                'Attribution MJ - Scène ' . $scene['title']
+                            ]);
+                            $insert_success = true;
+                            $target_name = $target['character_name'] ?: $target['username'];
+                        } else {
+                            $error_message = "Personnage joueur invalide ou sans personnage créé.";
+                        }
+                        break;
+                        
+                    case 'npc':
+                        // Récupérer les informations du PNJ
+                        $stmt = $pdo->prepare("SELECT name FROM scene_npcs WHERE id = ? AND scene_id = ?");
+                        $stmt->execute([$target_id, $scene_id]);
+                        $target = $stmt->fetch();
+                        
+                        if ($target) {
+                            // Ajouter le poison à l'équipement du PNJ
+                            $stmt = $pdo->prepare("INSERT INTO npc_equipment (npc_id, scene_id, magical_item_id, item_name, item_type, item_description, item_source, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                            $stmt->execute([
+                                $target_id,
+                                $scene_id,
+                                $poison_id,
+                                $poison_info['nom'],
+                                $poison_info['type'],
+                                $poison_info['description'],
+                                $poison_info['source'],
+                                $assign_notes,
+                                'Attribution MJ - Scène ' . $target['name']
+                            ]);
+                            $insert_success = true;
+                            $target_name = $target['name'];
+                        } else {
+                            $error_message = "PNJ introuvable.";
+                        }
+                        break;
+                        
+                    case 'monster':
+                        // Récupérer les informations du monstre
+                        $stmt = $pdo->prepare("SELECT name FROM scene_npcs WHERE id = ? AND scene_id = ?");
+                        $stmt->execute([$target_id, $scene_id]);
+                        $target = $stmt->fetch();
+                        
+                        if ($target) {
+                            // Ajouter le poison à l'équipement du monstre
+                            $stmt = $pdo->prepare("INSERT INTO monster_equipment (monster_id, scene_id, magical_item_id, item_name, item_type, item_description, item_source, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                            $stmt->execute([
+                                $target_id,
+                                $scene_id,
+                                $poison_id,
+                                $poison_info['nom'],
+                                $poison_info['type'],
+                                $poison_info['description'],
+                                $poison_info['source'],
+                                $assign_notes,
+                                'Attribution MJ - Scène ' . $target['name']
+                            ]);
+                            $insert_success = true;
+                            $target_name = $target['name'];
+                        } else {
+                            $error_message = "Monstre introuvable.";
+                        }
+                        break;
+                        
+                    default:
+                        $error_message = "Type de cible invalide.";
+                        break;
+                }
+                
+                if ($insert_success && $target_name) {
+                    $success_message = "Le poison \"{$poison_name}\" a été attribué à {$target_name} et ajouté à son équipement.";
+                    if (!empty($assign_notes)) {
+                        $success_message .= " Notes: {$assign_notes}";
+                    }
+                } elseif (!$insert_success && !isset($error_message)) {
+                    $error_message = "Erreur lors de l'ajout du poison à l'équipement.";
+                }
+            }
+        } else {
+            $error_message = "Veuillez sélectionner un destinataire pour le poison.";
+        }
+    }
 }
 
 // Récupérer la liste des personnages du MJ pour l'ajout en PNJ
@@ -627,9 +757,6 @@ foreach ($allScenes as $s) {
                                         <?php if ($player['character_name'] && !empty($player['character_id'])): ?>
                                             <a href="view_character.php?id=<?php echo (int)$player['character_id']; ?>&dm_campaign_id=<?php echo (int)$scene['campaign_id']; ?>" class="btn btn-sm btn-outline-primary" title="Voir la fiche du personnage" target="_blank">
                                                 <i class="fas fa-file-alt"></i>
-                                            </a>
-                                            <a href="view_character_equipment.php?id=<?php echo (int)$player['character_id']; ?>&dm_campaign_id=<?php echo (int)$scene['campaign_id']; ?>" class="btn btn-sm btn-outline-success" title="Voir l'équipement" target="_blank">
-                                                <i class="fas fa-backpack"></i>
                                             </a>
                                         <?php endif; ?>
                                     </div>
@@ -867,7 +994,7 @@ foreach ($allScenes as $s) {
 
 <!-- Modal pour rechercher des poisons -->
 <div class="modal fade" id="poisonSearchModal" tabindex="-1" aria-labelledby="poisonSearchModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="poisonSearchModalLabel">
@@ -876,21 +1003,13 @@ foreach ($allScenes as $s) {
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="row mb-3">
-                    <div class="col-md-12">
-                        <label for="poisonSearch" class="form-label">Rechercher un poison</label>
-                        <input type="text" class="form-control" id="poisonSearch" placeholder="Nom, type ou description du poison...">
-                    </div>
-                </div>
-                
                 <div class="mb-3">
-                    <div id="poisonResults" class="list-group" style="max-height: 400px; overflow-y: auto;">
-                        <div class="text-muted text-center p-3">Tapez au moins 2 caractères pour rechercher...</div>
-                    </div>
+                    <label for="poisonSearch" class="form-label">Rechercher un poison :</label>
+                    <input type="text" class="form-control" id="poisonSearch" placeholder="Tapez le nom du poison...">
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <div id="poisonResults" class="row">
+                    <div class="text-muted text-center p-3">Tapez au moins 2 caractères pour rechercher...</div>
+                </div>
             </div>
         </div>
     </div>
@@ -1006,6 +1125,80 @@ foreach ($allScenes as $s) {
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
                 <button type="submit" form="assignItemForm" class="btn btn-primary">
                     <i class="fas fa-gift me-1"></i>Attribuer l'objet
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour attribuer un poison -->
+<div class="modal fade" id="assignPoisonModal" tabindex="-1" aria-labelledby="assignPoisonModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="assignPoisonModalLabel">
+                    <i class="fas fa-skull-crossbones me-2"></i>Attribuer un poison
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" id="assignPoisonForm">
+                    <input type="hidden" name="action" value="assign_poison">
+                    <input type="hidden" name="poison_id" id="selectedPoisonId">
+                    <input type="hidden" name="poison_name" id="selectedPoisonName">
+                    
+                    <div class="mb-3">
+                        <label for="assignPoisonTarget" class="form-label">Attribuer à :</label>
+                        <select class="form-select" name="assign_target" id="assignPoisonTarget" required>
+                            <option value="">Sélectionner un destinataire...</option>
+                            
+                            <!-- Personnages joueurs -->
+                            <?php if (!empty($scenePlayers)): ?>
+                                <optgroup label="Personnages Joueurs">
+                                    <?php foreach ($scenePlayers as $player): ?>
+                                        <?php if ($player['character_name']): ?>
+                                            <option value="player_<?php echo (int)$player['player_id']; ?>">
+                                                <?php echo htmlspecialchars($player['character_name']); ?> (<?php echo htmlspecialchars($player['username']); ?>)
+                                            </option>
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                </optgroup>
+                            <?php endif; ?>
+                            
+                            <!-- PNJ -->
+                            <?php if (!empty($sceneNpcs)): ?>
+                                <optgroup label="PNJ">
+                                    <?php foreach ($sceneNpcs as $npc): ?>
+                                        <option value="npc_<?php echo (int)$npc['id']; ?>">
+                                            <?php echo htmlspecialchars($npc['name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </optgroup>
+                            <?php endif; ?>
+                            
+                            <!-- Monstres -->
+                            <?php if (!empty($sceneMonsters)): ?>
+                                <optgroup label="Monstres">
+                                    <?php foreach ($sceneMonsters as $monster): ?>
+                                        <option value="monster_<?php echo (int)$monster['id']; ?>">
+                                            <?php echo htmlspecialchars($monster['name']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </optgroup>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="assignPoisonNotes" class="form-label">Notes (optionnel)</label>
+                        <textarea class="form-control" name="assign_notes" id="assignPoisonNotes" rows="3" placeholder="Comment le poison a-t-il été obtenu ?..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="submit" form="assignPoisonForm" class="btn btn-danger">
+                    <i class="fas fa-skull-crossbones me-1"></i>Attribuer le poison
                 </button>
             </div>
         </div>
@@ -1164,25 +1357,41 @@ foreach ($allScenes as $s) {
             poisonResults.innerHTML = '';
             
             poisons.forEach(poison => {
-                const item = document.createElement('div');
-                item.className = 'list-group-item';
-                item.innerHTML = `
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div class="flex-grow-1">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="fw-bold text-danger">${poison.nom}</div>
-                                <small class="text-muted">${poison.type}</small>
-                            </div>
-                            <div class="text-muted small mb-2">Source: ${poison.source}</div>
-                            <div class="mb-2">${poison.description}</div>
-                            <div class="text-muted small">
-                                <strong>Clé:</strong> ${poison.cle}
-                            </div>
+                const poisonElement = document.createElement('div');
+                poisonElement.className = 'col-md-6 col-lg-4 mb-3';
+                poisonElement.innerHTML = `
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h6 class="card-title">${poison.nom}</h6>
+                            <p class="card-text small text-muted">${poison.type || 'Type non spécifié'}</p>
+                            <p class="card-text small">${poison.description ? poison.description.substring(0, 100) + '...' : 'Aucune description'}</p>
+                        </div>
+                        <div class="card-footer">
+                            <button type="button" class="btn btn-sm btn-danger w-100" data-poison-id="${poison.csv_id}" data-poison-name="${poison.nom}">
+                                <i class="fas fa-skull-crossbones me-1"></i>Attribuer ce poison
+                            </button>
                         </div>
                     </div>
                 `;
                 
-                poisonResults.appendChild(item);
+                // Ajouter l'événement de clic
+                poisonElement.querySelector('button').addEventListener('click', function() {
+                    const poisonId = this.getAttribute('data-poison-id');
+                    const poisonName = this.getAttribute('data-poison-name');
+                    
+                    // Remplir les champs cachés
+                    document.getElementById('selectedPoisonId').value = poisonId;
+                    document.getElementById('selectedPoisonName').value = poisonName;
+                    
+                    // Fermer la modale de recherche et ouvrir la modale d'attribution
+                    const searchModal = bootstrap.Modal.getInstance(document.getElementById('poisonSearchModal'));
+                    searchModal.hide();
+                    
+                    const assignModal = new bootstrap.Modal(document.getElementById('assignPoisonModal'));
+                    assignModal.show();
+                });
+                
+                poisonResults.appendChild(poisonElement);
             });
         }
 
@@ -1303,6 +1512,7 @@ foreach ($allScenes as $s) {
                 magicalItemResults.innerHTML = '<div class="text-muted text-center p-3">Tapez au moins 2 caractères pour rechercher...</div>';
             });
         }
+
     });
     </script>
 
