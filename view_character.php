@@ -63,6 +63,11 @@ if (!$canView) {
     exit();
 }
 
+// Récupérer l'équipement magique du personnage
+$stmt = $pdo->prepare("SELECT * FROM character_equipment WHERE character_id = ? ORDER BY obtained_at DESC");
+$stmt->execute([$character_id]);
+$magicalEquipment = $stmt->fetchAll();
+
 // Calcul des modificateurs
 $strengthMod = getAbilityModifier($character['strength']);
 $dexterityMod = getAbilityModifier($character['dexterity']);
@@ -348,9 +353,56 @@ $armorClass = $character['armor_class'];
                             <p class="text-muted">Aucun équipement enregistré</p>
                         <?php endif; ?>
                         
+                        <!-- Objets magiques attribués par le MJ -->
+                        <?php if (!empty($magicalEquipment)): ?>
+                            <div class="mt-4">
+                                <h5><i class="fas fa-gem me-2"></i>Objets Magiques</h5>
+                                <div class="row">
+                                    <?php foreach ($magicalEquipment as $item): ?>
+                                        <div class="col-md-6 mb-3">
+                                            <div class="card h-100 <?php echo $item['equipped'] ? 'border-success' : 'border-secondary'; ?>">
+                                                <div class="card-header d-flex justify-content-between align-items-center">
+                                                    <h6 class="mb-0">
+                                                        <?php if ($item['equipped']): ?>
+                                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                                        <?php endif; ?>
+                                                        <?php echo htmlspecialchars($item['item_name']); ?>
+                                                    </h6>
+                                                    <span class="badge bg-<?php echo $item['equipped'] ? 'success' : 'secondary'; ?>">
+                                                        <?php echo $item['equipped'] ? 'Équipé' : 'Non équipé'; ?>
+                                                    </span>
+                                                </div>
+                                                <div class="card-body">
+                                                    <p class="card-text">
+                                                        <strong>Type:</strong> <?php echo htmlspecialchars($item['item_type']); ?><br>
+                                                        <strong>Source:</strong> <?php echo htmlspecialchars($item['item_source']); ?><br>
+                                                        <strong>Quantité:</strong> <?php echo (int)$item['quantity']; ?><br>
+                                                        <strong>Obtenu:</strong> <?php echo date('d/m/Y', strtotime($item['obtained_at'])); ?><br>
+                                                        <strong>Provenance:</strong> <?php echo htmlspecialchars($item['obtained_from']); ?>
+                                                    </p>
+                                                    <?php if (!empty($item['item_description'])): ?>
+                                                        <p class="card-text">
+                                                            <strong>Description:</strong><br>
+                                                            <small><?php echo nl2br(htmlspecialchars($item['item_description'])); ?></small>
+                                                        </p>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($item['notes'])): ?>
+                                                        <p class="card-text">
+                                                            <strong>Notes:</strong><br>
+                                                            <small><em><?php echo nl2br(htmlspecialchars($item['notes'])); ?></em></small>
+                                                        </p>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                        
                         <div class="mt-3">
                             <a href="view_character_equipment.php?id=<?php echo (int)$character_id; ?>" class="btn btn-primary">
-                                <i class="fas fa-gem me-2"></i>Voir l'équipement détaillé
+                                <i class="fas fa-cog me-2"></i>Gérer l'équipement détaillé
                             </a>
                         </div>
                     </div>
@@ -361,6 +413,17 @@ $armorClass = $character['armor_class'];
                             <li><?php echo $character['money_silver']; ?> PA (pièces d'argent)</li>
                             <li><?php echo $character['money_copper']; ?> PC (pièces de cuivre)</li>
                         </ul>
+                        
+                        <?php if (!empty($magicalEquipment)): ?>
+                            <div class="mt-3">
+                                <p><strong>Objets Magiques:</strong></p>
+                                <ul class="list-unstyled">
+                                    <li><span class="badge bg-success"><?php echo count(array_filter($magicalEquipment, function($item) { return $item['equipped']; })); ?> Équipé(s)</span></li>
+                                    <li><span class="badge bg-secondary"><?php echo count(array_filter($magicalEquipment, function($item) { return !$item['equipped']; })); ?> Non équipé(s)</span></li>
+                                    <li><span class="badge bg-primary"><?php echo count($magicalEquipment); ?> Total</span></li>
+                                </ul>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

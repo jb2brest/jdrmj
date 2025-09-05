@@ -71,3 +71,4 @@ ALTER TABLE monster_equipment ADD COLUMN magical_item_id VARCHAR(50) AFTER item_
 ALTER TABLE character_equipment ADD INDEX idx_magical_item_id (magical_item_id);
 ALTER TABLE npc_equipment ADD INDEX idx_magical_item_id (magical_item_id);
 ALTER TABLE monster_equipment ADD INDEX idx_magical_item_id (magical_item_id);
+

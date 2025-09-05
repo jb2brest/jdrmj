@@ -255,3 +255,4 @@ SELECT COUNT(*) FROM dnd_monsters;
 **Statut** : ✅ **MIGRATION COMPLÈTE**
 
 La migration des données CSV vers MySQL est maintenant terminée et offre de meilleures performances, une meilleure robustesse et une maintenance plus facile.
+

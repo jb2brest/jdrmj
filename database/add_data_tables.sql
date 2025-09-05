@@ -54,3 +54,4 @@ CREATE TABLE IF NOT EXISTS dnd_monsters (
     INDEX idx_type (type),
     FULLTEXT idx_search (name, type)
 );
+

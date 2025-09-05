@@ -144,3 +144,4 @@ function importMonsters($pdo) {
     echo "<p>✅ $count monstres importés avec succès</p>";
 }
 ?>
+

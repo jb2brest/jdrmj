@@ -121,3 +121,4 @@ try {
 echo "<p><a href='index.php'>Retour à l'accueil</a></p>";
 echo "<p><a href='view_scene.php?id=1'>Voir une scène</a></p>";
 ?>
+

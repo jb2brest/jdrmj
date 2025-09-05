@@ -13,7 +13,7 @@ $scene_id = (int)$_GET['id'];
 $isModal = isset($_GET['modal']);
 
 // Charger la scène et sa session
-$stmt = $pdo->prepare("SELECT s.*, gs.title AS session_title, gs.id AS session_id, gs.dm_id, u.username AS dm_username FROM scenes s JOIN game_sessions gs ON s.session_id = gs.id JOIN users u ON gs.dm_id = u.id WHERE s.id = ?");
+$stmt = $pdo->prepare("SELECT s.*, gs.title AS session_title, gs.id AS session_id, gs.dm_id, gs.campaign_id, u.username AS dm_username FROM scenes s JOIN game_sessions gs ON s.session_id = gs.id JOIN users u ON gs.dm_id = u.id WHERE s.id = ?");
 $stmt->execute([$scene_id]);
 $scene = $stmt->fetch();
 
@@ -48,10 +48,10 @@ $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_i
 $stmt->execute([$scene_id]);
 $sceneNpcs = $stmt->fetchAll();
 
-                // Récupérer les monstres de cette scène
-                $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM scene_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.scene_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
-                $stmt->execute([$scene_id]);
-                $sceneMonsters = $stmt->fetchAll();
+// Récupérer les monstres de cette scène
+$stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM scene_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.scene_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
+$stmt->execute([$scene_id]);
+$sceneMonsters = $stmt->fetchAll();
 
 // Traitements POST pour ajouter des PNJ
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
@@ -119,21 +119,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
             $monster = $stmt->fetch();
             
             if ($monster) {
-                // Créer une ligne individuelle pour chaque monstre
-                for ($i = 0; $i < $quantity; $i++) {
-                    $monster_name = $monster['name'];
-                    if ($quantity > 1) {
-                        $monster_name .= " #" . ($i + 1);
-                    }
-                    
-                    $stmt = $pdo->prepare("INSERT INTO scene_npcs (scene_id, name, monster_id, quantity) VALUES (?, ?, ?, 1)");
-                    $stmt->execute([$scene_id, $monster_name, $monster_id]);
+                $monster_name = $monster['name'];
+                if ($quantity > 1) {
+                    $monster_name .= " (x{$quantity})";
                 }
                 
-                $success_message = $quantity . " monstre(s) ajouté(s) à la scène.";
+                $stmt = $pdo->prepare("INSERT INTO scene_npcs (scene_id, name, monster_id, quantity) VALUES (?, ?, ?, ?)");
+                $stmt->execute([$scene_id, $monster_name, $monster_id, $quantity]);
+                $success_message = "Monstre ajouté à la scène.";
                 
                 // Recharger les monstres
-                $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM scene_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.scene_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
+                $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM scene_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.scene_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
                 $stmt->execute([$scene_id]);
                 $sceneMonsters = $stmt->fetchAll();
             } else {
@@ -152,7 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         $success_message = "Monstre retiré de la scène.";
         
         // Recharger les monstres
-        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM scene_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.scene_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
+        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM scene_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.scene_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
         $stmt->execute([$scene_id]);
         $sceneMonsters = $stmt->fetchAll();
     }
@@ -629,7 +625,7 @@ foreach ($allScenes as $s) {
                                     </div>
                                     <div class="d-flex gap-1">
                                         <?php if ($player['character_name'] && !empty($player['character_id'])): ?>
-                                            <a href="view_character.php?id=<?php echo (int)$player['character_id']; ?>" class="btn btn-sm btn-outline-primary" title="Voir la fiche du personnage" target="_blank">
+                                            <a href="view_character.php?id=<?php echo (int)$player['character_id']; ?>&dm_campaign_id=<?php echo (int)$scene['campaign_id']; ?>" class="btn btn-sm btn-outline-primary" title="Voir la fiche du personnage" target="_blank">
                                                 <i class="fas fa-file-alt"></i>
                                             </a>
                                         <?php endif; ?>
@@ -729,7 +725,7 @@ foreach ($allScenes as $s) {
                                         </div>
                                         <div class="d-flex gap-1">
                                             <?php if (!empty($npc['npc_character_id'])): ?>
-                                                <a href="view_character.php?id=<?php echo (int)$npc['npc_character_id']; ?>" class="btn btn-sm btn-outline-primary" title="Voir la fiche du personnage" target="_blank">
+                                                <a href="view_character.php?id=<?php echo (int)$npc['npc_character_id']; ?>&dm_campaign_id=<?php echo (int)$scene['campaign_id']; ?>" class="btn btn-sm btn-outline-primary" title="Voir la fiche du personnage" target="_blank">
                                                     <i class="fas fa-file-alt"></i>
                                                 </a>
                                             <?php endif; ?>

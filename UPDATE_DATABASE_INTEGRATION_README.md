@@ -306,3 +306,4 @@ SHOW INDEX FROM dnd_monsters WHERE Key_name = 'idx_search';
 **Statut** : ✅ **INTÉGRATION COMPLÈTE**
 
 L'intégration des nouvelles tables dans `update_database.php` est maintenant terminée. Le script gère automatiquement la création de toutes les tables nécessaires et l'import de toutes les données CSV, offrant une solution complète et transparente pour la mise à jour de la base de données.
+

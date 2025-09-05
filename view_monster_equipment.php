@@ -4,86 +4,74 @@ require_once 'includes/functions.php';
 
 requireLogin();
 
-if (!isset($_GET['id'])) {
+if (!isset($_GET['id']) || !isset($_GET['scene_id'])) {
     header('Location: index.php');
     exit();
 }
 
-$character_id = (int)$_GET['id'];
+$monster_id = (int)$_GET['id'];
+$scene_id = (int)$_GET['scene_id'];
 
-// Récupérer les informations du personnage
-$stmt = $pdo->prepare("SELECT c.*, u.username, r.name AS race_name, cl.name AS class_name FROM characters c JOIN users u ON c.user_id = u.id LEFT JOIN races r ON c.race_id = r.id LEFT JOIN classes cl ON c.class_id = cl.id WHERE c.id = ?");
-$stmt->execute([$character_id]);
-$character = $stmt->fetch();
+// Vérifier que le MJ a accès à cette scène
+$stmt = $pdo->prepare("SELECT s.*, gs.dm_id FROM scenes s JOIN game_sessions gs ON s.session_id = gs.id WHERE s.id = ?");
+$stmt->execute([$scene_id]);
+$scene = $stmt->fetch();
 
-if (!$character) {
+if (!$scene || $scene['dm_id'] != $_SESSION['user_id']) {
     header('Location: index.php');
     exit();
 }
 
-// Vérifier que l'utilisateur peut voir ce personnage
-$canView = ($_SESSION['user_id'] === $character['user_id']);
+// Récupérer les informations du monstre
+$stmt = $pdo->prepare("
+    SELECT sn.*, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class 
+    FROM scene_npcs sn 
+    JOIN dnd_monsters m ON sn.monster_id = m.id 
+    WHERE sn.id = ? AND sn.scene_id = ? AND sn.monster_id IS NOT NULL
+");
+$stmt->execute([$monster_id, $scene_id]);
+$monster = $stmt->fetch();
 
-// Si ce n'est pas le propriétaire, vérifier si c'est le MJ de la campagne
-if (!$canView && isDM()) {
-    // Récupérer l'ID de la campagne du personnage
-    $stmt = $pdo->prepare("
-        SELECT c.id as campaign_id, c.dm_id 
-        FROM characters ch 
-        JOIN users u ON ch.user_id = u.id
-        JOIN campaign_members cm ON u.id = cm.user_id
-        JOIN campaigns c ON cm.campaign_id = c.id
-        WHERE ch.id = ?
-        LIMIT 1
-    ");
-    $stmt->execute([$character_id]);
-    $campaign_info = $stmt->fetch();
-    
-    if ($campaign_info && $campaign_info['dm_id'] == $_SESSION['user_id']) {
-        $canView = true;
-    }
-}
-
-if (!$canView) {
+if (!$monster) {
     header('Location: index.php');
     exit();
 }
 
-// Récupérer l'équipement du personnage
-$stmt = $pdo->prepare("SELECT * FROM character_equipment WHERE character_id = ? ORDER BY obtained_at DESC");
-$stmt->execute([$character_id]);
+// Récupérer l'équipement du monstre
+$stmt = $pdo->prepare("SELECT * FROM monster_equipment WHERE monster_id = ? AND scene_id = ? ORDER BY obtained_at DESC");
+$stmt->execute([$monster_id, $scene_id]);
 $equipment = $stmt->fetchAll();
 
 // Traitements POST pour gérer l'équipement
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canView) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
         switch ($_POST['action']) {
             case 'toggle_equipped':
                 $equipment_id = (int)$_POST['equipment_id'];
                 $new_status = (int)$_POST['new_status'];
                 
-                $stmt = $pdo->prepare("UPDATE character_equipment SET equipped = ? WHERE id = ? AND character_id = ?");
-                $stmt->execute([$new_status, $equipment_id, $character_id]);
+                $stmt = $pdo->prepare("UPDATE monster_equipment SET equipped = ? WHERE id = ? AND monster_id = ? AND scene_id = ?");
+                $stmt->execute([$new_status, $equipment_id, $monster_id, $scene_id]);
                 
                 $success_message = "Statut d'équipement mis à jour.";
                 
                 // Recharger l'équipement
-                $stmt = $pdo->prepare("SELECT * FROM character_equipment WHERE character_id = ? ORDER BY obtained_at DESC");
-                $stmt->execute([$character_id]);
+                $stmt = $pdo->prepare("SELECT * FROM monster_equipment WHERE monster_id = ? AND scene_id = ? ORDER BY obtained_at DESC");
+                $stmt->execute([$monster_id, $scene_id]);
                 $equipment = $stmt->fetchAll();
                 break;
                 
             case 'remove_item':
                 $equipment_id = (int)$_POST['equipment_id'];
                 
-                $stmt = $pdo->prepare("DELETE FROM character_equipment WHERE id = ? AND character_id = ?");
-                $stmt->execute([$equipment_id, $character_id]);
+                $stmt = $pdo->prepare("DELETE FROM monster_equipment WHERE id = ? AND monster_id = ? AND scene_id = ?");
+                $stmt->execute([$equipment_id, $monster_id, $scene_id]);
                 
                 $success_message = "Objet retiré de l'équipement.";
                 
                 // Recharger l'équipement
-                $stmt = $pdo->prepare("SELECT * FROM character_equipment WHERE character_id = ? ORDER BY obtained_at DESC");
-                $stmt->execute([$character_id]);
+                $stmt = $pdo->prepare("SELECT * FROM monster_equipment WHERE monster_id = ? AND scene_id = ? ORDER BY obtained_at DESC");
+                $stmt->execute([$monster_id, $scene_id]);
                 $equipment = $stmt->fetchAll();
                 break;
         }
@@ -96,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canView) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Équipement: <?php echo htmlspecialchars($character['name']); ?> - JDR 4 MJ</title>
+    <title>Équipement: <?php echo htmlspecialchars($monster['name']); ?> - JDR 4 MJ</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -109,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canView) {
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="view_character.php?id=<?php echo (int)$character_id; ?>">Retour Personnage</a></li>
+                    <li class="nav-item"><a class="nav-link" href="view_scene_equipment.php?id=<?php echo (int)$scene_id; ?>">Retour à la Scène</a></li>
                 </ul>
                 <ul class="navbar-nav">
                     <li class="nav-item dropdown">
@@ -135,30 +123,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canView) {
             <div class="col-md-4">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-user me-2"></i>Informations du personnage</h5>
+                        <h5 class="mb-0"><i class="fas fa-dragon me-2"></i>Informations du Monstre</h5>
                     </div>
                     <div class="card-body">
-                        <h6 class="card-title"><?php echo htmlspecialchars($character['name']); ?></h6>
+                        <h6 class="card-title"><?php echo htmlspecialchars($monster['name']); ?></h6>
                         <p class="card-text">
-                            <strong>Joueur:</strong> <?php echo htmlspecialchars($character['username']); ?><br>
-                            <strong>Race:</strong> <?php echo htmlspecialchars($character['race_name'] ?? 'Non définie'); ?><br>
-                            <strong>Classe:</strong> <?php echo htmlspecialchars($character['class_name'] ?? 'Non définie'); ?><br>
-                            <strong>Niveau:</strong> <?php echo (int)$character['level']; ?><br>
-                            <strong>Points de vie:</strong> <?php echo (int)$character['hit_points_current']; ?>/<?php echo (int)$character['hit_points_max']; ?>
+                            <strong>Type:</strong> <?php echo htmlspecialchars($monster['type']); ?><br>
+                            <strong>Taille:</strong> <?php echo htmlspecialchars($monster['size']); ?><br>
+                            <strong>Défi:</strong> <?php echo htmlspecialchars($monster['challenge_rating']); ?><br>
+                            <strong>Classe d'Armure:</strong> <?php echo htmlspecialchars($monster['armor_class']); ?><br>
+                            <strong>Points de Vie:</strong> <?php echo htmlspecialchars($monster['hit_points']); ?>
                         </p>
-                    </div>
-                </div>
-                
-                <div class="card mt-3">
-                    <div class="card-header">
-                        <h6 class="mb-0"><i class="fas fa-coins me-2"></i>Trésor</h6>
-                    </div>
-                    <div class="card-body">
-                        <p class="card-text">
-                            <strong>Or:</strong> <?php echo (int)$character['money_gold']; ?> po<br>
-                            <strong>Argent:</strong> <?php echo (int)$character['money_silver']; ?> pa<br>
-                            <strong>Cuivre:</strong> <?php echo (int)$character['money_copper']; ?> pc
-                        </p>
+                        <?php if ($monster['description']): ?>
+                            <p class="card-text">
+                                <strong>Description:</strong><br>
+                                <?php echo nl2br(htmlspecialchars($monster['description'])); ?>
+                            </p>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -167,7 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canView) {
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-gem me-2"></i>Équipement et Objets Magiques</h5>
-                        <span class="badge bg-primary"><?php echo count($equipment); ?> objet(s)</span>
+                        <span class="badge bg-danger"><?php echo count($equipment); ?> objet(s)</span>
                     </div>
                     <div class="card-body">
                         <?php if (empty($equipment)): ?>
@@ -233,35 +214,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canView) {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
     <script>
-        function toggleEquipped(equipmentId, newStatus) {
-            if (confirm('Modifier le statut d\'équipement de cet objet ?')) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.innerHTML = `
-                    <input type="hidden" name="action" value="toggle_equipped">
-                    <input type="hidden" name="equipment_id" value="${equipmentId}">
-                    <input type="hidden" name="new_status" value="${newStatus}">
-                `;
-                document.body.appendChild(form);
-                form.submit();
-            }
+    function toggleEquipped(equipmentId, newStatus) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.innerHTML = `
+            <input type="hidden" name="action" value="toggle_equipped">
+            <input type="hidden" name="equipment_id" value="${equipmentId}">
+            <input type="hidden" name="new_status" value="${newStatus}">
+        `;
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    function removeItem(equipmentId) {
+        if (confirm('Êtes-vous sûr de vouloir retirer cet objet de l\'équipement ?')) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.innerHTML = `
+                <input type="hidden" name="action" value="remove_item">
+                <input type="hidden" name="equipment_id" value="${equipmentId}">
+            `;
+            document.body.appendChild(form);
+            form.submit();
         }
-        
-        function removeItem(equipmentId) {
-            if (confirm('Êtes-vous sûr de vouloir retirer cet objet de l\'équipement ?')) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.innerHTML = `
-                    <input type="hidden" name="action" value="remove_item">
-                    <input type="hidden" name="equipment_id" value="${equipmentId}">
-                `;
-                document.body.appendChild(form);
-                form.submit();
-            }
-        }
+    }
     </script>
 </body>
 </html>
-
