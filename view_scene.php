@@ -1609,8 +1609,10 @@ foreach ($allScenes as $s) {
         <?php endif; ?>
 
     });
+    </script>
 
     <?php if ($isOwnerDM && !empty($scene['map_url'])): ?>
+    <script>
     function initializeTokenSystem() {
         const mapImage = document.getElementById('mapImage');
         const tokens = document.querySelectorAll('.token');
@@ -1817,8 +1819,9 @@ foreach ($allScenes as $s) {
             });
         }
     }
-    <?php endif; ?>
     </script>
+    <?php endif; ?>
+
 
 </body>
 </html>

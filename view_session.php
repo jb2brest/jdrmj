@@ -694,7 +694,7 @@ Capitaine Eloria"></textarea>
                                             <div class="card-body">
                                                 <div class="d-flex justify-content-between align-items-start">
                                                     <h5 class="card-title mb-2">
-                                                        <a href="view_scene.php?id=<?php echo (int)$sc['id']; ?>" class="text-decoration-none view-scene-btn" data-scene-id="<?php echo (int)$sc['id']; ?>">
+                                                        <a href="view_scene.php?id=<?php echo (int)$sc['id']; ?>" class="text-decoration-none">
                                                             <i class="fas fa-photo-video me-2"></i><?php echo htmlspecialchars($sc['title']); ?>
                                                         </a>
                                                     </h5>
@@ -850,53 +850,9 @@ Capitaine Eloria"></textarea>
         </div>
     </div>
 
-    <!-- Scene Detail Modal -->
-    <div class="modal fade" id="sceneDetailModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Détail de la scène</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                </div>
-                <div class="modal-body p-0">
-                    <div id="sceneDetailContent">
-                        <div class="text-center p-5 text-muted">Chargement...</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
 <?php if (!$isModal): ?>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        var modalEl = document.getElementById('sceneDetailModal');
-        var modal = modalEl ? new bootstrap.Modal(modalEl) : null;
-        document.querySelectorAll('.view-scene-btn').forEach(function(btn) {
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                var sceneId = this.getAttribute('data-scene-id');
-                if (!sceneId || !modal) return;
-                var url = 'view_scene.php?id=' + encodeURIComponent(sceneId) + '&modal=1';
-                var container = document.getElementById('sceneDetailContent');
-                if (container) {
-                    container.innerHTML = '<div class="text-center p-5 text-muted">Chargement...</div>';
-                }
-                fetch(url, { credentials: 'same-origin' })
-                    .then(function(resp) { return resp.text(); })
-                    .then(function(html) {
-                        if (container) { container.innerHTML = html; }
-                        modal.show();
-                    })
-                    .catch(function() {
-                        if (container) { container.innerHTML = '<div class="text-danger p-3">Erreur de chargement.</div>'; }
-                        modal.show();
-                    });
-            });
-        });
-    });
-    </script>
 </body>
 </html>
 <?php endif; ?>

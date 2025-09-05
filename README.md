@@ -114,6 +114,7 @@ Ce projet est sous licence MIT. Libre d'utilisation, modification et distributio
 
 ## Changelog
 <version_tag>
+- 0.0.37 : Position pions OK
 - 0.0.36 : Superposition pions OK
 - 0.0.36 : Superposition pions OK
 - 0.0.35 : correctifs
