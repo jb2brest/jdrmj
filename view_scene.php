@@ -1622,13 +1622,20 @@ foreach ($allScenes as $s) {
         let isDragging = false;
 
         // Initialiser les positions des pions
+        console.log('Initialisation du système de pions...');
+        console.log('Nombre de pions trouvés:', tokens.length);
+        
         tokens.forEach(token => {
             const isOnMap = token.dataset.isOnMap === 'true';
+            console.log(`Pion ${token.dataset.tokenType}_${token.dataset.entityId}: isOnMap=${isOnMap}`);
+            
             if (isOnMap) {
                 const x = parseInt(token.dataset.positionX);
                 const y = parseInt(token.dataset.positionY);
                 console.log(`Initialisation pion: ${token.dataset.tokenType}_${token.dataset.entityId} à ${x}%, ${y}%`);
                 positionTokenOnMap(token, x, y);
+            } else {
+                console.log(`Pion ${token.dataset.tokenType}_${token.dataset.entityId} reste dans la sidebar`);
             }
         });
 
@@ -1704,11 +1711,17 @@ foreach ($allScenes as $s) {
         }
 
         function positionTokenOnMap(token, x, y) {
-            // Retirer le pion de la sidebar
+            console.log(`Positionnement du pion ${token.dataset.tokenType}_${token.dataset.entityId} à ${x}%, ${y}%`);
+            
+            // Retirer le pion de son conteneur actuel
             token.remove();
             
             // Ajouter le pion au conteneur du plan
             const mapContainer = document.getElementById('mapContainer');
+            if (!mapContainer) {
+                console.error('Conteneur du plan non trouvé');
+                return;
+            }
             mapContainer.appendChild(token);
             
             // Positionner le pion
@@ -1723,7 +1736,7 @@ foreach ($allScenes as $s) {
             token.dataset.positionX = x;
             token.dataset.positionY = y;
             
-            console.log(`Pion positionné à ${x}%, ${y}%`);
+            console.log(`Pion positionné avec succès à ${x}%, ${y}%`);
         }
 
         function resetTokenToSidebar(token) {
