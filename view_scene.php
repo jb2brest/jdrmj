@@ -59,6 +59,22 @@ $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.
 $stmt->execute([$scene_id]);
 $sceneMonsters = $stmt->fetchAll();
 
+// Récupérer les positions des pions
+$stmt = $pdo->prepare("
+    SELECT token_type, entity_id, position_x, position_y, is_on_map
+    FROM scene_tokens 
+    WHERE scene_id = ?
+");
+$stmt->execute([$scene_id]);
+$tokenPositions = [];
+while ($row = $stmt->fetch()) {
+    $tokenPositions[$row['token_type'] . '_' . $row['entity_id']] = [
+        'x' => (int)$row['position_x'],
+        'y' => (int)$row['position_y'],
+        'is_on_map' => (bool)$row['is_on_map']
+    ];
+}
+
 // Traitements POST pour ajouter des PNJ
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
 
@@ -697,13 +713,87 @@ foreach ($allScenes as $s) {
                     <?php endif; ?>
                     
                     <?php if (!empty($scene['map_url'])): ?>
-                        <div class="text-center">
-                            <img src="<?php echo htmlspecialchars($scene['map_url']); ?>" class="img-fluid rounded" alt="Plan de la scène" style="max-height: 500px;">
+                        <div class="position-relative">
+                            <!-- Zone du plan avec pions -->
+                            <div id="mapContainer" class="position-relative" style="display: inline-block;">
+                                <img id="mapImage" src="<?php echo htmlspecialchars($scene['map_url']); ?>" class="img-fluid rounded" alt="Plan de la scène" style="max-height: 500px; cursor: crosshair;">
+                                
+                                <!-- Zone des pions sur le côté -->
+                                <div id="tokenSidebar" class="position-absolute" style="right: -120px; top: 0; width: 100px; height: 500px; border: 2px dashed #ccc; border-radius: 8px; background: rgba(248, 249, 250, 0.8); padding: 10px; overflow-y: auto;">
+                                    <div class="text-center mb-2">
+                                        <small class="text-muted">Pions</small>
+                                    </div>
+                                    
+                                    <!-- Pions des joueurs -->
+                                    <?php foreach ($scenePlayers as $player): ?>
+                                        <?php 
+                                        $tokenKey = 'player_' . $player['player_id'];
+                                        $position = $tokenPositions[$tokenKey] ?? ['x' => 0, 'y' => 0, 'is_on_map' => false];
+                                        $displayName = $player['character_name'] ?: $player['username'];
+                                        $imageUrl = !empty($player['profile_photo']) ? $player['profile_photo'] : 'images/default_character.png';
+                                        ?>
+                                        <div class="token" 
+                                             data-token-type="player" 
+                                             data-entity-id="<?php echo $player['player_id']; ?>"
+                                             data-position-x="<?php echo $position['x']; ?>"
+                                             data-position-y="<?php echo $position['y']; ?>"
+                                             data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
+                                             style="width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #007bff; border-radius: 50%; background-image: url('<?php echo htmlspecialchars($imageUrl); ?>'); background-size: cover; background-position: center;"
+                                             title="<?php echo htmlspecialchars($displayName); ?>">
+                                        </div>
+                                    <?php endforeach; ?>
+                                    
+                                    <!-- Pions des PNJ -->
+                                    <?php foreach ($sceneNpcs as $npc): ?>
+                                        <?php 
+                                        $tokenKey = 'npc_' . $npc['id'];
+                                        $position = $tokenPositions[$tokenKey] ?? ['x' => 0, 'y' => 0, 'is_on_map' => false];
+                                        $imageUrl = !empty($npc['character_profile_photo']) ? $npc['character_profile_photo'] : (!empty($npc['profile_photo']) ? $npc['profile_photo'] : 'images/default_npc.png');
+                                        ?>
+                                        <div class="token" 
+                                             data-token-type="npc" 
+                                             data-entity-id="<?php echo $npc['id']; ?>"
+                                             data-position-x="<?php echo $position['x']; ?>"
+                                             data-position-y="<?php echo $position['y']; ?>"
+                                             data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
+                                             style="width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #28a745; border-radius: 50%; background-image: url('<?php echo htmlspecialchars($imageUrl); ?>'); background-size: cover; background-position: center;"
+                                             title="<?php echo htmlspecialchars($npc['name']); ?>">
+                                        </div>
+                                    <?php endforeach; ?>
+                                    
+                                    <!-- Pions des monstres -->
+                                    <?php foreach ($sceneMonsters as $monster): ?>
+                                        <?php 
+                                        $tokenKey = 'monster_' . $monster['id'];
+                                        $position = $tokenPositions[$tokenKey] ?? ['x' => 0, 'y' => 0, 'is_on_map' => false];
+                                        $imageUrl = 'images/' . $monster['monster_id'] . '.jpg';
+                                        ?>
+                                        <div class="token" 
+                                             data-token-type="monster" 
+                                             data-entity-id="<?php echo $monster['id']; ?>"
+                                             data-position-x="<?php echo $position['x']; ?>"
+                                             data-position-y="<?php echo $position['y']; ?>"
+                                             data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
+                                             style="width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #dc3545; border-radius: 50%; background-image: url('<?php echo htmlspecialchars($imageUrl); ?>'); background-size: cover; background-position: center;"
+                                             title="<?php echo htmlspecialchars($monster['name']); ?>">
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
                             
-                            <div class="mt-2">
-                                <a href="<?php echo htmlspecialchars($scene['map_url']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-external-link-alt me-1"></i>Ouvrir en plein écran
-                                </a>
+                            <div class="mt-2 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <a href="<?php echo htmlspecialchars($scene['map_url']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-external-link-alt me-1"></i>Ouvrir en plein écran
+                                    </a>
+                                </div>
+                                <?php if ($isOwnerDM): ?>
+                                    <div>
+                                        <button id="resetTokensBtn" class="btn btn-sm btn-outline-warning">
+                                            <i class="fas fa-undo me-1"></i>Réinitialiser les pions
+                                        </button>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         </div>
                     <?php else: ?>
@@ -1513,7 +1603,208 @@ foreach ($allScenes as $s) {
             });
         }
 
+        // Système de glisser-déposer pour les pions
+        <?php if ($isOwnerDM && !empty($scene['map_url'])): ?>
+        initializeTokenSystem();
+        <?php endif; ?>
+
     });
+
+    <?php if ($isOwnerDM && !empty($scene['map_url'])): ?>
+    function initializeTokenSystem() {
+        const mapImage = document.getElementById('mapImage');
+        const tokens = document.querySelectorAll('.token');
+        const resetBtn = document.getElementById('resetTokensBtn');
+        
+        if (!mapImage || tokens.length === 0) return;
+
+        let draggedToken = null;
+        let isDragging = false;
+
+        // Initialiser les positions des pions
+        tokens.forEach(token => {
+            const isOnMap = token.dataset.isOnMap === 'true';
+            if (isOnMap) {
+                const x = parseInt(token.dataset.positionX);
+                const y = parseInt(token.dataset.positionY);
+                console.log(`Initialisation pion: ${token.dataset.tokenType}_${token.dataset.entityId} à ${x}%, ${y}%`);
+                positionTokenOnMap(token, x, y);
+            }
+        });
+
+        // Gestion du glisser-déposer
+        tokens.forEach(token => {
+            token.draggable = true;
+            
+            token.addEventListener('dragstart', function(e) {
+                draggedToken = this;
+                isDragging = true;
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/html', this.outerHTML);
+                this.style.opacity = '0.5';
+            });
+
+            token.addEventListener('dragend', function(e) {
+                this.style.opacity = '1';
+                draggedToken = null;
+                isDragging = false;
+            });
+        });
+
+        // Gestion du dépôt sur le plan
+        mapImage.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        });
+
+        mapImage.addEventListener('drop', function(e) {
+            e.preventDefault();
+            
+            if (!draggedToken) return;
+
+            const rect = mapImage.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // Convertir en pourcentages pour la responsivité
+            const xPercent = Math.round((x / rect.width) * 100);
+            const yPercent = Math.round((y / rect.height) * 100);
+            
+            // S'assurer que les pourcentages sont dans les limites
+            const clampedX = Math.max(0, Math.min(100, xPercent));
+            const clampedY = Math.max(0, Math.min(100, yPercent));
+            
+            positionTokenOnMap(draggedToken, clampedX, clampedY);
+            saveTokenPosition(draggedToken, clampedX, clampedY, true);
+        });
+
+        // Gestion du dépôt sur la sidebar (retour au côté)
+        const sidebar = document.getElementById('tokenSidebar');
+        sidebar.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        });
+
+        sidebar.addEventListener('drop', function(e) {
+            e.preventDefault();
+            
+            if (!draggedToken) return;
+
+            resetTokenToSidebar(draggedToken);
+            saveTokenPosition(draggedToken, 0, 0, false);
+        });
+
+        // Bouton de réinitialisation
+        if (resetBtn) {
+            resetBtn.addEventListener('click', function() {
+                if (confirm('Êtes-vous sûr de vouloir remettre tous les pions sur le côté du plan ?')) {
+                    resetAllTokens();
+                }
+            });
+        }
+
+        function positionTokenOnMap(token, x, y) {
+            // Retirer le pion de la sidebar
+            token.remove();
+            
+            // Ajouter le pion au conteneur du plan
+            const mapContainer = document.getElementById('mapContainer');
+            mapContainer.appendChild(token);
+            
+            // Positionner le pion
+            token.style.position = 'absolute';
+            token.style.left = x + '%';
+            token.style.top = y + '%';
+            token.style.transform = 'translate(-50%, -50%)';
+            token.style.zIndex = '1000';
+            token.style.margin = '0';
+            token.style.pointerEvents = 'auto';
+            token.dataset.isOnMap = 'true';
+            token.dataset.positionX = x;
+            token.dataset.positionY = y;
+            
+            console.log(`Pion positionné à ${x}%, ${y}%`);
+        }
+
+        function resetTokenToSidebar(token) {
+            // Retirer le pion du conteneur du plan
+            token.remove();
+            
+            // Remettre le pion dans la sidebar
+            const sidebar = document.getElementById('tokenSidebar');
+            sidebar.appendChild(token);
+            
+            // Réinitialiser les styles
+            token.style.position = 'static';
+            token.style.left = 'auto';
+            token.style.top = 'auto';
+            token.style.transform = 'none';
+            token.style.zIndex = 'auto';
+            token.style.margin = '2px';
+            token.style.pointerEvents = 'auto';
+            token.dataset.isOnMap = 'false';
+            token.dataset.positionX = '0';
+            token.dataset.positionY = '0';
+            
+            console.log('Pion remis dans la sidebar');
+        }
+
+        function saveTokenPosition(token, x, y, isOnMap) {
+            const data = {
+                scene_id: <?php echo $scene_id; ?>,
+                token_type: token.dataset.tokenType,
+                entity_id: parseInt(token.dataset.entityId),
+                position_x: x,
+                position_y: y,
+                is_on_map: isOnMap
+            };
+
+            fetch('update_token_position.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (!result.success) {
+                    console.error('Erreur lors de la sauvegarde:', result.error);
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+            });
+        }
+
+        function resetAllTokens() {
+            const data = {
+                scene_id: <?php echo $scene_id; ?>
+            };
+
+            fetch('reset_token_positions.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    tokens.forEach(token => {
+                        resetTokenToSidebar(token);
+                    });
+                } else {
+                    console.error('Erreur lors de la réinitialisation:', result.error);
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+            });
+        }
+    }
+    <?php endif; ?>
     </script>
 
 </body>
