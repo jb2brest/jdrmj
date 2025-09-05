@@ -14,8 +14,8 @@ $scene_id = (int)$_GET['scene_id'];
 
 // Récupérer les informations du monstre dans la scène
 $stmt = $pdo->prepare("
-    SELECT sn.*, m.name as monster_name, m.type, m.size, m.challenge_rating, 
-           m.hit_points as max_hit_points, m.armor_class, gs.dm_id, gs.campaign_id
+    SELECT sn.*, m.id as monster_db_id, m.name as monster_name, m.type, m.size, m.challenge_rating, 
+           m.hit_points as max_hit_points, m.armor_class, m.csv_id, gs.dm_id, gs.campaign_id
     FROM scene_npcs sn 
     JOIN dnd_monsters m ON sn.monster_id = m.id 
     JOIN scenes s ON sn.scene_id = s.id
@@ -94,8 +94,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Recharger les données du monstre
         $stmt = $pdo->prepare("
-            SELECT sn.*, m.name as monster_name, m.type, m.size, m.challenge_rating, 
-                   m.hit_points as max_hit_points, m.armor_class, gs.dm_id, gs.campaign_id
+            SELECT sn.*, m.id as monster_db_id, m.name as monster_name, m.type, m.size, m.challenge_rating, 
+                   m.hit_points as max_hit_points, m.armor_class, m.csv_id, gs.dm_id, gs.campaign_id
             FROM scene_npcs sn 
             JOIN dnd_monsters m ON sn.monster_id = m.id 
             JOIN scenes s ON sn.scene_id = s.id
@@ -160,10 +160,18 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
             margin: 0.25rem;
         }
         .monster-image {
-            max-width: 200px;
-            max-height: 200px;
+            max-width: 150px;
+            max-height: 150px;
             object-fit: cover;
             border-radius: 10px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        .monster-image.bg-secondary {
+            width: 150px;
+            height: 150px;
+            border-radius: 10px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
         }
     </style>
 </head>
@@ -171,7 +179,23 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
     <div class="monster-header">
         <div class="container">
             <div class="row align-items-center">
-                <div class="col-md-8">
+                <div class="col-md-2 text-center">
+                    <?php 
+                    // Utiliser le csv_id pour le nom de fichier
+                    $image_path = "images/{$monster['csv_id']}.jpg";
+                    
+                    if (file_exists($image_path)): 
+                    ?>
+                        <img src="<?php echo htmlspecialchars($image_path); ?>" 
+                             alt="<?php echo htmlspecialchars($monster['name']); ?>" 
+                             class="monster-image img-fluid">
+                    <?php else: ?>
+                        <div class="monster-image bg-secondary d-flex align-items-center justify-content-center text-white">
+                            <i class="fas fa-dragon fa-3x"></i>
+                        </div>
+                    <?php endif; ?>
+                </div>
+                <div class="col-md-6">
                     <h1 class="mb-0">
                         <i class="fas fa-dragon me-3"></i>
                         <?php echo htmlspecialchars($monster['name']); ?>

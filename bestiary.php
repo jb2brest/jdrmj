@@ -174,6 +174,24 @@ if (isDM()) {
             <?php foreach ($monsters as $monster): ?>
                 <div class="col-md-6 col-lg-4 mb-4">
                     <div class="card h-100">
+                        <!-- Image du monstre -->
+                        <div class="text-center p-3" style="background: linear-gradient(135deg, #f8f9fa, #e9ecef);">
+                            <?php 
+                            $image_path = "images/{$monster['csv_id']}.jpg";
+                            if (file_exists($image_path)): 
+                            ?>
+                                <img src="<?php echo htmlspecialchars($image_path); ?>" 
+                                     alt="<?php echo htmlspecialchars($monster['name']); ?>" 
+                                     class="img-fluid rounded" 
+                                     style="max-height: 150px; max-width: 100%; object-fit: cover;">
+                            <?php else: ?>
+                                <div class="d-flex align-items-center justify-content-center bg-secondary rounded" 
+                                     style="height: 150px; width: 100%;">
+                                    <i class="fas fa-dragon fa-3x text-white"></i>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                        
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h6 class="mb-0"><?php echo htmlspecialchars($monster['name']); ?></h6>
                             <?php if (isDM()): ?>
