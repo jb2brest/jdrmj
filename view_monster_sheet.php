@@ -30,6 +30,11 @@ if (!$monster) {
     exit();
 }
 
+// Récupérer l'équipement magique du monstre
+$stmt = $pdo->prepare("SELECT * FROM monster_equipment WHERE monster_id = ? AND scene_id = ? ORDER BY obtained_at DESC");
+$stmt->execute([$monster_npc_id, $scene_id]);
+$magicalEquipment = $stmt->fetchAll();
+
 // Vérifier que l'utilisateur est le MJ de cette scène
 if ($monster['dm_id'] != $_SESSION['user_id']) {
     header('Location: index.php');
@@ -348,6 +353,94 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
             </div>
         </div>
         <?php endif; ?>
+
+        <!-- Équipement et Trésor -->
+        <div class="row">
+            <div class="col-12 mb-4">
+                <div class="card">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-gem me-2"></i>Équipement et Trésor
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <?php if (!empty($magicalEquipment)): ?>
+                            <div class="row">
+                                <?php foreach ($magicalEquipment as $item): ?>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="card h-100 <?php echo $item['equipped'] ? 'border-success' : 'border-secondary'; ?>">
+                                            <div class="card-header d-flex justify-content-between align-items-center">
+                                                <h6 class="mb-0">
+                                                    <?php if ($item['equipped']): ?>
+                                                        <i class="fas fa-check-circle text-success me-2"></i>
+                                                    <?php endif; ?>
+                                                    <?php echo htmlspecialchars($item['item_name']); ?>
+                                                </h6>
+                                                <span class="badge bg-<?php echo $item['equipped'] ? 'success' : 'secondary'; ?>">
+                                                    <?php echo $item['equipped'] ? 'Équipé' : 'Non équipé'; ?>
+                                                </span>
+                                            </div>
+                                            <div class="card-body">
+                                                <?php if ($item['item_type']): ?>
+                                                    <p class="text-muted mb-2">
+                                                        <i class="fas fa-tag me-1"></i>
+                                                        <?php echo htmlspecialchars($item['item_type']); ?>
+                                                    </p>
+                                                <?php endif; ?>
+                                                
+                                                <?php if ($item['item_description']): ?>
+                                                    <p class="mb-2">
+                                                        <?php echo nl2br(htmlspecialchars($item['item_description'])); ?>
+                                                    </p>
+                                                <?php endif; ?>
+                                                
+                                                <?php if ($item['item_source']): ?>
+                                                    <p class="text-muted mb-2">
+                                                        <i class="fas fa-book me-1"></i>
+                                                        Source: <?php echo htmlspecialchars($item['item_source']); ?>
+                                                    </p>
+                                                <?php endif; ?>
+                                                
+                                                <?php if ($item['quantity'] > 1): ?>
+                                                    <p class="mb-2">
+                                                        <i class="fas fa-layer-group me-1"></i>
+                                                        Quantité: <?php echo $item['quantity']; ?>
+                                                    </p>
+                                                <?php endif; ?>
+                                                
+                                                <?php if ($item['notes']): ?>
+                                                    <div class="alert alert-info mb-2">
+                                                        <i class="fas fa-sticky-note me-1"></i>
+                                                        <strong>Notes:</strong> <?php echo nl2br(htmlspecialchars($item['notes'])); ?>
+                                                    </div>
+                                                <?php endif; ?>
+                                                
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-calendar me-1"></i>
+                                                        Obtenu le <?php echo date('d/m/Y à H:i', strtotime($item['obtained_at'])); ?>
+                                                    </small>
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-user me-1"></i>
+                                                        <?php echo htmlspecialchars($item['obtained_from']); ?>
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php else: ?>
+                            <div class="text-center py-4">
+                                <i class="fas fa-gem fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">Aucun objet magique attribué à ce monstre</p>
+                                <p class="text-muted">Les objets magiques peuvent être attribués depuis la page de la scène</p>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Actions -->
         <div class="row">

@@ -631,11 +631,6 @@ foreach ($allScenes as $s) {
                                             <a href="view_character_equipment.php?id=<?php echo (int)$player['character_id']; ?>&dm_campaign_id=<?php echo (int)$scene['campaign_id']; ?>" class="btn btn-sm btn-outline-success" title="Voir l'équipement" target="_blank">
                                                 <i class="fas fa-backpack"></i>
                                             </a>
-                                            <?php if ($isOwnerDM): ?>
-                                                <a href="view_character_hp.php?id=<?php echo (int)$player['character_id']; ?>&scene_id=<?php echo (int)$scene_id; ?>" class="btn btn-sm btn-outline-warning" title="Gérer les points de vie" target="_blank">
-                                                    <i class="fas fa-heart"></i>
-                                                </a>
-                                            <?php endif; ?>
                                         <?php endif; ?>
                                     </div>
                                     <?php if ($isOwnerDM): ?>
@@ -735,11 +730,6 @@ foreach ($allScenes as $s) {
                                             <?php if (!empty($npc['npc_character_id'])): ?>
                                                 <a href="view_character.php?id=<?php echo (int)$npc['npc_character_id']; ?>&dm_campaign_id=<?php echo (int)$scene['campaign_id']; ?>" class="btn btn-sm btn-outline-primary" title="Voir la fiche du personnage" target="_blank">
                                                     <i class="fas fa-file-alt"></i>
-                                                </a>
-                                            <?php endif; ?>
-                                            <?php if ($isOwnerDM): ?>
-                                                <a href="view_npc_hp.php?id=<?php echo (int)$npc['id']; ?>&scene_id=<?php echo (int)$scene_id; ?>" class="btn btn-sm btn-outline-warning" title="Gérer les points de vie" target="_blank">
-                                                    <i class="fas fa-heart"></i>
                                                 </a>
                                             <?php endif; ?>
                                         </div>
