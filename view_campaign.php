@@ -22,6 +22,9 @@ if (!$campaign) {
     exit();
 }
 
+// Définir si l'utilisateur est le MJ propriétaire
+$isOwnerDM = ($dm_id == $campaign['dm_id']);
+
 // Traitements POST: ajouter membre par invite, créer session rapide
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action']) && $_POST['action'] === 'add_member') {
@@ -216,6 +219,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
+
+    // Transfert d'entités entre lieux
+    if (isset($_POST['action']) && $_POST['action'] === 'transfer_entity' && $isOwnerDM) {
+        $entity_type = $_POST['entity_type'] ?? '';
+        $entity_id = (int)($_POST['entity_id'] ?? 0);
+        $from_place_id = (int)($_POST['from_place_id'] ?? 0);
+        $to_place_id = (int)($_POST['to_place_id'] ?? 0);
+        
+        if ($entity_type && $entity_id && $from_place_id && $to_place_id && $from_place_id !== $to_place_id) {
+            // Vérifier que les lieux appartiennent à la campagne
+            $stmt = $pdo->prepare("SELECT id FROM places WHERE id IN (?, ?) AND campaign_id = ?");
+            $stmt->execute([$from_place_id, $to_place_id, $campaign_id]);
+            $valid_places = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            
+            if (count($valid_places) === 2) {
+                $pdo->beginTransaction();
+                try {
+                    if ($entity_type === 'player') {
+                        // Transférer un joueur
+                        $stmt = $pdo->prepare("UPDATE place_players SET place_id = ? WHERE place_id = ? AND player_id = ?");
+                        $stmt->execute([$to_place_id, $from_place_id, $entity_id]);
+                        $success_message = "Joueur transféré avec succès.";
+                    } elseif ($entity_type === 'npc') {
+                        // Transférer un PNJ
+                        $stmt = $pdo->prepare("UPDATE place_npcs SET place_id = ? WHERE place_id = ? AND id = ? AND monster_id IS NULL");
+                        $stmt->execute([$to_place_id, $from_place_id, $entity_id]);
+                        $success_message = "PNJ transféré avec succès.";
+                    } elseif ($entity_type === 'monster') {
+                        // Transférer un monstre
+                        $stmt = $pdo->prepare("UPDATE place_npcs SET place_id = ? WHERE place_id = ? AND id = ? AND monster_id IS NOT NULL");
+                        $stmt->execute([$to_place_id, $from_place_id, $entity_id]);
+                        $success_message = "Monstre transféré avec succès.";
+                    }
+                    $pdo->commit();
+                } catch (Exception $e) {
+                    $pdo->rollBack();
+                    $error_message = "Erreur lors du transfert : " . $e->getMessage();
+                }
+            } else {
+                $error_message = "Lieux invalides.";
+            }
+        } else {
+            $error_message = "Paramètres de transfert invalides.";
+        }
+    }
 }
 
 // Récupérer membres
@@ -237,6 +285,37 @@ $applications = $stmt->fetchAll();
 $stmt = $pdo->prepare("SELECT * FROM places WHERE campaign_id = ? ORDER BY position ASC, created_at ASC");
 $stmt->execute([$campaign_id]);
 $places = $stmt->fetchAll();
+
+// Récupérer les joueurs, PNJ et monstres pour chaque lieu
+$placePlayers = [];
+$placeNpcs = [];
+$placeMonsters = [];
+
+if (!empty($places)) {
+    $placeIds = array_column($places, 'id');
+    $in = implode(',', array_fill(0, count($placeIds), '?'));
+    
+    // Récupérer les joueurs
+    $stmt = $pdo->prepare("SELECT pp.place_id, pp.player_id, u.username, ch.id AS character_id, ch.name AS character_name FROM place_players pp JOIN users u ON pp.player_id = u.id LEFT JOIN characters ch ON pp.character_id = ch.id WHERE pp.place_id IN ($in) ORDER BY u.username ASC");
+    $stmt->execute($placeIds);
+    foreach ($stmt->fetchAll() as $row) {
+        $placePlayers[$row['place_id']][] = $row;
+    }
+    
+    // Récupérer les PNJ (non-monstres)
+    $stmt = $pdo->prepare("SELECT pn.place_id, pn.id, pn.name, pn.description, pn.npc_character_id FROM place_npcs pn WHERE pn.place_id IN ($in) AND pn.monster_id IS NULL ORDER BY pn.name ASC");
+    $stmt->execute($placeIds);
+    foreach ($stmt->fetchAll() as $row) {
+        $placeNpcs[$row['place_id']][] = $row;
+    }
+    
+    // Récupérer les monstres
+    $stmt = $pdo->prepare("SELECT pn.place_id, pn.id, pn.name, pn.description, pn.monster_id, pn.quantity, pn.current_hit_points, m.type, m.size, m.challenge_rating FROM place_npcs pn JOIN dnd_monsters m ON pn.monster_id = m.id WHERE pn.place_id IN ($in) AND pn.monster_id IS NOT NULL ORDER BY pn.name ASC");
+    $stmt->execute($placeIds);
+    foreach ($stmt->fetchAll() as $row) {
+        $placeMonsters[$row['place_id']][] = $row;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -462,8 +541,75 @@ $places = $stmt->fetchAll();
                                                 <?php endif; ?>
                                                 
                                                 <?php if (!empty($scene['notes'])): ?>
-                                                    <div class="small text-muted">
+                                                    <div class="small text-muted mb-2">
                                                         <?php echo nl2br(htmlspecialchars($scene['notes'])); ?>
+                                                    </div>
+                                                <?php endif; ?>
+                                                
+                                                <!-- Joueurs présents -->
+                                                <?php if (!empty($placePlayers[$scene['id']])): ?>
+                                                    <div class="mb-2">
+                                                        <small class="text-muted"><i class="fas fa-users me-1"></i>Joueurs :</small>
+                                                        <div class="mt-1">
+                                                            <?php foreach ($placePlayers[$scene['id']] as $player): ?>
+                                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                                    <span class="small">
+                                                                        <i class="fas fa-user me-1"></i><?php echo htmlspecialchars($player['username']); ?>
+                                                                        <?php if ($player['character_name']): ?>
+                                                                            <span class="text-muted">(<?php echo htmlspecialchars($player['character_name']); ?>)</span>
+                                                                        <?php endif; ?>
+                                                                    </span>
+                                                                    <?php if ($isOwnerDM && count($places) > 1): ?>
+                                                                        <button class="btn btn-sm btn-outline-primary" onclick="showTransferModal('player', <?php echo $player['player_id']; ?>, <?php echo $scene['id']; ?>, '<?php echo htmlspecialchars($player['username']); ?>')">
+                                                                            <i class="fas fa-exchange-alt"></i>
+                                                                        </button>
+                                                                    <?php endif; ?>
+                                                                </div>
+                                                            <?php endforeach; ?>
+                                                        </div>
+                                                    </div>
+                                                <?php endif; ?>
+                                                
+                                                <!-- PNJ présents -->
+                                                <?php if (!empty($placeNpcs[$scene['id']])): ?>
+                                                    <div class="mb-2">
+                                                        <small class="text-muted"><i class="fas fa-user-tie me-1"></i>PNJ :</small>
+                                                        <div class="mt-1">
+                                                            <?php foreach ($placeNpcs[$scene['id']] as $npc): ?>
+                                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                                    <span class="small">
+                                                                        <i class="fas fa-user-tie me-1"></i><?php echo htmlspecialchars($npc['name']); ?>
+                                                                    </span>
+                                                                    <?php if ($isOwnerDM && count($places) > 1): ?>
+                                                                        <button class="btn btn-sm btn-outline-primary" onclick="showTransferModal('npc', <?php echo $npc['id']; ?>, <?php echo $scene['id']; ?>, '<?php echo htmlspecialchars($npc['name']); ?>')">
+                                                                            <i class="fas fa-exchange-alt"></i>
+                                                                        </button>
+                                                                    <?php endif; ?>
+                                                                </div>
+                                                            <?php endforeach; ?>
+                                                        </div>
+                                                    </div>
+                                                <?php endif; ?>
+                                                
+                                                <!-- Monstres présents -->
+                                                <?php if (!empty($placeMonsters[$scene['id']])): ?>
+                                                    <div class="mb-2">
+                                                        <small class="text-muted"><i class="fas fa-dragon me-1"></i>Monstres :</small>
+                                                        <div class="mt-1">
+                                                            <?php foreach ($placeMonsters[$scene['id']] as $monster): ?>
+                                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                                    <span class="small">
+                                                                        <i class="fas fa-dragon me-1"></i><?php echo htmlspecialchars($monster['name']); ?>
+                                                                        <span class="text-muted">(<?php echo htmlspecialchars($monster['type']); ?>)</span>
+                                                                    </span>
+                                                                    <?php if ($isOwnerDM && count($places) > 1): ?>
+                                                                        <button class="btn btn-sm btn-outline-primary" onclick="showTransferModal('monster', <?php echo $monster['id']; ?>, <?php echo $scene['id']; ?>, '<?php echo htmlspecialchars($monster['name']); ?>')">
+                                                                            <i class="fas fa-exchange-alt"></i>
+                                                                        </button>
+                                                                    <?php endif; ?>
+                                                                </div>
+                                                            <?php endforeach; ?>
+                                                        </div>
                                                     </div>
                                                 <?php endif; ?>
                                                 
@@ -601,6 +747,45 @@ $places = $stmt->fetchAll();
         </div>
     </div>
 
+    <!-- Modal Transfert d'Entité -->
+    <div class="modal fade" id="transferModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Transférer <span id="transferEntityName"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <form method="POST" id="transferForm">
+                    <div class="modal-body">
+                        <input type="hidden" name="action" value="transfer_entity">
+                        <input type="hidden" name="entity_type" id="transferEntityType">
+                        <input type="hidden" name="entity_id" id="transferEntityId">
+                        <input type="hidden" name="from_place_id" id="transferFromPlaceId">
+                        
+                        <div class="mb-3">
+                            <label for="transferToPlace" class="form-label">Transférer vers :</label>
+                            <select class="form-select" name="to_place_id" id="transferToPlace" required>
+                                <option value="">Sélectionner un lieu</option>
+                                <?php foreach ($places as $place): ?>
+                                    <option value="<?php echo (int)$place['id']; ?>"><?php echo htmlspecialchars($place['title']); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <span id="transferInfo"></span>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Transférer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Session Detail Modal -->
     <div class="modal fade" id="sessionDetailModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-xl">
@@ -645,6 +830,51 @@ $places = $stmt->fetchAll();
                     });
             });
         });
+        
+        // Fonction pour afficher le modal de transfert
+        window.showTransferModal = function(entityType, entityId, fromPlaceId, entityName) {
+            document.getElementById('transferEntityType').value = entityType;
+            document.getElementById('transferEntityId').value = entityId;
+            document.getElementById('transferFromPlaceId').value = fromPlaceId;
+            document.getElementById('transferEntityName').textContent = entityName;
+            
+            // Réinitialiser le formulaire
+            document.getElementById('transferToPlace').value = '';
+            
+            // Mettre à jour les informations
+            var typeText = '';
+            var infoText = '';
+            switch(entityType) {
+                case 'player':
+                    typeText = 'Joueur';
+                    infoText = 'Ce joueur sera transféré vers le lieu sélectionné.';
+                    break;
+                case 'npc':
+                    typeText = 'PNJ';
+                    infoText = 'Ce PNJ sera transféré vers le lieu sélectionné.';
+                    break;
+                case 'monster':
+                    typeText = 'Monstre';
+                    infoText = 'Ce monstre sera transféré vers le lieu sélectionné.';
+                    break;
+            }
+            
+            document.getElementById('transferInfo').textContent = infoText;
+            
+            // Exclure le lieu d'origine de la liste
+            var select = document.getElementById('transferToPlace');
+            for (var i = 0; i < select.options.length; i++) {
+                if (select.options[i].value == fromPlaceId) {
+                    select.options[i].style.display = 'none';
+                } else {
+                    select.options[i].style.display = 'block';
+                }
+            }
+            
+            // Afficher le modal
+            var modal = new bootstrap.Modal(document.getElementById('transferModal'));
+            modal.show();
+        };
     });
     </script>
 </body>

@@ -171,7 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
         $stmt = $pdo->prepare("
             SELECT ne.*, sn.name as npc_name, sn.place_id, s.title as scene_title
             FROM npc_equipment ne
-            JOIN place_npcs sn ON ne.npc_id = sn.id AND ne.place_id = sn.place_id
+            JOIN place_npcs sn ON ne.npc_id = sn.id AND ne.scene_id = sn.place_id
             JOIN places s ON sn.place_id = s.id
             WHERE ne.id = ? AND sn.npc_character_id = ?
         ");
@@ -351,7 +351,7 @@ $characterPoisons = $stmt->fetchAll();
 $stmt = $pdo->prepare("
     SELECT ne.*, sn.name as npc_name, sn.place_id, s.title as scene_title
     FROM npc_equipment ne
-    JOIN place_npcs sn ON ne.npc_id = sn.id AND ne.place_id = sn.place_id
+    JOIN place_npcs sn ON ne.npc_id = sn.id AND ne.scene_id = sn.place_id
     JOIN places s ON sn.place_id = s.id
     WHERE sn.npc_character_id = ?
     ORDER BY ne.obtained_at DESC

@@ -50,7 +50,7 @@ $stmt = $pdo->prepare("
            COUNT(ne.id) as equipment_count
     FROM place_npcs sn 
     LEFT JOIN characters c ON sn.npc_character_id = c.id 
-    LEFT JOIN npc_equipment ne ON sn.id = ne.npc_id AND sn.place_id = ne.place_id
+    LEFT JOIN npc_equipment ne ON sn.id = ne.npc_id AND sn.place_id = ne.scene_id
     WHERE sn.place_id = ? AND sn.monster_id IS NULL 
     GROUP BY sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, c.profile_photo
     ORDER BY sn.name ASC
