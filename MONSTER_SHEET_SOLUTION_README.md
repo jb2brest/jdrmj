@@ -334,3 +334,5 @@ courants, sans avoir à saisir manuellement chaque valeur.
 **Statut** : ✅ **SOLUTION COMPLÈTEMENT IMPLÉMENTÉE**
 
 Le MJ peut maintenant afficher la feuille de chaque monstre dans une scène et gérer ses points de vie avec une interface intuitive et des actions rapides. La solution offre un suivi visuel des points de vie, une gestion complète des dégâts/soins, et une intégration parfaite avec l'existant ! 🐉⚔️❤️
+
+

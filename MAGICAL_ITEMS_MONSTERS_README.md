@@ -355,3 +355,5 @@ function generateMonsterEquipment($monster_cr) {
 **Statut** : ✅ **SOLUTION COMPLÈTEMENT IMPLÉMENTÉE**
 
 Les objets magiques peuvent maintenant être attribués aux monstres et apparaissent dans la section "Équipement et Trésor" des feuilles de monstres, avec une interface cohérente et complète ! 🐉💎⚔️
+
+

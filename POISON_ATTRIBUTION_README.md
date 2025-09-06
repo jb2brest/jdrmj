@@ -155,3 +155,5 @@ Le système de poisons s'intègre parfaitement avec :
 - **Recherche** : Modifier `search_poisons.php` pour d'autres critères
 
 Le système est maintenant pleinement fonctionnel et prêt à être utilisé ! 🧪☠️
+
+

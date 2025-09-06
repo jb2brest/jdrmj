@@ -294,3 +294,5 @@ SELECT COUNT(*) FROM scene_npcs WHERE monster_id IS NOT NULL AND quantity = 1;
 
 La gestion individuelle des monstres est maintenant complètement implémentée. Chaque monstre apparaît individuellement dans la liste, permettant au MJ un contrôle granulaire et une meilleure gestion des créatures dans ses scènes.
 
+
+

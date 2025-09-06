@@ -167,6 +167,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
+
+    // Gestion des scènes
+    if (isset($_POST['action']) && $_POST['action'] === 'create_scene') {
+        $title = sanitizeInput($_POST['title'] ?? '');
+        $map_url = sanitizeInput($_POST['map_url'] ?? '');
+        $notes = sanitizeInput($_POST['notes'] ?? '');
+        
+        if ($title !== '') {
+            $stmt = $pdo->prepare("INSERT INTO scenes (campaign_id, title, map_url, notes, position) VALUES (?, ?, ?, ?, 0)");
+            $stmt->execute([$campaign_id, $title, $map_url, $notes]);
+            $success_message = "Scène créée avec succès.";
+        } else {
+            $error_message = "Le titre de la scène est requis.";
+        }
+    }
+
+    if (isset($_POST['action']) && $_POST['action'] === 'delete_scene' && isset($_POST['scene_id'])) {
+        $scene_id = (int)$_POST['scene_id'];
+        $stmt = $pdo->prepare("DELETE FROM scenes WHERE id = ? AND campaign_id = ?");
+        $stmt->execute([$scene_id, $campaign_id]);
+        $success_message = "Scène supprimée avec succès.";
+    }
+
+    if (isset($_POST['action']) && $_POST['action'] === 'move_scene' && isset($_POST['scene_id']) && isset($_POST['direction'])) {
+        $scene_id = (int)$_POST['scene_id'];
+        $direction = $_POST['direction'];
+        
+        // Récupérer la position actuelle
+        $stmt = $pdo->prepare("SELECT position FROM scenes WHERE id = ? AND campaign_id = ?");
+        $stmt->execute([$scene_id, $campaign_id]);
+        $scene = $stmt->fetch();
+        
+        if ($scene) {
+            $new_position = $scene['position'] + ($direction === 'up' ? -1 : 1);
+            $new_position = max(0, $new_position);
+            
+            // Échanger avec la scène adjacente
+            $stmt = $pdo->prepare("SELECT id FROM scenes WHERE campaign_id = ? AND position = ? AND id != ?");
+            $stmt->execute([$campaign_id, $new_position, $scene_id]);
+            $adjacent_scene = $stmt->fetch();
+            
+            if ($adjacent_scene) {
+                // Échanger les positions
+                $stmt = $pdo->prepare("UPDATE scenes SET position = ? WHERE id = ?");
+                $stmt->execute([$scene['position'], $adjacent_scene['id']]);
+                $stmt->execute([$new_position, $scene_id]);
+            }
+        }
+    }
 }
 
 // Récupérer membres
@@ -183,6 +232,11 @@ $sessions = $stmt->fetchAll();
 $stmt = $pdo->prepare("SELECT ca.id, ca.player_id, ca.character_id, ca.message, ca.status, ca.created_at, u.username, ch.name AS character_name FROM campaign_applications ca JOIN users u ON ca.player_id = u.id LEFT JOIN characters ch ON ca.character_id = ch.id WHERE ca.campaign_id = ? ORDER BY ca.created_at DESC");
 $stmt->execute([$campaign_id]);
 $applications = $stmt->fetchAll();
+
+// Récupérer scènes
+$stmt = $pdo->prepare("SELECT * FROM scenes WHERE campaign_id = ? ORDER BY position ASC, created_at ASC");
+$stmt->execute([$campaign_id]);
+$scenes = $stmt->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -339,6 +393,94 @@ $applications = $stmt->fetchAll();
             </div>
         </div>
 
+        <!-- Section Scènes -->
+        <div class="row g-4 mt-1">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-photo-video me-2"></i>Scènes de la campagne</h5>
+                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createSceneModal">
+                            <i class="fas fa-plus"></i> Nouvelle scène
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <?php if (empty($scenes)): ?>
+                            <p class="text-muted">Aucune scène créée.</p>
+                        <?php else: ?>
+                            <div class="row g-3">
+                                <?php foreach ($scenes as $scene): ?>
+                                    <div class="col-md-6">
+                                        <div class="card h-100">
+                                            <div class="card-body">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                    <h6 class="card-title mb-2">
+                                                        <a href="view_scene.php?id=<?php echo (int)$scene['id']; ?>" class="text-decoration-none">
+                                                            <i class="fas fa-photo-video me-2"></i><?php echo htmlspecialchars($scene['title']); ?>
+                                                        </a>
+                                                    </h6>
+                                                    <div class="dropdown">
+                                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                            <i class="fas fa-ellipsis-v"></i>
+                                                        </button>
+                                                        <ul class="dropdown-menu">
+                                                            <li><a class="dropdown-item" href="view_scene.php?id=<?php echo (int)$scene['id']; ?>"><i class="fas fa-eye me-2"></i>Voir</a></li>
+                                                            <li><hr class="dropdown-divider"></li>
+                                                            <li>
+                                                                <form method="POST" class="d-inline">
+                                                                    <input type="hidden" name="action" value="move_scene">
+                                                                    <input type="hidden" name="scene_id" value="<?php echo (int)$scene['id']; ?>">
+                                                                    <input type="hidden" name="direction" value="up">
+                                                                    <button class="dropdown-item" type="submit"><i class="fas fa-arrow-up me-2"></i>Monter</button>
+                                                                </form>
+                                                            </li>
+                                                            <li>
+                                                                <form method="POST" class="d-inline">
+                                                                    <input type="hidden" name="action" value="move_scene">
+                                                                    <input type="hidden" name="scene_id" value="<?php echo (int)$scene['id']; ?>">
+                                                                    <input type="hidden" name="direction" value="down">
+                                                                    <button class="dropdown-item" type="submit"><i class="fas fa-arrow-down me-2"></i>Descendre</button>
+                                                                </form>
+                                                            </li>
+                                                            <li><hr class="dropdown-divider"></li>
+                                                            <li>
+                                                                <form method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette scène ?')">
+                                                                    <input type="hidden" name="action" value="delete_scene">
+                                                                    <input type="hidden" name="scene_id" value="<?php echo (int)$scene['id']; ?>">
+                                                                    <button class="dropdown-item text-danger" type="submit"><i class="fas fa-trash me-2"></i>Supprimer</button>
+                                                                </form>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                                
+                                                <?php if (!empty($scene['map_url'])): ?>
+                                                    <div class="mb-2">
+                                                        <a href="<?php echo htmlspecialchars($scene['map_url']); ?>" target="_blank" rel="noopener noreferrer" class="text-decoration-none">
+                                                            <i class="fas fa-map me-1"></i>Plan de la scène
+                                                        </a>
+                                                    </div>
+                                                <?php endif; ?>
+                                                
+                                                <?php if (!empty($scene['notes'])): ?>
+                                                    <div class="small text-muted">
+                                                        <?php echo nl2br(htmlspecialchars($scene['notes'])); ?>
+                                                    </div>
+                                                <?php endif; ?>
+                                                
+                                                <div class="small text-muted mt-2">
+                                                    Créée le <?php echo date('d/m/Y H:i', strtotime($scene['created_at'])); ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="row g-4 mt-1">
             <div class="col-12">
                 <div class="card">
@@ -419,6 +561,42 @@ $applications = $stmt->fetchAll();
                         <?php endif; ?>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Création Scène -->
+    <div class="modal fade" id="createSceneModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nouvelle scène</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <form method="POST">
+                    <div class="modal-body">
+                        <input type="hidden" name="action" value="create_scene">
+                        
+                        <div class="mb-3">
+                            <label for="sceneTitle" class="form-label">Titre de la scène *</label>
+                            <input type="text" class="form-control" id="sceneTitle" name="title" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="sceneMapUrl" class="form-label">URL du plan (optionnel)</label>
+                            <input type="url" class="form-control" id="sceneMapUrl" name="map_url" placeholder="https://...">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="sceneNotes" class="form-label">Notes (optionnel)</label>
+                            <textarea class="form-control" id="sceneNotes" name="notes" rows="3" placeholder="Description de la scène, contexte, etc."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Créer la scène</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

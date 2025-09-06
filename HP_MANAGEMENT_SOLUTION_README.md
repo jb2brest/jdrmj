@@ -380,3 +380,5 @@ socket.onmessage = function(event) {
 **Statut** : ✅ **SOLUTION COMPLÈTEMENT IMPLÉMENTÉE**
 
 Le MJ peut maintenant gérer les points de vie de tous les personnages (joueurs et non-joueurs) et monstres dans ses scènes, avec une interface dédiée, des actions rapides et un contrôle d'accès sécurisé ! ❤️⚔️🛡️
+
+

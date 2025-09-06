@@ -247,3 +247,5 @@ function getCRCategory($cr) {
 
 Le problème de type de données pour la colonne `challenge_rating` a été identifié et corrigé. La table `dnd_monsters` supporte maintenant correctement les CR fractionnaires et entiers, permettant un import complet et fiable des monstres.
 
+
+

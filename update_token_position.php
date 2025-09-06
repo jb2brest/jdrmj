@@ -32,7 +32,7 @@ $position_y = (int)$input['position_y'];
 $is_on_map = (bool)$input['is_on_map'];
 
 // Vérifier que l'utilisateur est le DM de cette scène
-$stmt = $pdo->prepare("SELECT gs.dm_id FROM scenes s JOIN game_sessions gs ON s.session_id = gs.id WHERE s.id = ?");
+$stmt = $pdo->prepare("SELECT c.dm_id FROM scenes s JOIN campaigns c ON s.campaign_id = c.id WHERE s.id = ?");
 $stmt->execute([$scene_id]);
 $scene = $stmt->fetch();
 
@@ -70,3 +70,5 @@ try {
     echo json_encode(['error' => 'Erreur lors de la mise à jour: ' . $e->getMessage()]);
 }
 ?>
+
+

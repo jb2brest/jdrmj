@@ -221,3 +221,5 @@ Les deux problèmes identifiés ont été complètement résolus :
 2. ✅ Les objets magiques sont correctement ajoutés dans l'inventaire
 
 Le système fonctionne maintenant comme prévu, avec une attribution d'objets fonctionnelle et un accès MJ aux feuilles de personnage.
+
+

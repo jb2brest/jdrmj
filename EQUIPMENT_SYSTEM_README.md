@@ -157,3 +157,5 @@ http://localhost:8000/setup_equipment_tables.php
 
 Le système d'équipement est maintenant complètement fonctionnel et permet une gestion réelle des objets magiques attribués aux personnages, PNJ et monstres dans les scènes de jeu.
 
+
+

@@ -218,3 +218,5 @@ Résultat : Accès refusé, redirection vers characters.php
 **Statut** : ✅ **CORRECTION APPLIQUÉE**
 
 Le problème d'accès aux feuilles de personnage depuis les scènes est maintenant résolu. Le MJ peut consulter les feuilles de personnage des joueurs et PNJ directement depuis l'écran de détail d'une scène.
+
+

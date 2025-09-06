@@ -16,3 +16,5 @@ CREATE TABLE IF NOT EXISTS scene_tokens (
     INDEX idx_token_type (token_type),
     INDEX idx_entity_id (entity_id)
 );
+
+

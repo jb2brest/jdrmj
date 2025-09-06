@@ -105,3 +105,5 @@ echo "<p><a href='index.php'>Retour à l'accueil</a></p>";
 echo "<p><a href='update_database.php'>Relancer update_database.php</a></p>";
 ?>
 
+
+

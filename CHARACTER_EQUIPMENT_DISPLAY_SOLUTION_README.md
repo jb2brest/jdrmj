@@ -266,3 +266,5 @@ de l'équipement du personnage.
 **Statut** : ✅ **SOLUTION COMPLÈTEMENT IMPLÉMENTÉE**
 
 Les objets magiques attribués par le MJ apparaissent maintenant directement dans la section "Équipement et Trésor" de la feuille de personnage. La solution offre une vue d'ensemble complète, une interface intuitive et une intégration parfaite avec l'existant.
+
+

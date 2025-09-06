@@ -16,3 +16,5 @@ UNION ALL
 SELECT 'npc_equipment' as table_name, COUNT(*) as remaining_records FROM npc_equipment
 UNION ALL
 SELECT 'monster_equipment' as table_name, COUNT(*) as remaining_records FROM monster_equipment;
+
+

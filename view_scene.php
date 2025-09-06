@@ -12,8 +12,8 @@ if (!isset($_GET['id'])) {
 $scene_id = (int)$_GET['id'];
 $isModal = isset($_GET['modal']);
 
-// Charger la scène et sa session
-$stmt = $pdo->prepare("SELECT s.*, gs.title AS session_title, gs.id AS session_id, gs.dm_id, gs.campaign_id, u.username AS dm_username FROM scenes s JOIN game_sessions gs ON s.session_id = gs.id JOIN users u ON gs.dm_id = u.id WHERE s.id = ?");
+// Charger la scène et sa campagne
+$stmt = $pdo->prepare("SELECT s.*, c.title AS campaign_title, c.id AS campaign_id, c.dm_id, u.username AS dm_username FROM scenes s JOIN campaigns c ON s.campaign_id = c.id JOIN users u ON c.dm_id = u.id WHERE s.id = ?");
 $stmt->execute([$scene_id]);
 $scene = $stmt->fetch();
 
@@ -31,11 +31,11 @@ error_log("DEBUG view_scene.php - DM ID: " . $dm_id);
 error_log("DEBUG view_scene.php - isDM(): " . (isDM() ? 'true' : 'false'));
 error_log("DEBUG view_scene.php - isOwnerDM: " . ($isOwnerDM ? 'true' : 'false'));
 
-// Autoriser également les joueurs inscrits à voir la scène
+// Autoriser également les membres de la campagne à voir la scène
 $canView = $isOwnerDM;
 if (!$canView) {
-    $stmt = $pdo->prepare("SELECT 1 FROM session_registrations WHERE session_id = ? AND player_id = ? LIMIT 1");
-    $stmt->execute([$scene['session_id'], $_SESSION['user_id']]);
+    $stmt = $pdo->prepare("SELECT 1 FROM campaign_members WHERE campaign_id = ? AND user_id = ? LIMIT 1");
+    $stmt->execute([$scene['campaign_id'], $_SESSION['user_id']]);
     $canView = (bool)$stmt->fetch();
 }
 
@@ -182,22 +182,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         if ($new_title === '') {
             $error_message = "Le nom de la scène ne peut pas être vide.";
         } else {
-            // Vérifier que la scène existe et appartient à la bonne session
-            $check_stmt = $pdo->prepare("SELECT id, title FROM scenes WHERE id = ? AND session_id = ?");
-            $check_stmt->execute([$scene_id, $scene['session_id']]);
+            // Vérifier que la scène existe et appartient à la bonne campagne
+            $check_stmt = $pdo->prepare("SELECT id, title FROM scenes WHERE id = ? AND campaign_id = ?");
+            $check_stmt->execute([$scene_id, $scene['campaign_id']]);
             $current_scene = $check_stmt->fetch();
             
             if (!$current_scene) {
                 $error_message = "Scène introuvable ou accès refusé.";
             } else {
-                $stmt = $pdo->prepare("UPDATE scenes SET title = ? WHERE id = ? AND session_id = ?");
-                $result = $stmt->execute([$new_title, $scene_id, $scene['session_id']]);
+                $stmt = $pdo->prepare("UPDATE scenes SET title = ? WHERE id = ? AND campaign_id = ?");
+                $result = $stmt->execute([$new_title, $scene_id, $scene['campaign_id']]);
                 
                 if ($result && $stmt->rowCount() > 0) {
                     $success_message = "Nom de la scène mis à jour avec succès.";
                     
                     // Recharger les données de la scène
-                    $stmt = $pdo->prepare("SELECT s.*, gs.title AS session_title, gs.id AS session_id, gs.dm_id, u.username AS dm_username FROM scenes s JOIN game_sessions gs ON s.session_id = gs.id JOIN users u ON gs.dm_id = u.id WHERE s.id = ?");
+                    $stmt = $pdo->prepare("SELECT s.*, c.title AS campaign_title, c.id AS campaign_id, c.dm_id, u.username AS dm_username FROM scenes s JOIN campaigns c ON s.campaign_id = c.id JOIN users u ON c.dm_id = u.id WHERE s.id = ?");
                     $stmt->execute([$scene_id]);
                     $scene = $stmt->fetch();
                     
@@ -289,12 +289,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                 $newMapUrl = $scene['map_url']; 
             }
             
-            $stmt = $pdo->prepare("UPDATE scenes SET map_url = ?, notes = ? WHERE id = ? AND session_id = ?");
-            $stmt->execute([$newMapUrl, $notes, $scene_id, $scene['session_id']]);
+            $stmt = $pdo->prepare("UPDATE scenes SET map_url = ?, notes = ? WHERE id = ? AND campaign_id = ?");
+            $stmt->execute([$newMapUrl, $notes, $scene_id, $scene['campaign_id']]);
             $success_message = "Plan de la scène mis à jour.";
             
             // Recharger les données de la scène
-            $stmt = $pdo->prepare("SELECT s.*, gs.title AS session_title, gs.id AS session_id, gs.dm_id, u.username AS dm_username FROM scenes s JOIN game_sessions gs ON s.session_id = gs.id JOIN users u ON gs.dm_id = u.id WHERE s.id = ?");
+            $stmt = $pdo->prepare("SELECT s.*, c.title AS campaign_title, c.id AS campaign_id, c.dm_id, u.username AS dm_username FROM scenes s JOIN campaigns c ON s.campaign_id = c.id JOIN users u ON c.dm_id = u.id WHERE s.id = ?");
             $stmt->execute([$scene_id]);
             $scene = $stmt->fetch();
         }
@@ -557,9 +557,9 @@ if ($isOwnerDM) {
     $dmCharacters = $stmt->fetchAll();
 }
 
-// Récupérer les autres scènes de la session pour navigation
-$stmt = $pdo->prepare("SELECT id, title, position FROM scenes WHERE session_id = ? ORDER BY position ASC, created_at ASC");
-$stmt->execute([$scene['session_id']]);
+// Récupérer les autres scènes de la campagne pour navigation
+$stmt = $pdo->prepare("SELECT id, title, position FROM scenes WHERE campaign_id = ? ORDER BY position ASC, created_at ASC");
+$stmt->execute([$scene['campaign_id']]);
 $allScenes = $stmt->fetchAll();
 
 
@@ -597,7 +597,7 @@ foreach ($allScenes as $s) {
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="view_session.php?id=<?php echo (int)$scene['session_id']; ?>">Retour Session</a></li>
+                    <li class="nav-item"><a class="nav-link" href="view_campaign.php?id=<?php echo (int)$scene['campaign_id']; ?>">Retour Campagne</a></li>
                 </ul>
                 <ul class="navbar-nav">
                     <li class="nav-item dropdown">
@@ -648,7 +648,7 @@ foreach ($allScenes as $s) {
                 <h1><i class="fas fa-photo-video me-2"></i><?php echo htmlspecialchars($scene['title']); ?></h1>
             <?php endif; ?>
             <p class="text-muted mb-0">
-                Session: <?php echo htmlspecialchars($scene['session_title']); ?> • MJ: <?php echo htmlspecialchars($scene['dm_username']); ?>
+                Campagne: <?php echo htmlspecialchars($scene['campaign_title']); ?> • MJ: <?php echo htmlspecialchars($scene['dm_username']); ?>
                 <button class="btn btn-sm btn-outline-danger ms-2" type="button" data-bs-toggle="modal" data-bs-target="#poisonSearchModal">
                     <i class="fas fa-skull-crossbones me-1"></i>Poison
                 </button>
@@ -1009,7 +1009,7 @@ foreach ($allScenes as $s) {
                                             </div>
                                         </div>
                                         <div class="d-flex gap-1">
-                                            <a href="view_monster_sheet.php?id=<?php echo (int)$monster['id']; ?>&scene_id=<?php echo (int)$scene_id; ?>" class="btn btn-sm btn-outline-danger" title="Voir la feuille du monstre" target="_blank">
+                                            <a href="view_monster_sheet.php?id=<?php echo (int)$monster['id']; ?>&campaign_id=<?php echo (int)$scene['campaign_id']; ?>" class="btn btn-sm btn-outline-danger" title="Voir la feuille du monstre" target="_blank">
                                                 <i class="fas fa-dragon"></i>
                                             </a>
                                             <a href="bestiary.php?search=<?php echo urlencode($monster['name']); ?>" class="btn btn-sm btn-outline-primary" title="Voir dans le bestiaire" target="_blank">

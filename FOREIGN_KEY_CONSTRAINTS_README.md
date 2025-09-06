@@ -221,3 +221,5 @@ JOIN dnd_monsters dm ON umc.monster_id = dm.id;
 
 La gestion automatique des contraintes de clé étrangère est maintenant implémentée et résout le problème de TRUNCATE sur les tables référencées. Le système est robuste, sécurisé et maintient l'intégrité des données.
 
+
+

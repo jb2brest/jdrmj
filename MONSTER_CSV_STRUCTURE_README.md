@@ -240,3 +240,5 @@ echo extractArmorClass("17 (armure naturelle)"); // Doit retourner 17
 
 La structure réelle du fichier CSV des monstres a été identifiée et corrigée. Les fonctions de nettoyage des données permettent maintenant un import robuste et fiable des monstres dans la base de données.
 
+
+

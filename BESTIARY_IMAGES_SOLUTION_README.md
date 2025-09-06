@@ -269,3 +269,5 @@ $fallback_images = [
 **Statut** : ✅ **SOLUTION COMPLÈTEMENT IMPLÉMENTÉE**
 
 Les images des monstres sont maintenant affichées dans le bestiaire, utilisant le `csv_id` pour localiser l'image correspondante. La solution offre un affichage conditionnel avec fallback élégant, un design responsive et une interface enrichie ! 🐉📚🖼️
+
+

@@ -10,19 +10,19 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $monster_npc_id = (int)$_GET['id'];
-$scene_id = (int)$_GET['scene_id'];
+$campaign_id = (int)$_GET['campaign_id'];
 
 // Récupérer les informations du monstre dans la scène
 $stmt = $pdo->prepare("
     SELECT sn.*, m.id as monster_db_id, m.name as monster_name, m.type, m.size, m.challenge_rating, 
-           m.hit_points as max_hit_points, m.armor_class, m.csv_id, gs.dm_id, gs.campaign_id
+           m.hit_points as max_hit_points, m.armor_class, m.csv_id, c.dm_id, c.id as campaign_id, s.id as scene_id
     FROM scene_npcs sn 
     JOIN dnd_monsters m ON sn.monster_id = m.id 
     JOIN scenes s ON sn.scene_id = s.id
-    JOIN game_sessions gs ON s.session_id = gs.id
-    WHERE sn.id = ? AND sn.scene_id = ? AND sn.monster_id IS NOT NULL
+    JOIN campaigns c ON s.campaign_id = c.id
+    WHERE sn.id = ? AND s.campaign_id = ? AND sn.monster_id IS NOT NULL
 ");
-$stmt->execute([$monster_npc_id, $scene_id]);
+$stmt->execute([$monster_npc_id, $campaign_id]);
 $monster = $stmt->fetch();
 
 if (!$monster) {
@@ -35,11 +35,11 @@ $stmt = $pdo->prepare("
     SELECT me.*, mi.nom as magical_item_nom, mi.type as magical_item_type, mi.description as magical_item_description, mi.source as magical_item_source
     FROM monster_equipment me
     LEFT JOIN magical_items mi ON me.magical_item_id = mi.csv_id
-    WHERE me.monster_id = ? AND me.scene_id = ? 
+    WHERE me.monster_id = ? AND me.campaign_id = ? 
     AND me.magical_item_id NOT IN (SELECT csv_id FROM poisons)
     ORDER BY me.obtained_at DESC
 ");
-$stmt->execute([$monster_npc_id, $scene_id]);
+$stmt->execute([$monster_npc_id, $campaign_id]);
 $magicalEquipment = $stmt->fetchAll();
 
 // Récupérer les poisons du monstre (stockés dans monster_equipment avec magical_item_id correspondant à un poison)
@@ -47,10 +47,10 @@ $stmt = $pdo->prepare("
     SELECT me.*, p.nom as poison_nom, p.type as poison_type, p.description as poison_description, p.source as poison_source
     FROM monster_equipment me
     JOIN poisons p ON me.magical_item_id = p.csv_id
-    WHERE me.monster_id = ? AND me.scene_id = ?
+    WHERE me.monster_id = ? AND me.campaign_id = ?
     ORDER BY me.obtained_at DESC
 ");
-$stmt->execute([$monster_npc_id, $scene_id]);
+$stmt->execute([$monster_npc_id, $campaign_id]);
 $monsterPoisons = $stmt->fetchAll();
 
 // Vérifier que l'utilisateur est le MJ de cette scène
@@ -120,8 +120,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $notes = $_POST['notes'] ?? '';
                 
                 // Récupérer les informations de l'objet à transférer
-                $stmt = $pdo->prepare("SELECT * FROM monster_equipment WHERE id = ? AND monster_id = ? AND scene_id = ?");
-                $stmt->execute([$item_id, $monster_npc_id, $scene_id]);
+                $stmt = $pdo->prepare("SELECT * FROM monster_equipment WHERE id = ? AND monster_id = ? AND campaign_id = ?");
+                $stmt->execute([$item_id, $monster_npc_id, $campaign_id]);
                 $item = $stmt->fetch();
                 
                 if (!$item) {
@@ -169,16 +169,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             
                         case 'monster':
                             // Transférer vers un autre monstre
-                            $stmt = $pdo->prepare("SELECT sn.name, sn.scene_id FROM scene_npcs sn WHERE sn.id = ?");
+                            $stmt = $pdo->prepare("SELECT sn.name FROM scene_npcs sn WHERE sn.id = ?");
                             $stmt->execute([$target_id]);
                             $target_monster = $stmt->fetch();
                             
                             if ($target_monster) {
                                 // Insérer dans monster_equipment du nouveau propriétaire
-                                $stmt = $pdo->prepare("INSERT INTO monster_equipment (monster_id, scene_id, magical_item_id, item_name, item_type, item_description, item_source, quantity, equipped, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                                $stmt = $pdo->prepare("INSERT INTO monster_equipment (monster_id, campaign_id, magical_item_id, item_name, item_type, item_description, item_source, quantity, equipped, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                                 $stmt->execute([
                                     $target_id,
-                                    $target_monster['scene_id'],
+                                    $campaign_id,
                                     $item['magical_item_id'],
                                     $item['item_name'],
                                     $item['item_type'],
@@ -201,16 +201,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             
                         case 'npc':
                             // Transférer vers un PNJ
-                            $stmt = $pdo->prepare("SELECT sn.name, sn.scene_id FROM scene_npcs sn WHERE sn.id = ?");
+                            $stmt = $pdo->prepare("SELECT sn.name FROM scene_npcs sn WHERE sn.id = ?");
                             $stmt->execute([$target_id]);
                             $target_npc = $stmt->fetch();
                             
                             if ($target_npc) {
                                 // Insérer dans npc_equipment
-                                $stmt = $pdo->prepare("INSERT INTO npc_equipment (npc_id, scene_id, magical_item_id, item_name, item_type, item_description, item_source, quantity, equipped, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                                $stmt = $pdo->prepare("INSERT INTO npc_equipment (npc_id, campaign_id, magical_item_id, item_name, item_type, item_description, item_source, quantity, equipped, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                                 $stmt->execute([
                                     $target_id,
-                                    $target_npc['scene_id'],
+                                    $campaign_id,
                                     $item['magical_item_id'],
                                     $item['item_name'],
                                     $item['item_type'],
@@ -244,14 +244,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Recharger les données du monstre
         $stmt = $pdo->prepare("
             SELECT sn.*, m.id as monster_db_id, m.name as monster_name, m.type, m.size, m.challenge_rating, 
-                   m.hit_points as max_hit_points, m.armor_class, m.csv_id, gs.dm_id, gs.campaign_id
+                   m.hit_points as max_hit_points, m.armor_class, m.csv_id, c.dm_id, c.id as campaign_id, s.id as scene_id
             FROM scene_npcs sn 
             JOIN dnd_monsters m ON sn.monster_id = m.id 
             JOIN scenes s ON sn.scene_id = s.id
-            JOIN game_sessions gs ON s.session_id = gs.id
-            WHERE sn.id = ? AND sn.scene_id = ? AND sn.monster_id IS NOT NULL
+            JOIN campaigns c ON s.campaign_id = c.id
+            WHERE sn.id = ? AND s.campaign_id = ? AND sn.monster_id IS NOT NULL
         ");
-        $stmt->execute([$monster_npc_id, $scene_id]);
+        $stmt->execute([$monster_npc_id, $campaign_id]);
         $monster = $stmt->fetch();
     }
 }
@@ -356,8 +356,8 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
                     </p>
                 </div>
                 <div class="col-md-4 text-end">
-                    <a href="view_scene.php?id=<?php echo (int)$scene_id; ?>" class="btn btn-light">
-                        <i class="fas fa-arrow-left me-2"></i>Retour à la Scène
+                    <a href="view_campaign.php?id=<?php echo (int)$campaign_id; ?>" class="btn btn-light">
+                        <i class="fas fa-arrow-left me-2"></i>Retour à la Campagne
                     </a>
                 </div>
             </div>
