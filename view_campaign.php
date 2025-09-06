@@ -168,51 +168,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // Gestion des scènes
+    // Gestion des lieux
     if (isset($_POST['action']) && $_POST['action'] === 'create_scene') {
         $title = sanitizeInput($_POST['title'] ?? '');
         $map_url = sanitizeInput($_POST['map_url'] ?? '');
         $notes = sanitizeInput($_POST['notes'] ?? '');
         
         if ($title !== '') {
-            $stmt = $pdo->prepare("INSERT INTO scenes (campaign_id, title, map_url, notes, position) VALUES (?, ?, ?, ?, 0)");
+            $stmt = $pdo->prepare("INSERT INTO places (campaign_id, title, map_url, notes, position) VALUES (?, ?, ?, ?, 0)");
             $stmt->execute([$campaign_id, $title, $map_url, $notes]);
-            $success_message = "Scène créée avec succès.";
+            $success_message = "Lieu créée avec succès.";
         } else {
-            $error_message = "Le titre de la scène est requis.";
+            $error_message = "Le titre du lieu est requis.";
         }
     }
 
-    if (isset($_POST['action']) && $_POST['action'] === 'delete_scene' && isset($_POST['scene_id'])) {
-        $scene_id = (int)$_POST['scene_id'];
-        $stmt = $pdo->prepare("DELETE FROM scenes WHERE id = ? AND campaign_id = ?");
-        $stmt->execute([$scene_id, $campaign_id]);
-        $success_message = "Scène supprimée avec succès.";
+    if (isset($_POST['action']) && $_POST['action'] === 'delete_scene' && isset($_POST['place_id'])) {
+        $place_id = (int)$_POST['place_id'];
+        $stmt = $pdo->prepare("DELETE FROM places WHERE id = ? AND campaign_id = ?");
+        $stmt->execute([$place_id, $campaign_id]);
+        $success_message = "Lieu supprimée avec succès.";
     }
 
-    if (isset($_POST['action']) && $_POST['action'] === 'move_scene' && isset($_POST['scene_id']) && isset($_POST['direction'])) {
-        $scene_id = (int)$_POST['scene_id'];
+    if (isset($_POST['action']) && $_POST['action'] === 'move_scene' && isset($_POST['place_id']) && isset($_POST['direction'])) {
+        $place_id = (int)$_POST['place_id'];
         $direction = $_POST['direction'];
         
         // Récupérer la position actuelle
-        $stmt = $pdo->prepare("SELECT position FROM scenes WHERE id = ? AND campaign_id = ?");
-        $stmt->execute([$scene_id, $campaign_id]);
+        $stmt = $pdo->prepare("SELECT position FROM places WHERE id = ? AND campaign_id = ?");
+        $stmt->execute([$place_id, $campaign_id]);
         $scene = $stmt->fetch();
         
         if ($scene) {
             $new_position = $scene['position'] + ($direction === 'up' ? -1 : 1);
             $new_position = max(0, $new_position);
             
-            // Échanger avec la scène adjacente
-            $stmt = $pdo->prepare("SELECT id FROM scenes WHERE campaign_id = ? AND position = ? AND id != ?");
-            $stmt->execute([$campaign_id, $new_position, $scene_id]);
+            // Échanger avec la lieu adjacente
+            $stmt = $pdo->prepare("SELECT id FROM places WHERE campaign_id = ? AND position = ? AND id != ?");
+            $stmt->execute([$campaign_id, $new_position, $place_id]);
             $adjacent_scene = $stmt->fetch();
             
             if ($adjacent_scene) {
                 // Échanger les positions
-                $stmt = $pdo->prepare("UPDATE scenes SET position = ? WHERE id = ?");
+                $stmt = $pdo->prepare("UPDATE places SET position = ? WHERE id = ?");
                 $stmt->execute([$scene['position'], $adjacent_scene['id']]);
-                $stmt->execute([$new_position, $scene_id]);
+                $stmt->execute([$new_position, $place_id]);
             }
         }
     }
@@ -233,10 +233,10 @@ $stmt = $pdo->prepare("SELECT ca.id, ca.player_id, ca.character_id, ca.message, 
 $stmt->execute([$campaign_id]);
 $applications = $stmt->fetchAll();
 
-// Récupérer scènes
-$stmt = $pdo->prepare("SELECT * FROM scenes WHERE campaign_id = ? ORDER BY position ASC, created_at ASC");
+// Récupérer lieux
+$stmt = $pdo->prepare("SELECT * FROM places WHERE campaign_id = ? ORDER BY position ASC, created_at ASC");
 $stmt->execute([$campaign_id]);
-$scenes = $stmt->fetchAll();
+$places = $stmt->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -393,22 +393,22 @@ $scenes = $stmt->fetchAll();
             </div>
         </div>
 
-        <!-- Section Scènes -->
+        <!-- Section Lieux -->
         <div class="row g-4 mt-1">
             <div class="col-12">
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="fas fa-photo-video me-2"></i>Scènes de la campagne</h5>
+                        <h5 class="mb-0"><i class="fas fa-photo-video me-2"></i>Lieux de la campagne</h5>
                         <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createSceneModal">
-                            <i class="fas fa-plus"></i> Nouvelle scène
+                            <i class="fas fa-plus"></i> Nouveau lieu
                         </button>
                     </div>
                     <div class="card-body">
-                        <?php if (empty($scenes)): ?>
-                            <p class="text-muted">Aucune scène créée.</p>
+                        <?php if (empty($places)): ?>
+                            <p class="text-muted">Aucun lieu créé.</p>
                         <?php else: ?>
                             <div class="row g-3">
-                                <?php foreach ($scenes as $scene): ?>
+                                <?php foreach ($places as $scene): ?>
                                     <div class="col-md-6">
                                         <div class="card h-100">
                                             <div class="card-body">
@@ -428,7 +428,7 @@ $scenes = $stmt->fetchAll();
                                                             <li>
                                                                 <form method="POST" class="d-inline">
                                                                     <input type="hidden" name="action" value="move_scene">
-                                                                    <input type="hidden" name="scene_id" value="<?php echo (int)$scene['id']; ?>">
+                                                                    <input type="hidden" name="place_id" value="<?php echo (int)$scene['id']; ?>">
                                                                     <input type="hidden" name="direction" value="up">
                                                                     <button class="dropdown-item" type="submit"><i class="fas fa-arrow-up me-2"></i>Monter</button>
                                                                 </form>
@@ -436,16 +436,16 @@ $scenes = $stmt->fetchAll();
                                                             <li>
                                                                 <form method="POST" class="d-inline">
                                                                     <input type="hidden" name="action" value="move_scene">
-                                                                    <input type="hidden" name="scene_id" value="<?php echo (int)$scene['id']; ?>">
+                                                                    <input type="hidden" name="place_id" value="<?php echo (int)$scene['id']; ?>">
                                                                     <input type="hidden" name="direction" value="down">
                                                                     <button class="dropdown-item" type="submit"><i class="fas fa-arrow-down me-2"></i>Descendre</button>
                                                                 </form>
                                                             </li>
                                                             <li><hr class="dropdown-divider"></li>
                                                             <li>
-                                                                <form method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette scène ?')">
+                                                                <form method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette lieu ?')">
                                                                     <input type="hidden" name="action" value="delete_scene">
-                                                                    <input type="hidden" name="scene_id" value="<?php echo (int)$scene['id']; ?>">
+                                                                    <input type="hidden" name="place_id" value="<?php echo (int)$scene['id']; ?>">
                                                                     <button class="dropdown-item text-danger" type="submit"><i class="fas fa-trash me-2"></i>Supprimer</button>
                                                                 </form>
                                                             </li>
@@ -456,7 +456,7 @@ $scenes = $stmt->fetchAll();
                                                 <?php if (!empty($scene['map_url'])): ?>
                                                     <div class="mb-2">
                                                         <a href="<?php echo htmlspecialchars($scene['map_url']); ?>" target="_blank" rel="noopener noreferrer" class="text-decoration-none">
-                                                            <i class="fas fa-map me-1"></i>Plan de la scène
+                                                            <i class="fas fa-map me-1"></i>Plan du lieu
                                                         </a>
                                                     </div>
                                                 <?php endif; ?>
@@ -565,12 +565,12 @@ $scenes = $stmt->fetchAll();
         </div>
     </div>
 
-    <!-- Modal Création Scène -->
+    <!-- Modal Création Lieu -->
     <div class="modal fade" id="createSceneModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Nouvelle scène</h5>
+                    <h5 class="modal-title">Nouveau lieu</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
                 </div>
                 <form method="POST">
@@ -578,7 +578,7 @@ $scenes = $stmt->fetchAll();
                         <input type="hidden" name="action" value="create_scene">
                         
                         <div class="mb-3">
-                            <label for="sceneTitle" class="form-label">Titre de la scène *</label>
+                            <label for="sceneTitle" class="form-label">Titre du lieu *</label>
                             <input type="text" class="form-control" id="sceneTitle" name="title" required>
                         </div>
                         
@@ -589,12 +589,12 @@ $scenes = $stmt->fetchAll();
                         
                         <div class="mb-3">
                             <label for="sceneNotes" class="form-label">Notes (optionnel)</label>
-                            <textarea class="form-control" id="sceneNotes" name="notes" rows="3" placeholder="Description de la scène, contexte, etc."></textarea>
+                            <textarea class="form-control" id="sceneNotes" name="notes" rows="3" placeholder="Description du lieu, contexte, etc."></textarea>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-primary">Créer la scène</button>
+                        <button type="submit" class="btn btn-primary">Créer le lieu</button>
                     </div>
                 </form>
             </div>

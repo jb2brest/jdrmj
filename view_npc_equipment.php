@@ -4,21 +4,21 @@ require_once 'includes/functions.php';
 
 requireLogin();
 
-if (!isset($_GET['id']) || !isset($_GET['scene_id'])) {
+if (!isset($_GET['id']) || !isset($_GET['place_id'])) {
     header('Location: index.php');
     exit();
 }
 
 $npc_id = (int)$_GET['id'];
-$scene_id = (int)$_GET['scene_id'];
+$place_id = (int)$_GET['place_id'];
 
 // DEBUG: Logs pour déboguer l'accès
-error_log("DEBUG view_npc_equipment.php - Accès avec NPC ID: $npc_id, Scene ID: $scene_id");
+error_log("DEBUG view_npc_equipment.php - Accès avec NPC ID: $npc_id, Scene ID: $place_id");
 error_log("DEBUG view_npc_equipment.php - User ID: " . ($_SESSION['user_id'] ?? 'NOT_SET'));
 
-// Vérifier que le MJ a accès à cette scène
-$stmt = $pdo->prepare("SELECT s.*, gs.dm_id FROM scenes s JOIN game_sessions gs ON s.session_id = gs.id WHERE s.id = ?");
-$stmt->execute([$scene_id]);
+// Vérifier que le MJ a accès à cette lieu
+$stmt = $pdo->prepare("SELECT s.*, gs.dm_id FROM places s JOIN game_sessions gs ON s.session_id = gs.id WHERE s.id = ?");
+$stmt->execute([$place_id]);
 $scene = $stmt->fetch();
 
 if (!$scene || $scene['dm_id'] != $_SESSION['user_id']) {
@@ -30,8 +30,8 @@ if (!$scene || $scene['dm_id'] != $_SESSION['user_id']) {
 error_log("DEBUG view_npc_equipment.php - Accès autorisé - DM ID: " . $scene['dm_id'] . ", User ID: " . $_SESSION['user_id']);
 
 // Récupérer les informations du PNJ
-$stmt = $pdo->prepare("SELECT * FROM scene_npcs WHERE id = ? AND scene_id = ? AND monster_id IS NULL");
-$stmt->execute([$npc_id, $scene_id]);
+$stmt = $pdo->prepare("SELECT * FROM place_npcs WHERE id = ? AND place_id = ? AND monster_id IS NULL");
+$stmt->execute([$npc_id, $place_id]);
 $npc = $stmt->fetch();
 
 if (!$npc) {
@@ -40,8 +40,8 @@ if (!$npc) {
 }
 
 // Récupérer tous les équipements du PNJ
-$stmt = $pdo->prepare("SELECT * FROM npc_equipment WHERE npc_id = ? AND scene_id = ? ORDER BY obtained_at DESC");
-$stmt->execute([$npc_id, $scene_id]);
+$stmt = $pdo->prepare("SELECT * FROM npc_equipment WHERE npc_id = ? AND place_id = ? ORDER BY obtained_at DESC");
+$stmt->execute([$npc_id, $place_id]);
 $allEquipment = $stmt->fetchAll();
 
 error_log("DEBUG view_npc_equipment.php - Équipements récupérés: " . count($allEquipment) . " pour PNJ ID: $npc_id");
@@ -90,14 +90,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $equipment_id = (int)$_POST['equipment_id'];
                 $new_status = (int)$_POST['new_status'];
                 
-                $stmt = $pdo->prepare("UPDATE npc_equipment SET equipped = ? WHERE id = ? AND npc_id = ? AND scene_id = ?");
-                $stmt->execute([$new_status, $equipment_id, $npc_id, $scene_id]);
+                $stmt = $pdo->prepare("UPDATE npc_equipment SET equipped = ? WHERE id = ? AND npc_id = ? AND place_id = ?");
+                $stmt->execute([$new_status, $equipment_id, $npc_id, $place_id]);
                 
                 $success_message = "Statut d'équipement mis à jour.";
                 
                 // Recharger tous les équipements
-                $stmt = $pdo->prepare("SELECT * FROM npc_equipment WHERE npc_id = ? AND scene_id = ? ORDER BY obtained_at DESC");
-                $stmt->execute([$npc_id, $scene_id]);
+                $stmt = $pdo->prepare("SELECT * FROM npc_equipment WHERE npc_id = ? AND place_id = ? ORDER BY obtained_at DESC");
+                $stmt->execute([$npc_id, $place_id]);
                 $allEquipment = $stmt->fetchAll();
 
                 // Séparer les objets magiques et les poisons
@@ -138,14 +138,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             case 'remove_item':
                 $equipment_id = (int)$_POST['equipment_id'];
                 
-                $stmt = $pdo->prepare("DELETE FROM npc_equipment WHERE id = ? AND npc_id = ? AND scene_id = ?");
-                $stmt->execute([$equipment_id, $npc_id, $scene_id]);
+                $stmt = $pdo->prepare("DELETE FROM npc_equipment WHERE id = ? AND npc_id = ? AND place_id = ?");
+                $stmt->execute([$equipment_id, $npc_id, $place_id]);
                 
                 $success_message = "Objet retiré de l'équipement.";
                 
                 // Recharger tous les équipements
-                $stmt = $pdo->prepare("SELECT * FROM npc_equipment WHERE npc_id = ? AND scene_id = ? ORDER BY obtained_at DESC");
-                $stmt->execute([$npc_id, $scene_id]);
+                $stmt = $pdo->prepare("SELECT * FROM npc_equipment WHERE npc_id = ? AND place_id = ? ORDER BY obtained_at DESC");
+                $stmt->execute([$npc_id, $place_id]);
                 $allEquipment = $stmt->fetchAll();
 
                 // Séparer les objets magiques et les poisons
@@ -205,7 +205,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="view_scene_equipment.php?id=<?php echo (int)$scene_id; ?>">Retour à la Scène</a></li>
+                    <li class="nav-item"><a class="nav-link" href="view_scene_equipment.php?id=<?php echo (int)$place_id; ?>">Retour à la Lieu</a></li>
                 </ul>
                 <ul class="navbar-nav">
                     <li class="nav-item dropdown">

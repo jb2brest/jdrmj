@@ -18,17 +18,17 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $input = json_decode(file_get_contents('php://input'), true);
 
-if (!$input || !isset($input['scene_id'])) {
+if (!$input || !isset($input['place_id'])) {
     http_response_code(400);
     echo json_encode(['error' => 'ID de scène manquant']);
     exit();
 }
 
-$scene_id = (int)$input['scene_id'];
+$place_id = (int)$input['place_id'];
 
 // Vérifier que l'utilisateur est le DM de cette scène
-$stmt = $pdo->prepare("SELECT c.dm_id FROM scenes s JOIN campaigns c ON s.campaign_id = c.id WHERE s.id = ?");
-$stmt->execute([$scene_id]);
+$stmt = $pdo->prepare("SELECT c.dm_id FROM places s JOIN campaigns c ON s.campaign_id = c.id WHERE s.id = ?");
+$stmt->execute([$place_id]);
 $scene = $stmt->fetch();
 
 if (!$scene || $scene['dm_id'] != $_SESSION['user_id']) {
@@ -40,12 +40,12 @@ if (!$scene || $scene['dm_id'] != $_SESSION['user_id']) {
 try {
     // Remettre tous les pions sur le côté du plan
     $stmt = $pdo->prepare("
-        UPDATE scene_tokens 
+        UPDATE place_tokens 
         SET position_x = 0, position_y = 0, is_on_map = FALSE, updated_at = CURRENT_TIMESTAMP
-        WHERE scene_id = ?
+        WHERE place_id = ?
     ");
     
-    $stmt->execute([$scene_id]);
+    $stmt->execute([$place_id]);
     
     echo json_encode(['success' => true, 'message' => 'Positions réinitialisées']);
     

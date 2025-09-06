@@ -4,17 +4,17 @@ require_once 'includes/functions.php';
 
 requireLogin();
 
-if (!isset($_GET['id']) || !isset($_GET['scene_id'])) {
+if (!isset($_GET['id']) || !isset($_GET['place_id'])) {
     header('Location: index.php');
     exit();
 }
 
 $monster_id = (int)$_GET['id'];
-$scene_id = (int)$_GET['scene_id'];
+$place_id = (int)$_GET['place_id'];
 
-// Vérifier que le MJ a accès à cette scène
-$stmt = $pdo->prepare("SELECT s.*, gs.dm_id FROM scenes s JOIN game_sessions gs ON s.session_id = gs.id WHERE s.id = ?");
-$stmt->execute([$scene_id]);
+// Vérifier que le MJ a accès à cette lieu
+$stmt = $pdo->prepare("SELECT s.*, gs.dm_id FROM places s JOIN game_sessions gs ON s.session_id = gs.id WHERE s.id = ?");
+$stmt->execute([$place_id]);
 $scene = $stmt->fetch();
 
 if (!$scene || $scene['dm_id'] != $_SESSION['user_id']) {
@@ -25,11 +25,11 @@ if (!$scene || $scene['dm_id'] != $_SESSION['user_id']) {
 // Récupérer les informations du monstre
 $stmt = $pdo->prepare("
     SELECT sn.*, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class 
-    FROM scene_npcs sn 
+    FROM place_npcs sn 
     JOIN dnd_monsters m ON sn.monster_id = m.id 
-    WHERE sn.id = ? AND sn.scene_id = ? AND sn.monster_id IS NOT NULL
+    WHERE sn.id = ? AND sn.place_id = ? AND sn.monster_id IS NOT NULL
 ");
-$stmt->execute([$monster_id, $scene_id]);
+$stmt->execute([$monster_id, $place_id]);
 $monster = $stmt->fetch();
 
 if (!$monster) {
@@ -38,8 +38,8 @@ if (!$monster) {
 }
 
 // Récupérer l'équipement du monstre
-$stmt = $pdo->prepare("SELECT * FROM monster_equipment WHERE monster_id = ? AND scene_id = ? ORDER BY obtained_at DESC");
-$stmt->execute([$monster_id, $scene_id]);
+$stmt = $pdo->prepare("SELECT * FROM monster_equipment WHERE monster_id = ? AND place_id = ? ORDER BY obtained_at DESC");
+$stmt->execute([$monster_id, $place_id]);
 $equipment = $stmt->fetchAll();
 
 // Traitements POST pour gérer l'équipement
@@ -50,28 +50,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $equipment_id = (int)$_POST['equipment_id'];
                 $new_status = (int)$_POST['new_status'];
                 
-                $stmt = $pdo->prepare("UPDATE monster_equipment SET equipped = ? WHERE id = ? AND monster_id = ? AND scene_id = ?");
-                $stmt->execute([$new_status, $equipment_id, $monster_id, $scene_id]);
+                $stmt = $pdo->prepare("UPDATE monster_equipment SET equipped = ? WHERE id = ? AND monster_id = ? AND place_id = ?");
+                $stmt->execute([$new_status, $equipment_id, $monster_id, $place_id]);
                 
                 $success_message = "Statut d'équipement mis à jour.";
                 
                 // Recharger l'équipement
-                $stmt = $pdo->prepare("SELECT * FROM monster_equipment WHERE monster_id = ? AND scene_id = ? ORDER BY obtained_at DESC");
-                $stmt->execute([$monster_id, $scene_id]);
+                $stmt = $pdo->prepare("SELECT * FROM monster_equipment WHERE monster_id = ? AND place_id = ? ORDER BY obtained_at DESC");
+                $stmt->execute([$monster_id, $place_id]);
                 $equipment = $stmt->fetchAll();
                 break;
                 
             case 'remove_item':
                 $equipment_id = (int)$_POST['equipment_id'];
                 
-                $stmt = $pdo->prepare("DELETE FROM monster_equipment WHERE id = ? AND monster_id = ? AND scene_id = ?");
-                $stmt->execute([$equipment_id, $monster_id, $scene_id]);
+                $stmt = $pdo->prepare("DELETE FROM monster_equipment WHERE id = ? AND monster_id = ? AND place_id = ?");
+                $stmt->execute([$equipment_id, $monster_id, $place_id]);
                 
                 $success_message = "Objet retiré de l'équipement.";
                 
                 // Recharger l'équipement
-                $stmt = $pdo->prepare("SELECT * FROM monster_equipment WHERE monster_id = ? AND scene_id = ? ORDER BY obtained_at DESC");
-                $stmt->execute([$monster_id, $scene_id]);
+                $stmt = $pdo->prepare("SELECT * FROM monster_equipment WHERE monster_id = ? AND place_id = ? ORDER BY obtained_at DESC");
+                $stmt->execute([$monster_id, $place_id]);
                 $equipment = $stmt->fetchAll();
                 break;
         }
@@ -97,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="view_scene_equipment.php?id=<?php echo (int)$scene_id; ?>">Retour à la Scène</a></li>
+                    <li class="nav-item"><a class="nav-link" href="view_scene_equipment.php?id=<?php echo (int)$place_id; ?>">Retour à la Lieu</a></li>
                 </ul>
                 <ul class="navbar-nav">
                     <li class="nav-item dropdown">

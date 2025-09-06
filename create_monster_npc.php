@@ -11,11 +11,11 @@ if (!isDM()) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $monster_id = (int)($_POST['monster_id'] ?? 0);
-    $scene_id = (int)($_POST['scene_id'] ?? 0);
+    $place_id = (int)($_POST['place_id'] ?? 0);
     $npc_name = trim($_POST['npc_name'] ?? '');
     $description = trim($_POST['description'] ?? '');
     
-    if ($monster_id <= 0 || $scene_id <= 0 || $npc_name === '') {
+    if ($monster_id <= 0 || $place_id <= 0 || $npc_name === '') {
         header('Location: my_monsters.php?error=invalid_parameters');
         exit();
     }
@@ -32,11 +32,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
     
-    // Vérifier que la scène existe et appartient au MJ
-    $stmt = $pdo->prepare("SELECT s.id, s.title, gs.title AS session_title FROM scenes s 
+    // Vérifier que la lieu existe et appartient au MJ
+    $stmt = $pdo->prepare("SELECT s.id, s.title, gs.title AS session_title FROM places s 
                           JOIN game_sessions gs ON s.session_id = gs.id 
                           WHERE s.id = ? AND gs.dm_id = ?");
-    $stmt->execute([$scene_id, $_SESSION['user_id']]);
+    $stmt->execute([$place_id, $_SESSION['user_id']]);
     $scene = $stmt->fetch();
     
     if (!$scene) {
@@ -44,12 +44,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
     
-    // Créer le MNJ dans la scène
-    $stmt = $pdo->prepare("INSERT INTO scene_npcs (scene_id, name, description, monster_id) VALUES (?, ?, ?, ?)");
-    $stmt->execute([$scene_id, $npc_name, $description, $monster_id]);
+    // Créer le MNJ dans la lieu
+    $stmt = $pdo->prepare("INSERT INTO place_npcs (place_id, name, description, monster_id) VALUES (?, ?, ?, ?)");
+    $stmt->execute([$place_id, $npc_name, $description, $monster_id]);
     
-    // Rediriger vers la scène avec un message de succès
-    header('Location: view_scene.php?id=' . $scene_id . '&success=monster_npc_created');
+    // Rediriger vers la lieu avec un message de succès
+    header('Location: view_scene.php?id=' . $place_id . '&success=monster_npc_created');
     exit();
 }
 

@@ -12,13 +12,13 @@ if (!isset($_SESSION['user_id'])) {
 $monster_npc_id = (int)$_GET['id'];
 $campaign_id = (int)$_GET['campaign_id'];
 
-// Récupérer les informations du monstre dans la scène
+// Récupérer les informations du monstre dans la lieu
 $stmt = $pdo->prepare("
     SELECT sn.*, m.id as monster_db_id, m.name as monster_name, m.type, m.size, m.challenge_rating, 
-           m.hit_points as max_hit_points, m.armor_class, m.csv_id, c.dm_id, c.id as campaign_id, s.id as scene_id
-    FROM scene_npcs sn 
+           m.hit_points as max_hit_points, m.armor_class, m.csv_id, c.dm_id, c.id as campaign_id, s.id as place_id
+    FROM place_npcs sn 
     JOIN dnd_monsters m ON sn.monster_id = m.id 
-    JOIN scenes s ON sn.scene_id = s.id
+    JOIN places s ON sn.place_id = s.id
     JOIN campaigns c ON s.campaign_id = c.id
     WHERE sn.id = ? AND s.campaign_id = ? AND sn.monster_id IS NOT NULL
 ");
@@ -53,7 +53,7 @@ $stmt = $pdo->prepare("
 $stmt->execute([$monster_npc_id, $campaign_id]);
 $monsterPoisons = $stmt->fetchAll();
 
-// Vérifier que l'utilisateur est le MJ de cette scène
+// Vérifier que l'utilisateur est le MJ de cette lieu
 if ($monster['dm_id'] != $_SESSION['user_id']) {
     header('Location: index.php');
     exit();
@@ -79,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 
                 // Mettre à jour les points de vie actuels
-                $stmt = $pdo->prepare("UPDATE scene_npcs SET current_hit_points = ? WHERE id = ?");
+                $stmt = $pdo->prepare("UPDATE place_npcs SET current_hit_points = ? WHERE id = ?");
                 $stmt->execute([$new_hp, $monster_npc_id]);
                 
                 $success_message = "Points de vie mis à jour : {$new_hp}/{$max_hp}";
@@ -89,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $damage = (int)$_POST['damage'];
                 if ($damage > 0) {
                     $new_hp = max(0, $monster['current_hit_points'] - $damage);
-                    $stmt = $pdo->prepare("UPDATE scene_npcs SET current_hit_points = ? WHERE id = ?");
+                    $stmt = $pdo->prepare("UPDATE place_npcs SET current_hit_points = ? WHERE id = ?");
                     $stmt->execute([$new_hp, $monster_npc_id]);
                     
                     $success_message = "Dégâts infligés : {$damage} PV. Points de vie restants : {$new_hp}";
@@ -100,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $healing = (int)$_POST['healing'];
                 if ($healing > 0) {
                     $new_hp = min($monster['max_hit_points'], $monster['current_hit_points'] + $healing);
-                    $stmt = $pdo->prepare("UPDATE scene_npcs SET current_hit_points = ? WHERE id = ?");
+                    $stmt = $pdo->prepare("UPDATE place_npcs SET current_hit_points = ? WHERE id = ?");
                     $stmt->execute([$new_hp, $monster_npc_id]);
                     
                     $success_message = "Soins appliqués : {$healing} PV. Points de vie actuels : {$new_hp}";
@@ -108,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
                 
             case 'reset_hp':
-                $stmt = $pdo->prepare("UPDATE scene_npcs SET current_hit_points = ? WHERE id = ?");
+                $stmt = $pdo->prepare("UPDATE place_npcs SET current_hit_points = ? WHERE id = ?");
                 $stmt->execute([$monster['max_hit_points'], $monster_npc_id]);
                 
                 $success_message = "Points de vie réinitialisés au maximum : {$monster['max_hit_points']}";
@@ -169,7 +169,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             
                         case 'monster':
                             // Transférer vers un autre monstre
-                            $stmt = $pdo->prepare("SELECT sn.name FROM scene_npcs sn WHERE sn.id = ?");
+                            $stmt = $pdo->prepare("SELECT sn.name FROM place_npcs sn WHERE sn.id = ?");
                             $stmt->execute([$target_id]);
                             $target_monster = $stmt->fetch();
                             
@@ -201,7 +201,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             
                         case 'npc':
                             // Transférer vers un PNJ
-                            $stmt = $pdo->prepare("SELECT sn.name FROM scene_npcs sn WHERE sn.id = ?");
+                            $stmt = $pdo->prepare("SELECT sn.name FROM place_npcs sn WHERE sn.id = ?");
                             $stmt->execute([$target_id]);
                             $target_npc = $stmt->fetch();
                             
@@ -244,10 +244,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Recharger les données du monstre
         $stmt = $pdo->prepare("
             SELECT sn.*, m.id as monster_db_id, m.name as monster_name, m.type, m.size, m.challenge_rating, 
-                   m.hit_points as max_hit_points, m.armor_class, m.csv_id, c.dm_id, c.id as campaign_id, s.id as scene_id
-            FROM scene_npcs sn 
+                   m.hit_points as max_hit_points, m.armor_class, m.csv_id, c.dm_id, c.id as campaign_id, s.id as place_id
+            FROM place_npcs sn 
             JOIN dnd_monsters m ON sn.monster_id = m.id 
-            JOIN scenes s ON sn.scene_id = s.id
+            JOIN places s ON sn.place_id = s.id
             JOIN campaigns c ON s.campaign_id = c.id
             WHERE sn.id = ? AND s.campaign_id = ? AND sn.monster_id IS NOT NULL
         ");
@@ -258,7 +258,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Initialiser les points de vie actuels s'ils ne sont pas définis
 if ($monster['current_hit_points'] === null) {
-    $stmt = $pdo->prepare("UPDATE scene_npcs SET current_hit_points = ? WHERE id = ?");
+    $stmt = $pdo->prepare("UPDATE place_npcs SET current_hit_points = ? WHERE id = ?");
     $stmt->execute([$monster['max_hit_points'], $monster_npc_id]);
     $monster['current_hit_points'] = $monster['max_hit_points'];
 }
@@ -590,7 +590,7 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
                             <div class="text-center py-4">
                                 <i class="fas fa-gem fa-3x text-muted mb-3"></i>
                                 <p class="text-muted">Aucun objet magique attribué à ce monstre</p>
-                                <p class="text-muted">Les objets magiques peuvent être attribués depuis la page de la scène</p>
+                                <p class="text-muted">Les objets magiques peuvent être attribués depuis la page du lieu</p>
                             </div>
                         <?php endif; ?>
                         

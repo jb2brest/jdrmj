@@ -286,15 +286,15 @@ $types = $stmt->fetchAll(PDO::FETCH_COLUMN);
                                     </div>
                                     
                                     <div class="mb-3">
-                                        <label class="form-label">Scène où l'ajouter</label>
-                                        <select class="form-select" name="scene_id" required>
-                                            <option value="">Sélectionner une scène</option>
+                                        <label class="form-label">Lieu où l'ajouter</label>
+                                        <select class="form-select" name="place_id" required>
+                                            <option value="">Sélectionner un lieu</option>
                                             <?php
-                                            // Récupérer les scènes du MJ
-                                            $stmt = $pdo->prepare("SELECT s.id, s.title, gs.title AS session_title FROM scenes s JOIN game_sessions gs ON s.session_id = gs.id WHERE gs.dm_id = ? ORDER BY gs.title, s.position");
+                                            // Récupérer les lieux du MJ
+                                            $stmt = $pdo->prepare("SELECT s.id, s.title, gs.title AS session_title FROM places s JOIN game_sessions gs ON s.session_id = gs.id WHERE gs.dm_id = ? ORDER BY gs.title, s.position");
                                             $stmt->execute([$_SESSION['user_id']]);
-                                            $scenes = $stmt->fetchAll();
-                                            foreach ($scenes as $scene):
+                                            $places = $stmt->fetchAll();
+                                            foreach ($places as $scene):
                                             ?>
                                                 <option value="<?php echo (int)$scene['id']; ?>">
                                                     <?php echo htmlspecialchars($scene['session_title'] . ' - ' . $scene['title']); ?>

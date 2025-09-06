@@ -9,20 +9,20 @@ if (!isset($_GET['id'])) {
     exit();
 }
 
-$scene_id = (int)$_GET['id'];
+$place_id = (int)$_GET['id'];
 $isModal = isset($_GET['modal']);
 
-// Charger la scène et sa campagne
-$stmt = $pdo->prepare("SELECT s.*, c.title AS campaign_title, c.id AS campaign_id, c.dm_id, u.username AS dm_username FROM scenes s JOIN campaigns c ON s.campaign_id = c.id JOIN users u ON c.dm_id = u.id WHERE s.id = ?");
-$stmt->execute([$scene_id]);
-$scene = $stmt->fetch();
+// Charger la lieu et sa campagne
+$stmt = $pdo->prepare("SELECT s.*, c.title AS campaign_title, c.id AS campaign_id, c.dm_id, u.username AS dm_username FROM places s JOIN campaigns c ON s.campaign_id = c.id JOIN users u ON c.dm_id = u.id WHERE s.id = ?");
+$stmt->execute([$place_id]);
+$place = $stmt->fetch();
 
-if (!$scene) {
+if (!$place) {
     header('Location: index.php');
     exit();
 }
 
-$dm_id = (int)$scene['dm_id'];
+$dm_id = (int)$place['dm_id'];
 $isOwnerDM = (isDM() && $_SESSION['user_id'] === $dm_id);
 
 // DEBUG: Logs pour déboguer les permissions
@@ -31,11 +31,11 @@ error_log("DEBUG view_scene.php - DM ID: " . $dm_id);
 error_log("DEBUG view_scene.php - isDM(): " . (isDM() ? 'true' : 'false'));
 error_log("DEBUG view_scene.php - isOwnerDM: " . ($isOwnerDM ? 'true' : 'false'));
 
-// Autoriser également les membres de la campagne à voir la scène
+// Autoriser également les membres de la campagne à voir la lieu
 $canView = $isOwnerDM;
 if (!$canView) {
     $stmt = $pdo->prepare("SELECT 1 FROM campaign_members WHERE campaign_id = ? AND user_id = ? LIMIT 1");
-    $stmt->execute([$scene['campaign_id'], $_SESSION['user_id']]);
+    $stmt->execute([$place['campaign_id'], $_SESSION['user_id']]);
     $canView = (bool)$stmt->fetch();
 }
 
@@ -44,28 +44,28 @@ if (!$canView) {
     exit();
 }
 
-// Récupérer les joueurs présents dans cette scène
-$stmt = $pdo->prepare("SELECT sp.player_id, u.username, ch.id AS character_id, ch.name AS character_name, ch.profile_photo FROM scene_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.scene_id = ? ORDER BY u.username ASC");
-$stmt->execute([$scene_id]);
-$scenePlayers = $stmt->fetchAll();
+// Récupérer les joueurs présents dans cette lieu
+$stmt = $pdo->prepare("SELECT sp.player_id, u.username, ch.id AS character_id, ch.name AS character_name, ch.profile_photo FROM place_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.place_id = ? ORDER BY u.username ASC");
+$stmt->execute([$place_id]);
+$placePlayers = $stmt->fetchAll();
 
-// Récupérer les PNJ de cette scène
-$stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, c.profile_photo AS character_profile_photo FROM scene_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.scene_id = ? AND sn.monster_id IS NULL ORDER BY sn.name ASC");
-$stmt->execute([$scene_id]);
-$sceneNpcs = $stmt->fetchAll();
+// Récupérer les PNJ de cette lieu
+$stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, c.profile_photo AS character_profile_photo FROM place_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.place_id = ? AND sn.monster_id IS NULL ORDER BY sn.name ASC");
+$stmt->execute([$place_id]);
+$placeNpcs = $stmt->fetchAll();
 
-// Récupérer les monstres de cette scène
-$stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, sn.current_hit_points, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM scene_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.scene_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
-$stmt->execute([$scene_id]);
-$sceneMonsters = $stmt->fetchAll();
+// Récupérer les monstres de cette lieu
+$stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, sn.current_hit_points, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM place_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.place_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
+$stmt->execute([$place_id]);
+$placeMonsters = $stmt->fetchAll();
 
 // Récupérer les positions des pions
 $stmt = $pdo->prepare("
     SELECT token_type, entity_id, position_x, position_y, is_on_map
-    FROM scene_tokens 
-    WHERE scene_id = ?
+    FROM place_tokens 
+    WHERE place_id = ?
 ");
-$stmt->execute([$scene_id]);
+$stmt->execute([$place_id]);
 $tokenPositions = [];
 while ($row = $stmt->fetch()) {
     $tokenPositions[$row['token_type'] . '_' . $row['entity_id']] = [
@@ -87,14 +87,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
             $chk->execute([$character_id, $dm_id]);
             $char = $chk->fetch();
             if ($char) {
-                $ins = $pdo->prepare("INSERT INTO scene_npcs (scene_id, name, npc_character_id) VALUES (?, ?, ?)");
-                $ins->execute([$scene_id, $char['name'], $character_id]);
-                $success_message = "PNJ (personnage du MJ) ajouté à la scène.";
+                $ins = $pdo->prepare("INSERT INTO place_npcs (place_id, name, npc_character_id) VALUES (?, ?, ?)");
+                $ins->execute([$place_id, $char['name'], $character_id]);
+                $success_message = "PNJ (personnage du MJ) ajouté à la lieu.";
                 
                 // Recharger les PNJ
-                $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, c.profile_photo AS character_profile_photo FROM scene_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.scene_id = ? ORDER BY sn.name ASC");
-                $stmt->execute([$scene_id]);
-                $sceneNpcs = $stmt->fetchAll();
+                $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, c.profile_photo AS character_profile_photo FROM place_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.place_id = ? ORDER BY sn.name ASC");
+                $stmt->execute([$place_id]);
+                $placeNpcs = $stmt->fetchAll();
             } else {
                 $error_message = "Personnage invalide (doit appartenir au MJ).";
             }
@@ -103,30 +103,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         }
     }
     
-    // Exclure un joueur de la scène
+    // Exclure un joueur du lieu
     if (isset($_POST['action']) && $_POST['action'] === 'remove_player' && isset($_POST['player_id'])) {
         $player_id = (int)$_POST['player_id'];
-        $stmt = $pdo->prepare("DELETE FROM scene_players WHERE scene_id = ? AND player_id = ?");
-        $stmt->execute([$scene_id, $player_id]);
-        $success_message = "Joueur retiré de la scène.";
+        $stmt = $pdo->prepare("DELETE FROM place_players WHERE place_id = ? AND player_id = ?");
+        $stmt->execute([$place_id, $player_id]);
+        $success_message = "Joueur retiré du lieu.";
         
         // Recharger les joueurs
-        $stmt = $pdo->prepare("SELECT sp.player_id, u.username, ch.id AS character_id, ch.name AS character_name, ch.profile_photo FROM scene_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.scene_id = ? ORDER BY u.username ASC");
-        $stmt->execute([$scene_id]);
-        $scenePlayers = $stmt->fetchAll();
+        $stmt = $pdo->prepare("SELECT sp.player_id, u.username, ch.id AS character_id, ch.name AS character_name, ch.profile_photo FROM place_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.place_id = ? ORDER BY u.username ASC");
+        $stmt->execute([$place_id]);
+        $placePlayers = $stmt->fetchAll();
     }
     
-    // Exclure un PNJ de la scène
+    // Exclure un PNJ du lieu
     if (isset($_POST['action']) && $_POST['action'] === 'remove_npc' && isset($_POST['npc_name'])) {
         $npc_name = $_POST['npc_name'];
-        $stmt = $pdo->prepare("DELETE FROM scene_npcs WHERE scene_id = ? AND name = ?");
-        $stmt->execute([$scene_id, $npc_name]);
-        $success_message = "PNJ retiré de la scène.";
+        $stmt = $pdo->prepare("DELETE FROM place_npcs WHERE place_id = ? AND name = ?");
+        $stmt->execute([$place_id, $npc_name]);
+        $success_message = "PNJ retiré du lieu.";
         
         // Recharger les PNJ
-        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, c.profile_photo AS character_profile_photo FROM scene_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.scene_id = ? AND sn.monster_id IS NULL ORDER BY sn.name ASC");
-        $stmt->execute([$scene_id]);
-        $sceneNpcs = $stmt->fetchAll();
+        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, c.profile_photo AS character_profile_photo FROM place_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.place_id = ? AND sn.monster_id IS NULL ORDER BY sn.name ASC");
+        $stmt->execute([$place_id]);
+        $placeNpcs = $stmt->fetchAll();
     }
     
     // Ajouter un monstre du bestiaire
@@ -146,14 +146,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                     $monster_name .= " (x{$quantity})";
                 }
                 
-                $stmt = $pdo->prepare("INSERT INTO scene_npcs (scene_id, name, monster_id, quantity, current_hit_points) VALUES (?, ?, ?, ?, ?)");
-                $stmt->execute([$scene_id, $monster_name, $monster_id, $quantity, $monster['hit_points']]);
-                $success_message = "Monstre ajouté à la scène.";
+                $stmt = $pdo->prepare("INSERT INTO place_npcs (place_id, name, monster_id, quantity, current_hit_points) VALUES (?, ?, ?, ?, ?)");
+                $stmt->execute([$place_id, $monster_name, $monster_id, $quantity, $monster['hit_points']]);
+                $success_message = "Monstre ajouté à la lieu.";
                 
                 // Recharger les monstres
-                $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, sn.current_hit_points, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM scene_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.scene_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
-                $stmt->execute([$scene_id]);
-                $sceneMonsters = $stmt->fetchAll();
+                $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, sn.current_hit_points, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM place_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.place_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
+                $stmt->execute([$place_id]);
+                $placeMonsters = $stmt->fetchAll();
             } else {
                 $error_message = "Monstre introuvable.";
             }
@@ -162,56 +162,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         }
     }
     
-    // Retirer un monstre de la scène
+    // Retirer un monstre du lieu
     if (isset($_POST['action']) && $_POST['action'] === 'remove_monster' && isset($_POST['npc_id'])) {
         $npc_id = (int)$_POST['npc_id'];
-        $stmt = $pdo->prepare("DELETE FROM scene_npcs WHERE scene_id = ? AND id = ? AND monster_id IS NOT NULL");
-        $stmt->execute([$scene_id, $npc_id]);
-        $success_message = "Monstre retiré de la scène.";
+        $stmt = $pdo->prepare("DELETE FROM place_npcs WHERE place_id = ? AND id = ? AND monster_id IS NOT NULL");
+        $stmt->execute([$place_id, $npc_id]);
+        $success_message = "Monstre retiré du lieu.";
         
         // Recharger les monstres
-        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, sn.current_hit_points, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM scene_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.scene_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
-        $stmt->execute([$scene_id]);
-        $sceneMonsters = $stmt->fetchAll();
+        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, sn.current_hit_points, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM place_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.place_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
+        $stmt->execute([$place_id]);
+        $placeMonsters = $stmt->fetchAll();
     }
     
-    // Mettre à jour le nom de la scène
+    // Mettre à jour le nom du lieu
     if (isset($_POST['action']) && $_POST['action'] === 'update_title') {
         $new_title = trim($_POST['scene_title'] ?? '');
         
         if ($new_title === '') {
-            $error_message = "Le nom de la scène ne peut pas être vide.";
+            $error_message = "Le nom du lieu ne peut pas être vide.";
         } else {
-            // Vérifier que la scène existe et appartient à la bonne campagne
-            $check_stmt = $pdo->prepare("SELECT id, title FROM scenes WHERE id = ? AND campaign_id = ?");
-            $check_stmt->execute([$scene_id, $scene['campaign_id']]);
+            // Vérifier que la lieu existe et appartient à la bonne campagne
+            $check_stmt = $pdo->prepare("SELECT id, title FROM places WHERE id = ? AND campaign_id = ?");
+            $check_stmt->execute([$place_id, $place['campaign_id']]);
             $current_scene = $check_stmt->fetch();
             
             if (!$current_scene) {
-                $error_message = "Scène introuvable ou accès refusé.";
+                $error_message = "Lieu introuvable ou accès refusé.";
             } else {
-                $stmt = $pdo->prepare("UPDATE scenes SET title = ? WHERE id = ? AND campaign_id = ?");
-                $result = $stmt->execute([$new_title, $scene_id, $scene['campaign_id']]);
+                $stmt = $pdo->prepare("UPDATE places SET title = ? WHERE id = ? AND campaign_id = ?");
+                $result = $stmt->execute([$new_title, $place_id, $place['campaign_id']]);
                 
                 if ($result && $stmt->rowCount() > 0) {
-                    $success_message = "Nom de la scène mis à jour avec succès.";
+                    $success_message = "Nom du lieu mis à jour avec succès.";
                     
-                    // Recharger les données de la scène
-                    $stmt = $pdo->prepare("SELECT s.*, c.title AS campaign_title, c.id AS campaign_id, c.dm_id, u.username AS dm_username FROM scenes s JOIN campaigns c ON s.campaign_id = c.id JOIN users u ON c.dm_id = u.id WHERE s.id = ?");
-                    $stmt->execute([$scene_id]);
-                    $scene = $stmt->fetch();
+                    // Recharger les données du lieu
+                    $stmt = $pdo->prepare("SELECT s.*, c.title AS campaign_title, c.id AS campaign_id, c.dm_id, u.username AS dm_username FROM places s JOIN campaigns c ON s.campaign_id = c.id JOIN users u ON c.dm_id = u.id WHERE s.id = ?");
+                    $stmt->execute([$place_id]);
+                    $place = $stmt->fetch();
                     
-                    if (!$scene) {
-                        $error_message = "Erreur lors du rechargement des données de la scène.";
+                    if (!$place) {
+                        $error_message = "Erreur lors du rechargement des données du lieu.";
                     }
                 } else {
-                    $error_message = "Erreur lors de la mise à jour du nom de la scène. Aucune ligne modifiée.";
+                    $error_message = "Erreur lors de la mise à jour du nom du lieu. Aucune ligne modifiée.";
                 }
             }
         }
     }
     
-    // Mettre à jour le plan de la scène
+    // Mettre à jour le plan du lieu
     if (isset($_POST['action']) && $_POST['action'] === 'update_map') {
         $map_url = trim($_POST['map_url'] ?? '');
         $notes = trim($_POST['notes'] ?? '');
@@ -286,17 +286,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         if (!isset($error_message)) {
             // Si aucun nouveau lien fourni et pas d'upload, conserver l'ancien
             if ($newMapUrl === '') { 
-                $newMapUrl = $scene['map_url']; 
+                $newMapUrl = $place['map_url']; 
             }
             
-            $stmt = $pdo->prepare("UPDATE scenes SET map_url = ?, notes = ? WHERE id = ? AND campaign_id = ?");
-            $stmt->execute([$newMapUrl, $notes, $scene_id, $scene['campaign_id']]);
-            $success_message = "Plan de la scène mis à jour.";
+            $stmt = $pdo->prepare("UPDATE places SET map_url = ?, notes = ? WHERE id = ? AND campaign_id = ?");
+            $stmt->execute([$newMapUrl, $notes, $place_id, $place['campaign_id']]);
+            $success_message = "Plan du lieu mis à jour.";
             
-            // Recharger les données de la scène
-            $stmt = $pdo->prepare("SELECT s.*, c.title AS campaign_title, c.id AS campaign_id, c.dm_id, u.username AS dm_username FROM scenes s JOIN campaigns c ON s.campaign_id = c.id JOIN users u ON c.dm_id = u.id WHERE s.id = ?");
-            $stmt->execute([$scene_id]);
-            $scene = $stmt->fetch();
+            // Recharger les données du lieu
+            $stmt = $pdo->prepare("SELECT s.*, c.title AS campaign_title, c.id AS campaign_id, c.dm_id, u.username AS dm_username FROM places s JOIN campaigns c ON s.campaign_id = c.id JOIN users u ON c.dm_id = u.id WHERE s.id = ?");
+            $stmt->execute([$place_id]);
+            $place = $stmt->fetch();
         }
     }
     
@@ -327,8 +327,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                 switch ($target_type) {
                     case 'player':
                         // Récupérer les informations du personnage joueur
-                        $stmt = $pdo->prepare("SELECT u.username, ch.id AS character_id, ch.name AS character_name FROM scene_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.scene_id = ? AND sp.player_id = ?");
-                        $stmt->execute([$scene_id, $target_id]);
+                        $stmt = $pdo->prepare("SELECT u.username, ch.id AS character_id, ch.name AS character_name FROM place_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.place_id = ? AND sp.player_id = ?");
+                        $stmt->execute([$place_id, $target_id]);
                         $target = $stmt->fetch();
                         
                         if ($target && $target['character_id']) {
@@ -342,7 +342,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                                 $item_info['description'],
                                 $item_info['source'],
                                 $assign_notes,
-                                'Attribution MJ - Scène ' . $scene['title']
+                                'Attribution MJ - Lieu ' . $place['title']
                             ]);
                             $insert_success = true;
                             $target_name = $target['character_name'] ?: $target['username'];
@@ -353,23 +353,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         
                     case 'npc':
                         // Récupérer les informations du PNJ
-                        $stmt = $pdo->prepare("SELECT name FROM scene_npcs WHERE id = ? AND scene_id = ?");
-                        $stmt->execute([$target_id, $scene_id]);
+                        $stmt = $pdo->prepare("SELECT name FROM place_npcs WHERE id = ? AND place_id = ?");
+                        $stmt->execute([$target_id, $place_id]);
                         $target = $stmt->fetch();
                         
                         if ($target) {
                             // Ajouter l'objet à l'équipement du PNJ
-                            $stmt = $pdo->prepare("INSERT INTO npc_equipment (npc_id, scene_id, magical_item_id, item_name, item_type, item_description, item_source, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                            $stmt = $pdo->prepare("INSERT INTO npc_equipment (npc_id, place_id, magical_item_id, item_name, item_type, item_description, item_source, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
                             $stmt->execute([
                                 $target_id,
-                                $scene_id,
+                                $place_id,
                                 $item_id,
                                 $item_info['nom'],
                                 $item_info['type'],
                                 $item_info['description'],
                                 $item_info['source'],
                                 $assign_notes,
-                                'Attribution MJ - Scène ' . $scene['title']
+                                'Attribution MJ - Lieu ' . $place['title']
                             ]);
                             $insert_success = true;
                             $target_name = $target['name'];
@@ -380,23 +380,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         
                     case 'monster':
                         // Récupérer les informations du monstre
-                        $stmt = $pdo->prepare("SELECT name FROM scene_npcs WHERE id = ? AND scene_id = ?");
-                        $stmt->execute([$target_id, $scene_id]);
+                        $stmt = $pdo->prepare("SELECT name FROM place_npcs WHERE id = ? AND place_id = ?");
+                        $stmt->execute([$target_id, $place_id]);
                         $target = $stmt->fetch();
                         
                         if ($target) {
                             // Ajouter l'objet à l'équipement du monstre
-                            $stmt = $pdo->prepare("INSERT INTO monster_equipment (monster_id, scene_id, magical_item_id, item_name, item_type, item_description, item_source, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                            $stmt = $pdo->prepare("INSERT INTO monster_equipment (monster_id, place_id, magical_item_id, item_name, item_type, item_description, item_source, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
                             $stmt->execute([
                                 $target_id,
-                                $scene_id,
+                                $place_id,
                                 $item_id,
                                 $item_info['nom'],
                                 $item_info['type'],
                                 $item_info['description'],
                                 $item_info['source'],
                                 $assign_notes,
-                                'Attribution MJ - Scène ' . $target['name']
+                                'Attribution MJ - Lieu ' . $target['name']
                             ]);
                             $insert_success = true;
                             $target_name = $target['name'];
@@ -451,8 +451,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                 switch ($target_type) {
                     case 'player':
                         // Récupérer les informations du personnage joueur
-                        $stmt = $pdo->prepare("SELECT u.username, ch.id AS character_id, ch.name AS character_name FROM scene_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.scene_id = ? AND sp.player_id = ?");
-                        $stmt->execute([$scene_id, $target_id]);
+                        $stmt = $pdo->prepare("SELECT u.username, ch.id AS character_id, ch.name AS character_name FROM place_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.place_id = ? AND sp.player_id = ?");
+                        $stmt->execute([$place_id, $target_id]);
                         $target = $stmt->fetch();
                         
                         if ($target && $target['character_id']) {
@@ -466,7 +466,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                                 $poison_info['description'],
                                 $poison_info['source'],
                                 $assign_notes,
-                                'Attribution MJ - Scène ' . $scene['title']
+                                'Attribution MJ - Lieu ' . $place['title']
                             ]);
                             $insert_success = true;
                             $target_name = $target['character_name'] ?: $target['username'];
@@ -477,23 +477,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         
                     case 'npc':
                         // Récupérer les informations du PNJ
-                        $stmt = $pdo->prepare("SELECT name FROM scene_npcs WHERE id = ? AND scene_id = ?");
-                        $stmt->execute([$target_id, $scene_id]);
+                        $stmt = $pdo->prepare("SELECT name FROM place_npcs WHERE id = ? AND place_id = ?");
+                        $stmt->execute([$target_id, $place_id]);
                         $target = $stmt->fetch();
                         
                         if ($target) {
                             // Ajouter le poison à l'équipement du PNJ
-                            $stmt = $pdo->prepare("INSERT INTO npc_equipment (npc_id, scene_id, magical_item_id, item_name, item_type, item_description, item_source, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                            $stmt = $pdo->prepare("INSERT INTO npc_equipment (npc_id, place_id, magical_item_id, item_name, item_type, item_description, item_source, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
                             $stmt->execute([
                                 $target_id,
-                                $scene_id,
+                                $place_id,
                                 $poison_id,
                                 $poison_info['nom'],
                                 $poison_info['type'],
                                 $poison_info['description'],
                                 $poison_info['source'],
                                 $assign_notes,
-                                'Attribution MJ - Scène ' . $target['name']
+                                'Attribution MJ - Lieu ' . $target['name']
                             ]);
                             $insert_success = true;
                             $target_name = $target['name'];
@@ -504,23 +504,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         
                     case 'monster':
                         // Récupérer les informations du monstre
-                        $stmt = $pdo->prepare("SELECT name FROM scene_npcs WHERE id = ? AND scene_id = ?");
-                        $stmt->execute([$target_id, $scene_id]);
+                        $stmt = $pdo->prepare("SELECT name FROM place_npcs WHERE id = ? AND place_id = ?");
+                        $stmt->execute([$target_id, $place_id]);
                         $target = $stmt->fetch();
                         
                         if ($target) {
                             // Ajouter le poison à l'équipement du monstre
-                            $stmt = $pdo->prepare("INSERT INTO monster_equipment (monster_id, scene_id, magical_item_id, item_name, item_type, item_description, item_source, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                            $stmt = $pdo->prepare("INSERT INTO monster_equipment (monster_id, place_id, magical_item_id, item_name, item_type, item_description, item_source, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
                             $stmt->execute([
                                 $target_id,
-                                $scene_id,
+                                $place_id,
                                 $poison_id,
                                 $poison_info['nom'],
                                 $poison_info['type'],
                                 $poison_info['description'],
                                 $poison_info['source'],
                                 $assign_notes,
-                                'Attribution MJ - Scène ' . $target['name']
+                                'Attribution MJ - Lieu ' . $target['name']
                             ]);
                             $insert_success = true;
                             $target_name = $target['name'];
@@ -557,14 +557,14 @@ if ($isOwnerDM) {
     $dmCharacters = $stmt->fetchAll();
 }
 
-// Récupérer les autres scènes de la campagne pour navigation
-$stmt = $pdo->prepare("SELECT id, title, position FROM scenes WHERE campaign_id = ? ORDER BY position ASC, created_at ASC");
-$stmt->execute([$scene['campaign_id']]);
+// Récupérer les autres lieux de la campagne pour navigation
+$stmt = $pdo->prepare("SELECT id, title, position FROM places WHERE campaign_id = ? ORDER BY position ASC, created_at ASC");
+$stmt->execute([$place['campaign_id']]);
 $allScenes = $stmt->fetchAll();
 
 
 
-$currentPosition = $scene['position'];
+$currentPosition = $place['position'];
 $prevScene = null;
 $nextScene = null;
 
@@ -584,7 +584,7 @@ foreach ($allScenes as $s) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scène: <?php echo htmlspecialchars($scene['title']); ?> - JDR 4 MJ</title>
+    <title>Lieu: <?php echo htmlspecialchars($place['title']); ?> - JDR 4 MJ</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -597,7 +597,7 @@ foreach ($allScenes as $s) {
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="view_campaign.php?id=<?php echo (int)$scene['campaign_id']; ?>">Retour Campagne</a></li>
+                    <li class="nav-item"><a class="nav-link" href="view_campaign.php?id=<?php echo (int)$place['campaign_id']; ?>">Retour Campagne</a></li>
                 </ul>
                 <ul class="navbar-nav">
                     <li class="nav-item dropdown">
@@ -624,7 +624,7 @@ foreach ($allScenes as $s) {
         <div>
             <?php if ($isOwnerDM): ?>
                 <div class="d-flex align-items-center">
-                    <h1 class="me-3"><i class="fas fa-photo-video me-2"></i><?php echo htmlspecialchars($scene['title']); ?></h1>
+                    <h1 class="me-3"><i class="fas fa-photo-video me-2"></i><?php echo htmlspecialchars($place['title']); ?></h1>
                     <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#editTitleForm">
                         <i class="fas fa-edit me-1"></i>Modifier le nom
                     </button>
@@ -634,7 +634,7 @@ foreach ($allScenes as $s) {
                         <form method="POST" class="row g-2">
                             <input type="hidden" name="action" value="update_title">
                             <div class="col-md-8">
-                                <input type="text" class="form-control" name="scene_title" value="<?php echo htmlspecialchars($scene['title']); ?>" required>
+                                <input type="text" class="form-control" name="scene_title" value="<?php echo htmlspecialchars($place['title']); ?>" required>
                             </div>
                             <div class="col-md-4">
                                 <button type="submit" class="btn btn-primary">
@@ -645,10 +645,10 @@ foreach ($allScenes as $s) {
                     </div>
                 </div>
             <?php else: ?>
-                <h1><i class="fas fa-photo-video me-2"></i><?php echo htmlspecialchars($scene['title']); ?></h1>
+                <h1><i class="fas fa-photo-video me-2"></i><?php echo htmlspecialchars($place['title']); ?></h1>
             <?php endif; ?>
             <p class="text-muted mb-0">
-                Campagne: <?php echo htmlspecialchars($scene['campaign_title']); ?> • MJ: <?php echo htmlspecialchars($scene['dm_username']); ?>
+                Campagne: <?php echo htmlspecialchars($place['campaign_title']); ?> • MJ: <?php echo htmlspecialchars($place['dm_username']); ?>
                 <button class="btn btn-sm btn-outline-danger ms-2" type="button" data-bs-toggle="modal" data-bs-target="#poisonSearchModal">
                     <i class="fas fa-skull-crossbones me-1"></i>Poison
                 </button>
@@ -675,7 +675,7 @@ foreach ($allScenes as $s) {
         <div class="col-lg-8">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <span>Plan de la scène</span>
+                    <span>Plan du lieu</span>
                     <?php if ($isOwnerDM): ?>
                         <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#editMapForm">
                             <i class="fas fa-edit me-1"></i>Modifier le plan
@@ -686,12 +686,12 @@ foreach ($allScenes as $s) {
                     <?php if ($isOwnerDM): ?>
                         <div class="collapse mb-3" id="editMapForm">
                             <div class="card card-body">
-                                <h6>Modifier le plan de la scène</h6>
+                                <h6>Modifier le plan du lieu</h6>
                                 <form method="POST" enctype="multipart/form-data" class="row g-3">
                                     <input type="hidden" name="action" value="update_map">
                                     <div class="col-md-6">
                                         <label class="form-label">URL du plan</label>
-                                        <input type="url" class="form-control" name="map_url" value="<?php echo htmlspecialchars($scene['map_url'] ?? ''); ?>" placeholder="https://...">
+                                        <input type="url" class="form-control" name="map_url" value="<?php echo htmlspecialchars($place['map_url'] ?? ''); ?>" placeholder="https://...">
                                     </div>
                                                                             <div class="col-md-6">
                                             <label class="form-label">Ou téléverser un plan (image)</label>
@@ -700,7 +700,7 @@ foreach ($allScenes as $s) {
                                         </div>
                                     <div class="col-12">
                                         <label class="form-label">Notes du MJ</label>
-                                        <textarea class="form-control" name="notes" rows="3" placeholder="Notes internes sur cette scène..."><?php echo htmlspecialchars($scene['notes'] ?? ''); ?></textarea>
+                                        <textarea class="form-control" name="notes" rows="3" placeholder="Notes internes sur cette lieu..."><?php echo htmlspecialchars($place['notes'] ?? ''); ?></textarea>
                                     </div>
                                     <div class="col-12">
                                         <button type="submit" class="btn btn-primary">
@@ -712,11 +712,11 @@ foreach ($allScenes as $s) {
                         </div>
                     <?php endif; ?>
                     
-                    <?php if (!empty($scene['map_url'])): ?>
+                    <?php if (!empty($place['map_url'])): ?>
                         <div class="position-relative">
                             <!-- Zone du plan avec pions -->
                             <div id="mapContainer" class="position-relative" style="display: inline-block;">
-                                <img id="mapImage" src="<?php echo htmlspecialchars($scene['map_url']); ?>" class="img-fluid rounded" alt="Plan de la scène" style="max-height: 500px; cursor: crosshair;">
+                                <img id="mapImage" src="<?php echo htmlspecialchars($place['map_url']); ?>" class="img-fluid rounded" alt="Plan du lieu" style="max-height: 500px; cursor: crosshair;">
                                 
                                 <!-- Zone des pions sur le côté -->
                                 <div id="tokenSidebar" class="position-absolute" style="right: -120px; top: 0; width: 100px; height: 500px; border: 2px dashed #ccc; border-radius: 8px; background: rgba(248, 249, 250, 0.8); padding: 10px; overflow-y: auto;">
@@ -725,7 +725,7 @@ foreach ($allScenes as $s) {
                                     </div>
                                     
                                     <!-- Pions des joueurs -->
-                                    <?php foreach ($scenePlayers as $player): ?>
+                                    <?php foreach ($placePlayers as $player): ?>
                                         <?php 
                                         $tokenKey = 'player_' . $player['player_id'];
                                         $position = $tokenPositions[$tokenKey] ?? ['x' => 0, 'y' => 0, 'is_on_map' => false];
@@ -744,7 +744,7 @@ foreach ($allScenes as $s) {
                                     <?php endforeach; ?>
                                     
                                     <!-- Pions des PNJ -->
-                                    <?php foreach ($sceneNpcs as $npc): ?>
+                                    <?php foreach ($placeNpcs as $npc): ?>
                                         <?php 
                                         $tokenKey = 'npc_' . $npc['id'];
                                         $position = $tokenPositions[$tokenKey] ?? ['x' => 0, 'y' => 0, 'is_on_map' => false];
@@ -762,7 +762,7 @@ foreach ($allScenes as $s) {
                                     <?php endforeach; ?>
                                     
                                     <!-- Pions des monstres -->
-                                    <?php foreach ($sceneMonsters as $monster): ?>
+                                    <?php foreach ($placeMonsters as $monster): ?>
                                         <?php 
                                         $tokenKey = 'monster_' . $monster['id'];
                                         $position = $tokenPositions[$tokenKey] ?? ['x' => 0, 'y' => 0, 'is_on_map' => false];
@@ -783,7 +783,7 @@ foreach ($allScenes as $s) {
                             
                             <div class="mt-2 d-flex justify-content-between align-items-center">
                                 <div>
-                                    <a href="<?php echo htmlspecialchars($scene['map_url']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary">
+                                    <a href="<?php echo htmlspecialchars($place['map_url']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary">
                                         <i class="fas fa-external-link-alt me-1"></i>Ouvrir en plein écran
                                     </a>
                                 </div>
@@ -799,7 +799,7 @@ foreach ($allScenes as $s) {
                     <?php else: ?>
                         <div class="text-center text-muted py-5">
                             <i class="fas fa-map fa-3x mb-3"></i>
-                            <p>Aucun plan disponible pour cette scène.</p>
+                            <p>Aucun plan disponible pour cette lieu.</p>
                             <?php if ($isOwnerDM): ?>
                                 <p class="small">Cliquez sur "Modifier le plan" pour ajouter un plan.</p>
                             <?php endif; ?>
@@ -808,11 +808,11 @@ foreach ($allScenes as $s) {
                 </div>
             </div>
 
-            <?php if (!empty($scene['notes'])): ?>
+            <?php if (!empty($place['notes'])): ?>
                 <div class="card mt-4">
                     <div class="card-header">Notes du MJ</div>
                     <div class="card-body">
-                        <p class="mb-0"><?php echo nl2br(htmlspecialchars($scene['notes'])); ?></p>
+                        <p class="mb-0"><?php echo nl2br(htmlspecialchars($place['notes'])); ?></p>
                     </div>
                 </div>
             <?php endif; ?>
@@ -822,11 +822,11 @@ foreach ($allScenes as $s) {
             <div class="card mb-4">
                 <div class="card-header">Joueurs présents</div>
                 <div class="card-body">
-                    <?php if (empty($scenePlayers)): ?>
-                        <p class="text-muted">Aucun joueur présent dans cette scène.</p>
+                    <?php if (empty($placePlayers)): ?>
+                        <p class="text-muted">Aucun joueur présent dans cette lieu.</p>
                     <?php else: ?>
                         <ul class="list-group list-group-flush">
-                            <?php foreach ($scenePlayers as $player): ?>
+                            <?php foreach ($placePlayers as $player): ?>
                                 <li class="list-group-item d-flex justify-content-between align-items-start">
                                     <div class="d-flex align-items-start">
                                         <?php if (!empty($player['profile_photo'])): ?>
@@ -845,16 +845,16 @@ foreach ($allScenes as $s) {
                                     </div>
                                     <div class="d-flex gap-1">
                                         <?php if ($player['character_name'] && !empty($player['character_id'])): ?>
-                                            <a href="view_character.php?id=<?php echo (int)$player['character_id']; ?>&dm_campaign_id=<?php echo (int)$scene['campaign_id']; ?>" class="btn btn-sm btn-outline-primary" title="Voir la fiche du personnage" target="_blank">
+                                            <a href="view_character.php?id=<?php echo (int)$player['character_id']; ?>&dm_campaign_id=<?php echo (int)$place['campaign_id']; ?>" class="btn btn-sm btn-outline-primary" title="Voir la fiche du personnage" target="_blank">
                                                 <i class="fas fa-file-alt"></i>
                                             </a>
                                         <?php endif; ?>
                                     </div>
                                     <?php if ($isOwnerDM): ?>
-                                        <form method="POST" class="d-inline" onsubmit="return confirm('Retirer <?php echo htmlspecialchars($player['username']); ?> de cette scène ?');">
+                                        <form method="POST" class="d-inline" onsubmit="return confirm('Retirer <?php echo htmlspecialchars($player['username']); ?> de cette lieu ?');">
                                             <input type="hidden" name="action" value="remove_player">
                                             <input type="hidden" name="player_id" value="<?php echo (int)$player['player_id']; ?>">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Retirer de la scène">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Retirer du lieu">
                                                 <i class="fas fa-user-minus"></i>
                                             </button>
                                         </form>
@@ -913,11 +913,11 @@ foreach ($allScenes as $s) {
                         </div>
                     <?php endif; ?>
                     
-                    <?php if (empty($sceneNpcs)): ?>
-                        <p class="text-muted">Aucun PNJ dans cette scène.</p>
+                    <?php if (empty($placeNpcs)): ?>
+                        <p class="text-muted">Aucun PNJ dans cette lieu.</p>
                     <?php else: ?>
                         <ul class="list-group list-group-flush">
-                            <?php foreach ($sceneNpcs as $npc): ?>
+                            <?php foreach ($placeNpcs as $npc): ?>
                                 <li class="list-group-item">
                                     <div class="d-flex justify-content-between align-items-start">
                                         <div class="d-flex align-items-start">
@@ -945,16 +945,16 @@ foreach ($allScenes as $s) {
                                         </div>
                                         <div class="d-flex gap-1">
                                             <?php if (!empty($npc['npc_character_id'])): ?>
-                                                <a href="view_character.php?id=<?php echo (int)$npc['npc_character_id']; ?>&dm_campaign_id=<?php echo (int)$scene['campaign_id']; ?>" class="btn btn-sm btn-outline-primary" title="Voir la fiche du personnage" target="_blank">
+                                                <a href="view_character.php?id=<?php echo (int)$npc['npc_character_id']; ?>&dm_campaign_id=<?php echo (int)$place['campaign_id']; ?>" class="btn btn-sm btn-outline-primary" title="Voir la fiche du personnage" target="_blank">
                                                     <i class="fas fa-file-alt"></i>
                                                 </a>
                                             <?php endif; ?>
                                         </div>
                                         <?php if ($isOwnerDM): ?>
-                                            <form method="POST" class="d-inline" onsubmit="return confirm('Retirer <?php echo htmlspecialchars($npc['name']); ?> de cette scène ?');">
+                                            <form method="POST" class="d-inline" onsubmit="return confirm('Retirer <?php echo htmlspecialchars($npc['name']); ?> de cette lieu ?');">
                                                 <input type="hidden" name="action" value="remove_npc">
                                                 <input type="hidden" name="npc_name" value="<?php echo htmlspecialchars($npc['name']); ?>">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Retirer de la scène">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Retirer du lieu">
                                                     <i class="fas fa-user-minus"></i>
                                                 </button>
                                             </form>
@@ -977,11 +977,11 @@ foreach ($allScenes as $s) {
                     <?php endif; ?>
                 </div>
                 <div class="card-body">
-                    <?php if (empty($sceneMonsters)): ?>
-                        <p class="text-muted">Aucun monstre dans cette scène.</p>
+                    <?php if (empty($placeMonsters)): ?>
+                        <p class="text-muted">Aucun monstre dans cette lieu.</p>
                     <?php else: ?>
                         <ul class="list-group list-group-flush">
-                            <?php foreach ($sceneMonsters as $monster): ?>
+                            <?php foreach ($placeMonsters as $monster): ?>
                                 <li class="list-group-item">
                                     <div class="d-flex justify-content-between align-items-start">
                                         <div class="d-flex align-items-start">
@@ -1009,17 +1009,17 @@ foreach ($allScenes as $s) {
                                             </div>
                                         </div>
                                         <div class="d-flex gap-1">
-                                            <a href="view_monster_sheet.php?id=<?php echo (int)$monster['id']; ?>&campaign_id=<?php echo (int)$scene['campaign_id']; ?>" class="btn btn-sm btn-outline-danger" title="Voir la feuille du monstre" target="_blank">
+                                            <a href="view_monster_sheet.php?id=<?php echo (int)$monster['id']; ?>&campaign_id=<?php echo (int)$place['campaign_id']; ?>" class="btn btn-sm btn-outline-danger" title="Voir la feuille du monstre" target="_blank">
                                                 <i class="fas fa-dragon"></i>
                                             </a>
                                             <a href="bestiary.php?search=<?php echo urlencode($monster['name']); ?>" class="btn btn-sm btn-outline-primary" title="Voir dans le bestiaire" target="_blank">
                                                 <i class="fas fa-book"></i>
                                             </a>
                                             <?php if ($isOwnerDM): ?>
-                                                <form method="POST" class="d-inline" onsubmit="return confirm('Retirer <?php echo htmlspecialchars($monster['name']); ?> de cette scène ?');">
+                                                <form method="POST" class="d-inline" onsubmit="return confirm('Retirer <?php echo htmlspecialchars($monster['name']); ?> de cette lieu ?');">
                                                     <input type="hidden" name="action" value="remove_monster">
                                                     <input type="hidden" name="npc_id" value="<?php echo (int)$monster['id']; ?>">
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Retirer de la scène">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Retirer du lieu">
                                                         <i class="fas fa-user-minus"></i>
                                                     </button>
                                                 </form>
@@ -1131,7 +1131,7 @@ foreach ($allScenes as $s) {
                 
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle me-2"></i>
-                    <strong>Astuce :</strong> Cliquez sur le bouton "Attribuer" à côté d'un objet pour l'assigner à un PNJ ou un personnage joueur de cette scène.
+                    <strong>Astuce :</strong> Cliquez sur le bouton "Attribuer" à côté d'un objet pour l'assigner à un PNJ ou un personnage joueur de cette lieu.
                 </div>
             </div>
             <div class="modal-footer">
@@ -1168,9 +1168,9 @@ foreach ($allScenes as $s) {
                             <option value="">Sélectionner un destinataire...</option>
                             
                             <!-- Personnages joueurs -->
-                            <?php if (!empty($scenePlayers)): ?>
+                            <?php if (!empty($placePlayers)): ?>
                                 <optgroup label="Personnages joueurs">
-                                    <?php foreach ($scenePlayers as $player): ?>
+                                    <?php foreach ($placePlayers as $player): ?>
                                         <option value="player_<?php echo (int)$player['player_id']; ?>">
                                             <?php echo htmlspecialchars($player['username']); ?>
                                             <?php if (!empty($player['character_name'])): ?>
@@ -1182,9 +1182,9 @@ foreach ($allScenes as $s) {
                             <?php endif; ?>
                             
                             <!-- PNJ -->
-                            <?php if (!empty($sceneNpcs)): ?>
+                            <?php if (!empty($placeNpcs)): ?>
                                 <optgroup label="PNJ">
-                                    <?php foreach ($sceneNpcs as $npc): ?>
+                                    <?php foreach ($placeNpcs as $npc): ?>
                                         <option value="npc_<?php echo (int)$npc['id']; ?>">
                                             <?php echo htmlspecialchars($npc['name']); ?>
                                         </option>
@@ -1193,9 +1193,9 @@ foreach ($allScenes as $s) {
                             <?php endif; ?>
                             
                             <!-- Monstres -->
-                            <?php if (!empty($sceneMonsters)): ?>
+                            <?php if (!empty($placeMonsters)): ?>
                                 <optgroup label="Monstres">
-                                    <?php foreach ($sceneMonsters as $monster): ?>
+                                    <?php foreach ($placeMonsters as $monster): ?>
                                         <option value="monster_<?php echo (int)$monster['id']; ?>">
                                             <?php echo htmlspecialchars($monster['name']); ?>
                                         </option>
@@ -1243,9 +1243,9 @@ foreach ($allScenes as $s) {
                             <option value="">Sélectionner un destinataire...</option>
                             
                             <!-- Personnages joueurs -->
-                            <?php if (!empty($scenePlayers)): ?>
+                            <?php if (!empty($placePlayers)): ?>
                                 <optgroup label="Personnages Joueurs">
-                                    <?php foreach ($scenePlayers as $player): ?>
+                                    <?php foreach ($placePlayers as $player): ?>
                                         <?php if ($player['character_name']): ?>
                                             <option value="player_<?php echo (int)$player['player_id']; ?>">
                                                 <?php echo htmlspecialchars($player['character_name']); ?> (<?php echo htmlspecialchars($player['username']); ?>)
@@ -1256,9 +1256,9 @@ foreach ($allScenes as $s) {
                             <?php endif; ?>
                             
                             <!-- PNJ -->
-                            <?php if (!empty($sceneNpcs)): ?>
+                            <?php if (!empty($placeNpcs)): ?>
                                 <optgroup label="PNJ">
-                                    <?php foreach ($sceneNpcs as $npc): ?>
+                                    <?php foreach ($placeNpcs as $npc): ?>
                                         <option value="npc_<?php echo (int)$npc['id']; ?>">
                                             <?php echo htmlspecialchars($npc['name']); ?>
                                         </option>
@@ -1267,9 +1267,9 @@ foreach ($allScenes as $s) {
                             <?php endif; ?>
                             
                             <!-- Monstres -->
-                            <?php if (!empty($sceneMonsters)): ?>
+                            <?php if (!empty($placeMonsters)): ?>
                                 <optgroup label="Monstres">
-                                    <?php foreach ($sceneMonsters as $monster): ?>
+                                    <?php foreach ($placeMonsters as $monster): ?>
                                         <option value="monster_<?php echo (int)$monster['id']; ?>">
                                             <?php echo htmlspecialchars($monster['name']); ?>
                                         </option>
@@ -1604,14 +1604,14 @@ foreach ($allScenes as $s) {
         }
 
         // Système de glisser-déposer pour les pions
-        <?php if ($isOwnerDM && !empty($scene['map_url'])): ?>
+        <?php if ($isOwnerDM && !empty($place['map_url'])): ?>
         initializeTokenSystem();
         <?php endif; ?>
 
     });
     </script>
 
-    <?php if ($isOwnerDM && !empty($scene['map_url'])): ?>
+    <?php if ($isOwnerDM && !empty($place['map_url'])): ?>
     <script>
     function initializeTokenSystem() {
         const mapImage = document.getElementById('mapImage');
@@ -1766,7 +1766,7 @@ foreach ($allScenes as $s) {
 
         function saveTokenPosition(token, x, y, isOnMap) {
             const data = {
-                scene_id: <?php echo $scene_id; ?>,
+                place_id: <?php echo $place_id; ?>,
                 token_type: token.dataset.tokenType,
                 entity_id: parseInt(token.dataset.entityId),
                 position_x: x,
@@ -1794,7 +1794,7 @@ foreach ($allScenes as $s) {
 
         function resetAllTokens() {
             const data = {
-                scene_id: <?php echo $scene_id; ?>
+                place_id: <?php echo $place_id; ?>
             };
 
             fetch('reset_token_positions.php', {

@@ -169,10 +169,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
     if ($source === 'npc_equipment') {
         // Récupérer depuis npc_equipment via le personnage associé
         $stmt = $pdo->prepare("
-            SELECT ne.*, sn.name as npc_name, sn.scene_id, s.title as scene_title
+            SELECT ne.*, sn.name as npc_name, sn.place_id, s.title as scene_title
             FROM npc_equipment ne
-            JOIN scene_npcs sn ON ne.npc_id = sn.id AND ne.scene_id = sn.scene_id
-            JOIN scenes s ON sn.scene_id = s.id
+            JOIN place_npcs sn ON ne.npc_id = sn.id AND ne.place_id = sn.place_id
+            JOIN places s ON sn.place_id = s.id
             WHERE ne.id = ? AND sn.npc_character_id = ?
         ");
         $stmt->execute([$item_id, $character_id]);
@@ -233,16 +233,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                 
             case 'monster':
                 // Transférer vers un monstre
-                $stmt = $pdo->prepare("SELECT sn.name, sn.scene_id FROM scene_npcs sn WHERE sn.id = ?");
+                $stmt = $pdo->prepare("SELECT sn.name, sn.place_id FROM place_npcs sn WHERE sn.id = ?");
                 $stmt->execute([$target_id]);
                 $target_monster = $stmt->fetch();
                 
                 if ($target_monster) {
                     // Insérer dans monster_equipment
-                    $stmt = $pdo->prepare("INSERT INTO monster_equipment (monster_id, scene_id, magical_item_id, item_name, item_type, item_description, item_source, quantity, equipped, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    $stmt = $pdo->prepare("INSERT INTO monster_equipment (monster_id, place_id, magical_item_id, item_name, item_type, item_description, item_source, quantity, equipped, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                     $stmt->execute([
                         $target_id,
-                        $target_monster['scene_id'],
+                        $target_monster['place_id'],
                         $item['magical_item_id'],
                         $item['item_name'],
                         $item['item_type'],
@@ -269,16 +269,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                 
             case 'npc':
                 // Transférer vers un PNJ
-                $stmt = $pdo->prepare("SELECT sn.name, sn.scene_id FROM scene_npcs sn WHERE sn.id = ?");
+                $stmt = $pdo->prepare("SELECT sn.name, sn.place_id FROM place_npcs sn WHERE sn.id = ?");
                 $stmt->execute([$target_id]);
                 $target_npc = $stmt->fetch();
                 
                 if ($target_npc) {
                     // Insérer dans npc_equipment
-                    $stmt = $pdo->prepare("INSERT INTO npc_equipment (npc_id, scene_id, magical_item_id, item_name, item_type, item_description, item_source, quantity, equipped, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    $stmt = $pdo->prepare("INSERT INTO npc_equipment (npc_id, place_id, magical_item_id, item_name, item_type, item_description, item_source, quantity, equipped, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                     $stmt->execute([
                         $target_id,
-                        $target_npc['scene_id'],
+                        $target_npc['place_id'],
                         $item['magical_item_id'],
                         $item['item_name'],
                         $item['item_type'],
@@ -349,10 +349,10 @@ $characterPoisons = $stmt->fetchAll();
 
 // Récupérer l'équipement attribué aux PNJ associés à ce personnage
 $stmt = $pdo->prepare("
-    SELECT ne.*, sn.name as npc_name, sn.scene_id, s.title as scene_title
+    SELECT ne.*, sn.name as npc_name, sn.place_id, s.title as scene_title
     FROM npc_equipment ne
-    JOIN scene_npcs sn ON ne.npc_id = sn.id AND ne.scene_id = sn.scene_id
-    JOIN scenes s ON sn.scene_id = s.id
+    JOIN place_npcs sn ON ne.npc_id = sn.id AND ne.place_id = sn.place_id
+    JOIN places s ON sn.place_id = s.id
     WHERE sn.npc_character_id = ?
     ORDER BY ne.obtained_at DESC
 ");
