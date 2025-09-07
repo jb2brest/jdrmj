@@ -387,6 +387,9 @@ if ($playerPlaceId) {
     
     <?php if (!empty($playerPlace['map_url'])): ?>
     <script>
+    let tokenUpdateInterval;
+    let lastUpdateTimestamp = 0;
+    
     function initializeTokenSystem() {
         const mapImage = document.getElementById('mapImage');
         const tokens = document.querySelectorAll('.token');
@@ -397,53 +400,181 @@ if ($playerPlaceId) {
         console.log('Initialisation du système de pions (lecture seule)...');
         console.log('Nombre de pions trouvés:', tokens.length);
         
+        // Positionner les pions selon leurs données initiales
         tokens.forEach(token => {
             const isOnMap = token.dataset.isOnMap === 'true';
-            console.log(`Pion ${token.dataset.tokenType}_${token.dataset.entityId}: isOnMap=${isOnMap}`);
+            const x = parseInt(token.dataset.positionX);
+            const y = parseInt(token.dataset.positionY);
+            
+            console.log(`Pion initial ${token.dataset.tokenType}_${token.dataset.entityId}:`);
+            console.log(`  - isOnMap: ${isOnMap} (raw: "${token.dataset.isOnMap}")`);
+            console.log(`  - positionX: ${x} (raw: "${token.dataset.positionX}")`);
+            console.log(`  - positionY: ${y} (raw: "${token.dataset.positionY}")`);
+            console.log(`  - current parent:`, token.parentElement?.id || 'none');
             
             if (isOnMap) {
-                const x = parseInt(token.dataset.positionX);
-                const y = parseInt(token.dataset.positionY);
-                console.log(`Positionnement pion: ${token.dataset.tokenType}_${token.dataset.entityId} à ${x}%, ${y}%`);
+                console.log(`  -> Positionnement sur la carte à ${x}%, ${y}%`);
                 positionTokenOnMap(token, x, y);
             } else {
-                console.log(`Pion ${token.dataset.tokenType}_${token.dataset.entityId} reste dans la sidebar`);
+                console.log(`  -> Reste dans la sidebar`);
             }
         });
+        
+        // Démarrer la mise à jour en temps réel
+        startRealTimeUpdates();
+    }
 
-        function positionTokenOnMap(token, x, y) {
-            console.log(`Positionnement du pion ${token.dataset.tokenType}_${token.dataset.entityId} à ${x}%, ${y}%`);
-            
-            // Retirer le pion de son conteneur actuel
-            token.remove();
-            
-            // Ajouter le pion au conteneur du plan
-            const mapContainer = document.getElementById('mapContainer');
-            if (!mapContainer) {
-                console.error('Conteneur du plan non trouvé');
-                return;
-            }
-            mapContainer.appendChild(token);
-            
-            // Positionner le pion (même logique que le MJ)
-            token.style.position = 'absolute';
-            token.style.left = x + '%';
-            token.style.top = y + '%';
-            token.style.transform = 'translate(-50%, -50%)';
-            token.style.zIndex = '1000';
-            token.style.margin = '0';
-            token.style.pointerEvents = 'none'; // Lecture seule
-            token.dataset.isOnMap = 'true';
-            token.dataset.positionX = x;
-            token.dataset.positionY = y;
-            
-            console.log(`Pion positionné avec succès à ${x}%, ${y}%`);
+    function startRealTimeUpdates() {
+        // Mettre à jour toutes les 2 secondes
+        tokenUpdateInterval = setInterval(updateTokenPositions, 2000);
+        console.log('Mise à jour en temps réel démarrée');
+    }
+
+    function stopRealTimeUpdates() {
+        if (tokenUpdateInterval) {
+            clearInterval(tokenUpdateInterval);
+            tokenUpdateInterval = null;
+            console.log('Mise à jour en temps réel arrêtée');
         }
+    }
+
+    function updateTokenPositions() {
+        const placeId = <?php echo $playerPlaceId; ?>;
+        
+        fetch(`get_token_positions.php?place_id=${placeId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Positions mises à jour:', data.token_positions);
+                    applyTokenPositions(data.token_positions);
+                } else {
+                    console.error('Erreur lors de la récupération des positions:', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Erreur de connexion:', error);
+            });
+    }
+
+    function applyTokenPositions(tokenPositions) {
+        const tokens = document.querySelectorAll('.token');
+        
+        tokens.forEach(token => {
+            const tokenKey = `${token.dataset.tokenType}_${token.dataset.entityId}`;
+            const newPosition = tokenPositions[tokenKey];
+            
+            if (newPosition) {
+                const currentX = parseInt(token.dataset.positionX);
+                const currentY = parseInt(token.dataset.positionY);
+                const currentIsOnMap = token.dataset.isOnMap === 'true';
+                
+                // Vérifier si la position a changé
+                if (currentX !== newPosition.x || currentY !== newPosition.y || currentIsOnMap !== newPosition.is_on_map) {
+                    console.log(`Mise à jour du pion ${tokenKey}: ${currentX},${currentY} -> ${newPosition.x},${newPosition.y} (on_map: ${newPosition.is_on_map})`);
+                    
+                    // Mettre à jour les données
+                    token.dataset.positionX = newPosition.x;
+                    token.dataset.positionY = newPosition.y;
+                    token.dataset.isOnMap = newPosition.is_on_map ? 'true' : 'false';
+                    
+                    // Appliquer la nouvelle position
+                    if (newPosition.is_on_map) {
+                        positionTokenOnMap(token, newPosition.x, newPosition.y);
+                    } else {
+                        resetTokenToSidebar(token);
+                    }
+                }
+            }
+        });
+    }
+
+    function positionTokenOnMap(token, x, y) {
+        console.log(`Positionnement du pion ${token.dataset.tokenType}_${token.dataset.entityId} à ${x}%, ${y}%`);
+        
+        // Retirer le pion de son conteneur actuel
+        token.remove();
+        
+        // Ajouter le pion au conteneur du plan
+        const mapContainer = document.getElementById('mapContainer');
+        if (!mapContainer) {
+            console.error('Conteneur du plan non trouvé');
+            return;
+        }
+        mapContainer.appendChild(token);
+        
+        // Positionner le pion (même logique que le MJ)
+        token.style.position = 'absolute';
+        token.style.left = x + '%';
+        token.style.top = y + '%';
+        token.style.transform = 'translate(-50%, -50%)';
+        token.style.zIndex = '1000';
+        token.style.margin = '0';
+        token.style.pointerEvents = 'none'; // Lecture seule
+        token.dataset.isOnMap = 'true';
+        token.dataset.positionX = x;
+        token.dataset.positionY = y;
+        
+        console.log(`Pion positionné avec succès à ${x}%, ${y}%`);
+        console.log(`Styles appliqués: position=${token.style.position}, left=${token.style.left}, top=${token.style.top}, transform=${token.style.transform}`);
+    }
+
+    function resetTokenToSidebar(token) {
+        console.log(`Remise du pion ${token.dataset.tokenType}_${token.dataset.entityId} dans la sidebar`);
+        
+        // Retirer le pion du conteneur du plan
+        token.remove();
+        
+        // Remettre le pion dans la sidebar
+        const sidebar = document.getElementById('tokenSidebar');
+        if (sidebar) {
+            sidebar.appendChild(token);
+        }
+        
+        // Réinitialiser les styles
+        token.style.position = 'static';
+        token.style.left = 'auto';
+        token.style.top = 'auto';
+        token.style.transform = 'none';
+        token.style.zIndex = 'auto';
+        token.style.margin = '2px';
+        token.style.pointerEvents = 'none';
+        token.dataset.isOnMap = 'false';
+        token.dataset.positionX = '0';
+        token.dataset.positionY = '0';
     }
 
     // Initialiser le système de pions au chargement de la page
     document.addEventListener('DOMContentLoaded', function() {
-        initializeTokenSystem();
+        // Attendre que l'image soit chargée avant d'initialiser les pions
+        const mapImage = document.getElementById('mapImage');
+        if (mapImage) {
+            if (mapImage.complete) {
+                // Image déjà chargée
+                setTimeout(initializeTokenSystem, 100);
+            } else {
+                // Attendre le chargement de l'image
+                mapImage.addEventListener('load', function() {
+                    setTimeout(initializeTokenSystem, 100);
+                });
+            }
+        } else {
+            // Pas d'image, initialiser quand même
+            setTimeout(initializeTokenSystem, 100);
+        }
+    });
+
+    // Arrêter les mises à jour quand la page se ferme
+    window.addEventListener('beforeunload', function() {
+        stopRealTimeUpdates();
+    });
+
+    // Reprendre les mises à jour quand la page redevient visible
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            stopRealTimeUpdates();
+        } else {
+            startRealTimeUpdates();
+        }
     });
     </script>
     <?php endif; ?>
