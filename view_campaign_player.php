@@ -568,16 +568,26 @@ if ($playerPlaceId) {
     }
 
     function updateTokenPositions() {
-        const placeId = <?php echo $playerPlaceId; ?>;
+        // Utiliser le lieu actuel du joueur depuis l'URL ou le lieu par défaut
+        const urlParams = new URLSearchParams(window.location.search);
+        const placeId = urlParams.get('place_id') || <?php echo $playerPlaceId; ?>;
         
         fetch(`get_token_positions.php?place_id=${placeId}`)
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
                     console.log('Positions mises à jour:', data.token_positions);
-                    applyTokenPositions(data.token_positions);
-                    handleVisibilityChanges(data.hidden_tokens);
-                    updateNpcMonsterList(data.visible_npcs, data.visible_monsters);
+                    
+                    // Vérifier si le joueur a changé de lieu
+                    if (data.place_changed) {
+                        console.log('Changement de lieu détecté:', data.player_current_place);
+                        handlePlaceChange(data.player_current_place);
+                    } else {
+                        // Mise à jour normale des positions et visibilité
+                        applyTokenPositions(data.token_positions);
+                        handleVisibilityChanges(data.hidden_tokens);
+                        updateNpcMonsterList(data.visible_npcs, data.visible_monsters);
+                    }
                 } else {
                     console.error('Erreur lors de la récupération des positions:', data.error);
                 }
@@ -854,6 +864,50 @@ if ($playerPlaceId) {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    function handlePlaceChange(newPlace) {
+        console.log('Gestion du changement de lieu vers:', newPlace);
+        
+        if (!newPlace || !newPlace.place_id) {
+            console.error('Informations de lieu invalides');
+            return;
+        }
+        
+        // Mettre à jour l'URL pour refléter le nouveau lieu
+        const newUrl = new URL(window.location);
+        newUrl.searchParams.set('place_id', newPlace.place_id);
+        window.history.replaceState({}, '', newUrl);
+        
+        // Afficher un message de changement de lieu
+        showPlaceChangeNotification(newPlace.place_title);
+        
+        // Recharger la page pour afficher le nouveau lieu
+        setTimeout(() => {
+            window.location.reload();
+        }, 2000);
+    }
+
+    function showPlaceChangeNotification(placeTitle) {
+        // Créer une notification de changement de lieu
+        const notification = document.createElement('div');
+        notification.className = 'alert alert-info alert-dismissible fade show position-fixed';
+        notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        notification.innerHTML = `
+            <i class="fas fa-map-marker-alt me-2"></i>
+            <strong>Changement de lieu !</strong><br>
+            Vous êtes maintenant dans : <strong>${escapeHtml(placeTitle)}</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Supprimer la notification après 5 secondes
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 5000);
     }
 
     // Initialiser le système de pions au chargement de la page

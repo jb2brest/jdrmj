@@ -119,6 +119,32 @@ $stmt = $pdo->prepare("
 $stmt->execute([$place_id]);
 $visibleMonsters = $stmt->fetchAll();
 
+// Récupérer les informations du lieu actuel
+$stmt = $pdo->prepare("
+    SELECT p.id, p.title, p.map_url, p.notes, p.campaign_id
+    FROM places p 
+    WHERE p.id = ?
+");
+$stmt->execute([$place_id]);
+$currentPlace = $stmt->fetch();
+
+// Récupérer le lieu actuel du joueur pour détecter les changements
+$stmt = $pdo->prepare("
+    SELECT pp.place_id, p.title as place_title
+    FROM place_players pp 
+    JOIN places p ON pp.place_id = p.id 
+    WHERE pp.player_id = ? AND p.campaign_id = ?
+    LIMIT 1
+");
+$stmt->execute([$_SESSION['user_id'], $currentPlace['campaign_id']]);
+$playerCurrentPlace = $stmt->fetch();
+
+// Détecter si le joueur a changé de lieu
+$placeChanged = false;
+if ($playerCurrentPlace && $playerCurrentPlace['place_id'] != $place_id) {
+    $placeChanged = true;
+}
+
 // Retourner les positions et les informations des PNJ/monstres
 header('Content-Type: application/json');
 echo json_encode([
@@ -128,6 +154,9 @@ echo json_encode([
     'hidden_tokens' => $hiddenTokens,
     'visible_npcs' => $visibleNpcs,
     'visible_monsters' => $visibleMonsters,
+    'current_place' => $currentPlace,
+    'player_current_place' => $playerCurrentPlace,
+    'place_changed' => $placeChanged,
     'timestamp' => time()
 ]);
 ?>
