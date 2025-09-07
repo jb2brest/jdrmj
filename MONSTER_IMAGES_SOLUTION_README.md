@@ -253,3 +253,4 @@ if ($image_path && file_exists($image_path)) {
 Les images des monstres sont maintenant affichées dans les feuilles de monstres, utilisant le `csv_id` pour localiser l'image correspondante. La solution offre un affichage conditionnel avec fallback élégant, une interface enrichie et une performance optimisée ! 🐉🖼️✨
 
 
+

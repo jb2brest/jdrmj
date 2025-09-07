@@ -217,3 +217,4 @@ Le problème signalé n'était **pas un bug**, mais une **confusion sur le fonct
 Le système d'attribution et d'affichage de l'équipement fonctionne parfaitement. Les objets magiques attribués par le MJ apparaissent bien dans l'inventaire des personnages, à condition que l'utilisateur soit connecté avec les bonnes permissions.
 
 
+

@@ -18,3 +18,4 @@ UNION ALL
 SELECT 'monster_equipment' as table_name, COUNT(*) as remaining_records FROM monster_equipment;
 
 
+

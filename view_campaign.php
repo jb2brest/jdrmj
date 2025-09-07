@@ -174,13 +174,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Gestion des lieux
     if (isset($_POST['action']) && $_POST['action'] === 'create_scene') {
         $title = sanitizeInput($_POST['title'] ?? '');
-        $map_url = sanitizeInput($_POST['map_url'] ?? '');
         $notes = sanitizeInput($_POST['notes'] ?? '');
         
         if ($title !== '') {
-            $stmt = $pdo->prepare("INSERT INTO places (campaign_id, title, map_url, notes, position) VALUES (?, ?, ?, ?, 0)");
-            $stmt->execute([$campaign_id, $title, $map_url, $notes]);
-            $success_message = "Lieu créée avec succès.";
+            $map_url = '';
+            
+            // Upload de plan si fourni
+            if (isset($_FILES['plan_file']) && $_FILES['plan_file']['error'] === UPLOAD_ERR_OK) {
+                $tmp = $_FILES['plan_file']['tmp_name'];
+                $size = (int)$_FILES['plan_file']['size'];
+                $originalName = $_FILES['plan_file']['name'];
+                
+                // Vérifier la taille (limite à 2M pour correspondre à la config PHP)
+                if ($size > 2 * 1024 * 1024) {
+                    $error_message = "Image trop volumineuse (max 2 Mo).";
+                } else {
+                    $finfo = new finfo(FILEINFO_MIME_TYPE);
+                    $mime = $finfo->file($tmp);
+                    $allowed = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/gif' => 'gif', 'image/webp' => 'webp'];
+                    
+                    if (!isset($allowed[$mime])) {
+                        $error_message = "Format d'image non supporté. Formats acceptés: JPG, PNG, GIF, WebP.";
+                    } else {
+                        $ext = $allowed[$mime];
+                        $filename = 'plan_' . time() . '_' . uniqid() . '.' . $ext;
+                        $uploadPath = 'uploads/' . $filename;
+                        
+                        if (move_uploaded_file($tmp, $uploadPath)) {
+                            $map_url = $uploadPath;
+                        } else {
+                            $error_message = "Erreur lors du téléversement de l'image.";
+                        }
+                    }
+                }
+            }
+            
+            if (!isset($error_message)) {
+                $stmt = $pdo->prepare("INSERT INTO places (campaign_id, title, map_url, notes, position) VALUES (?, ?, ?, ?, 0)");
+                $stmt->execute([$campaign_id, $title, $map_url, $notes]);
+                $success_message = "Lieu créée avec succès.";
+            }
         } else {
             $error_message = "Le titre du lieu est requis.";
         }
@@ -719,7 +752,7 @@ if (!empty($places)) {
                     <h5 class="modal-title">Nouveau lieu</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
                 </div>
-                <form method="POST">
+                <form method="POST" enctype="multipart/form-data">
                     <div class="modal-body">
                         <input type="hidden" name="action" value="create_scene">
                         
@@ -729,8 +762,9 @@ if (!empty($places)) {
                         </div>
                         
                         <div class="mb-3">
-                            <label for="sceneMapUrl" class="form-label">URL du plan (optionnel)</label>
-                            <input type="url" class="form-control" id="sceneMapUrl" name="map_url" placeholder="https://...">
+                            <label for="scenePlanFile" class="form-label">Plan du lieu (optionnel)</label>
+                            <input type="file" class="form-control" id="scenePlanFile" name="plan_file" accept="image/png,image/jpeg,image/webp,image/gif">
+                            <div class="form-text">Formats acceptés: JPG, PNG, GIF, WebP (max 2 Mo)</div>
                         </div>
                         
                         <div class="mb-3">

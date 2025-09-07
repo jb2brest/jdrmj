@@ -330,3 +330,4 @@ function applyDamageToGroup($character_ids, $damage) {
 La gestion des points de vie est maintenant intégrée directement dans les feuilles de personnages, offrant une interface unifiée, simple et efficace pour le MJ et les joueurs ! ❤️📄⚔️
 
 
+

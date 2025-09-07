@@ -223,3 +223,4 @@ Les deux problèmes identifiés ont été complètement résolus :
 Le système fonctionne maintenant comme prévu, avec une attribution d'objets fonctionnelle et un accès MJ aux feuilles de personnage.
 
 
+

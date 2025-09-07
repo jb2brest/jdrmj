@@ -213,11 +213,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
     
     // Mettre à jour le plan du lieu
     if (isset($_POST['action']) && $_POST['action'] === 'update_map') {
-        $map_url = trim($_POST['map_url'] ?? '');
         $notes = trim($_POST['notes'] ?? '');
         
         // Upload de plan si fourni
-        $newMapUrl = $map_url;
+        $newMapUrl = $place['map_url']; // Conserver l'ancien plan par défaut
         if (isset($_FILES['plan_file']) && $_FILES['plan_file']['error'] === UPLOAD_ERR_OK) {
             $tmp = $_FILES['plan_file']['tmp_name'];
             $size = (int)$_FILES['plan_file']['size'];
@@ -284,11 +283,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         }
         
         if (!isset($error_message)) {
-            // Si aucun nouveau lien fourni et pas d'upload, conserver l'ancien
-            if ($newMapUrl === '') { 
-                $newMapUrl = $place['map_url']; 
-            }
-            
             $stmt = $pdo->prepare("UPDATE places SET map_url = ?, notes = ? WHERE id = ? AND campaign_id = ?");
             $stmt->execute([$newMapUrl, $notes, $place_id, $place['campaign_id']]);
             $success_message = "Plan du lieu mis à jour.";
@@ -689,15 +683,11 @@ foreach ($allScenes as $s) {
                                 <h6>Modifier le plan du lieu</h6>
                                 <form method="POST" enctype="multipart/form-data" class="row g-3">
                                     <input type="hidden" name="action" value="update_map">
-                                    <div class="col-md-6">
-                                        <label class="form-label">URL du plan</label>
-                                        <input type="url" class="form-control" name="map_url" value="<?php echo htmlspecialchars($place['map_url'] ?? ''); ?>" placeholder="https://...">
+                                    <div class="col-12">
+                                        <label class="form-label">Téléverser un plan (image)</label>
+                                        <input type="file" class="form-control" name="plan_file" accept="image/png,image/jpeg,image/webp,image/gif">
+                                        <div class="form-text">Formats acceptés: JPG, PNG, GIF, WebP (max 2 Mo)</div>
                                     </div>
-                                                                            <div class="col-md-6">
-                                            <label class="form-label">Ou téléverser un plan (image)</label>
-                                            <input type="file" class="form-control" name="plan_file" accept="image/png,image/jpeg,image/webp,image/gif">
-                                            <div class="form-text">Formats acceptés: JPG, PNG, GIF, WebP (max 2 Mo)</div>
-                                        </div>
                                     <div class="col-12">
                                         <label class="form-label">Notes du MJ</label>
                                         <textarea class="form-control" name="notes" rows="3" placeholder="Notes internes sur cette lieu..."><?php echo htmlspecialchars($place['notes'] ?? ''); ?></textarea>

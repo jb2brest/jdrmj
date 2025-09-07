@@ -114,6 +114,7 @@ Ce projet est sous licence MIT. Libre d'utilisation, modification et distributio
 
 ## Changelog
 <version_tag>
+- 0.0.41 : Suppression plan url
 - 0.0.40 : Transfert de lieux
 - 0.0.39 : Bascule des scènes en lieux
 - 0.0.38 : Bascule des scènes dans la campagne

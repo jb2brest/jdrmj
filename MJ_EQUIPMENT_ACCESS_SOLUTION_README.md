@@ -253,3 +253,4 @@ et peut ajuster les récompenses en conséquence
 Le MJ peut maintenant accéder à l'équipement de **tous les participants** de ses scènes et sessions. La solution offre un contrôle total, une interface intuitive et une sécurité renforcée, répondant parfaitement à la demande de l'utilisateur.
 
 
+
