@@ -50,12 +50,12 @@ $stmt->execute([$place_id]);
 $placePlayers = $stmt->fetchAll();
 
 // Récupérer les PNJ de cette lieu
-$stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, c.profile_photo AS character_profile_photo FROM place_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.place_id = ? AND sn.monster_id IS NULL ORDER BY sn.name ASC");
+$stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, sn.is_visible, c.profile_photo AS character_profile_photo FROM place_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.place_id = ? AND sn.monster_id IS NULL ORDER BY sn.name ASC");
 $stmt->execute([$place_id]);
 $placeNpcs = $stmt->fetchAll();
 
 // Récupérer les monstres de cette lieu
-$stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, sn.current_hit_points, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM place_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.place_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
+$stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, sn.current_hit_points, sn.is_visible, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM place_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.place_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
 $stmt->execute([$place_id]);
 $placeMonsters = $stmt->fetchAll();
 
@@ -170,7 +170,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         $success_message = "Monstre retiré du lieu.";
         
         // Recharger les monstres
-        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, sn.current_hit_points, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM place_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.place_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
+        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, sn.current_hit_points, sn.is_visible, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM place_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.place_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
+        $stmt->execute([$place_id]);
+        $placeMonsters = $stmt->fetchAll();
+    }
+    
+    // Basculer la visibilité d'un PNJ
+    if (isset($_POST['action']) && $_POST['action'] === 'toggle_npc_visibility' && isset($_POST['npc_id'])) {
+        $npc_id = (int)$_POST['npc_id'];
+        $stmt = $pdo->prepare("UPDATE place_npcs SET is_visible = NOT is_visible WHERE place_id = ? AND id = ? AND monster_id IS NULL");
+        $stmt->execute([$place_id, $npc_id]);
+        $success_message = "Visibilité du PNJ mise à jour.";
+        
+        // Recharger les PNJ
+        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, sn.is_visible, c.profile_photo AS character_profile_photo FROM place_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.place_id = ? AND sn.monster_id IS NULL ORDER BY sn.name ASC");
+        $stmt->execute([$place_id]);
+        $placeNpcs = $stmt->fetchAll();
+    }
+    
+    // Basculer la visibilité d'un monstre
+    if (isset($_POST['action']) && $_POST['action'] === 'toggle_monster_visibility' && isset($_POST['npc_id'])) {
+        $npc_id = (int)$_POST['npc_id'];
+        $stmt = $pdo->prepare("UPDATE place_npcs SET is_visible = NOT is_visible WHERE place_id = ? AND id = ? AND monster_id IS NOT NULL");
+        $stmt->execute([$place_id, $npc_id]);
+        $success_message = "Visibilité du monstre mise à jour.";
+        
+        // Recharger les monstres
+        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, sn.current_hit_points, sn.is_visible, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM place_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.place_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
         $stmt->execute([$place_id]);
         $placeMonsters = $stmt->fetchAll();
     }
@@ -939,16 +965,23 @@ foreach ($allScenes as $s) {
                                                     <i class="fas fa-file-alt"></i>
                                                 </a>
                                             <?php endif; ?>
+                                            <?php if ($isOwnerDM): ?>
+                                                <form method="POST" class="d-inline" onsubmit="return confirm('<?php echo ($npc['is_visible'] ? 'Masquer' : 'Afficher'); ?> <?php echo htmlspecialchars($npc['name']); ?> pour les joueurs ?');">
+                                                    <input type="hidden" name="action" value="toggle_npc_visibility">
+                                                    <input type="hidden" name="npc_id" value="<?php echo (int)$npc['id']; ?>">
+                                                    <button type="submit" class="btn btn-sm <?php echo $npc['is_visible'] ? 'btn-outline-warning' : 'btn-outline-success'; ?>" title="<?php echo $npc['is_visible'] ? 'Masquer pour les joueurs' : 'Afficher pour les joueurs'; ?>">
+                                                        <i class="fas <?php echo $npc['is_visible'] ? 'fa-eye-slash' : 'fa-eye'; ?>"></i>
+                                                    </button>
+                                                </form>
+                                                <form method="POST" class="d-inline" onsubmit="return confirm('Retirer <?php echo htmlspecialchars($npc['name']); ?> de cette lieu ?');">
+                                                    <input type="hidden" name="action" value="remove_npc">
+                                                    <input type="hidden" name="npc_name" value="<?php echo htmlspecialchars($npc['name']); ?>">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Retirer du lieu">
+                                                        <i class="fas fa-user-minus"></i>
+                                                    </button>
+                                                </form>
+                                            <?php endif; ?>
                                         </div>
-                                        <?php if ($isOwnerDM): ?>
-                                            <form method="POST" class="d-inline" onsubmit="return confirm('Retirer <?php echo htmlspecialchars($npc['name']); ?> de cette lieu ?');">
-                                                <input type="hidden" name="action" value="remove_npc">
-                                                <input type="hidden" name="npc_name" value="<?php echo htmlspecialchars($npc['name']); ?>">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Retirer du lieu">
-                                                    <i class="fas fa-user-minus"></i>
-                                                </button>
-                                            </form>
-                                        <?php endif; ?>
                                     </div>
                                 </li>
                             <?php endforeach; ?>
@@ -1006,6 +1039,13 @@ foreach ($allScenes as $s) {
                                                 <i class="fas fa-book"></i>
                                             </a>
                                             <?php if ($isOwnerDM): ?>
+                                                <form method="POST" class="d-inline" onsubmit="return confirm('<?php echo ($monster['is_visible'] ? 'Masquer' : 'Afficher'); ?> <?php echo htmlspecialchars($monster['name']); ?> pour les joueurs ?');">
+                                                    <input type="hidden" name="action" value="toggle_monster_visibility">
+                                                    <input type="hidden" name="npc_id" value="<?php echo (int)$monster['id']; ?>">
+                                                    <button type="submit" class="btn btn-sm <?php echo $monster['is_visible'] ? 'btn-outline-warning' : 'btn-outline-success'; ?>" title="<?php echo $monster['is_visible'] ? 'Masquer pour les joueurs' : 'Afficher pour les joueurs'; ?>">
+                                                        <i class="fas <?php echo $monster['is_visible'] ? 'fa-eye-slash' : 'fa-eye'; ?>"></i>
+                                                    </button>
+                                                </form>
                                                 <form method="POST" class="d-inline" onsubmit="return confirm('Retirer <?php echo htmlspecialchars($monster['name']); ?> de cette lieu ?');">
                                                     <input type="hidden" name="action" value="remove_monster">
                                                     <input type="hidden" name="npc_id" value="<?php echo (int)$monster['id']; ?>">

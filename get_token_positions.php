@@ -42,12 +42,21 @@ if (!$place) {
     exit();
 }
 
-// Récupérer les positions des pions
+// Récupérer les positions des pions avec informations de visibilité
 $stmt = $pdo->prepare("
-    SELECT token_type, entity_id, position_x, position_y, is_on_map, updated_at
-    FROM place_tokens 
-    WHERE place_id = ?
-    ORDER BY updated_at DESC
+    SELECT pt.token_type, pt.entity_id, pt.position_x, pt.position_y, pt.is_on_map, pt.updated_at,
+           pn.is_visible, pn.name as entity_name
+    FROM place_tokens pt
+    LEFT JOIN place_npcs pn ON (
+        (pt.token_type = 'npc' AND pt.entity_id = pn.id) OR 
+        (pt.token_type = 'monster' AND pt.entity_id = pn.id)
+    )
+    WHERE pt.place_id = ? 
+    AND (
+        pt.token_type = 'player' OR 
+        (pn.id IS NOT NULL AND pn.is_visible = TRUE)
+    )
+    ORDER BY pt.updated_at DESC
 ");
 $stmt->execute([$place_id]);
 $tokenPositions = [];
@@ -56,6 +65,34 @@ while ($row = $stmt->fetch()) {
         'x' => (int)$row['position_x'],
         'y' => (int)$row['position_y'],
         'is_on_map' => (bool)$row['is_on_map'],
+        'is_visible' => $row['token_type'] === 'player' ? true : (bool)$row['is_visible'],
+        'entity_name' => $row['entity_name'],
+        'updated_at' => $row['updated_at']
+    ];
+}
+
+// Récupérer aussi les PNJ/monstres masqués pour informer le client qu'ils doivent être cachés
+$stmt = $pdo->prepare("
+    SELECT pt.token_type, pt.entity_id, pt.position_x, pt.position_y, pt.is_on_map, pt.updated_at,
+           pn.is_visible, pn.name as entity_name
+    FROM place_tokens pt
+    JOIN place_npcs pn ON (
+        (pt.token_type = 'npc' AND pt.entity_id = pn.id) OR 
+        (pt.token_type = 'monster' AND pt.entity_id = pn.id)
+    )
+    WHERE pt.place_id = ? 
+    AND pn.is_visible = FALSE
+    ORDER BY pt.updated_at DESC
+");
+$stmt->execute([$place_id]);
+$hiddenTokens = [];
+while ($row = $stmt->fetch()) {
+    $hiddenTokens[$row['token_type'] . '_' . $row['entity_id']] = [
+        'x' => (int)$row['position_x'],
+        'y' => (int)$row['position_y'],
+        'is_on_map' => (bool)$row['is_on_map'],
+        'is_visible' => false,
+        'entity_name' => $row['entity_name'],
         'updated_at' => $row['updated_at']
     ];
 }
@@ -66,6 +103,7 @@ echo json_encode([
     'success' => true,
     'place_id' => $place_id,
     'token_positions' => $tokenPositions,
+    'hidden_tokens' => $hiddenTokens,
     'timestamp' => time()
 ]);
 ?>

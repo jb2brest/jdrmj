@@ -110,23 +110,23 @@ if ($playerPlaceId) {
     $stmt->execute([$playerPlaceId]);
     $placePlayers = $stmt->fetchAll();
     
-    // Récupérer les PNJ
+    // Récupérer les PNJ (seulement ceux visibles)
     $stmt = $pdo->prepare("
         SELECT pn.id, pn.name, pn.description, pn.npc_character_id, pn.profile_photo, c.profile_photo AS character_profile_photo 
         FROM place_npcs pn 
         LEFT JOIN characters c ON pn.npc_character_id = c.id 
-        WHERE pn.place_id = ? AND pn.monster_id IS NULL 
+        WHERE pn.place_id = ? AND pn.monster_id IS NULL AND pn.is_visible = TRUE
         ORDER BY pn.name ASC
     ");
     $stmt->execute([$playerPlaceId]);
     $placeNpcs = $stmt->fetchAll();
     
-    // Récupérer les monstres
+    // Récupérer les monstres (seulement ceux visibles)
     $stmt = $pdo->prepare("
         SELECT pn.id, pn.name, pn.description, pn.monster_id, pn.quantity, pn.current_hit_points, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class 
         FROM place_npcs pn 
         JOIN dnd_monsters m ON pn.monster_id = m.id 
-        WHERE pn.place_id = ? AND pn.monster_id IS NOT NULL 
+        WHERE pn.place_id = ? AND pn.monster_id IS NOT NULL AND pn.is_visible = TRUE
         ORDER BY pn.name ASC
     ");
     $stmt->execute([$playerPlaceId]);
@@ -406,6 +406,9 @@ if ($playerPlaceId) {
             const x = parseInt(token.dataset.positionX);
             const y = parseInt(token.dataset.positionY);
             
+            // Marquer comme visible par défaut (sera mis à jour par l'API)
+            token.dataset.isVisible = 'true';
+            
             console.log(`Pion initial ${token.dataset.tokenType}_${token.dataset.entityId}:`);
             console.log(`  - isOnMap: ${isOnMap} (raw: "${token.dataset.isOnMap}")`);
             console.log(`  - positionX: ${x} (raw: "${token.dataset.positionX}")`);
@@ -419,6 +422,9 @@ if ($playerPlaceId) {
                 console.log(`  -> Reste dans la sidebar`);
             }
         });
+        
+        // Vérifier la visibilité initiale
+        updateTokenPositions();
         
         // Démarrer la mise à jour en temps réel
         startRealTimeUpdates();
@@ -447,6 +453,7 @@ if ($playerPlaceId) {
                 if (data.success) {
                     console.log('Positions mises à jour:', data.token_positions);
                     applyTokenPositions(data.token_positions);
+                    handleVisibilityChanges(data.hidden_tokens);
                 } else {
                     console.error('Erreur lors de la récupération des positions:', data.error);
                 }
@@ -467,21 +474,31 @@ if ($playerPlaceId) {
                 const currentX = parseInt(token.dataset.positionX);
                 const currentY = parseInt(token.dataset.positionY);
                 const currentIsOnMap = token.dataset.isOnMap === 'true';
+                const currentIsVisible = token.dataset.isVisible !== 'false';
                 
-                // Vérifier si la position a changé
-                if (currentX !== newPosition.x || currentY !== newPosition.y || currentIsOnMap !== newPosition.is_on_map) {
-                    console.log(`Mise à jour du pion ${tokenKey}: ${currentX},${currentY} -> ${newPosition.x},${newPosition.y} (on_map: ${newPosition.is_on_map})`);
+                // Vérifier si la position ou la visibilité a changé
+                if (currentX !== newPosition.x || currentY !== newPosition.y || currentIsOnMap !== newPosition.is_on_map || currentIsVisible !== newPosition.is_visible) {
+                    console.log(`Mise à jour du pion ${tokenKey}: ${currentX},${currentY} -> ${newPosition.x},${newPosition.y} (on_map: ${newPosition.is_on_map}, visible: ${newPosition.is_visible})`);
                     
                     // Mettre à jour les données
                     token.dataset.positionX = newPosition.x;
                     token.dataset.positionY = newPosition.y;
                     token.dataset.isOnMap = newPosition.is_on_map ? 'true' : 'false';
+                    token.dataset.isVisible = newPosition.is_visible ? 'true' : 'false';
                     
-                    // Appliquer la nouvelle position
-                    if (newPosition.is_on_map) {
-                        positionTokenOnMap(token, newPosition.x, newPosition.y);
+                    // Gérer la visibilité
+                    if (newPosition.is_visible) {
+                        token.style.display = 'inline-block';
+                        
+                        // Appliquer la nouvelle position si visible
+                        if (newPosition.is_on_map) {
+                            positionTokenOnMap(token, newPosition.x, newPosition.y);
+                        } else {
+                            resetTokenToSidebar(token);
+                        }
                     } else {
-                        resetTokenToSidebar(token);
+                        // Masquer le pion
+                        token.style.display = 'none';
                     }
                 }
             }
@@ -541,6 +558,33 @@ if ($playerPlaceId) {
         token.dataset.isOnMap = 'false';
         token.dataset.positionX = '0';
         token.dataset.positionY = '0';
+    }
+
+    function handleVisibilityChanges(hiddenTokens) {
+        console.log('Gestion des changements de visibilité:', hiddenTokens);
+        
+        // Cacher les pions qui ne sont plus visibles
+        Object.keys(hiddenTokens).forEach(tokenKey => {
+            const token = document.querySelector(`[data-token-type="${tokenKey.split('_')[0]}"][data-entity-id="${tokenKey.split('_')[1]}"]`);
+            if (token) {
+                console.log(`Masquage du pion ${tokenKey}`);
+                token.style.display = 'none';
+                token.dataset.isVisible = 'false';
+            }
+        });
+        
+        // Afficher les pions qui sont maintenant visibles
+        const allTokens = document.querySelectorAll('.token');
+        allTokens.forEach(token => {
+            const tokenKey = `${token.dataset.tokenType}_${token.dataset.entityId}`;
+            const isCurrentlyHidden = hiddenTokens[tokenKey];
+            
+            if (!isCurrentlyHidden && token.dataset.isVisible === 'false') {
+                console.log(`Affichage du pion ${tokenKey}`);
+                token.style.display = 'inline-block';
+                token.dataset.isVisible = 'true';
+            }
+        });
     }
 
     // Initialiser le système de pions au chargement de la page

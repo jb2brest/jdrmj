@@ -114,6 +114,7 @@ Ce projet est sous licence MIT. Libre d'utilisation, modification et distributio
 
 ## Changelog
 <version_tag>
+- 0.0.45 : Cacher les joueurs
 - 0.0.44 : Viewer Ok avec repositionnement
 - 0.0.43 : Viewer Ok avec positionnement
 - 0.0.42 : Campagne du personnage
