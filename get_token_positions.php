@@ -97,13 +97,37 @@ while ($row = $stmt->fetch()) {
     ];
 }
 
-// Retourner les positions
+// Récupérer les informations des PNJ visibles
+$stmt = $pdo->prepare("
+    SELECT pn.id, pn.name, pn.description, pn.npc_character_id, pn.profile_photo, c.profile_photo AS character_profile_photo 
+    FROM place_npcs pn 
+    LEFT JOIN characters c ON pn.npc_character_id = c.id 
+    WHERE pn.place_id = ? AND pn.monster_id IS NULL AND pn.is_visible = TRUE
+    ORDER BY pn.name ASC
+");
+$stmt->execute([$place_id]);
+$visibleNpcs = $stmt->fetchAll();
+
+// Récupérer les informations des monstres visibles
+$stmt = $pdo->prepare("
+    SELECT pn.id, pn.name, pn.description, pn.monster_id, pn.quantity, pn.current_hit_points, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class 
+    FROM place_npcs pn 
+    JOIN dnd_monsters m ON pn.monster_id = m.id 
+    WHERE pn.place_id = ? AND pn.monster_id IS NOT NULL AND pn.is_visible = TRUE
+    ORDER BY pn.name ASC
+");
+$stmt->execute([$place_id]);
+$visibleMonsters = $stmt->fetchAll();
+
+// Retourner les positions et les informations des PNJ/monstres
 header('Content-Type: application/json');
 echo json_encode([
     'success' => true,
     'place_id' => $place_id,
     'token_positions' => $tokenPositions,
     'hidden_tokens' => $hiddenTokens,
+    'visible_npcs' => $visibleNpcs,
+    'visible_monsters' => $visibleMonsters,
     'timestamp' => time()
 ]);
 ?>

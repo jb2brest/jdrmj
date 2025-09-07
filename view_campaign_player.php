@@ -159,6 +159,31 @@ if ($playerPlaceId) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        .npc-card {
+            border-left: 4px solid #17a2b8;
+            transition: transform 0.2s ease;
+        }
+        .npc-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .monster-card {
+            border-left: 4px solid #dc3545;
+            transition: transform 0.2s ease;
+        }
+        .monster-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .member-card {
+            transition: transform 0.2s ease;
+        }
+        .member-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+    </style>
+    <style>
         .campaign-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -273,6 +298,104 @@ if ($playerPlaceId) {
                         <?php endif; ?>
                     </div>
                 </div>
+                
+                <!-- Section Personnages non joueurs -->
+                <?php if (!empty($placeNpcs) || !empty($placeMonsters)): ?>
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-user-tie me-2"></i>Personnages non joueurs
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <?php if (!empty($placeNpcs)): ?>
+                            <h6 class="text-muted mb-3">
+                                <i class="fas fa-user-friends me-1"></i>PNJ
+                            </h6>
+                            <div class="row g-2">
+                                <?php foreach ($placeNpcs as $npc): ?>
+                                    <div class="col-12">
+                                        <div class="card npc-card">
+                                            <div class="card-body p-3">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="me-3">
+                                                        <?php 
+                                                        $photo_to_show = !empty($npc['profile_photo']) ? $npc['profile_photo'] : (!empty($npc['character_profile_photo']) ? $npc['character_profile_photo'] : null);
+                                                        ?>
+                                                        <?php if (!empty($photo_to_show)): ?>
+                                                            <img src="<?php echo htmlspecialchars($photo_to_show); ?>" alt="Photo de <?php echo htmlspecialchars($npc['name']); ?>" class="rounded" style="width: 40px; height: 40px; object-fit: cover;">
+                                                        <?php else: ?>
+                                                            <div class="bg-info rounded d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                                <i class="fas fa-user-tie text-white"></i>
+                                                            </div>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                    <div class="flex-grow-1">
+                                                        <h6 class="mb-1">
+                                                            <?php echo htmlspecialchars($npc['name']); ?>
+                                                            <?php if (!empty($npc['npc_character_id'])): ?>
+                                                                <span class="badge bg-info ms-1">perso MJ</span>
+                                                            <?php endif; ?>
+                                                        </h6>
+                                                        <?php if (!empty($npc['description'])): ?>
+                                                            <small class="text-muted"><?php echo htmlspecialchars($npc['description']); ?></small>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <?php if (!empty($placeMonsters)): ?>
+                            <?php if (!empty($placeNpcs)): ?>
+                                <hr class="my-3">
+                            <?php endif; ?>
+                            <h6 class="text-muted mb-3">
+                                <i class="fas fa-dragon me-1"></i>Monstres
+                            </h6>
+                            <div class="row g-2">
+                                <?php foreach ($placeMonsters as $monster): ?>
+                                    <div class="col-12">
+                                        <div class="card monster-card">
+                                            <div class="card-body p-3">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="me-3">
+                                                        <div class="bg-danger rounded d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                            <i class="fas fa-dragon text-white"></i>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex-grow-1">
+                                                        <h6 class="mb-1"><?php echo htmlspecialchars($monster['name']); ?></h6>
+                                                        <small class="text-muted">
+                                                            <?php echo htmlspecialchars($monster['type']); ?> • 
+                                                            <?php echo htmlspecialchars($monster['size']); ?> • 
+                                                            CR <?php echo htmlspecialchars($monster['challenge_rating']); ?>
+                                                        </small>
+                                                        <br>
+                                                        <small class="text-muted">
+                                                            CA <?php echo htmlspecialchars($monster['armor_class']); ?> • 
+                                                            PV <?php 
+                                                                $current_hp = $monster['current_hit_points'] ?? $monster['hit_points'];
+                                                                $max_hp = $monster['hit_points'];
+                                                                $hp_percentage = ($current_hp / $max_hp) * 100;
+                                                                $hp_color = $hp_percentage > 50 ? 'text-success' : ($hp_percentage > 25 ? 'text-warning' : 'text-danger');
+                                                                echo "<span class='{$hp_color}'>{$current_hp}</span>/{$max_hp}";
+                                                            ?>
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
 
             <!-- Colonne droite : Plan du lieu -->
@@ -454,6 +577,7 @@ if ($playerPlaceId) {
                     console.log('Positions mises à jour:', data.token_positions);
                     applyTokenPositions(data.token_positions);
                     handleVisibilityChanges(data.hidden_tokens);
+                    updateNpcMonsterList(data.visible_npcs, data.visible_monsters);
                 } else {
                     console.error('Erreur lors de la récupération des positions:', data.error);
                 }
@@ -585,6 +709,151 @@ if ($playerPlaceId) {
                 token.dataset.isVisible = 'true';
             }
         });
+    }
+
+    function updateNpcMonsterList(visibleNpcs, visibleMonsters) {
+        console.log('Mise à jour de la liste des PNJ/monstres:', { visibleNpcs, visibleMonsters });
+        
+        // Trouver le conteneur de la section PNJ
+        const npcSection = document.querySelector('.card .card-header h5');
+        let npcSectionCard = null;
+        
+        // Chercher la carte qui contient le titre "Personnages non joueurs"
+        document.querySelectorAll('.card').forEach(card => {
+            const header = card.querySelector('.card-header h5');
+            if (header && header.textContent.includes('Personnages non joueurs')) {
+                npcSectionCard = card;
+            }
+        });
+        
+        if (!npcSectionCard) {
+            console.log('Section PNJ non trouvée');
+            return;
+        }
+        
+        const cardBody = npcSectionCard.querySelector('.card-body');
+        if (!cardBody) {
+            console.log('Corps de la carte PNJ non trouvé');
+            return;
+        }
+        
+        // Vérifier s'il y a des PNJ ou monstres visibles
+        const hasVisibleContent = (visibleNpcs && visibleNpcs.length > 0) || (visibleMonsters && visibleMonsters.length > 0);
+        
+        if (!hasVisibleContent) {
+            // Masquer la section si aucun PNJ/monstre visible
+            npcSectionCard.style.display = 'none';
+            return;
+        }
+        
+        // Afficher la section
+        npcSectionCard.style.display = 'block';
+        
+        // Reconstruire le contenu
+        let content = '';
+        
+        // Section PNJ
+        if (visibleNpcs && visibleNpcs.length > 0) {
+            content += `
+                <h6 class="text-muted mb-3">
+                    <i class="fas fa-user-friends me-1"></i>PNJ
+                </h6>
+                <div class="row g-2">
+            `;
+            
+            visibleNpcs.forEach(npc => {
+                const photoToShow = npc.profile_photo || npc.character_profile_photo;
+                const photoHtml = photoToShow ? 
+                    `<img src="${escapeHtml(photoToShow)}" alt="Photo de ${escapeHtml(npc.name)}" class="rounded" style="width: 40px; height: 40px; object-fit: cover;">` :
+                    `<div class="bg-info rounded d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;"><i class="fas fa-user-tie text-white"></i></div>`;
+                
+                const badgeHtml = npc.npc_character_id ? '<span class="badge bg-info ms-1">perso MJ</span>' : '';
+                const descriptionHtml = npc.description ? `<small class="text-muted">${escapeHtml(npc.description)}</small>` : '';
+                
+                content += `
+                    <div class="col-12">
+                        <div class="card npc-card">
+                            <div class="card-body p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        ${photoHtml}
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">
+                                            ${escapeHtml(npc.name)}${badgeHtml}
+                                        </h6>
+                                        ${descriptionHtml}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            content += '</div>';
+        }
+        
+        // Section Monstres
+        if (visibleMonsters && visibleMonsters.length > 0) {
+            if (visibleNpcs && visibleNpcs.length > 0) {
+                content += '<hr class="my-3">';
+            }
+            
+            content += `
+                <h6 class="text-muted mb-3">
+                    <i class="fas fa-dragon me-1"></i>Monstres
+                </h6>
+                <div class="row g-2">
+            `;
+            
+            visibleMonsters.forEach(monster => {
+                const currentHp = monster.current_hit_points || monster.hit_points;
+                const maxHp = monster.hit_points;
+                const hpPercentage = (currentHp / maxHp) * 100;
+                const hpColor = hpPercentage > 50 ? 'text-success' : (hpPercentage > 25 ? 'text-warning' : 'text-danger');
+                
+                content += `
+                    <div class="col-12">
+                        <div class="card monster-card">
+                            <div class="card-body p-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <div class="bg-danger rounded d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i class="fas fa-dragon text-white"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">${escapeHtml(monster.name)}</h6>
+                                        <small class="text-muted">
+                                            ${escapeHtml(monster.type)} • 
+                                            ${escapeHtml(monster.size)} • 
+                                            CR ${escapeHtml(monster.challenge_rating)}
+                                        </small>
+                                        <br>
+                                        <small class="text-muted">
+                                            CA ${escapeHtml(monster.armor_class)} • 
+                                            PV <span class="${hpColor}">${currentHp}</span>/${maxHp}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            content += '</div>';
+        }
+        
+        // Mettre à jour le contenu
+        cardBody.innerHTML = content;
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     // Initialiser le système de pions au chargement de la page
