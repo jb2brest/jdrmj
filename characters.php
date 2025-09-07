@@ -23,12 +23,15 @@ if (isset($_POST['delete_character']) && isset($_POST['character_id'])) {
     }
 }
 
-// Récupération des personnages de l'utilisateur
+// Récupération des personnages de l'utilisateur avec informations de campagne
 $stmt = $pdo->prepare("
-    SELECT c.*, r.name as race_name, cl.name as class_name, c.profile_photo
+    SELECT c.*, r.name as race_name, cl.name as class_name, c.profile_photo,
+           ca.campaign_id, ca.status as campaign_status, camp.title as campaign_title
     FROM characters c 
     JOIN races r ON c.race_id = r.id 
     JOIN classes cl ON c.class_id = cl.id 
+    LEFT JOIN campaign_applications ca ON c.id = ca.character_id AND ca.status = 'approved'
+    LEFT JOIN campaigns camp ON ca.campaign_id = camp.id
     WHERE c.user_id = ? 
     ORDER BY c.created_at DESC
 ");
@@ -52,6 +55,13 @@ $characters = $stmt->fetchAll();
         .character-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+        }
+        .character-card.border-success {
+            border: 2px solid #28a745 !important;
+            box-shadow: 0 4px 6px rgba(40, 167, 69, 0.2);
+        }
+        .character-card.border-success:hover {
+            box-shadow: 0 8px 15px rgba(40, 167, 69, 0.3);
         }
         .btn-dnd {
             background: linear-gradient(45deg, #8B4513, #D2691E);
@@ -156,7 +166,7 @@ $characters = $stmt->fetchAll();
             <div class="row g-4">
                 <?php foreach ($characters as $character): ?>
                     <div class="col-md-6 col-lg-4">
-                        <div class="card character-card h-100">
+                        <div class="card character-card h-100 <?php echo (!empty($character['campaign_id']) && $character['campaign_status'] === 'approved') ? 'border-success' : ''; ?>">
                             <div class="card-body">
                                 <div class="d-flex align-items-start mb-3">
                                     <div class="me-3">
@@ -182,6 +192,14 @@ $characters = $stmt->fetchAll();
                                     <i class="fas fa-dragon me-1"></i><?php echo htmlspecialchars($character['race_name']); ?> 
                                     <i class="fas fa-shield-alt me-2 ms-2"></i><?php echo htmlspecialchars($character['class_name']); ?>
                                 </p>
+                                
+                                <?php if (!empty($character['campaign_id']) && $character['campaign_status'] === 'approved'): ?>
+                                    <div class="mb-3">
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-crown me-1"></i><?php echo htmlspecialchars($character['campaign_title']); ?>
+                                        </span>
+                                    </div>
+                                <?php endif; ?>
                                 
                                 <div class="row mb-3">
                                     <div class="col-4 text-center">
