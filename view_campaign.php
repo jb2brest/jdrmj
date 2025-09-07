@@ -171,6 +171,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Gestion du journal
+    if (isset($_POST['action']) && $_POST['action'] === 'create_journal_entry') {
+        $title = sanitizeInput($_POST['title'] ?? '');
+        $content = sanitizeInput($_POST['content'] ?? '');
+        
+        if ($title !== '' && $content !== '') {
+            $stmt = $pdo->prepare("INSERT INTO campaign_journal (campaign_id, title, content) VALUES (?, ?, ?)");
+            $stmt->execute([$campaign_id, $title, $content]);
+            $success_message = "Événement ajouté au journal.";
+        } else {
+            $error_message = "Le titre et le contenu sont obligatoires.";
+        }
+    }
+    
+    if (isset($_POST['action']) && $_POST['action'] === 'update_journal_entry' && isset($_POST['entry_id'])) {
+        $entry_id = (int)$_POST['entry_id'];
+        $title = sanitizeInput($_POST['title'] ?? '');
+        $content = sanitizeInput($_POST['content'] ?? '');
+        
+        if ($title !== '' && $content !== '') {
+            $stmt = $pdo->prepare("UPDATE campaign_journal SET title = ?, content = ? WHERE id = ? AND campaign_id = ?");
+            $stmt->execute([$title, $content, $entry_id, $campaign_id]);
+            $success_message = "Événement mis à jour.";
+        } else {
+            $error_message = "Le titre et le contenu sont obligatoires.";
+        }
+    }
+    
+    if (isset($_POST['action']) && $_POST['action'] === 'delete_journal_entry' && isset($_POST['entry_id'])) {
+        $entry_id = (int)$_POST['entry_id'];
+        $stmt = $pdo->prepare("DELETE FROM campaign_journal WHERE id = ? AND campaign_id = ?");
+        $stmt->execute([$entry_id, $campaign_id]);
+        $success_message = "Événement supprimé du journal.";
+    }
+    
+    if (isset($_POST['action']) && $_POST['action'] === 'toggle_journal_visibility' && isset($_POST['entry_id'])) {
+        $entry_id = (int)$_POST['entry_id'];
+        $stmt = $pdo->prepare("UPDATE campaign_journal SET is_public = NOT is_public WHERE id = ? AND campaign_id = ?");
+        $stmt->execute([$entry_id, $campaign_id]);
+        $success_message = "Visibilité de l'événement mise à jour.";
+    }
+
     // Gestion des lieux
     if (isset($_POST['action']) && $_POST['action'] === 'create_scene') {
         $title = sanitizeInput($_POST['title'] ?? '');
@@ -318,6 +360,11 @@ $applications = $stmt->fetchAll();
 $stmt = $pdo->prepare("SELECT * FROM places WHERE campaign_id = ? ORDER BY position ASC, created_at ASC");
 $stmt->execute([$campaign_id]);
 $places = $stmt->fetchAll();
+
+// Récupérer les événements du journal
+$stmt = $pdo->prepare("SELECT * FROM campaign_journal WHERE campaign_id = ? ORDER BY created_at DESC");
+$stmt->execute([$campaign_id]);
+$journalEntries = $stmt->fetchAll();
 
 // Récupérer les joueurs, PNJ et monstres pour chaque lieu
 $placePlayers = [];
@@ -660,6 +707,71 @@ if (!empty($places)) {
             </div>
         </div>
 
+        <!-- Section Journal -->
+        <div class="row g-4 mt-1">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-book me-2"></i>Journal de campagne</h5>
+                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createJournalModal">
+                            <i class="fas fa-plus"></i> Nouvel événement
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <?php if (empty($journalEntries)): ?>
+                            <p class="text-muted">Aucun événement dans le journal.</p>
+                        <?php else: ?>
+                            <div class="row g-3">
+                                <?php foreach ($journalEntries as $entry): ?>
+                                    <div class="col-12">
+                                        <div class="card border-<?php echo $entry['is_public'] ? 'success' : 'danger'; ?>">
+                                            <div class="card-header bg-<?php echo $entry['is_public'] ? 'success' : 'danger'; ?> text-white d-flex justify-content-between align-items-center">
+                                                <h6 class="mb-0">
+                                                    <i class="fas fa-<?php echo $entry['is_public'] ? 'eye' : 'eye-slash'; ?> me-2"></i>
+                                                    <?php echo htmlspecialchars($entry['title']); ?>
+                                                </h6>
+                                                <div class="d-flex gap-1">
+                                                    <form method="POST" class="d-inline" onsubmit="return confirm('<?php echo ($entry['is_public'] ? 'Rendre privé' : 'Rendre public'); ?> cet événement ?');">
+                                                        <input type="hidden" name="action" value="toggle_journal_visibility">
+                                                        <input type="hidden" name="entry_id" value="<?php echo (int)$entry['id']; ?>">
+                                                        <button type="submit" class="btn btn-sm btn-outline-light" title="<?php echo $entry['is_public'] ? 'Rendre privé' : 'Rendre public'; ?>">
+                                                            <i class="fas fa-<?php echo $entry['is_public'] ? 'eye-slash' : 'eye'; ?>"></i>
+                                                        </button>
+                                                    </form>
+                                                    <button class="btn btn-sm btn-outline-light" data-bs-toggle="modal" data-bs-target="#editJournalModal" onclick="editJournalEntry(<?php echo (int)$entry['id']; ?>, '<?php echo htmlspecialchars($entry['title'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($entry['content'], ENT_QUOTES); ?>')" title="Modifier">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <form method="POST" class="d-inline" onsubmit="return confirm('Supprimer cet événement ?');">
+                                                        <input type="hidden" name="action" value="delete_journal_entry">
+                                                        <input type="hidden" name="entry_id" value="<?php echo (int)$entry['id']; ?>">
+                                                        <button type="submit" class="btn btn-sm btn-outline-light" title="Supprimer">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="text-muted small mb-2">
+                                                    <i class="fas fa-calendar me-1"></i>
+                                                    Créé le <?php echo date('d/m/Y à H:i', strtotime($entry['created_at'])); ?>
+                                                    <?php if ($entry['updated_at'] !== $entry['created_at']): ?>
+                                                        • Modifié le <?php echo date('d/m/Y à H:i', strtotime($entry['updated_at'])); ?>
+                                                    <?php endif; ?>
+                                                </div>
+                                                <div class="journal-content">
+                                                    <?php echo nl2br(htmlspecialchars($entry['content'])); ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="row g-4 mt-1">
             <div class="col-12">
                 <div class="card">
@@ -837,6 +949,74 @@ if (!empty($places)) {
         </div>
     </div>
 
+    <!-- Modal Créer Événement Journal -->
+    <div class="modal fade" id="createJournalModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nouvel événement</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <form method="POST">
+                    <div class="modal-body">
+                        <input type="hidden" name="action" value="create_journal_entry">
+                        
+                        <div class="mb-3">
+                            <label for="journalTitle" class="form-label">Titre de l'événement</label>
+                            <input type="text" class="form-control" id="journalTitle" name="title" required maxlength="255">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="journalContent" class="form-label">Contenu</label>
+                            <textarea class="form-control" id="journalContent" name="content" rows="8" required placeholder="Décrivez l'événement..."></textarea>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            L'événement sera créé en mode privé (rouge). Vous pourrez le rendre public (vert) après sa création.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Créer l'événement</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Modifier Événement Journal -->
+    <div class="modal fade" id="editJournalModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Modifier l'événement</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <form method="POST">
+                    <div class="modal-body">
+                        <input type="hidden" name="action" value="update_journal_entry">
+                        <input type="hidden" name="entry_id" id="editEntryId">
+                        
+                        <div class="mb-3">
+                            <label for="editJournalTitle" class="form-label">Titre de l'événement</label>
+                            <input type="text" class="form-control" id="editJournalTitle" name="title" required maxlength="255">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="editJournalContent" class="form-label">Contenu</label>
+                            <textarea class="form-control" id="editJournalContent" name="content" rows="8" required placeholder="Décrivez l'événement..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Mettre à jour</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -908,6 +1088,13 @@ if (!empty($places)) {
             // Afficher le modal
             var modal = new bootstrap.Modal(document.getElementById('transferModal'));
             modal.show();
+        };
+        
+        // Fonction pour éditer un événement du journal
+        window.editJournalEntry = function(entryId, title, content) {
+            document.getElementById('editEntryId').value = entryId;
+            document.getElementById('editJournalTitle').value = title;
+            document.getElementById('editJournalContent').value = content;
         };
     });
     </script>

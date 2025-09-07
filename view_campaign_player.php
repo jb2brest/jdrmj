@@ -132,6 +132,11 @@ if ($playerPlaceId) {
     $stmt->execute([$playerPlaceId]);
     $placeMonsters = $stmt->fetchAll();
     
+    // Récupérer les événements publics du journal
+    $stmt = $pdo->prepare("SELECT * FROM campaign_journal WHERE campaign_id = ? AND is_public = TRUE ORDER BY created_at DESC");
+    $stmt->execute([$campaign_id]);
+    $journalEntries = $stmt->fetchAll();
+    
     // Récupérer les positions des pions
     $stmt = $pdo->prepare("
         SELECT token_type, entity_id, position_x, position_y, is_on_map
@@ -396,7 +401,44 @@ if ($playerPlaceId) {
                     </div>
                 </div>
                 <?php endif; ?>
+
+                <!-- Section Journal -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-book me-2"></i>Journal de campagne</h5>
+                    </div>
+                    <div class="card-body">
+                        <?php if (empty($journalEntries)): ?>
+                            <p class="text-muted">Aucun événement public dans le journal.</p>
+                        <?php else: ?>
+                            <div class="row g-2">
+                                <?php foreach ($journalEntries as $entry): ?>
+                                    <div class="col-12">
+                                        <div class="card border-success">
+                                            <div class="card-header bg-success text-white p-2">
+                                                <h6 class="mb-0 small">
+                                                    <i class="fas fa-eye me-1"></i>
+                                                    <?php echo htmlspecialchars($entry['title']); ?>
+                                                </h6>
+                                            </div>
+                                            <div class="card-body p-2">
+                                                <div class="text-muted small mb-2">
+                                                    <i class="fas fa-calendar me-1"></i>
+                                                    <?php echo date('d/m/Y H:i', strtotime($entry['created_at'])); ?>
+                                                </div>
+                                                <div class="journal-content small">
+                                                    <?php echo nl2br(htmlspecialchars($entry['content'])); ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
             </div>
+
 
             <!-- Colonne droite : Plan du lieu -->
             <div class="col-lg-8">
