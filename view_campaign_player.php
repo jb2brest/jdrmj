@@ -1,0 +1,451 @@
+<?php
+require_once 'config/database.php';
+require_once 'includes/functions.php';
+
+requireLogin();
+
+// Récupérer l'ID de la campagne depuis l'URL
+$campaign_id = (int)($_GET['id'] ?? 0);
+
+if ($campaign_id <= 0) {
+    header('Location: characters.php');
+    exit();
+}
+
+// Vérifier que l'utilisateur est membre de cette campagne
+$stmt = $pdo->prepare("
+    SELECT c.*, u.username as dm_username 
+    FROM campaigns c 
+    JOIN users u ON c.dm_id = u.id 
+    WHERE c.id = ? AND EXISTS (
+        SELECT 1 FROM campaign_applications ca 
+        WHERE ca.campaign_id = c.id 
+        AND ca.player_id = ? 
+        AND ca.status = 'approved'
+    )
+");
+$stmt->execute([$campaign_id, $_SESSION['user_id']]);
+$campaign = $stmt->fetch();
+
+if (!$campaign) {
+    header('Location: characters.php');
+    exit();
+}
+
+// Récupérer le personnage du joueur dans cette campagne
+$stmt = $pdo->prepare("
+    SELECT ch.*, ca.character_id 
+    FROM campaign_applications ca 
+    JOIN characters ch ON ca.character_id = ch.id 
+    WHERE ca.campaign_id = ? 
+    AND ca.player_id = ? 
+    AND ca.status = 'approved'
+");
+$stmt->execute([$campaign_id, $_SESSION['user_id']]);
+$playerCharacter = $stmt->fetch();
+
+// Récupérer les membres de la campagne
+$stmt = $pdo->prepare("
+    SELECT u.id, u.username, u.avatar, ch.name as character_name, ch.profile_photo, ch.level, ch.race_id, ch.class_id, r.name as race_name, cl.name as class_name
+    FROM campaign_applications ca 
+    JOIN users u ON ca.player_id = u.id 
+    LEFT JOIN characters ch ON ca.character_id = ch.id 
+    LEFT JOIN races r ON ch.race_id = r.id 
+    LEFT JOIN classes cl ON ch.class_id = cl.id 
+    WHERE ca.campaign_id = ? 
+    AND ca.status = 'approved'
+    ORDER BY u.username ASC
+");
+$stmt->execute([$campaign_id]);
+$members = $stmt->fetchAll();
+
+// Récupérer les lieux de la campagne
+$stmt = $pdo->prepare("SELECT * FROM places WHERE campaign_id = ? ORDER BY position ASC, created_at ASC");
+$stmt->execute([$campaign_id]);
+$places = $stmt->fetchAll();
+
+// Déterminer dans quel lieu se trouve le personnage du joueur
+$playerPlace = null;
+$playerPlaceId = null;
+
+if ($playerCharacter) {
+    // Chercher dans quelle lieu se trouve le personnage
+    $stmt = $pdo->prepare("
+        SELECT p.*, pp.place_id 
+        FROM place_players pp 
+        JOIN places p ON pp.place_id = p.id 
+        WHERE pp.character_id = ? AND p.campaign_id = ?
+    ");
+    $stmt->execute([$playerCharacter['id'], $campaign_id]);
+    $playerPlace = $stmt->fetch();
+    
+    if ($playerPlace) {
+        $playerPlaceId = $playerPlace['id'];
+    }
+}
+
+// Si le personnage n'est dans aucun lieu, prendre le premier lieu disponible
+if (!$playerPlace && !empty($places)) {
+    $playerPlace = $places[0];
+    $playerPlaceId = $playerPlace['id'];
+}
+
+// Récupérer les joueurs présents dans le lieu du joueur
+$placePlayers = [];
+$placeNpcs = [];
+$placeMonsters = [];
+
+if ($playerPlaceId) {
+    // Récupérer les joueurs présents
+    $stmt = $pdo->prepare("
+        SELECT pp.player_id, pp.character_id, u.username, ch.name AS character_name, ch.profile_photo, ch.level, r.name as race_name, cl.name as class_name
+        FROM place_players pp 
+        JOIN users u ON pp.player_id = u.id 
+        LEFT JOIN characters ch ON pp.character_id = ch.id 
+        LEFT JOIN races r ON ch.race_id = r.id 
+        LEFT JOIN classes cl ON ch.class_id = cl.id 
+        WHERE pp.place_id = ? 
+        ORDER BY u.username ASC
+    ");
+    $stmt->execute([$playerPlaceId]);
+    $placePlayers = $stmt->fetchAll();
+    
+    // Récupérer les PNJ
+    $stmt = $pdo->prepare("
+        SELECT pn.id, pn.name, pn.description, pn.npc_character_id, pn.profile_photo, c.profile_photo AS character_profile_photo 
+        FROM place_npcs pn 
+        LEFT JOIN characters c ON pn.npc_character_id = c.id 
+        WHERE pn.place_id = ? AND pn.monster_id IS NULL 
+        ORDER BY pn.name ASC
+    ");
+    $stmt->execute([$playerPlaceId]);
+    $placeNpcs = $stmt->fetchAll();
+    
+    // Récupérer les monstres
+    $stmt = $pdo->prepare("
+        SELECT pn.id, pn.name, pn.description, pn.monster_id, pn.quantity, pn.current_hit_points, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class 
+        FROM place_npcs pn 
+        JOIN dnd_monsters m ON pn.monster_id = m.id 
+        WHERE pn.place_id = ? AND pn.monster_id IS NOT NULL 
+        ORDER BY pn.name ASC
+    ");
+    $stmt->execute([$playerPlaceId]);
+    $placeMonsters = $stmt->fetchAll();
+    
+    // Récupérer les positions des pions
+    $stmt = $pdo->prepare("
+        SELECT token_type, entity_id, position_x, position_y, is_on_map
+        FROM place_tokens 
+        WHERE place_id = ?
+    ");
+    $stmt->execute([$playerPlaceId]);
+    $tokenPositions = [];
+    while ($row = $stmt->fetch()) {
+        $tokenPositions[$row['token_type'] . '_' . $row['entity_id']] = [
+            'x' => (int)$row['position_x'],
+            'y' => (int)$row['position_y'],
+            'is_on_map' => (bool)$row['is_on_map']
+        ];
+    }
+    
+}
+?>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo htmlspecialchars($campaign['title']); ?> - Campagne</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .campaign-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        .member-card {
+            transition: transform 0.2s ease;
+        }
+        .member-card:hover {
+            transform: translateY(-2px);
+        }
+        .place-info {
+            background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+            border-left: 4px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="characters.php">
+                <i class="fas fa-dice-d20 me-2"></i>JDR 4 MJ
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="characters.php">
+                    <i class="fas fa-users me-1"></i>Mes Personnages
+                </a>
+                <a class="nav-link" href="logout.php">
+                    <i class="fas fa-sign-out-alt me-1"></i>Déconnexion
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- En-tête de la campagne -->
+    <div class="campaign-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-2">
+                        <i class="fas fa-crown me-2"></i><?php echo htmlspecialchars($campaign['title']); ?>
+                    </h1>
+                    <p class="mb-0 opacity-75">
+                        <i class="fas fa-user-tie me-1"></i>MJ: <?php echo htmlspecialchars($campaign['dm_username']); ?>
+                        <span class="ms-3">
+                            <i class="fas fa-dice me-1"></i><?php echo htmlspecialchars($campaign['game_system']); ?>
+                        </span>
+                    </p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <?php if ($playerCharacter): ?>
+                        <div class="badge bg-light text-dark fs-6">
+                            <i class="fas fa-user me-1"></i><?php echo htmlspecialchars($playerCharacter['name']); ?>
+                            <span class="ms-1">Niv. <?php echo $playerCharacter['level']; ?></span>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row g-4">
+            <!-- Colonne gauche : Participants -->
+            <div class="col-lg-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-users me-2"></i>Participants
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <?php if (empty($members)): ?>
+                            <p class="text-muted">Aucun participant.</p>
+                        <?php else: ?>
+                            <div class="row g-3">
+                                <?php foreach ($members as $member): ?>
+                                    <div class="col-12">
+                                        <div class="card member-card">
+                                            <div class="card-body p-3">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="me-3">
+                                                        <?php if (!empty($member['profile_photo'])): ?>
+                                                            <img src="<?php echo htmlspecialchars($member['profile_photo']); ?>" alt="Photo de <?php echo htmlspecialchars($member['character_name'] ?: $member['username']); ?>" class="rounded" style="width: 50px; height: 50px; object-fit: cover;">
+                                                        <?php else: ?>
+                                                            <div class="bg-secondary rounded d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                                                <i class="fas fa-user text-white"></i>
+                                                            </div>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                    <div class="flex-grow-1">
+                                                        <h6 class="mb-1">
+                                                            <?php echo htmlspecialchars($member['character_name'] ?: $member['username']); ?>
+                                                        </h6>
+                                                        <small class="text-muted">
+                                                            <?php if ($member['character_name']): ?>
+                                                                <i class="fas fa-dragon me-1"></i><?php echo htmlspecialchars($member['race_name']); ?> 
+                                                                <i class="fas fa-shield-alt me-1 ms-1"></i><?php echo htmlspecialchars($member['class_name']); ?>
+                                                                <span class="ms-2">Niv. <?php echo $member['level']; ?></span>
+                                                            <?php else: ?>
+                                                                <i class="fas fa-user me-1"></i><?php echo htmlspecialchars($member['username']); ?>
+                                                            <?php endif; ?>
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Colonne droite : Plan du lieu -->
+            <div class="col-lg-8">
+                <?php if ($playerPlace): ?>
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-map me-2"></i><?php echo htmlspecialchars($playerPlace['title']); ?>
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <?php if (!empty($playerPlace['map_url'])): ?>
+                                <div class="position-relative">
+                                    <!-- Zone du plan avec pions -->
+                                    <div id="mapContainer" class="position-relative" style="display: inline-block;">
+                                        <img id="mapImage" src="<?php echo htmlspecialchars($playerPlace['map_url']); ?>" class="img-fluid rounded" alt="Plan du lieu" style="max-height: 500px; cursor: default;">
+                                        
+                                        <!-- Zone des pions sur le côté -->
+                                        <div id="tokenSidebar" class="position-absolute" style="right: -120px; top: 0; width: 100px; height: 500px; border: 2px dashed #ccc; border-radius: 8px; background: rgba(248, 249, 250, 0.8); padding: 10px; overflow-y: auto;">
+                                            <div class="text-center mb-2">
+                                                <small class="text-muted">Pions</small>
+                                            </div>
+                                            
+                                            <!-- Pions des joueurs -->
+                                            <?php foreach ($placePlayers as $player): ?>
+                                                <?php 
+                                                $tokenKey = 'player_' . $player['player_id'];
+                                                $position = $tokenPositions[$tokenKey] ?? ['x' => 0, 'y' => 0, 'is_on_map' => false];
+                                                $displayName = $player['character_name'] ?: $player['username'];
+                                                $imageUrl = !empty($player['profile_photo']) ? $player['profile_photo'] : 'images/default_character.png';
+                                                ?>
+                                                <div class="token" 
+                                                     data-token-type="player" 
+                                                     data-entity-id="<?php echo $player['player_id']; ?>"
+                                                     data-position-x="<?php echo $position['x']; ?>"
+                                                     data-position-y="<?php echo $position['y']; ?>"
+                                                     data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
+                                                     style="width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: default; border: 2px solid #007bff; border-radius: 50%; background-image: url('<?php echo htmlspecialchars($imageUrl); ?>'); background-size: cover; background-position: center;"
+                                                     title="<?php echo htmlspecialchars($displayName); ?>">
+                                                </div>
+                                            <?php endforeach; ?>
+                                            
+                                            <!-- Pions des PNJ -->
+                                            <?php foreach ($placeNpcs as $npc): ?>
+                                                <?php 
+                                                $tokenKey = 'npc_' . $npc['id'];
+                                                $position = $tokenPositions[$tokenKey] ?? ['x' => 0, 'y' => 0, 'is_on_map' => false];
+                                                $imageUrl = !empty($npc['character_profile_photo']) ? $npc['character_profile_photo'] : (!empty($npc['profile_photo']) ? $npc['profile_photo'] : 'images/default_npc.png');
+                                                ?>
+                                                <div class="token" 
+                                                     data-token-type="npc" 
+                                                     data-entity-id="<?php echo $npc['id']; ?>"
+                                                     data-position-x="<?php echo $position['x']; ?>"
+                                                     data-position-y="<?php echo $position['y']; ?>"
+                                                     data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
+                                                     style="width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: default; border: 2px solid #28a745; border-radius: 50%; background-image: url('<?php echo htmlspecialchars($imageUrl); ?>'); background-size: cover; background-position: center;"
+                                                     title="<?php echo htmlspecialchars($npc['name']); ?>">
+                                                </div>
+                                            <?php endforeach; ?>
+                                            
+                                            <!-- Pions des monstres -->
+                                            <?php foreach ($placeMonsters as $monster): ?>
+                                                <?php 
+                                                $tokenKey = 'monster_' . $monster['id'];
+                                                $position = $tokenPositions[$tokenKey] ?? ['x' => 0, 'y' => 0, 'is_on_map' => false];
+                                                $imageUrl = 'images/' . $monster['monster_id'] . '.jpg';
+                                                ?>
+                                                <div class="token" 
+                                                     data-token-type="monster" 
+                                                     data-entity-id="<?php echo $monster['id']; ?>"
+                                                     data-position-x="<?php echo $position['x']; ?>"
+                                                     data-position-y="<?php echo $position['y']; ?>"
+                                                     data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
+                                                     style="width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: default; border: 2px solid #dc3545; border-radius: 50%; background-image: url('<?php echo htmlspecialchars($imageUrl); ?>'); background-size: cover; background-position: center;"
+                                                     title="<?php echo htmlspecialchars($monster['name']); ?>">
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php else: ?>
+                                <div class="text-center text-muted py-5">
+                                    <i class="fas fa-map fa-3x mb-3"></i>
+                                    <p>Aucun plan disponible pour ce lieu.</p>
+                                </div>
+                            <?php endif; ?>
+                            
+                            <!-- Informations sur le lieu -->
+                            <?php if (!empty($playerPlace['notes'])): ?>
+                                <div class="place-info p-3 mt-3 rounded">
+                                    <h6><i class="fas fa-info-circle me-2"></i>Informations du lieu</h6>
+                                    <p class="mb-0"><?php echo nl2br(htmlspecialchars($playerPlace['notes'])); ?></p>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <div class="card">
+                        <div class="card-body text-center py-5">
+                            <i class="fas fa-map-marked-alt fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">Aucun lieu disponible</h5>
+                            <p class="text-muted">Votre personnage n'est actuellement dans aucun lieu de cette campagne.</p>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <?php if (!empty($playerPlace['map_url'])): ?>
+    <script>
+    function initializeTokenSystem() {
+        const mapImage = document.getElementById('mapImage');
+        const tokens = document.querySelectorAll('.token');
+        
+        if (!mapImage || tokens.length === 0) return;
+
+        // Initialiser les positions des pions (lecture seule)
+        console.log('Initialisation du système de pions (lecture seule)...');
+        console.log('Nombre de pions trouvés:', tokens.length);
+        
+        tokens.forEach(token => {
+            const isOnMap = token.dataset.isOnMap === 'true';
+            console.log(`Pion ${token.dataset.tokenType}_${token.dataset.entityId}: isOnMap=${isOnMap}`);
+            
+            if (isOnMap) {
+                const x = parseInt(token.dataset.positionX);
+                const y = parseInt(token.dataset.positionY);
+                console.log(`Positionnement pion: ${token.dataset.tokenType}_${token.dataset.entityId} à ${x}%, ${y}%`);
+                positionTokenOnMap(token, x, y);
+            } else {
+                console.log(`Pion ${token.dataset.tokenType}_${token.dataset.entityId} reste dans la sidebar`);
+            }
+        });
+
+        function positionTokenOnMap(token, x, y) {
+            console.log(`Positionnement du pion ${token.dataset.tokenType}_${token.dataset.entityId} à ${x}%, ${y}%`);
+            
+            // Retirer le pion de son conteneur actuel
+            token.remove();
+            
+            // Ajouter le pion au conteneur du plan
+            const mapContainer = document.getElementById('mapContainer');
+            if (!mapContainer) {
+                console.error('Conteneur du plan non trouvé');
+                return;
+            }
+            mapContainer.appendChild(token);
+            
+            // Positionner le pion (même logique que le MJ)
+            token.style.position = 'absolute';
+            token.style.left = x + '%';
+            token.style.top = y + '%';
+            token.style.transform = 'translate(-50%, -50%)';
+            token.style.zIndex = '1000';
+            token.style.margin = '0';
+            token.style.pointerEvents = 'none'; // Lecture seule
+            token.dataset.isOnMap = 'true';
+            token.dataset.positionX = x;
+            token.dataset.positionY = y;
+            
+            console.log(`Pion positionné avec succès à ${x}%, ${y}%`);
+        }
+    }
+
+    // Initialiser le système de pions au chargement de la page
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeTokenSystem();
+    });
+    </script>
+    <?php endif; ?>
+</body>
+</html>

@@ -195,9 +195,11 @@ $characters = $stmt->fetchAll();
                                 
                                 <?php if (!empty($character['campaign_id']) && $character['campaign_status'] === 'approved'): ?>
                                     <div class="mb-3">
-                                        <span class="badge bg-success">
-                                            <i class="fas fa-crown me-1"></i><?php echo htmlspecialchars($character['campaign_title']); ?>
-                                        </span>
+                                        <a href="view_campaign_player.php?id=<?php echo $character['campaign_id']; ?>" class="text-decoration-none">
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-crown me-1"></i><?php echo htmlspecialchars($character['campaign_title']); ?>
+                                            </span>
+                                        </a>
                                     </div>
                                 <?php endif; ?>
                                 
