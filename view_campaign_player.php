@@ -110,12 +110,12 @@ if ($playerPlaceId) {
     $stmt->execute([$playerPlaceId]);
     $placePlayers = $stmt->fetchAll();
     
-    // Récupérer les PNJ (seulement ceux visibles)
+    // Récupérer les PNJ (seulement ceux visibles ET identifiés)
     $stmt = $pdo->prepare("
         SELECT pn.id, pn.name, pn.description, pn.npc_character_id, pn.profile_photo, c.profile_photo AS character_profile_photo 
         FROM place_npcs pn 
         LEFT JOIN characters c ON pn.npc_character_id = c.id 
-        WHERE pn.place_id = ? AND pn.monster_id IS NULL AND pn.is_visible = TRUE
+        WHERE pn.place_id = ? AND pn.monster_id IS NULL AND pn.is_visible = TRUE AND pn.is_identified = TRUE
         ORDER BY pn.name ASC
     ");
     $stmt->execute([$playerPlaceId]);

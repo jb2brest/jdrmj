@@ -50,7 +50,7 @@ $stmt->execute([$place_id]);
 $placePlayers = $stmt->fetchAll();
 
 // Récupérer les PNJ de cette lieu
-$stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, sn.is_visible, c.profile_photo AS character_profile_photo FROM place_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.place_id = ? AND sn.monster_id IS NULL ORDER BY sn.name ASC");
+$stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, sn.is_visible, sn.is_identified, c.profile_photo AS character_profile_photo FROM place_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.place_id = ? AND sn.monster_id IS NULL ORDER BY sn.name ASC");
 $stmt->execute([$place_id]);
 $placeNpcs = $stmt->fetchAll();
 
@@ -199,6 +199,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, sn.current_hit_points, sn.is_visible, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM place_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.place_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
         $stmt->execute([$place_id]);
         $placeMonsters = $stmt->fetchAll();
+    }
+    
+    // Basculer l'identification d'un PNJ
+    if (isset($_POST['action']) && $_POST['action'] === 'toggle_npc_identification' && isset($_POST['npc_id'])) {
+        $npc_id = (int)$_POST['npc_id'];
+        $stmt = $pdo->prepare("UPDATE place_npcs SET is_identified = NOT is_identified WHERE place_id = ? AND id = ? AND monster_id IS NULL");
+        $stmt->execute([$place_id, $npc_id]);
+        $success_message = "Identification du PNJ mise à jour.";
+        
+        // Recharger les PNJ
+        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, sn.is_visible, sn.is_identified, c.profile_photo AS character_profile_photo FROM place_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.place_id = ? AND sn.monster_id IS NULL ORDER BY sn.name ASC");
+        $stmt->execute([$place_id]);
+        $placeNpcs = $stmt->fetchAll();
     }
     
     // Mettre à jour le nom du lieu
@@ -966,6 +979,13 @@ foreach ($allScenes as $s) {
                                                 </a>
                                             <?php endif; ?>
                                             <?php if ($isOwnerDM): ?>
+                                                <form method="POST" class="d-inline" onsubmit="return confirm('<?php echo ($npc['is_identified'] ? 'Désidentifier' : 'Identifier'); ?> <?php echo htmlspecialchars($npc['name']); ?> pour les joueurs ?');">
+                                                    <input type="hidden" name="action" value="toggle_npc_identification">
+                                                    <input type="hidden" name="npc_id" value="<?php echo (int)$npc['id']; ?>">
+                                                    <button type="submit" class="btn btn-sm <?php echo $npc['is_identified'] ? 'btn-outline-info' : 'btn-outline-secondary'; ?>" title="<?php echo $npc['is_identified'] ? 'Désidentifier pour les joueurs' : 'Identifier pour les joueurs'; ?>">
+                                                        <i class="fas <?php echo $npc['is_identified'] ? 'fa-user-check' : 'fa-user-question'; ?>"></i>
+                                                    </button>
+                                                </form>
                                                 <form method="POST" class="d-inline" onsubmit="return confirm('<?php echo ($npc['is_visible'] ? 'Masquer' : 'Afficher'); ?> <?php echo htmlspecialchars($npc['name']); ?> pour les joueurs ?');">
                                                     <input type="hidden" name="action" value="toggle_npc_visibility">
                                                     <input type="hidden" name="npc_id" value="<?php echo (int)$npc['id']; ?>">
