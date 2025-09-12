@@ -1,0 +1,48 @@
+Classe,DV,Bonif PV,Armures,Armes,Outils,Jets de sauvegarde,NB Compétences,Compétences,Equipement de départ
+Barbare,1d12,Constitution,"Armures légères et intermédiaires, boucliers","Armes courantes, armes de guerre",,"Force, Constitution",2,"Athlétisme, Dressage, Intimidation, Nature, Perception, Survie","(a) une hache à deux mains ou (b) n'importe quelle arme de guerre de corps à corps
+(a) deux hachettes ou (b) n'importe quelle arme courante
+un sac d'explorateur et quatre javelines"
+Barde,1d8,Constitution,Armures légère,"Armes courantes, arbalète de poing, épée longue, épée courte, rapière","Instrument de musique, instrument de musique, instrument de musique","Dextérité, Charisme",3,"Acrobaties, Arcanes, Athlétisme, Discrétion, Dressage, Escamotage, Histoire, Intimidation, Intuition, Investigation, Médecine, Nature, Perception, Persuasion, Religion, Représentation, Survie, Tromperie","(a) une rapière, (b) une épée longue ou (c) n'importe quelle arme courante
+(a) un sac de diplomate ou (b) un sac d'artiste
+(a) un luth ou (b) n'importe quel autre instrument de musique
+une armure de cuir et une dague"
+Clerc,1d8,Constitution,"Armures légères et intermédiaires, boucliers",Armes courantes,,"Sagesse, Charisme",2,"Histoire, Intuition, Médecine, Persuasion, Religion","(a) une masse d'armes ou (b) un marteau de guerre (si vous le maîtrisez)
+(a) une armure d'écailles ou (b) une armure de cuir ou (c) une cotte de mailles (si vous la maîtrisez)
+(a) une arbalète légère et 20 carreaux ou (b) une arme courante
+(a) un sac d'ecclésiastique ou (b) un sac d'explorateur
+un bouclier et un symbole sacré"
+Druide,1d8,Constitution,"Armures légères et intermédiaires, boucliers","Gourdin, dague, fléchette, javeline, masse d'armes, bâton, cimeterre, fronde, serpe, lance",Kit d'herboriste,"Intelligence, Sagesse",2,"Arcanes, Dressage, Intuition, Médecine, Nature, Perception, Religion, Survie","(a) un bouclier en bois ou (b) une arme courante
+(a) un cimeterre ou (b) une arme courante de corps à corps
+une armure de cuir, un sac d'explorateur et un focaliseur druidique"
+Ensorceleur,1d6,Constitution,,"Dague, fléchette, fronde, bâton, arbalète légère",,"Constitution, Charisme",2,"Arcanes, Intimidation, Intuition, Persuasion, Religion, Tromperie","(a) une arbalète légère et 20 carreaux ou (b) n'importe quelle arme courante
+(a) une sacoche à composantes ou (b) un focaliseur arcanique
+(a) un sac d'exploration souterraine ou (b) un sac d'explorateur
+deux dagues"
+Guerrier,1d10,Constitution,"Toutes les armures, boucliers","Armes courantes, armes de guerre",,"Force, Constitution",2,"Acrobaties, Athlétisme, Dressage, Histoire, Intimidation, Intuition, Perception, Survie","(a) une cotte de mailles ou (b) une armure de cuir, un arc long et 20 flèches
+(a) une arme de guerre et un bouclier ou (b) deux armes de guerre
+(a) une arbalète légère et 20 carreaux ou (b) deux hachettes
+(a) un sac d'exploration souterraine ou (b) un sac d'explorateur"
+Magicien,1d6,Constitution,,"Dague, fléchette, fronde, bâton, arbalète légère",,"Intelligence, Sagesse",2,"Arcanes, Histoire, Intuition, Investigation, Médecine, Religion","(a) un bâton ou (b) une dague
+(a) une sacoche à composantes ou (b) un focaliseur arcanique
+(a) un sac d'érudit ou (b) un sac d'explorateur
+un grimoire"
+Moine,1d8,Constitution,,"Armes courantes, épée courte",Outil d'artisan,"Force, Dextérité",2,"Acrobaties, Athlétisme, Discrétion, Histoire, Intuition, Religion","(a) une épée courte ou (b) n'importe quelle arme courante
+(a) un sac d'exploration souterraine ou (b) un sac d'explorateur
+10 fléchettes"
+Occultiste,1d8,Constitution,Armures légères,Armes courantes,,"Sagesse, Charisme",2,"Arcanes, Histoire, Intimidation, Investigation, Nature, Religion, Tromperie","(a) une arbalète légère et 20 carreaux ou (b) n'importe quelle arme courante
+(a) une sacoche à composantes ou (b) un focaliseur arcanique
+(a) un sac d'érudit ou (b) un sac d'exploration souterraine
+une armure de cuir, n'importe quelle arme courante, et deux dagues"
+Paladin,1d10,Constitution,"Toutes les armures, boucliers","Armes courantes, armes de guerre",,"Sagesse, Charisme",2,"Athlétisme, Intimidation, Intuition, Médecine, Persuasion, Religion","(a) une arme de guerre et un bouclier ou (b) deux armes de guerre
+(a) cinq javelines ou (b) n'importe quelle arme courante de corps à corps
+(a) un sac d'ecclésiastique ou (b) un sac d'explorateur
+une cotte de mailles et un symbole sacré"
+Rôdeur,1d10,Constitution,"Armures légères et intermédiaires, boucliers","Armes courantes, armes de guerre",,"Force, Dextérité",3,"Athlétisme, Discrétion, Dressage, Intuition, Investigation, Nature, Perception, Survie","(a) armure d'écailles ou (b) armure de cuir
+(a) deux épées courtes ou (b) deux armes courantes de corps à corps
+(a) un sac d'exploration souterraine ou (b) un sac d'explorateur
+un arc long et un carquois avec 20 flèches"
+Roublard,1d8,Constitution,Armures légères,"Armes courantes, arbalète de poing, épée courte, épée longue, rapière, arc court",Outils de voleur,"Dextérité, Intelligence",4,"Acrobaties, Athlétisme, Discrétion, Escamotage, Intimidation, Intuition, Investigation, Perception, Persuasion, Représentation, Tromperie","(a) une rapière ou (b) une épée courte
+(a) un arc court et un carquois de 20 flèches ou (b) une épée courte
+(a) un sac de cambrioleur, (b) un sac d'exploration souterraine ou (c) un sac d'explorateur
+une armure de cuir, deux dagues et des outils de voleur"
+Artificier,1d8,,"Armures légères et intermédiaires, boucliers",Armes courantes,"Outils de voleur, outils de bricoleur, outil d'artisan","Constitution, Intelligence",2,"Arcanes, Histoire, Investigation, Médecine, Nature, Perception, Escamotage",

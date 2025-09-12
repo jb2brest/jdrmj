@@ -1,0 +1,249 @@
+Classe,Niv,"Bonus de
+maîtrise",Capacités,"Attaque
+sournoise","Arts
+martiaux",Ki,"Mouvement
+sans armure",Points de sorcellerie,Rages,Dégâts,Sorts mineurs connus,Sorts connus,"Emplacements
+de sorts","Niveau
+d'emplacement","Manifestations
+connues",Emplacement sorts N1,Emplacement sorts N2,Emplacement sorts N3,Emplacement sorts N4,Emplacement sorts N5,Emplacement sorts N6,Emplacement sorts N7,Emplacement sorts N8,Emplacement sorts N9
+Barbare,1,2,"Rage, Défense sans armure",0,0,0,0,0,2,2,0,0,,,,0,0,0,0,0,0,0,0,0
+Barbare,2,2,"Attaque téméraire, Sens du danger",0,0,0,0,0,2,2,0,0,,,,0,0,0,0,0,0,0,0,0
+Barbare,3,2,Voie primitive,0,0,0,0,0,3,2,0,0,,,,0,0,0,0,0,0,0,0,0
+Barbare,4,2,Amélioration de caractéristiques,0,0,0,0,0,3,2,0,0,,,,0,0,0,0,0,0,0,0,0
+Barbare,5,3,"Attaque supplémentaire, Déplacement rapide",0,0,0,0,0,3,2,0,0,,,,0,0,0,0,0,0,0,0,0
+Barbare,6,3,Capacité de voie,0,0,0,0,0,4,2,0,0,,,,0,0,0,0,0,0,0,0,0
+Barbare,7,3,Instinct sauvage,0,0,0,0,0,4,2,0,0,,,,0,0,0,0,0,0,0,0,0
+Barbare,8,3,Amélioration de caractéristiques,0,0,0,0,0,4,2,0,0,,,,0,0,0,0,0,0,0,0,0
+Barbare,9,4,Critique brutal (1 dé),0,0,0,0,0,4,3,0,0,,,,0,0,0,0,0,0,0,0,0
+Barbare,10,4,Capacité de voie,0,0,0,0,0,4,3,0,0,,,,0,0,0,0,0,0,0,0,0
+Barbare,11,4,Rage implacable,0,0,0,0,0,4,3,0,0,,,,0,0,0,0,0,0,0,0,0
+Barbare,12,4,Amélioration de caractéristiques,0,0,0,0,0,5,3,0,0,,,,0,0,0,0,0,0,0,0,0
+Barbare,13,5,Critique brutal (2 dés),0,0,0,0,0,5,3,0,0,,,,0,0,0,0,0,0,0,0,0
+Barbare,14,5,Capacité de voie,0,0,0,0,0,5,3,0,0,,,,0,0,0,0,0,0,0,0,0
+Barbare,15,5,Rage persistante,0,0,0,0,0,5,3,0,0,,,,0,0,0,0,0,0,0,0,0
+Barbare,16,5,Amélioration de caractéristiques,0,0,0,0,0,5,4,0,0,,,,0,0,0,0,0,0,0,0,0
+Barbare,17,6,Critique brutal (3 dés),0,0,0,0,0,6,4,0,0,,,,0,0,0,0,0,0,0,0,0
+Barbare,18,6,Puissance indomptable,0,0,0,0,0,6,4,0,0,,,,0,0,0,0,0,0,0,0,0
+Barbare,19,6,Amélioration de caractéristiques,0,0,0,0,0,6,4,0,0,,,,0,0,0,0,0,0,0,0,0
+Barbare,20,6,Champion primitif,0,0,0,0,0,illimitées,4,0,0,,,,0,0,0,0,0,0,0,0,0
+Barde,1,2,"Incantation, Inspiration bardique (d6)",0,0,0,0,0,0,0,2,4,,,,2,-,-,-,-,-,-,-,-
+Barde,2,2,"Touche-à-tout, Chant reposant (d6)",0,0,0,0,0,0,0,2,5,,,,3,-,-,-,-,-,-,-,-
+Barde,3,2,"Collège bardique, Expertise",0,0,0,0,0,0,0,2,6,,,,4,2,-,-,-,-,-,-,-
+Barde,4,2,Amélioration de caractéristiques,0,0,0,0,0,0,0,3,7,,,,4,3,-,-,-,-,-,-,-
+Barde,5,3,"Inspiration bardique (d8), Source d'inspiration",0,0,0,0,0,0,0,3,8,,,,4,3,2,-,-,-,-,-,-
+Barde,6,3,"Contre-charme, Capacité de collège bardique",0,0,0,0,0,0,0,3,9,,,,4,3,3,-,-,-,-,-,-
+Barde,7,3,-,0,0,0,0,0,0,0,3,10,,,,4,3,3,1,-,-,-,-,-
+Barde,8,3,Amélioration de caractéristiques,0,0,0,0,0,0,0,3,11,,,,4,3,3,2,-,-,-,-,-
+Barde,9,4,Chant reposant (d8),0,0,0,0,0,0,0,3,12,,,,4,3,3,3,1,-,-,-,-
+Barde,10,4,"Inspiration bardique (d10), Expertise, Secrets magiques",0,0,0,0,0,0,0,4,14,,,,4,3,3,3,2,-,-,-,-
+Barde,11,4,-,0,0,0,0,0,0,0,4,15,,,,4,3,3,3,2,1,-,-,-
+Barde,12,4,Amélioration de caractéristiques,0,0,0,0,0,0,0,4,15,,,,4,3,3,3,2,1,-,-,-
+Barde,13,5,Chant reposant (d10),0,0,0,0,0,0,0,4,16,,,,4,3,3,3,2,1,1,-,-
+Barde,14,5,"Secrets magiques, Capacité de collège bardique",0,0,0,0,0,0,0,4,18,,,,4,3,3,3,2,1,1,-,-
+Barde,15,5,Inspiration bardique (d12),0,0,0,0,0,0,0,4,19,,,,4,3,3,3,2,1,1,1,-
+Barde,16,5,Amélioration de caractéristiques,0,0,0,0,0,0,0,4,19,,,,4,3,3,3,2,1,1,1,-
+Barde,17,6,Chant reposant (d12),0,0,0,0,0,0,0,4,20,,,,4,3,3,3,2,1,1,1,1
+Barde,18,6,Secrets magiques,0,0,0,0,0,0,0,4,22,,,,4,3,3,3,3,1,1,1,1
+Barde,19,6,Amélioration de caractéristiques,0,0,0,0,0,0,0,4,22,,,,4,3,3,3,3,2,1,1,1
+Barde,20,6,Inspiration supérieure,0,0,0,0,0,0,0,4,22,,,,4,3,3,3,3,2,2,1,1
+Clerc,1,2,"Incantation, Domaine divin",0,0,0,0,0,0,0,3,2,,,,-,-,-,-,-,-,-,-,
+Clerc,2,2,"Conduit divin (1/repos), Capacité de domaine divin",0,0,0,0,0,0,0,3,3,,,,-,-,-,-,-,-,-,-,
+Clerc,3,2,-,0,0,0,0,0,0,0,3,4,,,,2,-,-,-,-,-,-,-,
+Clerc,4,2,Amélioration de caractéristiques,0,0,0,0,0,0,0,4,4,,,,3,-,-,-,-,-,-,-,
+Clerc,5,3,Destruction des morts-vivants (FP 1/2),0,0,0,0,0,0,0,4,4,,,,3,2,-,-,-,-,-,-,
+Clerc,6,3,"Conduit divin (2/repos), Capacité de domaine divin",0,0,0,0,0,0,0,4,4,,,,3,3,-,-,-,-,-,-,
+Clerc,7,3,-,0,0,0,0,0,0,0,4,4,,,,3,3,1,-,-,-,-,-,
+Clerc,8,3,"Amélioration de caractéristiques, Capacité de domaine divin,
+Destruction des morts-vivants (FP 1)",0,0,0,0,0,0,0,4,4,,,,3,3,2,-,-,-,-,-,
+Clerc,9,4,-,0,0,0,0,0,0,0,4,4,,,,3,3,3,1,-,-,-,-,
+Clerc,10,4,Intervention divine,0,0,0,0,0,0,0,5,4,,,,3,3,3,2,-,-,-,-,
+Clerc,11,4,Destruction des morts-vivants (FP 2),0,0,0,0,0,0,0,5,4,,,,3,3,3,2,1,-,-,-,
+Clerc,12,4,Amélioration de caractéristiques,0,0,0,0,0,0,0,5,4,,,,3,3,3,2,1,-,-,-,
+Clerc,13,5,-,0,0,0,0,0,0,0,5,4,,,,3,3,3,2,1,1,-,-,
+Clerc,14,5,Destruction des morts-vivants (FP 3),0,0,0,0,0,0,0,5,4,,,,3,3,3,2,1,1,-,-,
+Clerc,15,5,-,0,0,0,0,0,0,0,5,4,,,,3,3,3,2,1,1,1,-,
+Clerc,16,5,Amélioration de caractéristiques,0,0,0,0,0,0,0,5,4,,,,3,3,3,2,1,1,1,-,
+Clerc,17,6,"Destruction des morts-vivants (FP 4), Capacité de domaine divin",0,0,0,0,0,0,0,5,4,,,,3,3,3,2,1,1,1,1,
+Clerc,18,6,Conduit divin (3/repos),0,0,0,0,0,0,0,5,4,,,,3,3,3,3,1,1,1,1,
+Clerc,19,6,Amélioration de caractéristiques,0,0,0,0,0,0,0,5,4,,,,3,3,3,3,2,1,1,1,
+Clerc,20,6,Intervention divine supérieure,0,0,0,0,0,0,0,5,4,,,,3,3,3,3,2,2,1,1,
+Druide,1,2,"Druidique, Incantation",0,0,0,0,0,0,0,2,2,,,,-,-,-,-,-,-,-,-,
+Druide,2,2,"Forme sauvage, Cercle druidique",0,0,0,0,0,0,0,2,3,,,,-,-,-,-,-,-,-,-,
+Druide,3,2,-,0,0,0,0,0,0,0,2,4,,,,2,-,-,-,-,-,-,-,
+Druide,4,2,"Forme sauvage améliorée, Amélioration de caractéristiques",0,0,0,0,0,0,0,3,4,,,,3,-,-,-,-,-,-,-,
+Druide,5,3,-,0,0,0,0,0,0,0,3,4,,,,3,2,-,-,-,-,-,-,
+Druide,6,3,Capacité de cercle druidique,0,0,0,0,0,0,0,3,4,,,,3,3,-,-,-,-,-,-,
+Druide,7,3,-,0,0,0,0,0,0,0,3,4,,,,3,3,1,-,-,-,-,-,
+Druide,8,3,"Forme sauvage améliorée, Amélioration de caractéristiques",0,0,0,0,0,0,0,3,4,,,,3,3,2,-,-,-,-,-,
+Druide,9,4,-,0,0,0,0,0,0,0,3,4,,,,3,3,3,1,-,-,-,-,
+Druide,10,4,Capacité de cercle druidique,0,0,0,0,0,0,0,4,4,,,,3,3,3,2,-,-,-,-,
+Druide,11,4,-,0,0,0,0,0,0,0,4,4,,,,3,3,3,2,1,-,-,-,
+Druide,12,4,Amélioration de caractéristiques,0,0,0,0,0,0,0,4,4,,,,3,3,3,2,1,-,-,-,
+Druide,13,5,-,0,0,0,0,0,0,0,4,4,,,,3,3,3,2,1,1,-,-,
+Druide,14,5,Capacité de cercle druidique,0,0,0,0,0,0,0,4,4,,,,3,3,3,2,1,1,-,-,
+Druide,15,5,-,0,0,0,0,0,0,0,4,4,,,,3,3,3,2,1,1,1,-,
+Druide,16,5,Amélioration de caractéristiques,0,0,0,0,0,0,0,4,4,,,,3,3,3,2,1,1,1,-,
+Druide,17,6,-,0,0,0,0,0,0,0,4,4,,,,3,3,3,2,1,1,1,1,
+Druide,18,6,"Jeunesse éternelle, Incantation animale",0,0,0,0,0,0,0,4,4,,,,3,3,3,3,1,1,1,1,
+Druide,19,6,Amélioration de caractéristiques,0,0,0,0,0,0,0,4,4,,,,3,3,3,3,2,1,1,1,
+Druide,20,6,Archidruide,0,0,0,0,0,0,0,4,4,,,,3,3,3,3,2,2,1,1,
+Ensorceleur,1,2,"Incantation, Origine magique",0,0,0,0,-,,,4,2,,,,2,-,-,-,-,-,-,-,-
+Ensorceleur,2,2,Source de magie,0,0,0,0,2,,,4,3,,,,3,-,-,-,-,-,-,-,-
+Ensorceleur,3,2,Métamagie,0,0,0,0,3,,,4,4,,,,4,2,-,-,-,-,-,-,-
+Ensorceleur,4,2,Amélioration de caractéristiques,0,0,0,0,4,,,5,5,,,,4,3,-,-,-,-,-,-,-
+Ensorceleur,5,3,-,0,0,0,0,5,,,5,6,,,,4,3,2,-,-,-,-,-,-
+Ensorceleur,6,3,Capacité de l'origine magique,0,0,0,0,6,,,5,7,,,,4,3,3,-,-,-,-,-,-
+Ensorceleur,7,3,-,0,0,0,0,7,,,5,8,,,,4,3,3,1,-,-,-,-,-
+Ensorceleur,8,3,Amélioration de caractéristiques,0,0,0,0,8,,,5,9,,,,4,3,3,2,-,-,-,-,-
+Ensorceleur,9,4,-,0,0,0,0,9,,,5,10,,,,4,3,3,3,1,-,-,-,-
+Ensorceleur,10,4,Métamagie,0,0,0,0,10,,,6,11,,,,4,3,3,3,2,-,-,-,-
+Ensorceleur,11,4,-,0,0,0,0,11,,,6,12,,,,4,3,3,3,2,1,-,-,-
+Ensorceleur,12,4,Amélioration de caractéristiques,0,0,0,0,12,,,6,12,,,,4,3,3,3,2,1,-,-,-
+Ensorceleur,13,5,-,0,0,0,0,13,,,6,13,,,,4,3,3,3,2,1,1,-,-
+Ensorceleur,14,5,Capacité de l'origine magique,0,0,0,0,14,,,6,13,,,,4,3,3,3,2,1,1,-,-
+Ensorceleur,15,5,-,0,0,0,0,15,,,6,14,,,,4,3,3,3,2,1,1,1,-
+Ensorceleur,16,5,Amélioration de caractéristiques,0,0,0,0,16,,,6,14,,,,4,3,3,3,2,1,1,1,-
+Ensorceleur,17,6,Métamagie,0,0,0,0,17,,,6,15,,,,4,3,3,3,2,1,1,1,1
+Ensorceleur,18,6,Capacité de l'origine magique,0,0,0,0,18,,,6,15,,,,4,3,3,3,3,1,1,1,1
+Ensorceleur,19,6,Amélioration de caractéristiques,0,0,0,0,19,,,6,15,,,,4,3,3,3,3,2,1,1,1
+Ensorceleur,20,6,Restauration magique,0,0,0,0,20,,,6,15,,,,4,3,3,3,3,2,2,1,1
+Guerrier,1,2,"Style de combat, Second souffle",0,0,0,0,0,,,,,,,,,,,,,,,,
+Guerrier,2,2,Fougue (1),0,0,0,0,0,,,,,,,,,,,,,,,,
+Guerrier,3,2,Archétype martial,0,0,0,0,0,,,,,,,,,,,,,,,,
+Guerrier,4,2,Amélioration de caractéristiques,0,0,0,0,0,,,,,,,,,,,,,,,,
+Guerrier,5,3,Attaque supplémentaire (1),0,0,0,0,0,,,,,,,,,,,,,,,,
+Guerrier,6,3,Amélioration de caractéristiques,0,0,0,0,0,,,,,,,,,,,,,,,,
+Guerrier,7,3,Capacité de l'archétype martial,0,0,0,0,0,,,,,,,,,,,,,,,,
+Guerrier,8,3,Amélioration de caractéristiques,0,0,0,0,0,,,,,,,,,,,,,,,,
+Guerrier,9,4,Inflexible (1),0,0,0,0,0,,,,,,,,,,,,,,,,
+Guerrier,10,4,Capacité de l'archétype martial,0,0,0,0,0,,,,,,,,,,,,,,,,
+Guerrier,11,4,Attaque supplémentaire (2),0,0,0,0,0,,,,,,,,,,,,,,,,
+Guerrier,12,4,Amélioration de caractéristiques,0,0,0,0,0,,,,,,,,,,,,,,,,
+Guerrier,13,5,Inflexible (2),0,0,0,0,0,,,,,,,,,,,,,,,,
+Guerrier,14,5,Amélioration de caractéristiques,0,0,0,0,0,,,,,,,,,,,,,,,,
+Guerrier,15,5,Capacité de l'archétype martial,0,0,0,0,0,,,,,,,,,,,,,,,,
+Guerrier,16,5,Amélioration de caractéristiques,0,0,0,0,0,,,,,,,,,,,,,,,,
+Guerrier,17,6,"Fougue (2), Inflexible (3)",0,0,0,0,0,,,,,,,,,,,,,,,,
+Guerrier,18,6,Capacité de l'archétype martial,0,0,0,0,0,,,,,,,,,,,,,,,,
+Guerrier,19,6,Amélioration de caractéristiques,0,0,0,0,0,,,,,,,,,,,,,,,,
+Guerrier,20,6,Attaque supplémentaire (3),0,0,0,0,0,,,,,,,,,,,,,,,,
+Magicien,1,2,"Incantation, Restauration arcanique",0,0,0,0,,,,3,2,,,,-,-,-,-,-,-,-,-,
+Magicien,2,2,Tradition arcanique,0,0,0,0,,,,3,3,,,,-,-,-,-,-,-,-,-,
+Magicien,3,2,-,0,0,0,0,,,,3,4,,,,2,-,-,-,-,-,-,-,
+Magicien,4,2,Amélioration de caractéristiques,0,0,0,0,,,,4,4,,,,3,-,-,-,-,-,-,-,
+Magicien,5,3,-,0,0,0,0,,,,4,4,,,,3,2,-,-,-,-,-,-,
+Magicien,6,3,Capacité de la tradition arcanique,0,0,0,0,,,,4,4,,,,3,3,-,-,-,-,-,-,
+Magicien,7,3,-,0,0,0,0,,,,4,4,,,,3,3,1,-,-,-,-,-,
+Magicien,8,3,Amélioration de caractéristiques,0,0,0,0,,,,4,4,,,,3,3,2,-,-,-,-,-,
+Magicien,9,4,-,0,0,0,0,,,,4,4,,,,3,3,3,1,-,-,-,-,
+Magicien,10,4,Capacité de la tradition arcanique,0,0,0,0,,,,5,4,,,,3,3,3,2,-,-,-,-,
+Magicien,11,4,-,0,0,0,0,,,,5,4,,,,3,3,3,2,1,-,-,-,
+Magicien,12,4,Amélioration de caractéristiques,0,0,0,0,,,,5,4,,,,3,3,3,2,1,-,-,-,
+Magicien,13,5,-,0,0,0,0,,,,5,4,,,,3,3,3,2,1,1,-,-,
+Magicien,14,5,Capacité de la tradition arcanique,0,0,0,0,,,,5,4,,,,3,3,3,2,1,1,-,-,
+Magicien,15,5,-,0,0,0,0,,,,5,4,,,,3,3,3,2,1,1,1,-,
+Magicien,16,5,Amélioration de caractéristiques,0,0,0,0,,,,5,4,,,,3,3,3,2,1,1,1,-,
+Magicien,17,6,-,0,0,0,0,,,,5,4,,,,3,3,3,2,1,1,1,1,
+Magicien,18,6,Maîtrise des sorts,0,0,0,0,,,,5,4,,,,3,3,3,3,1,1,1,1,
+Magicien,19,6,Amélioration de caractéristiques,0,0,0,0,,,,5,4,,,,3,3,3,3,2,1,1,1,
+Magicien,20,6,Sorts de prédilection,0,0,0,0,,,,5,4,,,,3,3,3,3,2,2,1,1,
+Moine,1,2,"Défense sans armure, Arts martiaux",0,1d4,-,-,,,,,,,,,,,,,,,,,
+Moine,2,2,"Ki, Déplacement sans armure",0,1d4,2,3,,,,,,,,,,,,,,,,,
+Moine,3,2,"Tradition monastique, Parade de projectiles",0,1d4,3,3,,,,,,,,,,,,,,,,,
+Moine,4,2,"Amélioration de caractéristiques, Chute ralentie",0,1d4,4,3,,,,,,,,,,,,,,,,,
+Moine,5,3,"Attaque supplémentaire, Frappe étourdissante",0,1d6,5,3,,,,,,,,,,,,,,,,,
+Moine,6,3,"Frappes de ki, Capacité de la tradition monastique",0,1d6,6,"4,5",,,,,,,,,,,,,,,,,
+Moine,7,3,"Esquive totale, Sérénité",0,1d6,7,"4,5",,,,,,,,,,,,,,,,,
+Moine,8,3,Amélioration de caractéristiques,0,1d6,8,"4,5",,,,,,,,,,,,,,,,,
+Moine,9,4,Déplacement sans armure amélioré,0,1d6,9,"4,5",,,,,,,,,,,,,,,,,
+Moine,10,4,Pureté physique,0,1d6,10,6,,,,,,,,,,,,,,,,,
+Moine,11,4,Capacité de la tradition monastique,0,1d8,11,6,,,,,,,,,,,,,,,,,
+Moine,12,4,Amélioration de caractéristiques,0,1d8,12,6,,,,,,,,,,,,,,,,,
+Moine,13,5,Langue du soleil et de la lune,0,1d8,13,6,,,,,,,,,,,,,,,,,
+Moine,14,5,Âme de diamant,0,1d8,14,"7,5",,,,,,,,,,,,,,,,,
+Moine,15,5,Jeunesse éternelle,0,1d8,15,"7,5",,,,,,,,,,,,,,,,,
+Moine,16,5,Amélioration de caractéristiques,0,1d8,16,"7,5",,,,,,,,,,,,,,,,,
+Moine,17,6,Capacité de la tradition monastique,0,1d10,17,"7,5",,,,,,,,,,,,,,,,,
+Moine,18,6,Désertion de l'âme,0,1d10,18,9,,,,,,,,,,,,,,,,,
+Moine,19,6,Amélioration de caractéristiques,0,1d10,19,9,,,,,,,,,,,,,,,,,
+Moine,20,6,Perfection de l'être,0,1d10,20,9,,,,,,,,,,,,,,,,,
+Occultiste,1,2,"Patron d'Outremonde, Magie de pacte",0,,,,,,,2,2,1,1,-,,,,,,,,,
+Occultiste,2,2,Manifestations occultes,0,,,,,,,2,3,2,1,2,,,,,,,,,
+Occultiste,3,2,Faveur de pacte,0,,,,,,,2,4,2,2,2,,,,,,,,,
+Occultiste,4,2,Amélioration de caractéristiques,0,,,,,,,3,5,2,2,2,,,,,,,,,
+Occultiste,5,3,-,0,,,,,,,3,6,2,3,3,,,,,,,,,
+Occultiste,6,3,Capacité de patron d'Outremonde,0,,,,,,,3,7,2,3,3,,,,,,,,,
+Occultiste,7,3,-,0,,,,,,,3,8,2,4,4,,,,,,,,,
+Occultiste,8,3,Amélioration de caractéristiques,0,,,,,,,3,9,2,4,4,,,,,,,,,
+Occultiste,9,4,-,0,,,,,,,3,10,2,5,5,,,,,,,,,
+Occultiste,10,4,Capacité de patron d'Outremonde,0,,,,,,,4,10,2,5,5,,,,,,,,,
+Occultiste,11,4,Arcanum mystique (niveau 6),0,,,,,,,4,11,3,5,5,,,,,,,,,
+Occultiste,12,4,Amélioration de caractéristiques,0,,,,,,,4,11,3,5,6,,,,,,,,,
+Occultiste,13,5,Arcanum mystique (niveau 7),0,,,,,,,4,12,3,5,6,,,,,,,,,
+Occultiste,14,5,Capacité de patron d'Outremonde,0,,,,,,,4,12,3,5,6,,,,,,,,,
+Occultiste,15,5,Arcanum mystique (niveau 8),0,,,,,,,4,13,3,5,7,,,,,,,,,
+Occultiste,16,5,Amélioration de caractéristiques,0,,,,,,,4,13,3,5,7,,,,,,,,,
+Occultiste,17,6,Arcanum mystique (niveau 9),0,,,,,,,4,14,4,5,7,,,,,,,,,
+Occultiste,18,6,-,0,,,,,,,4,14,4,5,8,,,,,,,,,
+Occultiste,19,6,Amélioration de caractéristiques,0,,,,,,,4,15,4,5,8,,,,,,,,,
+Occultiste,20,6,Maître de l'occulte,0,,,,,,,4,15,4,5,8,,,,,,,,,
+Paladin,1,2,"Sens divin, Imposition des mains",0,,,,,,,,,,,,-,-,-,-,-,,,,
+Paladin,2,2,"Style de combat, Incantation, Châtiment divin",0,,,,,,,,,,,,2,-,-,-,-,,,,
+Paladin,3,2,"Santé divine, Serment sacré",0,,,,,,,,,,,,3,-,-,-,-,,,,
+Paladin,4,2,Amélioration de caractéristiques,0,,,,,,,,,,,,3,-,-,-,-,,,,
+Paladin,5,3,Attaque supplémentaire,0,,,,,,,,,,,,4,2,-,-,-,,,,
+Paladin,6,3,Aura de protection,0,,,,,,,,,,,,4,2,-,-,-,,,,
+Paladin,7,3,Capacité de serment sacré,0,,,,,,,,,,,,4,3,-,-,-,,,,
+Paladin,8,3,Amélioration de caractéristiques,0,,,,,,,,,,,,4,3,-,-,-,,,,
+Paladin,9,4,-,0,,,,,,,,,,,,4,3,2,-,-,,,,
+Paladin,10,4,Aura de courage,0,,,,,,,,,,,,4,3,2,-,-,,,,
+Paladin,11,4,Châtiment divin amélioré,0,,,,,,,,,,,,4,3,3,-,-,,,,
+Paladin,12,4,Amélioration de caractéristiques,0,,,,,,,,,,,,4,3,3,-,-,,,,
+Paladin,13,5,-,0,,,,,,,,,,,,4,3,3,1,-,,,,
+Paladin,14,5,Contact purifiant,0,,,,,,,,,,,,4,3,3,1,-,,,,
+Paladin,15,5,Capacité de serment sacré,0,,,,,,,,,,,,4,3,3,2,-,,,,
+Paladin,16,5,Amélioration de caractéristiques,0,,,,,,,,,,,,4,3,3,2,-,,,,
+Paladin,17,6,-,0,,,,,,,,,,,,4,3,3,3,1,,,,
+Paladin,18,6,Amélioration d'auras,0,,,,,,,,,,,,4,3,3,3,1,,,,
+Paladin,19,6,Amélioration de caractéristiques,0,,,,,,,,,,,,4,3,3,3,2,,,,
+Paladin,20,6,Capacité de serment sacré,0,,,,,,,,,,,,4,3,3,3,2,,,,
+Rôdeur,1,2,"Ennemi juré, Explorateur-né",0,,,,,,,,-,,,,-,-,-,-,-,,,,
+Rôdeur,2,2,"Style de combat, Incantation",0,,,,,,,,2,,,,2,-,-,-,-,,,,
+Rôdeur,3,2,"Archétype de rôdeur, Vigilance primitive",0,,,,,,,,3,,,,3,-,-,-,-,,,,
+Rôdeur,4,2,Amélioration de caractéristiques,0,,,,,,,,3,,,,3,-,-,-,-,,,,
+Rôdeur,5,3,Attaque supplémentaire,0,,,,,,,,4,,,,4,2,-,-,-,,,,
+Rôdeur,6,3,Amélioration de l'Ennemi juré et de l'Explorateur-né,0,,,,,,,,4,,,,4,2,-,-,-,,,,
+Rôdeur,7,3,Capacité de l'archétype de rôdeur,0,,,,,,,,5,,,,4,3,-,-,-,,,,
+Rôdeur,8,3,"Amélioration de caractéristiques, Foulée tellurique",0,,,,,,,,5,,,,4,3,-,-,-,,,,
+Rôdeur,9,4,-,0,,,,,,,,6,,,,4,3,2,-,-,,,,
+Rôdeur,10,4,"Amélioration de l'Explorateur-né, Camouflage naturel",0,,,,,,,,6,,,,4,3,2,-,-,,,,
+Rôdeur,11,4,Capacité de l'archétype de rôdeur,0,,,,,,,,7,,,,4,3,3,-,-,,,,
+Rôdeur,12,4,Amélioration de caractéristiques,0,,,,,,,,7,,,,4,3,3,-,-,,,,
+Rôdeur,13,5,-,0,,,,,,,,8,,,,4,3,3,1,-,,,,
+Rôdeur,14,5,"Amélioration de l'Ennemi juré, Disparition",0,,,,,,,,8,,,,4,3,3,1,-,,,,
+Rôdeur,15,5,Capacité de l'archétype de rôdeur,0,,,,,,,,9,,,,4,3,3,2,-,,,,
+Rôdeur,16,5,Amélioration de caractéristiques,0,,,,,,,,9,,,,4,3,3,2,-,,,,
+Rôdeur,17,6,-,0,,,,,,,,10,,,,4,3,3,3,1,,,,
+Rôdeur,18,6,Sens sauvages,0,,,,,,,,10,,,,4,3,3,3,1,,,,
+Rôdeur,19,6,Amélioration de caractéristiques,0,,,,,,,,11,,,,4,3,3,3,2,,,,
+Rôdeur,20,6,Tueur implacable,0,,,,,,,,11,,,,4,3,3,3,2,,,,
+Roublard,1,2,"Expertise, Attaque sournoise, Jargon des voleurs",1d6,,,,,,,,,,,,,,,,,,,,
+Roublard,2,2,Ruse,1d6,,,,,,,,,,,,,,,,,,,,
+Roublard,3,2,Archétype de roublard,2d6,,,,,,,,,,,,,,,,,,,,
+Roublard,4,2,Amélioration de caractéristiques,2d6,,,,,,,,,,,,,,,,,,,,
+Roublard,5,3,Esquive instinctive,3d6,,,,,,,,,,,,,,,,,,,,
+Roublard,6,3,Expertise,3d6,,,,,,,,,,,,,,,,,,,,
+Roublard,7,3,Esquive totale,4d6,,,,,,,,,,,,,,,,,,,,
+Roublard,8,3,Amélioration de caractéristiques,4d6,,,,,,,,,,,,,,,,,,,,
+Roublard,9,4,Capacité de l'archétype de roublard,5d6,,,,,,,,,,,,,,,,,,,,
+Roublard,10,4,Amélioration de caractéristiques,5d6,,,,,,,,,,,,,,,,,,,,
+Roublard,11,4,Savoir-faire,6d6,,,,,,,,,,,,,,,,,,,,
+Roublard,12,4,Amélioration de caractéristiques,6d6,,,,,,,,,,,,,,,,,,,,
+Roublard,13,5,Capacité de l'archétype de roublard,7d6,,,,,,,,,,,,,,,,,,,,
+Roublard,14,5,Perception aveugle,7d6,,,,,,,,,,,,,,,,,,,,
+Roublard,15,5,Esprit fuyant,8d6,,,,,,,,,,,,,,,,,,,,
+Roublard,16,5,Amélioration de caractéristiques,8d6,,,,,,,,,,,,,,,,,,,,
+Roublard,17,6,Capacité de l'archétype de roublard,9d6,,,,,,,,,,,,,,,,,,,,
+Roublard,18,6,Insaisissable,9d6,,,,,,,,,,,,,,,,,,,,
+Roublard,19,6,Amélioration de caractéristiques,10d6,,,,,,,,,,,,,,,,,,,,
+Roublard,20,6,Coup de chance,10d6,,,,,,,,,,,,,,,,,,,,

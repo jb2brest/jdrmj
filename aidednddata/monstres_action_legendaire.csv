@@ -1,0 +1,106 @@
+Id,Nom,Description
+1,Détection, L'aboleth effectue un jet de Sagesse (Perception).
+1,Attaque avec la queue, L'aboleth effectue une attaque avec sa queue.
+1,Absorption psychique (coûte 2 actions)," Une créature charmée par l'aboleth subit 10 (3d6) dégâts psychiques, et l'aboleth récupère un montant de point de vie égal aux dégâts que cette créature a subis."
+7,Attaque avec les griffes, Le sphinx effectue une attaque avec ses griffes.
+7,Téléportation (coûte 2 actions)," Le sphinx se téléporte par magie, emportant avec lui l'équipement qu'il porte ou transporte, jusqu'à un espace inoccupé qu'il peut voir dans un rayon de 36 mètres."
+7,Sort (coûte 3 actions)," Le sphinx lance un sort choisi parmi sa liste de sorts préparés, en utilisant un emplacement de sort normalement."
+79,Envolée, La demi-liche s'envole de la moitié de sa vitesse de déplacement.
+79,Nuage de poussière," La demi-liche fait tourbillonner par magie la poussière de ses restes. Chaque créature se trouvant à 3 mètres ou moins de la demi-liche, y compris derrière les angles des murs, doit réussir un jet de sauvegarde de Constitution DD 15 ou être aveuglé jusqu'à la fin du prochain tour de la demi-liche. Une créature qui réussit son jet de sauvegarde est immunisée contre cet effet jusqu'à la fin du prochain tour de la demi-liche."
+79,Absorption d'énergie (coûte 2 actions)," Chaque créature se trouvant dans un rayon de 9 mètres de la demi-liche doit effectuer un jet de sauvegarde de Constitution DD 15. En cas d'échec, le maximum de points de vie de la créature est réduit magiquement de 10 (3d6). Si le maximum de points de vie de la créature est réduit à 0 par cet effet, la créature meurt. Le maximum de points de vie de la créature peut être récupéré grâce à un sort de <em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=restauration-superieure"">restauration supérieure</a></em> ou un effet magique similaire."
+79,Infâme malédiction (coûte 3 actions)," La demi-liche cible une créature qu'elle peut voir et se trouvant à 9 mètres. La cible doit réussir un jet de sauvegarde de Sagesse DD 15 ou être maudite par magie. Jusqu'à ce que la malédiction prenne fin, la cible a un désavantage aux jets d'attaque et de sauvegarde. La cible peut retenter son jet de sauvegarde à la fin de chacun de ses tours, mettant fin à la malédiction en cas de réussite."
+96,Détection, La dracoliche effectue un jet de Sagesse (Perception).
+96,Attaque avec la queue, La dracoliche effectue une attaque avec sa queue.
+96,Attaque avec les ailes (coûte 2 actions), La dracoliche bat des ailes. Chaque créature située à 3 mètres ou moins de la dracoliche doit réussir un jet de sauvegarde de Dextérité DD 21 ou subir 14 (2d6 + 7) dégâts contondants et être jetée à terre. La dracoliche peut ensuite s'envoler de la moitié de sa vitesse de vol.
+97,Détection, Le dragon effectue un jet de Sagesse (Perception).
+97,Attaque avec la queue, Le dragon effectue une attaque avec sa queue.
+97,Attaque avec les ailes (coûte 2 actions), Le dragon bat des ailes. Chaque créature située à 3 mètres ou moins du dragon doit réussir un jet de sauvegarde de Dextérité DD 19 ou subir 13 (2d6 + 6) dégâts contondants et être jetée à terre. Le dragon peut ensuite s'envoler de la moitié de sa vitesse de vol.
+98,Détection, Le dragon effectue un jet de Sagesse (Perception).
+98,Attaque avec la queue, Le dragon effectue une attaque avec sa queue.
+98,Attaque avec les ailes (coûte 2 actions)," Le dragon bat des ailes. Chaque créature située à 4,50 mètres ou moins du dragon doit réussir un jet de sauvegarde de Dextérité DD 22 ou subir 15 (2d6 + 8) dégâts contondants et être jetée à terre. Le dragon peut ensuite s'envoler de la moitié de sa vitesse de vol."
+101,Détection, Le dragon effectue un jet de Sagesse (Perception).
+101,Attaque avec la queue, Le dragon effectue une attaque avec sa queue.
+101,Attaque avec les ailes (coûte 2 actions), Le dragon bat des ailes. Chaque créature située à 3 mètres ou moins du dragon doit réussir un jet de sauvegarde de Dextérité DD 20 ou subir 14 (2d6 + 7) dégâts contondants et être jetée à terre. Le dragon peut ensuite s'envoler de la moitié de sa vitesse de vol.
+102,Détection, Le dragon effectue un jet de Sagesse (Perception).
+102,Attaque avec la queue, Le dragon effectue une attaque avec sa queue.
+102,Attaque avec les ailes (coûte 2 actions)," Le dragon bat des ailes. Chaque créature située à 4,50 mètres ou moins du dragon doit réussir un jet de sauvegarde de Dextérité DD 24 ou subir 16 (2d6 + 9) dégâts contondants et être jetée à terre. Le dragon peut ensuite s'envoler de la moitié de sa vitesse de vol."
+105,Détection, Le dragon effectue un jet de Sagesse (Perception).
+105,Attaque avec la queue, Le dragon effectue une attaque avec sa queue.
+105,Attaque avec les ailes (coûte 2 actions), Le dragon bat des ailes. Chaque créature située à 3 mètres ou moins du dragon doit réussir un jet de sauvegarde de Dextérité DD 19 ou subir 13 (2d6 + 6) dégâts contondants et être jetée à terre. Le dragon peut ensuite s'envoler de la moitié de sa vitesse de vol.
+106,Détection, Le dragon effectue un jet de Sagesse (Perception).
+106,Attaque avec la queue, Le dragon effectue une attaque avec sa queue.
+106,Attaque avec les ailes (coûte 2 actions)," Le dragon bat des ailes. Chaque créature située à 4,50 mètres ou moins du dragon doit réussir un jet de sauvegarde de Dextérité DD 22 ou subir 15 (2d6 + 8) dégâts contondants et être jetée à terre. Le dragon peut ensuite s'envoler de la moitié de sa vitesse de vol."
+109,Détection, Le dragon effectue un jet de Sagesse (Perception).
+109,Attaque avec la queue, Le dragon effectue une attaque avec sa queue.
+109,Attaque avec les ailes (coûte 2 actions), Le dragon bat des ailes. Chaque créature située à 3 mètres ou moins du dragon doit réussir un jet de sauvegarde de Dextérité DD 21 ou subir 15 (2d6 + 8) dégâts contondants et être jetée à terre. Le dragon peut ensuite s'envoler de la moitié de sa vitesse de vol.
+110,Détection, Le dragon effectue un jet de Sagesse (Perception).
+110,Attaque avec la queue, Le dragon effectue une attaque avec sa queue.
+110,Attaque avec les ailes (coûte 2 actions)," Le dragon bat des ailes. Chaque créature située à 4,50 mètres ou moins du dragon doit réussir un jet de sauvegarde de Dextérité DD 25 ou subir 17 (2d6 + 10) dégâts contondants et être jetée à terre. Le dragon peut ensuite s'envoler de la moitié de sa vitesse de vol."
+114,Détection, Le dragon effectue un jet de Sagesse (Perception).
+114,Attaque avec la queue, Le dragon effectue une attaque avec sa queue.
+114,Attaque avec les ailes (coûte 2 actions), Le dragon bat des ailes. Chaque créature située à 3 mètres ou moins du dragon doit réussir un jet de sauvegarde de Dextérité DD 22 ou subir 15 (2d6 + 8) dégâts contondants et être jetée à terre. Le dragon peut ensuite s'envoler de la moitié de sa vitesse de vol.
+115,Détection, Le dragon effectue un jet de Sagesse (Perception).
+115,Attaque avec la queue, Le dragon effectue une attaque avec sa queue.
+115,Attaque avec les ailes (coûte 2 actions)," Le dragon bat des ailes. Chaque créature située à 4,50 mètres ou moins du dragon doit réussir un jet de sauvegarde de Dextérité DD 25 ou subir 17 (2d6 + 10) dégâts contondants et être jetée à terre. Le dragon peut ensuite s'envoler de la moitié de sa vitesse de vol."
+118,Détection, Le dragon effectue un jet de Sagesse (Perception).
+118,Attaque avec la queue, Le dragon effectue une attaque avec sa queue.
+118,Attaque avec les ailes (coûte 2 actions), Le dragon bat des ailes. Chaque créature située à 3 mètres ou moins du dragon doit réussir un jet de sauvegarde de Dextérité DD 20 ou subir 14 (2d6 + 7) dégâts contondants et être jetée à terre. Le dragon peut ensuite s'envoler de la moitié de sa vitesse de vol.
+119,Détection, Le dragon effectue un jet de Sagesse (Perception).
+119,Attaque avec la queue, Le dragon effectue une attaque avec sa queue.
+119,Attaque avec les ailes (coûte 2 actions)," Le dragon bat des ailes. Chaque créature située à 4,50 mètres ou moins du dragon doit réussir un jet de sauvegarde de Dextérité DD 24 ou subir 16 (2d6 + 9) dégâts contondants et être jetée à terre. Le dragon peut ensuite s'envoler de la moitié de sa vitesse de vol."
+122,Détection, Le dragon effectue un jet de Sagesse (Perception).
+122,Attaque avec la queue, Le dragon effectue une attaque avec sa queue.
+122,Attaque avec les ailes (coûte 2 actions), Le dragon bat des ailes. Chaque créature située à 3 mètres ou moins du dragon doit réussir un jet de sauvegarde de Dextérité DD 19 ou subir 13 (2d6 + 6) dégâts contondants et être jetée à terre. Le dragon peut ensuite s'envoler de la moitié de sa vitesse de vol.
+123,Détection, Le dragon effectue un jet de Sagesse (Perception).
+123,Attaque avec la queue, Le dragon effectue une attaque avec sa queue.
+123,Attaque avec les ailes (coûte 2 actions)," Le dragon bat des ailes. Chaque créature située à 4,50 mètres ou moins du dragon doit réussir un jet de sauvegarde de Dextérité DD 23 ou subir 15 (2d6 + 8) dégâts contondants et être jetée à terre. Le dragon peut ensuite s'envoler de la moitié de sa vitesse de vol."
+127,Détection, Le dragon effectue un jet de Sagesse (Perception).
+127,Attaque avec la queue, Le dragon effectue une attaque avec sa queue.
+127,Attaque avec les ailes (coûte 2 actions), Le dragon bat des ailes. Chaque créature située à 3 mètres ou moins du dragon doit réussir un jet de sauvegarde de Dextérité DD 19 ou subir 13 (2d6 + 6) dégâts contondants et être jetée à terre. Le dragon peut ensuite s'envoler de la moitié de sa vitesse de vol.
+128,Détection, Le dragon effectue un jet de Sagesse (Perception).
+128,Attaque avec la queue, Le dragon effectue une attaque avec sa queue.
+128,Attaque avec les ailes (coûte 2 actions)," Le dragon bat des ailes. Chaque créature située à 4,50 mètres ou moins du dragon doit réussir un jet de sauvegarde de Dextérité DD 23 ou subir 15 (2d6 + 8) dégâts contondants et être jetée à terre. Le dragon peut ensuite s'envoler de la moitié de sa vitesse de vol."
+131,Attaque avec la queue, Le dragon effectue une attaque avec sa queue.
+131,Détection, Le dragon effectue un jet de Sagesse (Perception).
+131,Attaque Ailée (coûte 2 actions), Le dragon bat des ailes. Chaque créature située à 3 mètres ou moins de lui doit réussir un jet de sauvegarde de Dextérité DD 22 ou subir 15 (2d6 + 8) dégâts contondants et tomber à terre. Le dragon peut ensuite s'envoler et parcourir jusqu'à la moitié de son déplacement en vol.
+132,Attaque avec la queue, Le dragon effectue une attaque avec sa queue.
+132,Détection, Le dragon effectue un jet de Sagesse (Perception).
+132,Attaque avec les ailes (coûte 2 actions)," Le dragon bat des ailes. Chaque créature située dans un rayon de 4,50 mètres autour de lui doit réussir un jet de sauvegarde de Dextérité DD 25 ou subir 17 (2d6 + 10) dégâts contondants et être jetée à terre. Le dragon peut ensuite s'envoler et parcourir jusqu'à la moitié de son déplacement en vol."
+135,Détection, Le dragon effectue un jet de Sagesse (Perception).
+135,Attaque avec la queue, Le dragon effectue une attaque avec sa queue.
+135,Attaque avec les ailes (coûte 2 actions), Le dragon bat des ailes. Chaque créature située à 3 mètres ou moins du dragon doit réussir un jet de sauvegarde de Dextérité DD 19 ou subir 13 (2d6 + 6) dégâts contondants et être jetée à terre. Le dragon peut ensuite s'envoler de la moitié de sa vitesse de vol.
+136,Détection, Le dragon effectue un jet de Sagesse (Perception).
+136,Attaque avec la queue, Le dragon effectue une attaque avec sa queue.
+136,Attaque avec les ailes (coûte 2 actions)," Le dragon bat des ailes. Chaque créature située à 4,50 mètres ou moins du dragon doit réussir un jet de sauvegarde de Dextérité DD 23 ou subir 15 (2d6 + 8) dégâts contondants et être jetée à terre. Le dragon peut ensuite s'envoler de la moitié de sa vitesse de vol."
+159,Attaque, L'empyréen effectue une attaque.
+159,Soutien," L'empyréen soutient toutes les créatures non-hostiles dans un rayon de 36 mètres autour de lui jusqu'à la fin de son prochain tour. Les créatures soutenues ne peuvent pas être charmées ou effrayées, de plus elles gagnent un avantage à leurs jets de caractéristique et de sauvegarde, jusqu'à la fin du prochain tour de l'empyréen."
+159,Secousse (coûte 2 actions)," L'empyréen frappe le sol avec son maillet, déclenchant un tremblement de terre. Toutes les autres créatures sur le sol dans un rayon de 18 mètres autour de l'empyréen doivent réussir un jet de sauvegarde de Force DD 25 ou être jetées à terre."
+223,Attaque avec les griffes, Le sphinx effectue une attaque avec ses griffes.
+223,Téléportation (coûte 2 actions)," Le sphinx se téléporte magiquement, emportant avec lui l'équipement qu'il porte ou transporte, jusqu'à un espace inoccupé qu'il peut voir à 36 mètres maximum."
+223,Sort (coûte 3 actions)," Le sphinx lance un sort choisi parmi sa liste de sorts préparés, en utilisant un emplacement de sort normalement."
+244,Attaque de tentacule ou Catapultage, Le kraken effectue une attaque avec ses tentacules ou utilise son Catapultage.
+244,Tempête d'éclairs (coûte 2 actions), Le kraken utilise sa Tempête d'éclairs.
+244,Nuage d'encre (coûte 3 actions)," Tant qu'il se trouve sous l'eau, le kraken expulse un nuage d'encre dans un rayon de 18 mètres. Le nuage contourne les angles des murs, et cette zone est fortement obscurcie pour toute créature à l'exception du kraken. Chaque créature, à l'exception du kraken, qui termine son tour dans le nuage doit effectuer un jet de sauvegarde de Constitution DD 23, subissant 16 (3d10) dégâts de poison en cas d'échec, ou la moitié de ces dégâts en cas de réussite. Un courant fort disperse le nuage d'encre, qui disparaît de toute façon à la fin du prochain tour du kraken."
+252,Sort mineur, La liche lance un sort mineur.
+252,Contact paralysant (coûte 2 actions), La liche utilise son Contact paralysant.
+252,Regard effrayant (coûte 2 actions)," La liche fixe du regard une créature qu'elle peut voir dans un rayon de 3 mètres autour d'elle. La cible doit réussir un jet de sauvegarde de Sagesse DD 18 contre la magie ou être effrayée pendant 1 minute. La cible effrayée peut retenter son jet de sauvegarde à la fin de chacun de ses tours, mettant fin à l'effet qui l'affecte en cas de réussite. Si le jet de sauvegarde de la cible est une réussite, ou si l'effet se termine pour elle, la cible est immunisée au regard de la liche pour les prochaines 24 heures."
+252,Perturbation de la vie (coûte 3 actions)," Toute créature non morte-vivante située dans un rayon de 6 mètres autour de la liche doit effectuer un jet de sauvegarde de Constitution DD 18 contre la magie, subissant 21 (6d6) dégâts nécrotiques en cas d'échec, ou la moitié de ces dégâts en cas de réussite."
+253,Sabots, La licorne effectue une attaque avec ses sabots.
+253,Boucliers scintillant (coûte 2 actions), La licorne crée un champ magique scintillant autour d'elle ou d'une autre créature qu'elle peut voir à 18 m d'elle. La cible gagne un bonus de +2 à sa CA jusqu'à la fin du prochain tour de la licorne.
+253,Soin personnel (coûte 3 actions), La licorne récupère magiquement 11 (2d8 + 2) points de vie.
+366,Attaques, Le seigneur momie effectue une attaque avec ses poings putréfiants ou son Regard effroyable.
+366,Poussière aveuglante," De la poussière et du sable se mettent à tourbillonner par magie autour du seigneur momie. Toutes les créatures se trouvant à 1,50 mètre ou moins du seigneur momie doivent réussir un jet de sauvegarde de Constitution DD 16 ou être aveuglées jusqu'à la fin de leur tour suivant."
+366,Parole blasphématoire (coûte 2 actions), Le seigneur momie murmure une parole blasphématoire. Chaque créature non morte-vivante se trouvant à 3 mètres ou moins du seigneur momie et étant capable d'entendre la parole magique doit réussir un jet de sauvegarde de Constitution DD 16 ou être étourdie jusqu'à la fin du tour suivant du seigneur momie.
+366,Conduit d'énergie négative (coûte 2 actions)," Le seigneur momie déchaine par magie un torrent d'énergie négative. Les créatures se trouvant dans un rayon de 18 mètres autour du seigneur momie, incluant celles derrière des coins ou des barrières, ne peuvent pas récupérer de points de vie jusqu'à la fin du tour suivant du seigneur momie."
+366,Tourbillon de sable (coûte 2 actions)," Le seigneur momie se transforme par magie en un tourbillon de sable, se déplace de 18 mètres, et retrouve sa forme originelle. Lorsqu'il est transformé en tourbillon, le seigneur momie est immunisé contre tous les dégâts, et il ne peut pas être agrippé, entravé, jeté à terre, étourdi, ou pétrifié. L'équipement porté ou transporté par le seigneur momie reste en sa possession."
+381,Téléportation," Le solar se téléporte magiquement, avec tout l'équipement qu'il porte ou transporte, vers un espace inoccupé qu'il peut voir et situé dans un rayon de 36 mètres autour de lui."
+381,Explosion brûlante (coûte 2 actions)," Le solar émet une énergie magique et divine. Toutes les créatures de son choix dans un rayon de 3 mètres doivent effectuer un jet de sauvegarde de Dextérité DD 23, subissant 14 (4d6) dégâts de feu plus 14 (4d6) dégâts radiants en cas d'échec, ou la moitié de ces dégâts en cas de réussite."
+381,Regard aveuglant (coûte 3 actions)," Le solar prend pour cible une créature qu'il peut voir et qui se trouve à 9 mètres ou moins de lui. Si la cible peut voir, celle-ci doit réussir un jet de sauvegarde de Constitution DD 15 ou être aveuglée, jusqu'à ce qu'une magie, comme un sort de <em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=restauration-partielle"">restauration partielle</a></em>, lui restaure la vue."
+392,Attaque, La tarasque effectue une attaque avec ses griffes ou avec sa queue.
+392,Déplacement, La tarasque se déplace de la moitié de sa vitesse.
+392,Mastication (coûte 2 actions), La tarasque effectue une attaque de morsure ou utilise Engloutissement.
+404,Rayon oculaire, Le tyramort utilise un rayon oculaire aléatoire.
+405,Rayon oculaire, Le tyrannoeil utilise un rayon oculaire aléatoire.
+408,Déplacement, Le vampire se déplace de sa vitesse sans provoquer d'attaque d'opportunité.
+408,Attaque à mains nues, Le vampire effectue une attaque à mains nues.
+408,Morsure (coûte 2 actions), Le vampire effectue une attaque de morsure.

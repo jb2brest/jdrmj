@@ -1,0 +1,969 @@
+Id,Nom,Cle,Description,type,Source
+0,Amulette d'antidétection,amulette-d-antidetection ,"Lorsque vous portez cette amulette, vous êtes protégé contre la divination magique. Vous ne pouvez pas être ciblé par une telle magie ou perçu par des capteurs de divination magique.
+
+","Objet merveilleux, peu commun (nécessite un lien)",Dungeon Master´s Guide (SRD)
+1,Amulette de bonne santé,amulette-de-bonne-sante ,"Votre Constitution passe à 19 tant que vous portez cette amulette. L'amulette n'a aucun effet sur vous si votre Constitution est de 19 ou plus sans elle.
+
+","Objet merveilleux, rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+2,Amulette de cicatrisation,amulette-de-cicatrisation ,"Lorsque vous portez ce pendentif, vous vous stabilisez chaque fois que vous êtes mourant au début de votre tour. En outre, chaque fois que vous lancez un dé de vie pour regagner des points de vie, vous doublez le nombre de points de vie récupéré.
+
+","Objet merveilleux, peu commun (nécessite un lien)",Dungeon Master´s Guide (SRD)
+3,Amulette de protection contre le poison,amulette-de-protection-contre-le-poison ,"Cette fine chaîne d'argent possède une gemme noire joliment taillée. Lorsque vous la portez, les poisons n'ont aucun effet sur vous. Vous êtes immunisé contre l'état empoisonné et contre les dégâts de poison.
+
+","Objet merveilleux, rare",Dungeon Master´s Guide (SRD)
+4,Amulette de santé,amulette-de-sante ,"Vous êtes immunisé contre toutes les maladies tant que vous portez ce pendentif. Si vous êtes déjà infecté par une maladie, les effets de celle-ci disparaissent tant que vous portez le pendentif.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide (SRD)
+5,Amulette de sombre éclat,amulette-de-sombre-eclat ,"Cette amulette est fabriquée à partir d'un éclat résistant de matériau extraplanaire provenant du royaume de votre patron d'occultiste. Tant que vous le portez, vous bénéficiez des avantages suivants :
+
+","Objet merveilleux, commun (nécessite un lien avec un occultiste)",Xanathar´s Guide to Everything
+6,Amulette des plans,amulette-des-plans ,"Lorsque vous portez cette amulette, vous pouvez utiliser une action pour nommer un lieu qui vous est familier sur un autre plan d'existence. Ensuite, faites un jet d'Intelligence DD 15. En cas de réussite, vous lancez le sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=changement-de-plan"">changement de plan</a>. En cas d'échec, vous et toute créature ou objet dans un rayon de 4,50 m voyagez vers une destination aléatoire. Lancez un d100. Sur 1-60, vous voyagez à un endroit aléatoire sur le plan que vous avez nommé. Sur 61-100, vous voyagez dans un plan d'existence déterminé au hasard.
+
+","Objet merveilleux, très rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+7,Amulette mécanique,amulette-mecanique ,"Cette amulette en cuivre contient de minuscules engrenages imbriqués et est alimentée par la magie de Mechanus, un plan extérieur. Une créature qui colle son oreille à l'amulette peut entendre de faibles bruits de tic-tac et de vrombissement venant de l'intérieur. Lorsque vous effectuez un jet d'attaque tout en portant l'amulette, vous pouvez renoncer à lancer le d20 et obtenir automatiquement 10 au dé. Une fois utilisée, cette propriété ne peut être réutilisée avant l'aube suivante.
+
+","Objet merveilleux, commun",Xanathar´s Guide to Everything
+8,Anneau d'action libre,anneau-d-action-libre ,"Tant que vous êtes équipé de cet anneau, les terrains difficiles ne vous coûtent pas de déplacement supplémentaire. De plus, aucune magie ne peut réduire votre vitesse de déplacement ni vous paralyser ou vous entraver.
+
+","Anneau, rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+9,Anneau d'esquive totale,anneau-d-esquive-totale ,"Cet anneau possède 3 charges, et récupère 1d3 charges dépensées chaque jour à l'aube. Si vous échouez à un jet de sauvegarde de Dextérité alors que vous portez l'anneau, vous pouvez utiliser votre réaction pour dépenser 1 charge et ainsi réussir ce jet de sauvegarde.
+
+","Anneau, rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+10,Anneau d'influence sur les animaux,anneau-d-influence-sur-les-animaux ,"Cet anneau possède 3 charges, et il récupère 1d3 charges dépensées chaque jour à l'aube. Tant que vous êtes équipé de cet anneau, vous pouvez utiliser une action pour dépenser 1 de ses charges pour lancer l'un des sorts suivants :
+
+","Anneau, rare",Dungeon Master´s Guide (SRD)
+11,Anneau d'invisibilité,anneau-d-invisibilite ,"Lorsque vous portez cet anneau, vous pouvez devenir invisible par une action. Tout ce que vous portez ou transportez devient invisible avec vous. Vous restez invisible jusqu'à ce que l'anneau soit retiré, jusqu'à ce que vous attaquiez ou lanciez un sort, ou jusqu'à ce que vous utilisiez une action bonus pour redevenir visible.
+
+","Anneau, légendaire (nécessite un lien)",Dungeon Master´s Guide (SRD)
+12,Anneau de barrière mentale,anneau-de-barriere-mentale ,"Tant que vous êtes équipé de cet anneau, vous êtes immunisé aux magies qui permettent à d'autres créatures de lire dans vos pensées, de déterminer si vous êtes en train de mentir, de connaître votre alignement ou de connaître votre type de créature. Les créatures ne peuvent communiquer avec vous par télépathie que si vous le leur permettez.
+
+","Anneau, peu commun (nécessite un lien)",Dungeon Master´s Guide (SRD)
+13,Anneau de chaleur constante,anneau-de-chaleur-constante ,"Tant que vous êtes équipé de cet anneau, vous avez la résistance aux dégâts de froid. De plus, vous et tout ce que vous portez et transportez êtes insensibles aux effets des basses températures, jusqu'à un négatif maximum de -45°C.
+
+","Anneau, peu commun (nécessite un lien)",Dungeon Master´s Guide (SRD)
+14,Anneau de contrôle des élémentaires,anneau-de-controle-des-elementaires ,"Cet anneau est relié à l'un des quatre plans Élémentaires. Le MD choisit ou détermine de manière aléatoire le plan en question.
+
+","Anneau, légendaire (nécessite un lien)",Dungeon Master´s Guide (SRD)
+15,Anneau de convocation de djinn,anneau-de-convocation-de-djinn ,"Tant que vous êtes équipé de cet anneau, vous pouvez prononcer son mot de commande en utilisant une action pour invoquer un djinn particulier depuis le plan élémentaire de l'Air. Le djinn apparaît dans un espace inoccupé de votre choix dans un rayon de 36 mètres autour de vous. Il reste aussi longtemps que vous vous concentrez (comme lorsque vous vous concentrez sur un sort), pour une durée maximale de 1 heure, ou jusqu'à ce que ses points de vie tombent à 0. Puis il retourne dans son plan natif.
+
+","Anneau, légendaire (nécessite un lien)",Dungeon Master´s Guide (SRD)
+16,Anneau de feu d'étoiles,anneau-de-feu-d-etoiles ,"Lorsque vous portez cette bague dans une zone de lumière faible ou de ténèbres, vous pouvez jeter <a href=""https://www.aidedd.org/dnd/sorts.php?vf=lumieres-dansantes"">lumières dansantes</a> et <a href=""https://www.aidedd.org/dnd/sorts.php?vf=lumiere"">lumière</a> depuis l'anneau à volonté. Lancer un de ces deux sorts depuis l'anneau nécessite une action.
+
+","Anneau, très rare (nécessite un lien de nuit en extérieur)",Dungeon Master´s Guide (SRD)
+17,Anneau de feuille morte,anneau-de-feuille-morte ,"Si vous tombez alors que vous portez cet anneau, vous descendez de 18 mètres par round et ne prenez aucun dégât de chute.
+
+","Anneau, rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+18,Anneau de marche sur l'eau,anneau-de-marche-sur-l-eau ,"Tant que vous portez cet anneau, vous pouvez vous déplacer et rester sur les surfaces liquides comme si vous vous trouviez sur la terre ferme.
+
+","Anneau, peu commun",Dungeon Master´s Guide (SRD)
+19,Anneau de nage,anneau-de-nage ,"Vous avez une vitesse de nage de 12 mètres lorsque vous portez cet anneau.
+
+","Anneau, peu commun",Dungeon Master´s Guide (SRD)
+20,Anneau de protection,anneau-de-protection ,"Vous obtenez un bonus de +1 à la CA et aux jets de sauvegarde lorsque vous portez cet anneau.
+
+","Anneau, rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+21,Anneau de rayons X,anneau-de-rayons-x ,"Tant que vous êtes équipé de cet anneau, vous pouvez utiliser une action pour prononcer son mot de commande. Lorsque vous le faites, vous pouvez voir à l'intérieur et au travers des matières solides pendant 1 minute. Cette vision possède un rayon de 9 mètres. Pour vous, les objets solides se trouvant dans ce rayon vous semblent transparents et n'interdisent pas à la lumière de les traverser. Cette vision peut pénétrer jusqu'à 30 cm de pierre, 2,50 cm de métal commun ou jusqu'à 90 cm de bois ou de terre. Des substances plus denses bloquent la vision, comme le ferait une fine feuille de plomb.
+
+","Anneau, rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+22,Anneau de régénération,anneau-de-regeneration ,"Tant que vous êtes équipé de cet anneau, vous récupérez 1d6 points de vie toutes les 10 minutes, à condition qu'il vous reste au moins 1 point de vie. Si vous perdez un membre, l'anneau fait repousser la partie manquante, qui redevient alors fonctionnelle, en 1d6 + 1 jours, à condition que vous ayez au moins 1 point de vie pendant toute cette période.
+
+","Anneau, très rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+23,Anneau de renvoi des sorts,anneau-de-renvoi-des-sorts ,"Tant que vous êtes équipé de cet anneau, vous avez un avantage aux jets de sauvegarde contre les sorts dont vous êtes la cible unique (mais pas les sorts de zone). De plus, si vous obtenez un 20 naturel à votre jet de sauvegarde contre un sort de niveau 7 ou inférieur, le sort n'a aucun effet sur vous et cible son propre lanceur à la place, en utilisant le niveau d'emplacement de sort, le DD au jet de sauvegarde des sorts, le bonus à l'attaque du sort, et la caractéristique d'incantation de son lanceur originel.
+
+","Anneau, légendaire (nécessite un lien)",Dungeon Master´s Guide (SRD)
+24,Anneau de résistance,anneau-de-resistance ,"Vous obtenez la résistance à un type de dégâts tant que vous portez cet anneau. La gemme sur l'anneau indique le type, lequel est choisi par le MD ou déterminé au hasard.
+
+","Anneau, rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+25,Anneau de résistance au poison,anneau-de-resistance-au-poison ,"Vous possédez la résistance aux dégâts de poison tant que vous portez cet anneau, lequel possède une améthyste sertie.
+
+","Anneau, rare (nécessite un lien)",Dungeon Master´s Guide (BR)
+26,Anneau de saut,anneau-de-saut ,"Lorsque vous portez cet anneau, vous pouvez lancer le sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=saut"">saut</a> depuis l'anneau par une action bonus, à volonté, mais vous ne pouvez cibler que vous-même.
+
+","Anneau, peu commun (nécessite un lien)",Dungeon Master´s Guide (SRD)
+27,Anneau de stockage de sort,anneau-de-stockage-de-sort ,"Cet anneau garde les sorts qu'on lui a jetés, les conservant jusqu'à ce que l'utilisateur qui lui est lié les utilise. L'anneau peut stocker jusqu'à l'équivalent de 5 niveaux de sorts à la fois. Lorsqu'on le trouve, il contient 1d6 - 1 niveaux de sorts mémorisés, choisis par le MD.
+
+","Anneau, rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+28,Anneau de télékinésie,anneau-de-telekinesie ,"Lorsque vous portez cet anneau, vous pouvez lancer le sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=telekinesie"">télékinésie</a> à volonté, mais vous ne pouvez cibler que des objets qui ne sont pas portés ou transportés.
+
+","Anneau, très rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+29,Anneau de triple souhait,anneau-de-triple-souhait ,"Lorsque vous portez cet anneau, vous pouvez utiliser une action pour dépenser une de ses 3 charges pour lancer le sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=souhait"">souhait</a> depuis l'anneau. L'anneau devient non magique lorsque vous utilisez la dernière charge.
+
+","Anneau, légendaire",Dungeon Master´s Guide (SRD)
+30,Anneau du bélier,anneau-du-belier ,"Cet anneau possède 3 charges, et il récupère 1d3 charges dépensées chaque jour à l'aube. Tant que vous êtes équipé de cet anneau, vous pouvez utiliser une action pour dépenser 1 à 3 de ses charges pour effectuer une attaque à distance avec un sort contre une créature que vous pouvez voir et qui se trouve à 18 mètres ou moins de vous. L'anneau fait apparaître la tête d'un bélier fantomatique et effectue son jet d'attaque avec un bonus de +7. Si le coup touche, pour chaque charge que vous avez dépensée, la cible subit 2d10 dégâts de force et est repoussée de vous sur 1,50 mètre.
+
+","Anneau, rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+31,Arc du serment,arc-du-serment ,"Quand vous encochez une flèche à la corde de cet arc, il murmure en elfique : « Prompte défaite à mes ennemis ». Lorsque vous faites une attaque à distance avec cet arc vous pouvez dire en tant que phrase de commande : « Prompte mort à ceux qui m'ont fait du tort ». La cible de votre attaque devient votre ennemi juré jusqu'à ce qu'il meure ou jusqu'à l'aube sept jours plus tard. Vous ne pouvez avoir qu'un seul ennemi juré à la fois. Quand votre ennemi juré meurt, vous pouvez en choisir un nouveau après la prochaine aube.
+
+","Arme (arc long), très rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+32,"Arme +1, +2 ou +3",arme-1-2-ou-3 ,"Vous avez un bonus aux jets d'attaque et de dégâts effectués avec cette arme magique. Le bonus est déterminé par la rareté de l'arme.
+
+","Arme (toutes), peu commun (+1) rare (+2) ou très rare (+3)",Dungeon Master´s Guide (SRD)
+33,Arme vicieuse,arme-vicieuse ,"Lorsque vous obtenez un 20 naturel à votre jet d'attaque avec cette arme magique, votre coup critique inflige 7 dégâts supplémentaires du type correspondant à l'arme.
+
+","Arme (toutes), rare",Dungeon Master´s Guide (SRD)
+34,Arme vigilante,arme-vigilante ,"Cette arme magique vous prévient du danger. Tant que cette arme se trouve sur vous, vous avez un avantage aux jets d'initiative. De plus, vous et tous vos compagnons dans un rayon de 9 mètres autour de vous ne pouvez pas être surpris, sauf lorsque vous êtes rendu incapable d'agir pour une autre raison qu'un sommeil non magique. L'arme vous réveille vous et vos compagnons se trouvant à portée si l'un de vous est en train de dormir d'un sommeil naturel lorsqu'un combat débute.
+
+","Arme (toutes), peu commun (nécessite un lien)",Dungeon Master´s Guide
+35,"Armure +1, +2 ou +3",armure-1-2-ou-3 ,"Lorsque vous portez cette armure, vous obtenez un bonus à la CA. Le bonus est déterminé par sa rareté.
+
+","Armure (légère intermédiaire ou lourde), rare (+1) très rare (+2) ou légendaire (+3)",Dungeon Master´s Guide (SRD)
+36,Armure d'adamantium,armure-d-adamantium ,"Cette armure est renforcée par de l'adamantium, l'une des plus robustes substances au monde. Lorsque vous la portez, tout coup critique contre vous devient un coup normal.
+
+","Armure (intermédiaire ou lourde mais pas de peau), peu commun",Dungeon Master´s Guide (SRD)
+37,Armure d'écailles de dragon,armure-d-ecailles-de-dragon ,"Une armure d'écailles de dragon est fabriquée à partir des écailles d'une sorte de dragon. Parfois les dragons récoltent les écailles qu'ils ont perdues et les offrent aux humanoïdes. Dans d'autres cas, des chasseurs écorchent avec soin et préservent la peau écailleuse des dragons morts. Quoi qu'il en soit, une armure d'écailles de dragon est un objet très précieux et très apprécié.
+
+","Armure (armure d'écailles), très rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+38,Armure d'invulnérabilité,armure-d-invulnerabilite ,"Vous avez une résistance contre les dégâts non magiques tant que vous portez cette armure. De plus, vous pouvez utiliser une action pour vous immuniser aux dégâts non magiques pendant 10 minutes ou jusqu'à ce que vous ne portiez plus cette armure. Une fois que cette action spéciale est utilisée, elle ne peut être réutilisée avant la prochaine aube.
+
+","Armure (harnois), légendaire (nécessite un lien)",Dungeon Master´s Guide (SRD)
+39,Armure de cuir clouté enchantée,armure-de-cuir-cloute-enchantee ,"Lorsque vous portez cette armure, vous obtenez un bonus de +1 à la CA. Vous pouvez également utiliser une action bonus pour prononcer le mot de commande de l'armure et faire que celle-ci prenne l'apparence de vêtements ou d'un autre type d'armure. Vous décidez l'apparence, les couleurs et le style, mais le poids et le volume restent les mêmes. L'illusion dure jusqu'à ce que vous utilisiez cette propriété de nouveau, ou que vous ôtiez l'armure.
+
+","Armure (cuir clouté), rare",Dungeon Master´s Guide (SRD)
+40,Armure de matelot,armure-de-matelot ,"Lorsque vous portez cette armure, vous obtenez une vitesse de nage égale à votre vitesse de marche. De plus, chaque fois que vous commencez votre tour sous l'eau avec 0 point de vie, l'armure vous fait remonter vers la surface de 18 mètres. L'armure est ornée de motifs de poissons et de coquillages.
+
+","Armure (légère intermédiaire ou lourde), peu commun",Dungeon Master´s Guide (BR)
+41,Armure de mithral,armure-de-mithral ,"Le mithral est un métal souple et léger. Une chemise de mailles ou une cuirasse en mithral peuvent être portées sous des vêtements normaux. Si l'armure impose normalement un désavantage aux jets de Dextérité (Discrétion) ou a un prérequis de Force, la version en mithral de l'armure ne l'a pas.
+
+","Armure (intermédiaire ou lourde mais pas de peau), peu commun",Dungeon Master´s Guide (SRD)
+42,Armure de résistance,armure-de-resistance ,"Vous avez la résistance à un type de dégâts tant que vous êtes équipé de cette armure. Le MD choisit le type de dégâts ou le détermine aléatoirement grâce à la table ci-dessous.
+
+","Armure (légère intermédiaire ou lourde), rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+43,Armure de vulnérabilité,armure-de-vulnerabilite ,"Tant que vous portez cette armure, vous avez une résistance contre l'un des types de dégâts suivants : contondant, perforant ou tranchant. Le MD choisit le type ou le détermine aléatoirement.
+
+","Armure (harnois), rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+44,Armure démoniaque,armure-demoniaque ,"Lorsque vous portez cette armure, vous gagnez un bonus de +1 à la CA, et vous pouvez comprendre et parler l'abyssal. En outre, les gantelets griffus de l'armure transforment vos attaques à mains nues en armes magiques qui infligent des dégâts tranchants, avec un bonus de +1 aux jets d'attaque et de dégâts et un dé de dégâts de 1d8.
+
+","Armure (harnois), très rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+45,Armure fumante,armure-fumante ,"Des volutes de fumée inoffensive et inodore s'élèvent de cette armure lorsqu'elle est portée.
+
+","Armure (toutes), commun",Xanathar´s Guide to Everything
+46,Armure rapide,armure-rapide ,"Vous pouvez retirer cette armure par une action.
+
+","Armure (légère intermédiaire ou lourde), commun",Xanathar´s Guide to Everything
+47,Armure rutilante,armure-rutilante ,"Cette armure ne se salit jamais.
+
+","Armure (intermédiaire ou lourde), commun",Xanathar´s Guide to Everything
+48,Baguette d'éclairs,baguette-d-eclairs ,"Cette baguette possède 7 charges. Si vous la tenez, vous pouvez utiliser une action pour dépenser 1 ou plusieurs charges et lancer le sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=eclair"">éclair</a> (sauvegarde DD 15). Avec 1 charge, vous lancez la version de niveau 3 du sort. Vous pouvez augmenter le niveau de l'emplacement de sort de un pour chaque charge supplémentaire que vous dépensez.
+
+","Baguette, rare (nécessite un lien par un lanceur de sorts)",Dungeon Master´s Guide (SRD)
+49,Baguette d'Orcus,baguette-d-orcus ,"L'épouvantable Baguette d'Orcus est la plupart du temps aux côtés d'Orcus lui-même. L'objet magique, aussi maléique que son créateur, partage les objectifs du seigneur démon, en particulier celui de tuer tout être vivant et d'enchaîner le Plan matériel à la non-vie. Orcus permet parfois à la baguette de le quitter. Lorsque cela arrive, elle apparaît par magie à un endroit où son maître a ressenti l'opportunité d'accomplir l'un de ses sombres desseins.
+
+","Baguette, artéfact (nécessite un lien)",Dungeon Master´s Guide
+50,Baguette de boules de feu,baguette-de-boules-de-feu ,"Cette baguette possède 7 charges. Si vous la tenez, vous pouvez utiliser une action pour dépenser 1 ou plusieurs charges et lancer le sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=boule-de-feu"">boule de feu</a> (sauvegarde DD 15). Avec 1 charge, vous lancez la version de niveau 3 du sort. Vous pouvez augmenter le niveau de l'emplacement de sort de un pour chaque charge supplémentaire que vous dépensez.
+
+","Baguette, rare (nécessite un lien par un lanceur de sorts)",Dungeon Master´s Guide (SRD)
+51,Baguette de chef d'orchestre,baguette-de-chef-d-orchestre ,"Cette baguette possède 3 charges. Lorsque vous la tenez, vous pouvez utiliser une action pour dépenser 1 charge et créer une musique orchestrale en l'agitant. La musique peut être entendue sur une portée de 18 mètres et se termine lorsque vous arrêtez d'agiter la baguette. La baguette récupère toutes les charges dépensées chaque jour à l'aube. Si vous dépensez la dernière charge de la baguette, lancez un d20. Sur un résultat de 1, un son de tuba triste se joue alors pendant que la baguette tombe en poussière et est détruite.
+
+","Baguette, commun",Xanathar´s Guide to Everything
+52,Baguette de détection de l'ennemi,baguette-de-detection-de-l-ennemi ,"Cette baguette possède 7 charges. Lorsque vous la tenez, vous pouvez utiliser une action pour dépenser 1 charge et prononcer son mot de commande. Pendant 1 minute, vous connaissez la direction de la créature hostile la plus proche de vous dans un rayon de 18 mètres, mais pas sa distance. La baguette détecte la présence de créatures hostiles cachées, invisibles, éthérées ou déguisées, de même que celles en pleine vue. L'effet cesse si vous ne tenez plus la baguette.
+
+","Baguette, rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+53,Baguette de détection de la magie,baguette-de-detection-de-la-magie ,"Cette baguette possède 3 charges. Tant que vous tenez cette baguette, vous pouvez dépenser 1 charge au prix d'une action pour lancer le sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=detection-de-la-magie"">détection de la magie</a> depuis la baguette. La baguette récupère 1d3 charges dépensées chaque jour à l'aube.
+
+","Baguette, peu commun",Dungeon Master´s Guide (SRD)
+54,Baguette de métamorphose,baguette-de-metamorphose ,"Cette baguette possède 7 charges. Si vous la tenez, vous pouvez utiliser une action pour dépenser 1 de ses charges et jeter le sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=metamorphose"">métamorphose</a> (sauvegarde DD 15).
+
+","Baguette, très rare (nécessite un lien par un lanceur de sorts)",Dungeon Master´s Guide (SRD)
+55,Baguette de paralysie,baguette-de-paralysie ,"Cette baguette possède 7 charges. Si vous la tenez, vous pouvez utiliser une action pour dépenser 1 de ses charges et lancer un fin rayon bleu du bout de la baguette vers une créature que vous pouvez voir à 18 mètres ou moins de vous. La cible doit réussir un jet de sauvegarde de Constitution DD 15 ou être paralysée pour 1 minute. À la fin de chacun de ses tours, la cible peut faire refaire un jet de sauvegarde, mettant fin à l'effet pour elle-même en cas de réussite.
+
+","Baguette, rare (nécessite un lien par un lanceur de sorts)",Dungeon Master´s Guide (SRD)
+56,Baguette de peur,baguette-de-peur ,"Cette baguette possède 7 charges pour les propriétés suivantes. Elle récupère 1d6 + 1 charges dépensées chaque jour à l'aube. Lorsque vous dépensez la dernière charge de la baguette, lancez un d20. Sur un 1, la baguette tombe en cendre et est détruite.
+
+","Baguette, rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+57,Baguette de projectiles magiques,baguette-de-projectiles-magiques ,"Cette baguette possède 7 charges. Tant que vous la tenez, vous pouvez utiliser une action pour dépenser de 1 ou plus de ses charges pour lancer le sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=projectile-magique"">projectile magique</a> depuis la baguette. Pour 1 charge, vous lancez le sort comme si vous utilisiez un emplacement de sort de niveau 1, et vous augmentez le niveau d'emplacement de sort de un pour chaque charge additionnelle dépensée.
+
+","Baguette, peu commun",Dungeon Master´s Guide (SRD)
+58,Baguette de pyrotechnicien,baguette-de-pyrotechnicien ,"Cette baguette possède 7 charges. Lorsque vous la tenez, vous pouvez utiliser une action pour dépenser 1 charge et créer un éclat inoffensif de lumière multicolore à un point que vous pouvez voir dans un rayon de 18 mètres autour de vous. L'éclat de lumière est accompagné d'un crépitement qui peut être entendu jusqu'à 90 mètres de distance. La lumière est aussi vive qu'une flamme de torche mais ne dure qu'une seconde. La baguette récupère 1d6 + 1 charges dépensées chaque jour à l'aube. Si vous dépensez la dernière charge de la baguette, lancez un d20. Sur un résultat de 1, la baguette éclate dans un spectacle pyrotechnique inoffensif et est détruite.
+
+","Baguette, commun",Xanathar´s Guide to Everything
+59,Baguette de toile d'araignée,baguette-de-toile-d-araignee ,"Cette baguette possède 7 charges. Si vous la tenez, vous pouvez utiliser une action pour dépenser 1 de ses charges et jeter le sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=toile-d-araignee"">toile d'araignée</a> (sauvegarde DD 15).
+
+","Baguette, peu commun (nécessite un lien par un lanceur de sorts)",Dungeon Master´s Guide (SRD)
+60,Baguette des entraves,baguette-des-entraves ,"Cette baguette possède 7 charges pour les propriétés suivantes. Elle récupère 1d6 + 1 charges dépensées chaque jour à l'aube. Lorsque vous dépensez la dernière charge, lancez 1d20. Sur un 1, la baguette tombe en cendre et est détruite.
+
+","Baguette, rare (nécessite un lien par un lanceur de sorts)",Dungeon Master´s Guide (SRD)
+61,Baguette des merveilles,baguette-des-merveilles ,"Cette baguette possède 7 charges. Tant que vous la portez, vous pouvez utiliser une action pour dépenser 1 de ses charges et choisir une cible se trouvant à 36 mètres de vous. La cible peut être une créature, un objet, ou un point dans l'espace. Lancez un d100 et consultez la table qui suit pour découvrir ce qui survient.
+
+","Baguette, rare (nécessite un lien avec un lanceur de sorts)",Dungeon Master´s Guide (SRD)
+62,Baguette des secrets,baguette-des-secrets ,"Cette baguette possède 3 charges. Si vous la tenez, vous pouvez utiliser une action pour dépenser 1 de ses charges et si un piège ou une porte secrète se trouve dans un rayon de 9 mètres autour de vous, la baguette tremble et pointe vers le plus proche de vous. La baguette récupère 1d3 charges dépensées chaque jour à l'aube.
+
+","Baguette, peu commun",Dungeon Master´s Guide (SRD)
+63,Baguette du grincheux,baguette-du-grincheux ,"Cette baguette possède 3 charges. Lorsque vous la tenez, vous pouvez utiliser une action pour dépenser 1 charge et cibler un humanoïde que vous pouvez voir à 9 mètres ou moins de vous. La cible doit réussir un jet de sauvegarde de Charisme DD 10 ou être forcée d'être grincheux pendant 1 minute. La baguette récupère toutes les charges dépensées chaque jour à l'aube.
+
+","Baguette, commun",Xanathar´s Guide to Everything
+64,Baguette du jovial,baguette-du-jovial ,"Cette baguette possède 3 charges. Lorsque vous la tenez, vous pouvez utiliser une action pour dépenser 1 charge et cibler un humanoïde que vous pouvez voir à 9 mètres ou moins de vous. La cible doit réussir un jet de sauvegarde de Charisme DD 10 ou être forcée de sourire pendant 1 minute. La baguette récupère toutes les charges dépensées chaque jour à l'aube.
+
+","Baguette, commun",Xanathar´s Guide to Everything
+65,"Baguette du mage de guerre +1, +2 ou +3",baguette-du-mage-de-guerre-1-2-ou-3 ,"Lorsque vous tenez cette baguette, vous gagnez un bonus aux jets d'attaque des sorts. Le bonus est déterminé par la rareté de la baguette. En outre, vous ignorez les abris partiels lorsque vous effectuez une attaque avec un sort.
+
+","Baguette, peu commun (+1) rare (+2) ou très rare (+3) (nécessite un lien par un lanceur de sorts)",Dungeon Master´s Guide (SRD)
+66,Balai volant,balai-volant ,"Ce balai de bois pèse 1,5 kg et ressemble à un balai normal jusqu'à ce que vous l'enfourchiez à califourchon et prononciez son mot de commande. Il se met alors à planer et peut être chevauché dans les airs. Sa vitesse de vol est de 15 mètres. Il peut porter 200 kg, mais s'il en transporte plus de 100, sa vitesse est limitée à 9 mètres. Le balai cesse de planer une fois que vous atterrissez.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide (SRD)
+67,Bandeau d'intelligence,bandeau-d-intelligence ,"Votre Intelligence est de 19 tant que vous portez ce bandeau. Le serre-tête n'a aucun effet sur vous si votre Intelligence est de 19 ou plus sans lui.
+
+","Objet merveilleux, peu commun (nécessite un lien)",Dungeon Master´s Guide (SRD)
+68,Bateau pliable,bateau-pliable ,"Cet objet ressemble à une boîte en bois de 30 cm de long, 15 cm de large, et 15 cm de hauteur. Il pèse 2 kg et flotte. Il peut être ouvert pour y entreposer des objets à l'intérieur. Cet objet a également trois mots de commande, chacun nécessitant une action pour être prononcé.
+
+","Objet merveilleux, rare",Dungeon Master´s Guide (SRD)
+69,Bâton d'envoûtement,baton-d-envoutement ,"Tant que vous tenez ce bâton, vous pouvez utiliser une action pour dépenser l'une de ses 10 charges afin de lancer le sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=charme-personne"">charme-personne</a>, <a href=""https://www.aidedd.org/dnd/sorts.php?vf=injonction"">injonction</a> ou <a href=""https://www.aidedd.org/dnd/sorts.php?vf=comprehension-des-langues"">compréhension des langues</a> en utilisant votre propre DD des sorts. Le bâton peut également être utilisé en tant qu'arme magique.
+
+","Bâton, rare (nécessite un lien avec un barde, un clerc, un druide, un ensorceleur, un magicien ou un occultiste)",Dungeon Master´s Guide (SRD)
+70,Bâton de feu,baton-de-feu ,"Vous obtenez la résistance aux dégâts de feu tant que vous tenez ce bâton.
+
+","Bâton, très rare (nécessite un lien avec un druide, un ensorceleur, un magicien ou un occultiste)",Dungeon Master´s Guide (SRD)
+71,Bâton de flétrissement,baton-de-fletrissement ,"Ce bâton possède 3 charges et récupère 1d3 charges dépensées chaque jour à l'aube.
+
+","Bâton, rare (nécessite un lien par un clerc, un druide ou un occultiste)",Dungeon Master´s Guide (SRD)
+72,Bâton de givre,baton-de-givre ,"Vous obtenez la résistance aux dégâts de froid tant que vous tenez ce bâton.
+
+","Bâton, très rare (nécessite un lien avec un druide, un ensorceleur, un magicien ou un occultiste)",Dungeon Master´s Guide (SRD)
+73,Bâton de grand essaim,baton-de-grand-essaim ,"Ce bâton possède 10 charges et récupère 1d6 + 4 charges dépensées chaque jour à l'aube. Si vous dépensez la dernière charge, lancez un d20. Sur un résultat de 1, un essaim d'insectes consomme et détruit le bâton, puis disparaît.
+
+","Bâton, rare (nécessite un lien avec un barde, un clerc, un druide, un ensorceleur, un magicien ou un occultiste)",Dungeon Master´s Guide (SRD)
+74,Bâton de guérison,baton-de-guerison ,"Ce bâton possède 10 charges. Tant que vous le tenez, vous pouvez utiliser une action pour dépenser 1 ou plusieurs charges afin de lancer l'un des sorts suivants tout en utilisant votre propre DD des sorts et le modificateur de votre caractéristique d'incantation : <a href=""https://www.aidedd.org/dnd/sorts.php?vf=soins"">soins</a> (1 charge par niveau d'emplacement de sort, jusqu'au niveau 4 maximum), <a href=""https://www.aidedd.org/dnd/sorts.php?vf=restauration-partielle"">restauration partielle</a> (2 charges) ou <a href=""https://www.aidedd.org/dnd/sorts.php?vf=soins-de-groupe"">soins de groupe</a> (5 charges).
+
+","Bâton, rare (nécessite un lien avec un barde, un clerc ou un druide)",Dungeon Master´s Guide (SRD)
+75,Bâton de la vipère,baton-de-la-vipere ,"Vous pouvez utiliser une action bonus pour prononcer le mot de commande de ce bâton et ainsi animer la tête du bâton qui devient alors un serpent venimeux pendant 1 minute. En utilisant une autre action bonus pour prononcer de nouveau le mort de commande, vous faites revenir le bâton à sa forme initiale.
+
+","Bâton, peu commun (nécessite un lien avec un clerc, un druide ou un occultiste)",Dungeon Master´s Guide
+76,Bâton de surpuissance,baton-de-surpuissance ,"Ce bâton peut être utilisé comme un bâton (arme) magique conférant un bonus de +2 aux jets d'attaque et de dégâts effectués avec lui. Tant que vous le tenez, vous gagnez un bonus de +2 à la Classe d'Armure, aux jets de sauvegarde, et aux jets d'attaque avec un sort.
+
+","Bâton, très rare (nécessite un lien avec un ensorceleur, un magicien ou un occultiste)",Dungeon Master´s Guide (SRD)
+77,Bâton de tonnerre et de foudre,baton-de-tonnerre-et-de-foudre ,"Ce bâton peut être manié comme un bâton magique qui octroie un bonus de +2 à l'attaque et aux dégâts. Il a également les propriétés supplémentaires suivantes. Quand une de ces propriétés est utilisée, elle ne peut être réutilisée avant la prochaine aube.
+
+","Bâton, très rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+78,Bâton des chants d'oiseaux,baton-des-chants-d-oiseaux ,"Ce bâton en bois est décoré de sculptures d'oiseaux et possède 10 charges. Lorsque vous le tenez, vous pouvez utiliser une action pour dépenser 1 charge et lui faire créer l'un des sons suivants jusqu'à une portée de 18 mètres : le gazouillis d'un pinson, le croassement d'un corbeau, le cancan d'un canard, le gloussement d'une poule, celui-ci d'une oie, l'appel d'un huard, le glouglou d'une dinde, le cri d'une mouette, le hululement d'un hibou ou le cri d'un aigle. Le bâton récupère 1d6 + 4 charges dépensées chaque jour à l'aube. Si vous dépensez la dernière charge, lancez un d20. Sur un résultat de 1, le bâton explose en un nuage inoffensif de plumes d'oiseaux et est perdu à jamais.
+
+","Bâton, commun",Xanathar´s Guide to Everything
+79,Bâton des forêts,baton-des-forets ,"Ce bâton peut être manié comme un bâton magique qui octroie un bonus de +2 à l'attaque et aux dégâts. Lorsque vous le tenez, vous obtenez un bonus de +2 aux jets d'attaque des sorts.
+
+","Bâton, rare (nécessite un lien par un druide)",Dungeon Master´s Guide (SRD)
+80,Bâton du python,baton-du-python ,"Vous pouvez utiliser une action pour prononcer le mot de commande du bâton et le lancer au sol dans un rayon de 3 mètres autour de vous. Le bâton devient un serpent constricteur géant (voir le Manuel des Monstres pour les statistiques) sous votre contrôle et qui agit selon son propre score d'initiative. En utilisant une action bonus pour prononcer de nouveau le mot de commande, le bâton reprend sa forme originale dans l'espace qu'occupait le serpent.
+
+","Bâton, peu commun (nécessite un lien par un clerc, un druide ou un occultiste)",Dungeon Master´s Guide (SRD)
+81,Bâton du thaumaturge,baton-du-thaumaturge ,"Ce bâton peut être utilisé comme un bâton (arme) magique conférant un bonus de +2 aux jets d'attaque et de dégâts effectués avec lui. Tant que vous le tenez, vous bénéficiez d'un bonus de +2 aux jets d'attaque des sorts.
+
+","Bâton, légendaire (nécessite un lien avec un ensorceleur, un magicien ou un occultiste)",Dungeon Master´s Guide (SRD)
+82,Bâton floral,baton-floral ,"Ce bâton en bois possède 10 charges. Lorsque vous le tenez, vous pouvez utiliser une action pour dépenser 1 charge et faire germer une fleur sur une parcelle de terre à 1,50 mètre ou moins de vous, ou depuis le bâton. À moins que vous ne choisissiez un type de fleur spécifique, le personnel crée une marguerite au parfum doux. La fleur est inoffensive et non magique, et elle pousse ou se fane comme le ferait une fleur normale. Le bâton récupère 1d6 + 4 charges dépensées chaque jour à l'aube. Si vous dépensez la dernière charge, lancez un d20. Sur un résultat de 1, le bâton se transforme en pétales de fleurs et est perdu à jamais.
+
+","Bâton, commun",Xanathar´s Guide to Everything
+83,Bâton orné,baton-orne ,"Si vous placez un objet ne pesant pas plus de 500 grammes (comme un éclat de cristal, un œuf ou une pierre) au-dessus du bout du bâton tout en le tenant, l'objet flotte 2,50 cm au dessus du bout du bâton et y reste jusqu'à ce qu'il soit enlevé ou jusqu'à ce que le bâton ne soit plus en votre possession. Le bâton peut avoir jusqu'à trois objets flottant au-dessus de sa pointe à un moment donné. Lorsque vous tenez le bâton, vous pouvez faire tourner lentement un ou plusieurs objets sur place.
+
+","Bâton, commun",Xanathar´s Guide to Everything
+84,Bâton percussif,baton-percussif ,"Ce bâton peut être utilisé comme une arme magique conférant un bonus de +3 aux jets d'attaque et de dégâts effectués avec lui.
+
+","Bâton, très rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+85,Baume de Keoghtom,baume-de-keoghtom ,"Ce pot de verre, de 7,50 cm de diamètre, contient 1d4 + 1 doses d'un mélange épais qui sent vaguement l'aloès. Le pot et son contenu pèsent 500 g. Au prix d'une action, une dose de l'onguent peut être avalée ou appliquée sur la peau. La créature qui le reçoit récupère 2d8 + 2 points de vie, cesse d'être empoisonnée, et est guérie de toute maladie.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide (SRD)
+86,Bottes ailées,bottes-ailees ,"Tant que vous êtes équipé de ces bottes, vous avez une vitesse de vol égale à votre vitesse de déplacement. Vous pouvez utiliser les bottes pour voler pendant une durée de 4 heures maximum, que ce soit en une seule fois ou en cumulant plusieurs vols de courte durée, chaque utilisation des bottes consommant au minimum 1 minute de la durée d'utilisation total. Si vous êtes en plein vol lorsque la durée expire, vous descendez jusqu'au sol avec une allure de 9 mètres par round.
+
+","Objet merveilleux, peu commun (nécessite un lien)",Dungeon Master´s Guide (SRD)
+87,Bottes d'empreintes factices,bottes-d-empreintes-factices ,"Seuls les humanoïdes peuvent porter ces bottes. En les portant, vous pouvez choisir de laisser des traces d'un autre type d'humanoïde de votre taille.
+
+","Objet merveilleux, commun",Xanathar´s Guide to Everything
+88,Bottes de lévitation,bottes-de-levitation ,"Lorsque vous portez ces bottes, vous pouvez utiliser une action pour lancer le sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=levitation"">lévitation</a> sur vous-même à volonté.
+
+","Objet merveilleux, rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+89,Bottes de rapidité,bottes-de-rapidite ,"Lorsque vous portez ces bottes, vous pouvez utiliser une action bonus pour claquer vos talons l'un contre l'autre. Si vous le faites, les bottes doublent votre vitesse de marche et toute créature qui tente une attaque d'opportunité à votre encontre le fait avec un désavantage au jet d'attaque. Claquer des talons de nouveau permet de mettre fin à l'effet.
+
+","Objet merveilleux, rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+90,Bottes de sept lieues,bottes-de-sept-lieues ,"Lorsque vous portez ces bottes, votre vitesse de marche passe à 9 mètres, à moins qu'elle ne soit déjà supérieure à cela, et votre vitesse n'est pas réduite par le fait d'être encombré ou de porter une armure lourde. En outre, vous pouvez sauter trois fois la distance normale, bien que vous ne puissiez pas sauter plus loin que ce qu'il vous reste de mouvement le permet.
+
+","Objet merveilleux, peu commun (nécessite un lien)",Dungeon Master´s Guide (SRD)
+91,Bottes des terres gelées,bottes-des-terres-gelees ,"Ces bottes de fourrure sont chaudes et confortables. Tant que vous les portez, vous profitez des bénéfices suivants :
+
+","Objet merveilleux, peu commun (nécessite un lien)",Dungeon Master´s Guide (SRD)
+92,Bottes elfiques,bottes-elfiques ,"Lorsque vous portez ces bottes, vos pas ne produisent aucun son, quelle que soit la surface sur laquelle vous vous déplacez. Vous avez également un avantage aux jets de Dextérité (Discrétion) liés à un déplacement silencieux.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide (SRD)
+93,"Bouclier +1, +2 ou +3",bouclier-1-2-ou-3 ,"Si vous tenez en main ce bouclier, vous obtenez un bonus à la CA déterminé par la rareté du bouclier. Ce bonus vient en plus du bonus normal du bouclier à la CA.
+
+","Armure (bouclier), peu commun (+1) rare (+2) ou très rare (+3)",Dungeon Master´s Guide (SRD)
+94,Bouclier animé,bouclier-anime ,"Lorsque vous tenez ce bouclier, vous pouvez prononcer son mot de commande au prix d'une action bonus pour l'animer. Le bouclier saute alors en l'air et flotte dans votre espace pour vous protéger comme si vous le maniez, mais en vous laissant les mains libres. Le bouclier reste animé pendant 1 minute, jusqu'à ce que vous utilisiez une action bonus pour mettre fin à l'effet, ou jusqu'à ce que vous soyez incapable d'agir ou mort. Le bouclier tombe alors au sol ou dans une de vos mains si vous en avez une de libre.
+
+","Armure (bouclier), très rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+95,Bouclier antiprojectiles,bouclier-antiprojectiles ,"Vous gagnez un bonus de +2 à la CA contre les attaques à distance lorsque vous maniez ce bouclier. Ce bonus vient en plus du bonus normal à la CA du bouclier. En outre, chaque fois qu'un attaquant effectue une attaque à distance contre une cible à 1,50 mètre ou moins de vous, vous pouvez utiliser votre réaction pour devenir la cible de l'attaque.
+
+","Armure (bouclier), rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+96,Bouclier d'attraction des projectiles,bouclier-d-attraction-des-projectiles ,"Tant que vous tenez ce bouclier, vous avez la résistance aux dégâts des attaques à distance avec une arme.
+
+","Armure (bouclier), rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+97,Bouclier expressif,bouclier-expressif ,"Le devant de ce bouclier a la forme d'un visage. Lorsque vous portez le bouclier, vous pouvez utiliser une action bonus pour modifier l'expression des visages.
+
+","Armure (bouclier), commun",Xanathar´s Guide to Everything
+98,Bouclier gardesort,bouclier-gardesort ,"Tant que vous tenez ce bouclier, vous avez un avantage à vos jets de sauvegarde effectués contre des sorts ou tout autre effet magique, et les attaques avec un sort ont un désavantage contre vous.
+
+","Armure (bouclier), très rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+99,Bouclier sentinelle,bouclier-sentinelle ,"Tant que vous êtes équipé de ce bouclier, vous avez un avantage à vos jets d'initiative et à vos jets de Sagesse (Perception). Le bouclier est décoré d'un symbole représentant un œil.
+
+","Armure (bouclier), peu commun",Dungeon Master´s Guide
+100,Boule de cristal,boule-de-cristal ,"La boule de cristal typique, un objet très rare, a un diamètre de 15 cm. Tant que vous la touchez, vous pouvez lancer un sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=scrutation"">scrutation</a> (sauvegarde DD 17) grâce à elle.
+
+","Objet merveilleux, très rare ou légendaire (nécessite un lien)",Dungeon Master´s Guide (SRD)
+101,Bourse à épices magique d'Heward,bourse-a-epices-magique-d-heward ,"Cette bourse semble vide et possède de 10 charges. Lorsque vous la tenez, vous pouvez utiliser une action pour dépenser 1 de ses charges, prononcer le nom d'un assaisonnement alimentaire non magique (sel, poivre, safran ou coriandre par exemple) et retirer une pincée de l'assaisonnement désiré du sachet. Une pincée suffit pour assaisonner un repas. La bourse récupère 1d6 + 4 charges dépensées chaque jour à l'aube.
+
+","Objet merveilleux, commun",Xanathar´s Guide to Everything
+102,Bouteille de l'éfrit,bouteille-de-l-efrit ,"Cette bouteille en laiton peinte pèse 500 grammes. Lorsque vous utilisez une action pour en retirer le bouchon, un épais nuage de fumée se déverse de la bouteille. À la fin de votre tour, la fumée disparaît en une myriade de flammèches inoffensives, et un éfrit apparaît dans un espace inoccupé dans un rayon de 9 mètres autour de vous.
+
+","Objet merveilleux, très rare",Dungeon Master´s Guide (SRD)
+103,Bouteille fumigène,bouteille-fumigene ,"De la fumée s'échappe de l'orifice de cette bouteille en laiton fermée par un bouchon de plomb. La bouteille pèse 500 grammes. Lorsque vous utilisez votre action pour enlever le bouchon, un épais nuage de fumée s'échappe de la bouteille dans un rayon de 18 mètres. La zone a une visibilité nulle. Chaque minute que la bouteille reste ouverte tout en étant dans le nuage, le rayon augmente de 3 mètres jusqu'à atteindre un rayon maximum de 36 mètres.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide (SRD)
+104,Bracelets d'archer,bracelets-d-archer ,"Tant que vous portez ces bracelets, vous avez la maîtrise des arcs longs et courts, et vous gagnez un bonus de +2 aux jets de dégâts des attaques à distance réalisés avec ces armes.
+
+","Objet merveilleux, peu commun (nécessite un lien)",Dungeon Master´s Guide (SRD)
+105,Bracelets de défense,bracelets-de-defense ,"Lorsque vous portez ces bracelets, vous obtenez un bonus de +2 à votre CA, à condition de ne porter aucune armure et de ne pas utiliser de bouclier.
+
+","Objet merveilleux, rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+106,Brasero de contrôle des élémentaires du feu,brasero-de-controle-des-elementaires-du-feu ,"Tant qu'un feu brûle dans ce brasero en cuivre, vous pouvez utiliser une action pour prononcer son mot de commande et convoquer un élémentaire du feu, comme si vous aviez lancé le sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=invocation-d-elementaire"">invocation d'élémentaire</a>. Le brasero ne peut plus être utilisé de cette façon avant la prochaine aube. Le brasero pèse 2,5 kg.
+
+","Objet merveilleux, rare",Dungeon Master´s Guide (SRD)
+107,Broche de défense,broche-de-defense ,"Tant que vous portez cette broche, vous obtenez la résistance aux dégâts de force, et êtes immunisé aux dégâts du sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=projectile-magique"">projectile magique</a>.
+
+","Objet merveilleux, peu commun (nécessite un lien)",Dungeon Master´s Guide (SRD)
+108,Cadenas sournois,cadenas-sournois ,"Cette serrure semble être une serrure ordinaire et vient avec une seule clé. Ses gobelets s'ajustent magiquement pour frustrer les cambrioleurs. Les jets de Dextérité effectués pour crocheter la serrure ont un désavantage.
+
+","Objet merveilleux, commun",Xanathar´s Guide to Everything
+109,Canne de vétéran,canne-de-veteran ,"Lorsque vous saisissez cette canne et utilisez une action bonus pour prononcer le mot de commande, elle se transforme en une épée longue ordinaire et cesse d'être magique.
+
+","Objet merveilleux, commun",Xanathar´s Guide to Everything
+110,Cape à la mode,cape-a-la-mode ,"Lorsque vous portez cette cape, vous pouvez utiliser une action bonus pour changer le style, la couleur et la qualité apparente du vêtement. Le poids de la cape ne change pas. Quelle que soit son apparence, la cape ne peut être qu'une cape. Bien qu'ele puisse reproduire l'apparence de capes magiques, elle n'acquiert aucune de leurs propriétés magiques.
+
+","Objet merveilleux, commun",Xanathar´s Guide to Everything
+111,Cape d'invisibilité,cape-d-invisibilite ,"Tant que vous êtes équipé de cette cape, vous pouvez rabattre sa capuche sur votre tête ce qui a pour effet de vous rendre invisible. Tant que vous êtes invisible, tout ce que vous portez ou transportez est également invisible. Vous redevenez visible lorsque vous retirez votre capuche. Mettre ou enlever la capuche nécessite une action.
+
+","Objet merveilleux, légendaire (nécessite un lien)",Dungeon Master´s Guide
+112,Cape de déplacement,cape-de-deplacement ,"Tant que vous êtes équipé de cette cape, elle projette une illusion de vous proche de là où vous vous trouvez. De fait, les créatures ont un désavantage aux jets d'attaque effectués contre vous. Si vous subissez des dégâts, la propriété de la cape cesse de fonctionner jusqu'au début de votre prochain tour. Cette capacité est annulée si vous être incapable d'agir, entravé, ou incapable de bouger de quelle que manière que ce soit.
+
+","Objet merveilleux, rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+113,Cape de l'arachnide,cape-de-l-arachnide ,"Ce vêtement délicat a été tressé à partir de soie noire et de discrets fils d'argent. Tant que vous en êtes équipé, vous gagnez les avantages suivants :
+
+","Objet merveilleux, très rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+114,Cape de la chauve-souris,cape-de-la-chauve-souris ,"Tant que vous êtes équipé de cette cape, vous avez un avantage aux jets de Dextérité (Discrétion). Dans une zone de lumière faible ou de ténèbres, vous pouvez attraper les bords de la cape avec vos deux mains et l'utiliser pour voler avec une vitesse de 12 mètres. Si par malheur vous lâchez les bords de la cape alors que vous êtes en train de voler grâce à elle, ou si vous ne vous trouvez plus dans une zone de lumière faible ou de ténèbres, vous perdez cette vitesse de vol.
+
+","Objet merveilleux, rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+115,Cape de la raie manta,cape-de-la-raie-manta ,"Tant que vous êtes équipé de cette cape et que vous avez enfilé sa capuche, vous pouvez respirer sous l'eau, et vous obtenez une vitesse de nage de 18 mètres. Enfiler ou retirer la capuche prend une action.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide (SRD)
+116,Cape de protection,cape-de-protection ,"Vous bénéficiez d'un bonus de +1 à la CA et aux jets de sauvegarde tant que vous êtes équipé de cette cape.
+
+","Objet merveilleux, peu commun (nécessite un lien)",Dungeon Master´s Guide (SRD)
+117,Cape de vol,cape-de-vol ,"Lorsque vous portez cette cape, vous pouvez utiliser une action pour prononcer son mot de commande. Cela transforme la cape en une paire d'ailes de chauve-souris ou d'oiseau sur votre dos pendant 1 heure, ou jusqu'à ce que vous répétiez le mot de commande au prix d'une action. Les ailes vous donnent une vitesse de vol de 18 mètres. Quand elles disparaissent, vous ne pouvez plus les réutiliser durant 1d12 heures.
+
+","Objet merveilleux, rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+118,Cape du prestidigitateur,cape-du-prestidigitateur ,"Cette cape sent légèrement le soufre. Tant que vous en êtes équipé, vous pouvez vous en servir, en utilisant votre action, pour lancer le sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=porte-dimensionnelle"">porte dimensionnelle</a>. Cette propriété de la cape ne peut être réutilisée avant la prochaine aube.
+
+","Objet merveilleux, rare",Dungeon Master´s Guide (SRD)
+119,Cape elfique,cape-elfique ,"Lorsque vous portez cette cape avec sa capuche rabattue sur votre tête, les jets de Sagesse (Perception) pour vous voir ont un désavantage, et vous avez un avantage aux jets de Dextérité (Discrétion) pour vous cacher, grâce aux changements de couleur de la cape qui vous aident à vous camoufler. Mettre ou enlever la capuche nécessite une action.
+
+","Objet merveilleux, peu commun (nécessite un lien)",Dungeon Master´s Guide (SRD)
+120,Cape virevoltante,cape-virevoltante ,"Lorsque vous portez cette cape, vous pouvez utiliser une action bonus pour la faire tournoyer de façon spectaculaire.
+
+","Objet merveilleux, commun",Xanathar´s Guide to Everything
+121,Capuchon de respiration aquatique,capuchon-de-respiration-aquatique ,"Si vous rabattez sur votre tête ce capuchon et que vous êtes sous l'eau, vous pouvez, en utilisant une action, prononcer son mot de commande et ainsi créer une boule d'air autour de votre tête. Celle-ci vous permet de respirer normalement sous l'eau. Cette bulle reste en place jusqu'à ce que vous prononciez de nouveau le mot de commande, que vous quittiez le capuchon, ou que vous ne soyez plus immergé.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide
+122,Carafe intarissable,carafe-intarissable ,"Cette flasque bouchée fait de petits clapotis lorsqu'elle est secouée, comme si elle contenait de l'eau. La carafe pèse 1 kg.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide (SRD)
+123,Carillon d'ouverture,carillon-d-ouverture ,"Ce tube de métal creux mesure environ 30 cm de long et pèse 500 grammes. Vous pouvez le frapper en utilisant une action, et le pointer vers un objet pouvant être ouvert et se trouvant à 36 mètres de vous maximum, comme une porte, un couvercle ou une serrure. En faisant cela, le carillon sonne d'un ton clair, et une serrure ou un loquet sur l'objet s'ouvre, à moins que le son ne puisse pas atteindre l'objet. S'il ne reste aucune serrure ou loquet en place, l'objet s'ouvre de lui-même. Le carillon peut être utilisé dix fois. Après ces dix utilisations, il se fissure et ne sert plus à rien.
+
+","Objet merveilleux, rare",Dungeon Master´s Guide (SRD)
+124,Carquois d'Ehlonna,carquois-d-ehlonna ,"Chacun des trois compartiments du carquois est connecté à un espace extradimensionnel qui permet au carquois de contenir un grand nombre d'objets tout en ne pesant jamais plus de 1 kg au total. Le plus petit compartiment peut contenir jusqu'à 60 flèches, carreaux, ou objets similaires. Le compartiment de taille moyenne peut contenir jusqu'à 18 javelines ou objets similaires. Le plus grand compartiment peut contenir jusqu'à 6 longs objets, comme un arc, un bâton, ou une lance.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide (SRD)
+125,Cartes d'illusion,cartes-d-illusion ,"L'étui contient un ensemble de cartes en parchemin. Un jeu complet comprend 34 cartes. Un paquet trouvé dans un trésor a généralement perdu 1d20 - 1 cartes.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide (SRD)
+126,Cartes merveilleuses,cartes-merveilleuses ,"Généralement découvert dans un boitier ou une pochette, ce jeu de carte contient un certain nombre de cartes faites en ivoire ou en vélin. La plupart (75 %) de ces jeux de carte ne contiennent que 13 cartes, mais les autres en comptent 22.
+
+","Objet merveilleux, légendaire",Dungeon Master´s Guide (SRD)
+127,Ceinturon de force de géant,ceinturon-de-force-de-geant ,"Tant que vous portez ce ceinturon, votre valeur de Force change pour celle conférée par le ceinturon. L'objet n'a aucun effet sur vous si votre Force sans la ceinture est égale ou supérieure à celle du ceinturon.
+
+","Objet merveilleux, variable (nécessite un lien)",Dungeon Master´s Guide (SRD)
+128,Ceinturon des nains,ceinturon-des-nains ,"Tant que vous êtes équipé de cette ceinture, vous gagnez les bénéfices suivants :
+
+","Objet merveilleux, rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+129,Chandelle des profondeurs,chandelle-des-profondeurs ,"La flamme de cette bougie ne s'éteint pas lorsqu'elle est immergée dans l'eau. Elle émet de la lumière et de la chaleur comme une bougie normale.
+
+","Objet merveilleux, commun",Xanathar´s Guide to Everything
+130,Chapeau de déguisement,chapeau-de-deguisement ,"Tant que vous êtes équipé de ce chapeau, vous pouvez à volonté, par une action, l'utiliser pour lancer le sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=deguisement"">déguisement</a>. Le sort prend fin si le couvre-chef est retiré.
+
+","Objet merveilleux, peu commun (nécessite un lien)",Dungeon Master´s Guide (SRD)
+131,Chapeau de magicien,chapeau-de-magicien ,"Ce chapeau désuet en forme de cône est orné de croissants de lune et d'étoiles dorés. Tant que vous le portez, vous bénéficiez des avantages suivants :
+
+","Objet merveilleux, commun (nécessite un lien avec un magicien)",Xanathar´s Guide to Everything
+132,Chapeau de vermine,chapeau-de-vermine ,"Ce chapeau possède 3 charges. Lorsque vous le tenez, vous pouvez utiliser une action pour dépenser 1 de ses charges et prononcer un mot de commande qui invoque au choix une chauve-souris, une grenouille ou un rat. La créature invoquée apparaît magiquement dans le chapeau et essaie de s'éloigner de vous le plus rapidement possible. La créature n'est ni amicale ni hostile, et elle n'est pas sous votre contrôle. Elle se comporte comme une créature ordinaire de son espèce et disparaît après 1 heure ou si elle tombe à 0 point de vie. Le chapeau récupère toutes les charges dépensées chaque jour à l'aube.
+
+","Objet merveilleux, commun",Xanathar´s Guide to Everything
+133,Chaussons de pattes d'araignée,chaussons-de-pattes-d-araignee ,"Lorsque vous portez ces chaussures légères, vous pouvez monter, descendre et parcourir des surfaces verticales ou la tête à l'envers aux plafonds, tout en ayant les mains libres. Votre vitesse d'escalade est égale à votre vitesse de marche. Cependant, les chaussons ne vous permettent pas de vous déplacer de cette façon sur une surface glissante, comme sur de la glace ou de l'huile.
+
+","Objet merveilleux, peu commun (nécessite un lien)",Dungeon Master´s Guide (SRD)
+134,Chope de sobriété,chope-de-sobriete ,"Cette chope est sculpté d'un visage sévère sur un côté. Vous pouvez y boire de la bière, du vin ou toute autre boisson alcoolisée non magique sans vous enivrer. La chope n'a aucun effet sur les liquides magiques ou les substances nocives telles que le poison.
+
+","Objet merveilleux, commun",Xanathar´s Guide to Everything
+135,Cierge d'invocation,cierge-d-invocation ,"Cette mince chandelle est dédiée à une divinité et partage l'alignement de cette divinité. L'alignement du cierge peut être détecté avec un sort de <a href=""https://www.aidedd.org/dnd/sorts.php?vf=detection-du-mal-et-du-bien"">détection du mal et du bien</a>. Le MD choisit le dieu et l'alignement qui lui est associé ou détermine l'alignement du cierge de manière aléatoire.
+
+","Objet merveilleux, très rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+136,Cimeterre de rapidité,cimeterre-de-rapidite ,"Vous gagnez un bonus de +2 aux jets d'attaque et de dégâts effectués avec cette arme magique. De plus, vous pouvez à chacun de vos tours effectuer une attaque avec cette arme en utilisant votre action bonus.
+
+","Arme (cimeterre), très rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+137,Clé mystérieuse,cle-mysterieuse ,"Un point d'interrogation est gravé sur la tête de cette clé. La clé a 5% de chances de déverrouiller n'importe quelle serrure dans laquelle elle est insérée. Une fois qu'elle a déverrouillé quelque chose, la clé disparaît.
+
+","Objet merveilleux, commun",Xanathar´s Guide to Everything
+138,Colle universelle,colle-universelle ,"Cette visqueuse substance d'un blanc laiteux peut créer un lien adhésif permanent entre deux objets. Elle doit être stockée dans un pot ou une flasque dont l'intérieur a été au préalable enduit d'une huile d'insaisissabilité. Lorsqu'il est découvert le contenant renferme 1d6 + 1 doses.
+
+","Objet merveilleux, légendaire",Dungeon Master´s Guide (SRD)
+139,Collier d'adaptation,collier-d-adaptation ,"Lorsque vous portez ce collier, vous pouvez respirer normalement dans tout environnement, et vous avez un avantage aux jets de sauvegarde contre les vapeurs et gaz nocifs (comme les effets de <a href=""https://www.aidedd.org/dnd/sorts.php?vf=brume-mortelle"">brume mortelle</a> et de <a href=""https://www.aidedd.org/dnd/sorts.php?vf=nuage-nauseabond"">nuage nauséabond</a>, les poisons inhalés et les armes de souffle de certains dragons).
+
+","Objet merveilleux, peu commun (nécessite un lien)",Dungeon Master´s Guide (SRD)
+140,Collier de boules de feu,collier-de-boules-de-feu ,"Ce collier possède 1d6 + 3 perles. Vous pouvez utiliser une action pour détacher une perle et la jeter jusqu'à 18 mètres de distance. Quand elle atteint la fin de sa trajectoire, la perle explose comme une <a href=""https://www.aidedd.org/dnd/sorts.php?vf=boule-de-feu"">boule de feu</a> de niveau 3 (sauvegarde DD 15).
+
+","Objet merveilleux, rare",Dungeon Master´s Guide (SRD)
+141,Collier de perles de prière,collier-de-perles-de-priere ,"Ce collier possède 1d4 + 2 perles magiques fabriquées à partir d'aigue-marine, de perle noire ou de topaze. Il comporte également de nombreuses perles non magiques fabriquées à partir de pierres telles que l'ambre, l'héliotrope, la citrine, le corail, le jade, la perle ou le quartz. Si une perle magique est retirée du collier, celle-ci perd sa magie.
+
+","Objet merveilleux, rare (nécessite un lien par un clerc, druide ou paladin)",Dungeon Master´s Guide (SRD)
+142,Cor de dévastation,cor-de-devastation ,"Vous pouvez utiliser une action pour prononcer le mot de commande du cor puis souffler dedans. Le cor produit alors une explosion tonitruante dans un cône de 9 mètres et qui est audible à 180 mètres à la ronde. Chaque créature présente dans le cône doit effectuer un jet de sauvegarde de Constitution DD 15. En cas d'échec, une créature subit 5d6 dégâts de tonnerre et est assourdie pendant 1 minute. En cas de réussite au jet, une créature ne subit que la moitié des dégâts et n'est pas assourdie. Les créatures et les objets faits de verre ou de cristal ont un désavantage à leur jet de sauvegarde et subissent 10d6 dégâts de tonnerre au lieu de 5d6.
+
+","Objet merveilleux, rare",Dungeon Master´s Guide (SRD)
+143,Cor du Valhalla,cor-du-valhalla ,"Vous pouvez utiliser une action pour souffler dans ce cor. En réponse, des esprits guerriers venant du Valhalla apparaissent dans un rayon de 18 mètres autour de vous. Ils utilisent les statistiques du <a href=""https://www.aidedd.org/dnd/monstres.php?vf=berserker"">berserker</a>. Ils retournent au Valhalla au bout d'une heure ou lorsqu'ils tombent à 0 point de vie. Une fois que vous avez utilisé le cor, il ne peut pas être réutilisé avant que 7 jours ne se soient écoulés.
+
+","Objet merveilleux, rare (argent ou airain) très rare (bronze) ou légendaire (fer)",Dungeon Master´s Guide (SRD)
+144,Corde d'enchevêtrement,corde-d-enchevetrement ,"Cette corde est longue de 9 mètres et pèse 1,5 kg. Si vous tenez un bout de la corde et utilisez votre action pour prononcer le mot de commande, l'autre extrémité se précipite vers une créature que vous pouvez voir et se trouvant à 6 mètres de vous maximum pour l'enchevêtrer. La cible doit réussir un jet de sauvegarde de Dextérité DD 15 sous peine d'être entravée.
+
+","Objet merveilleux, rare",Dungeon Master´s Guide (SRD)
+145,Corde d'escalade,corde-d-escalade ,"Cette corde de soie longue de 18 mètres pèse 1,5 kg et peut supporter un poids maximal de 1500 kg. Si vous tenez un bout de la corde et utilisez une action pour prononcer le mot de commande, la corde s'anime. Par une action bonus, vous pouvez ordonner à l'autre extrémité de se déplacer jusqu'à la destination de votre choix. Cette extrémité se déplace alors de 3 mètres pendant votre tour au moment où vous lui avez donner votre premier ordre, puis elle continue de se déplacer de 3 mètres à chacun de vos tours suivants jusqu'à ce qu'elle atteigne sa destination, jusqu'à ce qu'elle ait parcouru une distance égale à sa longueur, ou jusqu'à ce que vous lui ordonniez de s'arrêter. Vous pouvez également demander à la corde de s'attacher en toute sécurité à un objet ou de se détacher, de se nouer ou de se dénouer, ou de s'enrouler pour pouvoir la ranger.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide (SRD)
+146,Corde réparable,corde-reparable ,"Vous pouvez couper cette corde de chanvre de 15 mètres en un nombre quelconque de petits morceaux, puis utiliser une action pour prononcer un mot de commande et faire en sorte que tous les morceaux se recollent. Les pièces doivent être en contact les unes avec les autres et ne pas être utilisées pour autre chose. Une corde réparable est à jamais coupée si une partie de celle-ci est perdue ou détruite.
+
+","Objet merveilleux, commun",Xanathar´s Guide to Everything
+147,Corne d'alarme silencieuse,corne-d-alarme-silencieuse ,"Cette corne possède 4 charges. Lorsque vous utilisez une action pour souffler dans la corne, une créature de votre choix peut l'entendre retentir, à condition qu'elle se trouve dans un rayon de 180 mètres autour de la corne et qu'elle ne soit pas assourdie. Aucune autre créature n'entend le son provenant de la corne. Le cor récupère 1d4 charges dépensées chaque jour à l'aube.
+
+","Objet merveilleux, commun",Xanathar´s Guide to Everything
+148,Cornet acoustique,cornet-acoustique ,"Si vous le portez à votre oreille, ce cornet supprime les effets de l'état assourdi sur vous-même, vous permettant d'entendre normalement.
+
+","Objet merveilleux, commun",Xanathar´s Guide to Everything
+149,Cruche alchimique,cruche-alchimique ,"Cette cruche en céramique semble être en mesure de contenir 4 litres de liquide et pèse 6 kg, vide ou pleine. Des sons de ballonnements se font entendre de l'intérieur de la jarre quand elle est secouée, même si elle est vide.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide (BR)
+150,Cube de force,cube-de-force ,"Ce cube fait environ 2,50 cm d'arête. Chaque face possède une marque distincte sur laquelle on peut appuyer. Le cube débute en possédant 36 charges, et il récupère 1d20 charges dépensées chaque jour à l'aube.
+
+","Objet merveilleux, rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+151,Cube des plans,cube-des-plans ,"Ce cube de 7,50 cm de côté irradie une énergie magique palpable. Les six faces du cube sont chacune reliées à un plan d'existence différent, dont l'un d'eux est le plan matériel. Les autres faces sont reliées à des plans choisis par le MD.
+
+","Objet merveilleux, légendaire",Dungeon Master´s Guide (SRD)
+152,Dague venimeuse,dague-venimeuse ,"Vous obtenez un bonus de +1 aux jets d'attaque et de dégâts réalisés avec cette arme magique.
+
+","Arme (dague), rare",Dungeon Master´s Guide (SRD)
+153,Dé de charlatan,de-de-charlatan ,"Chaque fois que vous lancez ce dé à six faces, vous pouvez contrôler le résultat.
+
+","Objet merveilleux, commun (nécessite un lien)",Xanathar´s Guide to Everything
+154,Déluge,deluge ,"Déluge est un puissant marteau de guerre forgé par les nains et perdu dans le donjon de la Montagne de la Plume Blanche.
+
+","Arme (marteau de guerre), légendaire (nécessite un lien avec un nain)",Dungeon Master´s Guide
+155,Diadème de destruction,diademe-de-destruction ,"Tant que vous êtes équipé de ce diadème, vous pouvez l'utiliser en prenant une action pour lancer le sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=rayon-ardent"">rayon ardent</a>. Lorsque vous effectuez le jet d'attaque avec un sort, vous le faite en utilisant un bonus de +5 à l'attaque. Le diadème ne peut être réutilisé de la sorte avant la prochaine aube.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide (SRD)
+156,Élixir de jouvence,elixir-de-jouvence ,"Lorsque vous buvez cette potion, votre âge physique est réduit de 1d6 + 6 ans, jusqu'à un minimum de 13 ans. Par la suite, chaque fois que vous buvez de nouveau une potion de longévité, il y a une probabilité cumulative de 10 % que la potion vous fasse vieillir de 1d6 + 6 ans au lieu de rajeunir. Une queue de scorpion, un croc de vipère, une araignée morte et un tout petit cœur qui, contre toute attente, bat encore, sont en suspension dans ce liquide ambre. Les ingrédients disparaissent lorsque la potion est ouverte.
+
+","Potion, très rare",Dungeon Master´s Guide (BR)
+157,Élixir de santé,elixir-de-sante ,"Lorsque vous buvez cette potion, elle guérit de toute maladie qui vous afflige, et supprime les états aveuglé, assourdi, paralysé et empoisonné. Le liquide rouge clair possède de minuscules bulles de lumière.
+
+","Potion, rare",Dungeon Master´s Guide (BR)
+158,Encensoir de contrôle des élémentaires de l'air,encensoir-de-controle-des-elementaires-de-l-air ,"Tant que de l'encens brûle dans cet encensoir, vous pouvez utiliser une action pour prononcer le mot de commande de l'encensoir et invoquer un élémentaire de l'air, comme si vous aviez lancé le sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=invocation-d-elementaire"">invocation d'élémentaire</a>. L'encensoir ne peut être réutilisé de la sorte avant la prochaine aube.
+
+","Objet merveilleux, rare",Dungeon Master´s Guide (SRD)
+159,Épée acérée,epee-aceree ,"Lorsque vous attaquez un objet avec cette épée magique et le touchez, les dés de dégâts de votre arme sont maximisés contre cette cible.
+
+","Arme (toute épée qui inflige des dégâts tranchants), très rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+160,Épée ardente,epee-ardente ,"Vous pouvez utiliser une action bonus pour prononcer le mot de commande de l'épée, ce qui fait jaillir des flammes de la lame. Ces flammes génèrent une lumière vive dans un rayon de 12 mètres et une lumière faible sur 12 mètres supplémentaires. Tant que l'épée est en feu, elle inflige 2d6 dégâts de feu supplémentaires à toute cible qu'elle touche. Les flammes perdurent jusqu'à ce que vous utilisiez une action bonus pour prononcer le mot de commande de nouveau, ou jusqu'à ce que vous lâchiez l'épée ou la rengainiez.
+
+","Arme (toute épée), rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+161,Épée dansante,epee-dansante ,"Vous pouvez utiliser une action bonus pour lancer cette épée magique dans les airs et prononcer le mot de commande. Une fois fait, l'épée commence à léviter, se déplace en volant jusqu'à 9 mètres maximum, et attaque une créature de votre choix se trouvant à 1,50 mètre d'elle. Cette épée utilise votre jet d'attaque et votre valeur de caractéristique pour le jet de dégâts.
+
+","Arme (toute épée), très rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+162,Épée de Kas,epee-de-kas ,"Lorsque Vecna gagna en puissance, il nomma un maléfique et impitoyable lieutenant, Kas à la Main Ensanglantée, en tant que garde du corps et bras droit. Cet abject scélérat lui servit de conseiller, de chef de guerre et d'assassin. Ses succès lui offrirent l'admiration de Vecna ainsi qu'une récompense : une épée intrinsèquement mauvaise, comme l'homme qui devait la manier.
+
+","Objet merveilleux, artéfact (nécessite un lien)",Dungeon Master´s Guide
+163,Épée de lumière lunaire,epee-de-lumiere-lunaire ,"Dans les ténèbres, la lame dégainée de cette épée diffuse une lumière de clair de lune, créant une lumière vive dans un rayon de 4,50 mètres et une lumière faible sur 4,50 mètres supplémentaires.
+
+","Arme (toute épée), commun",Xanathar´s Guide to Everything
+164,Épée de réponse,epee-de-reponse ,"Dans le monde de Greyhawk, seules neuf de ces épées existent. Chacune a été créée sur le modèle de l'épée Fragarach, qui peut être traduit pas « le Dernier Mot ». Chacune de ces neuf épées a son propre nom et son propre alignement, et chacune porte une gemme différente incrustée dans son pommeau.
+
+","Arme (épée longue), légendaire (nécessite un lien avec une créature possédant le même alignement que l'épée)",Dungeon Master´s Guide
+165,Épée mordante,epee-mordante ,"Les points de vie perdus à cause de dégâts infligés par cette arme ne peuvent être récupérés que par le biais d'un repos court ou long, mais pas à l'aide de capacités de régénération, de pouvoirs magiques, de sorts, ou de tout autre moyen.
+
+","Arme (toute épée), rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+166,Épée radieuse,epee-radieuse ,"Cet objet semble être une poignée d'épée longue. Lorsque vous saisissez la poignée, vous pouvez utiliser une action bonus pour faire apparaitre une lame de pure radiance, ou pour faire disparaître la lame. Lorsque la lame est sortie, l'épée longue magique a la propriété finesse. Si vous maîtrisez les épées longues ou courtes, vous maîtrisez l'épée radieuse.
+
+","Arme (épée longue), rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+167,Épée vengeresse,epee-vengeresse ,"Vous gagnez un bonus de +1 aux jets d'attaque et de dégâts effectués avec cette arme magique.
+
+","Arme (toute épée), peu commun (nécessite un lien)",Dungeon Master´s Guide
+168,Épée voleuse de vie,epee-voleuse-de-vie ,"Lorsque vous attaquez une créature avec cette arme magique et obtenez un 20 au jet d'attaque, la cible subit 10 dégâts nécrotiques supplémentaires, à condition qu'elle ne soit pas un artificiel ou un mort-vivant. Vous gagnez un nombre de points de vie temporaires égal aux dégâts supplémentaires infligés.
+
+","Arme (toute épée), rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+169,Épée vorpale,epee-vorpale ,"Vous gagnez un bonus de +3 aux jets d'attaque et de dégâts effectués avec cette arme magique. De plus, l'arme ignore la résistance aux dégâts tranchants.
+
+","Arme (toute épée qui inflige des dégâts tranchants), légendaire (nécessite un lien)",Dungeon Master´s Guide (SRD)
+170,Éventail enchanté,eventail-enchante ,"Lorsque vous tenez l'éventail, vous pouvez utiliser une action pour lancer le sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=bourrasque"">bourrasque</a> (sauvegarde DD 13 contre celui-ci). Une fois utilisé, l'éventail ne devrait plus être réutilisé avant la prochaine aube. Chaque fois qu'il l'est de nouveau avant ce moment, il y a une chance cumulative de 20 % qu'il ne fonctionne pas et se déchire en lambeaux, inutiles non magiques.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide (SRD)
+171,Fer gelé,fer-gele ,"Lorsque vous touchez avec une attaque utilisant cette épée magique, la cible subit 1d6 dégâts de froid supplémentaires. En outre, tant que vous tenez l'épée, vous avez la résistance aux dégâts de feu. Dans des températures de congélation, la lame émet en lumière vive dans un rayon de 3 mètres et une lumière faible sur 3 mètres supplémentaires.
+
+","Arme (toute épée), très rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+172,Fers de rapidité,fers-de-rapidite ,"Ces fers à cheval se trouvent par lot de quatre. Tant que les quatre fers sont fixés aux sabots d'un cheval ou d'une créature similaire, ils augmentent la vitesse de déplacement de la créature de 9 mètres.
+
+","Objet merveilleux, rare",Dungeon Master´s Guide (SRD)
+173,Fers de zéphyr,fers-de-zephyr ,"Ces fers à cheval se trouvent par lot de quatre. Tant que les quatre fers sont fixés aux sabots d'un cheval ou d'une créature similaire, ils permettent à la créature de se déplacer normalement tout en flottant à 10 cm du sol. Grâce à cet effet, la créature peut traverser ou rester au-dessus de surfaces non solides ou instables, comme l'eau ou la lave. La créature ne laisse aucune trace et ignore les terrains difficiles. De plus, la créature peut se déplacer à sa vitesse de déplacement normale pendant une durée maximale de 12 heures par jour sans souffrir de l'épuisement dû à une marche forcée.
+
+","Objet merveilleux, très rare",Dungeon Master´s Guide (SRD)
+174,Mouche géante,figurine-merveilleuse ,"Une figurine merveilleuse est une statuette de bête suffisamment petite pour être placée dans une poche. Si vous utilisez une action pour prononcer le mot de commande et lancez la figurine au sol dans un rayon de 18 mètres autour de vous, celle-ci devient une créature vivante. Si l'espace est déjà occupé par une autre créature ou s'il n'y a pas assez d'espace, la figurine ne prend pas la forme d'une créature.
+ class=""orange"">","Objet merveilleux, rareté selon le type de statuette",Dungeon Master´s Guide (SRD)
+175,Flasque de fer,flasque-de-fer ,"Cette urne en fer possède un bouchon en laiton. Vous pouvez utiliser une action pour prononcer le mot de commande de la flasque, tout en ciblant une créature que vous pouvez voir et se trouvant à 18 mètres de vous maximum. Si la cible est native d'un autre plan d'existence que celui sur lequel vous vous trouvez, la cible doit réussir un jet de sauvegarde de Sagesse DD 17 sous peine d'être emprisonnée dans la flasque. Si la cible a déjà été emprisonnée dans la flasque par le passé, elle a un avantage à son jet de sauvegarde. Une fois capturée, une créature reste dans la flasque jusqu'à ce qu'elle soit libérée. La flasque ne peut contenir qu'une seule créature à la fois. Une créature prisonnière de la flasque n'a pas besoin de respirer, manger, ou boire, et ne vieillit pas.
+
+","Objet merveilleux, légendaire",Dungeon Master´s Guide (SRD)
+176,Flèche incassable,fleche-incassable ,"Cette flèche ne peut pas être brisée, sauf si elle se trouve dans un champ antimagie.
+
+","Arme (flèche), commun",Xanathar´s Guide to Everything
+177,Flèche tueuse,fleche-tueuse ,"Une flèche tueuse est une arme magique destinée à abattre un type de créature en particulier. Certaines sont plus spécifiques que d'autres ; par exemple, il existe des flèches tueuses de dragons et des flèches tueuses de dragons bleu. Si une créature appartenant au type, à la race ou au groupe associé à la flèche tueuse subit des dégâts de cette flèche, cette créature doit effectuer un jet de sauvegarde de Constitution DD 17, subissant 6d10 dégâts perforants supplémentaires en cas d'échec, ou la moitié de ces dégâts supplémentaires en cas de réussite.
+
+","Arme (flèche), très rare",Dungeon Master´s Guide (SRD)
+178,Flûte des égouts,flute-des-egouts ,"Vous devez avoir la maîtrise des instruments à vent pour utiliser cette flûte. Tant que vous êtes lié à cette flûte, les rats ordinaires et les rats géants sont indifférent à votre égard à moins que vous ne les attaquiez, les menaciez ou les blessiez.
+
+","Objet merveilleux, peu commun (nécessite un lien)",Dungeon Master´s Guide (SRD)
+179,Flûte terrifiante,flute-terrifiante ,"Vous devez avoir la maîtrise des instruments à vent pour pouvoir utiliser cette flûte. Elle a 3 charges. Par une action vous pouvez jouer de cette flûte et dépenser une charge pour produire un air envoûtant et mystérieux. Chaque créature dans les 9 mètres qui vous entend jouer doit réussir un jet de sauvegarde de Sagesse DD 15 ou être effrayée pendant 1 minute. Si vous le souhaitez, toutes les créatures à portée qui ne vous sont pas hostiles peuvent réussir automatiquement ce jet de sauvegarde. Une créature qui échoue peut retenter le jet de sauvegarde à la fin de chacun de ses tours, mettant ainsi fin à l'effet en cas de réussite. Une créature qui réussit le jet de sauvegarde devient immunisée contre cette flûte pour 24 heures. La flûte récupère 1d3 charges dépensées chaque jour à l'aube.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide (SRD)
+180,Forteresse instantanée de Daern,forteresse-instantanee-de-daern ,"Vous pouvez utiliser une action pour poser sur le sol ce cube métallique de 2,50 cm d'arête et prononcer le mot de commande. Le cube grandit rapidement jusqu'à prendre la forme d'une forteresse qui reste en place jusqu'à ce que vous utilisiez une action pour prononcer le mot de commande qui l'annule (mot de commande qui ne fonctionne que lorsque la forteresse est vide).
+
+","Objet merveilleux, rare",Dungeon Master´s Guide (SRD)
+181,Gantelets de puissance d'ogre,gantelets-de-puissance-d-ogre ,"Votre Force est de 19 tant que vous portez ces gantelets. Les gantelets n'ont aucun effet sur vous si votre Force est de 19 ou plus sans eux.
+
+","Objet merveilleux, peu commun (nécessite un lien)",Dungeon Master´s Guide (SRD)
+182,Gants de chapardeur,gants-de-chapardeur ,"Ces gants sont invisibles tant qu'ils sont portés. Tant que vous en êtes équipé, vous gagnez un bonus de +5 aux jets de Dextérité (Escamotage) et aux jets de Dextérité effectués pour crocheter des serrures.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide
+183,Gants de nage et d'escalade,gants-de-nage-et-d-escalade ,"Lorsque vous portez ces gants, escalader et nager ne vous coûte pas de mouvement supplémentaire, et vous obtenez un bonus de +5 aux jets de Force (Athlétisme) pour escalader ou nager.
+
+","Objet merveilleux, peu commun (nécessite un lien)",Dungeon Master´s Guide (SRD)
+184,Gants piégeurs de projectiles,gants-piegeurs-de-projectiles ,"Ces gants semblent fusionner avec vos mains lorsque vous les enfilez. Lorsqu'une attaque à distance avec une arme vous touche alors que vous avez équipé ces gants, vous pouvez utiliser votre réaction pour réduire les dégâts de 1d10 + votre modificateur de Dextérité, à condition que vous ayez au moins une main de libre. Si vous réduisez les dégâts à 0, vous pouvez attraper le projectile s'il est suffisamment petit pour que vous le teniez dans une main.
+
+","Objet merveilleux, peu commun (nécessite un lien)",Dungeon Master´s Guide (SRD)
+185,Gardienne,gardienne ,"Vous obtenez un bonus de +3 aux jets d'attaque et de dégâts effectués avec cette arme magique.
+
+","Arme (toute épée), légendaire (nécessite un lien)",Dungeon Master´s Guide (SRD)
+186,Gemme d'illumination,gemme-d-illumination ,"Ce prisme possède 50 charges. Tant que vous le tenez, vous pouvez utiliser une action pour prononcer l'un des trois mots de commande et ainsi provoquer l'un des trois effets suivants :
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide (SRD)
+187,Gemme de vision,gemme-de-vision ,"Cette gemme possède 3 charges. En utilisant une action, vous pouvez prononcer le mot de commande de la gemme et dépenser 1 charge. Pour les 10 minutes qui suivent, vous obtenez la vision véritable à 36 mètres lorsque vous regardez au travers de la gemme. La gemme récupère 1d3 charges dépensées chaque jour à l'aube.
+
+","Objet merveilleux, rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+188,Gemme élémentaire,gemme-elementaire ,"Cette gemme contient un brin d'énergie élémentaire. Lorsque vous utilisez une action pour briser la gemme, un élémentaire est invoqué comme si vous aviez jeté le sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=invocation-d-elementaire"">invocation d'élémentaire</a>, et la magie de la gemme est perdue. Le type de gemme détermine l'élémentaire invoqué par le sort.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide (SRD)
+189,Globe flottant,globe-flottant ,"Cette petite sphère de verre épais pèse 500 g. Si vous êtes dans un rayon de 18 mètres autour d'elle, vous pouvez prononcer son mot de commande qui lui fait émaner un sort de <a href=""https://www.aidedd.org/dnd/sorts.php?vf=lumiere"">lumière</a> ou de <a href=""https://www.aidedd.org/dnd/sorts.php?vf=lumiere-du-jour"">lumière du jour</a>. Une fois utilisé, l'effet de <a href=""https://www.aidedd.org/dnd/sorts.php?vf=lumiere-du-jour"">lumière du jour</a> ne peut être réutilisé avant l'aube suivante.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide (BR)
+190,Grimoire résistant,grimoire-resistant ,"Ce grimoire, ainsi que tout ce qui est écrit sur ses pages, ne peut pas être endommagé par le feu ou l'immersion dans l'eau. De plus, le grimoire ne se détériore pas avec l'âge.
+
+","Objet merveilleux, commun",Xanathar´s Guide to Everything
+191,Hache des seigneurs nains,hache-des-seigneurs-nains ,"Constatant le péril auquel faisait face son peuple, un jeune prince nain en vint à croire que ses sujets avaient besoin d'être unis. Ainsi, il choisit de forger une arme qui serait le symbole de cette union.
+
+","Arme (hache d'armes), artéfact (nécessite un lien)",Dungeon Master´s Guide
+192,Hache du berserker,hache-du-berserker ,"Vous gagnez un bonus de +1 aux jets d'attaque et de dégâts effectués avec cette arme magique. De plus, tant que vous êtes lié à cette arme, votre maximum de points de vie augmente de 1 pour chaque niveau de classe que vous possédez.
+
+","Arme (toute hache), rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+193,Harnois éthéré,harnois-ethere ,"Tant que vous portez cette armure, vous pouvez prononcer son mot de commande par une action pour gagner l'effet du sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=forme-etheree"">forme éthérée</a> pendant 10 minutes ou jusqu'à ce que vous retiriez l'armure ou y mettiez fin volontairement en répétant le mot de commande. Cette propriété de l'armure ne peut être réutilisée avant la prochaine aube.
+
+","Armure (harnois), légendaire (nécessite un lien)",Dungeon Master´s Guide (SRD)
+194,Harnois nain,harnois-nain ,"Lorsque vous portez cette armure, vous gagnez un bonus de +2 à la CA. En outre, si un effet vous déplace contre votre volonté au sol, vous pouvez utiliser votre réaction pour réduire la distance sur laquelle vous êtes déplacé de 3 mètres ou moins.
+
+","Armure (harnois), très rare",Dungeon Master´s Guide (SRD)
+195,Havresac magique d'Hévard,havresac-magique-d-hevard ,"Ce sac à dos possède une poche centrale et deux poches latérales, chacune d'entre elles étant un espace extradimensionnel. Chaque poche latérale peut contenir jusqu'à 10 kg de matériel, sans être plus volumineuse qu'un cube de 40 cm d'arête. La large poche centrale peut contenir 40 kg de matériel, sans être plus volumineuse qu'un cube de 60 cm d'arête. Le sac à dos pèse au total 2,5 kg, quel que soit son contenu.
+
+","Objet merveilleux, rare",Dungeon Master´s Guide (SRD)
+196,Heaume de compréhension des langues,heaume-de-comprehension-des-langues ,"Tant que vous êtes équipé de ce heaume, vous pouvez à volonté, par une action, l'utiliser pour lancer le sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=comprehension-des-langues"">compréhension des langues</a>.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide (SRD)
+197,Heaume de télépathie,heaume-de-telepathie ,"Tant que vous êtes équipé de ce casque, vous pouvez l'utiliser, par une action, pour lancer le sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=detection-des-pensees"">détection des pensées</a> (sauvegarde DD 13). Aussi longtemps que vous maintenez votre concentration sur le sort, vous pouvez utiliser une action bonus pour envoyer un message télépathique à une créature sur laquelle vous vous concentrez. Elle peut répondre, en utilisant une action bonus, tant que vous continuez de vous concentrer sur elle. Tant que vous êtes concentré sur une créature en utilisant détection des pensées, vous pouvez utiliser le casque, par une action, pour lancer le sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=suggestion"">suggestion</a> (sauvegarde DD 13) sur cette créature. Une fois utilisée, la capacité de suggestion ne peut être réutilisée avant la prochaine aube.
+
+","Objet merveilleux, peu commun (nécessite un lien)",Dungeon Master´s Guide (SRD)
+198,Heaume de téléportation,heaume-de-teleportation ,"Ce heaume possède 3 charges. Tant que vous en êtes équipé, vous pouvez l'utiliser, par une action et en dépensant 1 charge, pour lancer le sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=teleportation"">téléportation</a>. Le heaume récupère 1d3 charges dépensées chaque jour à l'aube.
+
+","Objet merveilleux, rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+199,Heaume effrayant,heaume-effrayant ,"Ce redoutable casque en acier fait briller vos yeux en rouge tant que vous le portez.
+
+","Objet merveilleux, commun",Xanathar´s Guide to Everything
+200,Heaume scintillant,heaume-scintillant ,"Ce heaume éclatant est serti de 1d10 diamants, 2d10 rubis, 3d10 opales de feu et 4d10 opales. Toute gemme prélevée du heaume tombe en poussière. Lorsque toutes les gemmes sont enlevées ou détruites, le heaume perd sa magie.
+
+","Objet merveilleux, très rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+201,Huile d'affûtage,huile-d-affutage ,"Cette huile gélatineuse et claire produit de minuscules éclats d'argent. L'huile peut recouvrir une arme tranchante ou perforante, ou jusqu'à 5 projectiles tranchants ou perforants. Appliquer l'huile prend 1 minute. Pour 1 heure, l'objet enduit est magique et donne un bonus de +3 à l'attaque et aux dégâts.
+
+","Potion, très rare",Dungeon Master´s Guide (SRD)
+202,Huile d'insaisissabilité,huile-d-insaisissabilite ,"Cet onguent noir collant est épais et pèse lourd dans le contenant, mais coule rapidement quand on le verse. L'huile peut couvrir une créature de taille M ou inférieure, ainsi que tout l'équipement qu'elle porte (un flacon supplémentaire est nécessaire pour chaque catégorie de taille au-dessus de M). L'application de l'huile prend 10 minutes. La créature affectée gagne alors l'effet du sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=liberte-de-mouvement"">liberté de mouvement</a> pendant 8 heures.
+
+","Potion, peu commun",Dungeon Master´s Guide (SRD)
+203,Huile éthérée,huile-etheree ,"Des perles de cette huile grise se forment à l'extérieur de son contenant et semblent s'évaporer rapidement. L'huile peut recouvrir une créature de taille M ou plus petite, ainsi que tout l'équipement qu'elle porte ou transporte (une fiole supplémentaire est nécessaire pour chaque catégorie de taille au-delà de M). Appliquer l'huile prend 10 minutes. La créature affectée gagne alors les effets du sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=forme-etheree"">forme éthérée</a> pendant 1 heure.
+
+","Potion, rare",Dungeon Master´s Guide (SRD)
+204,Instrument à illusions,instrument-a-illusions ,"Lorsque que vous jouez de cet instrument de musique, vous pouvez créer des effets visuels inoffensifs et illusoires dans une sphère de 1,50 mètre de rayon centrée sur l'instrument. Si vous êtes un barde, le rayon passe à 4,50 mètres. Les effets visuels peuvent être des notes de musique lumineuses, un danseur spectral, des papillons ou de la neige qui tombe doucement. Les effets magiques n'ont ni substance ni son, et ils sont évidemment illusoires. Les effets se terminent lorsque vous arrêtez de jouer.
+
+","Objet merveilleux, commun (nécessite un lien)",Xanathar´s Guide to Everything
+205,Instrument à message,instrument-a-message ,"Cet instrument de musique possède 3 charges. Lorsque que vous en jouez, vous pouvez utiliser une action pour dépenser 1 charge et écrire un message magique sur un objet ou une surface non magique que vous pouvez voir dans un rayon de 9 mètres autour de vous. Le message peut contenir jusqu'à six mots et doit être rédigé dans une langue que vous connaissez. Si vous êtes un barde, vous pouvez écrire sept mots supplémentaires et choisir de faire briller faiblement le message, lui permettant d'être vu dans des ténèbres non magiques. Lancer dissipation de la magie sur le message l'efface. Sinon, le message disparaît après 24 heures. L'instrument récupère toutes les charges dépensées chaque jour à l'aube.
+
+","Objet merveilleux, commun (nécessite un lien)",Xanathar´s Guide to Everything
+206,Instrument de barde,instrument-de-barde ,"Un instrument de barde est un magnifique exemplaire dans sa catégorie, supérieur à un instrument ordinaire sous tous rapports. Sept types de ces instruments existent, chacun nommé d'après un légendaire collège bardique. La table suivante liste les sorts spécifiques à chacun des instruments ainsi que leur rareté. Une créature qui tente de jouer d'un instrument sans y être liée doit réussir un jet de sauvegarde de Sagesse DD 15 sous peine de subir 2d4 dégâts psychiques.
+
+","Objet merveilleux, variable (nécessite un lien avec un barde)",Dungeon Master´s Guide
+207,Jatte de contrôle des élémentaires de l'eau,jatte-de-controle-des-elementaires-de-l-eau ,"Une fois cette jatte remplie d'eau, vous pouvez utiliser une action pour prononcer son mot de commande et convoquer un élémentaire de l'eau comme si vous aviez lancé le sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=invocation-d-elementaire"">invocation d'élémentaire</a>. La jatte ne peut être réutilisée de cette façon avant la prochaine aube.
+
+","Objet merveilleux, rare",Dungeon Master´s Guide (SRD)
+208,Javeline de foudre,javeline-de-foudre ,"Cette javeline est une arme magique. Quand vous la lancez et prononcez son mot de commande, elle se transforme en un éclair formant une ligne de 1,50 mètre de large qui s'étend de vous jusqu'à une cible éloignée de 36 mètres au maximum. Chaque créature sur la ligne à l'exception de vous et de la cible subit 4d6 dégâts de foudre. Un jet de sauvegarde de Dextérité DD 13 réussit permet de réduire ces dégâts de moitié. L'éclair se retransforme en javeline une fois qu'il atteint sa cible. Faites une attaque à distance contre la cible. Si vous la touchez, elle subit les dégâts de la javeline plus 4d6 dégâts de foudre. Cette propriété de la javeline ne peut être réutilisée avant la prochaine aube. Entre temps, la javeline peut toujours être utilisée comme une arme magique.
+
+","Arme (javeline), peu commun",Dungeon Master´s Guide (SRD)
+209,Lame porte-bonheur,lame-porte-bonheur ,"Vous gagnez un bonus de +1 aux jets d'attaque et de dégâts effectués avec cette arme magique. Tant que vous portez l'épée sur vous, vous bénéficiez également d'un bonus de +1 aux jets de sauvegarde.
+
+","Arme (toute épée), légendaire (nécessite un lien)",Dungeon Master´s Guide (SRD)
+210,Lamelune,lamelune ,"De tous les objets magiques créés par les elfes, les plus prisés et les plus jalousement gardés sont les Lamelunes. Dans les temps anciens, presque toutes les maisons elfes nobles prétendaient posséder une telle lame. Au fil des siècles, certaines lames s'évaporèrent, leur magie s'affaiblissant à mesure que les lignées familiales s'éteignaient. D'autres disparurent avec leur porteur au cours de quêtes épiques. Et c'est ainsi qu'aujourd'hui il ne reste plus que quelques exemplaires de ces épées.
+
+","Arme (épée longue), légendaire (nécessite un lien avec un elfe ou un demi-elfe d'alignement neutre bon)",Dungeon Master´s Guide
+211,Lanterne de révélation,lanterne-de-revelation ,"Tant qu'elle est allumée, cette lanterne à capote brûle un demi-litre d'huile en 6 heures et produit une lumière vive dans un rayon de 9 mètres et une lumière faible dans les 9 mètres suivants. Les créature et objets invisibles deviennent visible tant qu'ils sont dans le halo de la lumière vive. Vous pouvez utiliser une action pour rabattre la capote de la lanterne, réduisant la luminosité à un halo de lumière réduite de 1,50 mètre de rayon.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide (SRD)
+212,Les Chapitres interdits,les-chapitres-interdits ,"Le contenu de cet aberrant manuscrit d'une ineffable cruauté représente le pain et le vin des esclaves du Mal. Aucun mortel n'était censé en apprendre les secrets, des mystères tellement épouvantables que jeter un œil aux pages griffonnées peut déjà conduire à la folie.
+
+","Objet merveilleux, artéfact (nécessite un lien)",Dungeon Master´s Guide
+213,Les Chapitres sacrés,les-chapitres-sacres ,"Traité ultime sur tout ce qui représente le Bien dans le multivers, les légendaires Chapitres sacrés sont mentionnés avec insistance dans de nombreuses religions. Plus qu'une sainte écriture en l'honneur d'une seule foi, les multiples auteurs du livre en remplirent les pages avec leur propre vision de ce qu'est la véritable vertu, offrant un véritable guide à tous ceux qui souhaiteraient vaincre le Mal.
+
+","Objet merveilleux, artéfact (nécessite un lien avec une créature d'alignement bon)",Dungeon Master´s Guide
+214,Liens de fer de Bilarro,liens-de-fer-de-bilarro ,"Cette sphère de fer rouillé mesure 7,50 cm de diamètre et pèse 500 grammes. Vous pouvez utiliser une action pour prononcer le mot de commande et lancer la sphère sur une créature de taille G ou inférieure que vous pouvez voir et située dans un rayon de 18 mètres autour de vous. Alors que la sphère progresse dans les airs, elle s'ouvre en un enchevêtrement de bandelettes métalliques.
+
+","Objet merveilleux, rare",Dungeon Master´s Guide (SRD)
+215,Lunettes de nuit,lunettes-de-nuit ,"Lorsque vous portez ces lunettes noires, vous obtenez vision dans le noir dans un rayon de 18 mètres. Si vous possédez déjà vision dans le noir, porter ces lunettes augmente le rayon de vision de 18 mètres.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide (SRD)
+216,Mailles éfrit,mailles-efrit ,"Tant que vous portez cette armure, vous gagnez un bonus de +3 à la CA, vous êtes immunisé aux dégâts de feu, et vous pouvez comprendre et parler le primordial. De plus, vous pouvez rester sur de la roche en fusion et même marcher dessus, comme s'il s'agissait de terre solide.
+
+","Armure (cotte de mailles), légendaire (nécessite un lien)",Dungeon Master´s Guide
+217,Mailles elfiques,mailles-elfiques ,"Vous gagnez un bonus de +1 à la CA lorsque vous portez cette armure.
+
+","Armure (chemise de mailles), rare",Dungeon Master´s Guide (SRD)
+218,Manteau de résistance aux sorts,manteau-de-resistance-aux-sorts ,"Vous avez un avantage à tous les jets de sauvegarde contre les sorts tant que vous portez cette cape.
+
+","Objet merveilleux, rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+219,Manuel d'exercices physiques,manuel-d-exercices-physiques ,"Ce livre contient des exercices de remise en forme physique, et ses mots sont chargés de magie. Si vous passez 48 heures sur une période de 6 jours ou moins à étudier le contenu du livre et pratiquez ses lignes directrices, votre Force augmente de 2, tout comme votre maximum pour cette caractéristique. Le manuel perd alors sa magie, mais la retrouvera dans un siècle.
+
+","Objet merveilleux, très rare",Dungeon Master´s Guide (SRD)
+220,Manuel de vitalité,manuel-de-vitalite ,"Ce livre contient des conseils de santé et d'alimentation, et ses mots sont chargés de magie. Si vous passez 48 heures sur une période de 6 jours ou moins à étudier le contenu du livre et pratiquez ses lignes directrices, votre Constitution augmente de 2, tout comme votre maximum pour cette caractéristique. Le manuel perd alors sa magie, mais la retrouvera dans un siècle.
+
+","Objet merveilleux, très rare",Dungeon Master´s Guide (SRD)
+221,Manuel de vivacité,manuel-de-vivacite ,"Ce livre contient des exercices de coordination et d'équilibre, et ses mots sont chargés de magie. Si vous passez 48 heures sur une période de 6 jours ou moins à étudier le contenu du livre et pratiquez ses lignes directrices, votre Dextérité augmente de 2, tout comme votre maximum pour cette caractéristique. Le manuel perd alors sa magie, mais la retrouvera dans un siècle.
+
+","Objet merveilleux, très rare",Dungeon Master´s Guide (SRD)
+222,Manuel des golems,manuel-des-golems ,"Ce livre contient les informations et incantations nécessaires pour créer un golem d'un type particulier. Le MD choisit le type ou le détermine aléatoirement. Pour déchiffrer le manuel et l'utiliser, vous devez être un lanceur de sorts possédant au moins deux emplacements de sorts de niveau 5. Une créature qui ne peut pas utiliser le manuel des golems et qui tente de le lire subit 6d6 dégâts psychiques.
+
+","Objet merveilleux, très rare",Dungeon Master´s Guide (SRD)
+223,Marteau de lancer nain,marteau-de-lancer-nain ,"Vous gagnez un bonus de +3 à l'attaque et aux dégâts fait avec cette arme magique. Elle a la propriété lancer avec une portée normale de 6 mètres et une portée longue de 18 mètres.
+
+","Arme (marteau de guerre), très rare (nécessite un lien par un nain)",Dungeon Master´s Guide (SRD)
+224,Marteau de tonnerre,marteau-de-tonnerre ,"Vous obtenez un bonus de +1 à l'attaque et aux dégâts réalisés avec cette arme magique.
+
+","Arme (maillet), légendaire",Dungeon Master´s Guide (SRD)
+225,Masse d'anéantissement,masse-d-aneantissement ,"Quand vous frappez un fiélon ou un mort-vivant avec cette arme magique, cette créature subit 2d6 dégâts radiants supplémentaires. Si elle a 25 points de vie ou moins après avoir subi ces dégâts elle doit réussir un jet de sauvegarde de Sagesse DD 15 ou être détruite. En cas de réussite vous effrayez la créature jusqu'à la fin de votre prochain tour.
+
+","Arme (masse d'armes), rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+226,Masse destructrice,masse-destructrice ,"Vous gagnez un bonus de +1 aux jets d'attaque et de dégâts effectués avec cette arme magique. Ce bonus passe à +3 quand vous l'utilisez contre un artificiel.
+
+","Arme (masse d'armes), rare",Dungeon Master´s Guide (SRD)
+227,Masse terrifiante,masse-terrifiante ,"Cette arme magique possède 3 charges. Tant que vous la tenez vous pouvez utiliser une action et dépenser une charge pour relâcher une vague de terreur. Toutes les créatures de votre choix dans un rayon de 6 mètres centré sur vous doivent réussir un jet de sauvegarde de Sagesse DD 15 ou vous les effrayez pour une minute.
+
+","Arme (masse d'armes), rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+228,Médaillon des pensées,medaillon-des-pensees ,"Le médaillon possède 3 charges. Lorsque vous le portez, vous pouvez utiliser une action et dépenser 1 charge pour lancer le sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=detection-des-pensees"">détection des pensées</a> (sauvegarde DD 13) depuis le médaillon. Le médaillon récupère 1d3 charges dépensées chaque jour à l'aube.
+
+","Objet merveilleux, peu commun (nécessite un lien)",Dungeon Master´s Guide (SRD)
+229,Menottes dimensionnelles,menottes-dimensionnelles ,"Vous pouvez utiliser votre action pour mettre ses menottes à une créature incapable d'agir. Les menottes s'ajustent pour convenir à des créatures de taille P, M ou G. En plus de servir de menottes banales, les menottes empêchent la créature qu'elles attachent d'utiliser tout moyen de déplacement extradimensionnel, ce qui inclut la téléportation ou le voyage vers d'autres plans d'existence. Elles n'empêchent pas la créature de passer au travers d'un portail interdimensionnel.
+
+","Objet merveilleux, rare",Dungeon Master´s Guide (SRD)
+230,Miroir d'emprisonnement,miroir-d-emprisonnement ,"Quand ce miroir de 1,20 mètre de haut est regardé indirectement, sa surface montre de pâles images de créatures. Le miroir pèse 25 kg et a une CA de 11, 10 points de vie et la vulnérabilité aux dégâts contondants. Il se brise en éclats et est détruit s'il tombe à 0 point de vie.
+
+","Objet merveilleux, très rare",Dungeon Master´s Guide (SRD)
+231,"Munition +1, +2 ou +3",munition-1-2-ou-3 ,"Vous obtenez un bonus à l'attaque et aux dégâts effectués avec cette munition magique. Le bonus est déterminé par la rareté de la munition. Une fois qu'elle touche une cible, la munition n'est plus magique.
+
+","Arme (toute munition), peu commun (+1) rare (+2) ou très rare (+3)",Dungeon Master´s Guide (SRD)
+232,Munition percutante,munition-percutante ,"Cette munition frappe fort. Une créature touchée par la munition doit réussir un jet de sauvegarde de Force DD 10 ou tomber à terre.
+
+","Arme (toute munition), commun",Xanathar´s Guide to Everything
+233,Noir rasoir,noir-rasoir ,"Dissimulée dans le donjon de la Montagne de la Plume Blanche, Noir rasoir scintille tel un pan de ciel nocturne constellé d'étoiles. Son fourreau noir est décoré de fragments d'obsidienne.
+
+","Arme (épée à deux mains), légendaire (nécessite un lien avec une créature d'alignement non loyal)",Dungeon Master´s Guide
+234,Oeil artificiel,oeil-artificiel ,"Cet œil artificiel remplace un vrai œil qui aurait été perdu ou enlevé. L'œil artificiel est incrusté dans votre orbite, et vous seul pouvez le retirer. Vous pouvez voir à travers le petit orbe comme s'il s'agissait d'un œil normal.
+
+","Objet merveilleux, commun (nécessite un lien)",Xanathar´s Guide to Everything
+235,Oeil et Main de Vecna,oeil-et-main-de-vecna ,"On prononce rarement le nom de Vecna sinon en murmurant. Vecna était en son temps l'un des magiciens les plus puissants qui existaient. En usant et abusant de magie noire et du pouvoir des ténèbres, il se forgea un terrible empire. Mais malgré toute sa grandeur, Vecna ne pouvait pas se soustraire à sa condition de mortel. Il commença à fuir la mort et entama des recherches pour échapper à la mort qui s'approchait à grands pas.
+
+","Objet merveilleux, artéfact (nécessite un lien)",Dungeon Master´s Guide
+236,Orbe boussole,orbe-boussole ,"Lorsque que vous tenez cet orbe, vous pouvez utiliser une action pour déterminer dans quelle direction se trouve le nord. Cette propriété ne fonctionne que sur le plan matériel.
+
+","Objet merveilleux, commun",Xanathar´s Guide to Everything
+237,Orbe des dragons,orbe-des-dragons ,"Au cours des siècles passés, les elfes et les humains menèrent une terrible guerre contre les dragons malfaisants. Mais alors que le monde semblait courir à sa perte, de puissants magiciens se rassemblèrent et combinèrent leurs pouvoirs les plus puissants pour forger les cinq Orbes des dragons (ou Orbes draconiques) afin d'aider les armées humanoïdes à vaincre les dragons. Un orbe fut amené dans chacune des tours des cinq magiciens, où ils les utilisèrent pour remporter rapidement le conflit. Les magiciens se servirent des orbes pour attirer les dragons jusqu'à eux, puis, grâce à leur puissante magie, détruire les grands reptiles.
+
+","Objet merveilleux, artéfact (nécessite un lien)",Dungeon Master´s Guide (SRD)
+238,Orbe horloge,orbe-horloge ,"Lorsque que vous tenez cet orbe, vous pouvez utiliser une action pour déterminer si c'est le matin, l'après-midi, le soir ou la nuit à l'extérieur. Cette propriété ne fonctionne que sur le plan matériel.
+
+","Objet merveilleux, commun",Xanathar´s Guide to Everything
+239,Parchemin de protection,parchemin-de-protection ,"Chaque parchemin de protection fonctionne contre un type spécifique de créature.
+
+","Parchemin, rare",Dungeon Master´s Guide (BR)
+240,Parchemin de sort,parchemin-de-sort ,"Un parchemin de sort contient les mots d'un seul sort, écrit dans un langage mystique. Si le sort est sur la liste de sorts de votre classe, vous pouvez lire le parchemin et lancer son sort sans avoir à fournir les composantes matérielles. Sinon, le parchemin est inintelligible. Lancer le sort en lisant le parchemin demande le temps d'incantation normal du sort. Une fois que le sort est lancé, les mots sur le parchemin disparaissent, et il tombe en poussière. Si l'incantation est interrompue, le parchemin n'est pas perdu.
+
+","Parchemin, variable",Dungeon Master´s Guide (SRD)
+241,Parfum envoûtant,parfum-envoutant ,"Cette petite fiole contient un parfum magique, suffisant pour une utilisation. Vous pouvez utiliser une action pour appliquer le parfum sur vous-même, et son effet dure 1 heure. Durant ce temps, vous avez un avantage à tous les jets de Charisme dirigés contre des humanoïdes de FP 1 ou inférieur. Ceux qui subissent l'effet du parfum ne savent pas qu'ils ont été influencés par la magie.
+
+","Objet merveilleux, commun",Xanathar´s Guide to Everything
+242,Perche de pêcheur,perche-de-pecheur ,"Lorsque vous tenez cette perche de 3 mètres, vous pouvez prononcer un mot de commande et la transformer en canne à pêche avec un hameçon, une ligne et un moulinet. En prononçant de nouveau le mot de commande, la canne à pêche redevient une perche normale de 3 mètres.
+
+","Objet merveilleux, commun",Xanathar´s Guide to Everything
+243,Perche rétractable,perche-retractable ,"Lorsque vous tenez cette perche de 3 mètres, vous pouvez utiliser une action pour prononcer un mot de commande et la transformer en un bâton de 30 cm de long, pour faciliter son stockage. Le poids de la perche ne change pas. Vous pouvez utiliser une action pour prononcer un autre mot de commande et retransformer le bâton en perche, cependant le bâton ne s'allongera que dans la mesure où l'espace environnant le permet.
+
+","Objet merveilleux, commun",Xanathar´s Guide to Everything
+244,Perle de force,perle-de-force ,"Cette petite sphère noire mesure 2 cm de diamètre et pèse 30 grammes. Généralement, 1d4 + 4 perles de force sont trouvées en même temps.
+
+","Objet merveilleux, rare",Dungeon Master´s Guide (SRD)
+245,Perle de pouvoir,perle-de-pouvoir ,"Tant que cette perle est sur vous, vous pouvez utiliser une action pour prononcer son mot de commande et récupérer un emplacement de sort dépensé. Si l'emplacement de sort était de niveau 4 ou supérieur, le nouvel emplacement est de niveau 3. Une fois que vous avez utilisé la perle, elle ne peut être réutilisée avant la prochaine aube.
+
+","Objet merveilleux, peu commun (nécessite un lien par un lanceur de sorts)",Dungeon Master´s Guide (SRD)
+246,Perle désaltérante,perle-desalterante ,"Cette perle spongieuse, sans saveur et gélatineuse, se dissout dans un liquide, transformant jusqu'à l'équivalent d'une pinte en eau potable fraîche et froide. La perle n'a aucun effet sur les liquides magiques ou les substances nocives telles que le poison.
+
+","Objet merveilleux, commun",Xanathar´s Guide to Everything
+247,Perle nutritive,perle-nutritive ,"Cette perle spongieuse, sans saveur et gélatineuse, se dissout sous votre langue et fournit autant de nourriture qu'un jour de ration.
+
+","Objet merveilleux, commun",Xanathar´s Guide to Everything
+248,Philtre d'amour,philtre-d-amour ,"La prochaine fois que vous voyez une créature dans les 10 minutes qui suivent après avoir bu ce philtre, vous êtes charmé par cette créature pendant 1 heure. Si la créature est d'une espèce et du sexe qui vous attire normalement, vous la considérez comme votre véritable amour tant que vous êtes charmé. Cette potion aux teintes roses contient un liquide effervescent dont les bulles discrètes sont en forme de coeur.
+
+","Potion, peu commun",Dungeon Master´s Guide (SRD)
+249,Pierre de contrôle des élémentaires de la terre,pierre-de-controle-des-elementaires-de-la-terre ,"Si la pierre est en contact avec le sol, vous pouvez utiliser une action pour prononcer son mot de commande et invoquer un élémentaire de la Terre, comme si vous aviez lancé le sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=invocation-d-elementaire"">invocation d'élémentaire</a>. La pierre ne peut être réutilisée de cette façon avant la prochaine aube. La pierre pèse 2,5 kg.
+
+","Objet merveilleux, rare",Dungeon Master´s Guide (SRD)
+250,Pierre de Ioun,pierre-de-ioun ,"Les pierres de Ioun doivent leur nom à Ioun, un dieu de la connaissance et des prophéties vénéré dans certains mondes. De nombreux types de pierres de Ioun existent, chaque type aillant une combinaison forme-couleur qui lui est propre.
+
+","Objet merveilleux, variable (nécessite un lien)",Dungeon Master´s Guide (SRD)
+251,Pierre porte-bonheur,pierre-porte-bonheur ,"Si vous portez cette agate polie sur vous, vous gagnez un bonus de +1 aux jets de caractéristique et aux jets de sauvegarde.
+
+","Objet merveilleux, peu commun (nécessite un lien)",Dungeon Master´s Guide (SRD)
+252,Pierres de communication à distance,pierres-de-communication-a-distance ,"Les pierres de communication à distance fonctionnent par paire, chacune de ces pierres lisses étant sculptée pour correspondre à sa pierre complémentaire.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide
+253,Pigments merveilleux de Nolzur,pigments-merveilleux-de-nolzur ,"Généralement trouvés dans 1d4 pots accompagnés d'un pinceau à l'intérieur d'une fine boîte en bois (pesant 500 grammes au total), ces pigments vous permettent de créer des objets en trois dimensions en les peignant en deux dimensions. La peinture coule du pinceau pour dessiner l'image de l'objet sur lequel vous vous concentrez.
+
+","Objet merveilleux, très rare",Dungeon Master´s Guide (SRD)
+254,Pipe des monstres de fumée,pipe-des-monstres-de-fumee ,"Lorsque vous fumez avec cette pipe, vous pouvez utiliser une action pour expirer une bouffée de fumée qui prend la forme d'une créature, comme un dragon, un flumph ou un froghemoth. La forme doit être suffisamment petite pour tenir dans un cube de 30 cm et redevient une bouffée de fumée ordinaire après quelques secondes.
+
+","Objet merveilleux, commun",Xanathar´s Guide to Everything
+255,Plume de Quaal,plume-de-quaal ,"Ce tout petit objet ressemble à une plume. Différents types de plume magique existent, chacune étant d'usage unique et possédant son propre effet. Le MD choisit le type de la plume ou le détermine aléatoirement.
+
+","Objet merveilleux, rare",Dungeon Master´s Guide (SRD)
+256,Pot d'éveil,pot-d-eveil ,"Si vous plantez un arbuste ordinaire dans ce pot en argile de 5 kg et le laissez pousser pendant 30 jours, l'arbuste se transforme magiquement en un <a href=""https://www.aidedd.org/dnd/monstres.php?vf=arbuste-eveille"">arbuste éveillé</a> à la fin de cette période. Lorsque l'arbuste se réveille, ses racines brisent le pot et le détruisent. L'arbuste éveillé est amical envers vous. En l'absence d'ordres de votre part, il ne fait rien.
+
+","Objet merveilleux, commun",Xanathar´s Guide to Everything
+257,Potion d'agrandissement,potion-d-agrandissement ,"Lorsque vous buvez cette potion, vous bénéficiez de l'effet « agrandissement » du sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=agrandissement-rapetissement"">agrandissement/rapetissement</a> pendant 1d4 heures (aucune concentration n'est requise). Une couleur rouge s'étend depuis une petite perle pour colorer le liquide clair de la potion, puis se contracte. Secouer la fiole n'interrompt pas ce processus.
+
+","Potion, peu commun",Dungeon Master´s Guide (SRD)
+258,Potion d'amitié avec les animaux,potion-d-amitie-avec-les-animaux ,"Quand vous buvez cette potion, vous pouvez lancer le sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=amitie-avec-les-animaux"">amitié avec les animaux</a> (sauvegarde DD 13) pendant 1 heure à volonté. Agiter ce liquide boueux fait apparaître de petits morceaux : une écaille de poisson, une langue de colibri, une griffe de chat ou un poil d'écureuil.
+
+","Potion, peu commun",Dungeon Master´s Guide (SRD)
+259,Potion d'escalade,potion-d-escalade ,"Quand vous buvez cette potion, vous gagnez une vitesse d'escalade égale à votre vitesse de marche pendant 1 heure. Pendant ce temps, vous avez un avantage aux jets de Force (Athlétisme) que vous effectuez pour escalader. La potion est séparée en bandes brune, argent et grise qui ressemblent à des couches de pierre. Secouer la bouteille ne mélange pas les couleurs.
+
+","Potion, commun",Dungeon Master´s Guide (SRD)
+260,Potion d'héroïsme,potion-d-heroisme ,"Après avoir bu cette potion, vous gagnez 10 points de vie temporaires qui durent 1 heure. Durant tout ce temps, vous êtes sous l'effet du sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=benediction"">bénédiction</a> (pas de concentration requise). Cette potion présente des bulles bleues et des vapeurs comme si elle était bouillante.
+
+","Potion, rare",Dungeon Master´s Guide (SRD)
+261,Potion d'invisibilité,potion-d-invisibilite ,"Le contenant de cette potion semble vide, mais on sent toutefois qu'il contient un liquide. Lorsque vous buvez cette potion, vous devenez invisible pour une durée de 1 heure. Tout ce que vous portez ou transportez devient également invisible. L'effet se termine plus tôt si vous attaquez ou lancez un sort.
+
+","Potion, très rare",Dungeon Master´s Guide (SRD)
+262,Potion d'invulnérabilité,potion-d-invulnerabilite ,"Après avoir bu cette potion, vous avez une résistance à tous les dégâts durant 1 minute. Le liquide sirupeux de cette potion ressemble à du fer liquéfié.
+
+","Potion, rare",Dungeon Master´s Guide (BR)
+263,Potion de clairvoyance,potion-de-clairvoyance ,"Quand vous buvez cette potion, vous bénéficiez de l'effet du sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=clairvoyance"">clairvoyance</a>. Un globe oculaire s'agite sur le liquide jaunâtre, mais disparaît lorsque la potion est ouverte.
+
+","Potion, rare",Dungeon Master´s Guide (SRD)
+264,Potion de diminution,potion-de-diminution ,"Lorsque vous buvez cette potion, vous bénéficiez de l'effet « rapetissement » du sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=agrandissement-rapetissement"">agrandissement/rapetissement</a> pendant 1d4 heures (pas de concentration requise). Le rouge du liquide de cette potion se contracte en permanence en une petite perle, puis s'étend pour colorer le liquide clair autour de lui. Secouer la bouteille n'interrompt pas ce processus.
+
+","Potion, rare",Dungeon Master´s Guide (SRD)
+265,Potion de force de géant,potion-de-force-de-geant ,"Lorsque vous buvez cette potion, votre valeur de Force change pour 1 heure. Le type du géant détermine la valeur (voir le tableau ci-dessous). La potion n'a aucun effet sur vous si votre Force est égale ou supérieure à celle indiquée.
+
+","Potion, variable",Dungeon Master´s Guide (SRD)
+266,Potion de forme gazeuse,potion-de-forme-gazeuse ,"Lorsque vous buvez cette potion, vous bénéficiez de l'effet du sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=forme-gazeuse"">forme gazeuse</a> pour 1 heure (pas de concentration requise) ou jusqu'à ce que vous mettiez fin à l'effet par une action bonus. Le flacon de cette potion semble contenir un brouillard qui se déplace et se déverse comme de l'eau.
+
+","Potion, rare",Dungeon Master´s Guide (SRD)
+267,Potion de guérison,potion-de-guerison ,"Lorsque vous buvez cette potion, vous regagnez des points de vie. Le nombre de points de vie dépend de la rareté de la potion, comme indiqué dans la table ci-dessous. Quelle que soit sa puissance, le liquide rouge de la potion se met à luire lorsqu'il est agité.
+
+","Potion, variable",Dungeon Master´s Guide (SRD)
+268,Potion de lecture des pensées,potion-de-lecture-des-pensees ,"Quand vous buvez cette potion, vous bénéficiez de l'effet du sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=detection-des-pensees"">détection des pensées</a> (sauvegarde DD 13). Dans la potion, d'un liquide pourpre dense, flotte un nuage ovoïde rose.
+
+","Potion, rare",Dungeon Master´s Guide (SRD)
+269,Potion de poison,potion-de-poison ,"Cette concoction ressemble, sent et a le gout d'une potion de guérison ou de toute autre potion bénéfique. Cependant, c'est effectivement du poison masqué par une illusion magique. Un sort d'<a href=""https://www.aidedd.org/dnd/sorts.php?vf=identification"">identification</a> révèle sa vraie nature.
+
+","Potion, peu commun",Dungeon Master´s Guide (SRD)
+270,Potion de résistance,potion-de-resistance ,"Lorsque vous buvez cette potion, vous gagnez une résistance à un type de dégâts pendant 1 heure. Le MD choisit le type ou le détermine au hasard parmi les options ci-dessous.
+
+","Potion, peu commun",Dungeon Master´s Guide (SRD)
+271,Potion de respiration aquatique,potion-de-respiration-aquatique ,"Vous pouvez respirer sous l'eau pendant 1 heure après avoir bu cette potion. Son fluide vert nuageux sent la mer et une bulle ressemblant à une méduse y flotte en suspension.
+
+","Potion, peu commun",Dungeon Master´s Guide (SRD)
+272,Potion de souffle enflammé,potion-de-souffle-enflamme ,"Après avoir bu cette potion, vous pouvez utiliser une action bonus pour expirer du feu sur une cible à 9 mètres ou moins de vous. La cible doit effectuer un jet de sauvegarde de Dextérité DD 13, subissant 4d6 dégâts de feu en cas d'échec, ou la moitié de ces dégâts en cas de réussite. L'effet se termine après avoir expiré du feu trois fois ou après une heure.
+
+","Potion, peu commun",Dungeon Master´s Guide (BR)
+273,Potion de vitalité,potion-de-vitalite ,"Lorsque vous buvez cette potion, cela supprime toute fatigue dont vous souffrez, et guérit toute maladie ou un poison qui vous affecte. Pour les prochaines 24 heures, vous regagnez le maximum de points de vie pour tout DV que vous dépensez. Ce liquide pourpre émet régulièrement une lumière terne, rappelant le battement d'un coeur.
+
+","Potion, très rare",Dungeon Master´s Guide (BR)
+274,Potion de vitesse,potion-de-vitesse ,"Lorsque vous buvez cette potion, vous bénéficiez de l'effet du sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=hate"">hâte</a> pendant 1 minute (pas de concentration requise). Le liquide jaune de cette potion est strié de noir et tourbillonne sur lui-même.
+
+","Potion, très rare",Dungeon Master´s Guide (SRD)
+275,Potion de vol,potion-de-vol ,"Lorsque vous buvez cette potion, votre obtenez une vitesse de vol égale à votre vitesse de marche pour une durée de 1 heure et pouvez flotter. Si l'effet de la potion se termine alors que vous êtes dans les airs, vous tombez, à moins de posséder un autre moyen de vous retenir en l'air. Ce liquide clair flotte en haut de son contenant et des impuretés nuageuses blanches dérivent autour.
+
+","Potion, très rare",Dungeon Master´s Guide (SRD)
+276,Poudre à éternuer,poudre-a-eternuer ,"Trouvée dans un petit contenant, cette poudre ressemble à du sable très fin. Il ressemble à de la poussière de disparition, et un sort d'<a href=""https://www.aidedd.org/dnd/sorts.php?vf=identification"">identification</a> l'indique comme tel. Il y a suffisamment de poudre pour une seule utilisation.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide (SRD)
+277,Poupée qui parle,poupee-qui-parle ,"Lorsque cette poupée en peluche se trouve 1,50 mètre ou moins de vous, vous pouvez passer un repos court pour lui apprendre à dire jusqu'à six phrases, dont aucune ne peut dépasser six mots, et définir dans quelle condition prononcera chaque phrase. Vous pouvez remplacer d'anciennes phrases par de nouvelles. Quelle que soit la condition, celle-ci doit se produire à 1,50 mètre ou moins de la poupée pour la faire parler. Par exemple, chaque fois que quelqu'un prend la poupée, elle peut dire : « Je veux un bonbon ». Les phrases de la poupée sont perdues lorsque votre lien avec la poupée se termine.
+
+","Objet merveilleux, commun (nécessite un lien)",Xanathar´s Guide to Everything
+278,Poussière de disparition,poussiere-de-disparition ,"Rangée dans un petit paquet, cette poudre ressemble à du sable très fin. Il y en a assez pour une utilisation. Lorsque vous utilisez une action pour jeter la poussière dans l'air, vous et toute créature et objet dans un rayon de 3 mètres autour de vous devenez invisibles pour 2d4 minutes. La durée est la même pour tous les sujets, et la poussière est consommée lorsque sa magie prend effet. Si une créature affectée par la poussière attaque ou lance un sort, l'invisibilité se termine pour cette créature.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide (SRD)
+279,Poussière dessiccative,poussiere-dessiccative ,"Ce petit paquet contient 1d6 + 4 pincées de poussière. Vous pouvez utiliser une action pour en saupoudrer une pincée sur de l'eau.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide (SRD)
+280,Puits des mondes,puits-des-mondes ,"Cette étoffe noire et raffinée, aussi douce que la soie, est repliée aux dimensions d'un mouchoir de poche. Lorsqu'elle est dépliée, elle prend une forme circulaire de 1,80 mètre de diamètre.
+
+","Objet merveilleux, légendaire",Dungeon Master´s Guide (SRD)
+281,Puits portable,puits-portable ,"Ce fin tissu noir, doux comme de la soie fait la taille d'un mouchoir une fois plié. Étendu, il a la forme d'un cercle de 1,80 mètre de diamètre.
+
+","Objet merveilleux, rare",Dungeon Master´s Guide (SRD)
+282,Regard charmeur,regard-charmeur ,"Ces lentilles de cristal se placent sur les yeux. Elles possèdent 3 charges. Tant que vous en êtes équipé, vous pouvez dépenser 1 charge en utilisant une action et ainsi lancer le sort <a href=""https://www.aidedd.org/dnd/sorts.php?vf=charme-personne"">charme-personne</a> (sauvegarde DD 13) sur un humanoïde se trouvant à 9 mètres de vous, à condition que vous et la cible puissiez vous voir mutuellement. Les lentilles récupèrent toutes les charges dépensées chaque jour à l'aube.
+
+","Objet merveilleux, peu commun (nécessite un lien)",Dungeon Master´s Guide (SRD)
+283,Robe aux étoiles,robe-aux-etoiles ,"Cette robe noire ou bleue foncée est brodée de petites étoiles blanches ou argentées. Vous gagnez un bonus de +1 aux jets de sauvegarde tant que vous êtes équipé de cette robe. Six étoiles, situées sur la robe au niveau du torse, sont particulièrement larges. Tant que vous êtes équipé de cette robe, vous pouvez utiliser une action pour prélever l'une de ces étoiles et l'utiliser pour lancer un sort de <a href=""https://www.aidedd.org/dnd/sorts.php?vf=projectile-magique"">projectile magique</a> (équivalent à un emplacement de sort de niveau 5). Chaque jour, au crépuscule, 1d6 étoiles prélevées réapparaissent sur la robe.
+
+","Objet merveilleux, très rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+284,Robe de camelot,robe-de-camelot ,"Cette robe est recouverte de pièces de tissu de toutes tailles et de toutes formes. Tant que vous portez cette robe, vous pouvez utiliser une action pour détacher l'un des morceaux de tissu, ce qui le transforme en l'objet ou la créature qu'il représente. Une fois que la dernière pièce est enlevée, la robe devient un vêtement ordinaire.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide (SRD)
+285,Robe de l'archimage,robe-de-l-archimage ,"Ce vêtement élégant est brodé dans une étoffe raffinée de couleur blanche, grise, ou noire et ornée de runes d'argent. La couleur de la robe correspond à l'alignement pour lequel cet objet a été conçu. Une robe blanche est faite pour un personnage bon, une robe grise pour un neutre, et une robe noire pour un mauvais. Vous ne pouvez pas vous lier à une robe de l'archimage si votre alignement ne lui correspond pas. Vous gagnez les bénéfices suivants tant que vous êtes équipé de cette robe :
+
+","Objet merveilleux, légendaire (nécessite un lien avec un ensorceleur, un magicien ou un occultiste)",Dungeon Master´s Guide (SRD)
+286,Robe de vision totale,robe-de-vision-totale ,"Cette robe est ornée de motifs en forme d'yeux. Tant que vous êtes équipé de cette robe, vous gagnez les bénéfices suivants :
+
+","Objet merveilleux, rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+287,Robe prismatique,robe-prismatique ,"Cette robe possède 3 charges, et elle récupère 1d3 charges dépensées chaque jour à l'aube. Tant que vous en êtes équipé, vous pouvez utiliser une action et dépenser 1 charge pour que la robe se pare d'une myriade de motifs changeants aux couleurs éblouissantes jusqu'à la fin de votre prochain tour. Pour toute cette durée, la robe émet une lumière vive dans un rayon de 9 mètres et une lumière faible sur 9 mètres supplémentaires. Les créatures qui peuvent vous voir ont un désavantage à leur jet d'attaque effectué contre vous. De plus, toute créature présente dans la zone de lumière vive et qui peut vous voir au moment où le pouvoir de la robe est activé doit réussir un jet de sauvegarde de Sagesse DD 15 sous peine d'être étourdie jusqu'à ce que l'effet prenne fin.
+
+","Objet merveilleux, très rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+288,Rubis du mage de guerre,rubis-du-mage-de-guerre ,"Gravé de runes occultes, ce rubis de 2,50 cm de diamètre vous permet d'utiliser une arme courante ou de guerre comme focaliseur d'incantation pour vos sorts. Pour que cette propriété fonctionne, vous devez attacher le rubis à l'arme en le plaquant contre celle-ci pendant au moins 10 minutes. Par la suite, le rubis ne peut plus être retiré à moins que vous ne le détachiez par une action ou que l'arme ne soit détruite. Même un champ antimagie ne le décrochera pas. Le rubis tombe de l'arme lorsque votre lien avec le rubis se termine.
+
+","Objet merveilleux, commun (nécessite un lien avec un lanceur de sorts)",Xanathar´s Guide to Everything
+289,Sac à malices,sac-a-malices ,"Ce sac ordinaire, fait d'un tissu gris, couleur rouille, ou ocre, semble vide. Cependant, mettre la main dans le sac révèle la présence d'un petit objet poilu. Le sac pèse 250 grammes.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide (SRD)
+290,Sac de haricots,sac-de-haricots ,"À l'intérieur de sac en tissu lourd se trouvent 3d4 haricots secs. Le sac pèse 250 grammes + 125 grammes pour chaque haricot qu'il contient.
+
+","Objet merveilleux, rare",Dungeon Master´s Guide (SRD)
+291,Sac dévoreur,sac-devoreur ,"Si on l'examine superficiellement, ce sac ressemble à un <a href=""https://www.aidedd.org/dnd/om.php?vf=sac-sans-fond"">sac sans fond</a>, mais c'est en réalité un orifice par lequel s'alimente une gigantesque créature extradimensionnelle. Si on retourne le fond du sac, l'orifice se ferme.
+
+","Objet merveilleux, très rare",Dungeon Master´s Guide (SRD)
+292,Sac sans fond,sac-sans-fond ,"Ce sac de toile a un espace intérieur beaucoup plus grand que ses dimensions extérieures, environ 60 cm de diamètre à l'ouverture et 1,20 m de profondeur. Le sac peut contenir jusqu'à 250 kg, sans être plus volumineux qu'un cube de 1,20 m d'arête. Le sac pèse 7,5 kg, indépendamment de son contenu. Récupérer un élément du sac demande une action.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide (SRD)
+293,Scarabée de protection,scarabee-de-protection ,"Si vous tenez ce médaillon en forme de coléoptère dans votre main pendant 1 tour complet, une inscription apparaît à sa surface, révélant sa nature magique. Il confère deux avantages tant que vous en êtes équipé :
+
+","Objet merveilleux, légendaire (nécessite un lien)",Dungeon Master´s Guide (SRD)
+294,Sceptre d'absorption,sceptre-d-absorption ,"Lorsque vous tenez ce sceptre, vous pouvez utiliser votre réaction pour absorber un sort qui vous cible exclusivement, et sans zone d'effet. L'effet du sort absorbé est annulé, et son énergie (mais pas le sort en lui-même) est stockée dans le sceptre. L'énergie a le niveau du sort qui a été lancé. Le sceptre peut absorber jusqu'à 50 niveaux d'énergie au cours de sa vie. Lorsqu'il atteint ces 50 niveaux, il ne peut plus absorber d'énergie. Si vous êtes visé par un sort et que le sceptre ne peut plus absorber, le sceptre n'a aucun effet sur le sort.
+
+","Sceptre, très rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+295,Sceptre de puissance seigneuriale,sceptre-de-puissance-seigneuriale ,"Ce sceptre possède une bride à sa tête, et fonctionne comme une masse d'armes magique qui confère un bonus de +3 aux jets d'attaque et de dégâts effectués avec elle. Le sceptre possède des capacités associées à six boutons différents alignés le long de la hampe. Il possède également trois autres propriétés qui sont détaillées plus bas.
+
+","Sceptre, légendaire (nécessite un lien)",Dungeon Master´s Guide (SRD)
+296,Sceptre de résurrection,sceptre-de-resurrection ,"Le sceptre possède 5 charges. Tant que vous le tenez, vous pouvez utiliser une action pour lancer depuis le sceptre l'un des sorts suivants : <a href=""https://www.aidedd.org/dnd/sorts.php?vf=guerison"">guérison</a> (dépense 1 charge) ou <a href=""https://www.aidedd.org/dnd/sorts.php?vf=resurrection"">résurrection</a> (dépense 5 charges).
+
+","Sceptre, légendaire (nécessite un lien avec un clerc, un druide ou un paladin)",Dungeon Master´s Guide
+297,Sceptre de sécurité,sceptre-de-securite ,"Tant que vous tenez ce sceptre, vous pouvez utiliser une action pour l'activer. Le sceptre vous transporte alors instantanément, vous et jusqu'à 199 autres créatures consentantes que vous pouvez voir, dans un paradis situé dans un espace extraplanaire. Vous choisissez la forme que ce paradis prend. Ce peut être un jardin tranquille, une charmante petite clairière, une joyeuse taverne, un immense palace, une île tropicale, un carnaval fantastique, ou tout autre lieu de votre imagination. Quelle que soit sa nature, le paradis contient suffisant d'eau et de nourriture pour sustenter ses visiteurs. Sinon, tout ce avec quoi les visiteurs peuvent interagir n'existe que dans cet espace extraplanaire. Par exemple, une fleur cueillie dans un jardin du paradis disparaît si elle est sortie de cet espace extraplanaire.
+
+","Sceptre, très rare",Dungeon Master´s Guide (SRD)
+298,Sceptre de suzeraineté,sceptre-de-suzerainete ,"Vous pouvez utiliser une action pour brandir le sceptre et imposer l'obéissance à toutes les créatures de votre choix que vous pouvez voir et se trouvant dans un rayon de 36 mètres autour de vous. Chaque créature doit réussir un jet de sauvegarde de Sagesse DD 15 sous peine d'être charmée pendant 8 heures. Tant que vous la charmez de la sorte, la créature vous considère comme son chef en qui elle peut avoir toute confiance. Si vous ou l'un de vos compagnons faites du tort à la cible, ou si vous ordonnez à la cible de faire quelque chose contre sa nature, elle cesse d'être charmée par ce sceptre. Le sceptre ne peut être réutilisé avant la prochaine aube.
+
+","Sceptre, rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+299,Sceptre de vigilance,sceptre-de-vigilance ,"Ce sceptre possède une lanière à l'une de ses extrémités et les propriétés suivantes.
+
+","Sceptre, très rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+300,Sceptre du gardien des pactes,sceptre-du-gardien-des-pactes ,"Tant que vous tenez ce sceptre, vous gagnez un bonus aux jets d'attaque avec un sort et au DD de sauvegarde pour résister à vos sorts d'occultiste. Le bonus est déterminé par la rareté du sceptre.
+
+","Sceptre, peu commun (+1) rare (+2) ou très rare (+3) (nécessite un lien avec un occultiste)",Dungeon Master´s Guide
+301,Sceptre inamovible,sceptre-inamovible ,"Ce sceptre plat en fer possède un bouton à une extrémité. Vous pouvez utiliser une action pour appuyer sur le bouton, ce qui fixe magiquement le sceptre sur place. Jusqu'à ce que vous ou une autre créature n'utilisiez une action pour appuyer de nouveau le bouton, le sceptre ne bouge pas, même si cela défie la gravité. Le sceptre peut retenir jusqu'à 4000 kg. Plus de poids désactive le sceptre et le fait tomber. Une créature peut utiliser une action pour réaliser un jet de Force DD 30, lui permettant de déplacer le sceptre de 3 mètres en cas de réussite.
+
+","Sceptre, peu commun",Dungeon Master´s Guide (SRD)
+302,Sceptre tentacule,sceptre-tentacule ,"Fabriqué par les drows, ce sceptre est une arme magique qui se termine par trois tentacules caoutchouteux. Si vous tenez le sceptre, vous pouvez utiliser une action pour que chaque tentacule attaque une créature que vous pouvez voir dans un rayon de 4,50 mètres autour de vous. Chaque tentacule fait un jet d'attaque au corps à corps avec un bonus de +9. S'il touche, le tentacule inflige 1d6 dégâts contondants. Si les trois tentacules touchent une même cible, celle-ci doit faire un jet de sauvegarde de Constitution DD 15. En cas d'échec, la vitesse de la créature est réduite de moitié, elle a un désavantage à ses jets de sauvegarde de Dextérité, et ne peut pas utiliser de réaction pendant 1 minute.
+
+","Sceptre, rare (nécessite un lien)",Dungeon Master´s Guide (BR)
+303,Selle du cavalier,selle-du-cavalier ,"Tant que cette selle est installée sur une monture, vous ne pouvez pas être démonté contre votre volonté si vous êtes conscient. De plus, les jets d'attaque effectués contre la monture ont un désavantage.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide
+304,Solvant universel,solvant-universel ,"Ce tube contient un liquide laiteux qui dégage une forte odeur d'alcool. Vous pouvez utiliser une action pour verser le contenu du tube sur une surface à portée. Le liquide dissout instantanément les adhésifs qu'il touche, dont de la colle universelle, sur une surface carrée de 30 cm de côté maximum.
+
+","Objet merveilleux, légendaire",Dungeon Master´s Guide (SRD)
+305,Sphère d'annihilation,sphere-d-annihilation ,"Cette sphère noire de 60 cm de diamètre est un trou dans le multivers. Elle lévite sur place et est stabilisée par un champ magique qui l'entoure. Cette sphère efface l'existence de toutes les matières qu'elle traverse et qui la traversent. Les artéfacts en sont l'exception. À moins qu'un artéfact soit susceptible d'endommager la sphère d'annihilation, il peut passer au travers sans qu'elle ne l'affecte. Quoi que ce soit d'autre touchant la sphère sans y être complètement englouti et effacé subit 4d10 dégâts de force.
+
+","Objet merveilleux, légendaire",Dungeon Master´s Guide (SRD)
+306,Submersible de Kwalish,submersible-de-kwalish ,"Cet objet apparait d'abord comme un grand baril de fer étanche pesant 250 kg. Le baril a un loquet caché qui peut être trouvé sur un jet d'Intelligence (Investigation) DD 20 réussi. Relâcher le loquet déverrouille une trappe à une extrémité du fût, permettant à deux créatures de taille M ou inférieure de ramper à l'intérieur. Dix leviers sont alignés à l'autre extrémité, chacun dans une position neutre et pouvant être actionné vers le haut ou vers le bas. Quand certains leviers sont utilisés, l'appareil se transforme pour ressembler à un homard géant.
+
+","Objet merveilleux, légendaire",Dungeon Master´s Guide (SRD)
+307,Talisman de la sphère,talisman-de-la-sphere ,"Lorsque vous effectuez un jet d'Intelligence (Arcanes) pour contrôler une <a href=""https://www.aidedd.org/dnd/om.php?vf=sphere-d-annihilation"">sphère d'annihilation</a> alors que vous tenez ce talisman, vous doublez votre bonus de maîtrise pour le jet. En outre, lorsque vous démarrez votre tour en contrôlant une sphère d'annihilation, vous pouvez utiliser une action pour la faire léviter de 3 mètres plus un nombre de mètres supplémentaires égal à 3 x votre modificateur d'Intelligence.
+
+","Objet merveilleux, légendaire (nécessite un lien)",Dungeon Master´s Guide (SRD)
+308,Talisman du bien ultime,talisman-du-bien-ultime ,"Ce talisman est un majestueux symbole de bonté. Une créature qui n'est ni d'alignement bon ni d'alignement mauvais subit 6d6 dégâts radiants en touchant le talisman. Une créature mauvaise subit 8d6 dégâts radiants en touchant le talisman. Chacune de ces catégories de créatures subit de nouveau ces dégâts chaque fois qu'elle termine son tour en tenant ou transportant le talisman.
+
+","Objet merveilleux, légendaire (nécessite un lien avec une créature d'alignement bon)",Dungeon Master´s Guide (SRD)
+309,Talisman du mal absolu,talisman-du-mal-absolu ,"Cet objet symbolise le Mal impénitent. Une créature qui n'est ni d'alignement bon ni d'alignement mauvais subit 6d6 dégâts nécrotiques en touchant le talisman. Une créature bonne subit 8d6 dégâts nécrotiques en touchant le talisman. Chacune de ces catégories de créatures subit de nouveau ces dégâts chaque fois qu'elle termine son tour en tenant ou transportant le talisman.
+
+","Objet merveilleux, légendaire (nécessite un lien avec une créature d'alignement mauvais)",Dungeon Master´s Guide (SRD)
+310,Tapis volant,tapis-volant ,"Vous pouvez prononcer le mot de commande du tapis en utilisant votre action pour qu'il se mette à léviter et voler. Il se déplace dans la direction que vous lui annoncez, à condition que vous vous trouviez à 9 mètres ou moins de lui.
+
+","Objet merveilleux, très rare",Dungeon Master´s Guide (SRD)
+311,Tome de la langue nouée,tome-de-la-langue-nouee ,"Cet épais volume de cuir a une langue desséchée cloutée sur sa couverture. Cinq de ces tomes existent, mais nul ne sait lequel est l'original. Le macabre ornement de la couverture du premier tome de la langue nouée a appartenu à l'un des serviteurs du dieu-liche Vecna « le gardien des secrets » qui a fait l'erreur de le trahir. Les langues fixées sur la couverture de chacune des quatre copies proviennent d'autres lanceurs de sorts qui se sont opposés à Vecna. Les premières pages de chaque tome sont noircies de griffonnages indéchiffrables. Les pages restantes sont d'un blanc immaculé.
+
+","Objet merveilleux, légendaire (nécessite un lien avec un magicien)",Dungeon Master´s Guide
+312,Traité d'autorité et d'influence,traite-d-autorite-et-d-influence ,"Ce livre contient des conseils pour influencer et charmer les autres, et ses mots sont chargés de magie. Si vous passez 48 heures sur une période de 6 jours ou moins à étudier le contenu du livre et pratiquez ses lignes directrices, votre Charisme augmente de 2, tout comme votre maximum pour cette caractéristique. Le manuel perd alors sa magie, mais la retrouvera dans un siècle.
+
+","Objet merveilleux, très rare",Dungeon Master´s Guide (SRD)
+313,Traité de compréhension,traite-de-comprehension ,"Ce livre contient des exercices d'intuition et de perspicacité, et ses mots sont chargés de magie. Si vous passez 48 heures sur une période de 6 jours ou moins à étudier le contenu du livre et pratiquez ses lignes directrices, votre Sagesse augmente de 2, tout comme votre maximum pour cette caractéristique. Le manuel perd alors sa magie, mais la retrouvera dans un siècle.
+
+","Objet merveilleux, très rare",Dungeon Master´s Guide (SRD)
+314,Traité de perspicacité,traite-de-perspicacite ,"Ce livre contient des exercices de mémoire et de logique, et ses mots sont chargés de magie. Si vous passez 48 heures sur une période de 6 jours ou moins à étudier le contenu du livre et pratiquez ses lignes directrices, votre Intelligence augmente de 2, tout comme votre maximum pour cette caractéristique. Le manuel perd alors sa magie, mais la retrouvera dans un siècle.
+
+","Objet merveilleux, très rare",Dungeon Master´s Guide (SRD)
+315,Trident de domination aquatique,trident-de-domination-aquatique ,"Ce trident est une arme magique. Il dispose de 3 charges. Si vous le tenez, vous pouvez utiliser une action et dépenser 1 charge pour lancer <a href=""https://www.aidedd.org/dnd/sorts.php?vf=domination-de-bete"">domination de bête</a> (sauvegarde DD 15) depuis le trident sur une bête qui a une vitesse de nage innée. Le trident récupère 1d3 charges dépensées chaque jour à l'aube.
+
+","Arme (trident), peu commun (nécessite un lien)",Dungeon Master´s Guide (SRD)
+316,Tueuse de dragons,tueuse-de-dragons ,"Vous gagnez un bonus de +1 à l'attaque et aux dégâts fait avec cette arme magique.
+
+","Arme (toute épée), rare",Dungeon Master´s Guide (SRD)
+317,Tueuse de géants,tueuse-de-geants ,"Vous gagnez un bonus de +1 aux jets d'attaque et de dégâts effectués avec cette arme magique.
+
+","Arme (toute hache et toute épée), rare",Dungeon Master´s Guide (SRD)
+318,Vengeresse sacrée,vengeresse-sacree ,"Vous obtenez un bonus de +3 à l'attaque et aux dégâts réalisés avec cette arme magique. Lorsque vous touchez un fiélon ou un mort-vivant avec elle, cette créature subit 2d10 dégâts radiants supplémentaires.
+
+","Arme (toute épée), légendaire (nécessite un lien par un paladin)",Dungeon Master´s Guide (SRD)
+319,Vêtements raccommodeurs,vetements-raccommodeurs ,"Ces élégants vêtements de voyageur se réparent magiquement contre l'usure quotidienne. Les morceaux de la tenue qui sont détruits ne sont par contre pas réparés.
+
+","Objet merveilleux, commun",Xanathar´s Guide to Everything
+320,Voleuse des neuf vies,voleuse-des-neuf-vies ,"Vous gagnez un bonus de +2 aux jets d'attaque et de dégâts effectués avec cette arme magique.
+
+","Arme (toute épée), très rare (nécessite un lien)",Dungeon Master´s Guide (SRD)
+321,Yeux de lynx,yeux-de-lynx ,"Ces lentilles de cristal se placent sur les yeux. Tant que vous en êtes équipé, vous avez un avantage aux jets de Sagesse (Perception) basés sur la vue. Dans des conditions de bonne visibilité, vous pouvez même apercevoir les détails de créatures et d'objets extrêmement éloignés, comme s'ils étaient situés à 60 cm de vous.
+
+","Objet merveilleux, peu commun (nécessite un lien)",Dungeon Master´s Guide (SRD)
+322,Yeux grossissants,yeux-grossissants ,"Ces lentilles de cristal se placent sur les yeux. Tant que vous en êtes équipé, vous pouvez beaucoup mieux voir tout ce qui se trouve dans un rayon de 30 cm. Vous avez un avantage aux jets d'Intelligence (Investigation) basés sur la vue lorsque vous cherchez dans une zone ou étudiez un objet se trouvant dans cette portée.
+
+","Objet merveilleux, peu commun",Dungeon Master´s Guide (SRD)

@@ -1,0 +1,762 @@
+Id,Nom,Description
+0,Attaque en piqué," Si l'aarakocra vole sur au moins 9 mètres en ligne droite vers une cible, puis la touche lors d'une attaque au corps à corps avec une arme, l'attaque inflige 3 (1d6) dégâts supplémentaires à la cible."
+1,Amphibien, L'aboleth peut respirer aussi bien dans l'air que sous l'eau.
+1,Nuage de mucus," Lorsqu'il est sous l'eau, l'aboleth est entouré d'un mucus altérant. Une créature qui touche l'aboleth ou qui le frappe lors d'une attaque au corps à corps en se trouvant à 1,50 mètre ou moins de lui, doit effectuer un jet de sauvegarde de Constitution DD 14. Si elle l'échoue, la créature tombe malade pour les 1d4 prochaines heures. Une créature malade ne peut respirer que sous l'eau."
+1,Pénétration télépathique," Si une créature communique par télépathie avec l'aboleth, l'aboleth découvre les plus grands désirs de la créature, à condition qu'il puisse voir la créature."
+2,Incantation," L'acolyte est un lanceur de sorts de niveau 1. Sa caractéristique d'incantation est la Sagesse (jet de sauvegarde contre ses sorts DD 12, +4 au toucher pour les attaques avec un sort). L'acolyte a préparé les sorts de clerc suivants&nbsp;:"
+3,Vue aiguisée, L'aigle a un avantage aux jets de Sagesse (Perception) faisant appel à la vue.
+4,Vue aiguisée, L'aigle a un avantage aux jets de Sagesse (Perception) faisant appel à la vue.
+5,Bond agressif," Si l'allosaure se déplace d'au moins 9 mètres en ligne droite vers une créature, puis la touche lors d'une attaque avec ses griffes dans le même tour, la cible doit réussir un jet de sauvegarde de Force DD 13 ou tomber à terre. Si la cible est à terre, l'allosaure peut effectuer une attaque de morsure contre elle en tant qu'action bonus."
+6,Déplacement intangible, L'âme en peine peut se déplacer à travers d'autres créatures ou des objets comme si elle traversait un terrain difficile. Elle subit 5 (1d10) dégâts de force si elle termine son tour à l'intérieur d'un objet.
+6,Sensibilité au soleil," Si elle est exposée à la lumière du soleil, l'âme en peine a un désavantage aux jets d'attaque et aux jets de Sagesse (Perception) basés sur la vue."
+7,Inscrutable," Le sphinx est immunisé aux effets cherchant à ressentir ses émotions ou à lire ses pensées, ainsi qu'à n'importe quel sort de divination qu'il refuse. Les jets de Sagesse (Intuition) réalisés pour connaître les intentions ou la sincérité du sphinx subissent un désavantage."
+7,Armes magiques, Les attaques avec une arme du sphinx sont magiques.
+7,Incantation," Le sphinx est un lanceur de sorts de niveau 12. Sa caractéristique d'incantation est la Sagesse (jet de sauvegarde contre ses sorts DD 18, +10 au toucher pour les attaques avec un sort). Il n'a pas besoin de composantes matérielles pour lancer ses sorts. Le sphinx a la liste de sorts de clerc préparée :"
+10,Pattes d'araignée, L'araignée peut escalader des surfaces difficiles et être au plafond la tête en bas sans avoir besoin d'effectuer un jet de caractéristique.
+10,Sens de la toile," Lorsqu'elle est en contact avec une toile, l'araignée connait l'emplacement exact de toutes les créatures qui sont en contact avec cette toile."
+10,Déplacement sur la toile, L'araignée ignore les restrictions de mouvement causées par une toile d'araignée.
+11,Saut éthéré," Par une action bonus, l'araignée peut magiquement passer du plan matériel au plan éthéré, et vice versa."
+11,Pattes d'araignée, L'araignée peut escalader des surfaces difficiles et être au plafond la tête en bas sans avoir besoin d'effectuer un jet de caractéristique.
+11,Déplacement sur la toile, L'araignée ignore les restrictions de mouvement causées par une toile d'araignée.
+12,Déplacement sur la toile, L'araignée ignore les restrictions de mouvement causées par une toile d'araignée.
+12,Pattes d'araignée, L'araignée peut escalader des surfaces difficiles et être au plafond la tête en bas sans avoir besoin d'effectuer un jet de caractéristique.
+12,Sens de la toile," Lorsqu'elle est en contact avec une toile, l'araignée connait l'emplacement exact de toutes les créatures qui sont en contact avec cette toile."
+13,Déplacement sur la toile, L'araignée ignore les restrictions de mouvement causées par une toile d'araignée.
+13,Pattes d'araignée, L'araignée peut escalader des surfaces difficiles et être au plafond la tête en bas sans avoir besoin d'effectuer un jet de caractéristique.
+13,Sens de la toile," Lorsqu'elle est en contact avec une toile, l'araignée connait l'emplacement exact de toutes les créatures qui sont en contact avec cette toile."
+14,Apparence trompeuse," Tant que l'arbre reste immobile, il ne peut être distingué d'un arbre ordinaire."
+15,Apparence trompeuse," Tant que l'arbuste reste immobile, il ne peut être distingué d'un arbuste ordinaire."
+16,Incantation innée," La caractéristique d'incantation innée de l'arcanaloth est le Charisme (jet de sauvegarde contre ses sorts DD 15). L'arcanaloth peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+16,Résistance à la magie, L'arcanaloth a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+16,Armes magiques, Les attaques avec une arme de l'arcanaloth sont magiques.
+16,Incantation," L'arcanaloth est un lanceur de sorts de niveau 16. Sa caractéristique d'incantation est l'Intelligence (jet de sauvegarde contre ses sorts DD 17, +9 au toucher pour les attaques avec un sort). L'arcanaloth a préparé les sorts de magicien suivants&nbsp;:"
+17,Incantation," L'archimage est un lanceur de sorts de niveau 18. Sa caractéristique d'incantation est l'Intelligence (jet de sauvegarde contre ses sorts 17, +9 au toucher pour les attaques avec un sort). Il peut lancer à volonté les sorts <em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=deguisement"">déguisement</a></em> et <em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=invisibilite"">invisibilité</a></em>. L'archimage a préparé les sorts de magicien suivants&nbsp;:"
+17,Résistance à la magie, L'archimage a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+18,Apparence trompeuse," Lorsque l'armure reste immobile, elle ne peut être distinguée d'une armure normale."
+18,Sensibilité à l'antimagie," L'armure se retrouve incapable d'agir lorsqu'elle se situe dans un <em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=champ-antimagie"">champ antimagie</a></em>. Si elle est ciblée par une <em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=dissipation-de-la-magie"">dissipation de la magie</a></em>, l'armure doit réussir un jet de sauvegarde de Constitution contre le DD de sort du lanceur ou tomber inconsciente pendant 1 minute."
+19,Assassinat," Au cours de son premier tour, l'assassin a un avantage aux jets d'attaque contre toute créature qui n'a pas encore pris un tour. Tout coup de l'assassin qui touche contre une créature surprise est un coup critique."
+19,Attaque sournoise," Une fois par tour, l'assassin inflige 14 (4d6) dégâts supplémentaires quand il touche une cible lors d'une attaque avec une arme et qu'il a un avantage au jet d'attaque, ou lorsque la cible est 1,50 mètre ou moins d'un allié de l'assassin qui n'est pas incapable d'agir et si l'assassin n'a pas un désavantage à son jet d'attaque."
+19,Esquive totale," Si l'assassin est soumis à un effet qui lui permet d'effectuer un jet de sauvegarde de Dextérité pour ne subir que la moitié des dégâts, il ne subit aucun dégât s'il réussit son jet de sauvegarde, et seulement la moitié des dégâts s'il échoue."
+20,Corps brûlant," Une créature qui touche l'azer ou le frappe avec une attaque au corps à corps, en se trouvant à 1,50 mètre ou moins de lui, subit 5 (1d10) dégâts de feu."
+20,Armes brûlantes," Lorsque l'azer touche avec une arme de corps à corps en métal, il inflige 3 (1d6) dégâts de feu supplémentaires (inclus dans l'attaque ci-dessous)."
+20,Illumination, L'azer émet une lumière vive dans un rayon de 3 mètres et une lumière faible sur 3 mètres supplémentaires.
+21,Sol aberrant," Le sol, dans un rayon de 3 mètres autour du babélien, a un aspect pâteux et est considéré comme un terrain difficile. Chaque créature qui débute son tour dans cette zone doit réussir un jet de sauvegarde de Force DD 10 ou voir sa vitesse de déplacement réduite à 0 jusqu'au début de son prochain tour."
+21,Charabia," Le babélien babille des choses incompréhensibles tant qu'il peut voir une créature et qu'il n'est pas incapable d'agir. Chaque créature qui débute son tour dans un rayon de 6 mètres du babélien et qui peut entendre son charabia doit effectuer un jet de sauvegarde de Sagesse DD 10. En cas d'échec, la créature ne peut pas utiliser de réaction jusqu'au début de son prochain tour et lance un d8 pour déterminer ce qu'elle fait pendant son tour. Sur un 1 à 4, la créature ne fait rien. Sur un 5 ou 6, la créature n'utilise aucune action ni action bonus et utilise l'intégralité de son mouvement pour se déplacer dans une direction aléatoire. Sur un 7 ou 8, la créature effectue une attaque au corps à corps contre une créature aléatoire à portée ou ne fait rien si elle ne peut pas effectuer une telle attaque."
+22,Tactique de groupe," Le babouin a un avantage aux jets d'attaque contre une créature si au moins l'un de ses alliés est à 1,50 mètre ou moins de la créature et n'est pas incapable d'agir."
+23,Spasmes d'agonie," Le balor explose lorsqu'il meurt, et toutes les créatures situées à 9 mètres ou moins de lui doivent effectuer un jet de sauvegarde de Dextérité DD 20, subissant 70 (20d6) dégâts de feu en cas d'échec, ou la moitié de ces dégâts en cas de réussite. L'explosion embrase les objets inflammables qui ne sont pas tenus ou portés se trouvant dans la zone, et détruit les armes du balor."
+23,Aura de feu," Au début de chaque tour du balor, toute créature située à 1,50 mètre ou moins de lui subit 10 (3d6) dégâts de feu, et les objets inflammables situés dans l'aura, qui ne sont pas tenus ou portés, s'embrasent. Une créature qui touche le balor ou le frappe avec une attaque au corps à corps tout en se trouvant à 1,50 mètre ou moins de lui subit 10 (3d6) dégâts de feu."
+23,Résistance à la magie, Le balor a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+23,Armes magiques, Les attaques avec une arme du balor sont magiques.
+26,Détection de la vie," Grâce à la magie, la banshie peut sentir la présence de créatures qui ne sont ni des morts-vivants ni des créatures artificielles jusqu'à 7,5 kilomètres de distance. Elle connait dans quelle direction elles se trouvent, mais pas leur localisation exacte."
+26,Déplacement intangible, La banshie peut se déplacer à travers d'autres créatures ou des objets comme si elle traversait un terrain difficile. Elle subit 5 (1d10) dégâts de force si elle termine son tour à l'intérieur d'un objet.
+27,Incantation innée," La caractéristique d'incantation innée du barlgura est la Sagesse (jet de sauvegarde contre ses sorts DD 13). Le barlgura peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+27,Téméraire," Au début de son tour, le barlgura peut obtenir un avantage à tous les jets d'attaque au corps à corps avec une arme pendant ce tour, mais les attaques contre lui ont un avantage jusqu'au début de son prochain tour."
+27,Saut avec élan, Le saut en longueur du barlgura va jusqu'à 12 mètres et son saut en hauteur jusqu'à 6 mètres quand il peut prendre son élan.
+28,Regard pétrifiant," Si une créature débute son tour à 9 mètres du basilic et que chacun peut voir l'autre, le basilic peut forcer la créature à effectuer un jet de sauvegarde de Constitution DD 12, s'il n'est pas incapable d'agir. En cas d'échec, la magie commence à transformer la créature en pierre, et celle-ci est entravée. Elle doit retenter le jet de sauvegarde à la fin de son prochain tour. En cas de réussite, l'effet se termine. En cas d'échec, la créature est pétrifiée, jusqu'à ce qu'elle soit délivrée par un sort de <em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=restauration-superieure"">restauration supérieure</a></em> ou par une magie similaire. Une créature qui n'est pas surprise peut éviter le regard du basilic pour ne pas tenter de jet de sauvegarde au début de son tour. Dans ce cas, elle ne pourra pas voir le basilic jusqu'au début de son prochain tour, elle pourra encore choisir à ce moment d'éviter son regard. Si elle regarde le basilic entretemps, elle devra tenter immédiatement le jet de sauvegarde. Si le basilic voit son propre reflet à 9 mètres ou moins dans des conditions de lumière vive, il se méprendra et se ciblera avec son regard, croyant être face à un rival."
+31,Odorat et ouïe aiguisés, La belette a un avantage aux jets de Sagesse (Perception) basés sur l'odorat ou l'ouïe.
+32,Odorat et ouïe aiguisés, La belette a un avantage aux jets de Sagesse (Perception) basés sur l'odorat ou l'ouïe.
+33,Téméraire," Au début de son tour, un berserker peut obtenir un avantage à tous les jets d'attaque au corps à corps avec une arme pendant ce tour, mais les attaques contre lui ont un avantage jusqu'au début de son prochain tour."
+34,Esquive totale," Si la bête éclipsante est soumise à un effet qui lui permet d'effectuer un jet de sauvegarde pour ne subir que la moitié des dégâts, elle ne subit aucun dégât si elle réussit son jet de sauvegarde, et seulement la moitié des dégâts si elle échoue."
+34,Déplacement," La bête éclipsante projette une illusion magique qui fait apparaître la bête éclipsante à quelques centimètres de sa véritable localisation ; de ce fait, les jets d'attaque qui ciblent la bête éclipsante ont un désavantage contre elle. Si elle est touchée par une attaque, ce trait est interrompu jusqu'à la fin de son prochain tour. Ce trait est également interrompu tant que la bête éclipsante est incapable d'agir ou que sa vitesse de déplacement est égale à 0 mètre."
+35,Odorat aiguisé, Le blaireau a un avantage aux jets de Sagesse (Perception) basés sur l'odorat.
+36,Odorat aiguisé, Le blaireau a un avantage aux jets de Sagesse (Perception) basés sur l'odorat.
+37,Puanteur," Toute créature qui débute son tour à 1,50 mètre ou moins de la blême doit réussir un jet de sauvegarde de Constitution DD 10 ou être empoisonnée jusqu'au début de son prochain tour. Si elle réussit son jet de sauvegarde, la créature est immunisée contre la puanteur des blêmes pour les prochaines 24 heures."
+37,Mépris du renvoi, La blême et toutes les goules situées dans un rayon de 9 mètres autour d'elle ont un avantage aux jets de sauvegarde pour résister aux effets de renvoi des morts-vivants.
+38,Amphibien, Le brutacien peut respirer aussi bien dans l'air que sous l'eau.
+38,Communication avec les grenouilles et les crapauds, Le brutacien peut communiquer des concepts simples aux crapauds et aux grenouilles lorsqu'il parle le brutacien.
+38,Camouflage dans la vase, Le brutacien a un avantage aux jets de Dextérité (Discrétion) effectués pour se cacher sur un terrain marécageux.
+38,Saut sans élan," Le brutacien peut sauter en longueur jusqu'à 6 mètres ou en hauteur jusqu'à 3 mètres, avec ou sans élan."
+39,Saut sans élan," La bulette peut sauter en longueur jusqu'à 9 mètres ou en hauteur jusqu'à 4,50 mètres, avec ou sans élan."
+40,Faveur impie, La CA du cambion prend en compte son bonus de Charisme.
+40,Incantation innée," La caractéristique d'incantation innée du cambion est le Charisme (jet de sauvegarde contre ses sorts DD 14). Le cambion peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+41,Charge," Si le centaure se déplace d'au moins 9 mètres en ligne droite vers une cible, puis la touche lors d'une attaque avec la pique dans le même tour, la cible subit 10 (3d6) dégâts perforants supplémentaires."
+43,Odorat et ouïe aiguisés, Le chacal a un avantage aux jets de Sagesse (Perception) basés sur l'odorat ou l'ouïe.
+43,Tactique de groupe," Le chacal a un avantage aux jets d'attaque contre une créature si au moins l'un de ses alliés est à 1,50 mètre ou moins de la créature et n'est pas incapable d'agir."
+45,Odorat aiguisé, Le charognard rampant a un avantage aux jets de Sagesse (Perception) basés sur l'odorat.
+45,Pattes d'araignée, Le charognard rampant peut escalader des surfaces difficiles et être au plafond la tête en bas sans avoir besoin d'effectuer un jet de caractéristique.
+46,Bourdonnement," Le chasme produit un horrible son bourdonnant auquel sont immunisés les démons. Toute autre créature qui débute son tour dans un rayon de 9 mètres autour du chasme doit réussir un jet de sauvegarde de Constitution DD 12 ou tomber inconsciente pendant 10 minutes. Une créature qui ne peut pas entendre le bourdonnement réussit automatiquement son jet de sauvegarde. L'effet sur une créature rendue inconsciente prend fin dès qu'elle subit des dégâts ou si une autre créature utilise son action pour l'asperger avec de l'eau bénite. Si une créature réussit son jet de sauvegarde contre cet effet ou si cet effet prend fin pour elle, elle est immunisée au bourdonnement pour les prochaines 24 heures."
+46,Résistance à la magie, Le chasme a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+46,Pattes d'araignée, La chasme peut escalader des surfaces difficiles et être au plafond la tête en bas sans avoir besoin d'effectuer un jet de caractéristique.
+47,Odorat aiguisé, Le chat a un avantage aux jets de Sagesse (Perception) basés sur l'odorat.
+48,Écholocalisation, La chauve-souris ne peut utiliser sa vision aveugle quand elle est assourdie.
+48,Ouïe aiguisée, La chauve-souris a un avantage aux jets de Sagesse (Perception) faisant appel à l'ouïe.
+49,Écholocalisation, La chauve-souris ne peut utiliser sa vision aveugle quand elle est assourdie.
+49,Ouïe aiguisée, La chauve-souris a un avantage aux jets de Sagesse (Perception) faisant appel à l'ouïe.
+50,Charge écrasante," Si un cheval se déplace d'au moins 6 mètres en ligne droite vers une créature, puis la touche lors d'une attaque avec ses sabots dans le même tour, la cible doit réussir un jet de sauvegarde de Force DD 14 pour ne pas être jetée à terre. Si la cible est à terre, le cheval peut réaliser une autre attaque contre elle avec ses sabots en tant qu'action bonus."
+53,Brave, Le chevalier a un avantage aux jets de sauvegarde pour ne pas être effrayé.
+54,Résistance à la magie, Le chevalier de la mort a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+54,Général des Morts," À moins que le chevalier de la mort soit incapable d'agir, les morts-vivants de son choix à 18 mètres ou moins de lui (lui y comprit) bénéficient d'un avantage à leurs jets de sauvegarde contre les capacités qui repoussent les morts-vivants."
+54,Incantation," Le chevalier de la mort est un lanceur de sorts de niveau 19. Sa caractéristique d'incantation est le Charisme (jet de sauvegarde contre ses sorts DD 18, +10 au toucher pour les attaques avec un sort). Il a préparé les sorts de paladin suivants&nbsp;:"
+55,Charge," Si la chèvre se déplace d'au moins 6 mètres en ligne droite vers une cible, puis la touche lors d'une attaque avec un coup de tête dans le même tour, la cible subit 2 (1d4) dégâts contondants supplémentaires. Si la cible est une créature, elle doit réussir un jet de sauvegarde de Force DD 10 ou tomber à terre."
+55,Stable, La chèvre a un avantage aux jets de sauvegarde de Force et de Dextérité contre les effets susceptibles de la faire tomber à terre.
+56,Charge," Si la chèvre se déplace d'au moins 6 mètres en ligne droite vers une cible, puis la touche lors d'une attaque avec un coup de tête dans le même tour, la cible subit 5 (2d4) dégâts contondants supplémentaires. Si la cible est une créature, elle doit réussir un jet de sauvegarde de Force DD 13 ou tomber à terre."
+56,Stable, La chèvre a un avantage aux jets de sauvegarde de Force et de Dextérité contre les effets susceptibles de la faire tomber à terre.
+57,Odorat et ouïe aiguisés, Le chien de chasse a un avantage aux jets de Sagesse (Perception) basés sur l'odorat ou l'ouïe.
+57,Tactique de groupe," Le chien de chasse a un avantage aux jets d'attaque contre une créature si au moins l'un de ses alliés est à 1,50 mètre ou moins de la créature et n'est pas incapable d'agir."
+58,Bicéphale," Le chien a un avantage aux jets de Sagesse (Perception), ainsi qu'aux jets de sauvegarde pour ne pas être assourdi, aveuglé, charmé, étourdi, inconscient ou effrayé."
+59,Odorat et ouïe aiguisés, Le chien a un avantage aux jets de Sagesse (Perception) basés sur l'odorat ou l'ouïe.
+61,Repli aérien, La chouette ne provoque pas d'attaques d'opportunité lorsqu'elle quitte l'allonge d'un ennemi en volant.
+61,Ouïe et vue aiguisées, La chouette a un avantage aux jets de Sagesse (Perception) faisant appel à l'ouïe ou à la vue.
+62,Repli aérien, La chouette ne provoque pas d'attaques d'opportunité lorsqu'elle quitte l'allonge d'un ennemi en volant.
+62,Ouïe et vue aiguisées, La chouette a un avantage aux jets de Sagesse (Perception) faisant appel à l'ouïe ou à la vue.
+63,Amphibien, Le chuul peut respirer aussi bien dans l'air que sous l'eau.
+63,Détection de la magie," Le chuul détecte la magie dans un rayon de 36 mètres à volonté. Mis à part cela, ce trait fonctionne comme le sort <em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=detection-de-la-magie"">détection de la magie</a></em>, mais il n'est pas lui-même magique."
+65,Imitation," Le corbeau peut imiter des sons simples qu'il a entendus, comme le chuchotement d'une personne, un bébé qui pleure ou un petit cri animal. Une créature qui entend les sons peut se rendre compte qu'il s'agit d'imitations si elle réussit un jet de Sagesse (Intuition) DD 10."
+66,Incantation innée," La caractéristique d'incantation innée du couatl est le Charisme (jet de sauvegarde contre ses sorts DD 14). Le couatl peut lancer les sorts suivants de manière innée, qui nécessitent uniquement une composante verbale :"
+66,Armes magiques, Les attaques avec une arme du couatl sont magiques.
+66,Esprit fortifié," Le couatl est immunisé contre la scrutation et aux effets qui permettraient de ressentir ses émotions, lire ses pensées, ou détecter sa localisation."
+67,Amphibien, Le crabe peut respirer aussi bien dans l'air que sous l'eau.
+68,Amphibien, Le crabe peut respirer aussi bien dans l'air que sous l'eau.
+69,Illumination," Le crânefeu émet une lumière faible dans un rayon de 4,50 mètres, ou une lumière vive dans un rayon de 4,50 mètres et une lumière faible sur 4,50 mètres supplémentaires. Il peut passer d'une option à l'autre en utilisant une action."
+69,Résistance à la magie, Le crânefeu a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+69,Reconstitution," Si le crânefeu est détruit, il récupère tous ses points de vie en 1 heure, à moins que de l'eau bénite ne soit versée sur ses restes, ou qu'un sort de <em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=dissipation-de-la-magie"">dissipation de la magie</a></em> ou de <em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=delivrance-des-maledictions"">délivrance des malédictions</a></em> ne lui soit lancé."
+69,Incantation," Le crânefeu est un lanceur de sorts de niveau 5. Sa caractéristique d'incantation est l'Intelligence (jet de sauvegarde contre ses sorts DD 13, +5 au toucher pour les attaques avec un sort). Le crâne n'a pas besoin des composantes somatiques et matérielles pour lancer ses sorts. Il a préparé les sorts de magicien suivants&nbsp;:"
+70,Amphibien, Le crapaud peut respirer aussi bien dans l'air que sous l'eau.
+70,Saut sans élan," Le crapaud peut sauter en longueur jusqu'à 6 mètres ou en hauteur jusqu'à 3 mètres, avec ou sans élan."
+71,Apparence trompeuse," Tant que le criard reste immobile, il ne peut être distingué d'un champignon ordinaire."
+71,Hurlement," Lorsqu'une lumière vive ou une créature se trouve à 9 mètres ou moins du criard, il émet un hurlement audible à 90 mètres à la ronde. Le criard pousse son crie jusqu'à ce que ce qui l'a dérangé sorte de sa portée de vision aveugle et pendant les 1d4 tours qui suivent."
+72,Apnée, Le crocodile peut retenir son souffle durant 15 minutes.
+73,Apnée, Le crocodile peut retenir son souffle durant 30 minutes.
+74,Vase cubique," Le cube occupe intégralement son espace. Les autres créatures peuvent entrer dans cet espace, mais une créature le faisant est sujette à l'Engloutissement du cube et a un désavantage aux jets de sauvegarde. Les créatures à l'intérieur du cube sont visibles mais disposes d'un abri total. Une créature à 1,50 mètre du cube peut effectuer une action pour extraire une créature ou un objet du cube. Pour ce faire, elle doit réussir un jet de Force DD 12 et la créature accomplissant la tentative subit 10 (3d6) dégâts d'acide. Le cube ne peut contenir qu'une seule créature de taille G ou jusqu'à quatre créatures de taille M ou inférieur en même temps."
+74,Transparent," Y compris lorsque le cube est visible, il est nécessaire de réussir un jet de Sagesse (Perception) DD 15 pour repérer le cube s'il n'a ni bougé ni attaqué. Une créature qui tente d'entrer dans l'espace du cube sans le savoir est surprise par le cube."
+75,Sombre dévotion, Le cultiste a un avantage aux jets de sauvegarde pour ne pas être charmé ou effrayé.
+76,Faible perception du relief, Le cyclope a un désavantage à tous les jets d'attaque contre une cible située à plus de 9 mètres de lui.
+77,Disparition élémentaire," Si le dao meurt, son corps se désintègre en une poudre cristalline, ne laissant derrière lui que l'équipement qu'il portait ou transportait."
+77,Incantation innée," La caractéristique d'incantation innée du dao est le Charisme (jet de sauvegarde contre ses sorts DD 14, +6 au toucher pour les attaques avec un sort). Il peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+77,Déplacement dans la terre," Le dao peut creuser à travers la terre et la pierre non magique et non travaillée. En faisant cela, il ne dérange pas les matériaux qu'il traverse."
+77,Pieds sûrs, Le dao a un avantage aux jets de Force ou de Dextérité réalisés pour contrer des effets qui le jetteraient à terre.
+79,Esquive totale," Si la demi-liche est soumise à un effet qui lui permet d'effectuer un jet de sauvegarde pour ne subir que la moitié des dégâts, elle ne subit aucun dégât si elle réussit son jet de sauvegarde, et seulement la moitié des dégâts si elle échoue."
+79,Résistance légendaire (3/jour)," Si la demi-liche échoue à un jet de sauvegarde, elle peut décider de transformer cet échec en réussite."
+79,Immunité au renvoi, La demi-liche est immunisée aux effets de renvoi des morts-vivants.
+81,Déplacement intangible, Le démon peut se déplacer au travers d'autres créatures et objets comme s'ils étaient des terrains difficiles. Le démon subit 5 (1d10) dégâts de force s'il termine son tour à l'intérieur d'un objet.
+81,Sensibilité à la lumière," S'il est exposé à une lumière vive, le démon a un désavantage aux jets d'attaque et aux jets de Sagesse (Perception) basés sur la vue."
+81,Discrétion dans les ombres," S'il se trouve dans des ténèbres ou est exposé à une lumière faible, le démon peut effectuer l'action Se cacher en utilisant une action bonus."
+82,Résistance au feu partagée, Le destrier noir peut accorder la résistance au feu à son cavalier.
+82,Illumination, Le destrier noir émet une lumière vive dans un rayon de 3 mètres et une lumière faible sur 3 mètres supplémentaire.
+83,Armes angéliques," Les attaques avec une arme du déva sont magiques. Lorsque le déva touche avec n'importe quelle arme, l'arme inflige 4d8 dégâts radiants supplémentaires (inclus dans l'attaque ci-dessous)."
+83,Incantation innée," La caractéristique d'incantation innée du déva est le Charisme (jet de sauvegarde contre ses sorts DD 17). Le déva peut lancer les sorts suivants de manière innée, qui nécessitent uniquement une composante verbale :"
+83,Résistance à la magie, Le déva a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+84,Détection de la sentience," Le dévoreur d'intellect peut sentir la présence et localiser chaque créature ayant une Intelligence de 3 ou plus dans un rayon de 90 mètres, quelles que soient les barrières qui les séparent, à moins que la créature soit protégée par un sort d'<em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=esprit-impenetrable"">esprit impénétrable</a></em>."
+85,Vision de diable, Des ténèbres magiques ne gênent pas la vision dans le noir du diable.
+85,Résistance à la magie, Le diable a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+86,Peau barbelée," Au début de chacun de ses tours, le diable barbelé inflige 5 (1d10) dégâts perforants à toute créature qu'il agrippe."
+86,Vision de diable, Des ténèbres magiques ne gênent pas la vision dans le noir du diable.
+86,Résistance à la magie, Le diable a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+87,Vision de diable, Des ténèbres magiques ne gênent pas la vision dans le noir du diable.
+87,Résistance à la magie, Le diable a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+87,Inébranlable, Le diable ne peut pas être effrayé s'il peut voir une créature alliée dans un rayon de 9 mètres autour de lui.
+88,Vision de diable, Des ténèbres magiques ne gênent pas la vision dans le noir du diable.
+88,Résistance à la magie, Le diable a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+89,Vision de diable, Des ténèbres magiques ne gênent pas la vision dans le noir du diable.
+89,Repli aérien, Le diable épineux ne provoque pas d'attaques d'opportunité lorsqu'il quitte l'allonge d'un ennemi en volant.
+89,Épines limitées, Le diable possède douze épines caudales. Les épines utilisées repoussent après que le diable ait effectué un repos long.
+89,Résistance à la magie, Le diable épineux a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+90,Vision de diable, Des ténèbres magiques ne gênent pas la vision dans le noir du diable.
+90,Résistance à la magie, Le diable a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+91,Vision de diable, Des ténèbres magiques ne gênent pas la vision dans le noir du diable.
+91,Résistance à la magie, Le diable a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+92,Métamorphe," Le diablotin peut utiliser son action pour se métamorphoser en une bête qui ressemble à un rat (vitesse 6 m), un corbeau (6 m, vol 18 m) ou une araignée (6 m, escalade 6 m), ou pour reprendre sa forme véritable. Mise à part sa vitesse (comme indiqué précédemment), ses statistiques sont les mêmes quelle que soit sa forme. L'équipement qu'il porte ou transporte ne se transforme pas. Il retrouve sa forme véritable s'il meurt."
+92,Vision de diable, Des ténèbres magiques ne gênent pas la vision dans le noir du diablotin.
+92,Résistance à la magie, Le diablotin a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+93,Aura de peur," Toute créature hostile au diantrefosse qui commence son tour à 6 mètres ou moins de lui doit effectuer un jet de sauvegarde de Sagesse DD 21, à moins que le diantrefosse ne soit incapable d'agir. En cas d'échec, la créature est effrayée jusqu'au début de son prochain tour. Si le jet de sauvegarde d'une créature est une réussite, la créature est immunisée contre l'Aura de peur du diantrefosse pour les prochaines 24 heures."
+93,Résistance à la magie, Le diantrefosse a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+93,Armes magiques, Les attaques avec une arme du diantrefosse sont magiques.
+93,Incantation innée," La caractéristique d'incantation innée du diantrefosse est le Charisme (jet de sauvegarde contre ses sorts DD 21). Le diantrefosse peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+94,Disparition élémentaire," Si le djinn meurt, son corps se désintègre en une chaude brise, ne laissant derrière lui que l'équipement que le djinn portait ou transportait."
+94,Incantation innée," La caractéristique d'incantation innée du djinn est le Charisme (jet de sauvegarde contre ses sorts DD 17, +9 au toucher pour les attaques avec un sort). Il peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+95,Métamorphe," Le doppelganger peut utiliser son action pour se métamorphoser en un humanoïde de taille P ou M qu'il a déjà vu, ou pour reprendre sa forme véritable. Mise à part sa taille, ses statistiques sont les mêmes quelle que soit sa forme. L'équipement qu'il porte ou transporte ne se transforme pas. Il retrouve sa forme véritable s'il meurt."
+95,Embuscade," Lors du premier round de combat, le doppelganger a un avantage aux jets d'attaque contre toute créature qu'il a surprise."
+95,Attaque surprise," Si le doppelganger surprend une créature et touche avec une attaque lors du premier round de combat, la cible subit 10 (3d6) dégâts supplémentaires pour cette attaque."
+96,Résistance légendaire (3/jour)," Si la dracoliche échoue à un jet de sauvegarde, elle peut décider de transformer cet échec en réussite."
+96,Résistance à la magie, La dracoliche a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+97,Marche sur la glace," Le dragon peut se déplacer sur les sols gelés ou escalader les surfaces glacées sans avoir besoin d'effectuer un jet de caractéristique. De plus, les terrains difficiles formés de glace ou de neige ne lui coûtent pas de mouvement supplémentaire."
+97,Résistance légendaire (3/jour)," Si le dragon échoue à un jet de sauvegarde, il peut décider de transformer cet échec en réussite."
+98,Marche sur la glace," Le dragon peut se déplacer sur les sols gelés ou escalader les surfaces glacées sans avoir besoin d'effectuer un jet de caractéristique. De plus, les terrains difficiles formés de glace ou de neige ne lui coûtent pas de mouvement supplémentaire."
+98,Résistance légendaire (3/jour)," Si le dragon échoue à un jet de sauvegarde, il peut décider de transformer cet échec en réussite."
+100,Marche sur la glace," Le dragon peut se déplacer sur les sols gelés ou escalader les surfaces glacées sans avoir besoin d'effectuer un jet de caractéristique. De plus, les terrains difficiles formés de glace ou de neige ne lui coûtent pas de mouvement supplémentaire."
+101,Résistance légendaire (3/jour)," Si le dragon échoue à un jet de sauvegarde, il peut décider de transformer cet échec en réussite."
+102,Résistance légendaire (3/jour)," Si le dragon échoue à un jet de sauvegarde, il peut décider de transformer cet échec en réussite."
+105,Résistance légendaire (3/jour)," Si le dragon échoue à un jet de sauvegarde, il peut décider de transformer cet échec en réussite."
+106,Résistance légendaire (3/jour)," Si le dragon échoue à un jet de sauvegarde, il peut décider de transformer cet échec en réussite."
+109,Résistance légendaire (3/jour)," Si le dragon échoue à un jet de sauvegarde, il peut décider de transformer cet échec en réussite."
+110,Résistance légendaire (3/jour)," Si le dragon échoue à un jet de sauvegarde, il peut décider de transformer cet échec en réussite."
+113,Ombre vivante," Tant qu'il se trouve dans une zone de lumière faible ou de ténèbres, le dragon a une résistance à tous les dégâts, exception faite des dégâts de force, psychiques, ou radiants."
+113,Discrétion dans les ombres," Tant qu'il se trouve dans une zone de lumière faible ou de ténèbres, le dragon peut utiliser l'action Se cacher en dépensant une action bonus."
+113,Sensibilité au soleil," S'il est exposé à la lumière du soleil, le dragon a un désavantage aux jets d'attaque et aux jets de Sagesse (Perception) basés sur la vue."
+114,Amphibien, Le dragon peut respirer aussi bien dans l'air que sous l'eau.
+114,Résistance légendaire (3/jour)," Si le dragon échoue à un jet de sauvegarde, il peut décider de transformer cet échec en réussite."
+115,Amphibien, Le dragon peut respirer aussi bien dans l'air que sous l'eau.
+115,Résistance légendaire (3/jour)," Si le dragon échoue à un jet de sauvegarde, il peut décider de transformer cet échec en réussite."
+116,Amphibien, Le dragon peut respirer aussi bien dans l'air que sous l'eau.
+117,Amphibien, Le dragon peut respirer aussi bien dans l'air que sous l'eau.
+118,Amphibien, Le dragon peut respirer aussi bien dans l'air que sous l'eau.
+118,Résistance légendaire (3/jour)," Si le dragon échoue à un jet de sauvegarde, il peut décider de transformer cet échec en réussite."
+119,Amphibien, Le dragon peut respirer aussi bien dans l'air que sous l'eau.
+119,Résistance légendaire (3/jour)," Si le dragon échoue à un jet de sauvegarde, il peut décider de transformer cet échec en réussite."
+120,Amphibien, Le dragon peut respirer aussi bien dans l'air que sous l'eau.
+121,Amphibien, Le dragon peut respirer aussi bien dans l'air que sous l'eau.
+122,Résistance légendaire (3/jour)," Si le dragon échoue à un jet de sauvegarde, il peut décider de transformer cet échec en réussite."
+123,Résistance légendaire (3/jour)," Si le dragon échoue à un jet de sauvegarde, il peut décider de transformer cet échec en réussite."
+126,Invisibilité supérieure," En utilisant une action bonus, le dragon peut devenir invisible par magie jusqu'à ce que sa concentration s'arrête (comme s'il se concentrait sur un sort). Tout l'équipement que le dragon porte ou transporte est également invisible."
+126,Télépathie limitée," En utilisant la télépathie, le dragon peut magiquement communiquer avec d'autres dragons féeriques trouvant dans un rayon de 18 mètres autour de lui."
+126,Résistance à la magie, Le dragon a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+126,Incantation innée," La caractéristique d'incantation innée du dragon est le Charisme (jet de sauvegarde contre ses sorts DD 13). Il peut lancer un certain nombre de sorts de manière innée, sans avoir besoin de composantes matérielles. Au fur et à mesure que le dragon grandit et change de couleur, il gagne des sorts supplémentaires, comme indiqué ci-dessous."
+127,Amphibien, Le dragon peut respirer aussi bien dans l'air que sous l'eau.
+127,Résistance légendaire (3/jour)," Si le dragon échoue à un jet de sauvegarde, il peut décider de transformer cet échec en réussite."
+128,Amphibien, Le dragon peut respirer aussi bien dans l'air que sous l'eau.
+128,Résistance légendaire (3/jour)," Si le dragon échoue à un jet de sauvegarde, il peut décider de transformer cet échec en réussite."
+129,Amphibien, Le dragon peut respirer aussi bien dans l'air que sous l'eau
+130,Amphibien, Le dragon peut respirer aussi bien dans l'air que sous l'eau.
+131,Résistance légendaire (3/jour)," Si le dragon échoue à un jet de sauvegarde, il peut décider de transformer cet échec en réussite."
+132,Résistance légendaire (3/jour)," Si le dragon échoue à un jet de sauvegarde, il peut décider de transformer cet échec en réussite."
+135,Amphibien, Le dragon peut respirer aussi bien dans l'air que sous l'eau.
+135,Résistance légendaire (3/jour)," Si le dragon échoue à un jet de sauvegarde, il peut décider de transformer cet échec en réussite."
+136,Amphibien, Le dragon peut respirer aussi bien dans l'air que sous l'eau.
+136,Résistance légendaire (3/jour)," Si le dragon échoue à un jet de sauvegarde, il peut décider de transformer cet échec en réussite."
+137,Amphibien, Le dragon peut respirer aussi bien dans l'air que sous l'eau.
+138,Amphibien, Le dragon peut respirer aussi bien dans l'air que sous l'eau.
+139,Amphibien, Le dragon-tortue peut respirer aussi bien dans l'air que sous l'eau.
+141,Ascendance féerique," Le drider a un avantage aux jets de sauvegarde contre les effets de charme, et la magie ne peut pas l'endormir."
+141,Incantation innée," La caractéristique d'incantation innée du drider est la Sagesse (jet de sauvegarde contre ses sorts DD 13). Le drider peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+141,Pattes d'araignée, Le drider peut escalader des surfaces difficiles et être au plafond la tête en bas sans avoir besoin d'effectuer un jet de caractéristique.
+141,Sensibilité au soleil," S'il est exposé à la lumière du soleil, le drider a un désavantage aux jets d'attaque et aux jets de Sagesse (Perception) basés sur la vue."
+141,Déplacement sur la toile, Le drider ignore les restrictions de mouvement causées par une toile d'araignée.
+142,Ascendance féerique," Le drow a un avantage aux jets de sauvegarde contre les effets de charme, et la magie ne peut pas l'endormir."
+142,Incantation innée," La caractéristique d'incantation innée du drow est le Charisme (jet de sauvegarde contre ses sorts DD 11). Il peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+142,Sensibilité au soleil," S'il est exposé à la lumière du soleil, le drow a un désavantage aux jets d'attaque et aux jets de Sagesse (Perception) basés sur la vue."
+143,Ascendance féerique," Le drow a un avantage aux jets de sauvegarde contre les effets de charme, de plus il est immunisé contre le sommeil magique."
+143,Incantation innée," La caractéristique d'incantation innée du drow est le Charisme (jet de sauvegarde contre ses sorts DD 12). Il peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+143,Sensibilité au soleil," S'il est exposé à la lumière du soleil, le drow a un désavantage aux jets d'attaque et aux jets de Sagesse (Perception) basés sur la vue."
+144,Ascendance féerique," Le drow a un avantage aux jets de sauvegarde contre les effets de charme, et la magie ne peut pas l'endormir."
+144,Incantation innée," La caractéristique d'incantation innée du drow est le Charisme (jet de sauvegarde contre ses sorts DD 12). Il peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+144,Incantation," Le drow est un lanceur de sorts de niveau 10. Sa caractéristique d'incantation est l'Intelligence (jet de sauvegarde contre ses sorts DD 14, +6 au toucher pour les attaques avec un sort). Le drow a préparé les sorts de magicien suivants&nbsp;:"
+144,Sensibilité au soleil," S'il est exposé à la lumière du soleil, le drow a un désavantage aux jets d'attaque et aux jets de Sagesse (Perception) basés sur la vue."
+145,Ascendance féerique," Le drow a un avantage aux jets de sauvegarde contre les effets de charme, de plus il est immunisé contre le sommeil magique."
+145,Incantation innée," La caractéristique d'incantation innée du drow est le Charisme (jet de sauvegarde contre ses sorts DD 15). Il peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+145,Incantation," Le drow est un lanceur de sorts de niveau 10. Sa caractéristique d'incantation est la Sagesse (jet de sauvegarde contre ses sorts DD 14, +6 au toucher pour les attaques avec un sort). Le drow a préparé les sorts de clerc suivants&nbsp;:"
+145,Sensibilité au soleil," S'il est exposé à la lumière du soleil, le drow a un désavantage aux jets d'attaque et aux jets de Sagesse (Perception) basés sur la vue."
+146,Incantation," Le druide est un lanceur de sorts de niveau 4. Sa caractéristique d'incantation est la Sagesse (jet sauvegarde contre ses sorts DD 12, +4 au toucher pour les attaques avec un sort). Il a préparé les sorts de druide suivants&nbsp;:"
+147,Incantation innée," La caractéristique d'incantation innée de la dryade est le Charisme (jet de sauvegarde contre ses sorts DD 14). La dryade peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+147,Résistance à la magie, La dryade a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+147,Communication avec les animaux et avec les plantes, La dryade peut communiquer avec les bêtes et les plantes comme s'ils avaient une langue en commun.
+147,Passage par les arbres," Une fois pendant son tour, la dryade peut utiliser 3 mètres de son mouvement pour magiquement pénétrer à l'intérieur d'un arbre vivant se trouvant à portée et ressortir d'un arbre vivant se trouvant à 18 mètres maximum du premier arbre, apparaissant alors dans un espace inoccupé à 1,50 mètre du deuxième arbre. Chacun des arbres doit être de taille G ou supérieure."
+148,Résistance duergare," Le duergar a un avantage aux jets de sauvegarde contre le poison, les sorts et les illusions, ainsi qu'aux jets de sauvegarde pour ne pas être charmé ou paralysé."
+148,Sensibilité au soleil," S'il est exposé à la lumière du soleil, le duergar a un désavantage aux jets d'attaque et aux jets de Sagesse (Perception) basés sur la vue."
+149,Esprit axiomatique, Le duodrone ne peut être contraint à agir d'une manière contraire à sa nature ou aux instructions qu'il a reçues.
+149,Désintégration," Si le duodrone meurt, son corps se désintègre et tombe en poussière, ne derrière lui que ses armes et tout ce qu'il portait."
+150,Ouïe et vue aiguisées, L'éclaireur a un avantage aux jets de Sagesse (Perception) basés sur l'ouïe ou la vue.
+151,Disparition élémentaire," Si l'éfrit meurt, son corps se désintègre dans un flash de feu et un nuage de fumée, ne laissant derrière lui que l'équipement qu'il portait ou transportait."
+151,Incantation innée," La caractéristique d'incantation innée de l'éfrit est le Charisme (jet de sauvegarde contre ses sorts DD 15, +7 au toucher pour les attaques avec un sort). Il peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+152,Charge," Si l'élan se déplace d'au moins 6 mètres en ligne droite vers une cible, puis la touche lors d'une attaque avec un coup de tête dans le même tour, la cible subit 7 (2d6) dégâts supplémentaires. Si la cible est une créature, elle doit réussir un jet de sauvegarde de Force DD 13 ou tomber à terre."
+153,Charge," Si l'élan se déplace d'au moins 6 mètres en ligne droite vers une cible, puis la touche lors d'une attaque avec un coup de tête dans le même tour, la cible subit 7 (2d6) dégâts supplémentaires. Si la cible est une créature, elle doit réussir un jet de sauvegarde de Force DD 14 ou tomber à terre."
+154,Forme d'air," L'élémentaire peut pénétrer dans l'espace d'une créature hostile et y rester. Il peut se déplacer au travers d'espaces larges de 2,50 cm sans être considéré comme passant dans un espace étroit."
+155,Forme d'eau," L'élémentaire peut entrer dans l'espace d'une créature hostile et y rester. Il peut se déplacer à travers un espace aussi étroit que 2,50 cm de large sans être compressé."
+155,Congelé," Si l'élémentaire subit des dégâts de froid, il gèle partiellement ; sa vitesse est réduite de 6 mètres jusqu'à la fin de son prochain tour."
+156,Déplacement dans la terre," L'élémentaire peut creuser à travers la terre et la pierre non magique et non travaillée. Au cours de ce mouvement, il ne dérange pas les matériaux à travers lesquels il passe."
+156,Monstre de siège, L'élémentaire inflige le double des dégâts aux objets et structures qu'il attaque.
+157,Forme de feu," L'élémentaire peut se déplacer au travers d'espaces larges de 2,50 cm sans être considéré comme passant dans un espace étroit. Une créature qui touche l'élémentaire ou qui réussit à le frapper avec une attaque au corps à corps en se trouvant à 1,50 mètre ou moins de lui subit 5 (1d10) dégâts de feu. De plus, l'élémentaire peut pénétrer dans l'espace d'une créature hostile et y rester. La première fois qu'il pénètre dans l'espace d'une créature lors d'un tour, celle-ci subit 5 (1d10) dégâts de feu et s'enflamme, jusqu'à ce que quelqu'un utilise une action pour étouffer le feu. Une créature enflammée subit 5 (1d10) dégâts de feu au début de chacun de ses tours."
+157,Illumination, L'élémentaire émet une lumière vive dans un rayon de 9 mètres et une lumière faible sur 9 mètres supplémentaires.
+157,Susceptibilité à l'eau," Pour chaque 1,50 mètre parcouru dans de l'eau, ou pour chaque quantité de 4 litres d'eau jetée sur l'élémentaire, celui-ci subit 1 point de dégâts de froid."
+158,Charge écrasante," Si l'éléphant se déplace d'au moins 6 mètres en ligne droite vers une créature, puis la touche lors d'une attaque avec ses défenses dans le même tour, la cible doit réussir un jet de sauvegarde de Force DD 12 pour ne pas être jetée à terre. Si la cible est à terre, l'éléphant peut réaliser une attaque de piétinement contre celle-ci par une action bonus."
+159,Incantation innée," La caractéristique d'incantation innée de l'empyréen est le Charisme (jet de sauvegarde contre ses sorts DD 23, +15 au toucher pour les attaques avec un sort). Il peut lancer les sorts suivants de manière innée, sans avoir besoin des composantes matérielles :"
+159,Résistance légendaire (3/jour)," Si l'empyréen échoue à un jet de sauvegarde, il peut décider de transformer cet échec en réussite."
+159,Résistance à la magie, L'empyréen a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+159,Armes magiques, Les attaques avec une arme de l'empyréen sont magiques.
+160,Apparence trompeuse," Tant que l'enlaceur reste immobile, il ne peut être distingué d'une formation naturelle de caverne, comme une stalagmite."
+160,Filaments agrippants," L'enlaceur peut avoir jusqu'à 6 filaments à la fois. Chaque filament peut être attaqué (CA 20 ; 10 points de vie ; immunité au poison et aux dégâts psychiques). Détruire un filament n'inflige aucun dégât à l'enlaceur, qui peut faire sortir un filament de remplacement à son prochain tour. Un filament peut également être rompu si une créature utilise son action pour effectuer un jet de Force DD 15 contre elle."
+160,Pattes d'araignée, L'enlaceur peut escalader des surfaces difficiles et être au plafond la tête en bas sans avoir besoin d'effectuer un jet de caractéristique.
+161,Écholocalisation, L'épaulard ne peut pas utiliser sa vision aveugle s'il est assourdi.
+161,Apnée, L'épaulard peut retenir son souffle durant 30 minutes.
+161,Ouïe aiguisée, L'épaulard a un avantage aux jets de Sagesse (Perception) basés sur l'ouïe.
+162,Apparence trompeuse," Tant que l'épée reste immobile et qu'elle ne vole pas, elle ne peut être distinguée d'une épée normale."
+162,Sensibilité à l'antimagie," L'épée est incapable d'agir lorsqu'elle se situe dans un <em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=champ-antimagie"">champ antimagie</a></em>. Si elle est ciblée par une <em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=dissipation-de-la-magie"">dissipation de la magie</a></em>, l'épée doit réussir un jet de sauvegarde de Constitution contre le DD de sort du lanceur ou tomber inconsciente pendant 1 minute."
+163,Apparence trompeuse," Tant que l'épouvantail reste immobile, il ne peut pas être distingué d'un épouvantail ordinaire et inanimé."
+164,Armes infernales, Les attaques avec une arme de l'érinye sont magiques et infligent 13 (3d8) dégâts de poison supplémentaires si elles touchent (inclus dans les attaques ci-dessous).
+164,Résistance à la magie, L'érinye a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+165,Ruse," À chacun de ses tours, l'espion peut utiliser une action bonus pour Se désengager, Se cacher ou Foncer."
+165,Attaque sournoise (1/tour)," L'espion inflige 7 (2d6) dégâts supplémentaires à une créature qu'il touche avec une arme s'il a un avantage au jet d'attaque, ou si la cible est à 1,50 mètre ou moins d'un allié de l'espion qui n'est pas incapable d'agir et que l'espion n'a pas un désavantage au jet d'attaque."
+167,Pattes d'araignée, L'ettercap peut escalader des surfaces difficiles et être au plafond la tête en bas sans avoir besoin d'effectuer un jet de caractéristique.
+167,Sens de la toile," Lorsqu'il est en contact avec une toile, l'ettercap connait l'emplacement exact de toutes les créatures qui sont en contact avec cette toile."
+167,Déplacement sur la toile, L'ettercap ignore les restrictions de mouvement causées par une toile d'araignée.
+168,Bicéphale," L'ettin a un avantage aux jets de Sagesse (Perception), ainsi qu'aux jets de sauvegarde réalisés pour ne pas être assourdi, aveuglé, charmé, effrayé, étourdi ou inconscient."
+168,Alerte," Quand une des têtes de l'ettin dort, l'autre reste éveillée."
+169,Sombre dévotion, Le fanatique a un avantage aux jets de sauvegarde pour ne pas être charmé ou effrayé.
+169,Incantation," Le fanatique est un lanceur de sorts de niveau 4. Sa caractéristique d'incantation est la Sagesse (jet de sauvegarde contre ses sorts DD 11, +3 au toucher pour les attaques avec un sort). Le fanatique a préparé les sorts de clerc suivants&nbsp;:"
+170,Déplacement intangible, Le fantôme peut se déplacer à travers d'autres créatures ou des objets comme s'il traversait un terrain difficile. Il subit 5 (1d10) dégâts de force s'il termine son tour à l'intérieur d'un objet.
+170,Vision éthérée, Le fantôme peut voir à 18 mètres dans le plan éthéré lorsqu'il se trouve sur le plan matériel et inversement.
+171,Vue aiguisée, Le faucon a un avantage aux jets de Sagesse (Perception) faisant appel à la vue.
+172,Tactique de groupe," Le faucon a un avantage aux jets d'attaque contre une créature si au moins l'un de ses alliés est à 1,50 mètre ou moins de la créature et n'est pas incapable d'agir."
+172,Vue aiguisée, Le faucon a un avantage aux jets de Sagesse (Perception) faisant appel à la vue.
+173,Absorption de vie," Au prix d'une action bonus, le feu follet peut prendre pour cible une créature qu'il peut voir se trouvant à 1,50 mètre de lui, ayant 0 point de vie et qui est toujours vivante. La cible doit réussir un jet de sauvegarde de Constitution DD 10 contre cette magie ou mourir. Si la cible meurt, le feu follet récupère 10 (3d6) points de vie."
+173,Éphémère, Le feu follet ne peut rien porter ou ni transporter.
+173,Déplacement intangible, Le feu follet peut se déplacer à travers d'autres créatures ou des objets comme s'il traversait un terrain difficile. Il subit 5 (1d10) dégâts de force s'il termine son tour à l'intérieur d'un objet.
+173,Illumination variable," Le feu follet émet une lumière vive dans un rayon de 1,50 à 6 mètres, et une lumière faible sur un nombre supplémentaire de mètres égal au rayon choisi. Le feu follet peut modifier le rayon par une action bonus."
+174,Résistance à la magie, Le flagelleur mental a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+174,Incantation innée (psioniques)," La caractéristique d'incantation innée du flagelleur mental est l'Intelligence (jet de sauvegarde contre ses sorts DD 15). Il peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+175,Télépathie avancée," Le flumph peut percevoir la teneur de toute communication télépathique établie dans un rayon de 18 mètres autour de lui, et ne peut pas être surpris par des créatures possédant une quelconque forme de télépathie."
+175,Handicap à terre," Si le flumph est mis à terre, lancez un dé. Sur un résultat impair, le flumph se retrouve à l'envers et est incapable d'agir. À la fin de chacun de ses tours, le flumph peut effectuer un jet de sauvegarde de Dextérité DD 10, se redressant alors et n'étant plus soumis à l'état incapable d'agir en cas de réussite."
+175,Voile télépathique," Le flumph est immunisé contre tout effet qui pourrait percevoir ses émotions ou lire ses pensées, ainsi qu'à tous les sorts de divination."
+177,Apparence trompeuse," Tant que le galeb duhr reste immobile, il ne peut être distingué d'un rocher normal."
+177,Charge en roulade," Si le galeb duhr roule sur au moins 6 mètres droit sur une cible, puis la touche lors d'une attaque avec son coup dans le même tour, la cible subit 7 (2d6) dégâts contondants supplémentaires. Si la cible est une créature, elle doit réussir un jet de sauvegarde de Force DD 16 ou tomber à terre."
+179,Lien," Le gardien animé est connecté magiquement à une amulette. Tant que le gardien et son amulette sont dans le même plan d'existence, le porteur de l'amulette peut appeler télépathiquement le gardien animé à le rejoindre, et le gardien sait automatiquement à quelle distance et dans quelle direction se trouve l'amulette. Si le gardien se trouve à 18 mètres ou moins du porteur de l'amulette, la moitié des dégâts que le porteur subit (arrondis au supérieur) est transférée au gardien."
+179,Régénération, Le gardien animé récupère 10 points de vie au début de son tour s'il possède au moins 1 point de vie.
+179,Réservoir de sort," Un lanceur de sorts qui porte l'amulette du gardien animé peut faire en sorte que le garde animé emmagasine un sort de niveau 4 ou inférieur. Pour ce faire, le porteur de l'amulette doit lancer le sort sur le gardien. Le sort n'a pas d'effet mais il est stocké dans le gardien. Lorsque le porteur de l'amulette le lui ordonne, ou lorsqu'une situation définie à l'avance par le lanceur de sorts survient, le gardien animé lance le sort emmagasiné avec tous les paramètres établis par le lanceur de sorts originel, et sans avoir besoin de composantes. Lorsque le sort est lancé ou lorsqu'un nouveau sort est emmagasiné, tout sort précédemment stocké est perdu."
+180,Apparence trompeuse," Tant que la gargouille reste immobile, elle ne peut être distinguée d'une statue normale."
+181,Métamorphe," Le garou-chacal peut utiliser son action pour se métamorphoser en un humain de taille M ou en un hybride chacal-humanoïde, ou pour reprendre sa forme véritable (un chacal de taille P). Mise à part sa taille, ses statistiques sont les mêmes quelle que soit sa forme. L'équipement qu'il porte ou transporte ne se transforme pas. Il retrouve sa forme véritable s'il meurt."
+181,Odorat et ouïe aiguisés, Le garou-chacal a un avantage aux jets de Sagesse (Perception) basés sur l'ouïe ou l'odorat.
+181,Tactique de groupe," Le garou-chacal a un avantage aux jets d'attaque contre une créature si au moins l'un de ses alliés est à 1,50 mètre ou moins de la créature et n'est pas incapable d'agir."
+183,Odorat aiguisé, Le géant a un avantage aux jets de Sagesse (Perception) basés sur l'odorat.
+183,Incantation innée," La caractéristique d'incantation innée du géant est le Charisme. Il peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+184,Camouflage dans les rochers, Le géant a un avantage aux jets de Dextérité (Discrétion) effectués pour se cacher sur un terrain rocailleux.
+185,Amphibien, Le géant peut respirer aussi bien dans l'air que sous l'eau.
+185,Incantation innée," La caractéristique d'incantation innée du géant est le Charisme (jet de sauvegarde contre ses sorts DD 17). Il peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+188,Informe," La gelée peut se déplacer au travers d'espaces larges de 2,50 cm sans être considérée comme passant dans un espace étroit."
+188,Pattes d'araignée, La gelée peut escalader des surfaces difficiles et être au plafond la tête en bas sans avoir besoin d'effectuer un jet de caractéristique.
+189,Incantation innée (psioniques)," La caractéristique d'incantation innée du githyanki est l'Intelligence (jet de sauvegarde contre ses sorts DD 13, +5 au toucher pour les attaques avec un sort). Il peut lancer les sorts suivants de manière innée, sans avoir besoin d'aucune composante :"
+190,Incantation innée (psioniques)," La caractéristique d'incantation innée du githyanki est l'Intelligence. Il peut lancer les sorts suivants de manière innée, sans avoir besoin d'aucune composante :"
+191,Incantation innée (psioniques)," La caractéristique d'incantation innée du githzerai est la Sagesse. Il peut lancer les sorts suivants de manière innée, sans avoir besoin d'aucune composante :"
+191,Défense psychique," Tant que le githzerai ne porte pas d'armure et ne tient aucun bouclier, sa CA prend en compte son modificateur de Sagesse."
+192,Incantation innée (psioniques)," La caractéristique d'incantation innée du githzerai est la Sagesse (jet de sauvegarde contre ses sorts DD 14, +6 au toucher pour les attaques avec un sort). Il peut lancer les sorts suivants de manière innée, sans avoir besoin d'aucune composante :"
+192,Défense psychique," Tant que le githzerai ne porte pas d'armure et ne tient aucun bouclier, sa CA prend en compte son modificateur de Sagesse."
+193,Incantation innée," La caractéristique d'incantation innée du glabrezu est l'Intelligence (jet de sauvegarde contre ses sorts DD 16). Le glabrezu peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+193,Résistance à la magie, Le glabrezu a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+194,Brave, Le gladiateur a un avantage aux jets de sauvegarde pour ne pas être effrayé.
+194,Brutal, Une arme de corps à corps inflige un dé extra de ses dégâts si le gladiateur touche avec celle-ci (inclus dans l'attaque ci-dessous).
+195,Déchaîné," Lorsque durant son tour le gnoll fait tomber les points de vie d'une créature à 0 avec une attaque au corps à corps, il peut utiliser une action bonus pour se déplacer de la moitié de sa vitesse et effectuer une attaque de morsure."
+196,Déchaîné," Lorsque durant son tour le gnoll fait tomber les points de vie d'une créature à 0 avec une attaque au corps à corps, il peut utiliser une action bonus pour se déplacer de la moitié de sa vitesse et effectuer une attaque de morsure."
+197,Déchaîné," Lorsque durant son tour le gnoll fait tomber les points de vie d'une créature à 0 avec une attaque au corps à corps, il peut utiliser une action bonus pour se déplacer de la moitié de sa vitesse et effectuer une attaque de morsure."
+198,Camouflage dans les rochers, Le gnome a un avantage aux jets de Dextérité (Discrétion) effectués pour se cacher sur un terrain rocailleux.
+198,Ruse de gnome," Le gnome a un avantage aux jets de sauvegarde d'Intelligence, de Sagesse et de Charisme contre la magie."
+198,Incantation innée," La caractéristique d'incantation innée du gnome est l'Intelligence (jet de sauvegarde contre ses sorts DD 11). Il peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+199,Fuite agile, Le gobelin peut Se cacher ou Se désengager à chacun de ses tours en utilisant une action bonus.
+200,Fuite agile, Le gobelin peut Se cacher ou Se désengager à chacun de ses tours en utilisant une action bonus.
+201,Attaque surprise," Si un gobelours surprend une créature et touche avec une attaque lors du premier round de combat, la cible subit 7 (2d6) dégâts supplémentaires pour cette attaque."
+201,Brutal, Une arme de corps à corps inflige un dé de dégâts supplémentaires lorsque le gobelours réussit son attaque (inclus dans l'attaque ci-dessous).
+202,Attaque surprise," Si un gobelours surprend une créature et touche avec une attaque lors du premier round de combat, la cible subit 7 (2d6) dégâts supplémentaires pour cette attaque."
+202,Brutal, Une arme de corps à corps inflige un dé de dégâts supplémentaires lorsque le gobelours réussit son attaque (inclus dans l'attaque ci-dessous).
+202,Cœur de Hruggek," Le gobelours a un avantage aux jets de sauvegarde pour ne pas être charmé, effrayé, paralysé, empoisonné, étourdi, ou pour ne pas être endormi."
+203,Absorption de l'acide," Lorsque le golem subit des dégâts d'acide, il ne subit aucun dommage et récupère un nombre de points de vie égal aux dégâts d'acide causés."
+203,Fou furieux," Chaque fois que le golem débute son tour avec 60 points de vie ou moins, lancez un d6. Sur un résultat de 6, le golem devient fou furieux. À chacun de ses tours, s'il est dans cet état, le golem attaque la créature la plus proche qu'il peut voir. Si aucune créature n'est assez proche de lui pour qu'il puisse se déplacer et l'attaquer, il attaquera un objet, de préférence plus petit que lui. Une fois fou furieux, le golem demeure dans cet état jusqu'à ce qu'il soit détruit ou jusqu'à ce qu'il récupère tous ses points de vie."
+203,Forme immuable, Le golem est immunisé aux sorts et effets qui altèreraient son apparence.
+203,Armes magiques, Les attaques avec une arme du golem sont magiques.
+203,Résistance à la magie, Le golem a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+204,Fou furieux," Chaque fois que le golem débute son tour avec 40 points de vie ou moins, lancez un d6. Sur un résultat de 6, le golem devient fou furieux. À chacun de ses tours, s'il est dans cet état, le golem attaque la créature la plus proche qu'il peut voir. Si aucune créature n'est assez proche de lui pour qu'il puisse se déplacer et l'attaquer, il attaquera un objet, de préférence plus petit que lui. Une fois fou furieux, le golem demeure dans cet état jusqu'à ce qu'il soit détruit ou jusqu'à ce qu'il récupère tous ses points de vie. Le créateur du golem, s'il se trouve à 18 mètres ou moins de lui, peut tenter de le calmer en lui parlant fermement et de manière persuasive. Le golem doit pouvoir entendre son créateur, qui doit utiliser une action pour effectuer un jet de Charisme (Persuasion) DD 15. Si le jet est réussi, le golem se calme. S'il subit des dégâts alors que ses points de vie sont à 40 ou moins, le golem peut de nouveau devenir fou furieux."
+204,Absorption de la foudre," Lorsque le golem subit des dégâts de foudre, il ne subit aucun dommage et récupère un nombre de points de vie égal aux dégâts de foudre causés."
+204,Aversion au feu," Si le golem subit des dégâts de feu, il subit un désavantage aux jets d'attaque et de caractéristiques jusqu'à la fin de son tour."
+204,Forme immuable, Le golem est immunisé aux sorts et effets qui altèreraient son apparence.
+204,Armes magiques, Les attaques avec une arme du golem sont magiques.
+204,Résistance à la magie, Le golem a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+205,Absorption du feu," Chaque fois que le golem est soumis à des dégâts de feu, il ne subit aucun dégât et récupère un nombre de points de vie égal aux dégâts de feu infligés."
+205,Forme immuable, Le golem est immunisé aux sorts et effets qui altèreraient son apparence.
+205,Résistance à la magie, Le golem a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+205,Armes magiques, Les attaques avec une arme du golem sont magiques.
+206,Forme immuable, Le golem est immunisé aux sorts et effets qui altèreraient son apparence.
+206,Résistance à la magie, Le golem a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+206,Armes magiques, Les attaques avec une arme du golem sont magiques.
+207,Charge écrasante," Si la gorgone se déplace d'au moins 6 mètres en ligne droite vers une cible, puis la touche lors d'une attaque avec sa corne dans le même tour, la cible doit réussir un jet de sauvegarde de Force DD 16 ou tomber à terre. Si la cible est à terre, la gorgone peut effectuer une attaque avec ses sabots contre celle-ci en utilisant une action bonus."
+208,Charge," Si le goristro se déplace d'au moins 4,50 mètres en ligne droite vers une cible, puis la touche lors d'une attaque avec ses cornes dans le même tour, la cible subit 38 (7d10) dégâts perforants supplémentaires. Si la cible est une créature, elle doit réussir un jet de sauvegarde de Force DD 21 ou être repoussée sur 6 mètres et tomber à terre."
+208,Mémoire de labyrinthe, Le goristro se rappelle parfaitement des chemins qu'il a empruntés.
+208,Résistance à la magie, Le goristro a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+208,Monstre de siège, Le goristro inflige des dégâts doublés aux objets et aux structures.
+212,Amphibien, La grenouille peut respirer aussi bien dans l'air que sous l'eau.
+212,Saut sans élan," La grenouille peut sauter en longueur jusqu'à 3 mètres ou en hauteur jusqu'à 1,50 mètre, avec ou sans élan."
+213,Amphibien, La grenouille peut respirer aussi bien dans l'air que sous l'eau.
+213,Saut sans élan," La grenouille peut sauter en longueur jusqu'à 6 mètres ou en hauteur jusqu'à 3 mètres, avec ou sans élan."
+214,Camouflage dans les rochers, Le grick a un avantage aux jets de Dextérité (Discrétion) effectués pour se cacher sur un terrain rocailleux.
+215,Camouflage dans les rochers, Le grick a un avantage aux jets de Dextérité (Discrétion) effectués pour se cacher sur un terrain rocailleux.
+216,Immunité au renvoi, La griffe est immunisée aux effets de renvoi des morts-vivants.
+217,Vue aiguisée, Un griffon a un avantage aux jets de Sagesse (Perception) basés sur la vue.
+218,Amphibien, La guenaude peut respirer aussi bien dans l'air que sous l'eau.
+218,Apparence horrifique," Un humanoïde commençant son tour dans un rayon de 9 mètres autour de la guenaude, et qui peut voir sa forme véritable, doit effectuer un jet de sauvegarde de Sagesse DD 11. En cas d'échec, la créature est effrayée pendant 1 minute. Une créature peut retenter son jet de sauvegarde à la fin de chacun de ses tours, avec un désavantage si la guenaude se trouve dans sa ligne de mire, mettant fin à l'effet en cas de réussite. Si le jet de sauvegarde d'une créature est une réussite ou si l'effet prend fin, la créature devient immunisée contre l'apparence horrifique de la guenaude pour les 24 prochaines heures. À moins que la cible ne soit prise par surprise, ou que la révélation de la forme véritable de la guenaude soit soudaine, la cible peut détourner le regarde et ainsi éviter de faire le premier jet de sauvegarde. Jusqu'à la fin de son prochain tour, une créature qui a détourné le regard a un désavantage aux jets d'attaque effectués contre le guenaude."
+219,Incantation innée," La caractéristique d'incantation innée de la guenaude est le Charisme (jet de sauvegarde contre ses sorts DD 14, +6 au toucher pour les attaques avec un sort). Elle peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+219,Résistance à la magie, La guenaude a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+220,Amphibien, La guenaude peut respirer aussi bien dans l'air que sous l'eau.
+220,Incantation innée," La caractéristique d'incantation innée de la guenaude est le Charisme (jet de sauvegarde contre ses sorts DD 12). Elle peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+220,Imitation, La guenaude peut imiter les cris des animaux et les voix des humanoïdes. Une créature qui entend ces sons peut dire qu'il s'agit d'imitations en réussissant un jet de Sagesse (Intuition) DD 14.
+222,Tactique de groupe," Le guerrier a un avantage aux jets d'attaque contre une créature si au moins l'un de ses alliés est à 1,50 mètre ou moins de la créature et n'est pas incapable d'agir."
+223,Inscrutable," Le sphinx est immunisé aux effets cherchant à ressentir ses émotions ou à lire ses pensées, ainsi qu'à n'importe quel sort de divination qu'il refuse. Les jets de Sagesse (Intuition) réalisés pour connaître les intentions ou la sincérité du sphinx subissent un désavantage."
+223,Armes magiques, Les attaques avec une arme du sphinx sont magiques.
+223,Incantation," Le sphinx est un lanceur de sorts de niveau 9. Sa caractéristique d'incantation est l'Intelligence (jet de sauvegarde contre ses sorts DD 16, +8 au toucher pour les attaques avec un sort). Il n'a pas besoin de composantes matérielles pour lancer ses sorts. Le sphinx a la liste de sorts de magicien suivante préparée :"
+225,Résistance à la magie, Le hezrou a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+225,Puanteur," Toute créature débutant son tour dans un rayon de 3 mètres autour du hezrou doit réussir un jet de sauvegarde de Constitution DD 14 ou être empoisonnée jusqu'au début de son prochain tour. Si elle réussit son jet de sauvegarde, la créature est immunisée contre la puanteur des hezrous pour les prochaines 24 heures."
+226,Respiration aquatique, L'hippocampe ne peut respirer que sous l'eau.
+227,Charge," Si l'hippocampe se déplace d'au moins 6 mètres en ligne droite vers une cible, puis la touche lors d'une attaque avec un coup de tête dans le même tour, la cible subit 7 (2d6) dégâts contondants supplémentaires. Si la cible est une créature, elle doit réussir un jet de sauvegarde de Force DD 11 ou tomber à terre."
+227,Respiration aquatique, L'hippocampe ne peut respirer que sous l'eau.
+228,Vue aiguisée, Un hippogriffe a un avantage aux jets de Sagesse (Perception) basés sur la vue.
+229,Avantage martial," Une fois par tour, un hobgobelin peut infliger 7 (2d6) dégâts supplémentaires à une créature s'il la touche à l'aide d'une attaque armée réussie à condition que cette créature se situe à 1,50 mètre ou moins d'un allié de l'hobgobelin qui ne soit pas incapable d'agir."
+230,Avantage martial," Une fois par tour, l'hobgobelin peut infliger 10 (3d6) dégâts supplémentaires à une créature qu'il touche lors d'une attaque avec une arme si cette créature se trouve à 1,50 mètre ou moins d'un allié de l'hobgobelin qui n'est pas incapable d'agir."
+231,Avantage martial," Une fois par tour, l'hobgobelin peut infliger 14 (4d6) dégâts supplémentaires à une créature qu'il touche lors d'une attaque avec une arme si cette créature se trouve à 1,50 mètre ou moins d'un allié de l'hobgobelin qui n'est pas incapable d'agir."
+232,Apnée, L'homme-lézard peut retenir son souffle durant 15 minutes.
+233,Apnée, L'homme-lézard peut retenir son souffle durant 15 minutes.
+233,Incantation (forme d'homme-lézard uniquement)," L'homme-lézard est un lanceur de sorts de niveau 5. Sa caractéristique d'incantation est la Sagesse (jet de sauvegarde contre ses sorts DD 12, +4 au toucher pour les attaques avec un sort). L'homme-lézard a préparé les sorts de druide suivants&nbsp;:"
+234,Amphibien, L'homme-poisson peut respirer aussi bien dans l'air que sous l'eau.
+235,Lien télépathique," Tant que l'homoncule se trouve sur le même plan d'existence que son maître, il peut magiquement transmettre à son maître ce qu'il perçoit, et tous deux peuvent communiquer par télépathie."
+236,Résistance à la magie, L'horreur casquée a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+236,Immunité aux sorts," L'horreur casquée est immunisée contre 3 sorts choisis par son créateur. Les immunités les plus répandues sont celles aux sorts de <em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=boule-de-feu"">boule de feu</a>, <a href=""https://www.aidedd.org/dnd/sorts.php?vf=metal-brulant"">métal brûlant</a></em> et <em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=eclair"">éclair</a></em>."
+237,Écholocalisation, L'horreur crochue ne peut pas utiliser sa vision aveugle si elle est assourdie.
+237,Audition affûtée, L'horreur crochue a un avantage aux jets de Sagesse (Perception) basés sur l'ouïe.
+238,Apnée, L'hydre peut retenir son souffle durant 1 heure.
+238,Têtes multiples," L'hydre a cinq têtes. Tant qu'elle a plus d'une tête, l'hydre a un avantage aux jets de sauvegarde contre les effets pouvant causer les états aveuglé, charmé, assourdie, effrayé, étourdi ou inconscient. Dès que l'hydre prend 25 points de dégâts ou plus en un seul tour, une de ses têtes meurt. Si toutes ses têtes sont tuées, l'hydre meurt. À la fin de son tour, pour chaque tête tuée depuis son dernier tour, il en repousse deux nouvelles, à moins que l'hydre ait reçu des dégâts de feu depuis son dernier tour. L'hydre récupère 10 points de vie pour chaque tête ayant repoussée de cette façon."
+238,Têtes réactives," Pour chaque tête en plus de la première que l'hydre possède, elle obtient une réaction supplémentaire qui ne peut être utilisée que pour effectuer des attaques d'opportunité."
+238,Toujours éveillée," Lorsque l'hydre dort, elle a toujours au moins une de ses têtes qui est éveillée."
+239,Tactique de groupe," La hyène a un avantage aux jets d'attaque contre une créature si au moins l'un de ses alliés est à 1,50 mètre ou moins de la créature et n'est pas incapable d'agir."
+240,Déchaîné," Lorsque durant son tour la hyène fait tomber les points de vie d'une créature à 0 avec une attaque au corps à corps, elle peut utiliser une action bonus pour se déplacer de la moitié de sa vitesse et effectuer une attaque de morsure."
+241,Embuscade," Lors du premier round d'un combat, le kenku a un avantage aux jets d'attaque contre toute créature qu'il a surprise."
+241,Imitation," Le kenku peut reproduire tout son qu'il a entendu, dont les voix. Une créature qui entend ces sons peut dire qu'il s'agit d'imitation en réussissant un jet de Sagesse (Intuition) DD 14."
+242,Sensibilité au soleil," S'il est exposé à la lumière du soleil, le kobold a un désavantage aux jets d'attaque et aux jets de Sagesse (Perception) basés sur la vue."
+242,Tactique de groupe," Le kobold a un avantage aux jets d'attaque contre une créature si au moins l'un de ses alliés est à 1,50 mètre ou moins de la créature et n'est pas incapable d'agir."
+243,Sensibilité au soleil," S'il est exposé à la lumière du soleil, le kobold a un désavantage aux jets d'attaque et aux jets de Sagesse (Perception) basés sur la vue."
+243,Tactique de groupe," Le kobold a un avantage aux jets d'attaque contre une créature si au moins l'un de ses alliés est à 1,50 mètre ou moins de la créature et n'est pas incapable d'agir."
+244,Amphibien, Le kraken peut respirer aussi bien dans l'air que sous l'eau.
+244,Liberté de mouvement," Le kraken ignore les terrains difficiles, et les effets magiques ne peuvent pas réduire sa vitesse de déplacement ou l'entraver. Il peut dépenser 1,50 mètre de son déplacement pour s'échapper des entraves non magiques ou se libérer de l'état agrippé."
+244,Monstre de siège, Le kraken inflige le double des dégâts aux objets et structures qu'il attaque.
+245,Amphibien, Le kuo-toa peut respirer aussi bien dans l'air que sous l'eau.
+245,Perception d'un autre monde, Le kuo-toa peut ressentir la présence de toute créature dans un rayon de 9 mètres qui est invisible ou se trouve dans le plan éthéré. Il peut localiser de telles créatures lorsqu'elles se déplacent.
+245,Visqueux, Le kuo-toa a un avantage aux jets de caractéristique et de sauvegarde effectués pour échapper à l'état agrippé.
+245,Sensibilité au soleil," S'il est exposé à la lumière du soleil, le kuo-toa a un désavantage aux jets d'attaque et aux jets de Sagesse (Perception) basés sur la vue."
+246,Amphibien, Le kuo-toa peut respirer aussi bien dans l'air que sous l'eau.
+246,Perception d'un autre monde, Le kuo-toa peut ressentir la présence de toute créature dans un rayon de 9 mètres qui est invisible ou se trouve dans le plan éthéré. Il peut localiser de telles créatures lorsqu'elles se déplacent.
+246,Visqueux, Le kuo-toa a un avantage aux jets de caractéristique et de sauvegarde effectués pour échapper à l'état agrippé.
+246,Sensibilité au soleil," S'il est exposé à la lumière du soleil, le kuo-toa a un désavantage aux jets d'attaque et aux jets de Sagesse (Perception) basés sur la vue."
+246,Incantation," Le kuo-toa est un lanceur de sorts de niveau 10. Sa caractéristique d'incantation est la Sagesse (jet de sauvegarde contre ses sorts DD 14, +6 au toucher pour les attaques avec un sort). Le kuo-toa a préparé les sorts de clerc suivants&nbsp;:"
+247,Amphibien, Le kuo-toa peut respirer aussi bien dans l'air que sous l'eau.
+247,Perception d'un autre monde, Le kuo-toa peut ressentir la présence de toute créature dans un rayon de 9 mètres qui est invisible ou se trouve dans le plan éthéré. Il peut localiser de telles créatures lorsqu'elles se déplacent.
+247,Visqueux, Le kuo-toa a un avantage aux jets de caractéristique et de sauvegarde effectués pour échapper à l'état agrippé.
+247,Sensibilité au soleil," S'il est exposé à la lumière du soleil, le kuo-toa a un désavantage aux jets d'attaque et aux jets de Sagesse (Perception) basés sur la vue."
+247,Incantation," Le kuo-toa est un lanceur de sorts de niveau 2. Sa caractéristique d'incantation est la Sagesse (jet de sauvegarde contre ses sorts DD 12, +4 au toucher pour les attaques avec un sort). Le kuo-toa a préparé les sorts de clerc suivants&nbsp;:"
+248,Incantation innée," La caractéristique d'incantation innée de la lamie est le Charisme (jet de sauvegarde contre ses sorts DD 13). Elle peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+249,Vision de diable, Des ténèbres magiques ne gênent pas la vision dans le noir du lémure.
+249,Reconstitution infernale," Le lémure qui meurt dans les Neuf enfers revient à la vie avec tous ses points de vie en 1d10 jours à moins qu'il n'ait été tué par une créature d'alignement Bon sous l'effet du sort <em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=benediction"">bénédiction</a></em> ou que son cadavre ait été aspergé d'eau bénite."
+252,Résistance légendaire (3/jour)," Si la liche échoue à un jet de sauvegarde, elle peut décider de transformer cet échec en réussite."
+252,Reconstitution," Si elle a un phylactère, une liche détruite récupère un nouveau corps au bout de 1d10 jours, regagnant ainsi tous ses points de vie et redevenant active. Le nouveau corps apparaît à 1,50 mètre autour du phylactère."
+252,Incantation," La liche est un lanceur de sorts de niveau 18. Sa caractéristique d'incantation est l'Intelligence (jet de sauvegarde contre ses sorts DD 20, +12 au toucher pour les attaques avec un sort). La liche a préparé les sorts de magicien suivants&nbsp;:"
+252,Résistance au renvoi, La liche a un avantage aux jets de sauvegarde pour résister aux effets de renvoi des morts-vivants.
+253,Charge," Si la licorne se déplace d'au moins 6 mètres en ligne droite vers une cible, puis la touche lors d'une attaque avec sa corne dans le même tour, la cible subit 9 (2d8) dégâts supplémentaires de type perforant. Si la cible est une créature, elle doit réussir un jet de sauvegarde de Force DD 15 ou tomber à terre."
+253,Incantation innée," La caractéristique d'incantation innée de la licorne est le Charisme (jet de sauvegarde contre ses sorts DD 14). La licorne peut lancer les sorts suivants de manière innée, sans avoir besoin d'aucune composante :"
+253,Résistance à la magie, La licorne a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+253,Armes magiques, Les attaques avec une arme de la licorne sont magiques.
+254,Apparence trompeuse," Tant que le lierre infecté reste immobile, il ne peut être distingué d'un entrelacs de plantes grimpantes."
+255,Odorat aiguisé, Le lion a un avantage aux jets de Sagesse (Perception) basés sur l'odorat.
+255,Tactique de groupe," Le lion a un avantage aux jets d'attaque contre une créature si au moins l'un de ses alliés est à 1,50 mètre ou moins de la créature et n'est pas incapable d'agir."
+255,Bond agressif," Si le lion se déplace d'au moins 6 mètres en ligne droite vers une créature, puis la touche lors d'une attaque avec ses griffes dans le même tour, la cible doit réussir un jet de sauvegarde de Force DD 13 pour ne pas tomber à terre. Si la cible est à terre, le lion peut effectuer une attaque de morsure contre elle en tant qu'action bonus."
+255,Saut avec élan," S'il peut prendre une course d'élan de 3 mètres, un lion peut sauter jusqu'à 7,50 mètres."
+256,Odorat et ouïe aiguisés, Le loup a un avantage aux jets de Sagesse (Perception) basés sur l'odorat ou l'ouïe.
+256,Tactique de groupe," Le loup a un avantage aux jets d'attaque contre une créature si au moins l'un de ses alliés est à 1,50 mètre ou moins de la créature et n'est pas incapable d'agir."
+257,Odorat et ouïe aiguisés, Le loup a un avantage aux jets de Sagesse (Perception) basés sur l'odorat ou l'ouïe.
+257,Tactique de groupe," Le loup a un avantage aux jets d'attaque contre une créature si au moins l'un de ses alliés est à 1,50 mètre ou moins de la créature et n'est pas incapable d'agir."
+257,Camouflage dans la neige, Le loup a un avantage aux jets de Dextérité (Discrétion) effectués pour se cacher sur un terrain enneigé.
+258,Odorat et ouïe aiguisés, Le loup a un avantage aux jets de Sagesse (Perception) basés sur l'odorat ou l'ouïe.
+258,Tactique de groupe," Le loup a un avantage aux jets d'attaque contre une créature si au moins l'un de ses alliés est à 1,50 mètre ou moins de la créature et n'est pas incapable d'agir."
+259,Métamorphe," Le loup-garou peut utiliser son action pour se métamorphoser en un hybride loup-humanoïde ou en un loup, ou pour reprendre sa forme véritable (la forme humanoïde). Mise à part sa CA, ses statistiques sont les mêmes quelle que soit sa forme. L'équipement qu'il porte ou transporte ne se transforme pas. Il retrouve sa forme véritable s'il meurt."
+259,Odorat et ouïe aiguisés, Le loup-garou a un avantage aux jets de Sagesse (Perception) basés sur l'odorat ou l'ouïe.
+260,Incantation," Le mage est un lanceur de sorts de niveau 9. Sa caractéristique d'incantation est l'Intelligence (jet de sauvegarde contre ses sorts DD 14, +6 au toucher pour les attaques avec un sort). Le mage a préparé les sorts de magicien suivants&nbsp;:"
+261,Mort explosive," Lorsque le magmatique est tué, il éclate dans une explosion de feu et de magma. Chaque créature située dans un rayon de 3 mètres autour de lui doit effectuer un jet de sauvegarde de Dextérité DD 11, subissant 7 (2d6) dégâts de feu en cas d'échec, ou la moitié de ces dégâts en cas de réussite. Les objets inflammables qui ne sont pas portés ou transportés et situés dans la zone prennent feu."
+261,Illumination enflammée," Par une action bonus, le magmatique peut s'auto-enflammer ou éteindre ses flammes. Tant qu'il brûle, le magmatique émet une lumière vive dans un rayon de 3 mètres et une lumière faible sur 3 mètres supplémentaires."
+262,Tactique de groupe," Le malfrat a un avantage aux jets d'attaque contre une créature si au moins l'un de ses alliés est à 1,50 mètre ou moins de la créature et n'est pas incapable d'agir."
+263,Charge écrasante," Si le mammouth se déplace d'au moins 6 mètres en ligne droite vers une créature, puis la touche lors d'une attaque avec ses défenses dans le même tour, la cible doit réussir un jet de sauvegarde de Force DD 18 pour ne pas être jetée à terre. Si la cible est à terre, le mammouth peut réaliser une attaque de piétinement contre celle-ci par une action bonus."
+265,Écholocalisation, La mante obscure ne peut pas utiliser sa vision aveugle si elle est assourdie.
+265,Apparence trompeuse," Tant que la mante obscure reste immobile, elle ne peut être distinguée d'un relief caverneux de type stalagmite ou stalactite."
+266,Transfert de dégâts," Tant qu'il est attaché à une créature, le manteleur ne subit que la moitié des dégâts qui lui sont infligés (arrondis à l'entier inférieur), et la créature subit l'autre moitié."
+266,Apparence trompeuse," Tant que le manteleur reste immobile et que sa face ventrale n'est pas exposée, il ne peut être distingué d'un manteau de cuir noir."
+266,Sensibilité à la lumière," S'il est exposé à une lumière vive, le manteleur a un désavantage aux jets d'attaque et aux jets de Sagesse (Perception) basés sur la vue."
+267,Refloraison de piquants, La manticore possède une queue dotée de 24 piquants. Les piquants utilisés repoussent lorsque la manticore termine un repos long.
+268,Amphibien, Le maride peut respirer aussi bien dans l'air que sous l'eau.
+268,Disparition élémentaire," Si le maride meurt, son corps se désintègre en une explosion d'eau et d'écume, ne laissant derrière lui que l'équipement qu'il portait ou transportait."
+268,Incantation innée," La caractéristique d'incantation innée du maride est le Charisme (jet de sauvegarde contre ses sorts DD 16, +8 au toucher pour les attaques avec un sort). Il peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+269,Résistance à la magie, La marilith a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+269,Armes magiques, Les attaques avec une arme de la marilith sont magiques.
+269,Réactif, La marilith peut utiliser une réaction par tour de combat.
+270,Regard déstabilisant," Lorsqu'une créature débute son tour en étant à 9 mètres ou moins du mastodonte des ombres et est capable de voir son regard, le mastodonte des ombres peut la forcer par magie à effectuer un jet de sauvegarde de Charisme DD 15, à moins que le mastodonte des ombres soit incapable d'agir. En cas d'échec, la créature ne peut pas utiliser de réactions jusqu'au début de son tour suivant et lance un d8 pour déterminer ce qu'elle fait pendant ce round. De 1 à 4, la créature ne fait rien. Sur un 5 ou un 6, la créature ne prend aucune action mais se déplace de la totalité de son mouvement dans une direction aléatoire. Sur un 7 ou un 8, la créature effectue une attaque au corps à corps contre une créature choisie au hasard, ou elle ne fait rien si aucune créature n'est à portée. À moins d'être surprise, une créature peut éviter le regard du mastodonte des ombres pour ne pas tenter de jet de sauvegarde au début de son tour. Dans ce cas, elle ne pourra pas voir le mastodonte des ombres jusqu'au début de son prochain tour, et pourra encore choisir à ce moment d'éviter son regard. Si elle regarde le mastodonte des ombres entretemps, elle devra effectuer immédiatement le jet de sauvegarde."
+270,Fouisseur," Le mastodonte des ombres peut creuser à travers la roche en se déplaçant à la moitié de sa vitesse de creusement et laisser sur son passage un tunnel large de 1,50 mètre et haut de 2,40 mètres."
+271,Regard pétrifiant," Si une créature débute son tour à 9 mètres ou moins de la méduse et que chacun peut voir l'autre, la méduse (si elle n'est pas incapable d'agir) peut forcer la créature à effectuer un jet de sauvegarde de Constitution DD 14. En cas d'échec de 5 points ou plus, la créature est immédiatement pétrifiée. En cas de simple échec, elle commence à se changer en pierre et est entravée. Elle doit retenter le jet de sauvegarde à la fin de son prochain tour. En cas de réussite, l'effet se termine. En cas d'échec, la créature est pétrifiée, jusqu'à ce qu'elle soit délivrée par un sort de <em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=restauration-superieure"">restauration supérieure</a></em> ou par une magie similaire. À moins qu'elle ne soit surprise, une créature peut éviter le regard de la méduse pour éviter un jet de sauvegarde au début de son tour. Dans ce cas, elle ne pourra pas voir la méduse jusqu'au début de son prochain tour, et pourra encore choisir à ce moment d'éviter son regard. Si elle regarde la méduse entretemps, elle devra tenter immédiatement le jet de sauvegarde. Si la méduse voit son propre reflet à 9 mètres ou moins dans des conditions de lumière vive, la méduse, du fait de sa malédiction, sera affectée par son propre regard."
+272,Mort explosive," Lorsque le méphite meurt, il éclate dans une explosion de boue gluante. Chaque créature de taille M ou inférieure présente dans un rayon de 1,50 mètre autour du méphite doit réussir un jet de sauvegarde de Dextérité DD 11 ou être entravée jusqu'à la fin de son prochain tour."
+272,Apparence trompeuse," Tant que le méphite reste immobile, il ne peut être distingué d'un tas de boue ordinaire."
+273,Mort explosive," Lorsque le méphite meurt, il laisse derrière lui un nuage de fumée qui remplit une sphère de 1,50 mètre de rayon centrée sur sa position. La zone sphérique est énormément obscurcie. Le vent disperse ce nuage, qui reste sinon en place pendant 1 minute."
+273,Incantation innée (1/jour)," Le méphite peut lancer de manière innée le sort <em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=lumieres-dansantes"">lumières dansantes</a></em>, sans avoir besoin de composantes matérielles. Le Charisme est sa caractéristique d'incantation innée."
+274,Mort explosive," Lorsque le méphite meurt, il éclate dans une explosion d'éclats de glace. Chaque créature présente dans un rayon de 1,50 mètre autour du méphite doit effectuer un jet de sauvegarde de Dextérité DD 10, subissant 4 (1d8) dégâts tranchants en cas d'échec, ou la moitié de ces dégâts en cas de réussite."
+274,Apparence trompeuse," Tant que le méphite reste immobile, il ne peut être distingué d'un morceau de glace ordinaire."
+274,Incantation innée (1/jour)," Le méphite peut lancer de manière innée le sort <em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=nappe-de-brouillard"">nappe de brouillard</a></em>, sans avoir besoin de composantes matérielles. Le Charisme est sa caractéristique d'incantation innée."
+275,Mort explosive," Lorsque le méphite meurt, il éclate dans une explosion de lave. Chaque créature présente dans un rayon de 1,50 mètre autour du méphite doit effectuer un jet de sauvegarde de Dextérité DD 11, subissant 7 (2d6) dégâts de feu en cas d'échec, ou la moitié de ces dégâts en cas de réussite."
+275,Apparence trompeuse," Tant que le méphite reste immobile, il ne peut être distingué d'un monticule de lave ordinaire."
+275,Incantation innée (1/jour)," Le méphite peut lancer de manière innée le sort <em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=metal-brulant"">métal brûlant</a></em> (jet de sauvegarde contre ses sorts DD 10), sans avoir besoin de composantes matérielles. Le Charisme est sa caractéristique d'incantation innée."
+276,Mort explosive," Lorsque le méphite meurt, il éclate dans une explosion de poussière. Chaque créature présente dans un rayon de 1,50 mètre autour du méphite doit réussir un jet de sauvegarde de Constitution DD 10 ou être aveuglée pendant 1 minute. Une créature aveuglée peut retenter son jet de sauvegarde à chacun de ses tours, mettant fin à l'effet qui l'affecte en cas de réussite."
+276,Incantation innée (1/jour)," Le méphite peut lancer de manière innée le sort <em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=sommeil"">sommeil</a></em>, sans avoir besoin de composantes matérielles. Le Charisme est sa caractéristique d'incantation innée."
+277,Mort explosive," Lorsque le méphite meurt, il explose en un nuage de vapeur. Chaque créature présente dans un rayon de 1,50 mètre autour du méphite doit réussir un jet de sauvegarde de Dextérité DD 10 ou subir 4 (1d8) dégâts de feu."
+277,Incantation innée (1/jour)," Le méphite peut lancer de manière innée le sort <em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=flou"">flou</a></em>, sans avoir besoin de composantes matérielles. Le Charisme est sa caractéristique d'incantation innée."
+278,Amphibien, Le merrow peut respirer aussi bien dans l'air que sous l'eau.
+279,Incantation innée," La caractéristique d'incantation innée du mezzoloth est le Charisme (jet de sauvegarde contre ses sorts DD 11). Le mezzoloth peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+279,Résistance à la magie, Le mezzoloth a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+279,Armes magiques, Les attaques avec une arme du mezzoloth sont magiques.
+281,Métamorphe," La mimique peut utiliser son action pour se métamorphoser en un objet, ou pour reprendre son aspect véritable informe. Ses statistiques sont les mêmes quelle que soit sa forme. L'équipement qu'elle porte ou transporte ne se transforme pas. Elle retrouve sa forme véritable lorsqu'elle meurt."
+281,Collant (forme d'objet uniquement), La mimique adhère à tout ce qui la touche. Une créature de taille TG ou inférieure collée à la mimique est également agrippée par elle (DD 13 pour s'échapper). Les jets de caractéristique effectués pour s'échapper de cette prise ont un désavantage.
+281,Apparence trompeuse (forme d'objet uniquement)," Tant que la mimique reste immobile, elle ne peut être distinguée d'un objet ordinaire."
+281,Lutteur, La mimique a un avantage aux jets d'attaque effectués contre une créature qu'elle agrippe.
+282,Charge," Si le minotaure se déplace d'au moins 3 mètres en ligne droite vers une cible, puis la touche lors d'une attaque avec sa corne dans le même tour, la cible subit 9 (2d8) dégâts perforants supplémentaires. Si la cible est une créature, elle doit réussir un jet de sauvegarde de Force DD 14 ou être repoussée de 3 mètres et tomber à terre."
+282,Mémoire de labyrinthe, Le minotaure se souvient parfaitement des chemins qu'il a empruntés.
+282,Téméraire," Au début de son tour, le minotaure peut obtenir un avantage à tous les jets d'attaque au corps à corps avec une arme pendant ce tour, mais les attaques contre lui ont un avantage jusqu'au début de son prochain tour."
+283,Apparence trompeuse," Tant que la moisissure violette reste immobile, elle ne peut être distinguée d'un champignon ordinaire."
+284,Odorat et ouïe aiguisés, Le molosse a un avantage aux jets de Sagesse (Perception) basés sur l'odorat ou l'ouïe.
+286,Esprit axiomatique, Le monodrone ne peut être contraint à agir d'une manière contraire à sa nature ou aux instructions qu'il a reçues.
+286,Désintégration," Si le monodrone meurt, son corps se désintègre et tombe en poussière, ne laissant derrière lui que ses armes et tout ce qu'il portait."
+287,Bête de somme, La mule est considérée comme un animal de taille G pour déterminer sa capacité de charge.
+287,Pied sûr, La mule a un avantage aux jets de sauvegarde de Force et Dextérité effectués pour ne pas tomber à terre.
+288,Spores de détresse," Lorsque le myconide subit des dégâts, tous les autres myconides à 72 mètres à la ronde peuvent ressentir sa douleur."
+288,Maladie solaire," Lorsqu'il se trouve exposé à la lumière du soleil, le myconide a un désavantage aux jets de caractéristique, jets d'attaque et jets de sauvegarde. Le myconide meurt s'il est exposé directement à la lumière du soleil pendant plus d'une heure."
+289,Spores de détresse," Lorsque le myconide subit des dégâts, tous les autres myconides à 72 mètres à la ronde peuvent ressentir sa douleur."
+289,Maladie solaire," Lorsqu'il se trouve exposé à la lumière du soleil, le myconide a un désavantage aux jets de caractéristique, jets d'attaque et jets de sauvegarde. Le myconide meurt s'il est exposé directement à la lumière du soleil pendant plus d'une heure."
+290,Spores de détresse," Lorsque le myconide subit des dégâts, tous les autres myconides à 72 mètres à la ronde peuvent ressentir sa douleur."
+290,Maladie solaire," Lorsqu'il se trouve exposé à la lumière du soleil, le myconide a un désavantage aux jets de caractéristique, jets d'attaque et jets de sauvegarde. Le myconide meurt s'il est exposé directement à la lumière du soleil pendant plus d'une heure."
+291,Reconstitution," S'il meurt, le naga revient à la vie en 1d6 jours et retrouve tous ses points de vie. Seul un sort de <em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=souhait"">souhait</a></em> peut empêcher ce trait de fonctionner."
+291,Incantation," Le naga est un lanceur de sorts de niveau 10. Sa caractéristique d'incantation est l'Intelligence (jet de sauvegarde contre ses sorts DD 14, +6 au toucher pour les attaques avec un sort). Le naga n'a besoin que des composantes verbales pour lancer ses sorts. Il a préparé les sorts de magicien suivants&nbsp;:"
+292,Reconstitution," S'il meurt, le naga revient à la vie en 1d6 jours et retrouve tous ses points de vie. Seul un sort de <em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=souhait"">souhait</a></em> peut empêcher ce trait de fonctionner."
+292,Incantation," Le naga est un lanceur de sorts de niveau 11. Sa caractéristique d'incantation est la Sagesse (jet de sauvegarde contre ses sorts DD 16, +8 au toucher pour les attaques avec un sort). Le naga n'a besoin que des composantes verbales pour lancer ses sorts. Il a préparé les sorts de clerc suivants&nbsp;:"
+293,Incantation," Le naga est un lanceur de sorts de niveau 5 (jet de sauvegarde contre ses sorts DD 12, +4 au toucher pour les attaques avec un sort) qui n'a besoin que des composantes verbales pour lancer ses sorts."
+294,Résistance à la magie, La nalfeshnie a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+295,Sensibilité au soleil," S'il est exposé à la lumière du soleil, le nécrophage a un désavantage aux jets d'attaque et aux jets de Sagesse (Perception) basés sur la vue."
+296,Apparence trompeuse," Tant que le nielleux reste immobile, il ne peut être distingué d'un arbuste mort."
+298,Vue aiguisée, Le nothic a un avantage aux jets de Sagesse (Perception) faisant appel à la vue.
+299,Nuée," La nuée peut occuper l'espace d'une créature et vice versa, et peut passer par une ouverture suffisamment grande pour un insecte de taille TP. La nuée ne peut pas regagner de points de vie ou gagner des points de vie temporaires."
+300,Écholocalisation, La nuée ne peut pas utiliser sa vision aveugle si elle est assourdie.
+300,Ouïe aiguisée, La nuée a un avantage aux jets de Sagesse (Perception) basés sur l'ouïe.
+300,Nuée," La nuée peut occuper l'espace d'une créature et vice versa, et peut passer par une ouverture suffisamment grande pour une chauve-souris de taille TP. La nuée ne peut pas regagner de points de vie ou gagner des points de vie temporaires."
+301,Nuée," La nuée peut occuper l'espace d'une créature et vice versa, et peut passer par une ouverture suffisamment grande pour un corbeau de taille TP. La nuée ne peut pas regagner de points de vie ou gagner des points de vie temporaires."
+302,Frénésie sanguinaire, La nuée a un avantage aux jets d'attaque au corps à corps contre une créature qui n'a pas tous ses points de vie.
+302,Nuée," La nuée peut occuper l'espace d'une créature et vice versa, et peut passer par une ouverture suffisamment grande pour un piranha de taille TP. La nuée ne peut pas regagner de points de vie ou gagner des points de vie temporaires."
+302,Respiration aquatique, La nuée ne peut respirer que sous l'eau.
+303,Odorat aiguisé, La nuée a un avantage aux jets de Sagesse (Perception) basés sur l'odorat.
+303,Nuée," La nuée peut occuper l'espace d'une créature et vice versa, et peut passer par une ouverture suffisamment grande pour un rat de taille TP. La nuée ne peut pas regagner de points de vie ou gagner des points de vie temporaires."
+304,Nuée," La nuée peut occuper l'espace d'une créature et vice versa, et peut passer par une ouverture suffisamment grande pour un serpent de taille TP. La nuée ne peut pas regagner de points de vie ou gagner des points de vie temporaires."
+305,Incantation innée," La caractéristique d'incantation innée du nycaloth est le Charisme. Le nycaloth peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+305,Résistance à la magie, Le nycaloth a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+305,Armes magiques, Les attaques avec une arme du nycaloth sont magiques.
+307,Informe," L'ombre peut se déplacer au travers d'espaces larges de 2,50 cm sans être considérée comme passant dans un espace étroit."
+307,Discrétion dans les ombres," Si elle se trouve dans des ténèbres ou est exposée à une lumière faible, l'ombre peut effectuer l'action Se cacher en utilisant une action bonus."
+307,Impuissance face à la lumière du soleil," Si elle est exposée à la lumière du soleil, l'ombre a un désavantage aux jets d'attaque, de caractéristique et de sauvegarde."
+308,Incantation innée," La caractéristique d'incantation innée de l'oni est le Charisme (jet de sauvegarde contre ses sorts DD 13). L'oni peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+308,Armes magiques, Les attaques avec une arme de l'oni sont magiques.
+308,Régénération, L'oni récupère 10 points de vie au début de son tour s'il possède au moins 1 point de vie.
+309,Agressif," Par une action bonus, l'orc peut se déplacer de sa vitesse vers une créature hostile qu'il peut voir."
+310,Agressif," Par une action bonus, l'orc peut se déplacer de sa vitesse vers une créature hostile qu'il peut voir."
+310,Furie de Gruumsh, L'orc inflige 4 (1d8) dégâts supplémentaires lorsqu'il touche une cible lors d'une attaque avec une arme (ce bonus est inclus ci-dessous).
+311,Agressif," Par une action bonus, l'orc peut se déplacer de sa vitesse vers une créature hostile qu'il peut voir."
+311,Furie de Gruumsh, L'orc inflige 4 (1d8) dégâts supplémentaires lorsqu'il touche une cible lors d'une attaque avec une arme (inclus dans l'attaque ci-dessous).
+311,Incantation," L'orc est un lanceur de sorts de niveau 3. Sa caractéristique d'incantation est la Sagesse (jet de sauvegarde contre ses sorts DD 11, +3 au toucher pour les attaques avec un sort). L'orc a préparé les sorts de clerc suivants&nbsp;:"
+312,Agressif," Par une action bonus, l'orog peut se déplacer de sa vitesse vers une créature hostile qu'il peut voir."
+313,Télépathie limitée, L'otyugh peut transmettre par magie des messages et des images simples à toute créature capable de comprendre un langage dans un rayon de 36 mètres autour de lui. Cette forme de télépathie ne permet pas à la créature qui reçoit le message de répondre télépathiquement.
+314,Odorat aiguisé, L'ours a un avantage aux jets de Sagesse (Perception) basés sur l'odorat.
+315,Odorat aiguisé, L'ours a un avantage aux jets de Sagesse (Perception) basés sur l'odorat.
+316,Odorat aiguisé, L'ours a un avantage aux jets de Sagesse (Perception) basés sur l'odorat.
+317,Métamorphe," L'ours-garou peut utiliser son action pour se métamorphoser en un hybride ours-humanoïde de taille G ou en un ours de taille G, ou pour reprendre sa forme véritable (la forme humanoïde). Mises à part sa CA et sa taille, ses statistiques sont les mêmes quelle que soit sa forme. L'équipement qu'il porte ou transporte ne se transforme pas. Il retrouve sa forme véritable s'il meurt."
+317,Odorat aiguisé, L'ours-garou a un avantage aux jets de Sagesse (Perception) basés sur l'odorat.
+318,Odorat et vue aiguisés, L'ours-hibou a un avantage aux jets de Sagesse (Perception) basés sur la vue ou l'odorat.
+319,Odorat ferreux," Grâce à son odorat, l'oxydeur peut localiser avec précision les métaux ferreux se situant dans un rayon de 9 mètres autour de lui."
+319,Oxydation," Toute arme non magique constituée de métal qui touche l'oxydeur se met à rouiller. Après avoir infligé les dégâts, l'arme subit une pénalité permanente et cumulative de -1 aux jets de dégâts. Si la pénalité arrive à -5, l'arme est détruite. Les munitions non magiques constituées de métal qui touchent l'oxydeur sont détruites après avoir infligé leurs dégâts."
+320,Odorat aiguisé, La panthère a un avantage aux jets de Sagesse (Perception) basés sur l'odorat.
+320,Bond agressif," Si la panthère se déplace d'au moins 6 mètres en ligne droite vers une créature, puis la touche lors d'une attaque avec ses griffes dans le même tour, la cible doit réussir un jet de sauvegarde de Force DD 12 pour ne pas tomber à terre. Si la cible est à terre, la panthère peut effectuer une attaque de morsure contre elle en tant qu'action bonus."
+322,Esprit axiomatique, Le pentadrone ne peut être contraint à agir d'une manière contraire à sa nature ou aux instructions qu'il a reçues.
+322,Désintégration," Si le pentadrone meurt, son corps se désintègre et tombe en poussière, ne derrière lui que ses armes et tout ce qu'il portait."
+323,Apparence trompeuse," Tant que le perceur reste immobile au plafond, il ne peut être distingué d'une stalactite normale."
+323,Pattes d'araignée, Le perceur peut escalader des surfaces difficiles et être au plafond la tête en bas sans avoir besoin d'effectuer un jet de caractéristique.
+324,Attaque en piqué," Si le péryton est en train de voler et pique droit sur une cible située à au moins 9 mètres et la touche avec une attaque au corps à corps avec une arme, alors l'attaque inflige 9 (2d8) dégâts supplémentaires à la cible."
+324,Repli aérien, Le péryton ne provoque pas d'attaques d'opportunité lorsqu'il quitte l'allonge d'un ennemi en volant.
+324,Odorat et vue aiguisés, Le péryton a un avantage aux jets de Sagesse (Perception) basés sur la vue ou l'odorat.
+325,Apnée, La pieuvre peut retenir son souffle durant 30 minutes hors de l'eau.
+325,Camouflage dans l'eau, La pieuvre a un avantage aux jets de Dextérité (Discrétion) réalisés lorsqu'elle se trouve sous l'eau.
+325,Respiration aquatique, La pieuvre ne peut respirer que sous l'eau.
+326,Apnée, La pieuvre peut retenir son souffle durant 1 heure hors de l'eau.
+326,Camouflage dans l'eau, La pieuvre a un avantage aux jets de Dextérité (Discrétion) réalisés lorsqu'elle se trouve sous l'eau.
+326,Respiration aquatique, La pieuvre ne peut respirer que sous l'eau.
+327,Frénésie sanguinaire, Le piranha a un avantage aux jets d'attaque au corps à corps contre une créature qui n'a pas tous ses points de vie.
+327,Respiration aquatique, Le piranha ne peut respirer que sous l'eau.
+328,Résistance à la magie, La pixie a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+328,Incantation innée," La caractéristique d'incantation innée de la pixie est le Charisme (jet de sauvegarde contre ses sorts DD 12). Elle peut lancer les sorts suivants de manière innée, mais n'a besoin que de poussière de pixie comme composante matérielle :"
+329,Armes angéliques," Les attaques avec une arme du planétar sont magiques. Lorsque le planétar touche avec n'importe quelle arme, l'arme inflige 5d8 dégâts radiants supplémentaires (inclus dans l'attaque ci-dessous)."
+329,Conscience divine, Le planétar sait quand il entend un mensonge.
+329,Incantation innée," La caractéristique d'incantation innée du planétar est le Charisme (jet de sauvegarde contre ses sorts DD 20). Le planétar peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+329,Résistance à la magie, Le planétar a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+330,Apnée, Le plésiosaure peut retenir son souffle durant 1 heure.
+332,Informe," Le pouding peut se déplacer au travers d'espaces larges de 2,50 cm sans être considéré comme passant dans un espace étroit."
+332,Forme corrosive," Une créature qui touche le pouding ou le frappe au corps à corps, et se trouvant à 1,50 mètre ou moins de lui, subit 4 (1d8) dégâts d'acide. Toute arme non magique faite de métal ou de bois qui touche le pouding se corrode. Après avoir infligé ses dégâts, l'arme subit une diminution permanente et cumulable de -1 aux dégâts. Si sa diminution atteint -5, l'arme est détruite. Une munition non magique faite de métal ou de bois et qui touche le pouding est détruite après avoir infligé ses dégâts. Le pouding peut absorber jusqu'à 5 cm d'épaisseur de bois ou de métal non magique en 1 tour."
+332,Pattes d'araignée, Le pouding peut escalader des surfaces difficiles et être au plafond la tête en bas sans avoir besoin d'effectuer un jet de caractéristique.
+333,Distinction divine," Par une action bonus, un prêtre peut dépenser un emplacement de sort pour que ses attaques au corps à corps avec une arme fassent magiquement 10 (3d6) dégâts radiants supplémentaires à une cible qu'il touche. Cet avantage se poursuit jusqu'à la fin du tour. Si le prêtre dépense un emplacement de sort de niveau 2 ou plus, les dégâts supplémentaires augmentent de 1d6 pour chaque niveau au-dessus du 1er."
+333,Incantation," Le prêtre est un lanceur de sorts de niveau 5. Sa caractéristique d'incantation est la Sagesse (jet de sauvegarde contre ses sorts DD 13, +5 au toucher pour les attaques avec un sort). Le prêtre a préparé les sorts de clerc suivants&nbsp;:"
+334,Sens aiguisés," Le pseudodragon a un avantage aux jets de Sagesse (Perception) basés sur la vue, l'ouïe ou l'odorat."
+334,Résistance à la magie, Le pseudodragon a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+334,Télépathie limitée," Le pseudodragon peut communiquer par magie des idées, des émotions, et des images simples par télépathie à toute créature capable de comprendre un langage dans un rayon de 30 mètres autour de lui."
+335,Repli aérien, Le ptéranodon ne provoque pas d'attaques d'opportunité lorsqu'il quitte l'allonge d'un ennemi en volant.
+336,Esprit axiomatique, Le quadrone ne peut être contraint à agir d'une manière contraire à sa nature ou aux instructions qu'il a reçues.
+336,Désintégration," Si le quadrone meurt, son corps se désintègre et tombe en poussière, ne laissant derrière lui que ses armes et tout ce qu'il portait."
+337,Fureur du blessé," Tant qu'il est à 10 points de vie ou moins, le qaggoth a un avantage aux jets d'attaque. De plus, il inflige 7 (2d6) dégâts supplémentaires à chaque cible qu'il touche avec une attaque au corps à corps."
+339,Métamorphe," Le quasit peut utiliser son action pour se métamorphoser en une bête qui ressemble à une chauve-souris (vitesse 3 m, vol 12 m), un mille-pattes (12 m, escalade 12 m) ou un crapaud (12 m, nage 12 m), ou pour reprendre sa forme véritable. Mise à part sa vitesse (comme indiqué précédemment), ses statistiques sont les mêmes quelle que soit sa forme. L'équipement qu'il porte ou transporte ne se transforme pas. Il retrouve sa forme véritable s'il meurt."
+339,Résistance à la magie, Le quasit a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+340,Immunité magique partielle, Le rakshasa ne peut pas être affecté ou détecté par des sorts de niveaux 6 ou moins sauf s'il souhaite l'être. Il a un avantage aux jets de sauvegarde contre tous les autres sorts et effets magiques.
+340,Incantation innée," La caractéristique d'incantation innée du rakshasa est le Charisme (jet de sauvegarde contre ses sorts DD 18, +10 au toucher pour les attaques avec un sort). Le rakshasa peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+341,Odorat aiguisé, Le rat a un avantage aux jets de Sagesse (Perception) basés sur l'odorat.
+342,Odorat aiguisé, Le rat a un avantage aux jets de Sagesse (Perception) basés sur l'odorat.
+342,Tactique de groupe," Le rat a un avantage aux jets d'attaque contre une créature si au moins l'un de ses alliés est à 1,50 mètre ou moins de la créature et n'est pas incapable d'agir."
+343,Métamorphe," Le rat-garou peut utiliser son action pour se métamorphoser en un hybride rat-humanoïde ou en un rat géant, ou pour reprendre sa forme véritable (la forme humanoïde). Mise à part sa taille, ses statistiques sont les mêmes quelle que soit sa forme. L'équipement qu'il porte ou transporte ne se transforme pas. Il retrouve sa forme véritable s'il meurt."
+343,Odorat aiguisé, Le rat-garou a un avantage aux jets de Sagesse (Perception) basés sur l'odorat.
+344,Corps brûlant," Une créature se trouvant à 1,50 mètre ou moins du remorhaz et qui le touche ou réussit une attaque au corps à corps contre lui subit 10 (3d6) dégâts de feu."
+345,Corps brûlant," Une créature qui touche le remorhaz, ou qui le frappe tout en se trouvant à 1,50 mètre ou moins de lui, subit 7 (2d6) dégâts de feu."
+346,Tactique de groupe," Le requin a un avantage aux jets d'attaque contre une créature si au moins l'un de ses alliés est à 1,50 mètre ou moins de la créature et n'est pas incapable d'agir."
+346,Respiration aquatique, Le requin ne peut respirer que sous l'eau.
+347,Frénésie sanguinaire, Le requin a un avantage aux jets d'attaque au corps à corps contre une créature qui n'a pas tous ses points de vie.
+347,Respiration aquatique, Le requin ne peut respirer que sous l'eau.
+348,Frénésie sanguinaire, Le requin a un avantage aux jets d'attaque au corps à corps contre une créature qui n'a pas tous ses points de vie.
+348,Respiration aquatique, Le requin ne peut respirer que sous l'eau.
+350,Régénération," Le revenant récupère 10 points de vie au début de son tour. Si le revenant subit des dégâts de feu ou des dégâts radiants, ce trait ne fonctionne pas au début de son prochain tour. Le corps du revenant n'est détruit que s'il débute son tour avec 0 point de vie et qu'il ne se régénère pas."
+350,Reconstitution," Lorsque le corps du revenant est détruit, son âme subsiste. Au bout de 24 heures, l'âme habite et anime un autre corps humanoïde sur le même plan d'existence et récupère tous ses points de vie. Tant que l'âme n'est pas dans son nouveau corps, un sort de <em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=souhait"">souhait</a></em> peut être utilisé pour la forcer à passer dans l'au-delà et ne pas en revenir."
+350,Immunité au renvoi, Le revenant est immunisé aux effets de renvoi des morts-vivants.
+350,Traqueur rancunier," Le revenant connaît la direction et la distance qui le sépare de toutes les créatures contre lesquelles il est venu réclamer vengeance, même si la créature et le revenant sont sur des plans d'existence différents. Si la créature traquée par le revenant meurt, le revenant l'apprend."
+351,Charge," Si le rhinocéros se déplace d'au moins 6 mètres en ligne droite vers une cible, puis la touche lors d'une attaque avec sa corne dans le même tour, la cible subit 9 (2d8) dégâts contondants supplémentaires. Si la cible est une créature, elle doit réussir un jet de sauvegarde de Force DD 15 ou tomber à terre."
+352,Vue aiguisée, Le roc a un avantage aux jets de Sagesse (Perception) basés sur la vue.
+353,Apnée, Le roi lézard peut retenir son souffle durant 15 minutes.
+353,Embrocher," Une fois par tour, lorsque le roi lézard effectue une attaque au corps à corps avec son trident et touche, la cible subit 10 (3d6) dégâts supplémentaires, et le roi lézard gagne un nombre de points de vie temporaires égal au montant de ces dégâts supplémentaires."
+355,Frénésie sanguinaire, Le sahuagin a un avantage aux jets d'attaque au corps à corps contre une créature qui n'a pas tous ses points de vie.
+355,Amphibie limitée," Le sahuagin peut respirer sur terre ou dans l'eau, mais il a besoin d'être immergé au moins une fois toutes les 4 heures pour éviter de s'étouffer."
+355,Télépathie avec les requins," Le sahuagin peut prendre magiquement le contrôle de n'importe quel requin dans un rayon de 36 mètres autour de lui, en utilisant une forme limitée de télépathie."
+356,Frénésie sanguinaire, Le sahuagin a un avantage aux jets d'attaque au corps à corps contre une créature qui n'a pas tous ses points de vie.
+356,Amphibie limitée," Le sahuagin peut respirer sur terre ou dans l'eau, mais il a besoin d'être immergé au moins une fois toutes les 4 heures pour éviter de s'étouffer."
+356,Télépathie avec les requins," Le sahuagin peut prendre magiquement le contrôle de n'importe quel requin dans un rayon de 36 mètres autour de lui, en utilisant une forme limitée de télépathie."
+357,Frénésie sanguinaire, Le sahuagin a un avantage aux jets d'attaque au corps à corps contre une créature qui n'a pas tous ses points de vie.
+357,Amphibie limitée," Le sahuagin peut respirer sur terre ou dans l'eau, mais il a besoin d'être immergé au moins une fois toutes les 4 heures pour éviter de s'étouffer."
+357,Télépathie avec les requins," Le sahuagin peut prendre magiquement le contrôle de n'importe quel requin dans un rayon de 36 mètres autour de lui, en utilisant une forme limitée de télépathie."
+357,Incantation," Le sahuagin est un lanceur de sorts de niveau 6. Sa caractéristique d'incantation est la Sagesse (jet de sauvegarde contre ses sorts DD 12, +4 au toucher pour les attaques avec un sort). Il a préparé les sorts de clerc suivants&nbsp;:"
+358,Corps brûlant," Une créature qui touche la salamandre ou la frappe lors d'une attaque au corps à corps en étant à 1,50 mètre ou moins de la salamandre subit 7 (2d6) dégâts de feu."
+358,Armes brûlantes, Toute arme de corps à corps en métal que brandit la salamandre inflige 3 (1d6) dégâts de feu supplémentaires (inclus dans l'attaque ci-dessous).
+359,Charge," Si le sanglier se déplace d'au moins 6 mètres en ligne droite vers une cible, puis la touche lors d'une attaque avec ses défenses dans le même tour, la cible subit 3 (1d6) dégâts tranchants supplémentaires. Si la cible est une créature, elle doit réussir un jet de sauvegarde de Force DD 11 ou tomber à terre."
+359,Implacable (Recharge après un repos court ou long)," Si le sanglier subit 7 points de dégâts ou moins qui réduiraient ses points de vie à 0, il se retrouve à la place avec 1 point de vie."
+360,Charge," Si le sanglier se déplace d'au moins 6 mètres en ligne droite vers une cible, puis la touche lors d'une attaque avec ses défenses dans le même tour, la cible subit 7 (2d6) dégâts tranchants supplémentaires. Si la cible est une créature, elle doit réussir un jet de sauvegarde de Force DD 13 ou tomber à terre."
+360,Implacable (Recharge après un Repos court ou long)," Si le sanglier subit 10 points de dégâts ou moins qui réduiraient ses points de vie à 0, il se retrouve à la place avec 1 point de vie."
+361,Métamorphe," Le sanglier-garou peut utiliser son action pour se métamorphoser en un hybride sanglier-humanoïde ou en un sanglier, ou pour reprendre sa forme véritable (la forme humanoïde). Mise à part sa CA, ses statistiques sont les mêmes quelle que soit sa forme. L'équipement qu'il porte ou transporte ne se transforme pas. Il retrouve sa forme véritable s'il meurt."
+361,Charge (forme de sanglier ou hybride uniquement)," Si le sanglier-garou se déplace d'au moins 4,50 mètres en ligne droite vers une cible, puis la touche lors d'une attaque avec ses défenses dans le même tour, la cible subit 7 (2d6) dégâts tranchants supplémentaires. Si la cible est une créature, elle doit réussir un jet de sauvegarde de Force DD 13 ou tomber à terre."
+361,Férocité implacable (Recharge après un repos court ou long)," Si le sanglier-garou tombe à 0 point de vie après avoir subi 14 points de dégâts ou moins, il passe à 1 point de vie à la place."
+362,Résistance à la magie, Le satyre a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+363,Illumination, Le scarabée émet une lumière vive dans un rayon de 3 mètres et une lumière faible sur 3 mètres supplémentaires.
+366,Résistance à la magie, Le seigneur momie a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+366,Reconstitution," Le seigneur momie détruit retrouve un nouveau corps en 24 heures si son coeur est intact, récupérant tous ses points de vie et redevenant ainsi actif. Le nouveau corps apparaît à 1,50 mètre du coeur du seigneur momie."
+366,Incantation," Le seigneur momie est un lanceur de sorts de niveau 10. Sa caractéristique d'incantation est la Sagesse (jet de sauvegarde contre ses sorts DD 17, +9 au toucher pour les attaques avec un sort). Le seigneur momie a la liste suivante de sorts de clerc préparée :"
+367,Invisible dans l'eau, La sentinelle d'eau est invisible tant qu'elle est complètement immergée dans l'eau.
+367,Connexion à l'eau, La sentinelle d'eau meurt si elle quitte l'eau à laquelle elle est unie ou si cette eau est détruite.
+370,Corps brûlant," Une créature qui touche le serpent (lors d'un simple contact ou d'une attaque au corps à corps à 1,50 mètre ou moins de lui) subit 3 (1d6) dégâts de feu."
+373,Repli aérien, Le serpent ne provoque pas d'attaques d'opportunité lorsqu'il quitte l'allonge d'un ennemi en volant.
+375,Résistance à la magie, Le slaad a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+375,Régénération, Le slaad récupère 10 points de vie au début de son tour s'il possède au moins 1 point de vie.
+376,Métamorphe," Le slaad peut utiliser son action pour se métamorphoser en un humanoïde de taille P ou M, ou pour reprendre sa forme véritable. Mise à part sa taille, ses statistiques sont les mêmes quelle que soit sa forme. L'équipement qu'il porte ou transporte ne se transforme pas. Il retrouve sa forme véritable s'il meurt."
+376,Incantation innée," La caractéristique d'incantation innée du slaad est le Charisme (jet de sauvegarde contre ses sorts DD 15, +7 au toucher pour les attaques avec un sort). Le slaad peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+376,Résistance à la magie, Le slaad a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+376,Armes magiques, Les attaques avec une arme du slaad sont magiques.
+376,Régénération, Le slaad récupère 10 points de vie au début de son tour s'il possède au moins 1 point de vie.
+377,Métamorphe," Le slaad peut utiliser son action pour se métamorphoser en un humanoïde de taille P ou M, ou pour reprendre sa forme véritable. Mise à part sa taille, ses statistiques sont les mêmes quelle que soit sa forme. L'équipement qu'il porte ou transporte ne se transforme pas. Il retrouve sa forme véritable s'il meurt."
+377,Incantation innée," La caractéristique d'incantation innée du slaad est le Charisme (jet de sauvegarde contre ses sorts DD 14). Le slaad peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+377,Résistance à la magie, Le slaad a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+377,Armes magiques, Les attaques avec une arme du slaad sont magiques.
+377,Régénération, Le slaad récupère 10 points de vie au début de son tour s'il possède au moins 1 point de vie.
+378,Résistance à la magie, Le slaad a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+378,Régénération, Le slaad récupère 10 points de vie au début de son tour s'il possède au moins 1 point de vie.
+379,Métamorphe," Le slaad peut utiliser son action pour se métamorphoser en un humanoïde de taille P ou M, ou pour reprendre sa forme véritable. Mise à part sa taille, ses statistiques sont les mêmes quelle que soit sa forme. L'équipement qu'il porte ou transporte ne se transforme pas. Il retrouve sa forme véritable s'il meurt."
+379,Incantation innée," La caractéristique d'incantation innée du slaad est le Charisme (jet de sauvegarde contre ses sorts DD 12). Le slaad peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+379,Résistance à la magie, Le slaad a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+379,Régénération, Le slaad récupère 10 points de vie au début de son tour s'il possède au moins 1 point de vie.
+380,Résistance à la magie, Le slaad a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+381,Armes angéliques," Les attaques avec une arme du solar sont magiques. Lorsque le solar touche avec n'importe quelle arme, l'arme inflige 6d8 dégâts radiants supplémentaires (inclus dans l'attaque ci-dessous)."
+381,Conscience divine, Le solar sait quand il entend un mensonge.
+381,Incantation innée," La caractéristique d'incantation innée du solar est le Charisme (jet de sauvegarde contre ses sorts DD 25). Le solar peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+381,Résistance à la magie, Le solar a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+383,Déplacement intangible, Le spectre peut se déplacer au travers d'autres créatures et objets comme s'ils étaient des terrains difficiles. Le spectre subit 5 (1d10) dégâts de force s'il termine son tour à l'intérieur d'un objet.
+383,Sensibilité au soleil," S'il est exposé à la lumière du soleil, le spectre a un désavantage aux jets d'attaque et aux jets de Sagesse (Perception) basés sur la vue."
+384,Mort explosive," Lorsqu'elle tombe à 0 point de vie, la spore gazeuse explose. Chaque créature présente dans un rayon de 6 mètres autour d'elle doit réussir un jet de sauvegarde de Constitution DD 15 ou subir 10 (3d6) dégâts de poison et être infectée par une maladie. Les créatures immunisées à l'état empoisonné sont immunisées à cette maladie. Les spores envahissent le corps de la créature infectée, la tuant en un nombre d'heures égal à 1d12 + valeur de Constitution de la créature, à moins que la maladie ne soit guérie. Une fois la moitié du compte à rebours écoulée, la créature est empoisonnée pour le reste de la durée. Après que la créature soit décédée, 2d4 spores gazeuses de taille TP germent et atteignent leur taille finale en 7 jours."
+384,Sinistre ressemblance, La spore gazeuse ressemble à un tyrannoeil. Une créature qui peut voir la spore gazeuse peut déterminer sa véritable nature en réussissant un jet d'Intelligence (Nature) DD 15.
+387,Charge," Si le squelette se déplace d'au moins 3 mètres en ligne droite vers une cible, puis la touche lors d'une attaque avec sa corne dans le même tour, la cible subit 9 (2d8) dégâts perforants supplémentaires. Si la cible est une créature, elle doit réussir un jet de sauvegarde de Force DD 14 ou être repoussée de 3 mètres et tomber à terre."
+389,Lien télépathique, Le fiélon ignore la restriction de portée de sa télépathie quand il communique avec une créature qu'il a charmée. Les deux individus n'ont même pas besoin d'être sur le même plan d'existence.
+389,Métamorphe," Le fiélon peut utiliser son action pour se métamorphoser en un humanoïde de taille P ou M, ou pour reprendre sa forme véritable. Sans ses ailes, le fiélon perd sa vitesse de vol. Mises à part sa taille et sa vitesse, ses statistiques sont les mêmes quelle que soit sa forme. L'équipement qu'il porte ou transporte ne se transforme pas. Il retrouve sa forme véritable s'il meurt."
+390,Apparence trompeuse," Tant que le sylvanien reste immobile, il ne peut être distingué d'un arbre ordinaire."
+390,Monstre de siège, Le sylvanien inflige le double des dégâts aux objets et structures qu'il attaque.
+391,Sensibilité à l'antimagie," Le tapis est incapable d'agir tant qu'il se trouve dans un <em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=champ-antimagie"">champ antimagie</a></em>. S'il est ciblé par une <em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=dissipation-de-la-magie"">dissipation de la magie</a></em>, le tapis doit réussir un jet de sauvegarde de Constitution contre le DD de sort du lanceur de sorts ou tomber inconscient pendant 1 minute."
+391,Transfert de dégâts," Tant qu'il agrippe une créature, le tapis ne subit que la moitié des dégâts qui lui sont infligés, et la créature agrippée par le tapis en subit l'autre moitié."
+391,Apparence trompeuse," Tant que le tapis reste immobile, il ne peut être distingué d'un tapis normal."
+392,Résistance légendaire (3/jour)," Si la tarasque échoue à un jet de sauvegarde, elle peut décider de transformer cet échec en réussite."
+392,Résistance à la magie, La tarasque a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+392,Carapace réfléchissante," Chaque fois que la tarasque est ciblée par un sort de <em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=projectile-magique"">projectile magique</a></em>, un sort dont la zone d'effet est une ligne, ou un sort requérant un jet d'attaque à distance, lancez un d6. De 1 à 5, la tarasque n'est pas affectée. Sur un 6, la tarasque n'est pas affectée, et l'effet est renvoyé vers le lanceur de sorts comme s'il provenait de la tarasque, le lanceur devenant donc la cible."
+392,Monstre de siège, La tarasque inflige le double des dégâts aux objets et structures qu'elle attaque.
+393,Absorption de foudre," Lorsque le tertre errant est affecté par des dégâts de foudre, il ne subit aucun dégât et récupère un nombre de points de vie égal au montant des dégâts de foudre."
+394,Carapace caméléon, Le thri-kreen peut modifier la couleur de sa carapace pour s'adapter aux teintes et aux textures de son environnement. Cela lui permet de bénéficier d'un avantage aux jets de Dextérité (Discrétion) lorsqu'il se cache.
+394,Saut sans élan," Le thri-kreen peut sauter en longueur jusqu'à 9 mètres ou en hauteur jusqu'à 4,50 mètres, avec ou sans élan."
+395,Odorat aiguisé, Le tigre a un avantage aux jets de Sagesse (Perception) basés sur l'odorat.
+395,Bond agressif," Si le tigre se déplace d'au moins 6 mètres en ligne droite vers une créature, puis la touche lors d'une attaque avec ses griffes dans le même tour, la cible doit réussir un jet de sauvegarde de Force DD 13 pour ne pas tomber à terre. Si la cible est à terre, le tigre peut effectuer une attaque de morsure contre elle en tant qu'action bonus."
+396,Odorat aiguisé, Le tigre a un avantage aux jets de Sagesse (Perception) basés sur l'odorat.
+396,Bond agressif," Si le tigre se déplace d'au moins 6 mètres en ligne droite vers une créature, puis la touche lors d'une attaque avec ses griffes dans le même tour, la cible doit réussir un jet de sauvegarde de Force DD 14 pour ne pas tomber à terre. Si la cible est à terre, le tigre peut effectuer une attaque de morsure contre elle en tant qu'action bonus."
+397,Métamorphe," Le tigre-garou peut utiliser son action pour se métamorphoser en un hybride tigre-humanoïde ou en un tigre, ou pour reprendre sa forme véritable (la forme humanoïde). Mise à part sa taille, ses statistiques sont les mêmes quelle que soit sa forme. L'équipement qu'il porte ou transporte ne se transforme pas. Il retrouve sa forme véritable s'il meurt."
+397,Odorat et ouïe aiguisés, Le tigre-garou a un avantage aux jets de Sagesse (Perception) basés sur l'odorat ou l'ouïe.
+397,Bond (forme de tigre ou hybride uniquement)," Si le tigre-garou se déplace d'au moins 4,50 mètres en ligne droite vers une créature, puis la touche lors d'une attaque avec ses griffes dans le même tour, la cible doit réussir un jet de sauvegarde de Force DD 14 ou tomber à terre. Si la cible est à terre, le tigre-garou peut effectuer une attaque de morsure contre elle en tant qu'action bonus."
+398,Sens aveugles, Le torve ne peut pas utiliser sa vision aveugle tant qu'il est assourdi et a perdu son odorat.
+398,Odorat et ouïe aiguisés, Le torve a un avantage aux jets de Sagesse (Perception) basés sur l'odorat ou l'ouïe.
+398,Camouflage dans les rochers, Le torve a un avantage aux jets de Dextérité (Discrétion) effectués pour se cacher sur un terrain rocailleux.
+399,Invisibilité, Le traqueur est invisible.
+399,Traqueur irréprochable, Le traqueur reçoit une cible de la part de son invocateur. Le traqueur connaît la direction et la distance qui le sépare de sa cible tant qu'ils se trouvent tous les deux dans le même plan d'existence. Le traqueur sait également où se trouve son invocateur.
+400,Charge écrasante," Si le tricératops se déplace d'au moins 6 mètres en ligne droite vers une créature, puis la touche lors d'une attaque avec sa corne dans le même tour, la cible doit réussir un jet de sauvegarde de Force DD 13 ou tomber à terre. Si la cible est à terre, le tricératops peut faire une attaque de piétinement contre celle-ci par une action bonus."
+401,Esprit axiomatique, Le tridrone ne peut être contraint à agir d'une manière contraire à sa nature ou aux instructions qu'il a reçues.
+401,Désintégration," Si le tridrone meurt, son corps se désintègre et tombe en poussière, ne derrière lui que ses armes et tout ce qu'il portait."
+402,Peau de caméléon, Le troglodyte a un avantage aux jets de Dextérité (Discrétion) effectués pour se cacher.
+402,Puanteur," Une créature, autre qu'un troglodyte, qui commence son tour à 1,50 mètre du troglodyte doit réussir un jet de sauvegarde de Constitution DD 12 ou être empoisonnée jusqu'au début de son prochain tour. En cas de jet de sauvegarde réussi, la créature est immunisée contre la puanteur de tous les troglodytes pendant 1 heure."
+402,Sensibilité au soleil," S'il est exposé à la lumière du soleil, le troglodyte a un désavantage aux jets d'attaque et aux jets de Sagesse (Perception) basés sur la vue."
+403,Odorat aiguisé, Le troll a un avantage aux jets de Sagesse (Perception) basés sur l'odorat.
+403,Régénération," Le troll régénère 10 points de vie au début de son tour. Si le troll subit des dégâts d'acide ou de feu, ce trait ne fonctionne pas au début de son prochain tour. Le troll ne meurt que s'il débute son tour avec 0 point de vie et qu'il ne se régénère pas."
+404,Cône d'énergie négative," L'œil central du tyramort émet de l'énergie négative dans un invisible cône magique de 45 mètres. Au début de chacun de ses tours, le tyramort décide de quel côté il tourne ce cône et s'il active ce cône. Aucune créature dans la zone ne peut récupérer de point de vie. Tout humanoïde qui meurt dans la zone devient un zombi sous le contrôle du tyramort. Un humanoïde mort conserve son tour dans l'ordre d'initiative et s'anime au début de son tour suivant, à condition que son corps n'ait pas été complètement détruit."
+405,Cône d'antimagie," L'œil central du tyrannoeil crée une zone d'antimagie, comme un sort de <em><a href=""https://www.aidedd.org/dnd/sorts.php?vf=champ-antimagie"">champ antimagie</a></em>, dans un cône de 45 mètres. Au début de chacun de ses tours, le tyrannoeil décide de l'orientation du cône et s'il active ce cône. La zone fonctionne également contre les rayons oculaires de ce tyrannoeil."
+407,Incantation innée," La caractéristique d'incantation innée de l'ultroloth est le Charisme (jet de sauvegarde contre ses sorts DD 17). L'ultroloth peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+407,Résistance à la magie, L'ultroloth a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+407,Armes magiques, Les attaques avec une arme de l'ultroloth sont magiques.
+408,Métamorphe," Si le vampire n'est pas exposé à la lumière du soleil ou dans une étendue d'eau courante, il peut utiliser son action pour se métamorphoser en une chauve-souris de taille TP ou en un nuage de brouillard de taille M, ou pour reprendre sa forme véritable. Tant qu'il est sous forme de chauve-souris, le vampire ne peut pas parler, sa vitesse de déplacement au sol tombe à 1,50 m, mais il obtient une vitesse de vol de 9 mètres. Mises à part sa taille et sa vitesse, ses statistiques sont les mêmes quelle que soit sa forme. Tout ce qu'il porte sur lui est transformé avec lui, contrairement à ce qu'il transporte. Il retrouve sa forme véritable s'il meurt. Tant qu'il est sous forme brumeuse, le vampire ne peut effectuer aucune action, parler ou manipuler un objet. Il est en apesanteur, obtient une vitesse de vol de 6 mètres, peut rester en vol stationnaire, pénétrer dans l'espace d'une créature hostile et s'y arrêter. De plus, si de l'air peut passer par un petit espace, le nuage de brume le peut également sans être considéré comme passant dans un espace étroit. Le nuage ne peut pas pénétrer dans l'eau. Il a un avantage aux jets de sauvegarde de Force, Dextérité et Constitution, et est immunisé contre tous les dégâts non magiques, à l'exception des dégâts qu'il subit du soleil."
+408,Résistance légendaire (3/jour)," Si le vampire échoue à un jet de sauvegarde, il peut décider de transformer cet échec en réussite."
+408,Échappatoire brumeuse," Lorsqu'il tombe à 0 point de vie en dehors de sa tombe, le vampire se transforme en un nuage de brume (comme avec le trait Métamorphe) plutôt que de tomber inconscient, à condition qu'il ne soit pas exposé à la lumière du soleil ou dans une étendue d'eau courante. S'il ne peut pas se transformer, il est détruit. Tant qu'il est à 0 point de vie sous forme brumeuse, il ne peut pas retrouver sa forme de vampire, il doit impérativement atteindre sa tombe dans les 2 heures, ou être détruit. Dès qu'il atteint sa tombe, il retrouve sa forme vampirique. Il est alors paralysé jusqu'à ce qu'il récupère au moins 1 point de vie. Après être resté 1 heure dans sa tombe avec 0 point de vie, le vampire récupère 1 point de vie."
+408,Régénération," Le vampire récupère 20 points de vie au début de son tour s'il possède au moins 1 point de vie et qu'il n'est ni exposé à la lumière du soleil ou dans une étendue d'eau courante. Si le vampire subit des dégâts radiants ou des dégâts via de l'eau bénite, ce trait ne fonctionne pas au début de son prochain tour."
+408,Pattes d'araignée, Le vampire peut escalader des surfaces difficiles et être au plafond la tête en bas sans avoir besoin d'effectuer un jet de caractéristique.
+408,Faiblesses de vampire, Le vampire a les faiblesses suivantes :
+408,Interdiction, Le vampire ne peut pas entrer dans une résidence sans y avoir été invité par l'un de ses occupants.
+408,Détruit par les étendues d'eau courante, Le vampire subit 20 dégâts d'acide lorsqu'il termine son tour au sein d'une étendue d'eau courante.
+408,Un pieu dans le cœur," Si une arme perforante faite de bois est enfoncée dans son cœur alors qu'il est incapable d'agir dans sa tombe, le vampire devient paralysé jusqu'à ce que ce pieu soit retiré."
+408,Hypersensibilité au soleil," Le vampire subit 20 dégâts radiants lorsqu'il débute son tour à la lumière du soleil. S'il est exposé à la lumière du soleil, il a un désavantage aux jets d'attaque et de caractéristique."
+409,Régénération," Le vampirien récupère 10 points de vie au début de son tour s'il possède au moins 1 point de vie et qu'il n'est pas exposé à la lumière du soleil ou dans une étendue d'eau courante. Si le vampirien subit des dégâts radiants ou des dégâts via de l'eau bénite, ce trait ne fonctionne pas au début de son prochain tour."
+409,Pattes d'araignée, Le vampirien peut escalader des surfaces difficiles et être au plafond la tête en bas sans avoir besoin d'effectuer un jet de caractéristique.
+409,Faiblesses de vampire, Le vampirien a les faiblesses suivantes :
+409,Interdiction, Le vampirien ne peut pas entrer dans une résidence sans y avoir été invité par l'un de ses occupants.
+409,Détruit par les étendues d'eau courante, Le vampirien subit 20 dégâts d'acide lorsqu'il termine son tour au sein d'une étendue d'eau courante.
+409,Un pieu dans le cœur, Le vampirien est détruit si une arme perforante faite de bois est enfoncée dans son cœur alors qu'il est incapable d'agir dans sa tombe.
+409,Hypersensibilité au soleil," Le vampirien subit 20 dégâts radiants lorsqu'il débute son tour à la lumière du soleil. S'il est exposé à la lumière du soleil, il a un désavantage aux jets d'attaque et de caractéristique."
+410,Informe," La vase peut se déplacer au travers d'espaces larges de 2,50 cm sans être considérée comme passant dans un espace étroit."
+410,Corrosion du métal," Toute arme non magique faite de métal qui touche la vase se corrode. Après avoir infligé ses dégâts, l'arme subit un malus permanent et cumulable de -1 aux jets de dégâts. Si la pénalité atteint -5, l'arme est détruite. Des munitions non magiques faites de métal qui touchent la vase sont détruites après avoir infligé leurs dégâts. La vase peut ingurgiter jusqu'à 5 centimètres d'épaisseur de métal non magique en 1 tour."
+410,Apparence trompeuse," Tant que la vase reste immobile, elle ne peut être distinguée d'une flaque d'huile ou d'un rocher humide."
+411,Odorat et vue aiguisés, Le vautour a un avantage aux jets de Sagesse (Perception) basés sur la vue ou l'odorat.
+411,Tactique de groupe," Le vautour a un avantage aux jets d'attaque contre une créature si au moins l'un de ses alliés est à 1,50 mètre ou moins de la créature et n'est pas incapable d'agir."
+412,Odorat et vue aiguisés, Le vautour a un avantage aux jets de Sagesse (Perception) basés sur l'odorat ou la vue.
+412,Tactique de groupe," Le vautour a un avantage aux jets d'attaque contre une créature si au moins l'un de ses alliés est à 1,50 mètre ou moins de la créature et n'est pas incapable d'agir."
+413,Fouisseur, Le ver pourpre peut creuser à travers la roche solide en se déplaçant à la moitié de sa vitesse de creusement et laisser sur son passage un tunnel de 3 mètres de diamètre.
+415,Résistance à la magie, Le vrock a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+417,Odorat et ouïe aiguisés, Le worg a un avantage aux jets de Sagesse (Perception) basés sur l'odorat ou l'ouïe.
+418,Déplacement dans la terre," Le xorn peut creuser la pierre et la terre brutes et non magiques. Ce faisant, le xorn ne produit pas d'ondes de choc ni ne laisse de galerie derrière lui dans la matière qu'il creuse."
+418,Camouflage dans les rochers, Le xorn a un avantage aux jets de Dextérité (Discrétion) effectués pour se cacher sur un terrain rocailleux.
+418,Perception des trésors," Le xorn peut localiser, à l'odorat, la position de métaux précieux et de pierres précieuses, telles que les pièces d'or et les gemmes, qui se situent dans un rayon de 18 mètres autour de lui."
+419,Camouflage dans la neige, Le yéti a un avantage aux jets de Dextérité (Discrétion) effectués pour se cacher sur un terrain enneigé.
+419,Crainte du feu," Si le yéti subit des dégâts de feu, il subit un désavantage aux jets d'attaque et de caractéristique jusqu'à la fin de son tour suivant."
+419,Odorat aiguisé, Le yéti a un avantage aux jets de Sagesse (Perception) basés sur l'odorat.
+420,Camouflage dans la neige, Le yéti a un avantage aux jets de Dextérité (Discrétion) effectués pour se cacher sur un terrain enneigé.
+420,Crainte du feu," Si le yéti subit des dégâts de feu, il subit un désavantage aux jets d'attaque et de caractéristique jusqu'à la fin de son tour suivant."
+420,Odorat aiguisé, Le yéti a un avantage aux jets de Sagesse (Perception) basés sur l'odorat.
+421,Métamorphe," Le yochlol peut utiliser son action pour se métamorphoser en une forme qui ressemble à une femelle drow ou à une araignée géante, ou pour reprendre sa forme véritable. Ses statistiques sont les mêmes quelle que soit sa forme. L'équipement qu'il porte ou transporte ne se transforme pas. Il retrouve sa forme véritable s'il meurt."
+421,Résistance à la magie, Le yochlol a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+421,Pattes d'araignée, La yochlol peut escalader des surfaces difficiles et être au plafond la tête en bas sans avoir besoin d'effectuer un jet de caractéristique.
+421,Incantation innée," La caractéristique d'incantation innée du yochlol est le Charisme (jet de sauvegarde contre ses sorts DD 14). Le yochlol peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+421,Déplacement sur la toile, Le yochlol ignore les restrictions de mouvement causées par une toile d'araignée.
+422,Métamorphe," Le yuan-ti peut utiliser son action pour se métamorphoser en un serpent de taille G, ou pour reprendre sa forme véritable. Ses statistiques sont les mêmes quelle que soit sa forme. L'équipement qu'il porte ou transporte ne se transforme pas. Il ne change pas de forme s'il meurt."
+422,Incantation innée (forme d'abomination uniquement)," La caractéristique d'incantation innée du yuan-ti est le Charisme (jet de sauvegarde contre ses sorts DD 15). Le yuan-ti peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+422,Résistance à la magie, Le yuan-ti a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+423,Métamorphe," Le yuan-ti peut utiliser son action pour se métamorphoser en un serpent de taille M, ou pour reprendre sa forme véritable. Ses statistiques sont les mêmes quelle que soit sa forme. L'équipement qu'il porte ou transporte ne se transforme pas. Il ne change pas de forme s'il meurt."
+423,Incantation innée (forme de yuan-ti uniquement)," La caractéristique d'incantation innée du yuan-ti est le Charisme (jet de sauvegarde contre ses sorts DD 13). Le yuan-ti peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+423,Résistance à la magie, Le yuan-ti a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+423,Type de malison, Le yuan-ti possède un des types suivants&nbsp;:
+424,Incantation innée," La caractéristique d'incantation innée du yuan-ti est le Charisme (jet de sauvegarde contre ses sorts DD 12). Le yuan-ti peut lancer les sorts suivants de manière innée, sans avoir besoin de composantes matérielles :"
+424,Résistance à la magie, Le yuan-ti a un avantage aux jets de sauvegarde contre les sorts et autres effets magiques.
+425,Tenacité de mort-vivant," Si des dégâts font tomber le zombi à 0 point de vie, celui-ci doit effectuer un jet de sauvegarde de Constitution DD 5 + les dégâts subis, sauf en cas de dégâts radiants ou coup critique. En cas de réussite, il tombe à 1 point de vie à la place."
+426,Tenacité de mort-vivant," Si des dégâts font tomber le zombi à 0 point de vie, celui-ci doit effectuer un jet de sauvegarde de Constitution DD 5 + les dégâts subis, sauf en cas de dégâts radiants ou de coup critique. En cas de réussite, il tombe à 1 point de vie à la place."
+427,Tenacité de mort-vivant," Si des dégâts font tomber le zombi à 0 point de vie, celui-ci doit effectuer un jet de sauvegarde de Constitution DD 5 + les dégâts subis, sauf en cas de dégâts radiants ou coup critique. En cas de réussite, il tombe à 1 point de vie à la place."

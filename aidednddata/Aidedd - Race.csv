@@ -1,0 +1,51 @@
+Race,Force,Dextérité,Constitution,Sagesse,Charisme,Intelligence,Taille,Vitesse,Vision,Langues,Traits,Description
+Haut-elfe,,2,,,,1,M,9,,"commun, elfique,  une langue de votre choix","Sens aiguisés *
+Ascendance féerique (AV aux JdS vs charme et la magie ne peut pas vous endormir)
+Transe (4h de méditation remplacent 8h de sommeil)
+Entraînement aux armes elfiques *
+Sort mineur",
+Elfe des bois,,2,,1,,,M,10.5,Vision dans le noir (18 m),"commun, elfique","Sens aiguisés *
+Ascendance féerique (AV aux JdS vs charme et la magie ne peut pas vous endormir)
+Transe (4h de méditation remplacent 8h de sommeil)
+Entraînement aux armes elfiques *
+Foulée légère *
+Cachette naturelle (peut tenter de se cacher dans une zone à visibilité réduite)",
+Elfe noir,,2,,,1,,M,9,Vision dans le noir (18 m),"commun, elfique","Sens aiguisés *
+Ascendance féerique (AV aux JdS vs charme et la magie ne peut pas vous endormir)
+Transe (4h de méditation remplacent 8h de sommeil)
+Entraînement aux armes drows *
+Sensibilité au soleil
+Magie drow",
+Halfelin pied-léger,,2,,,1,,P,"7,5",,"commun, halfelin","Chanceux (relancer un 1)
+Brave (AV aux JdS vs effrayé)
+Agilité halfeline (peut passer dans l'espace d'une créature de taille supérieure)
+Discrétion naturelle (peut tenter de se cacher derrière une créature de taille supérieure)",
+Halfelin robuste,,2,1,,1,,P,"7,5",,"commun, halfelin","Chanceux (relancer un 1)
+Brave (AV aux JdS vs effrayé)
+Agilité halfeline (peut passer dans l'espace d'une créature de taille supérieure)
+Résistance des robustes (AV aux JdS contre le poison et résistance contre les dégâts de poison)",
+Humain,1,1,1,1,1,1,M,9,,"commun, une langue de votre choix",,
+Nain des collines,,,2,1,,,M,"7,5",Vision dans le noir (18 m),"commun, nain","Résistance naine (AV aux JdS vs poison)
+Entraînement aux armes naines *
+Maîtrise des outils *
+Connaissance de la pierre (bonus de maîtrise x2 aux jets d'Int (Histoire) en relation avec la pierre)
+Ténacité naine (+1 pv/niveau) *",
+Nain des montagnes,2,,2,1,,,M,"7,5",Vision dans le noir (18 m),"commun, nain","Résistance naine (AV aux JdS vs poison)
+Entraînement aux armes naines *
+Maîtrise des outils *
+Connaissance de la pierre (bonus de maîtrise x2 aux jets d'Int (Histoire) en relation avec la pierre)
+Formation au port des armures naines *",
+Demi-elfe,,,,,2,,M,9,Vision dans le noir (18 m),"commun, elfique, une langue de votre choix","Ascendance féerique (AV aux JdS contre les effets de charme et la magie ne peut pas vous endormir)
+Polyvalence *",
+Demi-orc,2,,1,,,,M,9,Vision dans le noir (18 m),"commun, orc","Menaçant *
+Endurance implacable
+Attaques sauvages",
+Drakéide,2,,,,1,,M,9,,"commun, draconique",Ascendance draconique,
+Gnome des forêts,,1,,,,2,P,"7,5",Vision dans le noir (18 m),"commun, gnome","Ruse gnome
+Communication avec les petits animaux
+Illusionniste-né",
+Gnome des roches,,,1,,,2,P,"7,5",Vision dans le noir (18 m),"commun, gnome","Ruse gnome
+Connaissance en ingénierie
+Bricoleur",
+Tieffelin,,,,,2,1,M,9,Vision dans le noir (18 m),"commun, infernal","Résistance infernale (feu)
+Ascendance infernale",
