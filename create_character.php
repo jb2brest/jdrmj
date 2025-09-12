@@ -336,10 +336,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="form-section">
                 <h3><i class="fas fa-language me-2"></i>Langues</h3>
                 <div class="row">
-                    <div class="col-md-12">
+                    <div class="col-md-8">
                         <div class="mb-3">
                             <label for="race_languages" class="form-label">Langues parlées</label>
-                            <input type="text" class="form-control" id="race_languages" name="race_languages" readonly>
+                            <div id="languages-list" class="border rounded p-3" style="min-height: 50px; background-color: #f8f9fa;">
+                                <em class="text-muted">Sélectionnez une race pour voir ses langues</em>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3" id="additional-language-section" style="display: none;">
+                            <label for="additional_language" class="form-label">Langue supplémentaire</label>
+                            <div class="input-group">
+                                <select class="form-select" id="additional_language" name="additional_language">
+                                    <option value="">Choisir une langue</option>
+                                </select>
+                                <button class="btn btn-outline-danger" type="button" id="remove-additional-language" style="display: none;">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <small class="form-text text-muted">Si votre race permet "une langue de votre choix"</small>
                         </div>
                     </div>
                 </div>
@@ -514,8 +530,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             speedInput.value = `${race.speed} pieds`;
             
             // Mettre à jour les langues
-            const languagesInput = document.getElementById('race_languages');
-            languagesInput.value = race.languages || '';
+            updateLanguagesDisplay(race.languages || '');
             
             // Mettre à jour la vitesse de combat
             const combatSpeedInput = document.getElementById('speed');
@@ -532,10 +547,171 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
         }
         
+        // Fonction pour mettre à jour l'affichage des langues
+        function updateLanguagesDisplay(languagesText) {
+            const languagesList = document.getElementById('languages-list');
+            const additionalLanguageSection = document.getElementById('additional-language-section');
+            const additionalLanguageSelect = document.getElementById('additional_language');
+            const removeButton = document.getElementById('remove-additional-language');
+            
+            if (!languagesText) {
+                languagesList.innerHTML = '<em class="text-muted">Sélectionnez une race pour voir ses langues</em>';
+                additionalLanguageSection.style.display = 'none';
+                return;
+            }
+            
+            // Analyser les langues
+            const languages = languagesText.split(',').map(lang => lang.trim());
+            let hasChoice = false;
+            let fixedLanguages = [];
+            
+            languages.forEach(lang => {
+                if (lang.includes('une langue de votre choix') || lang.includes('une langue de choix')) {
+                    hasChoice = true;
+                } else {
+                    fixedLanguages.push(lang);
+                }
+            });
+            
+            // Afficher les langues fixes
+            let html = '';
+            if (fixedLanguages.length > 0) {
+                html += '<div class="mb-2"><strong>Langues raciales :</strong></div>';
+                fixedLanguages.forEach(lang => {
+                    html += `<span class="badge bg-primary me-1 mb-1">${lang}</span>`;
+                });
+            }
+            
+            // Gérer la langue de choix
+            if (hasChoice) {
+                additionalLanguageSection.style.display = 'block';
+                populateAdditionalLanguageSelect(fixedLanguages);
+                
+                // Réinitialiser la sélection
+                additionalLanguageSelect.value = '';
+                removeButton.style.display = 'none';
+            } else {
+                additionalLanguageSection.style.display = 'none';
+            }
+            
+            languagesList.innerHTML = html;
+        }
+        
+        // Fonction pour peupler la liste des langues supplémentaires
+        function populateAdditionalLanguageSelect(excludeLanguages) {
+            const select = document.getElementById('additional_language');
+            
+            // Charger les langues depuis l'API
+            fetch('get_languages.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Vider les options existantes (sauf la première)
+                        select.innerHTML = '<option value="">Choisir une langue</option>';
+                        
+                        // Ajouter les langues disponibles
+                        data.languages.forEach(language => {
+                            if (!excludeLanguages.includes(language.name)) {
+                                const option = document.createElement('option');
+                                option.value = language.name;
+                                option.textContent = `${language.name} (${language.type})`;
+                                select.appendChild(option);
+                            }
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur lors du chargement des langues:', error);
+                });
+        }
+        
         // Événement de changement de race
         document.getElementById('race_id').addEventListener('change', function() {
             loadRaceInfo(this.value);
         });
+        
+        // Événement de changement de langue supplémentaire
+        document.getElementById('additional_language').addEventListener('change', function() {
+            updateAdditionalLanguageDisplay();
+        });
+        
+        // Événement de suppression de la langue supplémentaire
+        document.getElementById('remove-additional-language').addEventListener('click', function() {
+            const select = document.getElementById('additional_language');
+            const removeButton = document.getElementById('remove-additional-language');
+            
+            // Réinitialiser la sélection
+            select.value = '';
+            
+            // Supprimer la langue de choix de l'affichage
+            const languagesList = document.getElementById('languages-list');
+            const currentContent = languagesList.innerHTML;
+            
+            // Supprimer la section "Langue de choix" et le badge associé
+            let updatedContent = currentContent.replace(/<div class="mt-2"><strong>Langue de choix :<\/strong><\/div>\s*<span[^>]*>.*?<\/span>/s, '');
+            // Supprimer aussi le badge de langue de choix s'il existe
+            updatedContent = updatedContent.replace(/<span[^>]*id="selected-additional-language"[^>]*>.*?<\/span>/g, '');
+            
+            languagesList.innerHTML = updatedContent;
+            
+            // Masquer le bouton de suppression
+            removeButton.style.display = 'none';
+        });
+        
+        // Fonction pour mettre à jour l'affichage de la langue supplémentaire
+        function updateAdditionalLanguageDisplay() {
+            const select = document.getElementById('additional_language');
+            const languagesList = document.getElementById('languages-list');
+            const removeButton = document.getElementById('remove-additional-language');
+            
+            if (select.value) {
+                // Remplacer la langue de choix existante par la nouvelle
+                const selectedLanguage = select.value;
+                
+                // Supprimer d'abord la section "Langue de choix" existante si elle existe
+                let currentContent = languagesList.innerHTML;
+                currentContent = currentContent.replace(/<div class="mt-2"><strong>Langue de choix :<\/strong><\/div>\s*<span[^>]*>.*?<\/span>/s, '');
+                
+                // Supprimer aussi l'ancien badge de langue de choix s'il existe
+                currentContent = currentContent.replace(/<span[^>]*id="selected-additional-language"[^>]*>.*?<\/span>/g, '');
+                
+                // Ajouter la nouvelle langue directement dans la section "Langues raciales"
+                // Trouver la section "Langues raciales" et ajouter la langue
+                if (currentContent.includes('Langues raciales :')) {
+                    // Ajouter la langue à la fin de la section existante
+                    // Chercher la fin de la section des badges de langues raciales
+                    const regex = /(<div class="mb-2"><strong>Langues raciales :<\/strong><\/div>)(.*?)(<div class="mt-2">|$)/s;
+                    const match = currentContent.match(regex);
+                    
+                    if (match) {
+                        const beforeSection = match[1];
+                        const badgesSection = match[2];
+                        const afterSection = match[3];
+                        
+                        // Ajouter la nouvelle langue dans la section des badges
+                        const newBadgesSection = badgesSection + `<span class="badge bg-success me-1 mb-1" id="selected-additional-language">${selectedLanguage}</span>`;
+                        currentContent = beforeSection + newBadgesSection + afterSection;
+                    } else {
+                        // Fallback: ajouter à la fin
+                        currentContent += `<span class="badge bg-success me-1 mb-1" id="selected-additional-language">${selectedLanguage}</span>`;
+                    }
+                } else {
+                    // Créer une nouvelle section "Langues raciales" avec la langue
+                    currentContent += '<div class="mb-2"><strong>Langues raciales :</strong></div>';
+                    currentContent += `<span class="badge bg-success me-1 mb-1" id="selected-additional-language">${selectedLanguage}</span>`;
+                }
+                
+                languagesList.innerHTML = currentContent;
+                removeButton.style.display = 'block';
+            } else {
+                // Supprimer la langue de choix de l'affichage
+                const currentContent = languagesList.innerHTML;
+                let updatedContent = currentContent.replace(/<div class="mt-2"><strong>Langue de choix :<\/strong><\/div>\s*<span[^>]*>.*?<\/span>/s, '');
+                updatedContent = updatedContent.replace(/<span[^>]*id="selected-additional-language"[^>]*>.*?<\/span>/g, '');
+                languagesList.innerHTML = updatedContent;
+                removeButton.style.display = 'none';
+            }
+        }
         
         // Charger les informations de race au chargement de la page si une race est déjà sélectionnée
         document.addEventListener('DOMContentLoaded', function() {
