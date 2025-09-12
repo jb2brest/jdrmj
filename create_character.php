@@ -206,18 +206,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             </select>
                         </div>
                     </div>
-                    <div class="col-md-2">
-                        <div class="mb-3">
-                            <label for="race_size" class="form-label">Taille</label>
-                            <input type="text" class="form-control" id="race_size" name="race_size" readonly>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="mb-3">
-                            <label for="race_speed" class="form-label">Vitesse</label>
-                            <input type="text" class="form-control" id="race_speed" name="race_speed" readonly>
-                        </div>
-                    </div>
                 </div>
                 <div class="row">
                     <div class="col-md-3">
@@ -375,10 +363,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     </div>
                     <div class="col-md-3">
                         <div class="mb-3">
+                            <label for="race_size" class="form-label">Taille</label>
+                            <input type="text" class="form-control" id="race_size" name="race_size" readonly>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
                             <label for="speed" class="form-label">Vitesse (pieds)</label>
-                            <input type="number" class="form-control" id="speed" name="speed" 
-                                   value="<?php echo isset($_POST['speed']) ? $_POST['speed'] : '30'; ?>" 
-                                   min="5" max="120" required>
+                            <input type="text" class="form-control" id="speed" name="speed" readonly>
                             <small class="form-text text-muted" id="speed-info">Vitesse de base</small>
                         </div>
                     </div>
@@ -509,11 +501,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             
             // Effacer les champs de race
             document.getElementById('race_size').value = '';
-            document.getElementById('race_speed').value = '';
             document.getElementById('race_languages').value = '';
             
-            // Remettre la vitesse de combat à la valeur par défaut
-            document.getElementById('speed').value = 30;
+            // Effacer la vitesse
+            document.getElementById('speed').value = '';
             document.getElementById('speed-info').textContent = 'Vitesse de base';
             document.getElementById('speed-info').style.color = '#6c757d';
         }
@@ -526,8 +517,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             sizeInput.value = sizeText;
             
             // Mettre à jour la vitesse
-            const speedInput = document.getElementById('race_speed');
-            speedInput.value = `${race.speed} pieds`;
+            const speedInput = document.getElementById('speed');
+            speedInput.value = race.speed ? `${race.speed} pieds` : '';
             
             // Mettre à jour les langues
             updateLanguagesDisplay(race.languages || '');
