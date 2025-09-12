@@ -114,6 +114,7 @@ Ce projet est sous licence MIT. Libre d'utilisation, modification et distributio
 
 ## Changelog
 <version_tag>
+- 0.0.50 : Début Races
 - 0.0.49 : Journal de campagne
 - 0.0.48 : identification du personnage
 - 0.0.47 : Bascule de l'affichage en cas de changement de lieu.
