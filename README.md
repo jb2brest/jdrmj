@@ -114,6 +114,7 @@ Ce projet est sous licence MIT. Libre d'utilisation, modification et distributio
 
 ## Changelog
 <version_tag>
+- 0.0.57 : Tableau de carac
 - 0.0.56 : Tableau de carac
 - 0.0.55 : Tableau de carac
 - 0.0.54 : Vitesse
