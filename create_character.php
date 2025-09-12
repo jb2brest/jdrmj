@@ -262,61 +262,97 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     </div>
                 </div>
                 
-                <div class="row">
-                    <div class="col-md-2">
-                        <div class="mb-3">
-                            <label for="strength" class="form-label">Force</label>
-                            <input type="number" class="form-control stat-input" id="strength" name="strength" 
-                                   value="<?php echo isset($_POST['strength']) ? $_POST['strength'] : '10'; ?>" 
-                                   min="1" max="20" required>
-                            <small class="form-text text-muted" id="strength-bonus"></small>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="mb-3">
-                            <label for="dexterity" class="form-label">Dextérité</label>
-                            <input type="number" class="form-control stat-input" id="dexterity" name="dexterity" 
-                                   value="<?php echo isset($_POST['dexterity']) ? $_POST['dexterity'] : '10'; ?>" 
-                                   min="1" max="20" required>
-                            <small class="form-text text-muted" id="dexterity-bonus"></small>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="mb-3">
-                            <label for="constitution" class="form-label">Constitution</label>
-                            <input type="number" class="form-control stat-input" id="constitution" name="constitution" 
-                                   value="<?php echo isset($_POST['constitution']) ? $_POST['constitution'] : '10'; ?>" 
-                                   min="1" max="20" required>
-                            <small class="form-text text-muted" id="constitution-bonus"></small>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="mb-3">
-                            <label for="intelligence" class="form-label">Intelligence</label>
-                            <input type="number" class="form-control stat-input" id="intelligence" name="intelligence" 
-                                   value="<?php echo isset($_POST['intelligence']) ? $_POST['intelligence'] : '10'; ?>" 
-                                   min="1" max="20" required>
-                            <small class="form-text text-muted" id="intelligence-bonus"></small>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="mb-3">
-                            <label for="wisdom" class="form-label">Sagesse</label>
-                            <input type="number" class="form-control stat-input" id="wisdom" name="wisdom" 
-                                   value="<?php echo isset($_POST['wisdom']) ? $_POST['wisdom'] : '10'; ?>" 
-                                   min="1" max="20" required>
-                            <small class="form-text text-muted" id="wisdom-bonus"></small>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="mb-3">
-                            <label for="charisma" class="form-label">Charisme</label>
-                            <input type="number" class="form-control stat-input" id="charisma" name="charisma" 
-                                   value="<?php echo isset($_POST['charisma']) ? $_POST['charisma'] : '10'; ?>" 
-                                   min="1" max="20" required>
-                            <small class="form-text text-muted" id="charisma-bonus"></small>
-                        </div>
-                    </div>
+                <!-- Tableau des caractéristiques -->
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped">
+                        <thead class="table-dark">
+                            <tr>
+                                <th style="width: 20%;">Type</th>
+                                <th style="width: 13.33%;">Force</th>
+                                <th style="width: 13.33%;">Dextérité</th>
+                                <th style="width: 13.33%;">Constitution</th>
+                                <th style="width: 13.33%;">Intelligence</th>
+                                <th style="width: 13.33%;">Sagesse</th>
+                                <th style="width: 13.33%;">Charisme</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Caractéristiques de base (éditables) -->
+                            <tr>
+                                <td><strong>Caractéristiques de base</strong></td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm stat-input" id="strength" name="strength" 
+                                           value="<?php echo isset($_POST['strength']) ? $_POST['strength'] : '10'; ?>" 
+                                           min="1" max="20" required>
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm stat-input" id="dexterity" name="dexterity" 
+                                           value="<?php echo isset($_POST['dexterity']) ? $_POST['dexterity'] : '10'; ?>" 
+                                           min="1" max="20" required>
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm stat-input" id="constitution" name="constitution" 
+                                           value="<?php echo isset($_POST['constitution']) ? $_POST['constitution'] : '10'; ?>" 
+                                           min="1" max="20" required>
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm stat-input" id="intelligence" name="intelligence" 
+                                           value="<?php echo isset($_POST['intelligence']) ? $_POST['intelligence'] : '10'; ?>" 
+                                           min="1" max="20" required>
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm stat-input" id="wisdom" name="wisdom" 
+                                           value="<?php echo isset($_POST['wisdom']) ? $_POST['wisdom'] : '10'; ?>" 
+                                           min="1" max="20" required>
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm stat-input" id="charisma" name="charisma" 
+                                           value="<?php echo isset($_POST['charisma']) ? $_POST['charisma'] : '10'; ?>" 
+                                           min="1" max="20" required>
+                                </td>
+                            </tr>
+                            <!-- Bonus raciaux -->
+                            <tr>
+                                <td><strong>Bonus raciaux</strong></td>
+                                <td><span id="racial-strength-bonus" class="text-success">+0</span></td>
+                                <td><span id="racial-dexterity-bonus" class="text-success">+0</span></td>
+                                <td><span id="racial-constitution-bonus" class="text-success">+0</span></td>
+                                <td><span id="racial-intelligence-bonus" class="text-success">+0</span></td>
+                                <td><span id="racial-wisdom-bonus" class="text-success">+0</span></td>
+                                <td><span id="racial-charisma-bonus" class="text-success">+0</span></td>
+                            </tr>
+                            <!-- Bonus d'équipements -->
+                            <tr>
+                                <td><strong>Bonus d'équipements</strong></td>
+                                <td><span id="equipment-strength-bonus" class="text-info">+0</span></td>
+                                <td><span id="equipment-dexterity-bonus" class="text-info">+0</span></td>
+                                <td><span id="equipment-constitution-bonus" class="text-info">+0</span></td>
+                                <td><span id="equipment-intelligence-bonus" class="text-info">+0</span></td>
+                                <td><span id="equipment-wisdom-bonus" class="text-info">+0</span></td>
+                                <td><span id="equipment-charisma-bonus" class="text-info">+0</span></td>
+                            </tr>
+                            <!-- Bonus temporaires -->
+                            <tr>
+                                <td><strong>Bonus temporaires</strong></td>
+                                <td><span id="temp-strength-bonus" class="text-warning">+0</span></td>
+                                <td><span id="temp-dexterity-bonus" class="text-warning">+0</span></td>
+                                <td><span id="temp-constitution-bonus" class="text-warning">+0</span></td>
+                                <td><span id="temp-intelligence-bonus" class="text-warning">+0</span></td>
+                                <td><span id="temp-wisdom-bonus" class="text-warning">+0</span></td>
+                                <td><span id="temp-charisma-bonus" class="text-warning">+0</span></td>
+                            </tr>
+                            <!-- Total -->
+                            <tr class="table-primary">
+                                <td><strong>Total</strong></td>
+                                <td><strong id="total-strength">10 (+0)</strong></td>
+                                <td><strong id="total-dexterity">10 (+0)</strong></td>
+                                <td><strong id="total-constitution">10 (+0)</strong></td>
+                                <td><strong id="total-intelligence">10 (+0)</strong></td>
+                                <td><strong id="total-wisdom">10 (+0)</strong></td>
+                                <td><strong id="total-charisma">10 (+0)</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -469,7 +505,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             updateRaceFields(race);
         }
         
-        // Fonction pour afficher les bonus sous chaque caractéristique
+        // Fonction pour afficher les bonus raciaux dans le tableau
         function displayRaceBonuses(race) {
             const bonuses = {
                 'strength': race.strength_bonus,
@@ -481,22 +517,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             };
             
             Object.keys(bonuses).forEach(stat => {
-                const bonusElement = document.getElementById(`${stat}-bonus`);
+                const bonusElement = document.getElementById(`racial-${stat}-bonus`);
                 if (bonuses[stat] > 0) {
-                    bonusElement.textContent = `+${bonuses[stat]} racial`;
-                    bonusElement.style.color = '#28a745';
+                    bonusElement.textContent = `+${bonuses[stat]}`;
+                    bonusElement.className = 'text-success';
                 } else {
-                    bonusElement.textContent = '';
+                    bonusElement.textContent = '+0';
+                    bonusElement.className = 'text-muted';
                 }
             });
+            
+            // Recalculer les totaux
+            calculateTotals();
         }
         
-        // Fonction pour effacer les bonus
+        // Fonction pour effacer les bonus raciaux
         function clearRaceBonuses() {
             const stats = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
             stats.forEach(stat => {
-                const bonusElement = document.getElementById(`${stat}-bonus`);
-                bonusElement.textContent = '';
+                const bonusElement = document.getElementById(`racial-${stat}-bonus`);
+                bonusElement.textContent = '+0';
+                bonusElement.className = 'text-muted';
             });
             
             // Effacer les champs de race
@@ -507,6 +548,38 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             document.getElementById('speed').value = '';
             document.getElementById('speed-info').textContent = 'Vitesse de base';
             document.getElementById('speed-info').style.color = '#6c757d';
+            
+            // Recalculer les totaux
+            calculateTotals();
+        }
+        
+        // Fonction pour calculer les totaux des caractéristiques
+        function calculateTotals() {
+            const stats = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
+            
+            stats.forEach(stat => {
+                // Valeur de base
+                const baseValue = parseInt(document.getElementById(stat).value) || 0;
+                
+                // Bonus racial
+                const racialBonus = parseInt(document.getElementById(`racial-${stat}-bonus`).textContent.replace('+', '')) || 0;
+                
+                // Bonus d'équipement (pour l'instant toujours 0)
+                const equipmentBonus = 0;
+                
+                // Bonus temporaire (pour l'instant toujours 0)
+                const tempBonus = 0;
+                
+                // Total
+                const total = baseValue + racialBonus + equipmentBonus + tempBonus;
+                
+                // Modificateur = (caractéristique - 10) / 2, arrondi vers le bas
+                const modifier = Math.floor((total - 10) / 2);
+                const modifierText = modifier >= 0 ? `+${modifier}` : `${modifier}`;
+                
+                // Afficher le total
+                document.getElementById(`total-${stat}`).textContent = `${total} (${modifierText})`;
+            });
         }
         
         // Fonction pour mettre à jour les champs de race
@@ -710,6 +783,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             if (selectedRace) {
                 loadRaceInfo(selectedRace);
             }
+            
+            // Ajouter des event listeners pour recalculer les totaux quand les caractéristiques changent
+            const stats = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
+            stats.forEach(stat => {
+                const input = document.getElementById(stat);
+                if (input) {
+                    input.addEventListener('input', calculateTotals);
+                    input.addEventListener('change', calculateTotals);
+                }
+            });
+            
+            // Calculer les totaux initiaux
+            calculateTotals();
         });
     </script>
 </body>
