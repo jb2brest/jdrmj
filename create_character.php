@@ -170,7 +170,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="form-section">
                 <h3><i class="fas fa-info-circle me-2"></i>Informations de base</h3>
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="mb-3">
                             <label for="name" class="form-label">Nom du personnage</label>
                             <input type="text" class="form-control" id="name" name="name" 
@@ -178,7 +178,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                    required>
                         </div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <div class="mb-3">
                             <label for="race_id" class="form-label">Race</label>
                             <select class="form-select" id="race_id" name="race_id" required>
@@ -192,7 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             </select>
                         </div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <div class="mb-3">
                             <label for="class_id" class="form-label">Classe</label>
                             <select class="form-select" id="class_id" name="class_id" required>
@@ -204,6 +204,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="mb-3">
+                            <label for="race_size" class="form-label">Taille</label>
+                            <input type="text" class="form-control" id="race_size" name="race_size" readonly>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="mb-3">
+                            <label for="race_speed" class="form-label">Vitesse</label>
+                            <input type="text" class="form-control" id="race_speed" name="race_speed" readonly>
                         </div>
                     </div>
                 </div>
@@ -249,8 +261,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 
                 <!-- Informations de la race sélectionnée -->
                 <div id="race-info" class="alert alert-info" style="display: none;">
-                    <h5><i class="fas fa-info-circle me-2"></i>Informations de la race</h5>
-                    <div id="race-details"></div>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div id="race-image-container">
+                                <img id="race-image" src="" alt="Image de la race" class="img-fluid rounded" style="max-height: 200px; width: 100%; object-fit: cover;">
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <h5><i class="fas fa-info-circle me-2"></i>Informations de la race</h5>
+                            <div id="race-details"></div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="row">
@@ -306,6 +327,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                    value="<?php echo isset($_POST['charisma']) ? $_POST['charisma'] : '10'; ?>" 
                                    min="1" max="20" required>
                             <small class="form-text text-muted" id="charisma-bonus"></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Langues -->
+            <div class="form-section">
+                <h3><i class="fas fa-language me-2"></i>Langues</h3>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label for="race_languages" class="form-label">Langues parlées</label>
+                            <input type="text" class="form-control" id="race_languages" name="race_languages" readonly>
                         </div>
                     </div>
                 </div>
@@ -374,8 +408,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         function displayRaceInfo(race) {
             const raceInfo = document.getElementById('race-info');
             const raceDetails = document.getElementById('race-details');
+            const raceImage = document.getElementById('race-image');
             
             let details = `<div class="row">`;
+            
+            // Description de la race
+            if (race.description) {
+                details += `<div class="col-md-12 mb-3"><strong>Description :</strong><br>${race.description}</div>`;
+            }
             
             // Bonus de caractéristiques
             const bonuses = [];
@@ -390,21 +430,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 details += `<div class="col-md-6"><strong>Bonus de caractéristiques :</strong><br>${bonuses.join(' ')}</div>`;
             }
             
-            // Informations physiques
-            details += `<div class="col-md-6"><strong>Informations physiques :</strong><br>`;
-            details += `Taille : ${race.size === 'P' ? 'Petite' : race.size === 'M' ? 'Moyenne' : 'Grande'}<br>`;
-            details += `Vitesse : ${race.speed} pieds`;
+            // Vision
             if (race.vision) {
-                details += `<br>Vision : ${race.vision}`;
+                details += `<div class="col-md-6"><strong>Vision :</strong><br>${race.vision}</div>`;
             }
-            details += `</div>`;
             
             details += `</div>`;
-            
-            // Langues
-            if (race.languages) {
-                details += `<div class="mt-2"><strong>Langues :</strong> ${race.languages}</div>`;
-            }
             
             // Traits
             if (race.traits) {
@@ -412,13 +443,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
             
             raceDetails.innerHTML = details;
+            
+            // Afficher l'image de la race
+            if (race.image) {
+                raceImage.src = `images/${race.image}`;
+                raceImage.style.display = 'block';
+            } else {
+                raceImage.style.display = 'none';
+            }
+            
             raceInfo.style.display = 'block';
             
             // Afficher les bonus sous chaque caractéristique
             displayRaceBonuses(race);
             
-            // Mettre à jour la vitesse
-            updateSpeed(race.speed);
+            // Mettre à jour les champs de taille et vitesse
+            updateRaceFields(race);
         }
         
         // Fonction pour afficher les bonus sous chaque caractéristique
@@ -450,19 +490,43 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 const bonusElement = document.getElementById(`${stat}-bonus`);
                 bonusElement.textContent = '';
             });
+            
+            // Effacer les champs de race
+            document.getElementById('race_size').value = '';
+            document.getElementById('race_speed').value = '';
+            document.getElementById('race_languages').value = '';
+            
+            // Remettre la vitesse de combat à la valeur par défaut
+            document.getElementById('speed').value = 30;
+            document.getElementById('speed-info').textContent = 'Vitesse de base';
+            document.getElementById('speed-info').style.color = '#6c757d';
         }
         
-        // Fonction pour mettre à jour la vitesse
-        function updateSpeed(raceSpeed) {
-            const speedInput = document.getElementById('speed');
+        // Fonction pour mettre à jour les champs de race
+        function updateRaceFields(race) {
+            // Mettre à jour la taille
+            const sizeInput = document.getElementById('race_size');
+            const sizeText = race.size === 'P' ? 'Petite' : race.size === 'M' ? 'Moyenne' : 'Grande';
+            sizeInput.value = sizeText;
+            
+            // Mettre à jour la vitesse
+            const speedInput = document.getElementById('race_speed');
+            speedInput.value = `${race.speed} pieds`;
+            
+            // Mettre à jour les langues
+            const languagesInput = document.getElementById('race_languages');
+            languagesInput.value = race.languages || '';
+            
+            // Mettre à jour la vitesse de combat
+            const combatSpeedInput = document.getElementById('speed');
             const speedInfo = document.getElementById('speed-info');
             
-            if (raceSpeed && raceSpeed > 0) {
-                speedInput.value = raceSpeed;
-                speedInfo.textContent = `Vitesse raciale : ${raceSpeed} pieds`;
+            if (race.speed && race.speed > 0) {
+                combatSpeedInput.value = race.speed;
+                speedInfo.textContent = `Vitesse raciale : ${race.speed} pieds`;
                 speedInfo.style.color = '#28a745';
             } else {
-                speedInput.value = 30;
+                combatSpeedInput.value = 30;
                 speedInfo.textContent = 'Vitesse de base';
                 speedInfo.style.color = '#6c757d';
             }
