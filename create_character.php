@@ -246,6 +246,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <!-- Caractéristiques -->
             <div class="form-section">
                 <h3><i class="fas fa-dumbbell me-2"></i>Caractéristiques</h3>
+                
+                <!-- Informations de la race sélectionnée -->
+                <div id="race-info" class="alert alert-info" style="display: none;">
+                    <h5><i class="fas fa-info-circle me-2"></i>Informations de la race</h5>
+                    <div id="race-details"></div>
+                </div>
+                
                 <div class="row">
                     <div class="col-md-2">
                         <div class="mb-3">
@@ -253,6 +260,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <input type="number" class="form-control stat-input" id="strength" name="strength" 
                                    value="<?php echo isset($_POST['strength']) ? $_POST['strength'] : '10'; ?>" 
                                    min="1" max="20" required>
+                            <small class="form-text text-muted" id="strength-bonus"></small>
                         </div>
                     </div>
                     <div class="col-md-2">
@@ -261,6 +269,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <input type="number" class="form-control stat-input" id="dexterity" name="dexterity" 
                                    value="<?php echo isset($_POST['dexterity']) ? $_POST['dexterity'] : '10'; ?>" 
                                    min="1" max="20" required>
+                            <small class="form-text text-muted" id="dexterity-bonus"></small>
                         </div>
                     </div>
                     <div class="col-md-2">
@@ -269,6 +278,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <input type="number" class="form-control stat-input" id="constitution" name="constitution" 
                                    value="<?php echo isset($_POST['constitution']) ? $_POST['constitution'] : '10'; ?>" 
                                    min="1" max="20" required>
+                            <small class="form-text text-muted" id="constitution-bonus"></small>
                         </div>
                     </div>
                     <div class="col-md-2">
@@ -277,6 +287,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <input type="number" class="form-control stat-input" id="intelligence" name="intelligence" 
                                    value="<?php echo isset($_POST['intelligence']) ? $_POST['intelligence'] : '10'; ?>" 
                                    min="1" max="20" required>
+                            <small class="form-text text-muted" id="intelligence-bonus"></small>
                         </div>
                     </div>
                     <div class="col-md-2">
@@ -285,6 +296,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <input type="number" class="form-control stat-input" id="wisdom" name="wisdom" 
                                    value="<?php echo isset($_POST['wisdom']) ? $_POST['wisdom'] : '10'; ?>" 
                                    min="1" max="20" required>
+                            <small class="form-text text-muted" id="wisdom-bonus"></small>
                         </div>
                     </div>
                     <div class="col-md-2">
@@ -293,6 +305,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <input type="number" class="form-control stat-input" id="charisma" name="charisma" 
                                    value="<?php echo isset($_POST['charisma']) ? $_POST['charisma'] : '10'; ?>" 
                                    min="1" max="20" required>
+                            <small class="form-text text-muted" id="charisma-bonus"></small>
                         </div>
                     </div>
                 </div>
@@ -316,6 +329,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <input type="number" class="form-control" id="speed" name="speed" 
                                    value="<?php echo isset($_POST['speed']) ? $_POST['speed'] : '30'; ?>" 
                                    min="5" max="120" required>
+                            <small class="form-text text-muted" id="speed-info">Vitesse de base</small>
                         </div>
                     </div>
                 </div>
@@ -333,6 +347,140 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Fonction pour récupérer les informations de race
+        function loadRaceInfo(raceId) {
+            if (!raceId) {
+                document.getElementById('race-info').style.display = 'none';
+                clearRaceBonuses();
+                return;
+            }
+            
+            fetch(`get_race_info.php?id=${raceId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayRaceInfo(data.race);
+                    } else {
+                        console.error('Erreur lors du chargement des informations de race');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                });
+        }
+        
+        // Fonction pour afficher les informations de race
+        function displayRaceInfo(race) {
+            const raceInfo = document.getElementById('race-info');
+            const raceDetails = document.getElementById('race-details');
+            
+            let details = `<div class="row">`;
+            
+            // Bonus de caractéristiques
+            const bonuses = [];
+            if (race.strength_bonus > 0) bonuses.push(`<span class="badge bg-primary me-1">Force +${race.strength_bonus}</span>`);
+            if (race.dexterity_bonus > 0) bonuses.push(`<span class="badge bg-success me-1">Dextérité +${race.dexterity_bonus}</span>`);
+            if (race.constitution_bonus > 0) bonuses.push(`<span class="badge bg-warning me-1">Constitution +${race.constitution_bonus}</span>`);
+            if (race.intelligence_bonus > 0) bonuses.push(`<span class="badge bg-info me-1">Intelligence +${race.intelligence_bonus}</span>`);
+            if (race.wisdom_bonus > 0) bonuses.push(`<span class="badge bg-secondary me-1">Sagesse +${race.wisdom_bonus}</span>`);
+            if (race.charisma_bonus > 0) bonuses.push(`<span class="badge bg-dark me-1">Charisme +${race.charisma_bonus}</span>`);
+            
+            if (bonuses.length > 0) {
+                details += `<div class="col-md-6"><strong>Bonus de caractéristiques :</strong><br>${bonuses.join(' ')}</div>`;
+            }
+            
+            // Informations physiques
+            details += `<div class="col-md-6"><strong>Informations physiques :</strong><br>`;
+            details += `Taille : ${race.size === 'P' ? 'Petite' : race.size === 'M' ? 'Moyenne' : 'Grande'}<br>`;
+            details += `Vitesse : ${race.speed} pieds`;
+            if (race.vision) {
+                details += `<br>Vision : ${race.vision}`;
+            }
+            details += `</div>`;
+            
+            details += `</div>`;
+            
+            // Langues
+            if (race.languages) {
+                details += `<div class="mt-2"><strong>Langues :</strong> ${race.languages}</div>`;
+            }
+            
+            // Traits
+            if (race.traits) {
+                details += `<div class="mt-2"><strong>Traits raciaux :</strong><br><small>${race.traits}</small></div>`;
+            }
+            
+            raceDetails.innerHTML = details;
+            raceInfo.style.display = 'block';
+            
+            // Afficher les bonus sous chaque caractéristique
+            displayRaceBonuses(race);
+            
+            // Mettre à jour la vitesse
+            updateSpeed(race.speed);
+        }
+        
+        // Fonction pour afficher les bonus sous chaque caractéristique
+        function displayRaceBonuses(race) {
+            const bonuses = {
+                'strength': race.strength_bonus,
+                'dexterity': race.dexterity_bonus,
+                'constitution': race.constitution_bonus,
+                'intelligence': race.intelligence_bonus,
+                'wisdom': race.wisdom_bonus,
+                'charisma': race.charisma_bonus
+            };
+            
+            Object.keys(bonuses).forEach(stat => {
+                const bonusElement = document.getElementById(`${stat}-bonus`);
+                if (bonuses[stat] > 0) {
+                    bonusElement.textContent = `+${bonuses[stat]} racial`;
+                    bonusElement.style.color = '#28a745';
+                } else {
+                    bonusElement.textContent = '';
+                }
+            });
+        }
+        
+        // Fonction pour effacer les bonus
+        function clearRaceBonuses() {
+            const stats = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
+            stats.forEach(stat => {
+                const bonusElement = document.getElementById(`${stat}-bonus`);
+                bonusElement.textContent = '';
+            });
+        }
+        
+        // Fonction pour mettre à jour la vitesse
+        function updateSpeed(raceSpeed) {
+            const speedInput = document.getElementById('speed');
+            const speedInfo = document.getElementById('speed-info');
+            
+            if (raceSpeed && raceSpeed > 0) {
+                speedInput.value = raceSpeed;
+                speedInfo.textContent = `Vitesse raciale : ${raceSpeed} pieds`;
+                speedInfo.style.color = '#28a745';
+            } else {
+                speedInput.value = 30;
+                speedInfo.textContent = 'Vitesse de base';
+                speedInfo.style.color = '#6c757d';
+            }
+        }
+        
+        // Événement de changement de race
+        document.getElementById('race_id').addEventListener('change', function() {
+            loadRaceInfo(this.value);
+        });
+        
+        // Charger les informations de race au chargement de la page si une race est déjà sélectionnée
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectedRace = document.getElementById('race_id').value;
+            if (selectedRace) {
+                loadRaceInfo(selectedRace);
+            }
+        });
+    </script>
 </body>
 </html>
 
