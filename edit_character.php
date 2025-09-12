@@ -29,8 +29,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = trim($_POST['name'] ?? '');
     $race_id = (int)($_POST['race_id'] ?? 0);
     $class_id = (int)($_POST['class_id'] ?? 0);
-    $level = (int)($_POST['level'] ?? 1);
     $experience_points = (int)($_POST['experience_points'] ?? 0);
+    
+    // Calculer le niveau basé sur l'expérience
+    $level = calculateLevelFromExperience($experience_points);
     
     // Statistiques
     $strength = (int)($_POST['strength'] ?? 10);
@@ -51,6 +53,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $proficiency_bonus = (int)($_POST['proficiency_bonus'] ?? 2);
     $background = trim($_POST['background'] ?? '');
     $alignment = trim($_POST['alignment'] ?? '');
+    
+    // Compétences
+    $skills = isset($_POST['skills']) ? $_POST['skills'] : [];
+    
+    // Ajouter automatiquement les compétences de classe
+    $classProficiencies = getClassProficiencies($class_id);
+    $classSkills = array_merge(
+        $classProficiencies['armor'],
+        $classProficiencies['weapon'],
+        $classProficiencies['tool']
+    );
+    
+    // Fusionner les compétences sélectionnées avec les compétences automatiques de classe
+    $allSkills = array_unique(array_merge($skills, $classSkills));
+    $skills_json = json_encode($allSkills);
     $personality_traits = trim($_POST['personality_traits'] ?? '');
     $ideals = trim($_POST['ideals'] ?? '');
     $bonds = trim($_POST['bonds'] ?? '');
@@ -106,12 +123,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         if (empty($error_message)) {
+            // Calculer le bonus de maîtrise basé sur l'expérience
+            $proficiency_bonus = calculateProficiencyBonusFromExperience($experience_points);
+            
             $stmt = $pdo->prepare("
                 UPDATE characters SET 
                     name = ?, race_id = ?, class_id = ?, level = ?, experience_points = ?,
                     strength = ?, dexterity = ?, constitution = ?, intelligence = ?, wisdom = ?, charisma = ?,
                     armor_class = ?, initiative = ?, speed = ?, hit_points_max = ?, hit_points_current = ?,
-                    proficiency_bonus = ?, background = ?, alignment = ?, personality_traits = ?, ideals = ?, bonds = ?, flaws = ?, profile_photo = ?
+                    proficiency_bonus = ?, background = ?, alignment = ?, personality_traits = ?, ideals = ?, bonds = ?, flaws = ?, profile_photo = ?, skills = ?
                 WHERE id = ? AND user_id = ?
             ");
             
@@ -120,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $name, $race_id, $class_id, $level, $experience_points,
                     $strength, $dexterity, $constitution, $intelligence, $wisdom, $charisma,
                     $armor_class, $initiative, $speed, $hit_points_max, $hit_points_current,
-                    $proficiency_bonus, $background, $alignment, $personality_traits, $ideals, $bonds, $flaws, $profile_photo,
+                    $proficiency_bonus, $background, $alignment, $personality_traits, $ideals, $bonds, $flaws, $profile_photo, $skills_json,
                     $character_id, $user_id
                 ]);
                 
@@ -224,12 +244,16 @@ $classes = $pdo->query("SELECT * FROM classes ORDER BY name")->fetchAll();
                                             <input type="text" class="form-control" name="name" value="<?php echo htmlspecialchars($character['name']); ?>" required>
                                         </div>
                                         <div class="col-md-3">
-                                            <label class="form-label">Niveau</label>
-                                            <input type="number" class="form-control" name="level" value="<?php echo (int)$character['level']; ?>" min="1" max="20">
+                                            <label class="form-label">Points d'expérience</label>
+                                            <input type="number" class="form-control" id="experience_points" name="experience_points" 
+                                                   value="<?php echo (int)$character['experience_points']; ?>" min="0">
+                                            <small class="form-text text-muted">Le niveau sera calculé automatiquement</small>
                                         </div>
                                         <div class="col-md-3">
-                                            <label class="form-label">Points d'expérience</label>
-                                            <input type="number" class="form-control" name="experience_points" value="<?php echo (int)$character['experience_points']; ?>">
+                                            <label class="form-label">Niveau Calculé</label>
+                                            <div class="form-control-plaintext" id="calculated_level">
+                                                Niveau <?php echo (int)$character['level']; ?>
+                                            </div>
                                         </div>
                                     </div>
                                     
@@ -327,6 +351,110 @@ $classes = $pdo->query("SELECT * FROM classes ORDER BY name")->fetchAll();
                                 </div>
                             </div>
 
+                            <h5>Compétences</h5>
+                            <div class="row mb-3">
+                                <?php
+                                $classId = $character['class_id'];
+                                $skillData = getSkillsByCategoryWithClass($classId);
+                                $skillCategories = $skillData['categories'];
+                                $classProficiencies = $skillData['classProficiencies'];
+                                $character_skills = json_decode($character['skills'] ?? '[]', true);
+                                
+                                foreach ($skillCategories as $category => $skills): ?>
+                                    <div class="col-md-6 col-lg-3 mb-4">
+                                        <h6 class="text-primary border-bottom pb-2"><?php echo $category; ?></h6>
+                                        
+                                        <?php if ($category === 'Compétences'): ?>
+                                            <!-- Compétences classiques organisées par caractéristique -->
+                                            <?php
+                                            $abilityGroups = [
+                                                'Force' => [],
+                                                'Dextérité' => [],
+                                                'Intelligence' => [],
+                                                'Sagesse' => [],
+                                                'Charisme' => []
+                                            ];
+                                            
+                                            foreach ($skills as $skill => $ability) {
+                                                $abilityGroups[$ability][] = $skill;
+                                            }
+                                            
+                                            foreach ($abilityGroups as $ability => $abilitySkills): ?>
+                                                <div class="mb-2">
+                                                    <small class="text-muted fw-bold"><?php echo $ability; ?></small>
+                                                    <?php foreach ($abilitySkills as $skill): ?>
+                                                        <div class="form-check form-check-sm">
+                                                            <input class="form-check-input" type="checkbox" 
+                                                                   id="skill_<?php echo strtolower(str_replace([' ', '\''], ['_', ''], $skill)); ?>" 
+                                                                   name="skills[]" 
+                                                                   value="<?php echo $skill; ?>"
+                                                                   <?php echo in_array($skill, $character_skills) ? 'checked' : ''; ?>>
+                                                            <label class="form-check-label small" for="skill_<?php echo strtolower(str_replace([' ', '\''], ['_', ''], $skill)); ?>">
+                                                                <?php echo $skill; ?>
+                                                            </label>
+                                                        </div>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        <?php elseif ($category === 'Armure'): ?>
+                                            <!-- Compétences d'armure automatiques -->
+                                            <?php foreach ($skills as $skill): ?>
+                                                <div class="form-check form-check-sm">
+                                                    <input class="form-check-input" type="checkbox" 
+                                                           id="skill_<?php echo strtolower(str_replace([' ', '\''], ['_', ''], $skill)); ?>" 
+                                                           name="skills[]" 
+                                                           value="<?php echo $skill; ?>"
+                                                           <?php echo in_array($skill, $classProficiencies['armor']) ? 'checked' : ''; ?>
+                                                           disabled>
+                                                    <label class="form-check-label small text-muted" for="skill_<?php echo strtolower(str_replace([' ', '\''], ['_', ''], $skill)); ?>">
+                                                        <?php echo $skill; ?>
+                                                        <?php if (in_array($skill, $classProficiencies['armor'])): ?>
+                                                            <small class="text-success">(Automatique)</small>
+                                                        <?php endif; ?>
+                                                    </label>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        <?php elseif ($category === 'Arme'): ?>
+                                            <!-- Compétences d'armes automatiques -->
+                                            <?php foreach ($skills as $skill): ?>
+                                                <div class="form-check form-check-sm">
+                                                    <input class="form-check-input" type="checkbox" 
+                                                           id="skill_<?php echo strtolower(str_replace([' ', '\''], ['_', ''], $skill)); ?>" 
+                                                           name="skills[]" 
+                                                           value="<?php echo $skill; ?>"
+                                                           <?php echo in_array($skill, $classProficiencies['weapon']) ? 'checked' : ''; ?>
+                                                           disabled>
+                                                    <label class="form-check-label small text-muted" for="skill_<?php echo strtolower(str_replace([' ', '\''], ['_', ''], $skill)); ?>">
+                                                        <?php echo $skill; ?>
+                                                        <?php if (in_array($skill, $classProficiencies['weapon'])): ?>
+                                                            <small class="text-success">(Automatique)</small>
+                                                        <?php endif; ?>
+                                                    </label>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        <?php elseif ($category === 'Outil'): ?>
+                                            <!-- Compétences d'outils automatiques -->
+                                            <?php foreach ($skills as $skill): ?>
+                                                <div class="form-check form-check-sm">
+                                                    <input class="form-check-input" type="checkbox" 
+                                                           id="skill_<?php echo strtolower(str_replace([' ', '\''], ['_', ''], $skill)); ?>" 
+                                                           name="skills[]" 
+                                                           value="<?php echo $skill; ?>"
+                                                           <?php echo in_array($skill, $classProficiencies['tool']) ? 'checked' : ''; ?>
+                                                           disabled>
+                                                    <label class="form-check-label small text-muted" for="skill_<?php echo strtolower(str_replace([' ', '\''], ['_', ''], $skill)); ?>">
+                                                        <?php echo $skill; ?>
+                                                        <?php if (in_array($skill, $classProficiencies['tool'])): ?>
+                                                            <small class="text-success">(Automatique)</small>
+                                                        <?php endif; ?>
+                                                    </label>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+
                             <h5>Personnalité</h5>
                             <div class="row mb-3">
                                 <div class="col-md-6">
@@ -377,5 +505,41 @@ $classes = $pdo->query("SELECT * FROM classes ORDER BY name")->fetchAll();
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Gestion du calcul automatique du niveau basé sur l'expérience
+            const experienceInput = document.getElementById('experience_points');
+            const calculatedLevelDiv = document.getElementById('calculated_level');
+            
+            // Tableau des seuils d'expérience (niveau -> XP requis)
+            const experienceThresholds = {
+                1: 0, 2: 300, 3: 900, 4: 2700, 5: 6500, 6: 14000, 7: 23000, 8: 34000,
+                9: 48000, 10: 64000, 11: 85000, 12: 100000, 13: 120000, 14: 140000,
+                15: 165000, 16: 195000, 17: 225000, 18: 265000, 19: 305000, 20: 355000
+            };
+            
+            function calculateLevelFromXP(xp) {
+                let level = 1;
+                for (let lvl = 20; lvl >= 1; lvl--) {
+                    if (xp >= experienceThresholds[lvl]) {
+                        level = lvl;
+                        break;
+                    }
+                }
+                return level;
+            }
+            
+            function updateCalculatedLevel() {
+                const xp = parseInt(experienceInput.value) || 0;
+                const level = calculateLevelFromXP(xp);
+                calculatedLevelDiv.textContent = `Niveau ${level}`;
+            }
+            
+            experienceInput.addEventListener('input', updateCalculatedLevel);
+            
+            // Initialiser l'affichage
+            updateCalculatedLevel();
+        });
+    </script>
 </body>
 </html>

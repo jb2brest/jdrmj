@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $name = sanitizeInput($_POST['name']);
     $race_id = (int)$_POST['race_id'];
     $class_id = (int)$_POST['class_id'];
-    $level = (int)$_POST['level'];
+    $experience_points = (int)($_POST['experience_points'] ?? 0);
     
     // Statistiques
     $strength = (int)$_POST['strength'];
@@ -30,6 +30,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $background = sanitizeInput($_POST['background']);
     $alignment = sanitizeInput($_POST['alignment']);
     
+    // Compétences
+    $skills = isset($_POST['skills']) ? $_POST['skills'] : [];
+    
+    // Ajouter automatiquement les compétences de classe
+    $classProficiencies = getClassProficiencies($class_id);
+    $classSkills = array_merge(
+        $classProficiencies['armor'],
+        $classProficiencies['weapon'],
+        $classProficiencies['tool']
+    );
+    
+    // Fusionner les compétences sélectionnées avec les compétences automatiques de classe
+    $allSkills = array_unique(array_merge($skills, $classSkills));
+    $skills_json = json_encode($allSkills);
+    
     // Validation
     $errors = [];
     
@@ -37,9 +52,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $errors[] = "Le nom du personnage doit contenir au moins 2 caractères.";
     }
     
-    if ($level < 1 || $level > 20) {
-        $errors[] = "Le niveau doit être entre 1 et 20.";
+    if ($experience_points < 0) {
+        $errors[] = "Les points d'expérience ne peuvent pas être négatifs.";
     }
+    
+    // Calculer le niveau basé sur l'expérience
+    $level = calculateLevelFromExperience($experience_points);
     
     // Validation des caractéristiques
     $stats = [$strength, $dexterity, $constitution, $intelligence, $wisdom, $charisma];
@@ -59,24 +77,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $constitutionModifier = getAbilityModifier($constitution);
         $maxHP = calculateMaxHP($level, $hitDie, $constitutionModifier);
         
-        // Calcul du bonus de maîtrise
-        $proficiencyBonus = getProficiencyBonus($level);
+        // Calcul du bonus de maîtrise basé sur l'expérience
+        $proficiencyBonus = calculateProficiencyBonusFromExperience($experience_points);
         
         try {
             $stmt = $pdo->prepare("
                 INSERT INTO characters (
-                    user_id, name, race_id, class_id, level, 
+                    user_id, name, race_id, class_id, level, experience_points,
                     strength, dexterity, constitution, intelligence, wisdom, charisma,
                     armor_class, speed, hit_points_max, hit_points_current, proficiency_bonus,
-                    background, alignment
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    background, alignment, skills
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             $stmt->execute([
-                $_SESSION['user_id'], $name, $race_id, $class_id, $level,
+                $_SESSION['user_id'], $name, $race_id, $class_id, $level, $experience_points,
                 $strength, $dexterity, $constitution, $intelligence, $wisdom, $charisma,
                 $armor_class, $speed, $maxHP, $maxHP, $proficiencyBonus,
-                $background, $alignment
+                $background, $alignment, $skills_json
             ]);
             
             $character_id = $pdo->lastInsertId();
@@ -210,10 +228,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <div class="row">
                     <div class="col-md-3">
                         <div class="mb-3">
-                            <label for="level" class="form-label">Niveau</label>
-                            <input type="number" class="form-control" id="level" name="level" 
-                                   value="<?php echo isset($_POST['level']) ? $_POST['level'] : '1'; ?>" 
-                                   min="1" max="20" required>
+                            <label for="experience_points" class="form-label">Points d'Expérience</label>
+                            <input type="number" class="form-control" id="experience_points" name="experience_points" 
+                                   value="<?php echo isset($_POST['experience_points']) ? $_POST['experience_points'] : '0'; ?>" 
+                                   min="0" required>
+                            <small class="form-text text-muted">Le niveau sera calculé automatiquement</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label">Niveau Calculé</label>
+                            <div class="form-control-plaintext" id="calculated_level">
+                                Niveau 1
+                            </div>
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -534,6 +561,131 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <small class="form-text text-muted" id="speed-info">Vitesse de base</small>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Compétences -->
+            <div class="form-section">
+                <h3><i class="fas fa-star me-2"></i>Compétences</h3>
+                <p class="text-muted">Cochez les compétences dans lesquelles votre personnage est compétent. Les compétences d'armure sont automatiquement attribuées selon la classe.</p>
+                <div class="row">
+                    <?php
+                    $classId = isset($_POST['class_id']) ? (int)$_POST['class_id'] : null;
+                    $skillData = getSkillsByCategoryWithClass($classId);
+                    $skillCategories = $skillData['categories'];
+                    $classProficiencies = $skillData['classProficiencies'];
+                    
+                    // Debug: Afficher les compétences de classe pour debug
+                    if ($classId) {
+                        echo "<!-- Debug: Class ID = $classId -->\n";
+                        echo "<!-- Debug: Armor proficiencies = " . json_encode($classProficiencies['armor']) . " -->\n";
+                    }
+                    
+                    foreach ($skillCategories as $category => $skills): ?>
+                        <div class="col-md-6 col-lg-3 mb-4">
+                            <h6 class="text-primary border-bottom pb-2"><?php echo $category; ?></h6>
+                            
+                            <?php if ($category === 'Compétences'): ?>
+                                <!-- Compétences classiques organisées par caractéristique -->
+                                <?php
+                                $abilityGroups = [
+                                    'Force' => [],
+                                    'Dextérité' => [],
+                                    'Intelligence' => [],
+                                    'Sagesse' => [],
+                                    'Charisme' => []
+                                ];
+                                
+                                foreach ($skills as $skill => $ability) {
+                                    $abilityGroups[$ability][] = $skill;
+                                }
+                                
+                                foreach ($abilityGroups as $ability => $abilitySkills): ?>
+                                    <div class="mb-2">
+                                        <small class="text-muted fw-bold"><?php echo $ability; ?></small>
+                                        <?php foreach ($abilitySkills as $skill): ?>
+                                            <div class="form-check form-check-sm">
+                                                <input class="form-check-input" type="checkbox" 
+                                                       id="skill_<?php echo strtolower(str_replace([' ', '\''], ['_', ''], $skill)); ?>" 
+                                                       name="skills[]" 
+                                                       value="<?php echo $skill; ?>"
+                                                       <?php echo (isset($_POST['skills']) && in_array($skill, $_POST['skills'])) ? 'checked' : ''; ?>>
+                                                <label class="form-check-label small" for="skill_<?php echo strtolower(str_replace([' ', '\''], ['_', ''], $skill)); ?>">
+                                                    <?php echo $skill; ?>
+                                                </label>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php elseif ($category === 'Armure'): ?>
+                                <!-- Compétences d'armure automatiques -->
+                                <?php foreach ($skills as $skill): ?>
+                                    <?php 
+                                    $isProficient = in_array($skill, $classProficiencies['armor']);
+                                    $labelClass = $isProficient ? 'text-success' : 'text-muted';
+                                    ?>
+                                    <div class="form-check form-check-sm">
+                                        <input class="form-check-input" type="checkbox" 
+                                               id="skill_<?php echo strtolower(str_replace([' ', '\''], ['_', ''], $skill)); ?>" 
+                                               name="skills[]" 
+                                               value="<?php echo $skill; ?>"
+                                               <?php echo $isProficient ? 'checked' : ''; ?>
+                                               disabled>
+                                        <label class="form-check-label small <?php echo $labelClass; ?>" for="skill_<?php echo strtolower(str_replace([' ', '\''], ['_', ''], $skill)); ?>">
+                                            <?php echo $skill; ?>
+                                            <?php if ($isProficient): ?>
+                                                <small class="text-success">(Automatique)</small>
+                                            <?php endif; ?>
+                                        </label>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php elseif ($category === 'Arme'): ?>
+                                <!-- Compétences d'armes automatiques -->
+                                <?php foreach ($skills as $skill): ?>
+                                    <?php 
+                                    $isProficient = in_array($skill, $classProficiencies['weapon']);
+                                    $labelClass = $isProficient ? 'text-success' : 'text-muted';
+                                    ?>
+                                    <div class="form-check form-check-sm">
+                                        <input class="form-check-input" type="checkbox" 
+                                               id="skill_<?php echo strtolower(str_replace([' ', '\''], ['_', ''], $skill)); ?>" 
+                                               name="skills[]" 
+                                               value="<?php echo $skill; ?>"
+                                               <?php echo $isProficient ? 'checked' : ''; ?>
+                                               disabled>
+                                        <label class="form-check-label small <?php echo $labelClass; ?>" for="skill_<?php echo strtolower(str_replace([' ', '\''], ['_', ''], $skill)); ?>">
+                                            <?php echo $skill; ?>
+                                            <?php if ($isProficient): ?>
+                                                <small class="text-success">(Automatique)</small>
+                                            <?php endif; ?>
+                                        </label>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php elseif ($category === 'Outil'): ?>
+                                <!-- Compétences d'outils automatiques -->
+                                <?php foreach ($skills as $skill): ?>
+                                    <?php 
+                                    $isProficient = in_array($skill, $classProficiencies['tool']);
+                                    $labelClass = $isProficient ? 'text-success' : 'text-muted';
+                                    ?>
+                                    <div class="form-check form-check-sm">
+                                        <input class="form-check-input" type="checkbox" 
+                                               id="skill_<?php echo strtolower(str_replace([' ', '\''], ['_', ''], $skill)); ?>" 
+                                               name="skills[]" 
+                                               value="<?php echo $skill; ?>"
+                                               <?php echo $isProficient ? 'checked' : ''; ?>
+                                               disabled>
+                                        <label class="form-check-label small <?php echo $labelClass; ?>" for="skill_<?php echo strtolower(str_replace([' ', '\''], ['_', ''], $skill)); ?>">
+                                            <?php echo $skill; ?>
+                                            <?php if ($isProficient): ?>
+                                                <small class="text-success">(Automatique)</small>
+                                            <?php endif; ?>
+                                        </label>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
+                    <?php endforeach; ?>
                 </div>
             </div>
 
@@ -1176,6 +1328,122 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             switchGenerationMethod();
             updatePointsRemaining();
             calculateTotals();
+            
+            // Gestion du calcul automatique du niveau basé sur l'expérience
+            const experienceInput = document.getElementById('experience_points');
+            const calculatedLevelDiv = document.getElementById('calculated_level');
+            
+            // Tableau des seuils d'expérience (niveau -> XP requis)
+            const experienceThresholds = {
+                1: 0, 2: 300, 3: 900, 4: 2700, 5: 6500, 6: 14000, 7: 23000, 8: 34000,
+                9: 48000, 10: 64000, 11: 85000, 12: 100000, 13: 120000, 14: 140000,
+                15: 165000, 16: 195000, 17: 225000, 18: 265000, 19: 305000, 20: 355000
+            };
+            
+            function calculateLevelFromXP(xp) {
+                let level = 1;
+                for (let lvl = 20; lvl >= 1; lvl--) {
+                    if (xp >= experienceThresholds[lvl]) {
+                        level = lvl;
+                        break;
+                    }
+                }
+                return level;
+            }
+            
+            function updateCalculatedLevel() {
+                const xp = parseInt(experienceInput.value) || 0;
+                const level = calculateLevelFromXP(xp);
+                calculatedLevelDiv.textContent = `Niveau ${level}`;
+            }
+            
+            experienceInput.addEventListener('input', updateCalculatedLevel);
+            
+            // Initialiser l'affichage
+            updateCalculatedLevel();
+            
+            // Gestion des compétences automatiques (armure, armes, outils)
+            const classSelect = document.getElementById('class_id');
+            const armorCheckboxes = document.querySelectorAll('input[name="skills[]"][value*="Armure"], input[name="skills[]"][value*="Bouclier"]');
+            const weaponCheckboxes = document.querySelectorAll('input[name="skills[]"][value*="Armes"]');
+            const toolCheckboxes = document.querySelectorAll('input[name="skills[]"][value*="Outils"], input[name="skills[]"][value*="Instruments"], input[name="skills[]"][value*="Jeux"], input[name="skills[]"][value*="Véhicules"]');
+            
+            function updateClassProficiencies(classId) {
+                if (!classId) {
+                    // Aucune classe sélectionnée, décocher toutes les cases automatiques
+                    [...armorCheckboxes, ...weaponCheckboxes, ...toolCheckboxes].forEach(checkbox => {
+                        checkbox.checked = false;
+                        checkbox.disabled = true;
+                        const label = checkbox.nextElementSibling;
+                        label.classList.add('text-muted');
+                        label.classList.remove('text-success');
+                        const autoText = label.querySelector('.text-success');
+                        if (autoText) autoText.remove();
+                    });
+                    return;
+                }
+                
+                // Récupérer les compétences de la classe via AJAX
+                fetch(`get_class_armor_proficiencies.php?id=${classId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Mettre à jour les cases d'armure
+                            armorCheckboxes.forEach(checkbox => {
+                                const skillName = checkbox.value;
+                                const isProficient = data.armorProficiencies.includes(skillName);
+                                updateCheckbox(checkbox, isProficient);
+                            });
+                            
+                            // Mettre à jour les cases d'armes
+                            weaponCheckboxes.forEach(checkbox => {
+                                const skillName = checkbox.value;
+                                const isProficient = data.weaponProficiencies.includes(skillName);
+                                updateCheckbox(checkbox, isProficient);
+                            });
+                            
+                            // Mettre à jour les cases d'outils
+                            toolCheckboxes.forEach(checkbox => {
+                                const skillName = checkbox.value;
+                                const isProficient = data.toolProficiencies.includes(skillName);
+                                updateCheckbox(checkbox, isProficient);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors du chargement des compétences:', error);
+                    });
+            }
+            
+            function updateCheckbox(checkbox, isProficient) {
+                checkbox.checked = isProficient;
+                checkbox.disabled = true;
+                
+                const label = checkbox.nextElementSibling;
+                if (isProficient) {
+                    label.classList.remove('text-muted');
+                    label.classList.add('text-success');
+                    if (!label.querySelector('.text-success')) {
+                        const autoText = document.createElement('small');
+                        autoText.className = 'text-success';
+                        autoText.textContent = ' (Automatique)';
+                        label.appendChild(autoText);
+                    }
+                } else {
+                    label.classList.add('text-muted');
+                    label.classList.remove('text-success');
+                    const autoText = label.querySelector('.text-success');
+                    if (autoText) autoText.remove();
+                }
+            }
+            
+            // Mettre à jour les compétences quand la classe change
+            classSelect.addEventListener('change', function() {
+                updateClassProficiencies(this.value);
+            });
+            
+            // Initialiser avec la classe sélectionnée
+            updateClassProficiencies(classSelect.value);
         });
     </script>
 </body>
