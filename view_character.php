@@ -14,8 +14,10 @@ $dm_campaign_id = isset($_GET['dm_campaign_id']) ? (int)$_GET['dm_campaign_id'] 
 
 // Récupération du personnage avec ses détails (sans filtrer par propriétaire)
 $stmt = $pdo->prepare("
-    SELECT c.*, r.name as race_name, r.description as race_description, r.ability_score_bonus, r.traits,
-           cl.name as class_name, cl.description as class_description, cl.hit_die, cl.primary_ability
+    SELECT c.*, r.name as race_name, r.description as race_description, 
+           r.strength_bonus, r.dexterity_bonus, r.constitution_bonus, 
+           r.intelligence_bonus, r.wisdom_bonus, r.charisma_bonus, r.traits,
+           cl.name as class_name, cl.description as class_description, cl.hit_dice
     FROM characters c 
     JOIN races r ON c.race_id = r.id 
     JOIN classes cl ON c.class_id = cl.id 
@@ -146,8 +148,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['hp_ac
     
     // Recharger les données du personnage
     $stmt = $pdo->prepare("
-        SELECT c.*, r.name as race_name, r.description as race_description, r.ability_score_bonus, r.traits,
-               cl.name as class_name, cl.description as class_description, cl.hit_die, cl.primary_ability
+        SELECT c.*, r.name as race_name, r.description as race_description, r.strength_bonus, r.dexterity_bonus, r.constitution_bonus, 
+               r.intelligence_bonus, r.wisdom_bonus, r.charisma_bonus, r.traits,
+               cl.name as class_name, cl.description as class_description, cl.hit_dice
         FROM characters c 
         JOIN races r ON c.race_id = r.id 
         JOIN classes cl ON c.class_id = cl.id 
@@ -313,8 +316,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
     
     // Recharger les données du personnage
     $stmt = $pdo->prepare("
-        SELECT c.*, r.name as race_name, r.description as race_description, r.ability_score_bonus, r.traits,
-               cl.name as class_name, cl.description as class_description, cl.hit_die, cl.primary_ability
+        SELECT c.*, r.name as race_name, r.description as race_description, r.strength_bonus, r.dexterity_bonus, r.constitution_bonus, 
+               r.intelligence_bonus, r.wisdom_bonus, r.charisma_bonus, r.traits,
+               cl.name as class_name, cl.description as class_description, cl.hit_dice
         FROM characters c 
         JOIN races r ON c.race_id = r.id 
         JOIN classes cl ON c.class_id = cl.id 
@@ -679,7 +683,14 @@ $armorClass = $character['armor_class'];
                     <div class="info-section">
                         <h3><i class="fas fa-dragon me-2"></i>Race: <?php echo htmlspecialchars($character['race_name']); ?></h3>
                         <p><?php echo htmlspecialchars($character['race_description']); ?></p>
-                        <p><strong>Bonus de caractéristiques:</strong> &nbsp;<?php echo htmlspecialchars($character['ability_score_bonus']); ?></p>
+                        <p><strong>Bonus de caractéristiques:</strong> 
+                            Force: +<?php echo $character['strength_bonus']; ?> | 
+                            Dextérité: +<?php echo $character['dexterity_bonus']; ?> | 
+                            Constitution: +<?php echo $character['constitution_bonus']; ?> | 
+                            Intelligence: +<?php echo $character['intelligence_bonus']; ?> | 
+                            Sagesse: +<?php echo $character['wisdom_bonus']; ?> | 
+                            Charisme: +<?php echo $character['charisma_bonus']; ?>
+                        </p>
                         <p><strong>Traits:</strong> &nbsp;<?php echo htmlspecialchars($character['traits']); ?></p>
                     </div>
                 </div>
@@ -687,8 +698,7 @@ $armorClass = $character['armor_class'];
                     <div class="info-section">
                         <h3><i class="fas fa-shield-alt me-2"></i>Classe: <?php echo htmlspecialchars($character['class_name']); ?></h3>
                         <p><?php echo htmlspecialchars($character['class_description']); ?></p>
-                        <p><strong>Dé de vie:</strong> &nbsp;d<?php echo $character['hit_die']; ?></p>
-                        <p><strong>Caractéristique principale:</strong> &nbsp;<?php echo htmlspecialchars($character['primary_ability']); ?></p>
+                        <p><strong>Dé de vie:</strong> &nbsp;<?php echo $character['hit_dice']; ?></p>
                     </div>
                 </div>
             </div>

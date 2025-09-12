@@ -52,9 +52,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     
     if (empty($errors)) {
         // Calcul des points de vie
-        $stmt = $pdo->prepare("SELECT hit_die FROM classes WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT hit_dice FROM classes WHERE id = ?");
         $stmt->execute([$class_id]);
-        $hitDie = $stmt->fetch()['hit_die'];
+        $hitDie = $stmt->fetch()['hit_dice'];
         
         $constitutionModifier = getAbilityModifier($constitution);
         $maxHP = calculateMaxHP($level, $hitDie, $constitutionModifier);
@@ -247,6 +247,76 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="form-section">
                 <h3><i class="fas fa-dumbbell me-2"></i>Caractéristiques</h3>
                 
+                <!-- Méthode de génération des caractéristiques -->
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <label class="form-label"><strong>Méthode de génération des caractéristiques :</strong></label>
+                        <div class="btn-group" role="group" data-bs-toggle="buttons">
+                            <input type="radio" class="btn-check" name="generation_method" id="point_buy" value="point_buy" checked>
+                            <label class="btn btn-outline-primary" for="point_buy">
+                                <i class="fas fa-calculator me-2"></i>Répartition de 27 points
+                            </label>
+                            
+                            <input type="radio" class="btn-check" name="generation_method" id="dice_roll" value="dice_roll">
+                            <label class="btn btn-outline-primary" for="dice_roll">
+                                <i class="fas fa-dice me-2"></i>Tirage 4d6 (garder 3 meilleurs)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Interface de répartition de points -->
+                <div id="point-buy-interface" class="generation-interface">
+                    <div class="alert alert-info">
+                        <strong>Répartition de 27 points :</strong> Chaque caractéristique coûte des points selon le barème D&D 5e.
+                        <br><strong>Barème :</strong> 8-13 = 1pt par niveau, 14 = 2pts, 15 = 3pts
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Points disponibles</h6>
+                                </div>
+                                <div class="card-body text-center">
+                                    <h3 id="points-remaining" class="text-primary">27</h3>
+                                    <small class="text-muted">points restants</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Répartition typique</h6>
+                                </div>
+                                <div class="card-body">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="applyTypicalDistribution()">
+                                        Appliquer 15-14-13-12-10-8
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Interface de tirage de dés -->
+                <div id="dice-roll-interface" class="generation-interface" style="display: none;">
+                    <div class="alert alert-info">
+                        <strong>Tirage 4d6 :</strong> Lancez 4 dés à 6 faces, gardez les 3 meilleurs. Répétez 6 fois.
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <button type="button" class="btn btn-primary" onclick="rollAllDice()">
+                                <i class="fas fa-dice me-2"></i>Lancer tous les dés
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <div id="dice-results" class="text-center">
+                                <em class="text-muted">Cliquez sur "Lancer tous les dés" pour commencer</em>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Informations de la race sélectionnée -->
                 <div id="race-info" class="alert alert-info" style="display: none;">
                     <div class="row">
@@ -281,34 +351,88 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <tr>
                                 <td><strong>Caractéristiques de base</strong></td>
                                 <td>
-                                    <input type="number" class="form-control form-control-sm stat-input" id="strength" name="strength" 
-                                           value="<?php echo isset($_POST['strength']) ? $_POST['strength'] : '10'; ?>" 
-                                           min="1" max="20" required>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" class="form-control stat-input" id="strength" name="strength" 
+                                               value="<?php echo isset($_POST['strength']) ? $_POST['strength'] : '8'; ?>" 
+                                               min="8" max="15" required>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="adjustStat('strength', -1)">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="adjustStat('strength', 1)">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted" id="strength-cost">Coût: 0 pts</small>
                                 </td>
                                 <td>
-                                    <input type="number" class="form-control form-control-sm stat-input" id="dexterity" name="dexterity" 
-                                           value="<?php echo isset($_POST['dexterity']) ? $_POST['dexterity'] : '10'; ?>" 
-                                           min="1" max="20" required>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" class="form-control stat-input" id="dexterity" name="dexterity" 
+                                               value="<?php echo isset($_POST['dexterity']) ? $_POST['dexterity'] : '8'; ?>" 
+                                               min="8" max="15" required>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="adjustStat('dexterity', -1)">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="adjustStat('dexterity', 1)">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted" id="dexterity-cost">Coût: 0 pts</small>
                                 </td>
                                 <td>
-                                    <input type="number" class="form-control form-control-sm stat-input" id="constitution" name="constitution" 
-                                           value="<?php echo isset($_POST['constitution']) ? $_POST['constitution'] : '10'; ?>" 
-                                           min="1" max="20" required>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" class="form-control stat-input" id="constitution" name="constitution" 
+                                               value="<?php echo isset($_POST['constitution']) ? $_POST['constitution'] : '8'; ?>" 
+                                               min="8" max="15" required>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="adjustStat('constitution', -1)">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="adjustStat('constitution', 1)">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted" id="constitution-cost">Coût: 0 pts</small>
                                 </td>
                                 <td>
-                                    <input type="number" class="form-control form-control-sm stat-input" id="intelligence" name="intelligence" 
-                                           value="<?php echo isset($_POST['intelligence']) ? $_POST['intelligence'] : '10'; ?>" 
-                                           min="1" max="20" required>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" class="form-control stat-input" id="intelligence" name="intelligence" 
+                                               value="<?php echo isset($_POST['intelligence']) ? $_POST['intelligence'] : '8'; ?>" 
+                                               min="8" max="15" required>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="adjustStat('intelligence', -1)">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="adjustStat('intelligence', 1)">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted" id="intelligence-cost">Coût: 0 pts</small>
                                 </td>
                                 <td>
-                                    <input type="number" class="form-control form-control-sm stat-input" id="wisdom" name="wisdom" 
-                                           value="<?php echo isset($_POST['wisdom']) ? $_POST['wisdom'] : '10'; ?>" 
-                                           min="1" max="20" required>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" class="form-control stat-input" id="wisdom" name="wisdom" 
+                                               value="<?php echo isset($_POST['wisdom']) ? $_POST['wisdom'] : '8'; ?>" 
+                                               min="8" max="15" required>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="adjustStat('wisdom', -1)">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="adjustStat('wisdom', 1)">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted" id="wisdom-cost">Coût: 0 pts</small>
                                 </td>
                                 <td>
-                                    <input type="number" class="form-control form-control-sm stat-input" id="charisma" name="charisma" 
-                                           value="<?php echo isset($_POST['charisma']) ? $_POST['charisma'] : '10'; ?>" 
-                                           min="1" max="20" required>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" class="form-control stat-input" id="charisma" name="charisma" 
+                                               value="<?php echo isset($_POST['charisma']) ? $_POST['charisma'] : '8'; ?>" 
+                                               min="8" max="15" required>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="adjustStat('charisma', -1)">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="adjustStat('charisma', 1)">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted" id="charisma-cost">Coût: 0 pts</small>
                                 </td>
                             </tr>
                             <!-- Bonus raciaux -->
@@ -582,6 +706,250 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             });
         }
         
+        // Fonction pour calculer le coût d'une caractéristique selon le barème D&D 5e
+        function calculateStatCost(value) {
+            if (value <= 8) return 0;
+            if (value <= 13) return value - 8;
+            if (value === 14) return 7; // 5 + 2
+            if (value === 15) return 9; // 5 + 2 + 2
+            return 0;
+        }
+        
+        // Fonction pour calculer le coût total des caractéristiques
+        function calculateTotalCost() {
+            const stats = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
+            let totalCost = 0;
+            
+            stats.forEach(stat => {
+                const value = parseInt(document.getElementById(stat).value) || 8;
+                const cost = calculateStatCost(value);
+                totalCost += cost;
+                
+                // Afficher le coût individuel
+                document.getElementById(`${stat}-cost`).textContent = `Coût: ${cost} pts`;
+            });
+            
+            return totalCost;
+        }
+        
+        // Fonction pour mettre à jour l'affichage des points restants
+        function updatePointsRemaining() {
+            const totalCost = calculateTotalCost();
+            const remaining = 27 - totalCost;
+            const pointsElement = document.getElementById('points-remaining');
+            
+            pointsElement.textContent = remaining;
+            
+            if (remaining < 0) {
+                pointsElement.className = 'text-danger';
+            } else if (remaining === 0) {
+                pointsElement.className = 'text-success';
+            } else {
+                pointsElement.className = 'text-primary';
+            }
+        }
+        
+        // Fonction pour ajuster une caractéristique
+        function adjustStat(stat, change) {
+            const input = document.getElementById(stat);
+            const currentValue = parseInt(input.value) || 8;
+            const newValue = currentValue + change;
+            
+            // Vérifier les limites
+            if (newValue >= 8 && newValue <= 15) {
+                input.value = newValue;
+                updatePointsRemaining();
+                calculateTotals();
+            }
+        }
+        
+        // Fonction pour appliquer la répartition typique
+        function applyTypicalDistribution() {
+            const stats = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
+            const values = [15, 14, 13, 12, 10, 8];
+            
+            stats.forEach((stat, index) => {
+                document.getElementById(stat).value = values[index];
+            });
+            
+            updatePointsRemaining();
+            calculateTotals();
+        }
+        
+        // Fonction pour lancer un dé à 6 faces
+        function rollD6() {
+            return Math.floor(Math.random() * 6) + 1;
+        }
+        
+        // Fonction pour lancer 4d6 et garder les 3 meilleurs
+        function roll4d6Keep3() {
+            const rolls = [rollD6(), rollD6(), rollD6(), rollD6()];
+            rolls.sort((a, b) => b - a); // Tri décroissant
+            return rolls[0] + rolls[1] + rolls[2]; // Somme des 3 meilleurs
+        }
+        
+        // Fonction pour lancer tous les dés
+        function rollAllDice() {
+            const results = [];
+            for (let i = 0; i < 6; i++) {
+                results.push(roll4d6Keep3());
+            }
+            
+            // Afficher les résultats avec sélection de caractéristique
+            const resultsDiv = document.getElementById('dice-results');
+            resultsDiv.innerHTML = `
+                <h6>Résultats des dés :</h6>
+                <div class="row">
+                    ${results.map((result, index) => `
+                        <div class="col-md-4 col-6 mb-2">
+                            <div class="card">
+                                <div class="card-body p-2">
+                                    <h5 class="mb-2 text-center">${result}</h5>
+                                    <small class="text-muted d-block text-center mb-2">Dé ${index + 1}</small>
+                                    <select class="form-select form-select-sm" id="dice-${index}-assignment" onchange="updateDiceAssignment()">
+                                        <option value="">Choisir une caractéristique</option>
+                                        <option value="strength">Force</option>
+                                        <option value="dexterity">Dextérité</option>
+                                        <option value="constitution">Constitution</option>
+                                        <option value="intelligence">Intelligence</option>
+                                        <option value="wisdom">Sagesse</option>
+                                        <option value="charisma">Charisme</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="mt-3 text-center">
+                    <button type="button" class="btn btn-primary" onclick="assignSelectedDiceResults()" id="assign-button" disabled>
+                        <i class="fas fa-check me-2"></i>Assigner les valeurs sélectionnées
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary ms-2" onclick="rollAllDice()">
+                        <i class="fas fa-redo me-2"></i>Relancer les dés
+                    </button>
+                </div>
+            `;
+        }
+        
+        // Fonction pour mettre à jour l'état du bouton d'assignation
+        function updateDiceAssignment() {
+            const assignButton = document.getElementById('assign-button');
+            const selects = document.querySelectorAll('[id^="dice-"][id$="-assignment"]');
+            
+            // Vérifier si toutes les caractéristiques sont assignées
+            let allAssigned = true;
+            const assignedStats = new Set();
+            
+            selects.forEach(select => {
+                if (select.value === '') {
+                    allAssigned = false;
+                } else {
+                    // Vérifier les doublons
+                    if (assignedStats.has(select.value)) {
+                        allAssigned = false;
+                    } else {
+                        assignedStats.add(select.value);
+                    }
+                }
+            });
+            
+            // Activer/désactiver le bouton
+            assignButton.disabled = !allAssigned;
+            
+            // Mettre à jour le style des sélecteurs en cas de doublon
+            selects.forEach(select => {
+                if (select.value !== '' && assignedStats.has(select.value)) {
+                    const count = Array.from(selects).filter(s => s.value === select.value).length;
+                    if (count > 1) {
+                        select.classList.add('is-invalid');
+                    } else {
+                        select.classList.remove('is-invalid');
+                    }
+                } else {
+                    select.classList.remove('is-invalid');
+                }
+            });
+        }
+        
+        // Fonction pour assigner les résultats de dés sélectionnés aux caractéristiques
+        function assignSelectedDiceResults() {
+            const selects = document.querySelectorAll('[id^="dice-"][id$="-assignment"]');
+            const results = [];
+            
+            // Récupérer les résultats des dés
+            for (let i = 0; i < 6; i++) {
+                const diceElement = document.querySelector(`[id="dice-${i}-assignment"]`);
+                if (diceElement) {
+                    const stat = diceElement.value;
+                    const result = parseInt(diceElement.parentElement.parentElement.querySelector('h5').textContent);
+                    results.push({ stat, result });
+                }
+            }
+            
+            // Assigner les valeurs
+            results.forEach(({ stat, result }) => {
+                if (stat && result) {
+                    document.getElementById(stat).value = result;
+                }
+            });
+            
+            updatePointsRemaining();
+            calculateTotals();
+            
+            // Masquer l'interface de dés
+            document.getElementById('dice-results').innerHTML = '<em class="text-muted">Valeurs assignées</em>';
+        }
+        
+        // Fonction pour assigner les résultats de dés aux caractéristiques (ancienne version)
+        function assignDiceResults(results) {
+            // Pour l'instant, assigner dans l'ordre
+            const stats = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
+            
+            stats.forEach((stat, index) => {
+                if (results[index]) {
+                    document.getElementById(stat).value = results[index];
+                }
+            });
+            
+            updatePointsRemaining();
+            calculateTotals();
+            
+            // Masquer l'interface de dés
+            document.getElementById('dice-results').innerHTML = '<em class="text-muted">Valeurs assignées</em>';
+        }
+        
+        // Fonction pour basculer entre les méthodes de génération
+        function switchGenerationMethod() {
+            const pointBuyRadio = document.getElementById('point_buy');
+            const diceRollRadio = document.getElementById('dice_roll');
+            const pointBuyInterface = document.getElementById('point-buy-interface');
+            const diceRollInterface = document.getElementById('dice-roll-interface');
+            
+            if (pointBuyRadio.checked) {
+                pointBuyInterface.style.display = 'block';
+                diceRollInterface.style.display = 'none';
+                // Réinitialiser les valeurs pour le point buy
+                const stats = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
+                stats.forEach(stat => {
+                    document.getElementById(stat).value = 8;
+                    document.getElementById(stat).min = 8;
+                    document.getElementById(stat).max = 15;
+                });
+            } else if (diceRollRadio.checked) {
+                pointBuyInterface.style.display = 'none';
+                diceRollInterface.style.display = 'block';
+                // Réinitialiser les valeurs pour le dice roll
+                const stats = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
+                stats.forEach(stat => {
+                    document.getElementById(stat).min = 3;
+                    document.getElementById(stat).max = 18;
+                });
+            }
+            
+            updatePointsRemaining();
+            calculateTotals();
+        }
+        
         // Fonction pour mettre à jour les champs de race
         function updateRaceFields(race) {
             // Mettre à jour la taille
@@ -789,12 +1157,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             stats.forEach(stat => {
                 const input = document.getElementById(stat);
                 if (input) {
-                    input.addEventListener('input', calculateTotals);
-                    input.addEventListener('change', calculateTotals);
+                    input.addEventListener('input', function() {
+                        updatePointsRemaining();
+                        calculateTotals();
+                    });
+                    input.addEventListener('change', function() {
+                        updatePointsRemaining();
+                        calculateTotals();
+                    });
                 }
             });
             
-            // Calculer les totaux initiaux
+            // Ajouter des event listeners pour les boutons radio de génération
+            document.getElementById('point_buy').addEventListener('change', switchGenerationMethod);
+            document.getElementById('dice_roll').addEventListener('change', switchGenerationMethod);
+            
+            // Initialiser l'interface
+            switchGenerationMethod();
+            updatePointsRemaining();
             calculateTotals();
         });
     </script>
