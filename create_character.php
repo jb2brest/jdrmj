@@ -263,8 +263,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <div id="race-info" class="alert alert-info" style="display: none;">
                     <div class="row">
                         <div class="col-md-3">
-                            <div id="race-image-container">
-                                <img id="race-image" src="" alt="Image de la race" class="img-fluid rounded" style="max-height: 200px; width: 100%; object-fit: cover;">
+                            <div id="race-image-container" style="height: 200px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                                <img id="race-image" src="" alt="Image de la race" class="img-fluid rounded" style="max-height: 100%; max-width: 100%; object-fit: contain;">
                             </div>
                         </div>
                         <div class="col-md-9">
@@ -446,7 +446,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             
             // Afficher l'image de la race
             if (race.image) {
-                raceImage.src = `images/${race.image}`;
+                raceImage.src = `images/races/${race.image}`;
                 raceImage.style.display = 'block';
             } else {
                 raceImage.style.display = 'none';
