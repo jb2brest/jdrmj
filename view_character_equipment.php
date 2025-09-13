@@ -16,6 +16,9 @@ $stmt = $pdo->prepare("SELECT c.*, u.username, r.name AS race_name, cl.name AS c
 $stmt->execute([$character_id]);
 $character = $stmt->fetch();
 
+// L'équipement final est déjà stocké dans le champ equipment du personnage
+// Plus besoin de parser l'équipement de départ séparément
+
 if (!$character) {
     header('Location: index.php');
     exit();
@@ -170,43 +173,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canView) {
                         <span class="badge bg-primary"><?php echo count($equipment); ?> objet(s)</span>
                     </div>
                     <div class="card-body">
+                        <?php if ($character['equipment']): ?>
+                            <div class="mb-4">
+                                <h6><i class="fas fa-backpack me-2"></i>Équipement</h6>
+                                <div class="border rounded p-3" style="background-color: #f8f9fa;">
+                                    <p><?php echo nl2br(htmlspecialchars($character['equipment'])); ?></p>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <!-- Objets magiques attribués par le MJ -->
                         <?php if (empty($equipment)): ?>
                             <div class="text-center text-muted py-5">
                                 <i class="fas fa-gem fa-3x mb-3"></i>
-                                <p>Aucun objet dans l'équipement.</p>
+                                <p>Aucun objet magique attribué.</p>
                                 <p class="small">Les objets magiques attribués par le MJ apparaîtront ici.</p>
                             </div>
                         <?php else: ?>
-                            <div class="row">
-                                <?php foreach ($equipment as $item): ?>
-                                    <div class="col-md-6 mb-3">
-                                        <div class="card h-100 <?php echo $item['equipped'] ? 'border-success' : 'border-secondary'; ?>">
-                                            <div class="card-header d-flex justify-content-between align-items-center">
-                                                <h6 class="mb-0">
-                                                    <?php if ($item['equipped']): ?>
-                                                        <i class="fas fa-check-circle text-success me-2"></i>
-                                                    <?php endif; ?>
-                                                    <?php echo htmlspecialchars($item['item_name']); ?>
-                                                </h6>
-                                                <div class="btn-group btn-group-sm">
-                                                    <button type="button" class="btn btn-outline-<?php echo $item['equipped'] ? 'success' : 'secondary'; ?>" 
-                                                            onclick="toggleEquipped(<?php echo $item['id']; ?>, <?php echo $item['equipped'] ? 0 : 1; ?>)">
-                                                        <i class="fas fa-<?php echo $item['equipped'] ? 'check' : 'times'; ?>"></i>
-                                                        <?php echo $item['equipped'] ? 'Équipé' : 'Non équipé'; ?>
-                                                    </button>
-                                                    <button type="button" class="btn btn-outline-danger" 
-                                                            onclick="removeItem(<?php echo $item['id']; ?>)">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
+                            <div class="mb-4">
+                                <h6><i class="fas fa-gem me-2"></i>Objets Magiques</h6>
+                                <div class="row">
+                                    <?php foreach ($equipment as $item): ?>
+                                        <div class="col-md-6 mb-3">
+                                            <div class="card h-100 <?php echo $item['equipped'] ? 'border-success' : 'border-secondary'; ?>">
+                                                <div class="card-header d-flex justify-content-between align-items-center">
+                                                    <h6 class="mb-0">
+                                                        <?php if ($item['equipped']): ?>
+                                                            <i class="fas fa-check-circle text-success me-2"></i>
+                                                        <?php endif; ?>
+                                                        <?php echo htmlspecialchars($item['item_name']); ?>
+                                                    </h6>
+                                                    <div class="btn-group btn-group-sm">
+                                                        <button type="button" class="btn btn-outline-<?php echo $item['equipped'] ? 'success' : 'secondary'; ?>" 
+                                                                onclick="toggleEquipped(<?php echo $item['id']; ?>, <?php echo $item['equipped'] ? 0 : 1; ?>)">
+                                                            <i class="fas fa-<?php echo $item['equipped'] ? 'check' : 'times'; ?>"></i>
+                                                            <?php echo $item['equipped'] ? 'Équipé' : 'Non équipé'; ?>
+                                                        </button>
+                                                        <button type="button" class="btn btn-outline-danger" 
+                                                                onclick="removeItem(<?php echo $item['id']; ?>)">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div class="card-body">
-                                                <p class="card-text">
-                                                    <strong>Type:</strong> <?php echo htmlspecialchars($item['item_type']); ?><br>
-                                                    <strong>Source:</strong> <?php echo htmlspecialchars($item['item_source']); ?><br>
-                                                    <strong>Quantité:</strong> <?php echo (int)$item['quantity']; ?><br>
-                                                    <strong>Obtenu:</strong> <?php echo date('d/m/Y H:i', strtotime($item['obtained_at'])); ?><br>
-                                                    <strong>Provenance:</strong> <?php echo htmlspecialchars($item['obtained_from']); ?>
+                                                <div class="card-body">
+                                                    <p class="card-text">
+                                                        <strong>Type:</strong> <?php echo htmlspecialchars($item['item_type']); ?><br>
+                                                        <strong>Source:</strong> <?php echo htmlspecialchars($item['item_source']); ?><br>
+                                                        <strong>Quantité:</strong> <?php echo (int)$item['quantity']; ?><br>
+                                                        <strong>Obtenu:</strong> <?php echo date('d/m/Y H:i', strtotime($item['obtained_at'])); ?><br>
+                                                        <strong>Provenance:</strong> <?php echo htmlspecialchars($item['obtained_from']); ?>
                                                 </p>
                                                 <?php if (!empty($item['item_description'])): ?>
                                                     <p class="card-text">

@@ -31,6 +31,9 @@ if (!$character) {
     exit();
 }
 
+// L'équipement final est déjà stocké dans le champ equipment du personnage
+// Plus besoin de parser l'équipement de départ séparément
+
 // Contrôle d'accès: propriétaire OU MJ de la campagne liée
 $canView = ($character['user_id'] == $_SESSION['user_id']);
 

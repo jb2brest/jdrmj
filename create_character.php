@@ -69,6 +69,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $allLanguages = array_unique(array_merge($selectedLanguages, $backgroundLanguages));
     $languages_json = json_encode($allLanguages);
     
+    // Traitement de l'équipement de départ
+    $startingEquipment = [];
+    if (isset($_POST['starting_equipment']) && is_array($_POST['starting_equipment'])) {
+        $startingEquipment = $_POST['starting_equipment'];
+    }
+    
+    // Générer l'équipement final basé sur les choix
+    $finalEquipment = generateFinalEquipment($class_id, $startingEquipment);
+    
     // Validation
     $errors = [];
     
@@ -110,15 +119,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     user_id, name, race_id, class_id, background_id, level, experience_points,
                     strength, dexterity, constitution, intelligence, wisdom, charisma,
                     armor_class, speed, hit_points_max, hit_points_current, proficiency_bonus,
-                    alignment, skills, languages
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    alignment, skills, languages, equipment
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             $stmt->execute([
                 $_SESSION['user_id'], $name, $race_id, $class_id, $background_id, $level, $experience_points,
                 $strength, $dexterity, $constitution, $intelligence, $wisdom, $charisma,
                 $armor_class, $speed, $maxHP, $maxHP, $proficiencyBonus,
-                $alignment, $skills_json, $languages_json
+                $alignment, $skills_json, $languages_json, $finalEquipment
             ]);
             
             $character_id = $pdo->lastInsertId();
