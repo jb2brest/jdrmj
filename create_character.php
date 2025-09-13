@@ -6,14 +6,16 @@ requireLogin();
 
 $message = '';
 
-// Récupération des races et classes
+// Récupération des races, classes et historiques
 $races = $pdo->query("SELECT * FROM races ORDER BY name")->fetchAll();
 $classes = $pdo->query("SELECT * FROM classes ORDER BY name")->fetchAll();
+$backgrounds = getAllBackgrounds();
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $name = sanitizeInput($_POST['name']);
     $race_id = (int)$_POST['race_id'];
     $class_id = (int)$_POST['class_id'];
+    $background_id = (int)($_POST['background_id'] ?? 0);
     $experience_points = (int)($_POST['experience_points'] ?? 0);
     
     // Statistiques
@@ -27,7 +29,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Informations de combat
     $armor_class = (int)$_POST['armor_class'];
     $speed = (int)$_POST['speed'];
-    $background = sanitizeInput($_POST['background']);
     $alignment = sanitizeInput($_POST['alignment']);
     
     // Compétences
@@ -41,8 +42,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $classProficiencies['tool']
     );
     
-    // Fusionner les compétences sélectionnées avec les compétences automatiques de classe
-    $allSkills = array_unique(array_merge($skills, $classSkills));
+    // Ajouter automatiquement les compétences d'historique
+    $backgroundSkills = [];
+    $backgroundTools = [];
+    if ($background_id > 0) {
+        $backgroundProficiencies = getBackgroundProficiencies($background_id);
+        $backgroundSkills = $backgroundProficiencies['skills'];
+        $backgroundTools = $backgroundProficiencies['tools'];
+    }
+    
+    // Fusionner toutes les compétences
+    $allSkills = array_unique(array_merge($skills, $classSkills, $backgroundSkills, $backgroundTools));
     $skills_json = json_encode($allSkills);
     
     // Validation
@@ -83,18 +93,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         try {
             $stmt = $pdo->prepare("
                 INSERT INTO characters (
-                    user_id, name, race_id, class_id, level, experience_points,
+                    user_id, name, race_id, class_id, background_id, level, experience_points,
                     strength, dexterity, constitution, intelligence, wisdom, charisma,
                     armor_class, speed, hit_points_max, hit_points_current, proficiency_bonus,
-                    background, alignment, skills
+                    alignment, skills
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             $stmt->execute([
-                $_SESSION['user_id'], $name, $race_id, $class_id, $level, $experience_points,
+                $_SESSION['user_id'], $name, $race_id, $class_id, $background_id, $level, $experience_points,
                 $strength, $dexterity, $constitution, $intelligence, $wisdom, $charisma,
                 $armor_class, $speed, $maxHP, $maxHP, $proficiencyBonus,
-                $background, $alignment, $skills_json
+                $alignment, $skills_json
             ]);
             
             $character_id = $pdo->lastInsertId();
@@ -245,9 +255,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     </div>
                     <div class="col-md-3">
                         <div class="mb-3">
-                            <label for="background" class="form-label">Historique</label>
-                            <input type="text" class="form-control" id="background" name="background" 
-                                   value="<?php echo isset($_POST['background']) ? htmlspecialchars($_POST['background']) : ''; ?>">
+                            <label for="background_id" class="form-label">Historique</label>
+                            <select class="form-select" id="background_id" name="background_id">
+                                <option value="">Choisir un historique</option>
+                                <?php foreach ($backgrounds as $background): ?>
+                                    <option value="<?php echo $background['id']; ?>" 
+                                            <?php echo (isset($_POST['background_id']) && $_POST['background_id'] == $background['id']) ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($background['name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -266,6 +283,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <option value="Chaotique Mauvais" <?php echo (isset($_POST['alignment']) && $_POST['alignment'] == 'Chaotique Mauvais') ? 'selected' : ''; ?>>Chaotique Mauvais</option>
                             </select>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Détails de l'historique -->
+            <div class="form-section" id="background-details-section" style="display: none;">
+                <h3><i class="fas fa-book me-2"></i>Détails de l'historique</h3>
+                <div class="row">
+                    <div class="col-12">
+                        <div id="background-details"></div>
                     </div>
                 </div>
             </div>
@@ -571,9 +598,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <div class="row">
                     <?php
                     $classId = isset($_POST['class_id']) ? (int)$_POST['class_id'] : null;
+                    $backgroundId = isset($_POST['background_id']) ? (int)$_POST['background_id'] : null;
                     $skillData = getSkillsByCategoryWithClass($classId);
                     $skillCategories = $skillData['categories'];
                     $classProficiencies = $skillData['classProficiencies'];
+                    
+                    // Récupérer les compétences d'historique
+                    $backgroundProficiencies = ['skills' => [], 'tools' => []];
+                    if ($backgroundId) {
+                        $backgroundProficiencies = getBackgroundProficiencies($backgroundId);
+                    }
                     
                     // Debug: Afficher les compétences de classe pour debug
                     if ($classId) {
@@ -604,13 +638,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     <div class="mb-2">
                                         <small class="text-muted fw-bold"><?php echo $ability; ?></small>
                                         <?php foreach ($abilitySkills as $skill): ?>
+                                            <?php 
+                                            // Vérifier si la compétence est maîtrisée par la classe ou l'historique
+                                            $isClassProficient = in_array($skill, array_merge($classProficiencies['armor'], $classProficiencies['weapon'], $classProficiencies['tool']));
+                                            $isBackgroundProficient = in_array($skill, array_merge($backgroundProficiencies['skills'], $backgroundProficiencies['tools']));
+                                            $isProficient = $isClassProficient || $isBackgroundProficient;
+                                            $isSelected = (isset($_POST['skills']) && in_array($skill, $_POST['skills'])) || $isProficient;
+                                            $labelClass = $isProficient ? 'text-success' : 'text-muted';
+                                            ?>
                                             <div class="form-check form-check-sm">
                                                 <input class="form-check-input" type="checkbox" 
                                                        id="skill_<?php echo strtolower(str_replace([' ', '\''], ['_', ''], $skill)); ?>" 
                                                        name="skills[]" 
                                                        value="<?php echo $skill; ?>"
-                                                       <?php echo (isset($_POST['skills']) && in_array($skill, $_POST['skills'])) ? 'checked' : ''; ?>>
-                                                <label class="form-check-label small" for="skill_<?php echo strtolower(str_replace([' ', '\''], ['_', ''], $skill)); ?>">
+                                                       <?php echo $isSelected ? 'checked' : ''; ?>
+                                                       <?php echo $isProficient ? 'disabled' : ''; ?>
+                                                       <?php echo $isBackgroundProficient ? 'data-background-skill="true"' : ''; ?>>
+                                                <label class="form-check-label small <?php echo $labelClass; ?>" for="skill_<?php echo strtolower(str_replace([' ', '\''], ['_', ''], $skill)); ?>">
                                                     <?php echo $skill; ?>
                                                 </label>
                                             </div>
@@ -1370,15 +1414,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             
             function updateClassProficiencies(classId) {
                 if (!classId) {
-                    // Aucune classe sélectionnée, décocher toutes les cases automatiques
+                    // Aucune classe sélectionnée, décocher toutes les cases automatiques de classe
                     [...armorCheckboxes, ...weaponCheckboxes, ...toolCheckboxes].forEach(checkbox => {
-                        checkbox.checked = false;
-                        checkbox.disabled = true;
-                        const label = checkbox.nextElementSibling;
-                        label.classList.add('text-muted');
-                        label.classList.remove('text-success');
-                        const autoText = label.querySelector('.text-success');
-                        if (autoText) autoText.remove();
+                        // Ne pas toucher aux compétences d'historique
+                        if (checkbox.dataset.backgroundSkill !== 'true') {
+                            checkbox.checked = false;
+                            checkbox.disabled = true;
+                            const label = checkbox.nextElementSibling;
+                            label.classList.add('text-muted');
+                            label.classList.remove('text-success');
+                            const autoText = label.querySelector('.text-success');
+                            if (autoText) autoText.remove();
+                        }
                     });
                     return;
                 }
@@ -1392,21 +1439,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             armorCheckboxes.forEach(checkbox => {
                                 const skillName = checkbox.value;
                                 const isProficient = data.armorProficiencies.includes(skillName);
-                                updateCheckbox(checkbox, isProficient);
+                                // Ne pas écraser les compétences d'historique
+                                if (checkbox.dataset.backgroundSkill !== 'true') {
+                                    updateCheckbox(checkbox, isProficient);
+                                }
                             });
                             
                             // Mettre à jour les cases d'armes
                             weaponCheckboxes.forEach(checkbox => {
                                 const skillName = checkbox.value;
                                 const isProficient = data.weaponProficiencies.includes(skillName);
-                                updateCheckbox(checkbox, isProficient);
+                                // Ne pas écraser les compétences d'historique
+                                if (checkbox.dataset.backgroundSkill !== 'true') {
+                                    updateCheckbox(checkbox, isProficient);
+                                }
                             });
                             
                             // Mettre à jour les cases d'outils
                             toolCheckboxes.forEach(checkbox => {
                                 const skillName = checkbox.value;
                                 const isProficient = data.toolProficiencies.includes(skillName);
-                                updateCheckbox(checkbox, isProficient);
+                                // Ne pas écraser les compétences d'historique
+                                if (checkbox.dataset.backgroundSkill !== 'true') {
+                                    updateCheckbox(checkbox, isProficient);
+                                }
                             });
                         }
                     })
@@ -1444,6 +1500,107 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             
             // Initialiser avec la classe sélectionnée
             updateClassProficiencies(classSelect.value);
+            
+            // Gestion des détails d'historique
+            const backgroundSelect = document.getElementById('background_id');
+            const backgroundDetailsSection = document.getElementById('background-details-section');
+            const backgroundDetails = document.getElementById('background-details');
+            
+            function loadBackgroundDetails(backgroundId) {
+                if (!backgroundId) {
+                    backgroundDetailsSection.style.display = 'none';
+                    // Décocher toutes les compétences d'historique
+                    updateBackgroundSkills([]);
+                    return;
+                }
+                
+                fetch(`get_background_details.php?id=${backgroundId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const background = data.background;
+                            
+                            let html = `
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">${background.name}</h5>
+                                        <p class="card-text">${background.description}</p>
+                                        
+                                        <div class="row mt-3">
+                                            <div class="col-md-6">
+                                                <h6><i class="fas fa-dice me-2"></i>Compétences maîtrisées</h6>
+                                                <p>${background.skill_proficiencies ? JSON.parse(background.skill_proficiencies).join(', ') : 'Aucune'}</p>
+                                                
+                                                <h6><i class="fas fa-tools me-2"></i>Outils maîtrisés</h6>
+                                                <p>${background.tool_proficiencies ? JSON.parse(background.tool_proficiencies).join(', ') : 'Aucun'}</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6><i class="fas fa-language me-2"></i>Langues</h6>
+                                                <p>${background.languages ? JSON.parse(background.languages).join(', ') : 'Aucune'}</p>
+                                                
+                                                <h6><i class="fas fa-gift me-2"></i>Capacité spéciale</h6>
+                                                <p><strong>${background.feature}</strong></p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mt-3">
+                                            <h6><i class="fas fa-backpack me-2"></i>Équipement de départ</h6>
+                                            <p>${background.equipment}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                            
+                            backgroundDetails.innerHTML = html;
+                            backgroundDetailsSection.style.display = 'block';
+                            
+                            // Mettre à jour les compétences cochées
+                            const backgroundSkills = background.skill_proficiencies ? JSON.parse(background.skill_proficiencies) : [];
+                            const backgroundTools = background.tool_proficiencies ? JSON.parse(background.tool_proficiencies) : [];
+                            updateBackgroundSkills([...backgroundSkills, ...backgroundTools]);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors du chargement des détails de l\'historique:', error);
+                    });
+            }
+            
+            // Fonction pour mettre à jour les compétences d'historique
+            function updateBackgroundSkills(skills) {
+                // Décocher toutes les compétences d'historique précédentes
+                document.querySelectorAll('input[name="skills[]"]').forEach(checkbox => {
+                    if (checkbox.dataset.backgroundSkill === 'true') {
+                        checkbox.checked = false;
+                        checkbox.disabled = false;
+                        checkbox.dataset.backgroundSkill = 'false';
+                        const label = checkbox.closest('.form-check').querySelector('label');
+                        label.classList.remove('text-success');
+                        label.classList.add('text-muted');
+                    }
+                });
+                
+                // Cocher les nouvelles compétences d'historique
+                skills.forEach(skill => {
+                    const skillId = 'skill_' + skill.toLowerCase().replace(/[ ']/g, '_');
+                    const checkbox = document.getElementById(skillId);
+                    if (checkbox) {
+                        checkbox.checked = true;
+                        checkbox.disabled = true;
+                        checkbox.dataset.backgroundSkill = 'true';
+                        const label = checkbox.closest('.form-check').querySelector('label');
+                        label.classList.remove('text-muted');
+                        label.classList.add('text-success');
+                    }
+                });
+            }
+            
+            // Mettre à jour les détails quand l'historique change
+            backgroundSelect.addEventListener('change', function() {
+                loadBackgroundDetails(this.value);
+            });
+            
+            // Initialiser avec l'historique sélectionné
+            loadBackgroundDetails(backgroundSelect.value);
         });
     </script>
 </body>

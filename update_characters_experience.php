@@ -42,3 +42,4 @@ try {
     echo "Erreur lors de la mise à jour : " . $e->getMessage() . "\n";
 }
 ?>
+
