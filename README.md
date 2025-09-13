@@ -115,6 +115,7 @@ Ce projet est sous licence MIT. Libre d'utilisation, modification et distributio
 ## Changelog
 <version_tag>
 - 0.0.60 : Langues
+- 0.0.60 : Langues
 - 0.0.59 : Historique
 - 0.0.58 : Armes et armures
 - 0.0.57 : Armes et armures

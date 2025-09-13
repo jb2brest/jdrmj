@@ -582,6 +582,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 
             </div>
 
+            <!-- Équipement de départ -->
+            <div class="form-section">
+                <h3><i class="fas fa-shield-alt me-2"></i>Équipement de départ</h3>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label class="form-label">Équipement de classe</label>
+                            <div id="starting-equipment-section" class="border rounded p-3" style="background-color: #f8f9fa;">
+                                <em class="text-muted">Sélectionnez une classe pour voir son équipement de départ</em>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Combat -->
             <div class="form-section">
                 <h3><i class="fas fa-sword me-2"></i>Combat</h3>
@@ -1387,6 +1402,81 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             return true;
         }
         
+        // Fonction pour charger l'équipement de départ d'une classe
+        function loadStartingEquipment(classId) {
+            if (!classId) {
+                document.getElementById('starting-equipment-section').innerHTML = 
+                    '<em class="text-muted">Sélectionnez une classe pour voir son équipement de départ</em>';
+                return;
+            }
+            
+            fetch(`get_class_starting_equipment.php?id=${classId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayStartingEquipment(data.equipment);
+                    } else {
+                        console.error('Erreur lors du chargement de l\'équipement:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                });
+        }
+        
+        // Fonction pour afficher l'équipement de départ
+        function displayStartingEquipment(equipment) {
+            const container = document.getElementById('starting-equipment-section');
+            
+            if (!equipment || equipment.length === 0) {
+                container.innerHTML = '<em class="text-muted">Aucun équipement de départ défini pour cette classe</em>';
+                return;
+            }
+            
+            let html = '';
+            equipment.forEach((item, index) => {
+                if (item.fixed) {
+                    // Équipement fixe
+                    html += `
+                        <div class="mb-2">
+                            <span class="badge bg-primary me-1">✓</span>
+                            <span>${item.fixed}</span>
+                        </div>
+                    `;
+                } else {
+                    // Choix d'équipement
+                    html += `
+                        <div class="mb-3">
+                            <label class="form-label small">Choisissez une option :</label>
+                            <div class="ms-3">
+                    `;
+                    
+                    Object.keys(item).forEach(choice => {
+                        const choiceId = `equipment_${index}_${choice}`;
+                        html += `
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" 
+                                       name="starting_equipment[${index}]" 
+                                       id="${choiceId}" 
+                                       value="${choice}" 
+                                       data-equipment="${item[choice]}">
+                                <label class="form-check-label" for="${choiceId}">
+                                    <strong>(${choice.toUpperCase()})</strong> ${item[choice]}
+                                </label>
+                            </div>
+                        `;
+                    });
+                    
+                    html += `
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            container.innerHTML = html;
+        }
+        
         
         // Événement de changement de race
         document.getElementById('race_id').addEventListener('change', function() {
@@ -1556,10 +1646,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Mettre à jour les compétences quand la classe change
             classSelect.addEventListener('change', function() {
                 updateClassProficiencies(this.value);
+                loadStartingEquipment(this.value);
             });
             
             // Initialiser avec la classe sélectionnée
             updateClassProficiencies(classSelect.value);
+            loadStartingEquipment(classSelect.value);
             
             // Gestion des détails d'historique
             const backgroundSelect = document.getElementById('background_id');
