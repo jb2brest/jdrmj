@@ -17,10 +17,15 @@ $stmt = $pdo->prepare("
     SELECT c.*, r.name as race_name, r.description as race_description, 
            r.strength_bonus, r.dexterity_bonus, r.constitution_bonus, 
            r.intelligence_bonus, r.wisdom_bonus, r.charisma_bonus, r.traits,
-           cl.name as class_name, cl.description as class_description, cl.hit_dice
+           r.languages as race_languages,
+           cl.name as class_name, cl.description as class_description, cl.hit_dice,
+           b.name as background_name, b.description as background_description, 
+           b.skill_proficiencies as background_skills, b.tool_proficiencies as background_tools,
+           b.languages as background_languages, b.feature as background_feature
     FROM characters c 
     JOIN races r ON c.race_id = r.id 
     JOIN classes cl ON c.class_id = cl.id 
+    LEFT JOIN backgrounds b ON c.background_id = b.id
     WHERE c.id = ?
 ");
 $stmt->execute([$character_id]);
@@ -33,6 +38,38 @@ if (!$character) {
 
 // L'équipement final est déjà stocké dans le champ equipment du personnage
 // Plus besoin de parser l'équipement de départ séparément
+
+// Parser les données JSON du personnage
+$characterSkills = $character['skills'] ? json_decode($character['skills'], true) : [];
+$characterLanguages = $character['languages'] ? json_decode($character['languages'], true) : [];
+
+// Parser les données de l'historique
+$backgroundSkills = $character['background_skills'] ? json_decode($character['background_skills'], true) : [];
+$backgroundTools = $character['background_tools'] ? json_decode($character['background_tools'], true) : [];
+$backgroundLanguages = $character['background_languages'] ? json_decode($character['background_languages'], true) : [];
+
+// Parser les langues raciales
+$raceLanguages = [];
+if ($character['race_languages']) {
+    // Les langues raciales sont stockées comme texte, pas JSON
+    $raceLanguages = array_map('trim', explode(',', $character['race_languages']));
+}
+
+// Filtrer les mentions génériques de choix de langues
+$filteredRaceLanguages = array_filter($raceLanguages, function($lang) {
+    return !preg_match('/une? (langue )?de votre choix/i', $lang);
+});
+
+$filteredBackgroundLanguages = array_filter($backgroundLanguages, function($lang) {
+    return !preg_match('/une? (langue )?de votre choix/i', $lang);
+});
+
+$filteredCharacterLanguages = array_filter($characterLanguages, function($lang) {
+    return !preg_match('/une? (langue )?de votre choix/i', $lang);
+});
+
+// Combiner toutes les langues (sans les mentions génériques)
+$allLanguages = array_unique(array_merge($filteredCharacterLanguages, $filteredRaceLanguages, $filteredBackgroundLanguages));
 
 // Contrôle d'accès: propriétaire OU MJ de la campagne liée
 $canView = ($character['user_id'] == $_SESSION['user_id']);
@@ -680,6 +717,100 @@ $armorClass = $character['armor_class'];
                 </div>
             </div>
 
+            <!-- Traits et capacités -->
+            <div class="info-section">
+                <h3><i class="fas fa-magic me-2"></i>Traits et Capacités</h3>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-dragon me-2"></i>Traits raciaux</h5>
+                        <?php if ($character['traits']): ?>
+                            <p><?php echo nl2br(htmlspecialchars($character['traits'])); ?></p>
+                        <?php else: ?>
+                            <p class="text-muted">Aucun trait racial</p>
+                        <?php endif; ?>
+                    </div>
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-gift me-2"></i>Capacité spéciale</h5>
+                        <?php if ($character['background_feature']): ?>
+                            <p><strong><?php echo htmlspecialchars($character['background_name']); ?> :</strong></p>
+                            <p><?php echo htmlspecialchars($character['background_feature']); ?></p>
+                        <?php else: ?>
+                            <p class="text-muted">Aucune capacité spéciale</p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Compétences -->
+            <div class="info-section">
+                <h3><i class="fas fa-dice me-2"></i>Compétences</h3>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-check-circle me-2"></i>Compétences maîtrisées</h5>
+                        <?php if (!empty($characterSkills)): ?>
+                            <div class="d-flex flex-wrap">
+                                <?php foreach ($characterSkills as $skill): ?>
+                                    <span class="badge bg-primary me-2 mb-2"><?php echo htmlspecialchars($skill); ?></span>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php else: ?>
+                            <p class="text-muted">Aucune compétence maîtrisée</p>
+                        <?php endif; ?>
+                    </div>
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-tools me-2"></i>Outils maîtrisés</h5>
+                        <?php if (!empty($backgroundTools)): ?>
+                            <div class="d-flex flex-wrap">
+                                <?php foreach ($backgroundTools as $tool): ?>
+                                    <span class="badge bg-success me-2 mb-2"><?php echo htmlspecialchars($tool); ?></span>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php else: ?>
+                            <p class="text-muted">Aucun outil maîtrisé</p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Langues -->
+            <div class="info-section">
+                <h3><i class="fas fa-language me-2"></i>Langues</h3>
+                <div class="row">
+                    <div class="col-12">
+                        <h5><i class="fas fa-comments me-2"></i>Langues parlées</h5>
+                        <?php if (!empty($allLanguages)): ?>
+                            <div class="d-flex flex-wrap">
+                                <?php foreach ($allLanguages as $language): ?>
+                                    <?php
+                                    // Déterminer le type de langue pour le style du badge
+                                    $isRacial = in_array($language, $filteredRaceLanguages);
+                                    $isBackground = in_array($language, $filteredBackgroundLanguages);
+                                    $isCharacter = in_array($language, $filteredCharacterLanguages);
+                                    
+                                    $badgeClass = 'bg-info'; // Par défaut
+                                    $badgeText = $language;
+                                    
+                                    if ($isRacial) {
+                                        $badgeClass = 'bg-primary';
+                                        $badgeText = $language . ' (Raciale)';
+                                    } elseif ($isBackground) {
+                                        $badgeClass = 'bg-success';
+                                        $badgeText = $language . ' (Historique)';
+                                    } elseif ($isCharacter) {
+                                        $badgeClass = 'bg-info';
+                                        $badgeText = $language . ' (Choix)';
+                                    }
+                                    ?>
+                                    <span class="badge <?php echo $badgeClass; ?> me-2 mb-2"><?php echo htmlspecialchars($badgeText); ?></span>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php else: ?>
+                            <p class="text-muted">Aucune langue parlée</p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+
             <!-- Informations de race et classe -->
             <div class="row">
                 <div class="col-md-6">
@@ -694,7 +825,6 @@ $armorClass = $character['armor_class'];
                             Sagesse: +<?php echo $character['wisdom_bonus']; ?> | 
                             Charisme: +<?php echo $character['charisma_bonus']; ?>
                         </p>
-                        <p><strong>Traits:</strong> &nbsp;<?php echo htmlspecialchars($character['traits']); ?></p>
                     </div>
                 </div>
                 <div class="col-md-6">
@@ -705,6 +835,18 @@ $armorClass = $character['armor_class'];
                     </div>
                 </div>
             </div>
+
+            <!-- Historique -->
+            <?php if ($character['background_name']): ?>
+            <div class="info-section">
+                <h3><i class="fas fa-book me-2"></i>Historique: <?php echo htmlspecialchars($character['background_name']); ?></h3>
+                <div class="row">
+                    <div class="col-12">
+                        <p><?php echo htmlspecialchars($character['background_description']); ?></p>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
 
             <!-- Équipement et trésor -->
             <div class="info-section">
