@@ -114,6 +114,7 @@ Ce projet est sous licence MIT. Libre d'utilisation, modification et distributio
 
 ## Changelog
 <version_tag>
+- 0.0.62 : Ajout équipement d'historique
 - 0.0.61 : Ajout équipement d'historique
 - 0.0.61 : Ajout équipement de départ.
 - 0.0.60 : Langues
