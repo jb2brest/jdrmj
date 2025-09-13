@@ -6,10 +6,11 @@ requireLogin();
 
 $message = '';
 
-// Récupération des races, classes et historiques
+// Récupération des races, classes, historiques et langues
 $races = $pdo->query("SELECT * FROM races ORDER BY name")->fetchAll();
 $classes = $pdo->query("SELECT * FROM classes ORDER BY name")->fetchAll();
 $backgrounds = getAllBackgrounds();
+$languages = getLanguagesByType();
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $name = sanitizeInput($_POST['name']);
@@ -34,6 +35,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Compétences
     $skills = isset($_POST['skills']) ? $_POST['skills'] : [];
     
+    // Langues
+    $selectedLanguages = isset($_POST['languages']) ? $_POST['languages'] : [];
+    
     // Ajouter automatiquement les compétences de classe
     $classProficiencies = getClassProficiencies($class_id);
     $classSkills = array_merge(
@@ -54,6 +58,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Fusionner toutes les compétences
     $allSkills = array_unique(array_merge($skills, $classSkills, $backgroundSkills, $backgroundTools));
     $skills_json = json_encode($allSkills);
+    
+    // Ajouter automatiquement les langues d'historique
+    $backgroundLanguages = [];
+    if ($background_id > 0) {
+        $backgroundLanguages = getBackgroundLanguages($background_id);
+    }
+    
+    // Fusionner toutes les langues
+    $allLanguages = array_unique(array_merge($selectedLanguages, $backgroundLanguages));
+    $languages_json = json_encode($allLanguages);
     
     // Validation
     $errors = [];
@@ -96,15 +110,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     user_id, name, race_id, class_id, background_id, level, experience_points,
                     strength, dexterity, constitution, intelligence, wisdom, charisma,
                     armor_class, speed, hit_points_max, hit_points_current, proficiency_bonus,
-                    alignment, skills
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    alignment, skills, languages
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             $stmt->execute([
                 $_SESSION['user_id'], $name, $race_id, $class_id, $background_id, $level, $experience_points,
                 $strength, $dexterity, $constitution, $intelligence, $wisdom, $charisma,
                 $armor_class, $speed, $maxHP, $maxHP, $proficiencyBonus,
-                $alignment, $skills_json
+                $alignment, $skills_json, $languages_json
             ]);
             
             $character_id = $pdo->lastInsertId();
@@ -193,7 +207,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         
         <?php echo $message; ?>
         
-        <form method="POST" action="">
+        <form method="POST" action="" onsubmit="return validateForm()">
             <!-- Informations de base -->
             <div class="form-section">
                 <h3><i class="fas fa-info-circle me-2"></i>Informations de base</h3>
@@ -538,29 +552,34 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="form-section">
                 <h3><i class="fas fa-language me-2"></i>Langues</h3>
                 <div class="row">
-                    <div class="col-md-8">
+                    <div class="col-12">
                         <div class="mb-3">
-                            <label for="race_languages" class="form-label">Langues parlées</label>
-                            <div id="languages-list" class="border rounded p-3" style="min-height: 50px; background-color: #f8f9fa;">
-                                <em class="text-muted">Sélectionnez une race pour voir ses langues</em>
+                            <label class="form-label">Langues parlées</label>
+                            <div id="languages-selection" class="border rounded p-3" style="background-color: #f8f9fa;">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6>Langues standardes</h6>
+                                        <div id="standard-languages" class="mb-3">
+                                            <!-- Les langues standardes seront ajoutées dynamiquement -->
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Langues exotiques</h6>
+                                        <div id="exotic-languages" class="mb-3">
+                                            <!-- Les langues exotiques seront ajoutées dynamiquement -->
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <small class="text-muted">
+                                        <span id="language-count">0</span> langue(s) sélectionnée(s) sur <span id="max-languages">0</span> possible(s)
+                                    </small>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="mb-3" id="additional-language-section" style="display: none;">
-                            <label for="additional_language" class="form-label">Langue supplémentaire</label>
-                            <div class="input-group">
-                                <select class="form-select" id="additional_language" name="additional_language">
-                                    <option value="">Choisir une langue</option>
-                                </select>
-                                <button class="btn btn-outline-danger" type="button" id="remove-additional-language" style="display: none;">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                            <small class="form-text text-muted">Si votre race permet "une langue de votre choix"</small>
                         </div>
                     </div>
                 </div>
+                
             </div>
 
             <!-- Combat -->
@@ -1175,178 +1194,219 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
         }
         
+        // Fonction pour initialiser l'interface des langues
+        function initializeLanguagesInterface() {
+            const languages = <?php echo json_encode($languages); ?>;
+            
+            // Créer les cases à cocher pour les langues standardes
+            const standardContainer = document.getElementById('standard-languages');
+            if (!standardContainer) {
+                return;
+            }
+            standardContainer.innerHTML = '';
+            languages.standard.forEach(language => {
+                const checkbox = createLanguageCheckbox(language, 'standard');
+                standardContainer.appendChild(checkbox);
+            });
+            
+            // Créer les cases à cocher pour les langues exotiques
+            const exoticContainer = document.getElementById('exotic-languages');
+            if (!exoticContainer) {
+                return;
+            }
+            exoticContainer.innerHTML = '';
+            languages.exotique.forEach(language => {
+                const checkbox = createLanguageCheckbox(language, 'exotique');
+                exoticContainer.appendChild(checkbox);
+            });
+            
+            // Mettre à jour l'affichage
+            updateLanguageCount();
+        }
+        
+        // Fonction pour créer une case à cocher de langue
+        function createLanguageCheckbox(language, type) {
+            const div = document.createElement('div');
+            div.className = 'form-check';
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'form-check-input language-checkbox';
+            checkbox.id = `language_${language.id}`;
+            checkbox.name = 'languages[]';
+            checkbox.value = language.name;
+            checkbox.dataset.type = type;
+            checkbox.addEventListener('change', updateLanguageCount);
+            
+            const label = document.createElement('label');
+            label.className = 'form-check-label';
+            label.htmlFor = `language_${language.id}`;
+            label.innerHTML = `${language.name} <small class="text-muted">(${language.typical_races})</small>`;
+            
+            div.appendChild(checkbox);
+            div.appendChild(label);
+            
+            return div;
+        }
+        
         // Fonction pour mettre à jour l'affichage des langues
         function updateLanguagesDisplay(languagesText) {
-            const languagesList = document.getElementById('languages-list');
-            const additionalLanguageSection = document.getElementById('additional-language-section');
-            const additionalLanguageSelect = document.getElementById('additional_language');
-            const removeButton = document.getElementById('remove-additional-language');
+            // S'assurer que l'interface des langues est initialisée
+            if (document.querySelectorAll('.language-checkbox').length === 0) {
+                initializeLanguagesInterface();
+            }
             
             if (!languagesText) {
-                languagesList.innerHTML = '<em class="text-muted">Sélectionnez une race pour voir ses langues</em>';
-                additionalLanguageSection.style.display = 'none';
+                // Réinitialiser toutes les sélections
+                document.querySelectorAll('.language-checkbox').forEach(checkbox => {
+                    checkbox.checked = false;
+                    checkbox.disabled = false;
+                    const label = checkbox.parentElement.querySelector('label');
+                    label.innerHTML = `${checkbox.value} <small class="text-muted">(${checkbox.dataset.type})</small>`;
+                });
+                updateLanguageCount();
                 return;
             }
             
-            // Analyser les langues
+            // Analyser les langues de race
             const languages = languagesText.split(',').map(lang => lang.trim());
-            let hasChoice = false;
+            let hasRaceChoice = false;
             let fixedLanguages = [];
             
             languages.forEach(lang => {
                 if (lang.includes('une langue de votre choix') || lang.includes('une langue de choix')) {
-                    hasChoice = true;
+                    hasRaceChoice = true;
                 } else {
                     fixedLanguages.push(lang);
                 }
             });
             
-            // Afficher les langues fixes
-            let html = '';
-            if (fixedLanguages.length > 0) {
-                html += '<div class="mb-2"><strong>Langues raciales :</strong></div>';
-                fixedLanguages.forEach(lang => {
-                    html += `<span class="badge bg-primary me-1 mb-1">${lang}</span>`;
-                });
-            }
+            // Récupérer les langues d'historique
+            const backgroundLanguages = getBackgroundLanguages();
+            const hasBackgroundChoice = backgroundLanguages.length > 0;
             
-            // Gérer la langue de choix
-            if (hasChoice) {
-                additionalLanguageSection.style.display = 'block';
-                populateAdditionalLanguageSelect(fixedLanguages);
+            // Calculer le nombre maximum de langues
+            let maxLanguages = fixedLanguages.length;
+            if (hasRaceChoice) maxLanguages += 1;
+            backgroundLanguages.forEach(lang => {
+                if (lang === 'deux de votre choix') maxLanguages += 2;
+                else if (lang === 'une de votre choix') maxLanguages += 1;
+            });
+            
+            // Mettre à jour l'affichage du maximum
+            document.getElementById('max-languages').textContent = maxLanguages;
+            
+            // Cocher les langues raciales fixes
+            document.querySelectorAll('.language-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+                checkbox.disabled = false;
                 
-                // Réinitialiser la sélection
-                additionalLanguageSelect.value = '';
-                removeButton.style.display = 'none';
-            } else {
-                additionalLanguageSection.style.display = 'none';
-            }
+                // Comparer en ignorant la casse
+                const isRacialLanguage = fixedLanguages.some(lang => 
+                    lang.toLowerCase() === checkbox.value.toLowerCase()
+                );
+                
+                if (isRacialLanguage) {
+                    checkbox.checked = true;
+                    checkbox.disabled = true;
+                    const label = checkbox.parentElement.querySelector('label');
+                    label.innerHTML = `${checkbox.value} <small class="text-muted">(Raciale)</small>`;
+                } else {
+                    const label = checkbox.parentElement.querySelector('label');
+                    label.innerHTML = `${checkbox.value} <small class="text-muted">(${checkbox.dataset.type})</small>`;
+                }
+            });
             
-            languagesList.innerHTML = html;
+            // Mettre à jour le compteur
+            updateLanguageCount();
         }
         
-        // Fonction pour peupler la liste des langues supplémentaires
-        function populateAdditionalLanguageSelect(excludeLanguages) {
-            const select = document.getElementById('additional_language');
+        // Fonction pour mettre à jour le compteur de langues
+        function updateLanguageCount() {
+            const checkedBoxes = document.querySelectorAll('.language-checkbox:checked');
+            const maxLanguages = parseInt(document.getElementById('max-languages').textContent) || 0;
+            const currentCount = checkedBoxes.length;
             
-            // Charger les langues depuis l'API
-            fetch('get_languages.php')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Vider les options existantes (sauf la première)
-                        select.innerHTML = '<option value="">Choisir une langue</option>';
-                        
-                        // Ajouter les langues disponibles
-                        data.languages.forEach(language => {
-                            if (!excludeLanguages.includes(language.name)) {
-                                const option = document.createElement('option');
-                                option.value = language.name;
-                                option.textContent = `${language.name} (${language.type})`;
-                                select.appendChild(option);
-                            }
-                        });
-                    }
-                })
-                .catch(error => {
-                    console.error('Erreur lors du chargement des langues:', error);
-                });
+            document.getElementById('language-count').textContent = currentCount;
+            
+            // Vérifier si le joueur a sélectionné trop de langues
+            if (currentCount > maxLanguages) {
+                document.getElementById('language-count').style.color = 'red';
+                // Décocher la dernière case cochée
+                const lastChecked = Array.from(checkedBoxes).pop();
+                if (lastChecked && !lastChecked.disabled) {
+                    lastChecked.checked = false;
+                    updateLanguageCount(); // Rappeler la fonction
+                }
+            } else {
+                document.getElementById('language-count').style.color = '';
+            }
         }
+        
+        // Fonction pour récupérer les langues d'historique
+        function getBackgroundLanguages() {
+            const backgroundSelect = document.getElementById('background_id');
+            if (!backgroundSelect.value) return [];
+            
+            // Récupérer les langues d'historique depuis les données de l'historique sélectionné
+            const backgroundDetails = document.getElementById('background-details');
+            const backgroundData = backgroundDetails.dataset.backgroundLanguages;
+            if (backgroundData) {
+                return JSON.parse(backgroundData);
+            }
+            return [];
+        }
+        
+        // Fonction pour valider les langues sélectionnées
+        function validateLanguageSelection() {
+            const checkedBoxes = document.querySelectorAll('.language-checkbox:checked');
+            const maxLanguages = parseInt(document.getElementById('max-languages').textContent) || 0;
+            const currentCount = checkedBoxes.length;
+            
+            if (currentCount < maxLanguages) {
+                alert(`Vous devez sélectionner exactement ${maxLanguages} langue(s). Vous en avez sélectionné ${currentCount}.`);
+                return false;
+            }
+            
+            if (currentCount > maxLanguages) {
+                alert(`Vous ne pouvez sélectionner que ${maxLanguages} langue(s). Vous en avez sélectionné ${currentCount}.`);
+                return false;
+            }
+            
+            return true;
+        }
+        
+        // Fonction de validation du formulaire
+        function validateForm() {
+            // Valider les langues
+            if (!validateLanguageSelection()) {
+                return false;
+            }
+            
+            // Autres validations peuvent être ajoutées ici
+            return true;
+        }
+        
         
         // Événement de changement de race
         document.getElementById('race_id').addEventListener('change', function() {
             loadRaceInfo(this.value);
         });
         
-        // Événement de changement de langue supplémentaire
-        document.getElementById('additional_language').addEventListener('change', function() {
-            updateAdditionalLanguageDisplay();
-        });
         
-        // Événement de suppression de la langue supplémentaire
-        document.getElementById('remove-additional-language').addEventListener('click', function() {
-            const select = document.getElementById('additional_language');
-            const removeButton = document.getElementById('remove-additional-language');
-            
-            // Réinitialiser la sélection
-            select.value = '';
-            
-            // Supprimer la langue de choix de l'affichage
-            const languagesList = document.getElementById('languages-list');
-            const currentContent = languagesList.innerHTML;
-            
-            // Supprimer la section "Langue de choix" et le badge associé
-            let updatedContent = currentContent.replace(/<div class="mt-2"><strong>Langue de choix :<\/strong><\/div>\s*<span[^>]*>.*?<\/span>/s, '');
-            // Supprimer aussi le badge de langue de choix s'il existe
-            updatedContent = updatedContent.replace(/<span[^>]*id="selected-additional-language"[^>]*>.*?<\/span>/g, '');
-            
-            languagesList.innerHTML = updatedContent;
-            
-            // Masquer le bouton de suppression
-            removeButton.style.display = 'none';
-        });
-        
-        // Fonction pour mettre à jour l'affichage de la langue supplémentaire
-        function updateAdditionalLanguageDisplay() {
-            const select = document.getElementById('additional_language');
-            const languagesList = document.getElementById('languages-list');
-            const removeButton = document.getElementById('remove-additional-language');
-            
-            if (select.value) {
-                // Remplacer la langue de choix existante par la nouvelle
-                const selectedLanguage = select.value;
-                
-                // Supprimer d'abord la section "Langue de choix" existante si elle existe
-                let currentContent = languagesList.innerHTML;
-                currentContent = currentContent.replace(/<div class="mt-2"><strong>Langue de choix :<\/strong><\/div>\s*<span[^>]*>.*?<\/span>/s, '');
-                
-                // Supprimer aussi l'ancien badge de langue de choix s'il existe
-                currentContent = currentContent.replace(/<span[^>]*id="selected-additional-language"[^>]*>.*?<\/span>/g, '');
-                
-                // Ajouter la nouvelle langue directement dans la section "Langues raciales"
-                // Trouver la section "Langues raciales" et ajouter la langue
-                if (currentContent.includes('Langues raciales :')) {
-                    // Ajouter la langue à la fin de la section existante
-                    // Chercher la fin de la section des badges de langues raciales
-                    const regex = /(<div class="mb-2"><strong>Langues raciales :<\/strong><\/div>)(.*?)(<div class="mt-2">|$)/s;
-                    const match = currentContent.match(regex);
-                    
-                    if (match) {
-                        const beforeSection = match[1];
-                        const badgesSection = match[2];
-                        const afterSection = match[3];
-                        
-                        // Ajouter la nouvelle langue dans la section des badges
-                        const newBadgesSection = badgesSection + `<span class="badge bg-success me-1 mb-1" id="selected-additional-language">${selectedLanguage}</span>`;
-                        currentContent = beforeSection + newBadgesSection + afterSection;
-                    } else {
-                        // Fallback: ajouter à la fin
-                        currentContent += `<span class="badge bg-success me-1 mb-1" id="selected-additional-language">${selectedLanguage}</span>`;
-                    }
-                } else {
-                    // Créer une nouvelle section "Langues raciales" avec la langue
-                    currentContent += '<div class="mb-2"><strong>Langues raciales :</strong></div>';
-                    currentContent += `<span class="badge bg-success me-1 mb-1" id="selected-additional-language">${selectedLanguage}</span>`;
-                }
-                
-                languagesList.innerHTML = currentContent;
-                removeButton.style.display = 'block';
-            } else {
-                // Supprimer la langue de choix de l'affichage
-                const currentContent = languagesList.innerHTML;
-                let updatedContent = currentContent.replace(/<div class="mt-2"><strong>Langue de choix :<\/strong><\/div>\s*<span[^>]*>.*?<\/span>/s, '');
-                updatedContent = updatedContent.replace(/<span[^>]*id="selected-additional-language"[^>]*>.*?<\/span>/g, '');
-                languagesList.innerHTML = updatedContent;
-                removeButton.style.display = 'none';
-            }
-        }
         
         // Charger les informations de race au chargement de la page si une race est déjà sélectionnée
         document.addEventListener('DOMContentLoaded', function() {
-            const selectedRace = document.getElementById('race_id').value;
-            if (selectedRace) {
-                loadRaceInfo(selectedRace);
-            }
+            // Initialiser l'interface des langues
+            initializeLanguagesInterface();
+            
+            // Attendre un peu pour s'assurer que l'interface est prête
+            setTimeout(() => {
+                const selectedRace = document.getElementById('race_id').value;
+                if (selectedRace) {
+                    loadRaceInfo(selectedRace);
+                }
+            }, 200);
             
             // Ajouter des event listeners pour recalculer les totaux quand les caractéristiques changent
             const stats = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
@@ -1554,10 +1614,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             backgroundDetails.innerHTML = html;
                             backgroundDetailsSection.style.display = 'block';
                             
+                            // Stocker les langues d'historique dans les données
+                            const backgroundLanguages = background.languages ? JSON.parse(background.languages) : [];
+                            backgroundDetails.dataset.backgroundLanguages = JSON.stringify(backgroundLanguages);
+                            
                             // Mettre à jour les compétences cochées
                             const backgroundSkills = background.skill_proficiencies ? JSON.parse(background.skill_proficiencies) : [];
                             const backgroundTools = background.tool_proficiencies ? JSON.parse(background.tool_proficiencies) : [];
                             updateBackgroundSkills([...backgroundSkills, ...backgroundTools]);
+                            
+                            // Mettre à jour l'affichage des langues
+                            const raceSelect = document.getElementById('race_id');
+                            if (raceSelect.value) {
+                                loadRaceInfo(raceSelect.value);
+                            } else {
+                                // Si pas de race sélectionnée, juste mettre à jour le compteur
+                                updateLanguageCount();
+                            }
                         }
                     })
                     .catch(error => {
@@ -1593,6 +1666,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     }
                 });
             }
+            
+            
             
             // Mettre à jour les détails quand l'historique change
             backgroundSelect.addEventListener('change', function() {
