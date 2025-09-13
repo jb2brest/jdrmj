@@ -76,7 +76,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
     
     // Générer l'équipement final basé sur les choix
-    $finalEquipment = generateFinalEquipment($class_id, $startingEquipment);
+    $equipmentData = generateFinalEquipment($class_id, $startingEquipment, $background_id);
+    $finalEquipment = $equipmentData['equipment'];
+    $backgroundGold = $equipmentData['gold'];
     
     // Validation
     $errors = [];
@@ -119,15 +121,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     user_id, name, race_id, class_id, background_id, level, experience_points,
                     strength, dexterity, constitution, intelligence, wisdom, charisma,
                     armor_class, speed, hit_points_max, hit_points_current, proficiency_bonus,
-                    alignment, skills, languages, equipment
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    alignment, skills, languages, equipment, money_gold
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             $stmt->execute([
                 $_SESSION['user_id'], $name, $race_id, $class_id, $background_id, $level, $experience_points,
                 $strength, $dexterity, $constitution, $intelligence, $wisdom, $charisma,
                 $armor_class, $speed, $maxHP, $maxHP, $proficiencyBonus,
-                $alignment, $skills_json, $languages_json, $finalEquipment
+                $alignment, $skills_json, $languages_json, $finalEquipment, $backgroundGold
             ]);
             
             $character_id = $pdo->lastInsertId();
@@ -600,6 +602,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <label class="form-label">Équipement de classe</label>
                             <div id="starting-equipment-section" class="border rounded p-3" style="background-color: #f8f9fa;">
                                 <em class="text-muted">Sélectionnez une classe pour voir son équipement de départ</em>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Équipement d'historique</label>
+                            <div id="background-equipment-section" class="border rounded p-3" style="background-color: #f8f9fa;">
+                                <em class="text-muted">Sélectionnez un historique pour voir son équipement</em>
                             </div>
                         </div>
                     </div>
@@ -1486,6 +1495,87 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             container.innerHTML = html;
         }
         
+        // Fonction pour charger l'équipement de l'historique
+        function loadBackgroundEquipment(backgroundId) {
+            if (!backgroundId) {
+                document.getElementById('background-equipment-section').innerHTML = 
+                    '<em class="text-muted">Sélectionnez un historique pour voir son équipement</em>';
+                return;
+            }
+            
+            fetch(`get_background_details.php?id=${backgroundId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayBackgroundEquipment(data.background.equipment);
+                    } else {
+                        console.error('Erreur lors du chargement de l\'équipement de l\'historique:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                });
+        }
+        
+        // Fonction pour afficher l'équipement de l'historique
+        function displayBackgroundEquipment(equipment) {
+            const container = document.getElementById('background-equipment-section');
+            
+            if (!equipment || equipment.trim() === '') {
+                container.innerHTML = '<em class="text-muted">Aucun équipement défini pour cet historique</em>';
+                return;
+            }
+            
+            // Parser l'équipement côté client (simplifié)
+            const parts = equipment.split(/[,.]/);
+            let items = [];
+            let gold = 0;
+            
+            parts.forEach(part => {
+                part = part.trim();
+                if (!part) return;
+                
+                // Chercher les mentions de bourse avec des pièces d'or
+                const bourseMatch = part.match(/bourse.*?(\d+)\s*po/i);
+                if (bourseMatch) {
+                    gold += parseInt(bourseMatch[1]);
+                    part = part.replace(/bourse.*?(\d+)\s*po/i, 'une bourse');
+                }
+                
+                // Chercher d'autres mentions de pièces d'or
+                const goldMatch = part.match(/(\d+)\s*po/i);
+                if (goldMatch) {
+                    gold += parseInt(goldMatch[1]);
+                    part = part.replace(/\d+\s*po/i, '');
+                }
+                
+                part = part.trim();
+                if (part) {
+                    items.push(part);
+                }
+            });
+            
+            let html = '';
+            items.forEach(item => {
+                html += `
+                    <div class="mb-2">
+                        <span class="badge bg-success me-1">✓</span>
+                        <span>${item}</span>
+                    </div>
+                `;
+            });
+            
+            if (gold > 0) {
+                html += `
+                    <div class="mb-2">
+                        <span class="badge bg-warning me-1">💰</span>
+                        <span><strong>${gold} po</strong> (ajouté au trésor)</span>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
         
         // Événement de changement de race
         document.getElementById('race_id').addEventListener('change', function() {
@@ -1672,6 +1762,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     backgroundDetailsSection.style.display = 'none';
                     // Décocher toutes les compétences d'historique
                     updateBackgroundSkills([]);
+                    // Réinitialiser l'équipement de l'historique
+                    loadBackgroundEquipment(null);
                     return;
                 }
                 
@@ -1732,6 +1824,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 // Si pas de race sélectionnée, juste mettre à jour le compteur
                                 updateLanguageCount();
                             }
+                            
+                            // Charger l'équipement de l'historique
+                            loadBackgroundEquipment(backgroundId);
                         }
                     })
                     .catch(error => {
@@ -1777,6 +1872,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             
             // Initialiser avec l'historique sélectionné
             loadBackgroundDetails(backgroundSelect.value);
+            
+            // Charger l'équipement de l'historique initial
+            loadBackgroundEquipment(backgroundSelect.value);
         });
     </script>
 </body>
