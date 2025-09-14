@@ -71,6 +71,48 @@ $filteredCharacterLanguages = array_filter($characterLanguages, function($lang) 
 // Combiner toutes les langues (sans les mentions génériques)
 $allLanguages = array_unique(array_merge($filteredCharacterLanguages, $filteredRaceLanguages, $filteredBackgroundLanguages));
 
+// Calcul des modificateurs (nécessaire pour le calcul de la CA)
+$strengthMod = getAbilityModifier($character['strength']);
+$dexterityMod = getAbilityModifier($character['dexterity']);
+$constitutionMod = getAbilityModifier($character['constitution']);
+$intelligenceMod = getAbilityModifier($character['intelligence']);
+$wisdomMod = getAbilityModifier($character['wisdom']);
+$charismaMod = getAbilityModifier($character['charisma']);
+
+// Récupérer l'équipement équipé du personnage
+$equippedItems = getCharacterEquippedItems($character_id);
+
+// Détecter les armes, armures et boucliers dans l'équipement
+$detectedWeapons = detectWeaponsInEquipment($character['equipment']);
+$detectedArmor = detectArmorInEquipment($character['equipment']);
+$detectedShields = detectShieldsInEquipment($character['equipment']);
+
+// Calculer la classe d'armure
+$equippedArmor = null;
+$equippedShield = null;
+
+if ($equippedItems['armor']) {
+    foreach ($detectedArmor as $armor) {
+        if ($armor['name'] === $equippedItems['armor']) {
+            $equippedArmor = $armor;
+            break;
+        }
+    }
+}
+
+if ($equippedItems['shield']) {
+    foreach ($detectedShields as $shield) {
+        if ($shield['name'] === $equippedItems['shield']) {
+            $equippedShield = $shield;
+            break;
+        }
+    }
+}
+
+// Ajouter le modificateur de Dextérité au tableau character pour la fonction
+$character['dexterity_modifier'] = $dexterityMod;
+$armorClass = calculateArmorClassExtended($character, $equippedArmor, $equippedShield);
+
 // Contrôle d'accès: propriétaire OU MJ de la campagne liée
 $canView = ($character['user_id'] == $_SESSION['user_id']);
 
@@ -441,19 +483,13 @@ foreach ($npcEquipment as $item) {
 $allMagicalEquipment = array_merge($magicalEquipment, $npcMagicalEquipment);
 $allPoisons = array_merge($characterPoisons, $npcPoisons);
 
-// Calcul des modificateurs
-$strengthMod = getAbilityModifier($character['strength']);
-$dexterityMod = getAbilityModifier($character['dexterity']);
-$constitutionMod = getAbilityModifier($character['constitution']);
-$intelligenceMod = getAbilityModifier($character['intelligence']);
-$wisdomMod = getAbilityModifier($character['wisdom']);
-$charismaMod = getAbilityModifier($character['charisma']);
+// Les modificateurs sont déjà calculés plus haut dans le fichier
 
 // Calcul de l'initiative
 $initiative = $dexterityMod;
 
-// Calcul de la classe d'armure
-$armorClass = $character['armor_class'];
+// La classe d'armure est déjà calculée plus haut avec calculateArmorClassExtended()
+// $armorClass = $character['armor_class']; // Cette ligne écrasait le calcul correct
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -715,6 +751,89 @@ $armorClass = $character['armor_class'];
                         <strong>Points d'expérience:</strong> &nbsp;<?php echo number_format($character['experience_points']); ?>
                     </div>
                 </div>
+                
+                <!-- Classe d'armure -->
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h5><i class="fas fa-shield-alt me-2"></i>Classe d'armure</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h4 class="text-primary">CA: <?php echo $armorClass; ?></h4>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <small class="text-muted">
+                                            <?php if ($equippedArmor): ?>
+                                                <strong>Armure:</strong> <?php echo $equippedArmor['name']; ?> (<?php echo $equippedArmor['ac_formula']; ?>)<br>
+                                            <?php else: ?>
+                                                <strong>Armure:</strong> Aucune (10 + modificateur de Dextérité)<br>
+                                            <?php endif; ?>
+                                            
+                                            <?php if ($equippedShield): ?>
+                                                <strong>Bouclier:</strong> <?php echo $equippedShield['name']; ?> (+<?php echo $equippedShield['ac_bonus']; ?>)<br>
+                                            <?php else: ?>
+                                                <strong>Bouclier:</strong> Aucun<br>
+                                            <?php endif; ?>
+                                            
+                                            <strong>Modificateur de Dextérité:</strong> <?php echo ($dexterityMod >= 0 ? '+' : '') . $dexterityMod; ?>
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Arme équipée -->
+                <?php if ($equippedItems['main_hand']): ?>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h5><i class="fas fa-sword me-2"></i>Arme équipée</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                <?php
+                                // Trouver l'arme équipée dans les armes détectées
+                                $equippedWeapon = null;
+                                foreach ($detectedWeapons as $weapon) {
+                                    if ($weapon['name'] === $equippedItems['main_hand']) {
+                                        $equippedWeapon = $weapon;
+                                        break;
+                                    }
+                                }
+                                ?>
+                                
+                                <?php if ($equippedWeapon): ?>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h4 class="text-success"><?php echo htmlspecialchars($equippedWeapon['name']); ?></h4>
+                                        <p class="mb-1">
+                                            <strong>Dégâts:</strong> <?php echo htmlspecialchars($equippedWeapon['damage']); ?><br>
+                                            <strong>Type:</strong> <?php echo htmlspecialchars($equippedWeapon['type']); ?><br>
+                                            <strong>Mains:</strong> <?php echo $equippedWeapon['hands']; ?> main(s)
+                                        </p>
+                                        <?php if ($equippedWeapon['properties']): ?>
+                                        <p class="mb-1">
+                                            <strong>Propriétés:</strong> <?php echo htmlspecialchars($equippedWeapon['properties']); ?>
+                                        </p>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Lancer les dégâts</h6>
+                                        <button class="btn btn-danger btn-sm" onclick="rollDamage('<?php echo addslashes($equippedWeapon['damage']); ?>', '<?php echo addslashes($equippedWeapon['name']); ?>')">
+                                            <i class="fas fa-dice me-1"></i>Lancer <?php echo htmlspecialchars($equippedWeapon['damage']); ?>
+                                        </button>
+                                        <div id="damage-result" class="mt-2"></div>
+                                    </div>
+                                </div>
+                                <?php else: ?>
+                                <p class="text-muted">Arme équipée non trouvée dans la base de données</p>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
 
             <!-- Traits et capacités -->
@@ -845,6 +964,138 @@ $armorClass = $character['armor_class'];
                         <p><?php echo htmlspecialchars($character['background_description']); ?></p>
                     </div>
                 </div>
+            </div>
+            <?php endif; ?>
+
+            <!-- Équipement détecté -->
+            <?php if (!empty($detectedWeapons) || !empty($detectedArmor) || !empty($detectedShields)): ?>
+            <div class="info-section">
+                <h3><i class="fas fa-sword me-2"></i>Équipement de Combat</h3>
+                
+                <!-- Armes -->
+                <?php if (!empty($detectedWeapons)): ?>
+                <div class="mb-4">
+                    <h5><i class="fas fa-sword me-2"></i>Armes</h5>
+                    <div class="row">
+                        <?php foreach ($detectedWeapons as $weapon): ?>
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1"><?php echo htmlspecialchars($weapon['name']); ?></h6>
+                                            <small class="text-muted">
+                                                <?php echo $weapon['hands']; ?> main(s) - <?php echo htmlspecialchars($weapon['type']); ?>
+                                            </small>
+                                        </div>
+                                        <div>
+                                            <?php
+                                            $isEquipped = false;
+                                            $equippedSlot = null;
+                                            
+                                            if ($weapon['hands'] == 2) {
+                                                $isEquipped = ($equippedItems['main_hand'] === $weapon['name'] && $equippedItems['off_hand'] === $weapon['name']);
+                                                $equippedSlot = 'main_hand';
+                                            } else {
+                                                $isEquipped = ($equippedItems['main_hand'] === $weapon['name']);
+                                                $equippedSlot = 'main_hand';
+                                            }
+                                            ?>
+                                            
+                                            <?php if ($isEquipped): ?>
+                                                <button class="btn btn-warning btn-sm" onclick="unequipItem(<?php echo $character_id; ?>, '<?php echo addslashes($weapon['name']); ?>')">
+                                                    <i class="fas fa-hand-paper me-1"></i>Déséquiper
+                                                </button>
+                                            <?php else: ?>
+                                                <button class="btn btn-success btn-sm" onclick="equipItem(<?php echo $character_id; ?>, '<?php echo addslashes($weapon['name']); ?>', 'weapon', '<?php echo $equippedSlot; ?>')">
+                                                    <i class="fas fa-hand-rock me-1"></i>Équiper
+                                                </button>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+                
+                <!-- Armures -->
+                <?php if (!empty($detectedArmor)): ?>
+                <div class="mb-4">
+                    <h5><i class="fas fa-shield-alt me-2"></i>Armures</h5>
+                    <div class="row">
+                        <?php foreach ($detectedArmor as $armor): ?>
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1"><?php echo htmlspecialchars($armor['name']); ?></h6>
+                                            <small class="text-muted">
+                                                CA: <?php echo htmlspecialchars($armor['ac_formula']); ?> - <?php echo htmlspecialchars($armor['type']); ?>
+                                            </small>
+                                        </div>
+                                        <div>
+                                            <?php $isEquipped = ($equippedItems['armor'] === $armor['name']); ?>
+                                            
+                                            <?php if ($isEquipped): ?>
+                                                <button class="btn btn-warning btn-sm" onclick="unequipItem(<?php echo $character_id; ?>, '<?php echo addslashes($armor['name']); ?>')">
+                                                    <i class="fas fa-hand-paper me-1"></i>Déséquiper
+                                                </button>
+                                            <?php else: ?>
+                                                <button class="btn btn-success btn-sm" onclick="equipItem(<?php echo $character_id; ?>, '<?php echo addslashes($armor['name']); ?>', 'armor', 'armor')">
+                                                    <i class="fas fa-hand-rock me-1"></i>Équiper
+                                                </button>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+                
+                <!-- Boucliers -->
+                <?php if (!empty($detectedShields)): ?>
+                <div class="mb-4">
+                    <h5><i class="fas fa-shield me-2"></i>Boucliers</h5>
+                    <div class="row">
+                        <?php foreach ($detectedShields as $shield): ?>
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1"><?php echo htmlspecialchars($shield['name']); ?></h6>
+                                            <small class="text-muted">
+                                                Bonus de CA: +<?php echo $shield['ac_bonus']; ?>
+                                            </small>
+                                        </div>
+                                        <div>
+                                            <?php $isEquipped = ($equippedItems['shield'] === $shield['name']); ?>
+                                            
+                                            <?php if ($isEquipped): ?>
+                                                <button class="btn btn-warning btn-sm" onclick="unequipItem(<?php echo $character_id; ?>, '<?php echo addslashes($shield['name']); ?>')">
+                                                    <i class="fas fa-hand-paper me-1"></i>Déséquiper
+                                                </button>
+                                            <?php else: ?>
+                                                <button class="btn btn-success btn-sm" onclick="equipItem(<?php echo $character_id; ?>, '<?php echo addslashes($shield['name']); ?>', 'shield', 'off_hand')">
+                                                    <i class="fas fa-hand-rock me-1"></i>Équiper
+                                                </button>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
             <?php endif; ?>
 
@@ -1286,6 +1537,107 @@ $armorClass = $character['armor_class'];
             if (confirm(`Confirmer le transfert de "${itemName}" vers "${targetName}" ?`)) {
                 form.submit();
             }
+        }
+
+        // Fonctions pour l'équipement
+        function equipItem(characterId, itemName, itemType, slot) {
+            fetch('equip_item.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    character_id: characterId,
+                    item_name: itemName,
+                    item_type: itemType,
+                    slot: slot
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Erreur: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                alert('Erreur lors de l\'équipement');
+            });
+        }
+
+        function unequipItem(characterId, itemName) {
+            fetch('unequip_item.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    character_id: characterId,
+                    item_name: itemName
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Erreur: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                alert('Erreur lors du déséquipement');
+            });
+        }
+
+        // Fonction pour lancer les dés de dégâts
+        function rollDamage(damageFormula, weaponName) {
+            const resultDiv = document.getElementById('damage-result');
+            resultDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Lancement des dés...';
+            
+            // Parser la formule de dégâts (ex: "1d6+2" ou "2d4")
+            const match = damageFormula.match(/(\d+)d(\d+)([+-]\d+)?/);
+            if (!match) {
+                resultDiv.innerHTML = '<span class="text-danger">Formule de dégâts invalide: ' + damageFormula + '</span>';
+                return;
+            }
+            
+            const numDice = parseInt(match[1]);
+            const diceSize = parseInt(match[2]);
+            const modifier = match[3] ? parseInt(match[3]) : 0;
+            
+            // Lancer les dés
+            let total = 0;
+            let rolls = [];
+            
+            for (let i = 0; i < numDice; i++) {
+                const roll = Math.floor(Math.random() * diceSize) + 1;
+                rolls.push(roll);
+                total += roll;
+            }
+            
+            total += modifier;
+            
+            // Afficher le résultat
+            let resultHtml = '<div class="alert alert-success">';
+            resultHtml += '<strong>' + weaponName + '</strong><br>';
+            resultHtml += '<strong>Dégâts:</strong> ' + total;
+            
+            if (rolls.length > 1) {
+                resultHtml += ' (' + rolls.join(' + ') + ')';
+            } else {
+                resultHtml += ' (' + rolls[0] + ')';
+            }
+            
+            if (modifier !== 0) {
+                resultHtml += ' ' + (modifier > 0 ? '+' : '') + modifier;
+            }
+            
+            resultHtml += '</div>';
+            
+            resultDiv.innerHTML = resultHtml;
         }
     </script>
 </body>
