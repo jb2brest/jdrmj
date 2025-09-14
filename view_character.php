@@ -688,49 +688,74 @@ $initiative = $dexterityMod;
             <!-- Caractéristiques -->
             <div class="info-section">
                 <h3><i class="fas fa-dumbbell me-2"></i>Caractéristiques</h3>
-                <div class="row">
-                    <div class="col-md-2">
-                        <div class="stat-box">
-                            <div class="stat-value">&nbsp;<?php echo $character['strength']; ?></div>
-                            <div class="stat-modifier">&nbsp;<?php echo ($strengthMod >= 0 ? '+' : '') . $strengthMod; ?></div>
-                            <div class="stat-label">Force</div>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="stat-box">
-                            <div class="stat-value">&nbsp;<?php echo $character['dexterity']; ?></div>
-                            <div class="stat-modifier">&nbsp;<?php echo ($dexterityMod >= 0 ? '+' : '') . $dexterityMod; ?></div>
-                            <div class="stat-label">Dextérité</div>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="stat-box">
-                            <div class="stat-value">&nbsp;<?php echo $character['constitution']; ?></div>
-                            <div class="stat-modifier">&nbsp;<?php echo ($constitutionMod >= 0 ? '+' : '') . $constitutionMod; ?></div>
-                            <div class="stat-label">Constitution</div>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="stat-box">
-                            <div class="stat-value">&nbsp;<?php echo $character['intelligence']; ?></div>
-                            <div class="stat-modifier">&nbsp;<?php echo ($intelligenceMod >= 0 ? '+' : '') . $intelligenceMod; ?></div>
-                            <div class="stat-label">Intelligence</div>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="stat-box">
-                            <div class="stat-value">&nbsp;<?php echo $character['wisdom']; ?></div>
-                            <div class="stat-modifier">&nbsp;<?php echo ($wisdomMod >= 0 ? '+' : '') . $wisdomMod; ?></div>
-                            <div class="stat-label">Sagesse</div>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="stat-box">
-                            <div class="stat-value">&nbsp;<?php echo $character['charisma']; ?></div>
-                            <div class="stat-modifier">&nbsp;<?php echo ($charismaMod >= 0 ? '+' : '') . $charismaMod; ?></div>
-                            <div class="stat-label">Charisme</div>
-                        </div>
-                    </div>
+                
+                <!-- Tableau des caractéristiques -->
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped">
+                        <thead class="table-dark">
+                            <tr>
+                                <th style="width: 20%;">Type</th>
+                                <th style="width: 13.33%;">Force</th>
+                                <th style="width: 13.33%;">Dextérité</th>
+                                <th style="width: 13.33%;">Constitution</th>
+                                <th style="width: 13.33%;">Intelligence</th>
+                                <th style="width: 13.33%;">Sagesse</th>
+                                <th style="width: 13.33%;">Charisme</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Caractéristiques de base -->
+                            <tr>
+                                <td><strong>Caractéristiques de base</strong></td>
+                                <td><strong><?php echo $character['strength']; ?></strong></td>
+                                <td><strong><?php echo $character['dexterity']; ?></strong></td>
+                                <td><strong><?php echo $character['constitution']; ?></strong></td>
+                                <td><strong><?php echo $character['intelligence']; ?></strong></td>
+                                <td><strong><?php echo $character['wisdom']; ?></strong></td>
+                                <td><strong><?php echo $character['charisma']; ?></strong></td>
+                            </tr>
+                            <!-- Bonus raciaux -->
+                            <tr>
+                                <td><strong>Bonus raciaux</strong></td>
+                                <td><span class="text-success"><?php echo ($character['strength_bonus'] > 0 ? '+' : '') . $character['strength_bonus']; ?></span></td>
+                                <td><span class="text-success"><?php echo ($character['dexterity_bonus'] > 0 ? '+' : '') . $character['dexterity_bonus']; ?></span></td>
+                                <td><span class="text-success"><?php echo ($character['constitution_bonus'] > 0 ? '+' : '') . $character['constitution_bonus']; ?></span></td>
+                                <td><span class="text-success"><?php echo ($character['intelligence_bonus'] > 0 ? '+' : '') . $character['intelligence_bonus']; ?></span></td>
+                                <td><span class="text-success"><?php echo ($character['wisdom_bonus'] > 0 ? '+' : '') . $character['wisdom_bonus']; ?></span></td>
+                                <td><span class="text-success"><?php echo ($character['charisma_bonus'] > 0 ? '+' : '') . $character['charisma_bonus']; ?></span></td>
+                            </tr>
+                            <!-- Bonus d'équipements -->
+                            <tr>
+                                <td><strong>Bonus d'équipements</strong></td>
+                                <td><span class="text-info">+0</span></td>
+                                <td><span class="text-info">+0</span></td>
+                                <td><span class="text-info">+0</span></td>
+                                <td><span class="text-info">+0</span></td>
+                                <td><span class="text-info">+0</span></td>
+                                <td><span class="text-info">+0</span></td>
+                            </tr>
+                            <!-- Bonus temporaires -->
+                            <tr>
+                                <td><strong>Bonus temporaires</strong></td>
+                                <td><span class="text-warning">+0</span></td>
+                                <td><span class="text-warning">+0</span></td>
+                                <td><span class="text-warning">+0</span></td>
+                                <td><span class="text-warning">+0</span></td>
+                                <td><span class="text-warning">+0</span></td>
+                                <td><span class="text-warning">+0</span></td>
+                            </tr>
+                            <!-- Total -->
+                            <tr class="table-primary">
+                                <td><strong>Total</strong></td>
+                                <td><strong><?php echo $character['strength'] + $character['strength_bonus']; ?> (<?php echo ($strengthMod >= 0 ? '+' : '') . $strengthMod; ?>)</strong></td>
+                                <td><strong><?php echo $character['dexterity'] + $character['dexterity_bonus']; ?> (<?php echo ($dexterityMod >= 0 ? '+' : '') . $dexterityMod; ?>)</strong></td>
+                                <td><strong><?php echo $character['constitution'] + $character['constitution_bonus']; ?> (<?php echo ($constitutionMod >= 0 ? '+' : '') . $constitutionMod; ?>)</strong></td>
+                                <td><strong><?php echo $character['intelligence'] + $character['intelligence_bonus']; ?> (<?php echo ($intelligenceMod >= 0 ? '+' : '') . $intelligenceMod; ?>)</strong></td>
+                                <td><strong><?php echo $character['wisdom'] + $character['wisdom_bonus']; ?> (<?php echo ($wisdomMod >= 0 ? '+' : '') . $wisdomMod; ?>)</strong></td>
+                                <td><strong><?php echo $character['charisma'] + $character['charisma_bonus']; ?> (<?php echo ($charismaMod >= 0 ? '+' : '') . $charismaMod; ?>)</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
