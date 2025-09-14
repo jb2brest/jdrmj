@@ -58,12 +58,17 @@ $character_equipment = [];
 if (count($equipment_items) > 0) {
     // Nouveau système : équipement dans la table character_equipment
     foreach ($equipment_items as $item) {
-        // Pour l'instant, on ne charge que les équipements de départ (pas les objets magiques)
-        if ($item['item_source'] === 'Attribution MJ' || $item['obtained_from'] === 'Attribution MJ') {
+        // Charger les équipements de départ (pas les objets magiques ou les objets obtenus en jeu)
+        if ($item['item_source'] === 'Attribution MJ' || 
+            $item['obtained_from'] === 'Attribution MJ' ||
+            $item['item_source'] === 'Équipement de départ' ||
+            $item['obtained_from'] === 'Équipement de départ' ||
+            $item['item_source'] === 'Classe' ||
+            $item['obtained_from'] === 'Classe') {
             $character_equipment[] = $item['item_name'];
         }
     }
-        } else {
+} else {
     // Ancien système : équipement dans le champ equipment
     $equipment_text = $character['equipment'] ?? '';
     if (!empty($equipment_text)) {
@@ -674,7 +679,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <div class="mb-3">
                             <label class="form-label">Équipement de classe</label>
                             <div id="starting-equipment-section" class="border rounded p-3" style="background-color: #f8f9fa;">
-                                <em class="text-muted">Sélectionnez une classe pour voir son équipement de départ</em>
+                                <?php if ($character['class_id']): ?>
+                                    <em class="text-muted">Chargement de l'équipement de départ...</em>
+                                <?php else: ?>
+                                    <em class="text-muted">Sélectionnez une classe pour voir son équipement de départ</em>
+                                <?php endif; ?>
                             </div>
                         </div>
                         
@@ -1508,6 +1517,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 return;
             }
             
+            // Afficher un indicateur de chargement
+            document.getElementById('starting-equipment-section').innerHTML = 
+                '<div class="text-center"><i class="fas fa-spinner fa-spin me-2"></i>Chargement de l\'équipement de départ...</div>';
+            
             fetch(`get_class_starting_equipment.php?id=${classId}`)
                 .then(response => response.json())
                 .then(data => {
@@ -1515,10 +1528,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         displayStartingEquipment(data.equipment);
                     } else {
                         console.error('Erreur lors du chargement de l\'équipement:', data.message);
+                        document.getElementById('starting-equipment-section').innerHTML = 
+                            '<em class="text-danger">Erreur lors du chargement de l\'équipement de départ</em>';
                     }
                 })
                 .catch(error => {
                     console.error('Erreur:', error);
+                    document.getElementById('starting-equipment-section').innerHTML = 
+                        '<em class="text-danger">Erreur lors du chargement de l\'équipement de départ</em>';
                 });
         }
         
@@ -1554,17 +1571,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     
                     Object.keys(item).forEach(choice => {
                         const choiceId = `equipment_${index}_${choice}`;
-                        const isSelected = characterEquipment && characterEquipment[index] === choice;
+                        // Vérifier si cet équipement est déjà possédé par le personnage
+                        const equipmentName = item[choice];
+                        const isSelected = characterEquipment && characterEquipment.includes(equipmentName);
                         html += `
                             <div class="form-check">
                                 <input class="form-check-input" type="radio" 
                                        name="starting_equipment[${index}]" 
                                        id="${choiceId}" 
                                        value="${choice}" 
-                                       data-equipment="${item[choice]}"
+                                       data-equipment="${equipmentName}"
                                        ${isSelected ? 'checked' : ''}>
                                 <label class="form-check-label" for="${choiceId}">
-                                    <strong>(${choice.toUpperCase()})</strong> ${item[choice]}
+                                    <strong>(${choice.toUpperCase()})</strong> ${equipmentName}
                                 </label>
                             </div>
                         `;
@@ -1674,12 +1693,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Initialiser l'interface des langues
             initializeLanguagesInterface();
             
-            // Attendre un peu pour s'assurer que l'interface est prête
+            // Charger immédiatement les informations si elles sont déjà sélectionnées
+            const selectedRace = document.getElementById('race_id').value;
+            if (selectedRace) {
+                loadRaceInfo(selectedRace);
+            }
+            
+            // Charger l'équipement de départ si une classe est sélectionnée
+            const selectedClass = document.getElementById('class_id').value;
+            if (selectedClass) {
+                loadStartingEquipment(selectedClass);
+            }
+            
+            // Attendre un peu pour s'assurer que l'interface est prête pour les autres initialisations
             setTimeout(() => {
-                const selectedRace = document.getElementById('race_id').value;
-                if (selectedRace) {
-                    loadRaceInfo(selectedRace);
-                }
                 
                 // Appliquer les bonus raciaux directement si disponibles
                 <?php if ($race_info): ?>
