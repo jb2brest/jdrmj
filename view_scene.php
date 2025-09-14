@@ -45,7 +45,7 @@ if (!$canView) {
 }
 
 // Récupérer les joueurs présents dans cette lieu
-$stmt = $pdo->prepare("SELECT sp.player_id, u.username, ch.id AS character_id, ch.name AS character_name, ch.profile_photo FROM place_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.place_id = ? ORDER BY u.username ASC");
+$stmt = $pdo->prepare("SELECT sp.player_id, u.username, ch.id AS character_id, ch.name AS character_name, ch.profile_photo, ch.class_id FROM place_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.place_id = ? ORDER BY u.username ASC");
 $stmt->execute([$place_id]);
 $placePlayers = $stmt->fetchAll();
 
@@ -653,6 +653,41 @@ foreach ($allScenes as $s) {
     <?php if (isset($success_message)) echo displayMessage($success_message, 'success'); ?>
     <?php if (isset($error_message)) echo displayMessage($error_message, 'error'); ?>
     
+    <?php
+    // Vérifier si le joueur connecté est présent dans ce lieu
+    $currentPlayer = null;
+    foreach ($placePlayers as $player) {
+        if ($player['player_id'] == $_SESSION['user_id']) {
+            $currentPlayer = $player;
+            break;
+        }
+    }
+    ?>
+    
+    <?php if ($currentPlayer && $currentPlayer['character_id']): ?>
+        <!-- Section spéciale pour le joueur connecté -->
+        <div class="alert alert-info d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-user-circle me-2"></i>
+                <div>
+                    <strong>Vous êtes présent dans ce lieu</strong>
+                    <br>
+                    <small>Personnage: <?php echo htmlspecialchars($currentPlayer['character_name']); ?></small>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="view_character.php?id=<?php echo (int)$currentPlayer['character_id']; ?>&dm_campaign_id=<?php echo (int)$place['campaign_id']; ?>" class="btn btn-primary" target="_blank">
+                    <i class="fas fa-file-alt me-1"></i>Ma feuille de personnage
+                </a>
+                <?php if ($currentPlayer['class_id'] && canCastSpells($currentPlayer['class_id'])): ?>
+                    <a href="grimoire.php?id=<?php echo (int)$currentPlayer['character_id']; ?>" class="btn btn-info" target="_blank">
+                        <i class="fas fa-book-open me-1"></i>Mon Grimoire
+                    </a>
+                <?php endif; ?>
+            </div>
+        </div>
+    <?php endif; ?>
+    
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
             <?php if ($isOwnerDM): ?>
@@ -874,9 +909,17 @@ foreach ($allScenes as $s) {
                                     </div>
                                     <div class="d-flex gap-1">
                                         <?php if ($player['character_name'] && !empty($player['character_id'])): ?>
-                                            <a href="view_character.php?id=<?php echo (int)$player['character_id']; ?>&dm_campaign_id=<?php echo (int)$place['campaign_id']; ?>" class="btn btn-sm btn-outline-primary" title="Voir la fiche du personnage" target="_blank">
-                                                <i class="fas fa-file-alt"></i>
-                                            </a>
+                                            <?php if ($player['player_id'] == $_SESSION['user_id']): ?>
+                                                <!-- Bouton spécial pour le joueur connecté -->
+                                                <a href="view_character.php?id=<?php echo (int)$player['character_id']; ?>&dm_campaign_id=<?php echo (int)$place['campaign_id']; ?>" class="btn btn-sm btn-primary" title="Ma feuille de personnage" target="_blank">
+                                                    <i class="fas fa-user-circle me-1"></i>Ma fiche
+                                                </a>
+                                            <?php else: ?>
+                                                <!-- Bouton pour les autres joueurs -->
+                                                <a href="view_character.php?id=<?php echo (int)$player['character_id']; ?>&dm_campaign_id=<?php echo (int)$place['campaign_id']; ?>" class="btn btn-sm btn-outline-primary" title="Voir la fiche du personnage" target="_blank">
+                                                    <i class="fas fa-file-alt me-1"></i>Fiche
+                                                </a>
+                                            <?php endif; ?>
                                         <?php endif; ?>
                                     </div>
                                     <?php if ($isOwnerDM): ?>

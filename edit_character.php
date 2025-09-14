@@ -867,6 +867,53 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 </div>
                             </div>
 
+                            <!-- Grimoire -->
+                            <?php if (canCastSpells($character['class_id'])): ?>
+                            <div class="form-section">
+                                <h3><i class="fas fa-book-open me-2"></i>Grimoire</h3>
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            <strong>Grimoire accessible !</strong> Votre personnage peut lancer des sorts. 
+                                            <a href="grimoire.php?id=<?php echo $character_id; ?>" class="btn btn-sm btn-info ms-2">
+                                                <i class="fas fa-book-open me-1"></i>Ouvrir le Grimoire
+                                            </a>
+                                        </div>
+                                        
+                                        <?php
+                                        $spell_capabilities = getClassSpellCapabilities($character['class_id'], $character['level']);
+                                        $character_spells = getCharacterSpells($character_id);
+                                        ?>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <h6>Capacités de sorts (niveau <?php echo $character['level']; ?>)</h6>
+                                                <ul class="list-unstyled">
+                                                    <li><strong>Cantrips connus:</strong> <?php echo $spell_capabilities['cantrips_known']; ?></li>
+                                                    <li><strong>Sorts connus:</strong> <?php echo $spell_capabilities['spells_known']; ?></li>
+                                                    <li><strong>Sorts actuellement connus:</strong> <?php echo count($character_spells); ?></li>
+                                                </ul>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6>Emplacements de sorts</h6>
+                                                <ul class="list-unstyled">
+                                                    <?php
+                                                    for ($i = 1; $i <= 9; $i++) {
+                                                        $slots = $spell_capabilities["spell_slots_{$i}st"];
+                                                        if ($slots > 0) {
+                                                            echo "<li><strong>Niveau $i:</strong> $slots emplacements</li>";
+                                                        }
+                                                    }
+                                                    ?>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <?php endif; ?>
+
                             <div class="d-flex justify-content-between">
                                 <a href="characters.php" class="btn btn-secondary">
                     <i class="fas fa-arrow-left me-2"></i>Retour

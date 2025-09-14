@@ -1262,6 +1262,11 @@ $initiative = $dexterityMod;
                             <a href="view_character_equipment.php?id=<?php echo (int)$character_id; ?>" class="btn btn-primary">
                                 <i class="fas fa-cog me-2"></i>Gérer l'équipement détaillé
                             </a>
+                            <?php if (canCastSpells($character['class_id'])): ?>
+                                <a href="grimoire.php?id=<?php echo (int)$character_id; ?>" class="btn btn-info ms-2">
+                                    <i class="fas fa-book-open me-2"></i>Grimoire
+                                </a>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <div class="col-md-4">

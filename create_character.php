@@ -785,6 +785,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 </div>
             </div>
 
+            <!-- Grimoire (sera accessible après création) -->
+            <div class="form-section" id="grimoire-section" style="display: none;">
+                <h3><i class="fas fa-book-open me-2"></i>Grimoire</h3>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Grimoire disponible !</strong> Votre personnage pourra lancer des sorts. 
+                            Le Grimoire sera accessible après la création du personnage.
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Capacités de sorts (niveau 1)</h6>
+                                <ul class="list-unstyled" id="spell-capabilities">
+                                    <!-- Sera rempli dynamiquement -->
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Emplacements de sorts</h6>
+                                <ul class="list-unstyled" id="spell-slots">
+                                    <!-- Sera rempli dynamiquement -->
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="d-flex justify-content-between">
                 <a href="characters.php" class="btn btn-secondary">
                     <i class="fas fa-arrow-left me-2"></i>Retour
@@ -1495,6 +1524,47 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             container.innerHTML = html;
         }
         
+        // Fonction pour charger les capacités de sorts d'une classe
+        function loadSpellCapabilities(classId) {
+            if (!classId) {
+                document.getElementById('grimoire-section').style.display = 'none';
+                return;
+            }
+            
+            fetch(`get_class_spell_capabilities.php?class_id=${classId}&level=1`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && (data.capabilities.cantrips_known > 0 || data.capabilities.spells_known > 0 || 
+                        data.capabilities.spell_slots_1st > 0 || data.capabilities.spell_slots_2nd > 0)) {
+                        
+                        document.getElementById('grimoire-section').style.display = 'block';
+                        
+                        // Afficher les capacités
+                        const capabilitiesHtml = `
+                            <li><strong>Cantrips connus:</strong> ${data.capabilities.cantrips_known}</li>
+                            <li><strong>Sorts connus:</strong> ${data.capabilities.spells_known}</li>
+                        `;
+                        document.getElementById('spell-capabilities').innerHTML = capabilitiesHtml;
+                        
+                        // Afficher les emplacements de sorts
+                        let slotsHtml = '';
+                        for (let i = 1; i <= 9; i++) {
+                            const slots = data.capabilities[`spell_slots_${i}st`];
+                            if (slots > 0) {
+                                slotsHtml += `<li><strong>Niveau ${i}:</strong> ${slots} emplacements</li>`;
+                            }
+                        }
+                        document.getElementById('spell-slots').innerHTML = slotsHtml;
+                    } else {
+                        document.getElementById('grimoire-section').style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur lors du chargement des capacités de sorts:', error);
+                    document.getElementById('grimoire-section').style.display = 'none';
+                });
+        }
+
         // Fonction pour charger l'équipement de l'historique
         function loadBackgroundEquipment(backgroundId) {
             if (!backgroundId) {
@@ -1746,11 +1816,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             classSelect.addEventListener('change', function() {
                 updateClassProficiencies(this.value);
                 loadStartingEquipment(this.value);
+                loadSpellCapabilities(this.value);
             });
             
             // Initialiser avec la classe sélectionnée
             updateClassProficiencies(classSelect.value);
             loadStartingEquipment(classSelect.value);
+            loadSpellCapabilities(classSelect.value);
             
             // Gestion des détails d'historique
             const backgroundSelect = document.getElementById('background_id');

@@ -241,9 +241,21 @@ if ($playerPlaceId) {
                 </div>
                 <div class="col-md-4 text-md-end">
                     <?php if ($playerCharacter): ?>
-                        <div class="badge bg-light text-dark fs-6">
-                            <i class="fas fa-user me-1"></i><?php echo htmlspecialchars($playerCharacter['name']); ?>
-                            <span class="ms-1">Niv. <?php echo $playerCharacter['level']; ?></span>
+                        <div class="d-flex flex-column align-items-md-end gap-2">
+                            <div class="badge bg-light text-dark fs-6">
+                                <i class="fas fa-user me-1"></i><?php echo htmlspecialchars($playerCharacter['name']); ?>
+                                <span class="ms-1">Niv. <?php echo $playerCharacter['level']; ?></span>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a href="view_character.php?id=<?php echo (int)$playerCharacter['id']; ?>&dm_campaign_id=<?php echo (int)$campaign_id; ?>" class="btn btn-sm btn-primary" target="_blank">
+                                    <i class="fas fa-file-alt me-1"></i>Ma feuille
+                                </a>
+                                <?php if (canCastSpells($playerCharacter['class_id'])): ?>
+                                    <a href="grimoire.php?id=<?php echo (int)$playerCharacter['id']; ?>" class="btn btn-sm btn-info" target="_blank">
+                                        <i class="fas fa-book-open me-1"></i>Grimoire
+                                    </a>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     <?php endif; ?>
                 </div>
