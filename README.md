@@ -114,6 +114,7 @@ Ce projet est sous licence MIT. Libre d'utilisation, modification et distributio
 
 ## Changelog
 <version_tag>
+- 0.0.65 : Dés
 - 0.0.64 : détection arme et armures
 - 0.0.63 : Revue view_caracter
 - 0.0.62 : Ajout équipement d'historique

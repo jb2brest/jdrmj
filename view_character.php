@@ -1592,10 +1592,9 @@ $initiative = $dexterityMod;
             });
         }
 
-        // Fonction pour lancer les dés de dégâts
+        // Fonction pour lancer les dés de dégâts avec animation
         function rollDamage(damageFormula, weaponName) {
             const resultDiv = document.getElementById('damage-result');
-            resultDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Lancement des dés...';
             
             // Parser la formule de dégâts (ex: "1d6+2" ou "2d4")
             const match = damageFormula.match(/(\d+)d(\d+)([+-]\d+)?/);
@@ -1608,36 +1607,262 @@ $initiative = $dexterityMod;
             const diceSize = parseInt(match[2]);
             const modifier = match[3] ? parseInt(match[3]) : 0;
             
-            // Lancer les dés
-            let total = 0;
-            let rolls = [];
+            // Désactiver le bouton pendant l'animation
+            const button = event.target;
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Lancement...';
+            
+            // Créer l'animation des dés
+            resultDiv.innerHTML = createDiceAnimation(numDice, diceSize);
+            
+            // Lancer les dés après l'animation
+            setTimeout(() => {
+                let total = 0;
+                let rolls = [];
+                
+                for (let i = 0; i < numDice; i++) {
+                    const roll = Math.floor(Math.random() * diceSize) + 1;
+                    rolls.push(roll);
+                    total += roll;
+                }
+                
+                total += modifier;
+                
+                // Afficher le résultat final
+                resultDiv.innerHTML = createResultDisplay(weaponName, total, rolls, modifier, diceSize);
+                
+                // Réactiver le bouton
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-dice me-1"></i>Lancer ' + damageFormula;
+            }, 2000); // Animation de 2 secondes
+        }
+        
+        // Fonction pour créer l'animation des dés
+        function createDiceAnimation(numDice, diceSize) {
+            let animationHtml = '<div class="dice-animation-container">';
+            animationHtml += '<h6 class="mb-3"><i class="fas fa-dice me-2"></i>Lancement des dés...</h6>';
+            animationHtml += '<div class="dice-rolling-area">';
             
             for (let i = 0; i < numDice; i++) {
-                const roll = Math.floor(Math.random() * diceSize) + 1;
-                rolls.push(roll);
-                total += roll;
+                animationHtml += '<div class="dice rolling dice-' + diceSize + '" data-dice-size="' + diceSize + '">';
+                animationHtml += '<div class="dice-face">?</div>';
+                animationHtml += '</div>';
             }
             
-            total += modifier;
+            animationHtml += '</div></div>';
             
-            // Afficher le résultat
-            let resultHtml = '<div class="alert alert-success">';
-            resultHtml += '<strong>' + weaponName + '</strong><br>';
-            resultHtml += '<strong>Dégâts:</strong> ' + total;
-            
-            if (rolls.length > 1) {
-                resultHtml += ' (' + rolls.join(' + ') + ')';
-            } else {
-                resultHtml += ' (' + rolls[0] + ')';
+            // Ajouter les styles CSS pour l'animation
+            if (!document.getElementById('dice-animation-styles')) {
+                const style = document.createElement('style');
+                style.id = 'dice-animation-styles';
+                style.textContent = `
+                    .dice-animation-container {
+                        text-align: center;
+                        padding: 20px;
+                    }
+                    
+                    .dice-rolling-area {
+                        display: flex;
+                        justify-content: center;
+                        gap: 15px;
+                        flex-wrap: wrap;
+                        margin-bottom: 30px;
+                        min-height: 80px;
+                    }
+                    
+                    .dice {
+                        width: 60px;
+                        height: 60px;
+                        background: linear-gradient(145deg, #ffcccc, #ff9999);
+                        border: 2px solid #cc0000;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 20px;
+                        font-weight: bold;
+                        color: #cc0000;
+                        box-shadow: 0 4px 8px rgba(204,0,0,0.3);
+                        position: relative;
+                        transition: all 0.3s ease;
+                    }
+                    
+                    /* D4 - Tétraèdre */
+                    .dice-4 {
+                        width: 0;
+                        height: 0;
+                        border-left: 30px solid transparent;
+                        border-right: 30px solid transparent;
+                        border-bottom: 52px solid #ff9999;
+                        background: none;
+                        border-radius: 0;
+                        position: relative;
+                    }
+                    
+                    .dice-4 .dice-face {
+                        position: absolute;
+                        top: 35px;
+                        left: -15px;
+                        width: 30px;
+                        text-align: center;
+                        color: #cc0000;
+                    }
+                    
+                    /* D6 - Cube */
+                    .dice-6 {
+                        border-radius: 8px;
+                    }
+                    
+                    /* D8 - Octaèdre */
+                    .dice-8 {
+                        width: 0;
+                        height: 0;
+                        border-left: 25px solid transparent;
+                        border-right: 25px solid transparent;
+                        border-bottom: 35px solid #ff9999;
+                        background: none;
+                        border-radius: 0;
+                        position: relative;
+                    }
+                    
+                    .dice-8::after {
+                        content: '';
+                        position: absolute;
+                        top: 35px;
+                        left: -25px;
+                        width: 0;
+                        height: 0;
+                        border-left: 25px solid transparent;
+                        border-right: 25px solid transparent;
+                        border-top: 35px solid #ff6666;
+                    }
+                    
+                    .dice-8 .dice-face {
+                        position: absolute;
+                        top: 15px;
+                        left: -15px;
+                        width: 30px;
+                        text-align: center;
+                        color: #cc0000;
+                        z-index: 2;
+                    }
+                    
+                    /* D10 - Pentagone */
+                    .dice-10 {
+                        width: 50px;
+                        height: 50px;
+                        background: linear-gradient(145deg, #ffcccc, #ff9999);
+                        clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+                        border-radius: 0;
+                    }
+                    
+                    /* D12 - Dodécaèdre */
+                    .dice-12 {
+                        width: 50px;
+                        height: 50px;
+                        background: linear-gradient(145deg, #ffcccc, #ff9999);
+                        clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+                        border-radius: 0;
+                    }
+                    
+                    /* D20 - Icosaèdre */
+                    .dice-20 {
+                        width: 50px;
+                        height: 50px;
+                        background: linear-gradient(145deg, #ffcccc, #ff9999);
+                        clip-path: polygon(50% 0%, 100% 20%, 100% 80%, 50% 100%, 0% 80%, 0% 20%);
+                        border-radius: 0;
+                    }
+                    
+                    .dice.rolling {
+                        animation: diceRoll 0.5s infinite;
+                    }
+                    
+                    .dice.rolling .dice-face {
+                        animation: diceFaceChange 0.2s infinite;
+                    }
+                    
+                    @keyframes diceRoll {
+                        0% { transform: rotate(0deg) scale(1); }
+                        25% { transform: rotate(90deg) scale(1.1); }
+                        50% { transform: rotate(180deg) scale(1); }
+                        75% { transform: rotate(270deg) scale(1.1); }
+                        100% { transform: rotate(360deg) scale(1); }
+                    }
+                    
+                    @keyframes diceFaceChange {
+                        0% { content: '?'; }
+                        25% { content: '1'; }
+                        50% { content: '?'; }
+                        75% { content: '2'; }
+                        100% { content: '?'; }
+                    }
+                    
+                    .dice-face::before {
+                        content: '?';
+                        animation: diceFaceChange 0.2s infinite;
+                    }
+                    
+                    .dice-face.dice-final::before {
+                        content: '';
+                        animation: none;
+                    }
+                    
+                    .dice-result {
+                        animation: diceResult 0.5s ease-out;
+                    }
+                    
+                    .dice-result .alert {
+                        padding: 20px;
+                    }
+                    
+                    @keyframes diceResult {
+                        0% { transform: scale(1.5); opacity: 0; }
+                        50% { transform: scale(1.2); opacity: 0.8; }
+                        100% { transform: scale(1); opacity: 1; }
+                    }
+                `;
+                document.head.appendChild(style);
             }
             
-            if (modifier !== 0) {
-                resultHtml += ' ' + (modifier > 0 ? '+' : '') + modifier;
-            }
+            return animationHtml;
+        }
+        
+        // Fonction pour créer l'affichage du résultat
+        function createResultDisplay(weaponName, total, rolls, modifier, diceSize) {
+            
+            let resultHtml = '<div class="dice-result">';
+            resultHtml += '<div class="alert alert-success">';
+            resultHtml += '<h6><strong>' + weaponName + '</strong></h6>';
+            resultHtml += '<div class="dice-rolling-area">';
+            
+            // Afficher les dés avec leurs résultats
+            rolls.forEach((roll, index) => {
+                resultHtml += '<div class="dice dice-result dice-' + diceSize + '" style="animation-delay: ' + (index * 0.1) + 's">';
+                resultHtml += '<div class="dice-face dice-final">' + roll + '</div>';
+                resultHtml += '</div>';
+            });
             
             resultHtml += '</div>';
+            resultHtml += '<div class="text-center" style="margin-top: 40px; padding-top: 20px;">';
+            resultHtml += '<h5 class="text-success mb-1">Total: <strong>' + total + '</strong></h5>';
             
-            resultDiv.innerHTML = resultHtml;
+            if (rolls.length > 1) {
+                resultHtml += '<small class="text-muted">(' + rolls.join(' + ') + ')';
+                if (modifier !== 0) {
+                    resultHtml += ' ' + (modifier > 0 ? '+' : '') + modifier;
+                }
+                resultHtml += ')</small>';
+            } else {
+                resultHtml += '<small class="text-muted">(' + rolls[0];
+                if (modifier !== 0) {
+                    resultHtml += ' ' + (modifier > 0 ? '+' : '') + modifier;
+                }
+                resultHtml += ')</small>';
+            }
+            
+            resultHtml += '</div></div></div>';
+            
+            return resultHtml;
         }
     </script>
 </body>
