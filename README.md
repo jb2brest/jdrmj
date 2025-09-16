@@ -114,6 +114,7 @@ Ce projet est sous licence MIT. Libre d'utilisation, modification et distributio
 
 ## Changelog
 <version_tag>
+- 0.0.82 : Barbare Niveau 5
 - 0.0.81 : Barbare Lot 1
 - 0.0.80 : Sorts de bardes
 - 0.0.80 : Sorts de bardes

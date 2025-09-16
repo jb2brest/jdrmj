@@ -43,6 +43,47 @@ if ($character['race_id']) {
     $race_info = $stmt->fetch();
 }
 
+// Récupérer les capacités de classe et de race
+$classCapabilities = [];
+$raceCapabilities = [];
+
+// Vérifier si c'est un barbare
+$isBarbarian = false;
+if ($character['class_id']) {
+    $stmt = $pdo->prepare("SELECT name FROM classes WHERE id = ?");
+    $stmt->execute([$character['class_id']]);
+    $class = $stmt->fetch();
+    $isBarbarian = $class && strpos(strtolower($class['name']), 'barbare') !== false;
+}
+
+// Capacités de classe basées sur le niveau
+$classCapabilities = [];
+if ($isBarbarian) {
+    $classCapabilities = getBarbarianCapabilities($character['level']);
+}
+
+// Capacités raciales
+if ($race_info && $race_info['traits']) {
+    $raceCapabilities[] = [
+        'name' => 'Traits raciaux',
+        'description' => $race_info['traits']
+    ];
+}
+
+// Récupérer les voies primitives et le choix actuel
+$barbarianPaths = [];
+$selectedPath = null;
+if ($isBarbarian) {
+    $barbarianPaths = getBarbarianPaths();
+    $selectedPath = getCharacterBarbarianPath($character_id);
+}
+
+// Récupérer les améliorations de caractéristiques
+$abilityImprovements = getCharacterAbilityImprovements($character_id);
+
+// Calculer les points d'amélioration restants
+$remainingPoints = getRemainingAbilityPoints($character['level'], $abilityImprovements);
+
 // Filtrer les langues génériques
 $character_languages = array_filter($character_languages, function($lang) {
     return !preg_match('/une? (langue )?de votre choix/i', $lang);
@@ -112,6 +153,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     
     // Nombre maximum de sorts appris (MJ uniquement)
     $max_spells_learned = (int)($_POST['max_spells_learned'] ?? $character['max_spells_learned'] ?? 6);
+    
+    // Voie primitive (pour les barbares de niveau 3+)
+    $barbarian_path_id = isset($_POST['barbarian_path_id']) ? (int)$_POST['barbarian_path_id'] : null;
+    
+    // Améliorations de caractéristiques
+    $ability_improvements = [
+        'strength_bonus' => (int)($_POST['strength_bonus'] ?? $abilityImprovements['strength_bonus']),
+        'dexterity_bonus' => (int)($_POST['dexterity_bonus'] ?? $abilityImprovements['dexterity_bonus']),
+        'constitution_bonus' => (int)($_POST['constitution_bonus'] ?? $abilityImprovements['constitution_bonus']),
+        'intelligence_bonus' => (int)($_POST['intelligence_bonus'] ?? $abilityImprovements['intelligence_bonus']),
+        'wisdom_bonus' => (int)($_POST['wisdom_bonus'] ?? $abilityImprovements['wisdom_bonus']),
+        'charisma_bonus' => (int)($_POST['charisma_bonus'] ?? $abilityImprovements['charisma_bonus'])
+    ];
     
     // Ajouter automatiquement les compétences de classe
     $classProficiencies = getClassProficiencies($class_id);
@@ -214,10 +268,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 ]);
             $message = displayMessage("Personnage mis à jour avec succès !", "success");
             
+            // Sauvegarder la voie primitive si c'est un barbare de niveau 3+
+            if ($isBarbarian && $level >= 3 && $barbarian_path_id) {
+                saveBarbarianPath($character_id, $barbarian_path_id);
+            }
+            
+            // Sauvegarder les améliorations de caractéristiques
+            saveCharacterAbilityImprovements($character_id, $ability_improvements);
+            
             // Recharger les données du personnage
             $stmt = $pdo->prepare("SELECT * FROM characters WHERE id = ? AND user_id = ?");
             $stmt->execute([$character_id, $user_id]);
             $character = $stmt->fetch();
+            
+            // Recharger les améliorations de caractéristiques
+            $abilityImprovements = getCharacterAbilityImprovements($character_id);
             
         } catch (PDOException $e) {
             $message = displayMessage("Erreur lors de la mise à jour du personnage : " . $e->getMessage(), "error");
@@ -255,6 +320,42 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             border-radius: 10px;
             padding: 20px;
             margin-bottom: 20px;
+        }
+        
+        /* Styles pour les capacités */
+        .capabilities-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .capability-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            border-left: 4px solid #007bff;
+            transition: all 0.3s ease;
+        }
+        
+        .capability-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+        
+        .capability-header h6 {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .capability-description {
+            line-height: 1.5;
+        }
+        
+        .capability-item .text-primary {
+            color: #007bff !important;
+        }
+        
+        .capability-item .text-success {
+            color: #28a745 !important;
         }
     </style>
 </head>
@@ -358,7 +459,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         <div class="mb-3">
                             <label class="form-label">Niveau Calculé</label>
                             <div class="form-control-plaintext" id="calculated_level">
-                                Niveau 1
+                                Niveau <?php echo $character['level']; ?>
                                 </div>
                             </div>
                                 </div>
@@ -608,6 +709,88 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <td><span id="racial-wisdom-bonus" class="text-success">+0</span></td>
                                 <td><span id="racial-charisma-bonus" class="text-success">+0</span></td>
                             </tr>
+                            <!-- Bonus de niveau -->
+                            <tr>
+                                <td id="bonus-level-cell"><strong>Bonus de niveau (<?php echo $remainingPoints; ?> pts restants)</strong></td>
+                                <td>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" class="form-control stat-input" id="strength_bonus" name="strength_bonus" 
+                                               value="<?php echo isset($_POST['strength_bonus']) ? (int)$_POST['strength_bonus'] : $abilityImprovements['strength_bonus']; ?>" 
+                                               min="0" max="10">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="adjustLevelBonus('strength_bonus', -1)">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="adjustLevelBonus('strength_bonus', 1)">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" class="form-control stat-input" id="dexterity_bonus" name="dexterity_bonus" 
+                                               value="<?php echo isset($_POST['dexterity_bonus']) ? (int)$_POST['dexterity_bonus'] : $abilityImprovements['dexterity_bonus']; ?>" 
+                                               min="0" max="10">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="adjustLevelBonus('dexterity_bonus', -1)">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="adjustLevelBonus('dexterity_bonus', 1)">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" class="form-control stat-input" id="constitution_bonus" name="constitution_bonus" 
+                                               value="<?php echo isset($_POST['constitution_bonus']) ? (int)$_POST['constitution_bonus'] : $abilityImprovements['constitution_bonus']; ?>" 
+                                               min="0" max="10">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="adjustLevelBonus('constitution_bonus', -1)">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="adjustLevelBonus('constitution_bonus', 1)">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" class="form-control stat-input" id="intelligence_bonus" name="intelligence_bonus" 
+                                               value="<?php echo isset($_POST['intelligence_bonus']) ? (int)$_POST['intelligence_bonus'] : $abilityImprovements['intelligence_bonus']; ?>" 
+                                               min="0" max="10">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="adjustLevelBonus('intelligence_bonus', -1)">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="adjustLevelBonus('intelligence_bonus', 1)">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" class="form-control stat-input" id="wisdom_bonus" name="wisdom_bonus" 
+                                               value="<?php echo isset($_POST['wisdom_bonus']) ? (int)$_POST['wisdom_bonus'] : $abilityImprovements['wisdom_bonus']; ?>" 
+                                               min="0" max="10">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="adjustLevelBonus('wisdom_bonus', -1)">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="adjustLevelBonus('wisdom_bonus', 1)">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" class="form-control stat-input" id="charisma_bonus" name="charisma_bonus" 
+                                               value="<?php echo isset($_POST['charisma_bonus']) ? (int)$_POST['charisma_bonus'] : $abilityImprovements['charisma_bonus']; ?>" 
+                                               min="0" max="10">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="adjustLevelBonus('charisma_bonus', -1)">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="adjustLevelBonus('charisma_bonus', 1)">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
                             <!-- Bonus d'équipements -->
                             <tr>
                                 <td><strong>Bonus d'équipements</strong></td>
@@ -729,6 +912,91 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Capacités -->
+            <div class="form-section">
+                <h3><i class="fas fa-star me-2"></i>Capacités</h3>
+                <p class="text-muted">Les capacités de votre personnage selon sa classe et sa race.</p>
+                <div class="row">
+                    <!-- Capacités de classe -->
+                    <?php if (!empty($classCapabilities)): ?>
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-shield-alt me-2"></i>Capacités de classe</h5>
+                        <div class="capabilities-list">
+                            <?php foreach ($classCapabilities as $capability): ?>
+                                <div class="capability-item mb-3">
+                                    <div class="capability-header">
+                                        <h6 class="mb-1 text-primary">
+                                            <i class="fas fa-fire me-1"></i><?php echo htmlspecialchars($capability['name']); ?>
+                                        </h6>
+                                    </div>
+                                    <div class="capability-description">
+                                        <small class="text-muted"><?php echo nl2br(htmlspecialchars($capability['description'])); ?></small>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                    
+                    <!-- Capacités raciales -->
+                    <?php if (!empty($raceCapabilities)): ?>
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-dragon me-2"></i>Capacités raciales</h5>
+                        <div class="capabilities-list">
+                            <?php foreach ($raceCapabilities as $capability): ?>
+                                <div class="capability-item mb-3">
+                                    <div class="capability-header">
+                                        <h6 class="mb-1 text-success">
+                                            <i class="fas fa-magic me-1"></i><?php echo htmlspecialchars($capability['name']); ?>
+                                        </h6>
+                                    </div>
+                                    <div class="capability-description">
+                                        <small class="text-muted"><?php echo nl2br(htmlspecialchars($capability['description'])); ?></small>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                </div>
+                
+                <!-- Message si aucune capacité -->
+                <?php if (empty($classCapabilities) && empty($raceCapabilities)): ?>
+                    <div class="text-center text-muted">
+                        <i class="fas fa-info-circle me-2"></i>Aucune capacité spéciale
+                    </div>
+                <?php endif; ?>
+                
+                <!-- Choix de voie primitive pour les barbares de niveau 3+ -->
+                <?php if ($isBarbarian && $character['level'] >= 3): ?>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5><i class="fas fa-route me-2"></i>Voie primitive</h5>
+                            <p class="text-muted">Choisissez votre voie primitive (obligatoire au niveau 3).</p>
+                            <div class="row">
+                                <?php foreach ($barbarianPaths as $path): ?>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" 
+                                                   name="barbarian_path_id" 
+                                                   id="path_<?php echo $path['id']; ?>" 
+                                                   value="<?php echo $path['id']; ?>"
+                                                   <?php echo ($selectedPath && $selectedPath['path_id'] == $path['id']) ? 'checked' : ''; ?>>
+                                            <label class="form-check-label" for="path_<?php echo $path['id']; ?>">
+                                                <strong><?php echo htmlspecialchars($path['name']); ?></strong>
+                                            </label>
+                                        </div>
+                                        <div class="path-description mt-2">
+                                            <small class="text-muted"><?php echo nl2br(htmlspecialchars($path['description'])); ?></small>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <!-- Compétences -->
@@ -1093,14 +1361,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 // Bonus racial
                 const racialBonus = parseInt(document.getElementById(`racial-${stat}-bonus`).textContent.replace('+', '')) || 0;
                 
+                // Bonus de niveau
+                const levelBonus = parseInt(document.getElementById(`${stat}_bonus`).value) || 0;
+                
                 // Bonus d'équipement (pour l'instant toujours 0)
                 const equipmentBonus = 0;
                 
                 // Bonus temporaire (pour l'instant toujours 0)
                 const tempBonus = 0;
                 
-                // Total
-                const total = baseValue + racialBonus + equipmentBonus + tempBonus;
+                // Total (limité à 20)
+                const total = Math.min(20, baseValue + racialBonus + levelBonus + equipmentBonus + tempBonus);
                 
                 // Modificateur = (caractéristique - 10) / 2, arrondi vers le bas
                 const modifier = Math.floor((total - 10) / 2);
@@ -1165,6 +1436,78 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 input.value = newValue;
                 updatePointsRemaining();
                 calculateTotals();
+            }
+        }
+        
+        // Fonction pour calculer le total des points utilisés
+        function getTotalUsedPoints() {
+            const stats = ['strength_bonus', 'dexterity_bonus', 'constitution_bonus', 
+                          'intelligence_bonus', 'wisdom_bonus', 'charisma_bonus'];
+            let total = 0;
+            stats.forEach(stat => {
+                total += parseInt(document.getElementById(stat).value) || 0;
+            });
+            return total;
+        }
+        
+        // Fonction pour calculer le total des points disponibles
+        function getTotalAvailablePoints() {
+            // En D&D 5e, les améliorations sont aux niveaux 4, 8, 12, 16, 19
+            const calculatedLevelDiv = document.getElementById('calculated_level');
+            let level = 1;
+            
+            if (calculatedLevelDiv) {
+                // Extraire le niveau du texte "Niveau X"
+                const levelText = calculatedLevelDiv.textContent;
+                const levelMatch = levelText.match(/Niveau (\d+)/);
+                if (levelMatch) {
+                    level = parseInt(levelMatch[1]);
+                }
+            }
+            
+            const improvementLevels = [4, 8, 12, 16, 19];
+            let totalPoints = 0;
+            
+            improvementLevels.forEach(improvementLevel => {
+                if (level >= improvementLevel) {
+                    totalPoints += 2; // 2 points par amélioration
+                }
+            });
+            
+            return totalPoints;
+        }
+        
+        // Fonction pour mettre à jour l'affichage des points restants
+        function updateRemainingPoints() {
+            const used = getTotalUsedPoints();
+            const available = getTotalAvailablePoints();
+            const remaining = Math.max(0, available - used);
+            
+            // Mettre à jour le texte dans le tableau
+            const bonusCell = document.getElementById('bonus-level-cell');
+            if (bonusCell) {
+                bonusCell.innerHTML = `<strong>Bonus de niveau (${remaining} pts restants)</strong>`;
+            }
+        }
+        
+        // Fonction pour ajuster les bonus de niveau
+        function adjustLevelBonus(stat, change) {
+            const input = document.getElementById(stat);
+            const currentValue = parseInt(input.value) || 0;
+            const newValue = currentValue + change;
+            
+            // Vérifier les limites (0 à 10)
+            if (newValue >= 0 && newValue <= 10) {
+                const usedPoints = getTotalUsedPoints();
+                const availablePoints = getTotalAvailablePoints();
+                
+                // Permettre de réduire les bonus même si on n'a plus de points
+                // Mais empêcher d'augmenter si on n'a plus de points disponibles
+                if (change < 0 || usedPoints + change <= availablePoints) {
+                    input.value = newValue;
+                    calculateTotals();
+                    updateRemainingPoints();
+                }
             }
         }
         

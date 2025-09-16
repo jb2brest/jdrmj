@@ -68,6 +68,38 @@ if ($isBarbarian) {
     ];
 }
 
+// Récupérer les capacités de classe et de race
+$classCapabilities = [];
+$raceCapabilities = [];
+
+// Capacités de classe basées sur le niveau
+if ($isBarbarian) {
+    $classCapabilities = getBarbarianCapabilities($character['level']);
+}
+
+// Capacités raciales
+if ($character['traits']) {
+    $raceCapabilities[] = [
+        'name' => 'Traits raciaux',
+        'description' => $character['traits']
+    ];
+}
+
+// Récupérer la voie primitive du barbare
+$barbarianPath = null;
+if ($isBarbarian) {
+    $barbarianPath = getCharacterBarbarianPath($character_id);
+}
+
+// Récupérer les améliorations de caractéristiques
+$abilityImprovements = getCharacterAbilityImprovements($character_id);
+
+// Calculer les caractéristiques finales
+$finalAbilities = calculateFinalAbilities($character, $abilityImprovements);
+
+// Calculer les points d'amélioration restants
+$remainingPoints = getRemainingAbilityPoints($character['level'], $abilityImprovements);
+
 // Parser les langues raciales
 $raceLanguages = [];
 if ($character['race_languages']) {
@@ -634,6 +666,46 @@ $initiative = $dexterityMod;
         .rage-info {
             text-align: center;
         }
+        
+        /* Styles pour les capacités */
+        .capabilities-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .capability-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            border-left: 4px solid #007bff;
+            transition: all 0.3s ease;
+        }
+        
+        .capability-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+        
+        .capability-header h6 {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .capability-description {
+            line-height: 1.5;
+        }
+        
+        .capability-item .text-primary {
+            color: #007bff !important;
+        }
+        
+        .capability-item .text-success {
+            color: #28a745 !important;
+        }
+        
+        .capability-item .text-warning {
+            color: #ffc107 !important;
+        }
     </style>
 </head>
 <body>
@@ -804,6 +876,16 @@ $initiative = $dexterityMod;
                                 <td><span class="text-success"><?php echo ($character['wisdom_bonus'] > 0 ? '+' : '') . $character['wisdom_bonus']; ?></span></td>
                                 <td><span class="text-success"><?php echo ($character['charisma_bonus'] > 0 ? '+' : '') . $character['charisma_bonus']; ?></span></td>
                             </tr>
+                            <!-- Bonus de niveau -->
+                            <tr>
+                                <td><strong>Bonus de niveau (<?php echo $remainingPoints; ?> pts restants)</strong></td>
+                                <td><span class="text-warning"><?php echo ($abilityImprovements['strength_bonus'] > 0 ? '+' : '') . $abilityImprovements['strength_bonus']; ?></span></td>
+                                <td><span class="text-warning"><?php echo ($abilityImprovements['dexterity_bonus'] > 0 ? '+' : '') . $abilityImprovements['dexterity_bonus']; ?></span></td>
+                                <td><span class="text-warning"><?php echo ($abilityImprovements['constitution_bonus'] > 0 ? '+' : '') . $abilityImprovements['constitution_bonus']; ?></span></td>
+                                <td><span class="text-warning"><?php echo ($abilityImprovements['intelligence_bonus'] > 0 ? '+' : '') . $abilityImprovements['intelligence_bonus']; ?></span></td>
+                                <td><span class="text-warning"><?php echo ($abilityImprovements['wisdom_bonus'] > 0 ? '+' : '') . $abilityImprovements['wisdom_bonus']; ?></span></td>
+                                <td><span class="text-warning"><?php echo ($abilityImprovements['charisma_bonus'] > 0 ? '+' : '') . $abilityImprovements['charisma_bonus']; ?></span></td>
+                            </tr>
                             <!-- Bonus d'équipements -->
                             <tr>
                                 <td><strong>Bonus d'équipements</strong></td>
@@ -827,12 +909,12 @@ $initiative = $dexterityMod;
                             <!-- Total -->
                             <tr class="table-primary">
                                 <td><strong>Total</strong></td>
-                                <td><strong><?php echo $character['strength'] + $character['strength_bonus']; ?> (<?php echo ($strengthMod >= 0 ? '+' : '') . $strengthMod; ?>)</strong></td>
-                                <td><strong><?php echo $character['dexterity'] + $character['dexterity_bonus']; ?> (<?php echo ($dexterityMod >= 0 ? '+' : '') . $dexterityMod; ?>)</strong></td>
-                                <td><strong><?php echo $character['constitution'] + $character['constitution_bonus']; ?> (<?php echo ($constitutionMod >= 0 ? '+' : '') . $constitutionMod; ?>)</strong></td>
-                                <td><strong><?php echo $character['intelligence'] + $character['intelligence_bonus']; ?> (<?php echo ($intelligenceMod >= 0 ? '+' : '') . $intelligenceMod; ?>)</strong></td>
-                                <td><strong><?php echo $character['wisdom'] + $character['wisdom_bonus']; ?> (<?php echo ($wisdomMod >= 0 ? '+' : '') . $wisdomMod; ?>)</strong></td>
-                                <td><strong><?php echo $character['charisma'] + $character['charisma_bonus']; ?> (<?php echo ($charismaMod >= 0 ? '+' : '') . $charismaMod; ?>)</strong></td>
+                                <td><strong><?php echo $finalAbilities['strength']; ?> (<?php echo (getAbilityModifier($finalAbilities['strength']) >= 0 ? '+' : '') . getAbilityModifier($finalAbilities['strength']); ?>)</strong></td>
+                                <td><strong><?php echo $finalAbilities['dexterity']; ?> (<?php echo (getAbilityModifier($finalAbilities['dexterity']) >= 0 ? '+' : '') . getAbilityModifier($finalAbilities['dexterity']); ?>)</strong></td>
+                                <td><strong><?php echo $finalAbilities['constitution']; ?> (<?php echo (getAbilityModifier($finalAbilities['constitution']) >= 0 ? '+' : '') . getAbilityModifier($finalAbilities['constitution']); ?>)</strong></td>
+                                <td><strong><?php echo $finalAbilities['intelligence']; ?> (<?php echo (getAbilityModifier($finalAbilities['intelligence']) >= 0 ? '+' : '') . getAbilityModifier($finalAbilities['intelligence']); ?>)</strong></td>
+                                <td><strong><?php echo $finalAbilities['wisdom']; ?> (<?php echo (getAbilityModifier($finalAbilities['wisdom']) >= 0 ? '+' : '') . getAbilityModifier($finalAbilities['wisdom']); ?>)</strong></td>
+                                <td><strong><?php echo $finalAbilities['charisma']; ?> (<?php echo (getAbilityModifier($finalAbilities['charisma']) >= 0 ? '+' : '') . getAbilityModifier($finalAbilities['charisma']); ?>)</strong></td>
                             </tr>
                         </tbody>
                     </table>
@@ -1001,6 +1083,80 @@ $initiative = $dexterityMod;
                         <?php endif; ?>
                     </div>
                 </div>
+            </div>
+
+            <!-- Capacités -->
+            <div class="info-section">
+                <h3><i class="fas fa-star me-2"></i>Capacités</h3>
+                <div class="row">
+                    <!-- Capacités de classe -->
+                    <?php if (!empty($classCapabilities)): ?>
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-shield-alt me-2"></i>Capacités de classe</h5>
+                        <div class="capabilities-list">
+                            <?php foreach ($classCapabilities as $capability): ?>
+                                <div class="capability-item mb-3">
+                                    <div class="capability-header">
+                                        <h6 class="mb-1 text-primary">
+                                            <i class="fas fa-fire me-1"></i><?php echo htmlspecialchars($capability['name']); ?>
+                                        </h6>
+                                    </div>
+                                    <div class="capability-description">
+                                        <small class="text-muted"><?php echo nl2br(htmlspecialchars($capability['description'])); ?></small>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                    
+                    <!-- Capacités raciales -->
+                    <?php if (!empty($raceCapabilities)): ?>
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-dragon me-2"></i>Capacités raciales</h5>
+                        <div class="capabilities-list">
+                            <?php foreach ($raceCapabilities as $capability): ?>
+                                <div class="capability-item mb-3">
+                                    <div class="capability-header">
+                                        <h6 class="mb-1 text-success">
+                                            <i class="fas fa-magic me-1"></i><?php echo htmlspecialchars($capability['name']); ?>
+                                        </h6>
+                                    </div>
+                                    <div class="capability-description">
+                                        <small class="text-muted"><?php echo nl2br(htmlspecialchars($capability['description'])); ?></small>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                </div>
+                
+                <!-- Message si aucune capacité -->
+                <?php if (empty($classCapabilities) && empty($raceCapabilities) && !$barbarianPath): ?>
+                    <div class="text-center text-muted">
+                        <i class="fas fa-info-circle me-2"></i>Aucune capacité spéciale
+                    </div>
+                <?php endif; ?>
+                
+                <!-- Voie primitive du barbare -->
+                <?php if ($barbarianPath): ?>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5><i class="fas fa-route me-2"></i>Voie primitive</h5>
+                            <div class="capability-item">
+                                <div class="capability-header">
+                                    <h6 class="mb-1 text-warning">
+                                        <i class="fas fa-fire me-1"></i><?php echo htmlspecialchars($barbarianPath['path_name']); ?>
+                                    </h6>
+                                </div>
+                                <div class="capability-description">
+                                    <small class="text-muted"><?php echo nl2br(htmlspecialchars($barbarianPath['path_description'])); ?></small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <!-- Compétences -->
