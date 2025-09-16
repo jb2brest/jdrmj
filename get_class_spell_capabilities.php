@@ -30,3 +30,4 @@ try {
     error_log("Erreur get_class_spell_capabilities: " . $e->getMessage());
 }
 ?>
+

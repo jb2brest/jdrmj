@@ -890,7 +890,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                             <div class="col-md-6">
                                                 <h6>Capacités de sorts (niveau <?php echo $character['level']; ?>)</h6>
                                                 <ul class="list-unstyled">
-                                                    <li><strong>Cantrips connus:</strong> <?php echo $spell_capabilities['cantrips_known']; ?></li>
+                                                    <li><strong>Sorts mineurs connus:</strong> <?php echo $spell_capabilities['cantrips_known']; ?></li>
                                                     <li><strong>Sorts connus:</strong> <?php echo $spell_capabilities['spells_known']; ?></li>
                                                     <li><strong>Sorts actuellement connus:</strong> <?php echo count($character_spells); ?></li>
                                                 </ul>

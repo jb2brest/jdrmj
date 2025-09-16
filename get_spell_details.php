@@ -31,3 +31,4 @@ try {
     error_log("Erreur get_spell_details: " . $e->getMessage());
 }
 ?>
+

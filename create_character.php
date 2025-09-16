@@ -1541,7 +1541,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         
                         // Afficher les capacités
                         const capabilitiesHtml = `
-                            <li><strong>Cantrips connus:</strong> ${data.capabilities.cantrips_known}</li>
+                            <li><strong>Sorts mineurs connus:</strong> ${data.capabilities.cantrips_known}</li>
                             <li><strong>Sorts connus:</strong> ${data.capabilities.spells_known}</li>
                         `;
                         document.getElementById('spell-capabilities').innerHTML = capabilitiesHtml;

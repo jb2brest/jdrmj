@@ -388,3 +388,4 @@ Le MJ peut maintenant gérer les points de vie de tous les personnages (joueurs 
 
 
 
+

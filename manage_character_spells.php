@@ -78,3 +78,4 @@ try {
     error_log("Erreur manage_character_spells: " . $e->getMessage());
 }
 ?>
+
