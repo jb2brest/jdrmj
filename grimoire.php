@@ -1323,14 +1323,25 @@ function loadSpellDetails(spellId) {
                         <div class="d-flex gap-2 flex-wrap">
                             ${!isKnown ? `
                                 ${spell.level > 0 && <?php echo $canLearnSpells ? 'true' : 'false'; ?> ? `
-                                    <button class="btn btn-info" onclick="learnSpell(${spellId}, '${spell.name}')">
+                                    <button class="btn btn-info" onclick="learnSpell(${spellId}, \`${spell.name}\`)">
                                         <i class="fas fa-graduation-cap me-1"></i>Apprendre le sort
                                     </button>
                                 ` : ''}
                                 ${spell.level == 0 ? `
-                                    <button class="btn btn-success" onclick="addSpell(${<?php echo $character_id; ?>}, ${spellId}, '${spell.name}')">
+                                    <button class="btn btn-success" onclick="addSpell(${<?php echo $character_id; ?>}, ${spellId}, \`${spell.name}\`)">
                                         <i class="fas fa-star me-1"></i>Préparer le sort
                                     </button>
+                                ` : ''}
+                                ${spell.level > 0 && !<?php echo $canLearnSpells ? 'true' : 'false'; ?> ? `
+                                    ${!checkSpellSlotsAvailable(spell.level) ? `
+                                        <button class="btn btn-secondary" disabled title="Aucun emplacement de sort de niveau ${spell.level} disponible">
+                                            <i class="fas fa-ban me-1"></i>Emplacements insuffisants
+                                        </button>
+                                    ` : `
+                                        <button class="btn btn-success" onclick="addSpell(${<?php echo $character_id; ?>}, ${spellId}, \`${spell.name}\`)">
+                                            <i class="fas fa-star me-1"></i>Préparer le sort
+                                        </button>
+                                    `}
                                 ` : ''}
                             ` : `
                                 ${!isPrepared ? `
@@ -1339,13 +1350,13 @@ function loadSpellDetails(spellId) {
                                             <i class="fas fa-ban me-1"></i>Emplacements insuffisants
                                         </button>
                                     ` : `
-                                        <button class="btn btn-success" onclick="addSpell(${<?php echo $character_id; ?>}, ${spellId}, '${spell.name}')">
+                                        <button class="btn btn-success" onclick="addSpell(${<?php echo $character_id; ?>}, ${spellId}, \`${spell.name}\`)">
                                             <i class="fas fa-star me-1"></i>Préparer le sort
                                         </button>
                                     `}
                                 ` : `
                                     ${<?php echo strpos(strtolower($class['name']), 'ensorceleur') !== false ? 'false' : 'true'; ?> ? `
-                                        <button class="btn btn-warning" onclick="unprepareSpell(${<?php echo $character_id; ?>}, ${spellId}, '${spell.name}')">
+                                        <button class="btn btn-warning" onclick="unprepareSpell(${<?php echo $character_id; ?>}, ${spellId}, \`${spell.name}\`)">
                                             <i class="fas fa-star me-1"></i>Dépréparer le sort
                                         </button>
                                     ` : `
@@ -1354,7 +1365,7 @@ function loadSpellDetails(spellId) {
                                         </span>
                                     `}
                                 `}
-                                <button class="btn btn-danger" onclick="removeSpell(${<?php echo $character_id; ?>}, ${spellId}, '${spell.name}')">
+                                <button class="btn btn-danger" onclick="removeSpell(${<?php echo $character_id; ?>}, ${spellId}, \`${spell.name}\`)">
                                     <i class="fas fa-trash me-1"></i>Retirer du grimoire
                                 </button>
                             `}
@@ -1393,7 +1404,10 @@ function addSpell(characterId, spellId, spellName) {
     const spellLevel = getSpellLevel(spellId);
     if (spellLevel > 0) {
         const isKnown = characterSpells.some(cs => cs.id == spellId);
-        if (!isKnown) {
+        const canLearnSpells = <?php echo $canLearnSpells ? 'true' : 'false'; ?>;
+        
+        // Seuls les Magiciens et Ensorceleurs doivent apprendre les sorts avant de les préparer
+        if (!isKnown && canLearnSpells) {
             alert(`Vous devez d'abord apprendre ce sort avant de pouvoir le préparer.`);
             return;
         }
