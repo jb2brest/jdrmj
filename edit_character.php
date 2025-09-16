@@ -110,6 +110,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $bonds = sanitizeInput($_POST['bonds'] ?? $character['bonds']);
     $flaws = sanitizeInput($_POST['flaws'] ?? $character['flaws']);
     
+    // Nombre maximum de sorts appris (MJ uniquement)
+    $max_spells_learned = (int)($_POST['max_spells_learned'] ?? $character['max_spells_learned'] ?? 6);
+    
     // Ajouter automatiquement les compétences de classe
     $classProficiencies = getClassProficiencies($class_id);
     $classSkills = array_merge(
@@ -197,7 +200,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     strength = ?, dexterity = ?, constitution = ?, intelligence = ?, wisdom = ?, charisma = ?,
                     armor_class = ?, speed = ?, hit_points_max = ?, hit_points_current = ?, proficiency_bonus = ?,
                     alignment = ?, personality_traits = ?, ideals = ?, bonds = ?, flaws = ?,
-                    skills = ?, languages = ?, equipment = ?, money_gold = ?
+                    skills = ?, languages = ?, equipment = ?, money_gold = ?, max_spells_learned = ?
                 WHERE id = ? AND user_id = ?
             ");
             
@@ -206,7 +209,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $strength, $dexterity, $constitution, $intelligence, $wisdom, $charisma,
                 $armor_class, $speed, $maxHP, $character['hit_points_current'], $proficiencyBonus,
                 $alignment, $personality_traits, $ideals, $bonds, $flaws,
-                $skills_json, $languages_json, $finalEquipment, $backgroundGold,
+                $skills_json, $languages_json, $finalEquipment, $backgroundGold, $max_spells_learned,
                     $character_id, $user_id
                 ]);
             $message = displayMessage("Personnage mis à jour avec succès !", "success");
@@ -885,7 +888,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         </div>
                                         
                                         <?php
-                                        $spell_capabilities = getClassSpellCapabilities($character['class_id'], $character['level']);
+                                        // Calculer les modificateurs pour l'affichage
+                                        $wisdomModifier = floor(($character['wisdom'] + $character['wisdom_bonus'] - 10) / 2);
+                                        $intelligenceModifier = floor(($character['intelligence'] + $character['intelligence_bonus'] - 10) / 2);
+                                        $spell_capabilities = getClassSpellCapabilities($character['class_id'], $character['level'], $wisdomModifier, $character['max_spells_learned'], $intelligenceModifier);
                                         $character_spells = getCharacterSpells($character_id);
                                         ?>
                                         
@@ -894,9 +900,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                                 <h6>Capacités de sorts (niveau <?php echo $character['level']; ?>)</h6>
                                                 <ul class="list-unstyled">
                                                     <li><strong>Sorts mineurs connus:</strong> <?php echo $spell_capabilities['cantrips_known']; ?></li>
-                                                    <li><strong>Sorts connus:</strong> <?php echo $spell_capabilities['spells_known']; ?></li>
+                                                    <?php if (strpos(strtolower($class['name']), 'magicien') !== false || strpos(strtolower($class['name']), 'ensorceleur') !== false): ?>
+                                                    <li><strong>Sorts appris maximum:</strong> <?php echo $spell_capabilities['spells_learned']; ?></li>
+                                                    <?php endif; ?>
+                                                    <li><strong>Sorts préparés maximum:</strong> <?php echo $spell_capabilities['spells_prepared']; ?></li>
                                                     <li><strong>Sorts actuellement connus:</strong> <?php echo count($character_spells); ?></li>
                                                 </ul>
+                                                
+                                                <?php if (isDM() && (strpos(strtolower($class['name']), 'magicien') !== false || strpos(strtolower($class['name']), 'ensorceleur') !== false)): ?>
+                                                <div class="mt-3">
+                                                    <label for="max_spells_learned" class="form-label">
+                                                        <strong>Nombre maximum de sorts appris (MJ uniquement):</strong>
+                                                    </label>
+                                                    <input type="number" class="form-control form-control-sm" 
+                                                           id="max_spells_learned" name="max_spells_learned" 
+                                                           value="<?php echo htmlspecialchars($character['max_spells_learned'] ?? 6); ?>" 
+                                                           min="1" max="20">
+                                                    <div class="form-text">Permet au MJ de modifier le nombre maximum de sorts que ce personnage peut apprendre.</div>
+                                                </div>
+                                                <?php endif; ?>
                                             </div>
                                             <div class="col-md-6">
                                                 <h6>Emplacements de sorts</h6>

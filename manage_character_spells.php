@@ -68,6 +68,14 @@ try {
             }
             break;
             
+        case 'unprepare':
+            if (updateSpellPrepared($character_id, $spell_id, false)) {
+                echo json_encode(['success' => true, 'message' => 'Sort dépréparé avec succès']);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Erreur lors de la dépréparation']);
+            }
+            break;
+            
         default:
             echo json_encode(['success' => false, 'message' => 'Action non reconnue']);
             break;

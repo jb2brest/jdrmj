@@ -14,7 +14,7 @@ if ($character_id === 0) {
 
 // Vérifier que le personnage appartient à l'utilisateur et récupérer les bonus raciaux
 $stmt = $pdo->prepare("
-    SELECT c.*, r.wisdom_bonus 
+    SELECT c.*, r.wisdom_bonus, r.intelligence_bonus 
     FROM characters c 
     JOIN races r ON c.race_id = r.id 
     WHERE c.id = ? AND c.user_id = ?
@@ -37,9 +37,10 @@ if (!canCastSpells($character['class_id'])) {
 $stmt = $pdo->prepare("SELECT * FROM classes WHERE id = ?");
 $stmt->execute([$character['class_id']]);
 $class = $stmt->fetch();
-// Calculer le modificateur de Sagesse (sagesse totale incluant les bonus raciaux)
+// Calculer les modificateurs (caractéristiques totales incluant les bonus raciaux)
 $wisdomModifier = floor(($character['wisdom'] + $character['wisdom_bonus'] - 10) / 2);
-$spell_capabilities = getClassSpellCapabilities($character['class_id'], $character['level'], $wisdomModifier);
+$intelligenceModifier = floor(($character['intelligence'] + $character['intelligence_bonus'] - 10) / 2);
+$spell_capabilities = getClassSpellCapabilities($character['class_id'], $character['level'], $wisdomModifier, $character['max_spells_learned'], $intelligenceModifier);
 
 // Récupérer les sorts du personnage
 $character_spells = getCharacterSpells($character_id);
@@ -49,6 +50,9 @@ $spell_slots_usage = getSpellSlotsUsage($character_id);
 
 // Récupérer les sorts disponibles pour la classe
 $available_spells = getSpellsForClass($character['class_id']);
+
+// Vérifier si la classe peut apprendre de nouveaux sorts (Magicien, Ensorceleur, etc.)
+$canLearnSpells = in_array($character['class_id'], [7, 5]); // 7 = Magicien, 5 = Ensorceleur
 
 // Grouper les sorts par niveau
 $spells_by_level = [];
@@ -65,11 +69,15 @@ foreach ($available_spells as $spell) {
 // Compter les sorts préparés (niveau 1 et plus, pas les sorts mineurs)
 $prepared_spells_count = 0;
 $cantrips_count = 0;
+$learned_spells_count = 0;
 foreach ($character_spells as $spell) {
     if ($spell['level'] == 0) {
         $cantrips_count++;
-    } elseif ($spell['prepared']) {
-        $prepared_spells_count++;
+    } else {
+        $learned_spells_count++; // Tous les sorts de niveau 1+ sont appris
+        if ($spell['prepared']) {
+            $prepared_spells_count++;
+        }
     }
 }
 
@@ -773,24 +781,13 @@ if (isset($_GET['debug'])) {
                             <div class="capability-item">
                                 <i class="fas fa-magic me-1"></i>Sorts mineurs: <?php echo $cantrips_count; ?>/<?php echo $spell_capabilities['cantrips_known']; ?>
                             </div>
+                            <?php if (strpos(strtolower($class['name']), 'magicien') !== false || strpos(strtolower($class['name']), 'ensorceleur') !== false): ?>
                             <div class="capability-item">
-                                <i class="fas fa-scroll me-1"></i>Sorts préparés: <?php echo $prepared_spells_count; ?>/<?php echo $spell_capabilities['spells_known']; ?>
+                                <i class="fas fa-book me-1"></i>Sorts appris: <?php echo $learned_spells_count; ?>/<?php echo $spell_capabilities['spells_learned']; ?>
                             </div>
+                            <?php endif; ?>
                             <div class="capability-item">
-                                <i class="fas fa-gem me-1"></i>Emplacements:
-                                <?php
-                                for ($i = 1; $i <= 9; $i++) {
-                                    $key = "spell_slots_{$i}st";
-                                    $slots = isset($spell_capabilities[$key]) ? $spell_capabilities[$key] : 0;
-                                    if ($slots > 0) {
-                                        $used_key = "level_{$i}_used";
-                                        $used = isset($spell_slots_usage[$used_key]) ? $spell_slots_usage[$used_key] : 0;
-                                        $remaining = $slots - $used;
-                                        $color = $remaining > 0 ? 'text-success' : 'text-danger';
-                                        echo "<span class='$color'>Niv.$i: $remaining/$slots </span>";
-                                    }
-                                }
-                                ?>
+                                <i class="fas fa-scroll me-1"></i>Sorts préparés: <?php echo $prepared_spells_count; ?>/<?php echo $spell_capabilities['spells_prepared']; ?>
                             </div>
                             <div class="capability-item">
                                 <button class="btn btn-sm btn-outline-light" id="mode-toggle-btn" onclick="toggleGrimoireMode()">
@@ -1325,18 +1322,39 @@ function loadSpellDetails(spellId) {
                     <div class="mt-4">
                         <div class="d-flex gap-2 flex-wrap">
                             ${!isKnown ? `
-                                ${spell.level > 0 && !checkSpellSlotsAvailable(spell.level) ? `
-                                    <button class="btn btn-secondary" disabled title="Aucun emplacement de sort de niveau ${spell.level} disponible">
-                                        <i class="fas fa-ban me-1"></i>Sort non disponible
+                                ${spell.level > 0 && <?php echo $canLearnSpells ? 'true' : 'false'; ?> ? `
+                                    <button class="btn btn-info" onclick="learnSpell(${spellId}, '${spell.name}')">
+                                        <i class="fas fa-graduation-cap me-1"></i>Apprendre le sort
                                     </button>
-                                ` : `
+                                ` : ''}
+                                ${spell.level == 0 ? `
                                     <button class="btn btn-success" onclick="addSpell(${<?php echo $character_id; ?>}, ${spellId}, '${spell.name}')">
                                         <i class="fas fa-star me-1"></i>Préparer le sort
                                     </button>
-                                `}
+                                ` : ''}
                             ` : `
-                                <button class="btn btn-danger" 
-                                        onclick="removeSpell(${<?php echo $character_id; ?>}, ${spellId}, '${spell.name}')">
+                                ${!isPrepared ? `
+                                    ${spell.level > 0 && !checkSpellSlotsAvailable(spell.level) ? `
+                                        <button class="btn btn-secondary" disabled title="Aucun emplacement de sort de niveau ${spell.level} disponible">
+                                            <i class="fas fa-ban me-1"></i>Emplacements insuffisants
+                                        </button>
+                                    ` : `
+                                        <button class="btn btn-success" onclick="addSpell(${<?php echo $character_id; ?>}, ${spellId}, '${spell.name}')">
+                                            <i class="fas fa-star me-1"></i>Préparer le sort
+                                        </button>
+                                    `}
+                                ` : `
+                                    ${<?php echo strpos(strtolower($class['name']), 'ensorceleur') !== false ? 'false' : 'true'; ?> ? `
+                                        <button class="btn btn-warning" onclick="unprepareSpell(${<?php echo $character_id; ?>}, ${spellId}, '${spell.name}')">
+                                            <i class="fas fa-star me-1"></i>Dépréparer le sort
+                                        </button>
+                                    ` : `
+                                        <span class="text-muted">
+                                            <i class="fas fa-star me-1"></i>Automatiquement préparé
+                                        </span>
+                                    `}
+                                `}
+                                <button class="btn btn-danger" onclick="removeSpell(${<?php echo $character_id; ?>}, ${spellId}, '${spell.name}')">
                                     <i class="fas fa-trash me-1"></i>Retirer du grimoire
                                 </button>
                             `}
@@ -1371,9 +1389,15 @@ function addSpell(characterId, spellId, spellName) {
         return;
     }
     
-    // Vérifier si le personnage a des emplacements pour ce niveau de sort
+    // Vérifier si le sort est déjà appris (pour les sorts de niveau 1+)
     const spellLevel = getSpellLevel(spellId);
     if (spellLevel > 0) {
+        const isKnown = characterSpells.some(cs => cs.id == spellId);
+        if (!isKnown) {
+            alert(`Vous devez d'abord apprendre ce sort avant de pouvoir le préparer.`);
+            return;
+        }
+        
         const hasSpellSlots = checkSpellSlotsAvailable(spellLevel);
         if (!hasSpellSlots) {
             alert(`Impossible de préparer ce sort : vous n'avez pas d'emplacements de sorts de niveau ${spellLevel}.`);
@@ -1400,7 +1424,14 @@ function addSpell(characterId, spellId, spellName) {
             const spellLevel = getSpellLevel(spellId);
             
             // Mettre à jour la liste des sorts du personnage
-            characterSpells.push({id: spellId, level: spellLevel, prepared: true});
+            const existingSpellIndex = characterSpells.findIndex(cs => cs.id == spellId);
+            if (existingSpellIndex !== -1) {
+                // Le sort existe déjà, mettre à jour son statut
+                characterSpells[existingSpellIndex].prepared = true;
+            } else {
+                // Le sort n'existe pas, l'ajouter
+                characterSpells.push({id: spellId, level: spellLevel, prepared: true});
+            }
             
             // Mettre à jour l'interface
             updateSpellButton(spellId, true, true);
@@ -1424,6 +1455,67 @@ function addSpell(characterId, spellId, spellName) {
     .catch(error => {
         console.error('Erreur:', error);
         alert('Erreur lors de l\'ajout du sort');
+    });
+}
+
+function unprepareSpell(characterId, spellId, spellName) {
+    console.log('unprepareSpell appelée avec:', {characterId, spellId, spellName});
+    
+    if (!confirm(`Dépréparer le sort "${spellName}" ?`)) {
+        return;
+    }
+    
+    console.log('Envoi de la requête unprepare...');
+    
+    fetch('manage_character_spells.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            action: 'unprepare',
+            character_id: characterId,
+            spell_id: spellId
+        })
+    })
+    .then(response => {
+        console.log('Réponse reçue:', response.status, response.statusText);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Données reçues:', data);
+        if (data.success) {
+            console.log('Succès de la dépréparation');
+            // Mettre à jour le statut du sort dans la liste
+            const existingSpellIndex = characterSpells.findIndex(cs => cs.id == spellId);
+            if (existingSpellIndex !== -1) {
+                characterSpells[existingSpellIndex].prepared = false;
+                console.log('Statut du sort mis à jour dans characterSpells');
+            }
+            
+            // Mettre à jour l'interface
+            updateSpellButton(spellId, true, false);
+            
+            // Mettre à jour les compteurs
+            updatePreparedSpellsCount();
+            
+            // Si on est en mode lecture, mettre à jour la liste des sorts
+            if (!isEditMode) {
+                updateReadModeTabs();
+            }
+            
+            // Recharger les détails du sort
+            if (currentSpellId == spellId) {
+                loadSpellDetails(spellId);
+            }
+        } else {
+            console.error('Erreur de l\'API:', data.message);
+            alert('Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Erreur lors de la requête:', error);
+        alert('Erreur lors de la dépréparation du sort');
     });
 }
 
@@ -1546,15 +1638,19 @@ function updateSpellButton(spellId, isKnown, isPrepared) {
 }
 
 function updatePreparedSpellsCount() {
-    // Compter les sorts mineurs et préparés
+    // Compter les sorts mineurs, appris et préparés
     let cantripsCount = 0;
+    let learnedCount = 0;
     let preparedCount = 0;
     
     characterSpells.forEach(spell => {
         if (spell.level == 0) {
             cantripsCount++;
-        } else if (spell.prepared) {
-            preparedCount++;
+        } else {
+            learnedCount++; // Tous les sorts de niveau 1+ sont appris
+            if (spell.prepared) {
+                preparedCount++;
+            }
         }
     });
     
@@ -1563,9 +1659,16 @@ function updatePreparedSpellsCount() {
     const maxCantrips = <?php echo $spell_capabilities['cantrips_known']; ?>;
     cantripsElement.innerHTML = `<i class="fas fa-magic me-1"></i>Sorts mineurs: ${cantripsCount}/${maxCantrips}`;
     
+    // Mettre à jour l'affichage des sorts appris (seulement pour les Magiciens)
+    const learnedSpellsElement = document.querySelector('.capability-item i.fa-book');
+    if (learnedSpellsElement) {
+        const maxLearned = <?php echo $spell_capabilities['spells_learned']; ?>;
+        learnedSpellsElement.parentElement.innerHTML = `<i class="fas fa-book me-1"></i>Sorts appris: ${learnedCount}/${maxLearned}`;
+    }
+    
     // Mettre à jour l'affichage des sorts préparés
     const preparedSpellsElement = document.querySelector('.capability-item i.fa-scroll').parentElement;
-    const maxPrepared = <?php echo $spell_capabilities['spells_known']; ?>;
+    const maxPrepared = <?php echo $spell_capabilities['spells_prepared']; ?>;
     preparedSpellsElement.innerHTML = `<i class="fas fa-scroll me-1"></i>Sorts préparés: ${preparedCount}/${maxPrepared}`;
 }
 
@@ -1680,6 +1783,48 @@ function performLongRest() {
             alert('Erreur lors du long repos');
         });
     }
+}
+
+// Fonction pour apprendre un sort
+function learnSpell(spellId, spellName) {
+    if (!confirm(`Apprendre le sort "${spellName}" ?`)) {
+        return;
+    }
+    
+    fetch('learn_spell.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            character_id: <?php echo $character_id; ?>,
+            spell_id: spellId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Ajouter le sort à la liste des sorts connus (appris mais non préparé)
+            const spellLevel = getSpellLevel(spellId);
+            characterSpells.push({id: spellId, level: spellLevel, prepared: false});
+            
+            // Mettre à jour l'interface
+            updatePreparedSpellsCount();
+            
+            // Recharger les détails du sort pour mettre à jour les boutons
+            if (currentSpellId == spellId) {
+                loadSpellDetails(spellId);
+            }
+            
+            alert('Sort appris avec succès ! Vous pouvez maintenant le préparer.');
+        } else {
+            alert('Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Erreur lors de l\'apprentissage du sort');
+    });
 }
 </script>
 
