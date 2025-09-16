@@ -96,7 +96,7 @@ if (isset($_GET['debug'])) {
     content: '';
     position: absolute;
     left: 50%;
-    top: 0;
+    top: 200px;
     bottom: 0;
     width: 2px;
     background: linear-gradient(to bottom, #8B4513, #A0522D, #8B4513);
