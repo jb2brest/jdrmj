@@ -8,6 +8,7 @@ require_once 'includes/functions.php';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JDR 4 MJ - Gestionnaire de Personnages D&D</title>
+    <link rel="icon" type="image/png" href="images/logo.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -44,7 +45,8 @@ require_once 'includes/functions.php';
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand" href="index.php">
-                <i class="fas fa-dice-d20 me-2"></i>JDR 4 MJ
+                <img src="images/logo.png" alt="JDR 4 MJ" height="30" class="me-2">
+                JDR 4 MJ
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -100,7 +102,7 @@ require_once 'includes/functions.php';
     <section class="hero-section">
         <div class="container text-center">
             <h1 class="display-4 mb-4">
-                <i class="fas fa-dice-d20 me-3"></i>
+                <img src="images/logo.png" alt="JDR 4 MJ" height="60" class="me-3">
                 Gestionnaire de Personnages D&D
             </h1>
             <p class="lead mb-4">Créez, gérez et développez vos personnages de Donjons & Dragons en toute simplicité</p>

@@ -114,6 +114,7 @@ Ce projet est sous licence MIT. Libre d'utilisation, modification et distributio
 
 ## Changelog
 <version_tag>
+- 0.0.76 : MAJ logo
 - 0.0.75 : images monstres
 - 0.0.74 : Grimoire : liste des emplacements
 - 0.0.74 : Grimoire : liste des emplacements

@@ -211,7 +211,8 @@ if ($playerPlaceId) {
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand" href="characters.php">
-                <i class="fas fa-dice-d20 me-2"></i>JDR 4 MJ
+                <img src="images/logo.png" alt="JDR 4 MJ" height="30" class="me-2">
+                JDR 4 MJ
             </a>
             <div class="navbar-nav ms-auto">
                 <a class="nav-link" href="characters.php">

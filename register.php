@@ -92,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="col-md-6 col-lg-4">
                 <div class="register-card p-4">
                     <div class="text-center mb-4">
-                        <i class="fas fa-dice-d20 fa-3x text-primary mb-3"></i>
+                        <img src="images/logo.png" alt="JDR 4 MJ" height="60" class="mb-3">
                         <h2>Inscription</h2>
                         <p class="text-muted">Rejoignez l'aventure D&D</p>
                     </div>
