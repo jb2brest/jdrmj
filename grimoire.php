@@ -53,7 +53,16 @@ foreach ($available_spells as $spell) {
 }
 
 $page_title = "Grimoire - " . $character['name'];
-include 'includes/header.php';
+?>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo htmlspecialchars($page_title); ?> - JDR 4 MJ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
 
 // Debug: Afficher des informations de débogage
 if (isset($_GET['debug'])) {
@@ -92,16 +101,6 @@ if (isset($_GET['debug'])) {
     flex-direction: column;
 }
 
-.grimoire-book::before {
-    content: '';
-    position: absolute;
-    left: 50%;
-    top: 200px;
-    bottom: 0;
-    width: 2px;
-    background: linear-gradient(to bottom, #8B4513, #A0522D, #8B4513);
-    z-index: 10;
-}
 
 .grimoire-pages-container {
     display: flex;
@@ -121,12 +120,21 @@ if (isset($_GET['debug'])) {
 }
 
 .grimoire-page-left {
-    border-right: 1px solid #D2B48C;
+    border-right: 3px solid #8B4513;
+    border-top: 2px solid #8B4513;
+    border-bottom: 2px solid #8B4513;
+    border-left: 2px solid #8B4513;
     background: linear-gradient(90deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+    border-radius: 0 8px 8px 0;
 }
 
 .grimoire-page-right {
+    border-left: 3px solid #8B4513;
+    border-top: 2px solid #8B4513;
+    border-bottom: 2px solid #8B4513;
+    border-right: 2px solid #8B4513;
     background: linear-gradient(270deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+    border-radius: 8px 0 0 8px;
 }
 
 .spell-level-section {
@@ -144,6 +152,85 @@ if (isset($_GET['debug'])) {
     margin-bottom: 10px;
     text-align: center;
     text-shadow: 1px 1px 2px rgba(255,255,255,0.5);
+}
+
+.spell-tabs-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.spell-tabs-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 15px;
+    padding: 0;
+    list-style: none;
+    border-bottom: 2px solid #8B4513;
+    padding-bottom: 10px;
+}
+
+.spell-tab-item {
+    flex: 1;
+    min-width: 0;
+}
+
+.spell-tab-button {
+    width: 100%;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #F5F5DC 0%, #E6E6FA 100%);
+    border: 2px solid #D2B48C;
+    border-radius: 6px 6px 0 0;
+    color: #8B4513;
+    font-weight: 500;
+    font-size: 0.8em;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.spell-tab-button:hover {
+    background: linear-gradient(135deg, #E6E6FA 0%, #DDA0DD 100%);
+    border-color: #8B4513;
+    transform: translateY(-2px);
+}
+
+.spell-tab-button.active {
+    background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+    color: white;
+    border-color: #654321;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.spell-count {
+    font-size: 0.7em;
+    opacity: 0.8;
+    font-weight: normal;
+}
+
+.spell-tab-content {
+    display: none;
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 0;
+}
+
+.spell-tab-content.active {
+    display: block;
+}
+
+.spell-mode {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
 .spell-buttons-container {
@@ -539,6 +626,8 @@ if (isset($_GET['debug'])) {
     }
 }
 </style>
+</head>
+<body>
 
 <div class="grimoire-container">
     <div class="container">
@@ -552,88 +641,183 @@ if (isset($_GET['debug'])) {
                     </a>
                 </div>
                 
-                <!-- Barre des capacités -->
-                <div class="capabilities-bar">
-                    <div class="capability-item">
-                        <i class="fas fa-magic me-1"></i>Sorts mineurs: <?php echo $spell_capabilities['cantrips_known']; ?>
-                    </div>
-                    <div class="capability-item">
-                        <i class="fas fa-scroll me-1"></i>Sorts connus: <?php echo $spell_capabilities['spells_known']; ?>
-                    </div>
-                    <div class="capability-item">
-                        <i class="fas fa-gem me-1"></i>Emplacements:
-                        <?php
-                        for ($i = 1; $i <= 9; $i++) {
-                            $slots = $spell_capabilities["spell_slots_{$i}st"];
-                            if ($slots > 0) {
-                                echo "Niv.$i: $slots ";
-                            }
-                        }
-                        ?>
-                    </div>
-                </div>
+                        <!-- Barre des capacités -->
+                        <div class="capabilities-bar">
+                            <div class="capability-item">
+                                <i class="fas fa-magic me-1"></i>Sorts mineurs: <?php echo $spell_capabilities['cantrips_known']; ?>
+                            </div>
+                            <div class="capability-item">
+                                <i class="fas fa-scroll me-1"></i>Sorts connus: <?php echo $spell_capabilities['spells_known']; ?>
+                            </div>
+                            <div class="capability-item">
+                                <i class="fas fa-gem me-1"></i>Emplacements:
+                                <?php
+                                for ($i = 1; $i <= 9; $i++) {
+                                    $key = "spell_slots_{$i}st";
+                                    $slots = isset($spell_capabilities[$key]) ? $spell_capabilities[$key] : 0;
+                                    if ($slots > 0) {
+                                        echo "Niv.$i: $slots ";
+                                    }
+                                }
+                                ?>
+                            </div>
+                            <div class="capability-item">
+                                <button class="btn btn-sm btn-outline-light" id="mode-toggle-btn" onclick="toggleGrimoireMode()">
+                                    <i class="fas fa-edit me-1"></i>Préparer mes sorts
+                                </button>
+                            </div>
+                        </div>
             </div>
             
             <div class="grimoire-pages-container">
                 <!-- Page de gauche - Liste des sorts -->
                 <div class="grimoire-page grimoire-page-left">
                     <h4 class="text-center mb-3" style="color: #8B4513; font-size: 1.1em;">
-                        <i class="fas fa-list me-2"></i>Table des sorts
+                        <i class="fas fa-list me-2"></i><span id="page-title">Table des sorts</span>
                     </h4>
 
-                    <!-- Liste des sorts par niveau -->
-                    <?php for ($level = 0; $level <= 9; $level++): ?>
-                        <?php if (isset($available_by_level[$level])): ?>
-                            <div class="spell-level-section">
-                                <div class="spell-level-title">
-                                    <?php if ($level == 0): ?>
-                                        <i class="fas fa-sparkles me-2"></i>Sorts mineurs
-                                    <?php else: ?>
-                                        <i class="fas fa-gem me-2"></i>Sorts de niveau <?php echo $level; ?>
+                    <!-- Mode édition - Tous les sorts -->
+                    <div id="edit-mode" class="spell-mode">
+                        <!-- Onglets des niveaux de sorts -->
+                        <div class="spell-tabs-container">
+                            <ul class="spell-tabs-nav" id="spell-tabs-nav">
+                                <?php for ($level = 0; $level <= 9; $level++): ?>
+                                    <?php if (isset($available_by_level[$level])): ?>
+                                        <li class="spell-tab-item">
+                                            <button class="spell-tab-button <?php echo $level == 0 ? 'active' : ''; ?>" 
+                                                    onclick="switchSpellTab(<?php echo $level; ?>)"
+                                                    data-level="<?php echo $level; ?>">
+                                                <?php if ($level == 0): ?>
+                                                    <i class="fas fa-sparkles me-1"></i>Min.
+                                                <?php else: ?>
+                                                    <i class="fas fa-gem me-1"></i>Niv.<?php echo $level; ?>
+                                                <?php endif; ?>
+                                                <span class="spell-count">(<?php echo count($available_by_level[$level]); ?>)</span>
+                                            </button>
+                                        </li>
                                     <?php endif; ?>
-                                </div>
-                                
-                                <div class="spell-buttons-container">
-                                    <?php foreach ($available_by_level[$level] as $spell): ?>
-                                        <?php
-                                        $is_known = false;
-                                        $is_prepared = false;
-                                        foreach ($character_spells as $known_spell) {
-                                            if ($known_spell['id'] == $spell['id']) {
-                                                $is_known = true;
-                                                $is_prepared = $known_spell['prepared'];
-                                                break;
-                                            }
-                                        }
-                                        
-                                        $button_class = 'spell-button';
-                                        if ($is_known) $button_class .= ' known';
-                                        if ($is_prepared) $button_class .= ' prepared';
-                                        ?>
-                                        
-                                        <button class="<?php echo $button_class; ?>" 
-                                                onclick="selectSpell(<?php echo $spell['id']; ?>, this)"
-                                                data-spell-id="<?php echo $spell['id']; ?>">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <span>
-                                                    <?php echo htmlspecialchars($spell['name']); ?>
-                                                    <?php if ($is_known): ?>
-                                                        <i class="fas fa-check-circle text-success ms-1"></i>
-                                                    <?php endif; ?>
-                                                    <?php if ($is_prepared): ?>
-                                                        <i class="fas fa-star text-warning ms-1"></i>
-                                                    <?php endif; ?>
-                                                </span>
-                                                <small class="text-muted">
-                                                    <?php echo htmlspecialchars($spell['school']); ?>
-                                                </small>
-                                            </div>
-                                        </button>
-                                    <?php endforeach; ?>
-                                </div>
-                            </div>
-                        <?php endif; ?>
-                    <?php endfor; ?>
+                                <?php endfor; ?>
+                            </ul>
+                            
+                            <!-- Contenu des onglets -->
+                            <?php for ($level = 0; $level <= 9; $level++): ?>
+                                <?php if (isset($available_by_level[$level])): ?>
+                                    <div class="spell-tab-content <?php echo $level == 0 ? 'active' : ''; ?>" 
+                                         id="spell-tab-<?php echo $level; ?>">
+                                        <div class="spell-buttons-container">
+                                            <?php foreach ($available_by_level[$level] as $spell): ?>
+                                                <?php
+                                                $is_known = false;
+                                                $is_prepared = false;
+                                                foreach ($character_spells as $known_spell) {
+                                                    if ($known_spell['id'] == $spell['id']) {
+                                                        $is_known = true;
+                                                        $is_prepared = $known_spell['prepared'];
+                                                        break;
+                                                    }
+                                                }
+                                                
+                                                $button_class = 'spell-button';
+                                                if ($is_known) $button_class .= ' known';
+                                                if ($is_prepared) $button_class .= ' prepared';
+                                                ?>
+                                                
+                                                <button class="<?php echo $button_class; ?>" 
+                                                        onclick="selectSpell(<?php echo $spell['id']; ?>, this)"
+                                                        data-spell-id="<?php echo $spell['id']; ?>">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <span>
+                                                            <?php echo htmlspecialchars($spell['name']); ?>
+                                                            <?php if ($is_known): ?>
+                                                                <i class="fas fa-check-circle text-success ms-1"></i>
+                                                            <?php endif; ?>
+                                                            <?php if ($is_prepared): ?>
+                                                                <i class="fas fa-star text-warning ms-1"></i>
+                                                            <?php endif; ?>
+                                                        </span>
+                                                        <small class="text-muted">
+                                                            <?php echo htmlspecialchars($spell['school']); ?>
+                                                        </small>
+                                                    </div>
+                                                </button>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+                            <?php endfor; ?>
+                        </div>
+                    </div>
+
+                    <!-- Mode lecture - Sorts connus seulement -->
+                    <div id="read-mode" class="spell-mode" style="display: none;">
+                        <?php
+                        // Organiser les sorts connus par niveau
+                        $known_by_level = [];
+                        foreach ($character_spells as $known_spell) {
+                            $level = $known_spell['level'];
+                            if (!isset($known_by_level[$level])) {
+                                $known_by_level[$level] = [];
+                            }
+                            $known_by_level[$level][] = $known_spell;
+                        }
+                        ?>
+                        
+                        <!-- Onglets des sorts connus -->
+                        <div class="spell-tabs-container">
+                            <ul class="spell-tabs-nav" id="known-spell-tabs-nav">
+                                <?php for ($level = 0; $level <= 9; $level++): ?>
+                                    <?php if (isset($known_by_level[$level])): ?>
+                                        <li class="spell-tab-item">
+                                            <button class="spell-tab-button <?php echo $level == 0 ? 'active' : ''; ?>" 
+                                                    onclick="switchKnownSpellTab(<?php echo $level; ?>)"
+                                                    data-level="<?php echo $level; ?>">
+                                                <?php if ($level == 0): ?>
+                                                    <i class="fas fa-sparkles me-1"></i>Min.
+                                                <?php else: ?>
+                                                    <i class="fas fa-gem me-1"></i>Niv.<?php echo $level; ?>
+                                                <?php endif; ?>
+                                                <span class="spell-count">(<?php echo count($known_by_level[$level]); ?>)</span>
+                                            </button>
+                                        </li>
+                                    <?php endif; ?>
+                                <?php endfor; ?>
+                            </ul>
+                            
+                            <!-- Contenu des onglets des sorts connus -->
+                            <?php for ($level = 0; $level <= 9; $level++): ?>
+                                <?php if (isset($known_by_level[$level])): ?>
+                                    <div class="spell-tab-content <?php echo $level == 0 ? 'active' : ''; ?>" 
+                                         id="known-spell-tab-<?php echo $level; ?>">
+                                        <div class="spell-buttons-container">
+                                            <?php foreach ($known_by_level[$level] as $spell): ?>
+                                                <?php
+                                                $button_class = 'spell-button known';
+                                                if ($spell['prepared']) $button_class .= ' prepared';
+                                                ?>
+                                                
+                                                <button class="<?php echo $button_class; ?>" 
+                                                        onclick="selectSpell(<?php echo $spell['id']; ?>, this)"
+                                                        data-spell-id="<?php echo $spell['id']; ?>">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <span>
+                                                            <?php echo htmlspecialchars($spell['name']); ?>
+                                                            <i class="fas fa-check-circle text-success ms-1"></i>
+                                                            <?php if ($spell['prepared']): ?>
+                                                                <i class="fas fa-star text-warning ms-1"></i>
+                                                            <?php endif; ?>
+                                                        </span>
+                                                        <small class="text-muted">
+                                                            <?php echo htmlspecialchars($spell['school']); ?>
+                                                        </small>
+                                                    </div>
+                                                </button>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+                            <?php endfor; ?>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Page de droite - Détails du sort -->
@@ -659,7 +843,97 @@ if (isset($_GET['debug'])) {
 console.log('Script grimoire chargé');
 let currentSpellId = null;
 let characterSpells = <?php echo json_encode($character_spells); ?>;
+let isEditMode = true; // Mode édition par défaut
 console.log('Character spells chargés:', characterSpells);
+
+function toggleGrimoireMode() {
+    console.log('toggleGrimoireMode appelée, mode actuel:', isEditMode ? 'édition' : 'lecture');
+    
+    isEditMode = !isEditMode;
+    
+    const editMode = document.getElementById('edit-mode');
+    const readMode = document.getElementById('read-mode');
+    const pageTitle = document.getElementById('page-title');
+    const modeToggleBtn = document.getElementById('mode-toggle-btn');
+    
+    if (isEditMode) {
+        // Passer en mode édition
+        editMode.style.display = 'block';
+        readMode.style.display = 'none';
+        pageTitle.textContent = 'Table des sorts';
+        modeToggleBtn.innerHTML = '<i class="fas fa-edit me-1"></i>Préparer mes sorts';
+        modeToggleBtn.className = 'btn btn-sm btn-outline-light';
+    } else {
+        // Passer en mode lecture
+        editMode.style.display = 'none';
+        readMode.style.display = 'block';
+        pageTitle.textContent = 'Mes sorts connus';
+        modeToggleBtn.innerHTML = '<i class="fas fa-book-open me-1"></i>Mode édition';
+        modeToggleBtn.className = 'btn btn-sm btn-light';
+        
+        // Réinitialiser la sélection de sort
+        currentSpellId = null;
+        document.getElementById('spell-details-container').innerHTML = `
+            <div class="no-spell-selected">
+                <i class="fas fa-hand-pointer"></i>
+                <h4>Sélectionnez un sort</h4>
+                <p>Cliquez sur un sort dans la liste de gauche pour voir ses détails ici.</p>
+            </div>
+        `;
+    }
+}
+
+function switchSpellTab(level) {
+    console.log('switchSpellTab appelée avec level:', level);
+    
+    // Retirer la classe active de tous les onglets
+    document.querySelectorAll('.spell-tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Retirer la classe active de tous les contenus
+    document.querySelectorAll('.spell-tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    // Activer l'onglet sélectionné
+    const selectedTab = document.querySelector(`[data-level="${level}"]`);
+    if (selectedTab) {
+        selectedTab.classList.add('active');
+    }
+    
+    // Afficher le contenu correspondant
+    const selectedContent = document.getElementById(`spell-tab-${level}`);
+    if (selectedContent) {
+        selectedContent.classList.add('active');
+    }
+}
+
+function switchKnownSpellTab(level) {
+    console.log('switchKnownSpellTab appelée avec level:', level);
+    
+    // Retirer la classe active de tous les onglets des sorts connus
+    document.querySelectorAll('#known-spell-tabs-nav .spell-tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Retirer la classe active de tous les contenus des sorts connus
+    document.querySelectorAll('#read-mode .spell-tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    // Activer l'onglet sélectionné
+    const selectedTab = document.querySelector(`#known-spell-tabs-nav [data-level="${level}"]`);
+    if (selectedTab) {
+        selectedTab.classList.add('active');
+    }
+    
+    // Afficher le contenu correspondant
+    const selectedContent = document.getElementById(`known-spell-tab-${level}`);
+    if (selectedContent) {
+        selectedContent.classList.add('active');
+    }
+}
 
 function selectSpell(spellId, buttonElement) {
     console.log('selectSpell appelée avec spellId:', spellId, 'buttonElement:', buttonElement);
@@ -924,4 +1198,5 @@ function updateSpellButton(spellId, isKnown, isPrepared) {
 }
 </script>
 
-<?php include 'includes/footer.php'; ?>
+</body>
+</html>
