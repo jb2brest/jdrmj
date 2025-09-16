@@ -41,24 +41,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <link rel="icon" type="image/png" href="images/logo.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="css/custom-theme.css" rel="stylesheet">
     <style>
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-        }
-        .login-card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-        .btn-dnd {
-            background: linear-gradient(45deg, #8B4513, #D2691E);
-            border: none;
-            color: white;
-        }
-        .btn-dnd:hover {
-            background: linear-gradient(45deg, #A0522D, #CD853F);
-            color: white;
         }
     </style>
 </head>

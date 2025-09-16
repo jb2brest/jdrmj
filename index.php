@@ -11,34 +11,7 @@ require_once 'includes/functions.php';
     <link rel="icon" type="image/png" href="images/logo.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        .hero-section {
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-            color: white;
-            padding: 100px 0;
-        }
-        .feature-card {
-            transition: transform 0.3s ease;
-            border: none;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .feature-card:hover {
-            transform: translateY(-5px);
-        }
-        .navbar-brand {
-            font-weight: bold;
-            font-size: 1.5rem;
-        }
-        .btn-dnd {
-            background: linear-gradient(45deg, #8B4513, #D2691E);
-            border: none;
-            color: white;
-        }
-        .btn-dnd:hover {
-            background: linear-gradient(45deg, #A0522D, #CD853F);
-            color: white;
-        }
-    </style>
+    <link href="css/custom-theme.css" rel="stylesheet">
 </head>
 <body>
     <!-- Navigation -->
