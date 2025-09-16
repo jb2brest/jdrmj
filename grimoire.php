@@ -82,7 +82,9 @@ if (isset($_GET['debug'])) {
     border-radius: 15px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     margin: 0 auto;
-    width: 800px;
+    width: 90%;
+    max-width: 1200px;
+    min-width: 800px;
     min-height: 80vh;
     position: relative;
     overflow: hidden;
@@ -113,7 +115,8 @@ if (isset($_GET['debug'])) {
     position: relative;
     overflow-x: hidden;
     overflow-y: auto;
-    width: 400px;
+    width: 50%;
+    min-width: 350px;
     box-sizing: border-box;
 }
 
@@ -152,8 +155,8 @@ if (isset($_GET['debug'])) {
 }
 
 .spell-button {
-    width: 350px;
-    max-width: 350px;
+    width: 90%;
+    max-width: 400px;
     margin-bottom: 8px;
     padding: 8px 12px;
     background: linear-gradient(135deg, #F5F5DC 0%, #E6E6FA 100%);
@@ -368,21 +371,114 @@ if (isset($_GET['debug'])) {
 }
 
 /* Responsive design */
-@media (max-width: 992px) {
+@media (min-width: 1400px) {
+    .grimoire-book {
+        width: 85%;
+        max-width: 1400px;
+    }
+    
+    .spell-button {
+        width: 85%;
+        max-width: 450px;
+        font-size: 0.9em;
+        padding: 10px 15px;
+    }
+    
+    .spell-details {
+        padding: 30px;
+    }
+    
+    .spell-info-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+}
+
+@media (min-width: 1600px) {
+    .grimoire-book {
+        width: 80%;
+        max-width: 1600px;
+    }
+    
+    .spell-button {
+        width: 80%;
+        max-width: 500px;
+        font-size: 0.95em;
+        padding: 12px 18px;
+    }
+    
+    .spell-details {
+        padding: 35px;
+    }
+    
+    .spell-info-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 25px;
+    }
+}
+
+@media (max-width: 900px) {
+    .grimoire-book {
+        width: 95%;
+        max-width: 95%;
+    }
+    
+    .grimoire-pages-container {
+        flex-direction: column;
+        height: auto;
+    }
+    
+    .grimoire-page {
+        width: 100%;
+        min-height: 400px;
+    }
+    
     .grimoire-book::before {
         display: none;
     }
     
     .grimoire-page-left {
         border-right: none;
-        border-bottom: 1px solid #D2B48C;
-        height: auto;
-        min-height: 400px;
+        border-bottom: 2px solid #D2B48C;
     }
     
-    .grimoire-page-right {
-        height: auto;
-        min-height: 400px;
+    .spell-button {
+        width: 90%;
+        max-width: 90%;
+    }
+    
+    #spell-details-container {
+        width: 95%;
+        max-width: 95%;
+    }
+}
+
+@media (max-width: 768px) {
+    .grimoire-container {
+        padding: 10px 0;
+    }
+    
+    .grimoire-book {
+        width: 98%;
+        max-width: 98%;
+        margin: 0 auto;
+    }
+    
+    .grimoire-page {
+        padding: 10px;
+        min-height: 350px;
+    }
+    
+    .spell-button {
+        width: 95%;
+        max-width: 95%;
+        padding: 6px 10px;
+        font-size: 0.8em;
+    }
+    
+    .spell-details {
+        padding: 15px;
+        min-height: 300px;
     }
     
     .spell-info-grid {
@@ -392,27 +488,54 @@ if (isset($_GET['debug'])) {
     .capability-item {
         display: block;
         margin: 5px 0;
-    }
-}
-
-@media (max-width: 768px) {
-    .grimoire-container {
-        padding: 10px 0;
-    }
-    
-    .grimoire-page {
-        padding: 15px;
-        height: auto;
-    }
-    
-    .spell-button {
-        padding: 10px 12px;
         font-size: 0.9em;
     }
     
-    .spell-details {
-        padding: 15px;
+    .grimoire-header h1 {
+        font-size: 1.5em;
+    }
+}
+
+@media (max-width: 480px) {
+    .grimoire-container {
+        padding: 5px 0;
+    }
+    
+    .grimoire-book {
+        width: 100%;
+        max-width: 100%;
+        border-radius: 10px;
+    }
+    
+    .grimoire-page {
+        padding: 8px;
         min-height: 300px;
+    }
+    
+    .spell-button {
+        width: 98%;
+        max-width: 98%;
+        padding: 5px 8px;
+        font-size: 0.75em;
+    }
+    
+    .spell-details {
+        padding: 12px;
+        min-height: 250px;
+    }
+    
+    .spell-level-title {
+        font-size: 0.9em;
+        margin-bottom: 8px;
+    }
+    
+    .grimoire-header h1 {
+        font-size: 1.3em;
+    }
+    
+    .capability-item {
+        font-size: 0.8em;
+        padding: 6px 10px;
     }
 }
 </style>

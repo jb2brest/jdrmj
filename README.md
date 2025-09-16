@@ -114,6 +114,7 @@ Ce projet est sous licence MIT. Libre d'utilisation, modification et distributio
 
 ## Changelog
 <version_tag>
+- 0.0.71 : Grimoire responsive
 - 0.0.70 : Grimoire taille fixe
 - 0.0.69 : Grimoire début
 - 0.0.68 : Edition OK
