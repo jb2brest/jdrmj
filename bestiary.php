@@ -177,7 +177,7 @@ if (isDM()) {
                         <!-- Image du monstre -->
                         <div class="text-center p-3" style="background: linear-gradient(135deg, #f8f9fa, #e9ecef);">
                             <?php 
-                            $image_path = "images/{$monster['csv_id']}.jpg";
+                            $image_path = "images/monstres/{$monster['csv_id']}.jpg";
                             if (file_exists($image_path)): 
                             ?>
                                 <img src="<?php echo htmlspecialchars($image_path); ?>" 

@@ -331,7 +331,7 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
                 <div class="col-md-2 text-center">
                     <?php 
                     // Utiliser le csv_id pour le nom de fichier
-                    $image_path = "images/{$monster['csv_id']}.jpg";
+                    $image_path = "images/monstres/{$monster['csv_id']}.jpg";
                     
                     if (file_exists($image_path)): 
                     ?>

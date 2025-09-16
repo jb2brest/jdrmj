@@ -516,7 +516,7 @@ if ($playerPlaceId) {
                                                 <?php 
                                                 $tokenKey = 'monster_' . $monster['id'];
                                                 $position = $tokenPositions[$tokenKey] ?? ['x' => 0, 'y' => 0, 'is_on_map' => false];
-                                                $imageUrl = 'images/' . $monster['monster_id'] . '.jpg';
+                                                $imageUrl = 'images/monstres/' . $monster['monster_id'] . '.jpg';
                                                 ?>
                                                 <div class="token" 
                                                      data-token-type="monster" 

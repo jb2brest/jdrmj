@@ -151,7 +151,7 @@ class Monstre:
     def recuperer_image(self):
         if self.imageURL != "":
             response = requests.get(self.imageURL)
-            with open('./images/' + str(self.id) + '.jpg', 'wb') as f:
+            with open('./images/monstres/' + str(self.id) + '.jpg', 'wb') as f:
                 f.write(response.content)
 
     def exportcsv(self):

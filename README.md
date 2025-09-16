@@ -115,6 +115,7 @@ Ce projet est sous licence MIT. Libre d'utilisation, modification et distributio
 ## Changelog
 <version_tag>
 - 0.0.74 : Grimoire : liste des emplacements
+- 0.0.74 : Grimoire : liste des emplacements
 - 0.0.73 : Grimoire préparation
 - 0.0.72 : Grimoire ajout des sorts au grimoire
 - 0.0.71 : Grimoire responsive
