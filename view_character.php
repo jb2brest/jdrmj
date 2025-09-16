@@ -48,6 +48,26 @@ $backgroundSkills = $character['background_skills'] ? json_decode($character['ba
 $backgroundTools = $character['background_tools'] ? json_decode($character['background_tools'], true) : [];
 $backgroundLanguages = $character['background_languages'] ? json_decode($character['background_languages'], true) : [];
 
+// Récupérer les données de rage pour les barbares
+$isBarbarian = strpos(strtolower($character['class_name']), 'barbare') !== false;
+$rageData = null;
+if ($isBarbarian) {
+    // Récupérer le nombre maximum de rages pour ce niveau
+    $stmt = $pdo->prepare("SELECT rages FROM class_evolution WHERE class_id = ? AND level = ?");
+    $stmt->execute([$character['class_id'], $character['level']]);
+    $evolution = $stmt->fetch();
+    $maxRages = $evolution ? $evolution['rages'] : 0;
+    
+    // Récupérer le nombre de rages utilisées
+    $usedRages = getRageUsage($character_id);
+    
+    $rageData = [
+        'max' => $maxRages,
+        'used' => $usedRages,
+        'available' => $maxRages - $usedRages
+    ];
+}
+
 // Parser les langues raciales
 $raceLanguages = [];
 if ($character['race_languages']) {
@@ -558,6 +578,62 @@ $initiative = $dexterityMod;
             font-weight: bold;
             color: #3498db;
         }
+        
+        /* Styles pour les rages */
+        .rage-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .rage-symbols {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .rage-symbol {
+            width: 50px;
+            height: 50px;
+            border: 3px solid #dc3545;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            color: white;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .rage-symbol:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+        
+        .rage-symbol.available {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            border-color: #dc3545;
+            color: white;
+        }
+        
+        .rage-symbol.used {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            border-color: #6c757d;
+            color: #adb5bd;
+            opacity: 0.6;
+        }
+        
+        .rage-symbol.used:hover {
+            background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+        }
+        
+        .rage-info {
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -763,6 +839,37 @@ $initiative = $dexterityMod;
                 </div>
             </div>
 
+            <!-- Rages (pour les barbares) -->
+            <?php if ($isBarbarian && $rageData): ?>
+            <div class="info-section">
+                <h3><i class="fas fa-fire me-2"></i>Rages</h3>
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <div class="rage-container">
+                            <div class="rage-symbols">
+                                <?php for ($i = 1; $i <= $rageData['max']; $i++): ?>
+                                    <div class="rage-symbol <?php echo $i <= $rageData['used'] ? 'used' : 'available'; ?>" 
+                                         onclick="toggleRage(<?php echo $character_id; ?>, <?php echo $i; ?>)"
+                                         data-rage="<?php echo $i; ?>"
+                                         title="<?php echo $i <= $rageData['used'] ? 'Rage utilisée' : 'Rage disponible'; ?>">
+                                        <i class="fas fa-fire"></i>
+                                    </div>
+                                <?php endfor; ?>
+                            </div>
+                            <div class="rage-info mt-2">
+                                <span class="badge bg-info"><?php echo $rageData['available']; ?>/<?php echo $rageData['max']; ?> rages disponibles</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-warning" onclick="resetRages(<?php echo $character_id; ?>)">
+                            <i class="fas fa-moon me-1"></i>Long repos
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
             <!-- Combat -->
             <div class="info-section">
                 <h3><i class="fas fa-sword me-2"></i>Combat</h3>
@@ -796,7 +903,11 @@ $initiative = $dexterityMod;
                                             <?php if ($equippedArmor): ?>
                                                 <strong>Armure:</strong> <?php echo $equippedArmor['name']; ?> (<?php echo $equippedArmor['ac_formula']; ?>)<br>
                                             <?php else: ?>
-                                                <strong>Armure:</strong> Aucune (10 + modificateur de Dextérité)<br>
+                                                <?php if ($isBarbarian): ?>
+                                                    <strong>Armure:</strong> Aucune (10 + modificateur de Dextérité + modificateur de Constitution)<br>
+                                                <?php else: ?>
+                                                    <strong>Armure:</strong> Aucune (10 + modificateur de Dextérité)<br>
+                                                <?php endif; ?>
                                             <?php endif; ?>
                                             
                                             <?php if ($equippedShield): ?>
@@ -806,6 +917,9 @@ $initiative = $dexterityMod;
                                             <?php endif; ?>
                                             
                                             <strong>Modificateur de Dextérité:</strong> <?php echo ($dexterityMod >= 0 ? '+' : '') . $dexterityMod; ?>
+                                            <?php if ($isBarbarian && !$equippedArmor): ?>
+                                                <br><strong>Modificateur de Constitution:</strong> <?php echo ($constitutionMod >= 0 ? '+' : '') . $constitutionMod; ?>
+                                            <?php endif; ?>
                                         </small>
                                     </div>
                                 </div>
@@ -1897,6 +2011,71 @@ $initiative = $dexterityMod;
             resultHtml += '</div></div></div>';
             
             return resultHtml;
+        }
+
+        // Fonctions pour gérer les rages
+        function toggleRage(characterId, rageNumber) {
+            const rageSymbol = document.querySelector(`[data-rage="${rageNumber}"]`);
+            const isUsed = rageSymbol.classList.contains('used');
+            
+            const action = isUsed ? 'free' : 'use';
+            
+            fetch('manage_rage.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    character_id: characterId,
+                    action: action
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Mettre à jour l'affichage
+                    updateRageDisplay();
+                } else {
+                    alert('Erreur: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la mise à jour de la rage');
+            });
+        }
+
+        function resetRages(characterId) {
+            if (confirm('Effectuer un long repos ? Cela récupérera toutes les rages.')) {
+                fetch('manage_rage.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        character_id: characterId,
+                        action: 'reset'
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Mettre à jour l'affichage
+                        updateRageDisplay();
+                    } else {
+                        alert('Erreur: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    alert('Erreur lors de la réinitialisation des rages');
+                });
+            }
+        }
+
+        function updateRageDisplay() {
+            // Recharger la page pour mettre à jour l'affichage
+            window.location.reload();
         }
     </script>
 </body>
