@@ -12,8 +12,13 @@ if ($character_id === 0) {
     exit;
 }
 
-// Vérifier que le personnage appartient à l'utilisateur
-$stmt = $pdo->prepare("SELECT * FROM characters WHERE id = ? AND user_id = ?");
+// Vérifier que le personnage appartient à l'utilisateur et récupérer les bonus raciaux
+$stmt = $pdo->prepare("
+    SELECT c.*, r.wisdom_bonus 
+    FROM characters c 
+    JOIN races r ON c.race_id = r.id 
+    WHERE c.id = ? AND c.user_id = ?
+");
 $stmt->execute([$character_id, $user_id]);
 $character = $stmt->fetch();
 
@@ -32,8 +37,8 @@ if (!canCastSpells($character['class_id'])) {
 $stmt = $pdo->prepare("SELECT * FROM classes WHERE id = ?");
 $stmt->execute([$character['class_id']]);
 $class = $stmt->fetch();
-// Calculer le modificateur de Sagesse
-$wisdomModifier = floor(($character['wisdom'] - 10) / 2);
+// Calculer le modificateur de Sagesse (sagesse totale incluant les bonus raciaux)
+$wisdomModifier = floor(($character['wisdom'] + $character['wisdom_bonus'] - 10) / 2);
 $spell_capabilities = getClassSpellCapabilities($character['class_id'], $character['level'], $wisdomModifier);
 
 // Récupérer les sorts du personnage
@@ -55,6 +60,17 @@ foreach ($character_spells as $spell) {
 $available_by_level = [];
 foreach ($available_spells as $spell) {
     $available_by_level[$spell['level']][] = $spell;
+}
+
+// Compter les sorts préparés (niveau 1 et plus, pas les sorts mineurs)
+$prepared_spells_count = 0;
+$cantrips_count = 0;
+foreach ($character_spells as $spell) {
+    if ($spell['level'] == 0) {
+        $cantrips_count++;
+    } elseif ($spell['prepared']) {
+        $prepared_spells_count++;
+    }
 }
 
 $page_title = "Grimoire - " . $character['name'];
@@ -186,6 +202,99 @@ if (isset($_GET['debug'])) {
     font-size: 0.85em;
     color: #8B4513;
     text-align: center;
+}
+
+.spell-slots-container {
+    background: rgba(139, 69, 19, 0.05);
+    border: 1px solid rgba(139, 69, 19, 0.2);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 15px;
+}
+
+.spell-slots-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    color: #8B4513;
+    font-size: 0.9em;
+}
+
+.spell-slots-count {
+    background: rgba(139, 69, 19, 0.1);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: bold;
+}
+
+.spell-slots-grid {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.spell-slot {
+    width: 35px;
+    height: 35px;
+    border: 2px solid #8B4513;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #F5F5DC 0%, #E6E6FA 100%);
+}
+
+.spell-slot:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.spell-slot.available {
+    color: #28a745;
+    border-color: #28a745;
+}
+
+.spell-slot.available:hover {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+}
+
+.spell-slot.used {
+    color: #dc3545;
+    border-color: #dc3545;
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+}
+
+.spell-slot.used:hover {
+    background: linear-gradient(135deg, #f5c6cb 0%, #f1b0b7 100%);
+}
+
+.spell-slot i {
+    font-size: 0.8em;
+}
+
+.btn.disabled, .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.spell-button.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #f8f9fa;
+    color: #6c757d;
+}
+
+.no-spells {
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+    padding: 20px;
+    background: rgba(139, 69, 19, 0.05);
+    border-radius: 8px;
+    border: 1px dashed rgba(139, 69, 19, 0.2);
 }
 
 .spell-tab-item {
@@ -660,10 +769,10 @@ if (isset($_GET['debug'])) {
                         <!-- Barre des capacités -->
                         <div class="capabilities-bar">
                             <div class="capability-item">
-                                <i class="fas fa-magic me-1"></i>Sorts mineurs: <?php echo $spell_capabilities['cantrips_known']; ?>
+                                <i class="fas fa-magic me-1"></i>Sorts mineurs: <?php echo $cantrips_count; ?>/<?php echo $spell_capabilities['cantrips_known']; ?>
                             </div>
                             <div class="capability-item">
-                                <i class="fas fa-scroll me-1"></i>Sorts préparés: <?php echo $spell_capabilities['spells_known']; ?>
+                                <i class="fas fa-scroll me-1"></i>Sorts préparés: <?php echo $prepared_spells_count; ?>/<?php echo $spell_capabilities['spells_known']; ?>
                             </div>
                             <div class="capability-item">
                                 <i class="fas fa-gem me-1"></i>Emplacements:
@@ -735,19 +844,6 @@ if (isset($_GET['debug'])) {
                                 <?php endfor; ?>
                             </ul>
                             
-                            <!-- Informations sur les capacités -->
-                            <div class="spell-capabilities-info" id="spell-capabilities-info">
-                                <i class="fas fa-info-circle me-1"></i>
-                                <strong>Capacités maximales :</strong>
-                                <?php
-                                $max_cantrips = $spell_capabilities['cantrips_known'];
-                                $max_spells = $spell_capabilities['spells_known'];
-                                echo "Sorts mineurs: $max_cantrips, Sorts préparés: $max_spells";
-                                if ($class && strpos(strtolower($class['name']), 'clerc') !== false) {
-                                    echo " (Niveau $level + Sagesse $wisdomModifier)";
-                                }
-                                ?>
-                            </div>
                             
                             <!-- Contenu des onglets -->
                             <?php for ($level = 0; $level <= 9; $level++): ?>
@@ -816,7 +912,18 @@ if (isset($_GET['debug'])) {
                         <div class="spell-tabs-container">
                             <ul class="spell-tabs-nav" id="known-spell-tabs-nav">
                                 <?php for ($level = 0; $level <= 9; $level++): ?>
-                                    <?php if (isset($known_by_level[$level])): ?>
+                                    <?php 
+                                    // Afficher l'onglet s'il y a des sorts connus OU des emplacements de sorts disponibles
+                                    $has_known_spells = isset($known_by_level[$level]);
+                                    $has_spell_slots = false;
+                                    if ($level > 0) {
+                                        $suffix = $level == 1 ? 'st' : ($level == 2 ? 'nd' : ($level == 3 ? 'rd' : 'th'));
+                                        $key = "spell_slots_{$level}{$suffix}";
+                                        $has_spell_slots = isset($spell_capabilities[$key]) && $spell_capabilities[$key] > 0;
+                                    }
+                                    
+                                    if ($has_known_spells || $has_spell_slots):
+                                    ?>
                                         <li class="spell-tab-item">
                                             <button class="spell-tab-button <?php echo $level == 0 ? 'active' : ''; ?>" 
                                                     onclick="switchKnownSpellTab(<?php echo $level; ?>)"
@@ -826,57 +933,89 @@ if (isset($_GET['debug'])) {
                                                 <?php else: ?>
                                                     <i class="fas fa-gem me-1"></i>Niv.<?php echo $level; ?>
                                                 <?php endif; ?>
-                                                <span class="spell-count">(<?php echo count($known_by_level[$level]); ?> connus)</span>
+                                                <span class="spell-count">(<?php echo $has_known_spells ? count($known_by_level[$level]) : 0; ?> connus)</span>
                                             </button>
                                         </li>
                                     <?php endif; ?>
                                 <?php endfor; ?>
                             </ul>
                             
-                            <!-- Informations sur les capacités -->
-                            <div class="spell-capabilities-info" id="known-spell-capabilities-info">
-                                <i class="fas fa-info-circle me-1"></i>
-                                <strong>Capacités maximales :</strong>
-                                <?php
-                                $max_cantrips = $spell_capabilities['cantrips_known'];
-                                $max_spells = $spell_capabilities['spells_known'];
-                                echo "Sorts mineurs: $max_cantrips, Sorts préparés: $max_spells";
-                                if ($class && strpos(strtolower($class['name']), 'clerc') !== false) {
-                                    echo " (Niveau $level + Sagesse $wisdomModifier)";
-                                }
-                                ?>
-                            </div>
                             
                             <!-- Contenu des onglets des sorts connus -->
                             <?php for ($level = 0; $level <= 9; $level++): ?>
-                                <?php if (isset($known_by_level[$level])): ?>
+                                <?php 
+                                // Afficher l'onglet s'il y a des sorts connus OU des emplacements de sorts disponibles
+                                $has_known_spells = isset($known_by_level[$level]);
+                                $has_spell_slots = false;
+                                if ($level > 0) {
+                                    $suffix = $level == 1 ? 'st' : ($level == 2 ? 'nd' : ($level == 3 ? 'rd' : 'th'));
+                                    $key = "spell_slots_{$level}{$suffix}";
+                                    $has_spell_slots = isset($spell_capabilities[$key]) && $spell_capabilities[$key] > 0;
+                                }
+                                
+                                if ($has_known_spells || $has_spell_slots):
+                                ?>
                                     <div class="spell-tab-content <?php echo $level == 0 ? 'active' : ''; ?>" 
                                          id="known-spell-tab-<?php echo $level; ?>">
-                                        <div class="spell-buttons-container">
-                                            <?php foreach ($known_by_level[$level] as $spell): ?>
-                                                <?php
-                                                $button_class = 'spell-button known';
-                                                if ($spell['prepared']) $button_class .= ' prepared';
-                                                ?>
-                                                
-                                                <button class="<?php echo $button_class; ?>" 
-                                                        onclick="selectSpell(<?php echo $spell['id']; ?>, this)"
-                                                        data-spell-id="<?php echo $spell['id']; ?>">
-                                                    <div class="d-flex justify-content-between align-items-center">
-                                                        <span>
-                                                            <?php echo htmlspecialchars($spell['name']); ?>
-                                                            <i class="fas fa-check-circle text-success ms-1"></i>
-                                                            <?php if ($spell['prepared']): ?>
-                                                                <i class="fas fa-star text-warning ms-1"></i>
-                                                            <?php endif; ?>
-                                                        </span>
-                                                        <small class="text-muted">
-                                                            <?php echo htmlspecialchars($spell['school']); ?>
-                                                        </small>
+                                        
+                                        <!-- Affichage des emplacements de sorts (niveau 1+) -->
+                                        <?php if ($level > 0 && $has_spell_slots): ?>
+                                            <?php
+                                            $suffix = $level == 1 ? 'st' : ($level == 2 ? 'nd' : ($level == 3 ? 'rd' : 'th'));
+                                            $key = "spell_slots_{$level}{$suffix}";
+                                            $total_slots = $spell_capabilities[$key];
+                                            $used_key = "level_{$level}_used";
+                                            $used_slots = isset($spell_slots_usage[$used_key]) ? $spell_slots_usage[$used_key] : 0;
+                                            ?>
+                                                <div class="spell-slots-container mb-3">
+                                                    <div class="spell-slots-header">
+                                                        <strong>Emplacements de niveau <?php echo $level; ?>:</strong>
+                                                        <span class="spell-slots-count"><?php echo $used_slots; ?>/<?php echo $total_slots; ?></span>
                                                     </div>
-                                                </button>
-                                            <?php endforeach; ?>
-                                        </div>
+                                                    <div class="spell-slots-grid" data-level="<?php echo $level; ?>">
+                                                        <?php for ($i = 1; $i <= $total_slots; $i++): ?>
+                                                            <div class="spell-slot <?php echo $i <= $used_slots ? 'used' : 'available'; ?>" 
+                                                                 onclick="toggleSpellSlot(<?php echo $level; ?>, <?php echo $i; ?>)"
+                                                                 data-slot="<?php echo $i; ?>">
+                                                                <i class="fas fa-gem"></i>
+                                                            </div>
+                                                        <?php endfor; ?>
+                                                    </div>
+                                                </div>
+                                        <?php endif; ?>
+                                        
+                                        <?php if ($has_known_spells): ?>
+                                            <div class="spell-buttons-container">
+                                                <?php foreach ($known_by_level[$level] as $spell): ?>
+                                                    <?php
+                                                    $button_class = 'spell-button known';
+                                                    if ($spell['prepared']) $button_class .= ' prepared';
+                                                    ?>
+                                                    
+                                                    <button class="<?php echo $button_class; ?>" 
+                                                            onclick="selectSpell(<?php echo $spell['id']; ?>, this)"
+                                                            data-spell-id="<?php echo $spell['id']; ?>">
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <span>
+                                                                <?php echo htmlspecialchars($spell['name']); ?>
+                                                                <i class="fas fa-check-circle text-success ms-1"></i>
+                                                                <?php if ($spell['prepared']): ?>
+                                                                    <i class="fas fa-star text-warning ms-1"></i>
+                                                                <?php endif; ?>
+                                                            </span>
+                                                            <small class="text-muted">
+                                                                <?php echo htmlspecialchars($spell['school']); ?>
+                                                            </small>
+                                                        </div>
+                                                    </button>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="text-center text-muted py-3">
+                                                <i class="fas fa-scroll fa-2x mb-2"></i>
+                                                <p>Aucun sort connu de ce niveau</p>
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
                                 <?php endif; ?>
                             <?php endfor; ?>
@@ -907,8 +1046,115 @@ if (isset($_GET['debug'])) {
 console.log('Script grimoire chargé');
 let currentSpellId = null;
 let characterSpells = <?php echo json_encode($character_spells); ?>;
+let availableSpells = <?php echo json_encode($available_spells); ?>;
 let isEditMode = true; // Mode édition par défaut
 console.log('Character spells chargés:', characterSpells);
+console.log('Available spells chargés:', availableSpells);
+
+function getSpellLevel(spellId) {
+    const spell = availableSpells.find(s => s.id == spellId);
+    return spell ? spell.level : 0;
+}
+
+function checkSpellSlotsAvailable(level) {
+    // Vérifier si le personnage a des emplacements de sorts pour ce niveau
+    const suffix = level == 1 ? 'st' : (level == 2 ? 'nd' : (level == 3 ? 'rd' : 'th'));
+    const key = `spell_slots_${level}${suffix}`;
+    
+    // Récupérer les capacités depuis les données PHP
+    const capabilities = <?php echo json_encode($spell_capabilities); ?>;
+    const maxSlots = capabilities[key] || 0;
+    
+    return maxSlots > 0;
+}
+
+function loadReadModeData() {
+    console.log('Rechargement des données en mode lecture...');
+    
+    // Recharger les sorts du personnage depuis le serveur
+    fetch('get_character_spells.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            character_id: <?php echo $character_id; ?>
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Mettre à jour la liste des sorts du personnage
+            characterSpells = data.spells;
+            console.log('Sorts du personnage rechargés:', characterSpells);
+            
+            // Mettre à jour l'affichage des onglets
+            updateReadModeTabs();
+            
+            // Mettre à jour les compteurs
+            updatePreparedSpellsCount();
+        } else {
+            console.error('Erreur lors du rechargement:', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Erreur lors du rechargement:', error);
+    });
+}
+
+function updateReadModeTabs() {
+    // Mettre à jour les compteurs dans les onglets
+    const tabs = document.querySelectorAll('#known-spell-tabs-nav .spell-tab-button');
+    tabs.forEach(tab => {
+        const level = parseInt(tab.dataset.level);
+        const knownSpells = characterSpells.filter(spell => spell.level === level);
+        const countElement = tab.querySelector('.spell-count');
+        if (countElement) {
+            countElement.textContent = `(${knownSpells.length} connus)`;
+        }
+    });
+    
+    // Mettre à jour la liste des sorts affichée
+    updateReadModeSpellLists();
+}
+
+function updateReadModeSpellLists() {
+    // Mettre à jour chaque onglet de sort
+    for (let level = 0; level <= 9; level++) {
+        const tabContent = document.getElementById(`known-spell-tab-${level}`);
+        if (tabContent) {
+            const knownSpells = characterSpells.filter(spell => spell.level === level);
+            
+            if (knownSpells.length > 0) {
+                // Générer la liste des sorts
+                let spellsHtml = '';
+                knownSpells.forEach(spell => {
+                    const spellData = availableSpells.find(s => s.id == spell.id);
+                    if (spellData) {
+                        spellsHtml += `
+                            <div class="spell-button known" onclick="loadKnownSpellDetails(${spell.id})">
+                                <i class="fas fa-star me-2"></i>
+                                <span class="spell-name">${spellData.name}</span>
+                            </div>
+                        `;
+                    }
+                });
+                
+                // Mettre à jour le contenu de l'onglet
+                const spellsContainer = tabContent.querySelector('.spell-buttons-container');
+                if (spellsContainer) {
+                    spellsContainer.innerHTML = spellsHtml;
+                }
+            } else {
+                // Aucun sort connu pour ce niveau
+                const spellsContainer = tabContent.querySelector('.spell-buttons-container');
+                if (spellsContainer) {
+                    spellsContainer.innerHTML = '<div class="no-spells">Aucun sort connu</div>';
+                }
+            }
+        }
+    }
+}
 
 function toggleGrimoireMode() {
     console.log('toggleGrimoireMode appelée, mode actuel:', isEditMode ? 'édition' : 'lecture');
@@ -934,6 +1180,9 @@ function toggleGrimoireMode() {
         pageTitle.textContent = 'Mes sorts connus';
         modeToggleBtn.innerHTML = '<i class="fas fa-edit me-1"></i>Préparer les sorts';
         modeToggleBtn.className = 'btn btn-sm btn-light';
+        
+        // Recharger les données en mode lecture
+        loadReadModeData();
         
         // Réinitialiser la sélection de sort
         currentSpellId = null;
@@ -1074,9 +1323,15 @@ function loadSpellDetails(spellId) {
                     <div class="mt-4">
                         <div class="d-flex gap-2 flex-wrap">
                             ${!isKnown ? `
-                                <button class="btn btn-success" onclick="addSpell(${<?php echo $character_id; ?>}, ${spellId}, '${spell.name}')">
-                                    <i class="fas fa-star me-1"></i>Préparer le sort
-                                </button>
+                                ${spell.level > 0 && !checkSpellSlotsAvailable(spell.level) ? `
+                                    <button class="btn btn-secondary" disabled title="Aucun emplacement de sort de niveau ${spell.level} disponible">
+                                        <i class="fas fa-ban me-1"></i>Sort non disponible
+                                    </button>
+                                ` : `
+                                    <button class="btn btn-success" onclick="addSpell(${<?php echo $character_id; ?>}, ${spellId}, '${spell.name}')">
+                                        <i class="fas fa-star me-1"></i>Préparer le sort
+                                    </button>
+                                `}
                             ` : `
                                 <button class="btn btn-danger" 
                                         onclick="removeSpell(${<?php echo $character_id; ?>}, ${spellId}, '${spell.name}')">
@@ -1114,6 +1369,16 @@ function addSpell(characterId, spellId, spellName) {
         return;
     }
     
+    // Vérifier si le personnage a des emplacements pour ce niveau de sort
+    const spellLevel = getSpellLevel(spellId);
+    if (spellLevel > 0) {
+        const hasSpellSlots = checkSpellSlotsAvailable(spellLevel);
+        if (!hasSpellSlots) {
+            alert(`Impossible de préparer ce sort : vous n'avez pas d'emplacements de sorts de niveau ${spellLevel}.`);
+            return;
+        }
+    }
+    
     fetch('manage_character_spells.php', {
         method: 'POST',
         headers: {
@@ -1129,11 +1394,22 @@ function addSpell(characterId, spellId, spellName) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            // Récupérer le niveau du sort depuis les données disponibles
+            const spellLevel = getSpellLevel(spellId);
+            
             // Mettre à jour la liste des sorts du personnage
-            characterSpells.push({id: spellId, prepared: true});
+            characterSpells.push({id: spellId, level: spellLevel, prepared: true});
             
             // Mettre à jour l'interface
             updateSpellButton(spellId, true, true);
+            
+            // Mettre à jour les compteurs
+            updatePreparedSpellsCount();
+            
+            // Si on est en mode lecture, mettre à jour la liste des sorts
+            if (!isEditMode) {
+                updateReadModeTabs();
+            }
             
             // Recharger les détails du sort
             if (currentSpellId == spellId) {
@@ -1173,6 +1449,14 @@ function removeSpell(characterId, spellId, spellName) {
             
             // Mettre à jour l'interface
             updateSpellButton(spellId, false, false);
+            
+            // Mettre à jour les compteurs
+            updatePreparedSpellsCount();
+            
+            // Si on est en mode lecture, mettre à jour la liste des sorts
+            if (!isEditMode) {
+                updateReadModeTabs();
+            }
             
             // Recharger les détails du sort
             if (currentSpellId == spellId) {
@@ -1254,6 +1538,108 @@ function updateSpellButton(spellId, isKnown, isPrepared) {
             starIcon.remove();
         }
     }
+    
+    // Mettre à jour le compteur de sorts préparés
+    updatePreparedSpellsCount();
+}
+
+function updatePreparedSpellsCount() {
+    // Compter les sorts mineurs et préparés
+    let cantripsCount = 0;
+    let preparedCount = 0;
+    
+    characterSpells.forEach(spell => {
+        if (spell.level == 0) {
+            cantripsCount++;
+        } else if (spell.prepared) {
+            preparedCount++;
+        }
+    });
+    
+    // Mettre à jour l'affichage des sorts mineurs
+    const cantripsElement = document.querySelector('.capability-item i.fa-magic').parentElement;
+    const maxCantrips = <?php echo $spell_capabilities['cantrips_known']; ?>;
+    cantripsElement.innerHTML = `<i class="fas fa-magic me-1"></i>Sorts mineurs: ${cantripsCount}/${maxCantrips}`;
+    
+    // Mettre à jour l'affichage des sorts préparés
+    const preparedSpellsElement = document.querySelector('.capability-item i.fa-scroll').parentElement;
+    const maxPrepared = <?php echo $spell_capabilities['spells_known']; ?>;
+    preparedSpellsElement.innerHTML = `<i class="fas fa-scroll me-1"></i>Sorts préparés: ${preparedCount}/${maxPrepared}`;
+}
+
+function toggleSpellSlot(level, slotNumber) {
+    console.log('toggleSpellSlot appelée avec level:', level, 'slot:', slotNumber);
+    
+    // Trouver l'emplacement de sort correspondant
+    const slotElement = document.querySelector(`[data-level="${level}"] .spell-slot[data-slot="${slotNumber}"]`);
+    if (!slotElement) return;
+    
+    // Basculer l'état
+    const isUsed = slotElement.classList.contains('used');
+    const newState = !isUsed;
+    
+    // Mettre à jour l'apparence
+    slotElement.classList.toggle('used', newState);
+    slotElement.classList.toggle('available', !newState);
+    
+    // Mettre à jour le compteur
+    updateSpellSlotCount(level);
+    
+    // Envoyer la mise à jour au serveur
+    updateSpellSlotOnServer(level, newState, slotNumber);
+}
+
+function updateSpellSlotCount(level) {
+    const grid = document.querySelector(`[data-level="${level}"]`);
+    if (!grid) return;
+    
+    const usedSlots = grid.querySelectorAll('.spell-slot.used').length;
+    const totalSlots = grid.querySelectorAll('.spell-slot').length;
+    
+    // Mettre à jour l'affichage du compteur
+    const countElement = grid.parentElement.querySelector('.spell-slots-count');
+    if (countElement) {
+        countElement.textContent = `${usedSlots}/${totalSlots}`;
+    }
+}
+
+function updateSpellSlotOnServer(level, isUsed, slotNumber) {
+    const action = isUsed ? 'use' : 'free';
+    
+    fetch('manage_spell_slots.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            action: action,
+            character_id: <?php echo $character_id; ?>,
+            level: level
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            console.error('Erreur lors de la mise à jour des emplacements:', data.message);
+            // Revenir à l'état précédent en cas d'erreur
+            const slotElement = document.querySelector(`[data-level="${level}"] .spell-slot[data-slot="${slotNumber}"]`);
+            if (slotElement) {
+                slotElement.classList.toggle('used', !isUsed);
+                slotElement.classList.toggle('available', isUsed);
+                updateSpellSlotCount(level);
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        // Revenir à l'état précédent en cas d'erreur
+        const slotElement = document.querySelector(`[data-level="${level}"] .spell-slot[data-slot="${slotNumber}"]`);
+        if (slotElement) {
+            slotElement.classList.toggle('used', !isUsed);
+            slotElement.classList.toggle('available', isUsed);
+            updateSpellSlotCount(level);
+        }
+    });
 }
 
 function performLongRest() {
@@ -1270,8 +1656,19 @@ function performLongRest() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Recharger la page pour mettre à jour l'affichage
-                location.reload();
+                // Remettre tous les emplacements à "disponible"
+                document.querySelectorAll('.spell-slot').forEach(slot => {
+                    slot.classList.remove('used');
+                    slot.classList.add('available');
+                });
+                
+                // Mettre à jour tous les compteurs
+                document.querySelectorAll('.spell-slots-grid').forEach(grid => {
+                    updateSpellSlotCount(grid.dataset.level);
+                });
+                
+                // Mettre à jour la barre des capacités
+                updatePreparedSpellsCount();
             } else {
                 alert('Erreur lors du long repos: ' + data.message);
             }

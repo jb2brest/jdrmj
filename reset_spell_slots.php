@@ -49,3 +49,4 @@ try {
     error_log("Erreur reset_spell_slots: " . $e->getMessage());
 }
 ?>
+

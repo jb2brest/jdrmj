@@ -72,12 +72,13 @@ $filteredCharacterLanguages = array_filter($characterLanguages, function($lang) 
 $allLanguages = array_unique(array_merge($filteredCharacterLanguages, $filteredRaceLanguages, $filteredBackgroundLanguages));
 
 // Calcul des modificateurs (nécessaire pour le calcul de la CA)
-$strengthMod = getAbilityModifier($character['strength']);
-$dexterityMod = getAbilityModifier($character['dexterity']);
-$constitutionMod = getAbilityModifier($character['constitution']);
-$intelligenceMod = getAbilityModifier($character['intelligence']);
-$wisdomMod = getAbilityModifier($character['wisdom']);
-$charismaMod = getAbilityModifier($character['charisma']);
+// Utiliser les valeurs totales incluant les bonus raciaux
+$strengthMod = getAbilityModifier($character['strength'] + $character['strength_bonus']);
+$dexterityMod = getAbilityModifier($character['dexterity'] + $character['dexterity_bonus']);
+$constitutionMod = getAbilityModifier($character['constitution'] + $character['constitution_bonus']);
+$intelligenceMod = getAbilityModifier($character['intelligence'] + $character['intelligence_bonus']);
+$wisdomMod = getAbilityModifier($character['wisdom'] + $character['wisdom_bonus']);
+$charismaMod = getAbilityModifier($character['charisma'] + $character['charisma_bonus']);
 
 // Récupérer l'équipement équipé du personnage
 $equippedItems = getCharacterEquippedItems($character_id);
