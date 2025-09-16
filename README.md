@@ -114,6 +114,7 @@ Ce projet est sous licence MIT. Libre d'utilisation, modification et distributio
 
 ## Changelog
 <version_tag>
+- 0.0.80 : Sorts de bardes
 - 0.0.79 : Druide
 - 0.0.78 : Ensorceleur et mage
 - 0.0.77 : MAJ couleur

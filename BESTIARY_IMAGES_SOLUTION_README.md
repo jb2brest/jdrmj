@@ -279,3 +279,4 @@ Les images des monstres sont maintenant affichées dans le bestiaire, utilisant 
 
 
 
+

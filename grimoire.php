@@ -905,6 +905,22 @@ if (isset($_GET['debug'])) {
                             }
                             $known_by_level[$level][] = $known_spell;
                         }
+                        
+                        // Pour les bardes, en mode lecture, afficher tous les sorts disponibles
+                        $is_bard = strpos(strtolower($class['name']), 'barde') !== false;
+                        if ($is_bard) {
+                            // Organiser tous les sorts disponibles par niveau pour les bardes
+                            $known_by_level = [];
+                            foreach ($available_spells as $spell) {
+                                $level = $spell['level'];
+                                if (!isset($known_by_level[$level])) {
+                                    $known_by_level[$level] = [];
+                                }
+                                // Marquer tous les sorts comme "préparés" pour les bardes
+                                $spell['prepared'] = true;
+                                $known_by_level[$level][] = $spell;
+                            }
+                        }
                         ?>
                         
                         <!-- Onglets des sorts connus -->
@@ -932,7 +948,13 @@ if (isset($_GET['debug'])) {
                                                 <?php else: ?>
                                                     <i class="fas fa-gem me-1"></i>Niv.<?php echo $level; ?>
                                                 <?php endif; ?>
-                                                <span class="spell-count">(<?php echo $has_known_spells ? count($known_by_level[$level]) : 0; ?> connus)</span>
+                                                <span class="spell-count">(<?php 
+                                                    if ($is_bard) {
+                                                        echo $has_known_spells ? count($known_by_level[$level]) . ' disponibles' : 0;
+                                                    } else {
+                                                        echo $has_known_spells ? count($known_by_level[$level]) . ' connus' : 0;
+                                                    }
+                                                ?>)</span>
                                             </button>
                                         </li>
                                     <?php endif; ?>
@@ -1012,7 +1034,7 @@ if (isset($_GET['debug'])) {
                                         <?php else: ?>
                                             <div class="text-center text-muted py-3">
                                                 <i class="fas fa-scroll fa-2x mb-2"></i>
-                                                <p>Aucun sort connu de ce niveau</p>
+                                                <p><?php echo $is_bard ? 'Aucun sort disponible de ce niveau' : 'Aucun sort connu de ce niveau'; ?></p>
                                             </div>
                                         <?php endif; ?>
                                     </div>
@@ -1106,10 +1128,21 @@ function updateReadModeTabs() {
     const tabs = document.querySelectorAll('#known-spell-tabs-nav .spell-tab-button');
     tabs.forEach(tab => {
         const level = parseInt(tab.dataset.level);
-        const knownSpells = characterSpells.filter(spell => spell.level === level);
+        const isBard = <?php echo $is_bard ? 'true' : 'false'; ?>;
+        
+        let spells;
+        if (isBard) {
+            // Pour les bardes, utiliser tous les sorts disponibles
+            spells = availableSpells.filter(spell => spell.level === level);
+        } else {
+            // Pour les autres classes, utiliser les sorts appris
+            spells = characterSpells.filter(spell => spell.level === level);
+        }
+        
         const countElement = tab.querySelector('.spell-count');
         if (countElement) {
-            countElement.textContent = `(${knownSpells.length} connus)`;
+            const label = isBard ? 'disponibles' : 'connus';
+            countElement.textContent = `(${spells.length} ${label})`;
         }
     });
     
@@ -1119,21 +1152,38 @@ function updateReadModeTabs() {
 
 function updateReadModeSpellLists() {
     // Mettre à jour chaque onglet de sort
+    const isBard = <?php echo $is_bard ? 'true' : 'false'; ?>;
+    
     for (let level = 0; level <= 9; level++) {
         const tabContent = document.getElementById(`known-spell-tab-${level}`);
         if (tabContent) {
-            const knownSpells = characterSpells.filter(spell => spell.level === level);
+            let spells;
+            if (isBard) {
+                // Pour les bardes, utiliser tous les sorts disponibles
+                spells = availableSpells.filter(spell => spell.level === level);
+            } else {
+                // Pour les autres classes, utiliser les sorts appris
+                spells = characterSpells.filter(spell => spell.level === level);
+            }
             
-            if (knownSpells.length > 0) {
+            if (spells.length > 0) {
                 // Générer la liste des sorts
                 let spellsHtml = '';
-                knownSpells.forEach(spell => {
-                    const spellData = availableSpells.find(s => s.id == spell.id);
+                spells.forEach(spell => {
+                    const spellData = isBard ? spell : availableSpells.find(s => s.id == spell.id);
                     if (spellData) {
                         spellsHtml += `
-                            <div class="spell-button known" onclick="loadKnownSpellDetails(${spell.id})">
-                                <i class="fas fa-star me-2"></i>
-                                <span class="spell-name">${spellData.name}</span>
+                            <div class="spell-button known prepared" onclick="selectSpell(${spellData.id}, this)" data-spell-id="${spellData.id}">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>
+                                        ${spellData.name}
+                                        <i class="fas fa-check-circle text-success ms-1"></i>
+                                        <i class="fas fa-star text-warning ms-1"></i>
+                                    </span>
+                                    <small class="text-muted">
+                                        ${spellData.school}
+                                    </small>
+                                </div>
                             </div>
                         `;
                     }
@@ -1145,10 +1195,11 @@ function updateReadModeSpellLists() {
                     spellsContainer.innerHTML = spellsHtml;
                 }
             } else {
-                // Aucun sort connu pour ce niveau
+                // Aucun sort pour ce niveau
                 const spellsContainer = tabContent.querySelector('.spell-buttons-container');
                 if (spellsContainer) {
-                    spellsContainer.innerHTML = '<div class="no-spells">Aucun sort connu</div>';
+                    const message = isBard ? 'Aucun sort disponible' : 'Aucun sort connu';
+                    spellsContainer.innerHTML = `<div class="no-spells">${message}</div>`;
                 }
             }
         }
@@ -1333,36 +1384,48 @@ function loadSpellDetails(spellId) {
                                     </button>
                                 ` : ''}
                                 ${spell.level > 0 && !<?php echo $canLearnSpells ? 'true' : 'false'; ?> ? `
-                                    ${!checkSpellSlotsAvailable(spell.level) ? `
-                                        <button class="btn btn-secondary" disabled title="Aucun emplacement de sort de niveau ${spell.level} disponible">
-                                            <i class="fas fa-ban me-1"></i>Emplacements insuffisants
-                                        </button>
+                                    ${<?php echo strpos(strtolower($class['name']), 'barde') !== false ? 'true' : 'false'; ?> ? `
+                                        <span class="text-success">
+                                            <i class="fas fa-star me-1"></i>Automatiquement accessible
+                                        </span>
                                     ` : `
-                                        <button class="btn btn-success" onclick="addSpell(${<?php echo $character_id; ?>}, ${spellId}, \`${spell.name}\`)">
-                                            <i class="fas fa-star me-1"></i>Préparer le sort
-                                        </button>
+                                        ${!checkSpellSlotsAvailable(spell.level) ? `
+                                            <button class="btn btn-secondary" disabled title="Aucun emplacement de sort de niveau ${spell.level} disponible">
+                                                <i class="fas fa-ban me-1"></i>Emplacements insuffisants
+                                            </button>
+                                        ` : `
+                                            <button class="btn btn-success" onclick="addSpell(${<?php echo $character_id; ?>}, ${spellId}, \`${spell.name}\`)">
+                                                <i class="fas fa-star me-1"></i>Préparer le sort
+                                            </button>
+                                        `}
                                     `}
                                 ` : ''}
                             ` : `
-                                ${!isPrepared ? `
-                                    ${spell.level > 0 && !checkSpellSlotsAvailable(spell.level) ? `
-                                        <button class="btn btn-secondary" disabled title="Aucun emplacement de sort de niveau ${spell.level} disponible">
-                                            <i class="fas fa-ban me-1"></i>Emplacements insuffisants
-                                        </button>
-                                    ` : `
-                                        <button class="btn btn-success" onclick="addSpell(${<?php echo $character_id; ?>}, ${spellId}, \`${spell.name}\`)">
-                                            <i class="fas fa-star me-1"></i>Préparer le sort
-                                        </button>
-                                    `}
+                                ${<?php echo strpos(strtolower($class['name']), 'barde') !== false ? 'true' : 'false'; ?> ? `
+                                    <span class="text-success">
+                                        <i class="fas fa-star me-1"></i>Automatiquement accessible
+                                    </span>
                                 ` : `
-                                    ${<?php echo strpos(strtolower($class['name']), 'ensorceleur') !== false ? 'false' : 'true'; ?> ? `
-                                        <button class="btn btn-warning" onclick="unprepareSpell(${<?php echo $character_id; ?>}, ${spellId}, \`${spell.name}\`)">
-                                            <i class="fas fa-star me-1"></i>Dépréparer le sort
-                                        </button>
+                                    ${!isPrepared ? `
+                                        ${spell.level > 0 && !checkSpellSlotsAvailable(spell.level) ? `
+                                            <button class="btn btn-secondary" disabled title="Aucun emplacement de sort de niveau ${spell.level} disponible">
+                                                <i class="fas fa-ban me-1"></i>Emplacements insuffisants
+                                            </button>
+                                        ` : `
+                                            <button class="btn btn-success" onclick="addSpell(${<?php echo $character_id; ?>}, ${spellId}, \`${spell.name}\`)">
+                                                <i class="fas fa-star me-1"></i>Préparer le sort
+                                            </button>
+                                        `}
                                     ` : `
-                                        <span class="text-muted">
-                                            <i class="fas fa-star me-1"></i>Automatiquement préparé
-                                        </span>
+                                        ${<?php echo strpos(strtolower($class['name']), 'ensorceleur') !== false ? 'false' : 'true'; ?> ? `
+                                            <button class="btn btn-warning" onclick="unprepareSpell(${<?php echo $character_id; ?>}, ${spellId}, \`${spell.name}\`)">
+                                                <i class="fas fa-star me-1"></i>Dépréparer le sort
+                                            </button>
+                                        ` : `
+                                            <span class="text-muted">
+                                                <i class="fas fa-star me-1"></i>Automatiquement préparé
+                                            </span>
+                                        `}
                                     `}
                                 `}
                                 <button class="btn btn-danger" onclick="removeSpell(${<?php echo $character_id; ?>}, ${spellId}, \`${spell.name}\`)">
@@ -1409,6 +1472,13 @@ function addSpell(characterId, spellId, spellName) {
         // Seuls les Magiciens et Ensorceleurs doivent apprendre les sorts avant de les préparer
         if (!isKnown && canLearnSpells) {
             alert(`Vous devez d'abord apprendre ce sort avant de pouvoir le préparer.`);
+            return;
+        }
+        
+        // Pour les bardes, tous les sorts connus sont automatiquement accessibles
+        const isBard = <?php echo strpos(strtolower($class['name']), 'barde') !== false ? 'true' : 'false'; ?>;
+        if (isBard && isKnown) {
+            alert(`En tant que barde, vous avez déjà accès à ce sort. Vous n'avez pas besoin de le préparer.`);
             return;
         }
         
