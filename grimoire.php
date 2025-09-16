@@ -32,10 +32,15 @@ if (!canCastSpells($character['class_id'])) {
 $stmt = $pdo->prepare("SELECT * FROM classes WHERE id = ?");
 $stmt->execute([$character['class_id']]);
 $class = $stmt->fetch();
-$spell_capabilities = getClassSpellCapabilities($character['class_id'], $character['level']);
+// Calculer le modificateur de Sagesse
+$wisdomModifier = floor(($character['wisdom'] - 10) / 2);
+$spell_capabilities = getClassSpellCapabilities($character['class_id'], $character['level'], $wisdomModifier);
 
 // Récupérer les sorts du personnage
 $character_spells = getCharacterSpells($character_id);
+
+// Récupérer les utilisations d'emplacements de sorts
+$spell_slots_usage = getSpellSlotsUsage($character_id);
 
 // Récupérer les sorts disponibles pour la classe
 $available_spells = getSpellsForClass($character['class_id']);
@@ -165,11 +170,22 @@ if (isset($_GET['debug'])) {
     display: flex;
     flex-wrap: wrap;
     gap: 5px;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     padding: 0;
     list-style: none;
     border-bottom: 2px solid #8B4513;
     padding-bottom: 10px;
+}
+
+.spell-capabilities-info {
+    background: rgba(139, 69, 19, 0.1);
+    border: 1px solid #8B4513;
+    border-radius: 5px;
+    padding: 8px 12px;
+    margin-bottom: 15px;
+    font-size: 0.85em;
+    color: #8B4513;
+    text-align: center;
 }
 
 .spell-tab-item {
@@ -647,7 +663,7 @@ if (isset($_GET['debug'])) {
                                 <i class="fas fa-magic me-1"></i>Sorts mineurs: <?php echo $spell_capabilities['cantrips_known']; ?>
                             </div>
                             <div class="capability-item">
-                                <i class="fas fa-scroll me-1"></i>Sorts connus: <?php echo $spell_capabilities['spells_known']; ?>
+                                <i class="fas fa-scroll me-1"></i>Sorts préparés: <?php echo $spell_capabilities['spells_known']; ?>
                             </div>
                             <div class="capability-item">
                                 <i class="fas fa-gem me-1"></i>Emplacements:
@@ -656,14 +672,23 @@ if (isset($_GET['debug'])) {
                                     $key = "spell_slots_{$i}st";
                                     $slots = isset($spell_capabilities[$key]) ? $spell_capabilities[$key] : 0;
                                     if ($slots > 0) {
-                                        echo "Niv.$i: $slots ";
+                                        $used_key = "level_{$i}_used";
+                                        $used = isset($spell_slots_usage[$used_key]) ? $spell_slots_usage[$used_key] : 0;
+                                        $remaining = $slots - $used;
+                                        $color = $remaining > 0 ? 'text-success' : 'text-danger';
+                                        echo "<span class='$color'>Niv.$i: $remaining/$slots </span>";
                                     }
                                 }
                                 ?>
                             </div>
                             <div class="capability-item">
                                 <button class="btn btn-sm btn-outline-light" id="mode-toggle-btn" onclick="toggleGrimoireMode()">
-                                    <i class="fas fa-edit me-1"></i>Préparer mes sorts
+                                    <i class="fas fa-star me-1"></i>Sorts préparés
+                                </button>
+                            </div>
+                            <div class="capability-item">
+                                <button class="btn btn-sm btn-warning" id="long-rest-btn" onclick="performLongRest()">
+                                    <i class="fas fa-moon me-1"></i>Long repos
                                 </button>
                             </div>
                         </div>
@@ -692,12 +717,37 @@ if (isset($_GET['debug'])) {
                                                 <?php else: ?>
                                                     <i class="fas fa-gem me-1"></i>Niv.<?php echo $level; ?>
                                                 <?php endif; ?>
-                                                <span class="spell-count">(<?php echo count($available_by_level[$level]); ?>)</span>
+                                                <span class="spell-count">(<?php 
+                                                    $known_count = 0;
+                                                    foreach ($available_by_level[$level] as $spell) {
+                                                        foreach ($character_spells as $known_spell) {
+                                                            if ($known_spell['id'] == $spell['id']) {
+                                                                $known_count++;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                    echo $known_count . '/' . count($available_by_level[$level]);
+                                                ?>)</span>
                                             </button>
                                         </li>
                                     <?php endif; ?>
                                 <?php endfor; ?>
                             </ul>
+                            
+                            <!-- Informations sur les capacités -->
+                            <div class="spell-capabilities-info" id="spell-capabilities-info">
+                                <i class="fas fa-info-circle me-1"></i>
+                                <strong>Capacités maximales :</strong>
+                                <?php
+                                $max_cantrips = $spell_capabilities['cantrips_known'];
+                                $max_spells = $spell_capabilities['spells_known'];
+                                echo "Sorts mineurs: $max_cantrips, Sorts préparés: $max_spells";
+                                if ($class && strpos(strtolower($class['name']), 'clerc') !== false) {
+                                    echo " (Niveau $level + Sagesse $wisdomModifier)";
+                                }
+                                ?>
+                            </div>
                             
                             <!-- Contenu des onglets -->
                             <?php for ($level = 0; $level <= 9; $level++): ?>
@@ -776,12 +826,26 @@ if (isset($_GET['debug'])) {
                                                 <?php else: ?>
                                                     <i class="fas fa-gem me-1"></i>Niv.<?php echo $level; ?>
                                                 <?php endif; ?>
-                                                <span class="spell-count">(<?php echo count($known_by_level[$level]); ?>)</span>
+                                                <span class="spell-count">(<?php echo count($known_by_level[$level]); ?> connus)</span>
                                             </button>
                                         </li>
                                     <?php endif; ?>
                                 <?php endfor; ?>
                             </ul>
+                            
+                            <!-- Informations sur les capacités -->
+                            <div class="spell-capabilities-info" id="known-spell-capabilities-info">
+                                <i class="fas fa-info-circle me-1"></i>
+                                <strong>Capacités maximales :</strong>
+                                <?php
+                                $max_cantrips = $spell_capabilities['cantrips_known'];
+                                $max_spells = $spell_capabilities['spells_known'];
+                                echo "Sorts mineurs: $max_cantrips, Sorts préparés: $max_spells";
+                                if ($class && strpos(strtolower($class['name']), 'clerc') !== false) {
+                                    echo " (Niveau $level + Sagesse $wisdomModifier)";
+                                }
+                                ?>
+                            </div>
                             
                             <!-- Contenu des onglets des sorts connus -->
                             <?php for ($level = 0; $level <= 9; $level++): ?>
@@ -861,14 +925,14 @@ function toggleGrimoireMode() {
         editMode.style.display = 'block';
         readMode.style.display = 'none';
         pageTitle.textContent = 'Table des sorts';
-        modeToggleBtn.innerHTML = '<i class="fas fa-edit me-1"></i>Préparer mes sorts';
+        modeToggleBtn.innerHTML = '<i class="fas fa-star me-1"></i>Sorts préparés';
         modeToggleBtn.className = 'btn btn-sm btn-outline-light';
     } else {
         // Passer en mode lecture
         editMode.style.display = 'none';
         readMode.style.display = 'block';
         pageTitle.textContent = 'Mes sorts connus';
-        modeToggleBtn.innerHTML = '<i class="fas fa-book-open me-1"></i>Mode édition';
+        modeToggleBtn.innerHTML = '<i class="fas fa-edit me-1"></i>Préparer les sorts';
         modeToggleBtn.className = 'btn btn-sm btn-light';
         
         // Réinitialiser la sélection de sort
@@ -1011,14 +1075,9 @@ function loadSpellDetails(spellId) {
                         <div class="d-flex gap-2 flex-wrap">
                             ${!isKnown ? `
                                 <button class="btn btn-success" onclick="addSpell(${<?php echo $character_id; ?>}, ${spellId}, '${spell.name}')">
-                                    <i class="fas fa-plus me-1"></i>Ajouter au grimoire
+                                    <i class="fas fa-star me-1"></i>Préparer le sort
                                 </button>
                             ` : `
-                                <button class="btn btn-${isPrepared ? 'warning' : 'info'}" 
-                                        onclick="toggleSpellPrepared(${<?php echo $character_id; ?>}, ${spellId}, ${isPrepared ? 'false' : 'true'})">
-                                    <i class="fas fa-${isPrepared ? 'star' : 'star-o'} me-1"></i>
-                                    ${isPrepared ? 'Dépréparer' : 'Préparer'}
-                                </button>
                                 <button class="btn btn-danger" 
                                         onclick="removeSpell(${<?php echo $character_id; ?>}, ${spellId}, '${spell.name}')">
                                     <i class="fas fa-trash me-1"></i>Retirer du grimoire
@@ -1051,7 +1110,7 @@ function loadSpellDetails(spellId) {
 }
 
 function addSpell(characterId, spellId, spellName) {
-    if (!confirm(`Ajouter le sort "${spellName}" à votre grimoire ?`)) {
+    if (!confirm(`Préparer le sort "${spellName}" ?`)) {
         return;
     }
     
@@ -1064,17 +1123,17 @@ function addSpell(characterId, spellId, spellName) {
             action: 'add',
             character_id: characterId,
             spell_id: spellId,
-            prepared: false
+            prepared: true
         })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
             // Mettre à jour la liste des sorts du personnage
-            characterSpells.push({id: spellId, prepared: false});
+            characterSpells.push({id: spellId, prepared: true});
             
             // Mettre à jour l'interface
-            updateSpellButton(spellId, true, false);
+            updateSpellButton(spellId, true, true);
             
             // Recharger les détails du sort
             if (currentSpellId == spellId) {
@@ -1194,6 +1253,33 @@ function updateSpellButton(spellId, isKnown, isPrepared) {
         } else if (!isPrepared && starIcon) {
             starIcon.remove();
         }
+    }
+}
+
+function performLongRest() {
+    if (confirm('Effectuer un long repos ? Cela remettra tous les emplacements de sorts à zéro.')) {
+        fetch('reset_spell_slots.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                character_id: <?php echo $character_id; ?>
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Recharger la page pour mettre à jour l'affichage
+                location.reload();
+            } else {
+                alert('Erreur lors du long repos: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors du long repos');
+        });
     }
 }
 </script>
