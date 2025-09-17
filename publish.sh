@@ -133,11 +133,17 @@ git add .
 # Créer le commit
 log_info "Création du commit..."
 COMMIT_MESSAGE="v$NEW_VERSION: $COMMENT"
-if ! git commit -m "$COMMIT_MESSAGE"; then
-    log_error "Échec de la création du commit"
-    exit 1
+
+# Vérifier s'il y a des changements à commiter
+if git diff --staged --quiet; then
+    log_warning "Aucun changement à commiter"
+else
+    if ! git commit -m "$COMMIT_MESSAGE"; then
+        log_error "Échec de la création du commit"
+        exit 1
+    fi
+    log_success "Commit créé: $COMMIT_MESSAGE"
 fi
-log_success "Commit créé: $COMMIT_MESSAGE"
 
 # Créer le tag
 log_info "Création du tag Git..."
