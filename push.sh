@@ -463,6 +463,7 @@ prepare_files() {
         --include="*.sql" \
         --include="*.md" \
         --include="*.txt" \
+        --include="VERSION" \
         --include="config/" \
         --include="config/**" \
         --include="includes/" \
@@ -473,6 +474,8 @@ prepare_files() {
         --include="images/**" \
         --include="database/" \
         --include="database/**" \
+        --include="uploads/" \
+        --include="uploads/**" \
         --exclude="*" \
         . "$temp_dir/" >/dev/null 2>&1
     

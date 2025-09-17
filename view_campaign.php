@@ -1,8 +1,15 @@
 <?php
 require_once 'config/database.php';
 require_once 'includes/functions.php';
+$page_title = "Détails de Campagne";
+$current_page = "view_campaign";
 
-requireDMOrAdmin();
+
+// Les joueurs peuvent voir les campagnes publiques, les DM/Admin peuvent voir toutes les campagnes
+if (!isLoggedIn()) {
+    header('Location: login.php');
+    exit;
+}
 
 if (!isset($_GET['id'])) {
     header('Location: campaigns.php');
@@ -12,14 +19,19 @@ if (!isset($_GET['id'])) {
 $user_id = $_SESSION['user_id'];
 $campaign_id = (int)$_GET['id'];
 
-// Charger la campagne
-// Les admins peuvent voir toutes les campagnes, les MJ seulement les leurs
+// Charger la campagne selon le rôle
 if (isAdmin()) {
+    // Les admins peuvent voir toutes les campagnes
     $stmt = $pdo->prepare("SELECT * FROM campaigns WHERE id = ?");
     $stmt->execute([$campaign_id]);
-} else {
-    $stmt = $pdo->prepare("SELECT * FROM campaigns WHERE id = ? AND dm_id = ?");
+} elseif (isDM()) {
+    // Les DM peuvent voir leurs campagnes + les campagnes publiques
+    $stmt = $pdo->prepare("SELECT * FROM campaigns WHERE id = ? AND (dm_id = ? OR is_public = 1)");
     $stmt->execute([$campaign_id, $user_id]);
+} else {
+    // Les joueurs peuvent voir seulement les campagnes publiques
+    $stmt = $pdo->prepare("SELECT * FROM campaigns WHERE id = ? AND is_public = 1");
+    $stmt->execute([$campaign_id]);
 }
 $campaign = $stmt->fetch();
 
@@ -29,10 +41,42 @@ if (!$campaign) {
 }
 
 // Définir si l'utilisateur est le MJ propriétaire
-$isOwnerDM = ($user_id == $campaign['dm_id']);
+$dm_id = (int)$campaign['dm_id'];
+$isOwnerDM = ($user_id == $dm_id);
 
-// Traitements POST: ajouter membre par invite, créer session rapide
+// Traitements POST: candidatures (tous les utilisateurs connectés)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['action']) && $_POST['action'] === 'apply_to_campaign') {
+        $message = sanitizeInput($_POST['message'] ?? '');
+        $character_id = !empty($_POST['character_id']) ? (int)$_POST['character_id'] : null;
+        
+        // Vérifier si l'utilisateur n'est pas déjà membre
+        $stmt = $pdo->prepare("SELECT user_id FROM campaign_members WHERE campaign_id = ? AND user_id = ?");
+        $stmt->execute([$campaign_id, $user_id]);
+        $is_member = $stmt->fetch();
+        
+        if ($is_member) {
+            $error_message = "Vous êtes déjà membre de cette campagne.";
+        } else {
+            // Vérifier si l'utilisateur n'a pas déjà postulé
+            $stmt = $pdo->prepare("SELECT id FROM campaign_applications WHERE campaign_id = ? AND player_id = ? AND status = 'pending'");
+            $stmt->execute([$campaign_id, $user_id]);
+            $existing_application = $stmt->fetch();
+            
+            if ($existing_application) {
+                $error_message = "Vous avez déjà postulé à cette campagne.";
+            } else {
+                // Créer la candidature
+                $stmt = $pdo->prepare("INSERT INTO campaign_applications (campaign_id, player_id, character_id, message, status) VALUES (?, ?, ?, ?, 'pending')");
+                $stmt->execute([$campaign_id, $user_id, $character_id, $message]);
+                $success_message = "Votre candidature a été envoyée avec succès !";
+            }
+        }
+    }
+}
+
+// Traitements POST: ajouter membre par invite, créer session rapide (DM et Admin seulement)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isDMOrAdmin()) {
     if (isset($_POST['action']) && $_POST['action'] === 'add_member') {
         $username_or_email = sanitizeInput($_POST['username_or_email'] ?? '');
         if ($username_or_email !== '') {
@@ -150,6 +194,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Annuler le refus (revenir à 'pending')
+    if (isset($_POST['action']) && $_POST['action'] === 'unrevoke_application' && isset($_POST['application_id'])) {
+        $application_id = (int)$_POST['application_id'];
+        // Vérifier que la candidature est refusée pour cette campagne du MJ
+        $stmt = $pdo->prepare("SELECT ca.player_id FROM campaign_applications ca JOIN campaigns c ON ca.campaign_id = c.id WHERE ca.id = ? AND ca.campaign_id = ? AND c.dm_id = ? AND ca.status = 'declined'");
+        $stmt->execute([$application_id, $campaign_id, $dm_id]);
+        $app = $stmt->fetch();
+        if ($app) {
+            $player_id = (int)$app['player_id'];
+            // Remettre la candidature en attente
+            $stmt = $pdo->prepare("UPDATE campaign_applications SET status = 'pending' WHERE id = ?");
+            $stmt->execute([$application_id]);
+            // Notifier le joueur
+            $title = 'Refus annulé';
+            $message = 'Votre refus dans la campagne "' . $campaign['title'] . '" a été annulé par le MJ. Votre candidature est de nouveau en attente.';
+            $stmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, related_id) VALUES (?, 'system', ?, ?, ?)");
+            $stmt->execute([$player_id, $title, $message, $campaign_id]);
+            $success_message = "Refus annulé. La candidature est remise en attente.";
+        } else {
+            $error_message = "Candidature refusée introuvable.";
+        }
+    }
+
     // Exclure un membre (joueur) de la campagne
     if (isset($_POST['action']) && $_POST['action'] === 'remove_member' && isset($_POST['member_user_id'])) {
         $member_user_id = (int)$_POST['member_user_id'];
@@ -233,9 +300,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $size = (int)$_FILES['plan_file']['size'];
                 $originalName = $_FILES['plan_file']['name'];
                 
-                // Vérifier la taille (limite à 2M pour correspondre à la config PHP)
-                if ($size > 2 * 1024 * 1024) {
-                    $error_message = "Image trop volumineuse (max 2 Mo).";
+                // Vérifier la taille (limite à 10M pour correspondre à la config PHP)
+                if ($size > 10 * 1024 * 1024) {
+                    $error_message = "Image trop volumineuse (max 10 Mo).";
                 } else {
                     $finfo = new finfo(FILEINFO_MIME_TYPE);
                     $mime = $finfo->file($tmp);
@@ -352,6 +419,25 @@ $stmt = $pdo->prepare("SELECT u.id, u.username, cm.role, cm.joined_at FROM campa
 $stmt->execute([$campaign_id]);
 $members = $stmt->fetchAll();
 
+// Récupérer les personnages de l'utilisateur pour la candidature
+$stmt = $pdo->prepare("SELECT id, name FROM characters WHERE user_id = ? ORDER BY name ASC");
+$stmt->execute([$user_id]);
+$user_characters = $stmt->fetchAll();
+
+// Vérifier si l'utilisateur a déjà postulé
+$stmt = $pdo->prepare("SELECT id, status, created_at FROM campaign_applications WHERE campaign_id = ? AND player_id = ? ORDER BY created_at DESC LIMIT 1");
+$stmt->execute([$campaign_id, $user_id]);
+$user_application = $stmt->fetch();
+
+// Vérifier si l'utilisateur est déjà membre
+$is_member = false;
+foreach ($members as $member) {
+    if ($member['id'] == $user_id) {
+        $is_member = true;
+        break;
+    }
+}
+
 // Récupérer sessions
 $stmt = $pdo->prepare("SELECT * FROM game_sessions WHERE campaign_id = ? ORDER BY session_date DESC, created_at DESC");
 $stmt->execute([$campaign_id]);
@@ -413,34 +499,7 @@ if (!empty($places)) {
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="index.php">
-                <img src="images/logo.png" alt="JDR 4 MJ" height="30" class="me-2">
-                JDR 4 MJ
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="campaigns.php">Mes Campagnes</a></li>
-                </ul>
-                <ul class="navbar-nav">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                            <i class="fas fa-user me-1"></i><?php echo htmlspecialchars($_SESSION['username']); ?>
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="profile.php">Profil</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="logout.php">Déconnexion</a></li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+    <?php include 'includes/navbar.php'; ?>
 
     <div class="container mt-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -475,7 +534,7 @@ if (!empty($places)) {
                                         </span>
                                         <div class="d-flex align-items-center gap-2">
                                             <small class="text-muted">Depuis <?php echo date('d/m/Y', strtotime($m['joined_at'])); ?></small>
-                                            <?php if ($m['role'] !== 'dm'): ?>
+                                            <?php if ($m['role'] !== 'dm' && isDMOrAdmin()): ?>
                                                 <form method="POST" onsubmit="return confirm('Exclure ce joueur de la campagne ?');">
                                                     <input type="hidden" name="action" value="remove_member">
                                                     <input type="hidden" name="member_user_id" value="<?php echo (int)$m['id']; ?>">
@@ -489,6 +548,7 @@ if (!empty($places)) {
                                 <?php endforeach; ?>
                             </ul>
                         <?php endif; ?>
+                        <?php if (isDMOrAdmin()): ?>
                         <form method="POST" class="mt-3">
                             <input type="hidden" name="action" value="add_member">
                             <div class="input-group">
@@ -497,6 +557,54 @@ if (!empty($places)) {
                             </div>
                             <div class="form-text">Ou partagez le code d'invitation : <code><?php echo htmlspecialchars($campaign['invite_code']); ?></code></div>
                         </form>
+                        <?php else: ?>
+                        <div class="mt-3">
+                            <div class="form-text">Code d'invitation : <code><?php echo htmlspecialchars($campaign['invite_code']); ?></code></div>
+                        </div>
+                        <?php endif; ?>
+                        
+                        <?php if (!$is_member && !$user_application): ?>
+                        <!-- Formulaire de candidature pour les joueurs -->
+                        <div class="mt-4 p-3 border rounded bg-light">
+                            <h6 class="mb-3"><i class="fas fa-paper-plane me-2"></i>Postuler à cette campagne</h6>
+                            <form method="POST">
+                                <input type="hidden" name="action" value="apply_to_campaign">
+                                <div class="mb-3">
+                                    <label class="form-label">Personnage (optionnel)</label>
+                                    <select name="character_id" class="form-select">
+                                        <option value="">Aucun personnage spécifique</option>
+                                        <?php foreach ($user_characters as $char): ?>
+                                            <option value="<?php echo $char['id']; ?>"><?php echo htmlspecialchars($char['name']); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Message de candidature</label>
+                                    <textarea name="message" class="form-control" rows="3" placeholder="Présentez-vous et expliquez pourquoi vous souhaitez rejoindre cette campagne..."></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane me-2"></i>Envoyer ma candidature
+                                </button>
+                            </form>
+                        </div>
+                        <?php elseif ($user_application): ?>
+                        <!-- Statut de la candidature -->
+                        <div class="mt-4 p-3 border rounded">
+                            <h6 class="mb-2"><i class="fas fa-clock me-2"></i>Votre candidature</h6>
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-<?php 
+                                    echo $user_application['status'] === 'pending' ? 'warning' : 
+                                        ($user_application['status'] === 'approved' ? 'success' : 'danger'); 
+                                ?> me-2">
+                                    <?php 
+                                    echo $user_application['status'] === 'pending' ? 'En attente' : 
+                                        ($user_application['status'] === 'approved' ? 'Acceptée' : 'Refusée'); 
+                                    ?>
+                                </span>
+                                <small class="text-muted">Envoyée le <?php echo date('d/m/Y H:i', strtotime($user_application['created_at'])); ?></small>
+                            </div>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -505,6 +613,7 @@ if (!empty($places)) {
                 <div class="card h-100">
                     <div class="card-header"><i class="fas fa-calendar-alt me-2"></i>Sessions</div>
                     <div class="card-body">
+                        <?php if (isDMOrAdmin()): ?>
                         <form method="POST" class="mb-3">
                             <input type="hidden" name="action" value="create_session">
                             <div class="row g-2 align-items-end">
@@ -536,6 +645,7 @@ if (!empty($places)) {
                                 </div>
                             </div>
                         </form>
+                        <?php endif; ?>
 
                         <?php if (empty($sessions)): ?>
                             <p class="text-muted">Aucune session planifiée.</p>
@@ -781,6 +891,7 @@ if (!empty($places)) {
             </div>
         </div>
 
+        <?php if (isDMOrAdmin() && $isOwnerDM): ?>
         <div class="row g-4 mt-1">
             <div class="col-12">
                 <div class="card">
@@ -849,6 +960,12 @@ if (!empty($places)) {
                                                             <input type="hidden" name="application_id" value="<?php echo $a['id']; ?>">
                                                             <button class="btn btn-sm btn-outline-warning"><i class="fas fa-undo me-1"></i>Annuler l'acceptation</button>
                                                         </form>
+                                                    <?php elseif ($a['status'] === 'declined'): ?>
+                                                        <form method="POST" class="d-inline" onsubmit="return confirm('Annuler le refus de cette candidature ? Elle sera remise en attente.');">
+                                                            <input type="hidden" name="action" value="unrevoke_application">
+                                                            <input type="hidden" name="application_id" value="<?php echo $a['id']; ?>">
+                                                            <button class="btn btn-sm btn-outline-success"><i class="fas fa-undo me-1"></i>Annuler le refus</button>
+                                                        </form>
                                                     <?php else: ?>
                                                         <span class="text-muted">—</span>
                                                     <?php endif; ?>
@@ -863,6 +980,7 @@ if (!empty($places)) {
                 </div>
             </div>
         </div>
+        <?php endif; ?>
     </div>
 
     <!-- Modal Création Lieu -->
@@ -885,7 +1003,7 @@ if (!empty($places)) {
                         <div class="mb-3">
                             <label for="scenePlanFile" class="form-label">Plan du lieu (optionnel)</label>
                             <input type="file" class="form-control" id="scenePlanFile" name="plan_file" accept="image/png,image/jpeg,image/webp,image/gif">
-                            <div class="form-text">Formats acceptés: JPG, PNG, GIF, WebP (max 2 Mo)</div>
+                            <div class="form-text">Formats acceptés: JPG, PNG, GIF, WebP (max 10 Mo)</div>
                         </div>
                         
                         <div class="mb-3">

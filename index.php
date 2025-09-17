@@ -2,112 +2,25 @@
 require_once 'config/database.php';
 require_once 'includes/functions.php';
 ?>
+<?php
+$page_title = "Gestionnaire de Personnages D&D";
+$current_page = "index";
+$show_hero = true;
+?>
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JDR 4 MJ - Gestionnaire de Personnages D&D</title>
+    <title><?php echo $page_title; ?> - JDR 4 MJ</title>
     <link rel="icon" type="image/png" href="images/logo.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="css/custom-theme.css" rel="stylesheet">
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="index.php">
-                <img src="images/logo.png" alt="JDR 4 MJ" height="30" class="me-2">
-                JDR 4 MJ
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="index.php">Accueil</a>
-                    </li>
-                    <?php if (isLoggedIn()): ?>
-                        <li class="nav-item">
-                            <a class="nav-link" href="characters.php">Mes Personnages</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="public_campaigns.php">Campagnes Publiques</a>
-                        </li>
-                        <?php if (isDMOrAdmin()): ?>
-                        <li class="nav-item">
-                            <a class="nav-link" href="campaigns.php"><?php echo isAdmin() ? 'Toutes les Campagnes' : 'Mes Campagnes'; ?></a>
-                        </li>
-                        <?php endif; ?>
-                        <li class="nav-item">
-                            <a class="nav-link" href="create_character.php">Créer un Personnage</a>
-                        </li>
-                    <?php endif; ?>
-                </ul>
-                <ul class="navbar-nav">
-                    <?php if (isLoggedIn()): ?>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-user me-1"></i><?php echo htmlspecialchars($_SESSION['username']); ?>
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="profile.php">Profil</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="logout.php">Déconnexion</a></li>
-                            </ul>
-                        </li>
-                    <?php else: ?>
-                        <li class="nav-item">
-                            <a class="nav-link" href="login.php">Connexion</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="register.php">Inscription</a>
-                        </li>
-                    <?php endif; ?>
-                </ul>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Hero Section -->
-    <section class="hero-section">
-        <div class="container text-center">
-            <h1 class="display-4 mb-4">
-                <img src="images/logo.png" alt="JDR 4 MJ" height="60" class="me-3">
-                Gestionnaire de Personnages D&D
-            </h1>
-            <p class="lead mb-4">Créez, gérez et développez vos personnages de Donjons & Dragons en toute simplicité</p>
-            <?php if (!isLoggedIn()): ?>
-                <div class="d-flex justify-content-center gap-3">
-                    <a href="register.php" class="btn btn-dnd btn-lg">
-                        <i class="fas fa-user-plus me-2"></i>Commencer l'Aventure
-                    </a>
-                    <a href="login.php" class="btn btn-outline-light btn-lg">
-                        <i class="fas fa-sign-in-alt me-2"></i>Se Connecter
-                    </a>
-                </div>
-            <?php else: ?>
-                <div class="d-flex justify-content-center gap-3">
-                    <a href="characters.php" class="btn btn-dnd btn-lg">
-                        <i class="fas fa-users me-2"></i>Mes Personnages
-                    </a>
-                    <a href="public_campaigns.php" class="btn btn-outline-light btn-lg">
-                        <i class="fas fa-book-open me-2"></i>Campagnes Publiques
-                    </a>
-                    <?php if (isDMOrAdmin()): ?>
-                    <a href="campaigns.php" class="btn btn-outline-light btn-lg">
-                        <i class="fas fa-book me-2"></i><?php echo isAdmin() ? 'Toutes les Campagnes' : 'Mes Campagnes'; ?>
-                    </a>
-                    <?php endif; ?>
-                    <a href="create_character.php" class="btn btn-outline-light btn-lg">
-                        <i class="fas fa-plus me-2"></i>Créer un Personnage
-                    </a>
-                </div>
-            <?php endif; ?>
-        </div>
-    </section>
+    <?php include 'includes/navbar.php'; ?>
 
     <!-- Features Section -->
     <section class="py-5">

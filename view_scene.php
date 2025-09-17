@@ -1,6 +1,9 @@
 <?php
 require_once 'config/database.php';
 require_once 'includes/functions.php';
+$page_title = "Scène de Jeu";
+$current_page = "view_scene";
+
 
 requireLogin();
 
@@ -23,7 +26,7 @@ if (!$place) {
 }
 
 $dm_id = (int)$place['dm_id'];
-$isOwnerDM = (isDM() && $_SESSION['user_id'] === $dm_id);
+$isOwnerDM = (isDMOrAdmin() && $_SESSION['user_id'] === $dm_id);
 
 // DEBUG: Logs pour déboguer les permissions
 error_log("DEBUG view_scene.php - User ID: " . ($_SESSION['user_id'] ?? 'NOT_SET'));
@@ -31,13 +34,16 @@ error_log("DEBUG view_scene.php - DM ID: " . $dm_id);
 error_log("DEBUG view_scene.php - isDM(): " . (isDM() ? 'true' : 'false'));
 error_log("DEBUG view_scene.php - isOwnerDM: " . ($isOwnerDM ? 'true' : 'false'));
 
-// Autoriser également les membres de la campagne à voir la lieu
-$canView = $isOwnerDM;
+// Autoriser les admins, les DM propriétaires et les membres de la campagne à voir le lieu
+$canView = isAdmin() || $isOwnerDM;
 if (!$canView) {
     $stmt = $pdo->prepare("SELECT 1 FROM campaign_members WHERE campaign_id = ? AND user_id = ? LIMIT 1");
     $stmt->execute([$place['campaign_id'], $_SESSION['user_id']]);
     $canView = (bool)$stmt->fetch();
 }
+
+// Seuls les admins et les DM propriétaires peuvent éditer le lieu
+$canEdit = isAdmin() || $isOwnerDM;
 
 if (!$canView) {
     header('Location: index.php');
@@ -261,9 +267,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
             $size = (int)$_FILES['plan_file']['size'];
             $originalName = $_FILES['plan_file']['name'];
             
-            // Vérifier la taille (limite à 2M pour correspondre à la config PHP)
-            if ($size > 2 * 1024 * 1024) {
-                $error_message = "Image trop volumineuse (max 2 Mo).";
+            // Vérifier la taille (limite à 10M pour correspondre à la config PHP)
+            if ($size > 10 * 1024 * 1024) {
+                $error_message = "Image trop volumineuse (max 10 Mo).";
             } else {
                 $finfo = new finfo(FILEINFO_MIME_TYPE);
                 $mime = $finfo->file($tmp);
@@ -330,6 +336,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
             $stmt = $pdo->prepare("SELECT s.*, c.title AS campaign_title, c.id AS campaign_id, c.dm_id, u.username AS dm_username FROM places s JOIN campaigns c ON s.campaign_id = c.id JOIN users u ON c.dm_id = u.id WHERE s.id = ?");
             $stmt->execute([$place_id]);
             $place = $stmt->fetch();
+        }
+    }
+    
+    // Éditer le lieu (titre, description, notes)
+    if (isset($_POST['action']) && $_POST['action'] === 'edit_scene') {
+        if (!$canEdit) {
+            $error_message = "Vous n'avez pas les droits pour éditer ce lieu.";
+        } else {
+            $title = trim($_POST['scene_title'] ?? '');
+            $description = trim($_POST['scene_description'] ?? '');
+            $notes = trim($_POST['scene_notes'] ?? '');
+            
+            if ($title === '') {
+                $error_message = "Le titre du lieu est obligatoire.";
+            } else {
+                $stmt = $pdo->prepare("UPDATE places SET title = ?, description = ?, notes = ? WHERE id = ? AND campaign_id = ?");
+                $stmt->execute([$title, $description, $notes, $place_id, $place['campaign_id']]);
+                $success_message = "Lieu mis à jour avec succès.";
+                
+                // Recharger les données du lieu
+                $stmt = $pdo->prepare("SELECT s.*, c.title AS campaign_title, c.id AS campaign_id, c.dm_id, u.username AS dm_username FROM places s JOIN campaigns c ON s.campaign_id = c.id JOIN users u ON c.dm_id = u.id WHERE s.id = ?");
+                $stmt->execute([$place_id]);
+                $place = $stmt->fetch();
+            }
         }
     }
     
@@ -624,34 +654,7 @@ foreach ($allScenes as $s) {
     <link href="css/custom-theme.css" rel="stylesheet">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="index.php">
-                <img src="images/logo.png" alt="JDR 4 MJ" height="30" class="me-2">
-                JDR 4 MJ
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="view_campaign.php?id=<?php echo (int)$place['campaign_id']; ?>">Retour Campagne</a></li>
-                </ul>
-                <ul class="navbar-nav">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                            <i class="fas fa-user me-1"></i><?php echo htmlspecialchars($_SESSION['username']); ?>
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="profile.php">Profil</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="logout.php">Déconnexion</a></li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+    <?php include 'includes/navbar.php'; ?>
 <?php endif; ?>
 
 <div class="container mt-4">
@@ -698,9 +701,14 @@ foreach ($allScenes as $s) {
             <?php if ($isOwnerDM): ?>
                 <div class="d-flex align-items-center">
                     <h1 class="me-3"><i class="fas fa-photo-video me-2"></i><?php echo htmlspecialchars($place['title']); ?></h1>
-                    <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#editTitleForm">
-                        <i class="fas fa-edit me-1"></i>Modifier le nom
-                    </button>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#editTitleForm">
+                            <i class="fas fa-edit me-1"></i>Modifier le nom
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#editSceneModal">
+                            <i class="fas fa-edit me-1"></i>Éditer le lieu
+                        </button>
+                    </div>
                 </div>
                 <div class="collapse mt-2" id="editTitleForm">
                     <div class="card card-body">
@@ -721,7 +729,7 @@ foreach ($allScenes as $s) {
                 <h1><i class="fas fa-photo-video me-2"></i><?php echo htmlspecialchars($place['title']); ?></h1>
             <?php endif; ?>
             <p class="text-muted mb-0">
-                Campagne: <?php echo htmlspecialchars($place['campaign_title']); ?> • MJ: <?php echo htmlspecialchars($place['dm_username']); ?>
+                Campagne: <a href="view_campaign.php?id=<?php echo (int)$place['campaign_id']; ?>" class="text-decoration-none fw-bold" style="color: var(--bs-primary) !important;"><?php echo htmlspecialchars($place['campaign_title']); ?></a> • MJ: <?php echo htmlspecialchars($place['dm_username']); ?>
                 <button class="btn btn-sm btn-outline-danger ms-2" type="button" data-bs-toggle="modal" data-bs-target="#poisonSearchModal">
                     <i class="fas fa-skull-crossbones me-1"></i>Poison
                 </button>
@@ -765,7 +773,7 @@ foreach ($allScenes as $s) {
                                     <div class="col-12">
                                         <label class="form-label">Téléverser un plan (image)</label>
                                         <input type="file" class="form-control" name="plan_file" accept="image/png,image/jpeg,image/webp,image/gif">
-                                        <div class="form-text">Formats acceptés: JPG, PNG, GIF, WebP (max 2 Mo)</div>
+                                        <div class="form-text">Formats acceptés: JPG, PNG, GIF, WebP (max 10 Mo)</div>
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label">Notes du MJ</label>
@@ -781,7 +789,7 @@ foreach ($allScenes as $s) {
                         </div>
                     <?php endif; ?>
                     
-                    <?php if (!empty($place['map_url'])): ?>
+                    <?php if (!empty($place['map_url']) && file_exists($place['map_url'])): ?>
                         <div class="position-relative">
                             <!-- Zone du plan avec pions -->
                             <div id="mapContainer" class="position-relative" style="display: inline-block;">
@@ -852,9 +860,15 @@ foreach ($allScenes as $s) {
                             
                             <div class="mt-2 d-flex justify-content-between align-items-center">
                                 <div>
-                                    <a href="<?php echo htmlspecialchars($place['map_url']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary">
-                                        <i class="fas fa-external-link-alt me-1"></i>Ouvrir en plein écran
-                                    </a>
+                                    <?php if (file_exists($place['map_url'])): ?>
+                                        <a href="<?php echo htmlspecialchars($place['map_url']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-external-link-alt me-1"></i>Ouvrir en plein écran
+                                        </a>
+                                    <?php else: ?>
+                                        <span class="text-muted small">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>Fichier de plan manquant
+                                        </span>
+                                    <?php endif; ?>
                                 </div>
                                 <?php if ($isOwnerDM): ?>
                                     <div>
@@ -868,9 +882,16 @@ foreach ($allScenes as $s) {
                     <?php else: ?>
                         <div class="text-center text-muted py-5">
                             <i class="fas fa-map fa-3x mb-3"></i>
-                            <p>Aucun plan disponible pour cette lieu.</p>
-                            <?php if ($isOwnerDM): ?>
-                                <p class="small">Cliquez sur "Modifier le plan" pour ajouter un plan.</p>
+                            <?php if (!empty($place['map_url']) && !file_exists($place['map_url'])): ?>
+                                <p>Plan référencé mais fichier manquant : <code><?php echo htmlspecialchars($place['map_url']); ?></code></p>
+                                <?php if ($isOwnerDM): ?>
+                                    <p class="small">Cliquez sur "Modifier le plan" pour téléverser un nouveau plan.</p>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <p>Aucun plan disponible pour ce lieu.</p>
+                                <?php if ($isOwnerDM): ?>
+                                    <p class="small">Cliquez sur "Modifier le plan" pour ajouter un plan.</p>
+                                <?php endif; ?>
                             <?php endif; ?>
                         </div>
                     <?php endif; ?>
@@ -1920,6 +1941,51 @@ foreach ($allScenes as $s) {
     </script>
     <?php endif; ?>
 
+<!-- Modal pour éditer le lieu -->
+<?php if ($canEdit): ?>
+<div class="modal fade" id="editSceneModal" tabindex="-1" aria-labelledby="editSceneModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editSceneModalLabel">
+                    <i class="fas fa-edit me-2"></i>Éditer le lieu
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="edit_scene">
+                    
+                    <div class="mb-3">
+                        <label for="editSceneTitle" class="form-label">Titre du lieu *</label>
+                        <input type="text" class="form-control" id="editSceneTitle" name="scene_title" 
+                               value="<?php echo htmlspecialchars($place['title']); ?>" required maxlength="255">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="editSceneDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="editSceneDescription" name="scene_description" 
+                                  rows="4" placeholder="Décrivez le lieu..."><?php echo htmlspecialchars($place['description'] ?? ''); ?></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="editSceneNotes" class="form-label">Notes du MJ</label>
+                        <textarea class="form-control" id="editSceneNotes" name="scene_notes" 
+                                  rows="6" placeholder="Notes privées du MJ..."><?php echo htmlspecialchars($place['notes'] ?? ''); ?></textarea>
+                        <div class="form-text">Ces notes ne sont visibles que par le MJ et les administrateurs.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Enregistrer les modifications
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 </body>
 </html>

@@ -10,6 +10,7 @@ Ce répertoire contient toute la documentation technique du projet JDR 4 MJ.
 - `INSTALL.md` - Guide d'installation
 - `PUSH_README.md` - Documentation du script push.sh
 - `PUBLISH_SCRIPT_README.md` - Documentation du script publish.sh
+- `NAVBAR_COMMON_SYSTEM.md` - Système de navbar commune
 
 ### 🗄️ **Base de Données**
 - `DATABASE_SYSTEM_README.md` - Vue d'ensemble du système de base de données

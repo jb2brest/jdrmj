@@ -68,13 +68,16 @@ if (isDMOrAdmin()) {
 $stmt = $pdo->prepare("SELECT COUNT(*) as unread_count FROM notifications WHERE user_id = ? AND is_read = FALSE");
 $stmt->execute([$user_id]);
 $unread_notifications = $stmt->fetch()['unread_count'];
+
+$page_title = "Profil - " . htmlspecialchars($user['username']);
+$current_page = "profile";
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profil - <?php echo htmlspecialchars($user['username']); ?> - JDR 4 MJ</title>
+    <title><?php echo $page_title; ?> - JDR 4 MJ</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -132,56 +135,7 @@ $unread_notifications = $stmt->fetch()['unread_count'];
     </style>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="index.php">
-                <img src="images/logo.png" alt="JDR 4 MJ" height="30" class="me-2">
-                JDR 4 MJ
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="index.php">Accueil</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="characters.php">Mes Personnages</a>
-                    </li>
-                    <?php if (isDMOrAdmin()): ?>
-                        <li class="nav-item">
-                            <a class="nav-link" href="campaigns.php"><?php echo isAdmin() ? 'Toutes les Campagnes' : 'Mes Campagnes'; ?></a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="sessions.php">Mes Sessions</a>
-                        </li>
-                    <?php endif; ?>
-                    <li class="nav-item">
-                        <a class="nav-link" href="create_character.php">Créer un Personnage</a>
-                    </li>
-                </ul>
-                <ul class="navbar-nav">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user me-1"></i><?php echo htmlspecialchars($_SESSION['username']); ?>
-                            <?php if ($unread_notifications > 0): ?>
-                                <span class="badge bg-danger ms-1"><?php echo $unread_notifications; ?></span>
-                            <?php endif; ?>
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item active" href="profile.php">Profil</a></li>
-                            <li><a class="dropdown-item" href="messages.php">Messages</a></li>
-                            <li><a class="dropdown-item" href="notifications.php">Notifications</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="logout.php">Déconnexion</a></li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+    <?php include 'includes/navbar.php'; ?>
 
     <!-- En-tête du profil -->
     <section class="profile-header">

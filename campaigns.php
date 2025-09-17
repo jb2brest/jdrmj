@@ -2,7 +2,11 @@
 require_once 'config/database.php';
 require_once 'includes/functions.php';
 
-requireDMOrAdmin();
+// Les joueurs peuvent voir les campagnes publiques, les DM/Admin peuvent voir toutes les campagnes
+if (!isLoggedIn()) {
+    header('Location: login.php');
+    exit;
+}
 
 $user_id = $_SESSION['user_id'];
 
@@ -16,8 +20,8 @@ function generateInviteCode($length = 12) {
     return $code;
 }
 
-// Traitements POST: créer, supprimer, basculer visibilité
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+// Traitements POST: créer, supprimer, basculer visibilité (DM et Admin seulement)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isDMOrAdmin()) {
     if (isset($_POST['action']) && $_POST['action'] === 'create') {
         $title = sanitizeInput($_POST['title'] ?? '');
         $description = sanitizeInput($_POST['description'] ?? '');
@@ -28,9 +32,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (strlen($title) < 3) {
             $error_message = "Le titre doit contenir au moins 3 caractères.";
         } else {
-            $stmt = $pdo->prepare("INSERT INTO campaigns (dm_id, title, description, game_system, is_public, invite_code) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$user_id, $title, $description, $game_system, $is_public, $invite_code]);
-            $success_message = "Campagne créée avec succès.";
+            $pdo->beginTransaction();
+            try {
+                // Créer la campagne
+                $stmt = $pdo->prepare("INSERT INTO campaigns (dm_id, title, description, game_system, is_public, invite_code) VALUES (?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$user_id, $title, $description, $game_system, $is_public, $invite_code]);
+                $campaign_id = $pdo->lastInsertId();
+                
+                // Ajouter le DM comme membre de sa propre campagne
+                $stmt = $pdo->prepare("INSERT INTO campaign_members (campaign_id, user_id, role) VALUES (?, ?, 'dm')");
+                $stmt->execute([$campaign_id, $user_id]);
+                
+                $pdo->commit();
+                $success_message = "Campagne créée avec succès.";
+            } catch (Exception $e) {
+                $pdo->rollBack();
+                $error_message = "Erreur lors de la création de la campagne.";
+            }
         }
     }
 
@@ -61,60 +79,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Récupérer les campagnes
-// Les admins voient toutes les campagnes, les MJ seulement les leurs
+// Récupérer les campagnes selon le rôle
 if (isAdmin()) {
+    // Les admins voient toutes les campagnes
     $stmt = $pdo->prepare("SELECT c.*, u.username as dm_name FROM campaigns c LEFT JOIN users u ON c.dm_id = u.id ORDER BY c.created_at DESC");
     $stmt->execute();
-} else {
-    $stmt = $pdo->prepare("SELECT c.*, u.username as dm_name FROM campaigns c LEFT JOIN users u ON c.dm_id = u.id WHERE c.dm_id = ? ORDER BY c.created_at DESC");
+    $page_title = 'Toutes les Campagnes';
+} elseif (isDM()) {
+    // Les DM voient leurs campagnes + les campagnes publiques
+    $stmt = $pdo->prepare("
+        SELECT c.*, u.username as dm_name 
+        FROM campaigns c 
+        LEFT JOIN users u ON c.dm_id = u.id 
+        WHERE c.dm_id = ? OR c.is_public = 1 
+        ORDER BY c.created_at DESC
+    ");
     $stmt->execute([$user_id]);
+    $page_title = 'Mes Campagnes';
+} else {
+    // Les joueurs voient seulement les campagnes publiques
+    $stmt = $pdo->prepare("
+        SELECT c.*, u.username as dm_name 
+        FROM campaigns c 
+        LEFT JOIN users u ON c.dm_id = u.id 
+        WHERE c.is_public = 1 
+        ORDER BY c.created_at DESC
+    ");
+    $stmt->execute();
+    $page_title = 'Campagnes Publiques';
 }
 $campaigns = $stmt->fetchAll();
+$current_page = "campaigns";
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo isAdmin() ? 'Toutes les Campagnes' : 'Mes Campagnes'; ?> - JDR 4 MJ</title>
+    <title><?php echo $page_title; ?> - JDR 4 MJ</title>
     <link rel="icon" type="image/png" href="images/logo.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="css/custom-theme.css" rel="stylesheet">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="index.php">
-                <img src="images/logo.png" alt="JDR 4 MJ" height="30" class="me-2">
-                JDR 4 MJ
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="index.php">Accueil</a></li>
-                    <li class="nav-item"><a class="nav-link" href="characters.php">Mes Personnages</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="campaigns.php">Mes Campagnes</a></li>
-                    <li class="nav-item"><a class="nav-link" href="create_character.php">Créer un Personnage</a></li>
-                </ul>
-                <ul class="navbar-nav">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                            <i class="fas fa-user me-1"></i><?php echo htmlspecialchars($_SESSION['username']); ?>
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="profile.php">Profil</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="logout.php">Déconnexion</a></li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+    <?php include 'includes/navbar.php'; ?>
 
     <div class="container mt-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -124,6 +133,7 @@ $campaigns = $stmt->fetchAll();
         <?php if (isset($success_message)) echo displayMessage($success_message, 'success'); ?>
         <?php if (isset($error_message)) echo displayMessage($error_message, 'error'); ?>
 
+        <?php if (isDMOrAdmin()): ?>
         <div class="card mb-4">
             <div class="card-header">
                 <i class="fas fa-plus me-2"></i>Créer une nouvelle campagne
@@ -161,6 +171,7 @@ $campaigns = $stmt->fetchAll();
                 </form>
             </div>
         </div>
+        <?php endif; ?>
 
         <?php if (empty($campaigns)): ?>
             <p class="text-muted">Aucune campagne pour le moment.</p>
@@ -193,26 +204,30 @@ $campaigns = $stmt->fetchAll();
                                         <a class="btn btn-sm btn-outline-primary" href="view_campaign.php?id=<?php echo $c['id']; ?>">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        <form method="POST" onsubmit="return confirm('Supprimer cette campagne ?');">
-                                            <input type="hidden" name="action" value="delete">
-                                            <input type="hidden" name="campaign_id" value="<?php echo $c['id']; ?>">
-                                            <button class="btn btn-sm btn-outline-danger">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </form>
-                                        <form method="POST">
-                                            <input type="hidden" name="action" value="toggle_visibility">
-                                            <input type="hidden" name="campaign_id" value="<?php echo $c['id']; ?>">
-                                            <button class="btn btn-sm btn-outline-secondary" title="Basculer visibilité">
-                                                <i class="fas fa-eye-slash"></i>
-                                            </button>
-                                        </form>
+                                        <?php if (isDMOrAdmin()): ?>
+                                            <form method="POST" onsubmit="return confirm('Supprimer cette campagne ?');">
+                                                <input type="hidden" name="action" value="delete">
+                                                <input type="hidden" name="campaign_id" value="<?php echo $c['id']; ?>">
+                                                <button class="btn btn-sm btn-outline-danger">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                            <form method="POST">
+                                                <input type="hidden" name="action" value="toggle_visibility">
+                                                <input type="hidden" name="campaign_id" value="<?php echo $c['id']; ?>">
+                                                <button class="btn btn-sm btn-outline-secondary" title="Basculer visibilité">
+                                                    <i class="fas fa-eye-slash"></i>
+                                                </button>
+                                            </form>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
-                                <div class="mt-3">
-                                    <small class="text-muted">Code d'invitation :</small>
-                                    <code><?php echo htmlspecialchars($c['invite_code']); ?></code>
-                                </div>
+                                <?php if (isDMOrAdmin()): ?>
+                                    <div class="mt-3">
+                                        <small class="text-muted">Code d'invitation :</small>
+                                        <code><?php echo htmlspecialchars($c['invite_code']); ?></code>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>

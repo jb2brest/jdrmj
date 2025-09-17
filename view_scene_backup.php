@@ -1,6 +1,9 @@
 <?php
 require_once 'config/database.php';
 require_once 'includes/functions.php';
+$page_title = "Sauvegarde de Scène";
+$current_page = "view_scene_backup";
+
 
 requireLogin();
 
@@ -64,9 +67,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                 $size = (int)$_FILES['npc_photo']['size'];
                 $originalName = $_FILES['npc_photo']['name'];
                 
-                // Vérifier la taille (limite à 2M pour correspondre à la config PHP)
-                if ($size > 2 * 1024 * 1024) {
-                    $error_message = "Image trop volumineuse (max 2 Mo).";
+                // Vérifier la taille (limite à 10M pour correspondre à la config PHP)
+                if ($size > 10 * 1024 * 1024) {
+                    $error_message = "Image trop volumineuse (max 10 Mo).";
                 } else {
                     $finfo = new finfo(FILEINFO_MIME_TYPE);
                     $mime = $finfo->file($tmp);
@@ -213,9 +216,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
             $size = (int)$_FILES['plan_file']['size'];
             $originalName = $_FILES['plan_file']['name'];
             
-            // Vérifier la taille (limite à 2M pour correspondre à la config PHP)
-            if ($size > 2 * 1024 * 1024) {
-                $error_message = "Image trop volumineuse (max 2 Mo).";
+            // Vérifier la taille (limite à 10M pour correspondre à la config PHP)
+            if ($size > 10 * 1024 * 1024) {
+                $error_message = "Image trop volumineuse (max 10 Mo).";
             } else {
                 $finfo = new finfo(FILEINFO_MIME_TYPE);
                 $mime = $finfo->file($tmp);
@@ -357,34 +360,7 @@ foreach ($allScenes as $s) {
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="index.php">
-                <img src="images/logo.png" alt="JDR 4 MJ" height="30" class="me-2">
-                JDR 4 MJ
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="view_session.php?id=<?php echo (int)$scene['session_id']; ?>">Retour Session</a></li>
-                </ul>
-                <ul class="navbar-nav">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                            <i class="fas fa-user me-1"></i><?php echo htmlspecialchars($_SESSION['username']); ?>
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="profile.php">Profil</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="logout.php">Déconnexion</a></li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+    <?php include 'includes/navbar.php'; ?>
 <?php endif; ?>
 
 <div class="container mt-4">
@@ -455,7 +431,7 @@ foreach ($allScenes as $s) {
                                     <div class="col-12">
                                         <label class="form-label">Téléverser un plan (image)</label>
                                         <input type="file" class="form-control" name="plan_file" accept="image/png,image/jpeg,image/webp,image/gif">
-                                        <div class="form-text">Formats acceptés: JPG, PNG, GIF, WebP (max 2 Mo)</div>
+                                        <div class="form-text">Formats acceptés: JPG, PNG, GIF, WebP (max 10 Mo)</div>
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label">Notes du MJ</label>
@@ -694,7 +670,7 @@ foreach ($allScenes as $s) {
                                     <div class="col-12">
                                         <label class="form-label">Photo de profil (optionnel)</label>
                                         <input type="file" class="form-control" name="npc_photo" accept="image/png,image/jpeg,image/webp,image/gif">
-                                        <div class="form-text">Formats acceptés: JPG, PNG, GIF, WebP (max 2 Mo)</div>
+                                        <div class="form-text">Formats acceptés: JPG, PNG, GIF, WebP (max 10 Mo)</div>
                                     </div>
                                     <div class="col-12">
                                         <button type="submit" class="btn btn-primary btn-sm">

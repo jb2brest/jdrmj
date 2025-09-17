@@ -1,6 +1,9 @@
 <?php
 require_once 'config/database.php';
 require_once 'includes/functions.php';
+$page_title = "Campagne - Vue Joueur";
+$current_page = "view_campaign_player";
+
 
 requireLogin();
 
@@ -208,22 +211,7 @@ if ($playerPlaceId) {
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="characters.php">
-                <img src="images/logo.png" alt="JDR 4 MJ" height="30" class="me-2">
-                JDR 4 MJ
-            </a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="characters.php">
-                    <i class="fas fa-users me-1"></i>Mes Personnages
-                </a>
-                <a class="nav-link" href="logout.php">
-                    <i class="fas fa-sign-out-alt me-1"></i>Déconnexion
-                </a>
-            </div>
-        </div>
-    </nav>
+    <?php include 'includes/navbar.php'; ?>
 
     <!-- En-tête de la campagne -->
     <div class="campaign-header">

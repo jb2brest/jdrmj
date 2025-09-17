@@ -2,6 +2,9 @@
 session_start();
 require_once 'config/database.php';
 require_once 'includes/functions.php';
+$page_title = "Fiche de Monstre";
+$current_page = "view_monster_sheet";
+
 
 // Vérifier que l'utilisateur est connecté
 if (!isset($_SESSION['user_id'])) {

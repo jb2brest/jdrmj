@@ -5,8 +5,8 @@
 
 :root {
   /* Couleurs primaires */
-  --bs-primary: #8B4513;
-  --bs-primary-rgb: 139, 69, 19;
+  --bs-primary: #2D1810;
+  --bs-primary-rgb: 45, 24, 16;
   --bs-secondary: #D2691E;
   --bs-secondary-rgb: 210, 105, 30;
   --bs-success: #B22222;
@@ -47,6 +47,55 @@
   --dnd-bg: #F5F5DC;
   --dnd-bg-dark: #E6E6FA;
   --dnd-bg-darker: #2C3E50;
+}
+
+/* ========================================
+   BOUTONS BOOTSTRAP PERSONNALISÉS
+   ======================================== */
+
+.btn-primary {
+  background-color: var(--bs-primary) !important;
+  border-color: var(--bs-primary) !important;
+  color: white !important;
+}
+
+.btn-primary:hover {
+  background-color: #1a0f0a !important;
+  border-color: #1a0f0a !important;
+  color: white !important;
+}
+
+.btn-primary:focus {
+  background-color: var(--bs-primary) !important;
+  border-color: var(--bs-primary) !important;
+  box-shadow: 0 0 0 0.2rem rgba(45, 24, 16, 0.5) !important;
+}
+
+.btn-primary:active {
+  background-color: #1a0f0a !important;
+  border-color: #1a0f0a !important;
+}
+
+.btn-outline-primary {
+  color: var(--bs-primary) !important;
+  border-color: var(--bs-primary) !important;
+  background-color: transparent !important;
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--bs-primary) !important;
+  border-color: var(--bs-primary) !important;
+  color: white !important;
+}
+
+.btn-outline-primary:focus {
+  box-shadow: 0 0 0 0.2rem rgba(45, 24, 16, 0.5) !important;
+}
+
+.btn-outline-primary:active {
+  background-color: var(--bs-primary) !important;
+  border-color: var(--bs-primary) !important;
+  color: white !important;
 }
 
 /* ========================================
