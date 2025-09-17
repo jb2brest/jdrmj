@@ -129,6 +129,41 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $background_id = (int)($_POST['background_id'] ?? 0);
     $experience_points = (int)($_POST['experience_points'] ?? 0);
     
+    // Traitement de la photo de profil
+    $profile_photo = $character['profile_photo']; // Garder la photo existante par défaut
+    
+    if (isset($_FILES['profile_photo']) && $_FILES['profile_photo']['error'] === UPLOAD_ERR_OK) {
+        $upload_dir = 'uploads/profiles/';
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0777, true);
+        }
+        
+        $file_extension = strtolower(pathinfo($_FILES['profile_photo']['name'], PATHINFO_EXTENSION));
+        $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif'];
+        
+        if (in_array($file_extension, $allowed_extensions)) {
+            $file_size = $_FILES['profile_photo']['size'];
+            if ($file_size <= 10 * 1024 * 1024) { // 10MB max
+                $new_filename = 'profile_' . $character_id . '_' . time() . '_' . uniqid() . '.' . $file_extension;
+                $upload_path = $upload_dir . $new_filename;
+                
+                if (move_uploaded_file($_FILES['profile_photo']['tmp_name'], $upload_path)) {
+                    // Supprimer l'ancienne photo si elle existe
+                    if (!empty($character['profile_photo']) && file_exists($character['profile_photo'])) {
+                        unlink($character['profile_photo']);
+                    }
+                    $profile_photo = $upload_path;
+                } else {
+                    $message = '<div class="alert alert-danger">Erreur lors de l\'upload de la photo.</div>';
+                }
+            } else {
+                $message = '<div class="alert alert-danger">La photo est trop volumineuse (max 10MB).</div>';
+            }
+        } else {
+            $message = '<div class="alert alert-danger">Format de fichier non supporté. Utilisez JPG, PNG ou GIF.</div>';
+        }
+    }
+    
     // Statistiques
     $strength = (int)($_POST['strength'] ?? $character['strength']);
     $dexterity = (int)($_POST['dexterity'] ?? $character['dexterity']);
@@ -257,7 +292,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     strength = ?, dexterity = ?, constitution = ?, intelligence = ?, wisdom = ?, charisma = ?,
                     armor_class = ?, speed = ?, hit_points_max = ?, hit_points_current = ?, proficiency_bonus = ?,
                     alignment = ?, personality_traits = ?, ideals = ?, bonds = ?, flaws = ?,
-                    skills = ?, languages = ?, equipment = ?, money_gold = ?, max_spells_learned = ?
+                    skills = ?, languages = ?, equipment = ?, money_gold = ?, max_spells_learned = ?, profile_photo = ?
                 WHERE id = ? AND user_id = ?
             ");
             
@@ -266,7 +301,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     $strength, $dexterity, $constitution, $intelligence, $wisdom, $charisma,
                 $armor_class, $speed, $maxHP, $character['hit_points_current'], $proficiencyBonus,
                 $alignment, $personality_traits, $ideals, $bonds, $flaws,
-                $skills_json, $languages_json, $finalEquipment, $backgroundGold, $max_spells_learned,
+                $skills_json, $languages_json, $finalEquipment, $backgroundGold, $max_spells_learned, $profile_photo,
                     $character_id, $user_id
                 ]);
             $message = displayMessage("Personnage mis à jour avec succès !", "success");
@@ -371,7 +406,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         
         <?php echo $message; ?>
         
-        <form method="POST" action="" onsubmit="return validateForm()">
+        <form method="POST" action="" enctype="multipart/form-data" onsubmit="return validateForm()">
             <!-- Informations de base -->
             <div class="form-section">
                 <h3><i class="fas fa-info-circle me-2"></i>Informations de base</h3>
@@ -384,6 +419,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                    required>
                                         </div>
                                         </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="profile_photo" class="form-label">Photo de profil</label>
+                            <div class="d-flex align-items-center">
+                                <?php if (!empty($character['profile_photo'])): ?>
+                                    <img src="<?php echo htmlspecialchars($character['profile_photo']); ?>" alt="Photo actuelle" class="rounded me-3" style="width: 60px; height: 60px; object-fit: cover;">
+                                <?php else: ?>
+                                    <div class="bg-secondary rounded d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
+                                        <i class="fas fa-user text-white"></i>
+                                    </div>
+                                <?php endif; ?>
+                                <div class="flex-grow-1">
+                                    <input type="file" class="form-control" id="profile_photo" name="profile_photo" accept="image/*">
+                                    <small class="form-text text-muted">Formats acceptés: JPG, PNG, GIF (max 10MB)</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="col-md-2">
                         <div class="mb-3">
                             <label for="race_id" class="form-label">Race</label>

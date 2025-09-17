@@ -18,6 +18,24 @@ Répertoire cible : /domains/robindesbriques.fr/public_html/jdrmj
 
 ssh u839591438@robindesbriques.fr
 
+La position des pions n'est pas la bonne dans view_campaign_player.php.
+Il faut utiliser exactement le même système de positionnement que dans view_scene.php pour que les joueurs voient ce que souhaite le Maitre du jeu.
+
+Remplace view_campaign_player.php par view_scene_player.php.
+Dans view_scene_player.php, le joueur observe le lieu où est placé son personnage.
+Il y retrouve un accès à sa feuille de personnage.
+
+Dans view_campaign_player.php, si un PNG ou un monstre n'est pas visible alors le pion correspondant ne doit pas être affiché. 
+Dans view_campaign_player.php, si un PNG ou un monstre est visible, mais pas identifié alors le pion correspondant doit être affiché mais sans la photo du monstre ou du png 
+Dans view_campaign_player.php, si un PNG ou un monstre est visible etidentifié alors le pion correspondant doit être affiché avec la photo du monstre ou du png 
+
+Dans view_scene.php, la photo de profil des PNG ne fonctionne pas bien.
+Exemple : http://localhost/jdrmj_test/view_scene.php?id=7
+
+Dans view_campaign.php, un joueur ne doit pas voir la liste des lieux. 
+Dans view_campaign.php, un joueur accepté pour la campagne peut rejoindre la partie en cliquant sur "Rejoindre". 
+Dans ce cas le joueur visualise la page view_campaign_player.php,
+
 
 Dans le grimoire, il faut que graphiquement on ait l'impression d'avoir un grimoire ouvert.
 La page de gauche contient la liste des sorts, triées par niveau, représenté par des boutons. 

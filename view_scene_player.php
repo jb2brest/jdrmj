@@ -170,7 +170,13 @@ include 'includes/layout.php';
                                     <?php 
                                     $tokenKey = 'npc_' . $npc['id'];
                                     $position = $tokenPositions[$tokenKey] ?? ['x' => 0, 'y' => 0, 'is_on_map' => false];
-                                    $imageUrl = !empty($npc['character_profile_photo']) ? $npc['character_profile_photo'] : (!empty($npc['profile_photo']) ? $npc['profile_photo'] : 'images/default_npc.png');
+                                    // Priorité : characters.profile_photo, puis place_npcs.profile_photo, avec vérification d'existence
+                                    $imageUrl = 'images/default_npc.png';
+                                    if (!empty($npc['character_profile_photo']) && file_exists($npc['character_profile_photo'])) {
+                                        $imageUrl = $npc['character_profile_photo'];
+                                    } elseif (!empty($npc['profile_photo']) && file_exists($npc['profile_photo'])) {
+                                        $imageUrl = $npc['profile_photo'];
+                                    }
                                     ?>
                                     <div class="token" 
                                          data-token-type="npc" 
@@ -310,8 +316,17 @@ include 'includes/layout.php';
                                 <div class="card">
                                     <div class="card-body">
                                         <div class="d-flex align-items-center">
-                                            <?php if (!empty($npc['profile_photo'])): ?>
-                                                <img src="<?php echo htmlspecialchars($npc['profile_photo']); ?>" alt="Photo de <?php echo htmlspecialchars($npc['name']); ?>" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                            <?php 
+                                            // Utiliser characters.profile_photo en priorité, sinon place_npcs.profile_photo, avec vérification d'existence
+                                            $photo_to_show = null;
+                                            if (!empty($npc['character_profile_photo']) && file_exists($npc['character_profile_photo'])) {
+                                                $photo_to_show = $npc['character_profile_photo'];
+                                            } elseif (!empty($npc['profile_photo']) && file_exists($npc['profile_photo'])) {
+                                                $photo_to_show = $npc['profile_photo'];
+                                            }
+                                            ?>
+                                            <?php if (!empty($photo_to_show)): ?>
+                                                <img src="<?php echo htmlspecialchars($photo_to_show); ?>" alt="Photo de <?php echo htmlspecialchars($npc['name']); ?>" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;">
                                             <?php else: ?>
                                                 <div class="bg-success rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
                                                     <i class="fas fa-user-tie text-white"></i>

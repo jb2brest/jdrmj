@@ -867,7 +867,13 @@ foreach ($allScenes as $s) {
                                         <?php 
                                         $tokenKey = 'npc_' . $npc['id'];
                                         $position = $tokenPositions[$tokenKey] ?? ['x' => 0, 'y' => 0, 'is_on_map' => false];
-                                        $imageUrl = !empty($npc['character_profile_photo']) ? $npc['character_profile_photo'] : (!empty($npc['profile_photo']) ? $npc['profile_photo'] : 'images/default_npc.png');
+                                        // Priorité : characters.profile_photo, puis place_npcs.profile_photo, avec vérification d'existence
+                                        $imageUrl = 'images/default_npc.png';
+                                        if (!empty($npc['character_profile_photo']) && file_exists($npc['character_profile_photo'])) {
+                                            $imageUrl = $npc['character_profile_photo'];
+                                        } elseif (!empty($npc['profile_photo']) && file_exists($npc['profile_photo'])) {
+                                            $imageUrl = $npc['profile_photo'];
+                                        }
                                         ?>
                                         <div class="token" 
                                              data-token-type="npc" 
@@ -1111,8 +1117,13 @@ foreach ($allScenes as $s) {
                                     <div class="d-flex justify-content-between align-items-start">
                                         <div class="d-flex align-items-start">
                                             <?php 
-                                            // Utiliser la photo du PNJ si disponible, sinon la photo du personnage associé
-                                            $photo_to_show = !empty($npc['profile_photo']) ? $npc['profile_photo'] : (!empty($npc['character_profile_photo']) ? $npc['character_profile_photo'] : null);
+                                            // Utiliser characters.profile_photo en priorité, sinon place_npcs.profile_photo, avec vérification d'existence
+                                            $photo_to_show = null;
+                                            if (!empty($npc['character_profile_photo']) && file_exists($npc['character_profile_photo'])) {
+                                                $photo_to_show = $npc['character_profile_photo'];
+                                            } elseif (!empty($npc['profile_photo']) && file_exists($npc['profile_photo'])) {
+                                                $photo_to_show = $npc['profile_photo'];
+                                            }
                                             ?>
                                             <?php if (!empty($photo_to_show)): ?>
                                                 <img src="<?php echo htmlspecialchars($photo_to_show); ?>" alt="Photo de <?php echo htmlspecialchars($npc['name']); ?>" class="rounded me-2" style="width: 40px; height: 40px; object-fit: cover;">

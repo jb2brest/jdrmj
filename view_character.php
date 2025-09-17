@@ -172,11 +172,16 @@ $armorClass = calculateArmorClassExtended($character, $equippedArmor, $equippedS
 // Contrôle d'accès: propriétaire OU MJ de la campagne liée
 $canView = ($character['user_id'] == $_SESSION['user_id']);
 
-if (!$canView && isDM() && $dm_campaign_id) {
-    // Vérifier que la campagne appartient au MJ connecté
-    $stmt = $pdo->prepare("SELECT id FROM campaigns WHERE id = ? AND dm_id = ?");
-    $stmt->execute([$dm_campaign_id, $_SESSION['user_id']]);
-    $ownsCampaign = (bool)$stmt->fetch();
+if (!$canView && isDMOrAdmin() && $dm_campaign_id) {
+    // Vérifier que la campagne appartient au MJ connecté ou que l'utilisateur est admin
+    $ownsCampaign = false;
+    if (isAdmin()) {
+        $ownsCampaign = true; // Les admins peuvent voir toutes les feuilles
+    } else {
+        $stmt = $pdo->prepare("SELECT id FROM campaigns WHERE id = ? AND dm_id = ?");
+        $stmt->execute([$dm_campaign_id, $_SESSION['user_id']]);
+        $ownsCampaign = (bool)$stmt->fetch();
+    }
 
     if ($ownsCampaign) {
         // Vérifier que le joueur propriétaire du personnage est membre ou a candidaté à cette campagne
@@ -205,11 +210,15 @@ if (!$canView) {
 
 // Vérifier si l'utilisateur peut modifier les points de vie (propriétaire ou MJ)
 $canModifyHP = ($character['user_id'] == $_SESSION['user_id']);
-if (!$canModifyHP && isDM() && $dm_campaign_id) {
-    // Vérifier que la campagne appartient au MJ connecté
-    $stmt = $pdo->prepare("SELECT id FROM campaigns WHERE id = ? AND dm_id = ?");
-    $stmt->execute([$dm_campaign_id, $_SESSION['user_id']]);
-    $canModifyHP = (bool)$stmt->fetch();
+if (!$canModifyHP && isDMOrAdmin() && $dm_campaign_id) {
+    // Vérifier que la campagne appartient au MJ connecté ou que l'utilisateur est admin
+    if (isAdmin()) {
+        $canModifyHP = true; // Les admins peuvent modifier toutes les feuilles
+    } else {
+        $stmt = $pdo->prepare("SELECT id FROM campaigns WHERE id = ? AND dm_id = ?");
+        $stmt->execute([$dm_campaign_id, $_SESSION['user_id']]);
+        $canModifyHP = (bool)$stmt->fetch();
+    }
     
     // Si c'est un MJ et qu'il a accès à la campagne, il peut modifier les PV
     if ($canModifyHP) {
