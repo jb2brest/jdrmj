@@ -1,4 +1,4 @@
-Déploiement sur test - 2025-09-17 22:29:25
-Message: Correction finale: mise à jour automatique fonctionnelle
+Déploiement sur test - 2025-09-17 22:31:55
+Message: Correction: colonne updated_at manquante dans place_npcs
 Serveur: test
-Timestamp: 2025-09-17 22:29:25
+Timestamp: 2025-09-17 22:31:55
