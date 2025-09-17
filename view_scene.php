@@ -81,6 +81,19 @@ while ($row = $stmt->fetch()) {
     ];
 }
 
+
+// Récupérer les membres de la campagne pour le formulaire d'ajout de joueurs
+$stmt = $pdo->prepare("
+    SELECT u.id, u.username, c.id AS character_id, c.name AS character_name, c.profile_photo
+    FROM campaign_members cm
+    JOIN users u ON cm.user_id = u.id
+    LEFT JOIN characters c ON u.id = c.user_id
+    WHERE cm.campaign_id = ? AND cm.role IN ('player', 'dm')
+    ORDER BY u.username ASC
+");
+$stmt->execute([$place['campaign_id']]);
+$campaignMembers = $stmt->fetchAll();
+
 // Traitements POST pour ajouter des PNJ
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
 
@@ -109,6 +122,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         }
     }
     
+    // Ajouter un joueur au lieu
+    if (isset($_POST['action']) && $_POST['action'] === 'add_player' && isset($_POST['player_id'])) {
+        $player_id = (int)$_POST['player_id'];
+        $character_id = !empty($_POST['character_id']) ? (int)$_POST['character_id'] : null;
+        
+        // Vérifier que le joueur est membre de la campagne
+        $stmt = $pdo->prepare("SELECT 1 FROM campaign_members WHERE campaign_id = ? AND user_id = ?");
+        $stmt->execute([$place['campaign_id'], $player_id]);
+        if ($stmt->fetch()) {
+            // Vérifier que le joueur n'est pas déjà dans le lieu
+            $stmt = $pdo->prepare("SELECT 1 FROM place_players WHERE place_id = ? AND player_id = ?");
+            $stmt->execute([$place_id, $player_id]);
+            if (!$stmt->fetch()) {
+                $stmt = $pdo->prepare("INSERT INTO place_players (place_id, player_id, character_id) VALUES (?, ?, ?)");
+                $stmt->execute([$place_id, $player_id, $character_id]);
+                $success_message = "Joueur ajouté au lieu.";
+                
+                // Recharger les joueurs
+                $stmt = $pdo->prepare("SELECT sp.player_id, u.username, ch.id AS character_id, ch.name AS character_name, ch.profile_photo, ch.class_id FROM place_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.place_id = ? ORDER BY u.username ASC");
+                $stmt->execute([$place_id]);
+                $placePlayers = $stmt->fetchAll();
+            } else {
+                $error_message = "Ce joueur est déjà présent dans ce lieu.";
+            }
+        } else {
+            $error_message = "Ce joueur n'est pas membre de la campagne.";
+        }
+    }
+    
     // Exclure un joueur du lieu
     if (isset($_POST['action']) && $_POST['action'] === 'remove_player' && isset($_POST['player_id'])) {
         $player_id = (int)$_POST['player_id'];
@@ -117,7 +159,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         $success_message = "Joueur retiré du lieu.";
         
         // Recharger les joueurs
-        $stmt = $pdo->prepare("SELECT sp.player_id, u.username, ch.id AS character_id, ch.name AS character_name, ch.profile_photo FROM place_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.place_id = ? ORDER BY u.username ASC");
+        $stmt = $pdo->prepare("SELECT sp.player_id, u.username, ch.id AS character_id, ch.name AS character_name, ch.profile_photo, ch.class_id FROM place_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.place_id = ? ORDER BY u.username ASC");
         $stmt->execute([$place_id]);
         $placePlayers = $stmt->fetchAll();
     }
@@ -910,8 +952,57 @@ foreach ($allScenes as $s) {
 
         <div class="col-lg-4">
             <div class="card mb-4">
-                <div class="card-header">Joueurs présents</div>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Joueurs présents</span>
+                    <?php if ($isOwnerDM): ?>
+                        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#addPlayerForm">
+                            <i class="fas fa-user-plus me-1"></i>Ajouter
+                        </button>
+                    <?php endif; ?>
+                </div>
                 <div class="card-body">
+                    <?php if ($isOwnerDM): ?>
+                        <div class="collapse mb-3" id="addPlayerForm">
+                            <div class="card card-body">
+                                <h6>Ajouter un joueur</h6>
+                                <form method="POST" class="row g-2">
+                                    <input type="hidden" name="action" value="add_player">
+                                    <div class="col-12">
+                                        <label class="form-label">Sélectionner un joueur</label>
+                                        <select class="form-select" name="player_id" required>
+                                            <option value="">Choisir un joueur...</option>
+                                            <?php foreach ($campaignMembers as $member): ?>
+                                                <?php
+                                                // Vérifier si le joueur est déjà dans le lieu
+                                                $alreadyPresent = false;
+                                                foreach ($placePlayers as $player) {
+                                                    if ($player['player_id'] == $member['id']) {
+                                                        $alreadyPresent = true;
+                                                        break;
+                                                    }
+                                                }
+                                                ?>
+                                                <?php if (!$alreadyPresent): ?>
+                                                    <option value="<?php echo (int)$member['id']; ?>" data-character-id="<?php echo (int)$member['character_id']; ?>">
+                                                        <?php echo htmlspecialchars($member['username']); ?>
+                                                        <?php if ($member['character_name']): ?>
+                                                            (<?php echo htmlspecialchars($member['character_name']); ?>)
+                                                        <?php endif; ?>
+                                                    </option>
+                                                <?php endif; ?>
+                                            <?php endforeach; ?>
+                                        </select>
+                                    </div>
+                                    <div class="col-12">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-user-plus me-1"></i>Ajouter au lieu
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                    
                     <?php if (empty($placePlayers)): ?>
                         <p class="text-muted">Aucun joueur présent dans cette lieu.</p>
                     <?php else: ?>
@@ -1722,11 +1813,6 @@ foreach ($allScenes as $s) {
             });
         }
 
-        // Système de glisser-déposer pour les pions
-        <?php if ($isOwnerDM && !empty($place['map_url'])): ?>
-        initializeTokenSystem();
-        <?php endif; ?>
-
     });
     </script>
 
@@ -1745,6 +1831,7 @@ foreach ($allScenes as $s) {
         // Initialiser les positions des pions
         console.log('Initialisation du système de pions...');
         console.log('Nombre de pions trouvés:', tokens.length);
+        
         
         tokens.forEach(token => {
             const isOnMap = token.dataset.isOnMap === 'true';
@@ -1893,6 +1980,11 @@ foreach ($allScenes as $s) {
                 is_on_map: isOnMap
             };
 
+            console.log('=== SAVE TOKEN POSITION DEBUG ===');
+            console.log('Données à envoyer:', data);
+            console.log('Token:', token);
+            console.log('Position:', {x, y, isOnMap});
+
             fetch('update_token_position.php', {
                 method: 'POST',
                 headers: {
@@ -1900,14 +1992,20 @@ foreach ($allScenes as $s) {
                 },
                 body: JSON.stringify(data)
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('Réponse reçue:', response.status, response.statusText);
+                return response.json();
+            })
             .then(result => {
+                console.log('Résultat de la sauvegarde:', result);
                 if (!result.success) {
                     console.error('Erreur lors de la sauvegarde:', result.error);
+                } else {
+                    console.log('✅ Position sauvegardée avec succès');
                 }
             })
             .catch(error => {
-                console.error('Erreur:', error);
+                console.error('❌ Erreur lors de l\'appel:', error);
             });
         }
 
@@ -1938,8 +2036,37 @@ foreach ($allScenes as $s) {
             });
         }
     }
+    
+    // Initialiser le système de pions après que le DOM soit complètement chargé
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeTokenSystem();
+    });
     </script>
     <?php endif; ?>
+
+    <script>
+    // Gestion de l'ajout de joueurs
+    document.addEventListener('DOMContentLoaded', function() {
+        const playerSelect = document.querySelector('select[name="player_id"]');
+        if (playerSelect) {
+            playerSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                const characterId = selectedOption.getAttribute('data-character-id');
+                
+                // Créer un champ caché pour le character_id si nécessaire
+                let characterIdInput = document.querySelector('input[name="character_id"]');
+                if (!characterIdInput) {
+                    characterIdInput = document.createElement('input');
+                    characterIdInput.type = 'hidden';
+                    characterIdInput.name = 'character_id';
+                    this.parentNode.appendChild(characterIdInput);
+                }
+                
+                characterIdInput.value = characterId || '';
+            });
+        }
+    });
+    </script>
 
 <!-- Modal pour éditer le lieu -->
 <?php if ($canEdit): ?>

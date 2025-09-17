@@ -445,6 +445,12 @@ prepare_files() {
     # Créer le répertoire temporaire
     mkdir -p "$temp_dir"
     
+    # Sauvegarder les uploads existants sur le serveur de test
+    if [ "$SERVER" = "test" ] && [ -d "/var/www/html/jdrmj_test/uploads" ]; then
+        log_info "Sauvegarde des uploads existants..."
+        cp -r /var/www/html/jdrmj_test/uploads "$temp_dir/uploads_backup" 2>/dev/null || true
+    fi
+    
     # Copier les fichiers nécessaires
     log_info "Copie des fichiers de l'application..."
     
@@ -478,6 +484,19 @@ prepare_files() {
         --include="uploads/**" \
         --exclude="*" \
         . "$temp_dir/" >/dev/null 2>&1
+    
+    # Restaurer les uploads sauvegardés si le répertoire local est vide
+    if [ -d "$temp_dir/uploads_backup" ]; then
+        if [ ! -d "$temp_dir/uploads" ] || [ -z "$(ls -A "$temp_dir/uploads" 2>/dev/null)" ]; then
+            log_info "Restauration des uploads sauvegardés..."
+            rm -rf "$temp_dir/uploads" 2>/dev/null || true
+            mv "$temp_dir/uploads_backup" "$temp_dir/uploads"
+        else
+            log_info "Fusion des uploads sauvegardés avec les existants..."
+            cp -r "$temp_dir/uploads_backup"/* "$temp_dir/uploads/" 2>/dev/null || true
+            rm -rf "$temp_dir/uploads_backup"
+        fi
+    fi
     
     # Exclure les fichiers de développement
     rm -rf "$temp_dir/tests"

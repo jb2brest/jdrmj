@@ -419,6 +419,17 @@ $stmt = $pdo->prepare("SELECT u.id, u.username, cm.role, cm.joined_at FROM campa
 $stmt->execute([$campaign_id]);
 $members = $stmt->fetchAll();
 
+// Vérifier si l'utilisateur actuel est membre de la campagne
+$is_member = false;
+$user_role = null;
+foreach ($members as $member) {
+    if ($member['id'] == $user_id) {
+        $is_member = true;
+        $user_role = $member['role'];
+        break;
+    }
+}
+
 // Récupérer les personnages de l'utilisateur pour la candidature
 $stmt = $pdo->prepare("SELECT id, name FROM characters WHERE user_id = ? ORDER BY name ASC");
 $stmt->execute([$user_id]);
@@ -563,7 +574,16 @@ if (!empty($places)) {
                         </div>
                         <?php endif; ?>
                         
-                        <?php if (!$is_member && !$user_application): ?>
+                        <?php if ($is_member && $user_role === 'player'): ?>
+                        <!-- Bouton Rejoindre pour les joueurs membres -->
+                        <div class="mt-4 p-3 border rounded bg-success bg-opacity-10">
+                            <h6 class="mb-3 text-success"><i class="fas fa-check-circle me-2"></i>Vous êtes membre de cette campagne</h6>
+                            <p class="mb-3">Vous pouvez maintenant rejoindre la partie et accéder à tous les contenus de la campagne.</p>
+                            <a href="view_campaign_player.php?id=<?php echo (int)$campaign_id; ?>" class="btn btn-success">
+                                <i class="fas fa-play me-2"></i>Rejoindre la partie
+                            </a>
+                        </div>
+                        <?php elseif (!$is_member && !$user_application): ?>
                         <!-- Formulaire de candidature pour les joueurs -->
                         <div class="mt-4 p-3 border rounded bg-light">
                             <h6 class="mb-3"><i class="fas fa-paper-plane me-2"></i>Postuler à cette campagne</h6>
@@ -671,7 +691,8 @@ if (!empty($places)) {
             </div>
         </div>
 
-        <!-- Section Lieux -->
+        <!-- Section Lieux - Visible uniquement pour les DM et Admin -->
+        <?php if (isDMOrAdmin()): ?>
         <div class="row g-4 mt-1">
             <div class="col-12">
                 <div class="card">
@@ -825,6 +846,7 @@ if (!empty($places)) {
                 </div>
             </div>
         </div>
+        <?php endif; ?>
 
         <!-- Section Journal -->
         <div class="row g-4 mt-1">
