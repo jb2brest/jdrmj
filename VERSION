@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=1.1.3
+VERSION=1.1.4
 
 # Date de déploiement
 DEPLOY_DATE=2025-09-17
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-09-17
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=df4bb219718ae5057a8fb34d9ead6e39a5b7afce
+GIT_COMMIT=8bcadbedd429cec8a617e16529b21a0036c29aea
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20250917-200343
+BUILD_ID=20250917-200459
 
 # Notes de version
-RELEASE_NOTES="SonarQube"
+RELEASE_NOTES="Test de correction du script"
