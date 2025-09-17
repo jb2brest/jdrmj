@@ -5,158 +5,112 @@ require_once 'includes/functions.php';
 // Vérifier que l'utilisateur est connecté
 if (!isset($_SESSION['user_id'])) {
     http_response_code(401);
-    echo json_encode(['error' => 'Non authentifié']);
+    echo json_encode(['error' => 'Non autorisé']);
     exit();
 }
 
-// Récupérer les paramètres
-$place_id = (int)($_GET['place_id'] ?? 0);
+// Vérifier que la requête est en POST
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['error' => 'Méthode non autorisée']);
+    exit();
+}
 
-if ($place_id <= 0) {
+// Récupérer les données JSON
+$input = json_decode(file_get_contents('php://input'), true);
+
+if (!$input || !isset($input['place_id'])) {
     http_response_code(400);
-    echo json_encode(['error' => 'ID de lieu invalide']);
+    echo json_encode(['error' => 'Données manquantes']);
     exit();
 }
 
-// Vérifier que l'utilisateur a accès à ce lieu
-$stmt = $pdo->prepare("
-    SELECT c.id as campaign_id, c.dm_id 
-    FROM places p 
-    JOIN campaigns c ON p.campaign_id = c.id 
-    WHERE p.id = ? AND (
-        c.dm_id = ? OR 
-        EXISTS (
-            SELECT 1 FROM campaign_applications ca 
-            WHERE ca.campaign_id = c.id 
-            AND ca.player_id = ? 
-            AND ca.status = 'approved'
-        )
-    )
-");
-$stmt->execute([$place_id, $_SESSION['user_id'], $_SESSION['user_id']]);
-$place = $stmt->fetch();
+$place_id = (int)$input['place_id'];
+$last_update = $input['last_update'] ?? null;
 
-if (!$place) {
-    http_response_code(403);
-    echo json_encode(['error' => 'Accès refusé à ce lieu']);
-    exit();
+try {
+    // Vérifier que l'utilisateur a accès à ce lieu
+    $stmt = $pdo->prepare("
+        SELECT p.id, c.id as campaign_id 
+        FROM places p 
+        JOIN campaigns c ON p.campaign_id = c.id 
+        WHERE p.id = ?
+    ");
+    $stmt->execute([$place_id]);
+    $place = $stmt->fetch();
+    
+    if (!$place) {
+        http_response_code(404);
+        echo json_encode(['error' => 'Lieu non trouvé']);
+        exit();
+    }
+    
+    // Vérifier que l'utilisateur est membre de la campagne
+    $stmt = $pdo->prepare("
+        SELECT role FROM campaign_members 
+        WHERE campaign_id = ? AND user_id = ?
+    ");
+    $stmt->execute([$place['campaign_id'], $_SESSION['user_id']]);
+    $membership = $stmt->fetch();
+    
+    if (!$membership) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Accès refusé']);
+        exit();
+    }
+    
+    // Récupérer les positions des pions
+    $stmt = $pdo->prepare("
+        SELECT token_type, entity_id, position_x, position_y, is_on_map, updated_at
+        FROM place_tokens 
+        WHERE place_id = ?
+        ORDER BY updated_at DESC
+    ");
+    $stmt->execute([$place_id]);
+    
+    $positions = [];
+    $latest_timestamp = null;
+    
+    while ($row = $stmt->fetch()) {
+        $tokenKey = $row['token_type'] . '_' . $row['entity_id'];
+        $positions[$tokenKey] = [
+            'x' => (int)$row['position_x'],
+            'y' => (int)$row['position_y'],
+            'is_on_map' => (bool)$row['is_on_map']
+        ];
+        
+        // Garder la timestamp la plus récente
+        if ($latest_timestamp === null || $row['updated_at'] > $latest_timestamp) {
+            $latest_timestamp = $row['updated_at'];
+        }
+    }
+    
+    // Si last_update est fourni, vérifier s'il y a des changements
+    if ($last_update && $latest_timestamp) {
+        $lastUpdateTime = new DateTime($last_update);
+        $latestTime = new DateTime($latest_timestamp);
+        
+        if ($latestTime <= $lastUpdateTime) {
+            // Aucun changement depuis la dernière mise à jour
+            echo json_encode([
+                'success' => true,
+                'positions' => [],
+                'timestamp' => $latest_timestamp,
+                'no_changes' => true
+            ]);
+            exit();
+        }
+    }
+    
+    echo json_encode([
+        'success' => true,
+        'positions' => $positions,
+        'timestamp' => $latest_timestamp
+    ]);
+    
+} catch (Exception $e) {
+    error_log("Erreur get_token_positions.php: " . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['error' => 'Erreur serveur']);
 }
-
-// Récupérer les positions des pions avec informations de visibilité
-$stmt = $pdo->prepare("
-    SELECT pt.token_type, pt.entity_id, pt.position_x, pt.position_y, pt.is_on_map, pt.updated_at,
-           pn.is_visible, pn.name as entity_name
-    FROM place_tokens pt
-    LEFT JOIN place_npcs pn ON (
-        (pt.token_type = 'npc' AND pt.entity_id = pn.id) OR 
-        (pt.token_type = 'monster' AND pt.entity_id = pn.id)
-    )
-    WHERE pt.place_id = ? 
-    AND (
-        pt.token_type = 'player' OR 
-        (pn.id IS NOT NULL AND pn.is_visible = TRUE)
-    )
-    ORDER BY pt.updated_at DESC
-");
-$stmt->execute([$place_id]);
-$tokenPositions = [];
-while ($row = $stmt->fetch()) {
-    $tokenPositions[$row['token_type'] . '_' . $row['entity_id']] = [
-        'x' => (int)$row['position_x'],
-        'y' => (int)$row['position_y'],
-        'is_on_map' => (bool)$row['is_on_map'],
-        'is_visible' => $row['token_type'] === 'player' ? true : (bool)$row['is_visible'],
-        'entity_name' => $row['entity_name'],
-        'updated_at' => $row['updated_at']
-    ];
-}
-
-// Récupérer aussi les PNJ/monstres masqués pour informer le client qu'ils doivent être cachés
-$stmt = $pdo->prepare("
-    SELECT pt.token_type, pt.entity_id, pt.position_x, pt.position_y, pt.is_on_map, pt.updated_at,
-           pn.is_visible, pn.name as entity_name
-    FROM place_tokens pt
-    JOIN place_npcs pn ON (
-        (pt.token_type = 'npc' AND pt.entity_id = pn.id) OR 
-        (pt.token_type = 'monster' AND pt.entity_id = pn.id)
-    )
-    WHERE pt.place_id = ? 
-    AND pn.is_visible = FALSE
-    ORDER BY pt.updated_at DESC
-");
-$stmt->execute([$place_id]);
-$hiddenTokens = [];
-while ($row = $stmt->fetch()) {
-    $hiddenTokens[$row['token_type'] . '_' . $row['entity_id']] = [
-        'x' => (int)$row['position_x'],
-        'y' => (int)$row['position_y'],
-        'is_on_map' => (bool)$row['is_on_map'],
-        'is_visible' => false,
-        'entity_name' => $row['entity_name'],
-        'updated_at' => $row['updated_at']
-    ];
-}
-
-// Récupérer les informations des PNJ visibles ET identifiés
-$stmt = $pdo->prepare("
-    SELECT pn.id, pn.name, pn.description, pn.npc_character_id, pn.profile_photo, c.profile_photo AS character_profile_photo 
-    FROM place_npcs pn 
-    LEFT JOIN characters c ON pn.npc_character_id = c.id 
-    WHERE pn.place_id = ? AND pn.monster_id IS NULL AND pn.is_visible = TRUE AND pn.is_identified = TRUE
-    ORDER BY pn.name ASC
-");
-$stmt->execute([$place_id]);
-$visibleNpcs = $stmt->fetchAll();
-
-// Récupérer les informations des monstres visibles
-$stmt = $pdo->prepare("
-    SELECT pn.id, pn.name, pn.description, pn.monster_id, pn.quantity, pn.current_hit_points, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class 
-    FROM place_npcs pn 
-    JOIN dnd_monsters m ON pn.monster_id = m.id 
-    WHERE pn.place_id = ? AND pn.monster_id IS NOT NULL AND pn.is_visible = TRUE
-    ORDER BY pn.name ASC
-");
-$stmt->execute([$place_id]);
-$visibleMonsters = $stmt->fetchAll();
-
-// Récupérer les informations du lieu actuel
-$stmt = $pdo->prepare("
-    SELECT p.id, p.title, p.map_url, p.notes, p.campaign_id
-    FROM places p 
-    WHERE p.id = ?
-");
-$stmt->execute([$place_id]);
-$currentPlace = $stmt->fetch();
-
-// Récupérer le lieu actuel du joueur pour détecter les changements
-$stmt = $pdo->prepare("
-    SELECT pp.place_id, p.title as place_title
-    FROM place_players pp 
-    JOIN places p ON pp.place_id = p.id 
-    WHERE pp.player_id = ? AND p.campaign_id = ?
-    LIMIT 1
-");
-$stmt->execute([$_SESSION['user_id'], $currentPlace['campaign_id']]);
-$playerCurrentPlace = $stmt->fetch();
-
-// Détecter si le joueur a changé de lieu
-$placeChanged = false;
-if ($playerCurrentPlace && $playerCurrentPlace['place_id'] != $place_id) {
-    $placeChanged = true;
-}
-
-// Retourner les positions et les informations des PNJ/monstres
-header('Content-Type: application/json');
-echo json_encode([
-    'success' => true,
-    'place_id' => $place_id,
-    'token_positions' => $tokenPositions,
-    'hidden_tokens' => $hiddenTokens,
-    'visible_npcs' => $visibleNpcs,
-    'visible_monsters' => $visibleMonsters,
-    'current_place' => $currentPlace,
-    'player_current_place' => $playerCurrentPlace,
-    'place_changed' => $placeChanged,
-    'timestamp' => time()
-]);
 ?>
