@@ -353,10 +353,84 @@ EOF
     esac
     
     # Ajuster les permissions du fichier .env
-    sudo chown www-data:www-data "$env_file"
-    sudo chmod 600 "$env_file"
+    if [ "$server" != "production" ]; then
+        sudo chown www-data:www-data "$env_file"
+        sudo chmod 600 "$env_file"
+    else
+        chmod 600 "$env_file"
+    fi
     
     log_success "Configuration de l'environnement terminée"
+}
+
+# Fonction pour déployer via FTP
+deploy_via_ftp() {
+    local temp_dir=$1
+    local ftp_server=$2
+    local ftp_user=$3
+    local ftp_pass=$4
+    local ftp_path=$5
+    
+    log_info "Déploiement via FTP vers $ftp_server..."
+    
+    # Créer un script lftp temporaire
+    local lftp_script="/tmp/lftp_deploy_$(date +%s).txt"
+    
+    cat > "$lftp_script" << EOF
+set ftp:ssl-allow no
+set ftp:passive-mode on
+set ftp:list-options -a
+set net:timeout 30
+set net:max-retries 3
+set net:reconnect-interval-base 5
+set net:reconnect-interval-multiplier 1
+
+open ftp://$ftp_user:'$ftp_pass'@$ftp_server
+cd $ftp_path
+lcd $temp_dir
+
+# Créer un backup de la version précédente
+!echo "Création d'un backup..."
+mirror -R --delete --verbose --exclude-glob="*.log" --exclude-glob="*.tmp" --exclude-glob="cache/*" --exclude-glob="sessions/*" --exclude-glob="uploads/*" . backup_$(date +%Y%m%d_%H%M%S)/
+
+# Synchroniser les fichiers
+!echo "Synchronisation des fichiers..."
+mirror -R --delete --verbose --exclude-glob="*.log" --exclude-glob="*.tmp" --exclude-glob="cache/*" --exclude-glob="sessions/*" --exclude-glob="uploads/*" .
+
+# Ajuster les permissions
+!echo "Ajustement des permissions..."
+chmod 755 .
+chmod 644 *.php
+chmod 644 *.html
+chmod 644 *.css
+chmod 644 *.js
+chmod 644 *.md
+chmod 644 *.txt
+chmod 755 config/
+chmod 644 config/*.php
+chmod 755 includes/
+chmod 644 includes/*.php
+chmod 755 css/
+chmod 644 css/*
+chmod 755 images/
+chmod 644 images/*
+chmod 755 database/
+chmod 644 database/*.sql
+
+quit
+EOF
+    
+    # Exécuter le script lftp
+    if lftp -f "$lftp_script"; then
+        log_success "Déploiement FTP réussi"
+    else
+        log_error "Échec du déploiement FTP"
+        rm -f "$lftp_script"
+        exit 1
+    fi
+    
+    # Nettoyer le script temporaire
+    rm -f "$lftp_script"
 }
 
 # Fonction pour préparer les fichiers
@@ -435,13 +509,10 @@ deploy_to_server() {
                 sudo cp -r "$DEPLOY_PATH" "$BACKUP_PATH"
             fi
             
-    # Livrer les fichiers
-    sudo rsync -av --delete "$temp_dir/" "$DEPLOY_PATH/"
-    
-    # Configurer l'environnement
-    configure_environment "$DEPLOY_PATH" "$SERVER"
-    
-    # Ajuster les permissions
+            # Livrer les fichiers
+            sudo rsync -av --delete "$temp_dir/" "$DEPLOY_PATH/"
+            
+            # Ajuster les permissions
     sudo chown -R www-data:www-data "$DEPLOY_PATH"
     sudo chmod -R 755 "$DEPLOY_PATH"
     sudo chmod -R 777 "$DEPLOY_PATH/uploads" 2>/dev/null || true
@@ -457,9 +528,6 @@ deploy_to_server() {
             sudo mkdir -p "$DEPLOY_PATH"
             sudo rsync -av --delete "$temp_dir/" "$DEPLOY_PATH/"
             
-            # Configurer l'environnement
-            configure_environment "$DEPLOY_PATH" "$SERVER"
-            
             sudo chown -R www-data:www-data "$DEPLOY_PATH"
             sudo chmod -R 755 "$DEPLOY_PATH"
             sudo chmod -R 777 "$DEPLOY_PATH/uploads" 2>/dev/null || true
@@ -468,9 +536,24 @@ deploy_to_server() {
             ;;
             
         "production")
-            log_error "La livraison en production nécessite une approbation manuelle"
-            log_info "Utilisez le script publish.sh pour la production"
-            exit 1
+            # Serveur de production via FTP
+            FTP_SERVER="robindesbriques.fr"
+            FTP_USER="u839591438"
+            FTP_PASS="jwkczE.ZiFp5>4T"
+            FTP_PATH="/domains/robindesbriques.fr/public_html/jdrmj"
+            
+            log_info "Livraison sur le serveur de production via FTP: $FTP_SERVER"
+            
+            # Vérifier que lftp est installé
+            if ! command -v lftp &> /dev/null; then
+                log_error "lftp n'est pas installé. Installez-le avec: sudo apt install lftp"
+                exit 1
+            fi
+            
+            # Livrer via FTP
+            deploy_via_ftp "$temp_dir" "$FTP_SERVER" "$FTP_USER" "$FTP_PASS" "$FTP_PATH"
+            
+            log_success "Livraison terminée sur le serveur de production"
             ;;
             
         *)
@@ -538,6 +621,9 @@ main() {
     TEMP_DIR=$(create_temp_dir)
     prepare_files "$TEMP_DIR"
 
+    # Configurer l'environnement
+    configure_environment "$TEMP_DIR" "$SERVER"
+
     # Livrer sur le serveur
     deploy_to_server "$TEMP_DIR"
 
@@ -559,7 +645,7 @@ main() {
             log_info "URL: http://localhost/jdrmj_staging"
             ;;
         "production")
-            log_info "URL: http://localhost/jdrmj"
+            log_info "URL: https://robindesbriques.fr/jdrmj"
             ;;
     esac
 }

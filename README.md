@@ -114,6 +114,7 @@ Ce projet est sous licence MIT. Libre d'utilisation, modification et distributio
 
 ## Changelog
 <version_tag>
+- 0.0.86 : Deploy FTP
 - 0.0.85 : Deploy Staging
 - 0.0.83 : Test 2
 - 0.0.83 : publish
