@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=1.2.0
+VERSION=1.2.1
 
 # Date de déploiement
 DEPLOY_DATE=2025-09-17
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-09-17
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=153ce46e753439a4fc9c141e58fba4cc8752fc68
+GIT_COMMIT=a1d89c87eaff8aac0a7de0a902b3de93cb8edfb2
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20250917-212435
+BUILD_ID=20250917-220459
 
 # Notes de version
-RELEASE_NOTES="positionnement pions"
+RELEASE_NOTES="Images pions"
