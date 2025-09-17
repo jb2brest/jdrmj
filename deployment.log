@@ -1,4 +1,4 @@
-Déploiement sur test - 2025-09-17 16:12:35
-Message: Ajout script de test rôle admin
+Déploiement sur test - 2025-09-17 16:18:18
+Message: Correction accès campagnes pour admin - requireDMOrAdmin et logique d'accès
 Serveur: test
-Timestamp: 2025-09-17 16:12:35
+Timestamp: 2025-09-17 16:18:18
