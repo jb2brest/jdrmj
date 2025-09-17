@@ -85,26 +85,55 @@ try {
         }
     }
     
-    // Si last_update est fourni, vérifier s'il y a des changements
-    if ($last_update && $latest_timestamp) {
-        $lastUpdateTime = new DateTime($last_update);
-        $latestTime = new DateTime($latest_timestamp);
-        
-        if ($latestTime <= $lastUpdateTime) {
-            // Aucun changement depuis la dernière mise à jour
-            echo json_encode([
-                'success' => true,
-                'positions' => [],
-                'timestamp' => $latest_timestamp,
-                'no_changes' => true
-            ]);
-            exit();
-        }
+    // Récupérer les informations de visibilité et identification des PNJ
+    $stmt = $pdo->prepare("
+        SELECT sn.id, sn.name, sn.is_visible, sn.is_identified,
+               c.profile_photo AS character_profile_photo, sn.profile_photo
+        FROM place_npcs sn 
+        LEFT JOIN characters c ON sn.npc_character_id = c.id
+        WHERE sn.place_id = ? AND sn.monster_id IS NULL
+        ORDER BY sn.id ASC
+    ");
+    $stmt->execute([$place_id]);
+    
+    $npcs = [];
+    while ($row = $stmt->fetch()) {
+        $npcs['npc_' . $row['id']] = [
+            'name' => $row['name'],
+            'is_visible' => (bool)$row['is_visible'],
+            'is_identified' => (bool)$row['is_identified'],
+            'character_profile_photo' => $row['character_profile_photo'],
+            'profile_photo' => $row['profile_photo']
+        ];
     }
+    
+    // Récupérer les informations de visibilité et identification des monstres
+    $stmt = $pdo->prepare("
+        SELECT sn.id, sn.name, sn.is_visible, sn.is_identified, sn.monster_id
+        FROM place_npcs sn 
+        WHERE sn.place_id = ? AND sn.monster_id IS NOT NULL
+        ORDER BY sn.id ASC
+    ");
+    $stmt->execute([$place_id]);
+    
+    $monsters = [];
+    while ($row = $stmt->fetch()) {
+        $monsters['monster_' . $row['id']] = [
+            'name' => $row['name'],
+            'is_visible' => (bool)$row['is_visible'],
+            'is_identified' => (bool)$row['is_identified'],
+            'monster_id' => $row['monster_id']
+        ];
+    }
+    
+    // Pour les PNJ et monstres, on retourne toujours les données car ils n'ont pas de updated_at
+    // Le JavaScript se chargera de détecter les changements en comparant les données
     
     echo json_encode([
         'success' => true,
         'positions' => $positions,
+        'npcs' => $npcs,
+        'monsters' => $monsters,
         'timestamp' => $latest_timestamp
     ]);
     

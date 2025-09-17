@@ -81,24 +81,24 @@ $other_players = array_filter($placePlayers, function($player) use ($user_id) {
     return $player['player_id'] != $user_id;
 });
 
-// Récupérer les PNJ présents dans le lieu (comme dans view_scene.php)
+// Récupérer les PNJ présents dans le lieu (seulement ceux visibles)
 $stmt = $pdo->prepare("
     SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, sn.is_visible, sn.is_identified, c.profile_photo AS character_profile_photo
     FROM place_npcs sn 
     LEFT JOIN characters c ON sn.npc_character_id = c.id
-    WHERE sn.place_id = ? AND sn.monster_id IS NULL
+    WHERE sn.place_id = ? AND sn.monster_id IS NULL AND sn.is_visible = 1
     ORDER BY sn.name ASC
 ");
 $stmt->execute([$place_id]);
 $placeNpcs = $stmt->fetchAll();
 
-// Récupérer les monstres présents dans le lieu (comme dans view_scene.php)
+// Récupérer les monstres présents dans le lieu (seulement ceux visibles)
 $stmt = $pdo->prepare("
-    SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, sn.current_hit_points, sn.is_visible, 
+    SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, sn.current_hit_points, sn.is_visible, sn.is_identified,
            m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class
     FROM place_npcs sn 
     JOIN dnd_monsters m ON sn.monster_id = m.id 
-    WHERE sn.place_id = ? AND sn.monster_id IS NOT NULL
+    WHERE sn.place_id = ? AND sn.monster_id IS NOT NULL AND sn.is_visible = 1
     ORDER BY sn.name ASC
 ");
 $stmt->execute([$place_id]);
@@ -165,17 +165,27 @@ include 'includes/layout.php';
                                     </div>
                                 <?php endforeach; ?>
                                 
-                                <!-- Pions des PNJ -->
+                                <!-- Pions des PNJ (seulement visibles) -->
                                 <?php foreach ($placeNpcs as $npc): ?>
                                     <?php 
                                     $tokenKey = 'npc_' . $npc['id'];
                                     $position = $tokenPositions[$tokenKey] ?? ['x' => 0, 'y' => 0, 'is_on_map' => false];
-                                    // Priorité : characters.profile_photo, puis place_npcs.profile_photo, avec vérification d'existence
+                                    
+                                    // Logique d'affichage selon l'identification
                                     $imageUrl = 'images/default_npc.png';
-                                    if (!empty($npc['character_profile_photo']) && file_exists($npc['character_profile_photo'])) {
-                                        $imageUrl = $npc['character_profile_photo'];
-                                    } elseif (!empty($npc['profile_photo']) && file_exists($npc['profile_photo'])) {
-                                        $imageUrl = $npc['profile_photo'];
+                                    $displayName = 'PNJ inconnu';
+                                    
+                                    if ($npc['is_identified']) {
+                                        // PNJ identifié : afficher nom et photo
+                                        $displayName = $npc['name'];
+                                        if (!empty($npc['character_profile_photo']) && file_exists($npc['character_profile_photo'])) {
+                                            $imageUrl = $npc['character_profile_photo'];
+                                        } elseif (!empty($npc['profile_photo']) && file_exists($npc['profile_photo'])) {
+                                            $imageUrl = $npc['profile_photo'];
+                                        }
+                                    } else {
+                                        // PNJ non identifié : afficher silhouette générique
+                                        $imageUrl = 'images/default_npc.png';
                                     }
                                     ?>
                                     <div class="token" 
@@ -185,16 +195,28 @@ include 'includes/layout.php';
                                          data-position-y="<?php echo $position['y']; ?>"
                                          data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
                                          style="width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #28a745; border-radius: 50%; background-image: url('<?php echo htmlspecialchars($imageUrl); ?>'); background-size: cover; background-position: center;"
-                                         title="<?php echo htmlspecialchars($npc['name']); ?>">
+                                         title="<?php echo htmlspecialchars($displayName); ?>">
                                     </div>
                                 <?php endforeach; ?>
                                 
-                                <!-- Pions des monstres -->
+                                <!-- Pions des monstres (seulement visibles) -->
                                 <?php foreach ($placeMonsters as $monster): ?>
                                     <?php 
                                     $tokenKey = 'monster_' . $monster['id'];
                                     $position = $tokenPositions[$tokenKey] ?? ['x' => 0, 'y' => 0, 'is_on_map' => false];
-                                    $imageUrl = 'images/monstres/' . $monster['monster_id'] . '.jpg';
+                                    
+                                    // Logique d'affichage selon l'identification
+                                    $imageUrl = 'images/default_monster.png';
+                                    $displayName = 'Monstre inconnu';
+                                    
+                                    if ($monster['is_identified']) {
+                                        // Monstre identifié : afficher nom et photo
+                                        $displayName = $monster['name'];
+                                        $imageUrl = 'images/monstres/' . $monster['monster_id'] . '.jpg';
+                                    } else {
+                                        // Monstre non identifié : afficher silhouette générique
+                                        $imageUrl = 'images/default_monster.png';
+                                    }
                                     ?>
                                     <div class="token" 
                                          data-token-type="monster" 
@@ -203,7 +225,7 @@ include 'includes/layout.php';
                                          data-position-y="<?php echo $position['y']; ?>"
                                          data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
                                          style="width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #dc3545; border-radius: 50%; background-image: url('<?php echo htmlspecialchars($imageUrl); ?>'); background-size: cover; background-position: center;"
-                                         title="<?php echo htmlspecialchars($monster['name']); ?>">
+                                         title="<?php echo htmlspecialchars($displayName); ?>">
                                     </div>
                                 <?php endforeach; ?>
                             </div>
@@ -301,8 +323,8 @@ include 'includes/layout.php';
         </div>
     </div>
 
-    <!-- PNJ présents -->
-    <?php if (!empty($place_npcs)): ?>
+    <!-- PNJ présents (seulement visibles) -->
+    <?php if (!empty($placeNpcs)): ?>
     <div class="row mt-4">
         <div class="col-12">
             <div class="card">
@@ -311,31 +333,39 @@ include 'includes/layout.php';
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
-                        <?php foreach ($place_npcs as $npc): ?>
+                        <?php foreach ($placeNpcs as $npc): ?>
                             <div class="col-md-6">
                                 <div class="card">
                                     <div class="card-body">
                                         <div class="d-flex align-items-center">
                                             <?php 
-                                            // Utiliser characters.profile_photo en priorité, sinon place_npcs.profile_photo, avec vérification d'existence
+                                            // Logique d'affichage selon l'identification
                                             $photo_to_show = null;
-                                            if (!empty($npc['character_profile_photo']) && file_exists($npc['character_profile_photo'])) {
-                                                $photo_to_show = $npc['character_profile_photo'];
-                                            } elseif (!empty($npc['profile_photo']) && file_exists($npc['profile_photo'])) {
-                                                $photo_to_show = $npc['profile_photo'];
+                                            $displayName = 'PNJ inconnu';
+                                            
+                                            if ($npc['is_identified']) {
+                                                // PNJ identifié : afficher nom et photo
+                                                $displayName = $npc['name'];
+                                                if (!empty($npc['character_profile_photo']) && file_exists($npc['character_profile_photo'])) {
+                                                    $photo_to_show = $npc['character_profile_photo'];
+                                                } elseif (!empty($npc['profile_photo']) && file_exists($npc['profile_photo'])) {
+                                                    $photo_to_show = $npc['profile_photo'];
+                                                }
                                             }
                                             ?>
                                             <?php if (!empty($photo_to_show)): ?>
-                                                <img src="<?php echo htmlspecialchars($photo_to_show); ?>" alt="Photo de <?php echo htmlspecialchars($npc['name']); ?>" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                                <img src="<?php echo htmlspecialchars($photo_to_show); ?>" alt="Photo de <?php echo htmlspecialchars($displayName); ?>" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;">
                                             <?php else: ?>
                                                 <div class="bg-success rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
                                                     <i class="fas fa-user-tie text-white"></i>
                                                 </div>
                                             <?php endif; ?>
                                             <div>
-                                                <h6 class="mb-1"><?php echo htmlspecialchars($npc['name']); ?></h6>
-                                                <?php if (!empty($npc['description'])): ?>
+                                                <h6 class="mb-1"><?php echo htmlspecialchars($displayName); ?></h6>
+                                                <?php if ($npc['is_identified'] && !empty($npc['description'])): ?>
                                                     <p class="mb-0 text-muted small"><?php echo htmlspecialchars(substr($npc['description'], 0, 100)); ?><?php echo strlen($npc['description']) > 100 ? '...' : ''; ?></p>
+                                                <?php else: ?>
+                                                    <p class="mb-0 text-muted small">PNJ non identifié</p>
                                                 <?php endif; ?>
                                             </div>
                                         </div>
@@ -350,8 +380,8 @@ include 'includes/layout.php';
     </div>
     <?php endif; ?>
 
-    <!-- Monstres présents -->
-    <?php if (!empty($place_monsters)): ?>
+    <!-- Monstres présents (seulement visibles) -->
+    <?php if (!empty($placeMonsters)): ?>
     <div class="row mt-4">
         <div class="col-12">
             <div class="card">
@@ -360,21 +390,36 @@ include 'includes/layout.php';
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
-                        <?php foreach ($place_monsters as $monster): ?>
+                        <?php foreach ($placeMonsters as $monster): ?>
                             <div class="col-md-6">
                                 <div class="card">
                                     <div class="card-body">
                                         <div class="d-flex align-items-center">
+                                            <?php 
+                                            // Logique d'affichage selon l'identification
+                                            $displayName = 'Monstre inconnu';
+                                            $showDetails = false;
+                                            
+                                            if ($monster['is_identified']) {
+                                                // Monstre identifié : afficher nom et détails
+                                                $displayName = $monster['name'];
+                                                $showDetails = true;
+                                            }
+                                            ?>
                                             <div class="bg-danger rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
                                                 <i class="fas fa-dragon text-white"></i>
                                             </div>
                                             <div>
-                                                <h6 class="mb-1"><?php echo htmlspecialchars($monster['name']); ?></h6>
-                                                <small class="text-muted">
-                                                    <?php echo htmlspecialchars($monster['type']); ?> - <?php echo htmlspecialchars($monster['size']); ?> - CR <?php echo $monster['challenge_rating']; ?>
-                                                </small>
-                                                <?php if (!empty($monster['description'])): ?>
-                                                    <p class="mb-0 text-muted small mt-1"><?php echo htmlspecialchars(substr($monster['description'], 0, 100)); ?><?php echo strlen($monster['description']) > 100 ? '...' : ''; ?></p>
+                                                <h6 class="mb-1"><?php echo htmlspecialchars($displayName); ?></h6>
+                                                <?php if ($showDetails): ?>
+                                                    <small class="text-muted">
+                                                        <?php echo htmlspecialchars($monster['type']); ?> - <?php echo htmlspecialchars($monster['size']); ?> - CR <?php echo $monster['challenge_rating']; ?>
+                                                    </small>
+                                                    <?php if (!empty($monster['description'])): ?>
+                                                        <p class="mb-0 text-muted small mt-1"><?php echo htmlspecialchars(substr($monster['description'], 0, 100)); ?><?php echo strlen($monster['description']) > 100 ? '...' : ''; ?></p>
+                                                    <?php endif; ?>
+                                                <?php else: ?>
+                                                    <small class="text-muted">Monstre non identifié</small>
                                                 <?php endif; ?>
                                             </div>
                                         </div>
@@ -406,45 +451,33 @@ include 'includes/layout.php';
     <?php endif; ?>
 </div>
 
-<?php if (!empty($place['map_url']) && file_exists($place['map_url'])): ?>
 <script>
 function initializeTokenSystem() {
     const mapImage = document.getElementById('mapImage');
     const tokens = document.querySelectorAll('.token');
     
-    if (!mapImage || tokens.length === 0) return;
-
-    // Initialiser les positions des pions (identique à view_scene.php)
-    console.log('Initialisation du système de pions (vue joueur)...');
-    console.log('Nombre de pions trouvés:', tokens.length);
+    if (tokens.length === 0) return;
     
     tokens.forEach(token => {
         const isOnMap = token.dataset.isOnMap === 'true';
-        console.log(`Pion ${token.dataset.tokenType}_${token.dataset.entityId}: isOnMap=${isOnMap}`);
         
-        if (isOnMap) {
+        if (isOnMap && mapImage) {
             const x = parseInt(token.dataset.positionX);
             const y = parseInt(token.dataset.positionY);
-            console.log(`Initialisation pion: ${token.dataset.tokenType}_${token.dataset.entityId} à ${x}%, ${y}%`);
             positionTokenOnMap(token, x, y);
-        } else {
-            console.log(`Pion ${token.dataset.tokenType}_${token.dataset.entityId} reste dans la sidebar`);
         }
     });
 }
 
 function positionTokenOnMap(token, x, y) {
-    console.log(`Positionnement du pion ${token.dataset.tokenType}_${token.dataset.entityId} à ${x}%, ${y}%`);
+    // Vérifier que la carte existe
+    const mapContainer = document.getElementById('mapContainer');
+    if (!mapContainer) return;
     
     // Retirer le pion de son conteneur actuel
     token.remove();
     
     // Ajouter le pion au conteneur du plan
-    const mapContainer = document.getElementById('mapContainer');
-    if (!mapContainer) {
-        console.error('Conteneur du plan non trouvé');
-        return;
-    }
     mapContainer.appendChild(token);
     
     // Positionner le pion (identique à view_scene.php)
@@ -458,25 +491,21 @@ function positionTokenOnMap(token, x, y) {
     token.dataset.isOnMap = 'true';
     token.dataset.positionX = x;
     token.dataset.positionY = y;
-    
-    console.log(`Pion positionné avec succès à ${x}%, ${y}%`);
 }
 
 // Initialiser le système de pions après que le DOM soit complètement chargé
 document.addEventListener('DOMContentLoaded', function() {
     initializeTokenSystem();
-    
-    // Démarrer la mise à jour automatique des positions
     startAutoUpdate();
 });
 
 // Système de mise à jour automatique des positions
 let autoUpdateInterval;
 let lastUpdateTime = null;
+let lastNpcsData = {};
+let lastMonstersData = {};
 
 function startAutoUpdate() {
-    console.log('🔄 Démarrage de la mise à jour automatique des positions...');
-    
     // Mettre à jour toutes les 2 secondes
     autoUpdateInterval = setInterval(updateTokenPositions, 2000);
 }
@@ -485,7 +514,6 @@ function stopAutoUpdate() {
     if (autoUpdateInterval) {
         clearInterval(autoUpdateInterval);
         autoUpdateInterval = null;
-        console.log('⏹️ Mise à jour automatique arrêtée');
     }
 }
 
@@ -504,14 +532,32 @@ function updateTokenPositions() {
     })
     .then(response => response.json())
     .then(result => {
-        if (result.success && result.positions) {
-            console.log('🔄 Mise à jour des positions reçue:', result.positions);
-            applyPositionUpdates(result.positions);
+        if (result.success) {
+            if (result.positions) {
+                applyPositionUpdates(result.positions);
+            }
+            
+            if (result.npcs) {
+                // Comparer avec les données précédentes pour détecter les changements
+                if (JSON.stringify(result.npcs) !== JSON.stringify(lastNpcsData)) {
+                    updateNpcsDisplay(result.npcs);
+                    lastNpcsData = result.npcs;
+                }
+            }
+            
+            if (result.monsters) {
+                // Comparer avec les données précédentes pour détecter les changements
+                if (JSON.stringify(result.monsters) !== JSON.stringify(lastMonstersData)) {
+                    updateMonstersDisplay(result.monsters);
+                    lastMonstersData = result.monsters;
+                }
+            }
+            
             lastUpdateTime = result.timestamp;
         }
     })
     .catch(error => {
-        console.error('❌ Erreur lors de la mise à jour des positions:', error);
+        console.error('❌ Erreur lors de la mise à jour:', error);
     });
 }
 
@@ -531,8 +577,6 @@ function applyPositionUpdates(positions) {
             
             // Vérifier si la position a changé
             if (newPosition.x !== currentX || newPosition.y !== currentY || newPosition.is_on_map !== currentIsOnMap) {
-                console.log(`🔄 Mise à jour pion ${tokenKey}: ${currentX},${currentY} -> ${newPosition.x},${newPosition.y} (on_map: ${newPosition.is_on_map})`);
-                
                 // Mettre à jour les attributs
                 token.dataset.positionX = newPosition.x;
                 token.dataset.positionY = newPosition.y;
@@ -540,7 +584,13 @@ function applyPositionUpdates(positions) {
                 
                 // Appliquer la nouvelle position
                 if (newPosition.is_on_map) {
-                    positionTokenOnMap(token, newPosition.x, newPosition.y);
+                    // Vérifier que la carte existe avant de positionner sur la carte
+                    const mapContainer = document.getElementById('mapContainer');
+                    if (mapContainer) {
+                        positionTokenOnMap(token, newPosition.x, newPosition.y);
+                    } else {
+                        resetTokenToSidebar(token);
+                    }
                 } else {
                     resetTokenToSidebar(token);
                 }
@@ -555,10 +605,8 @@ function resetTokenToSidebar(token) {
     
     // Ajouter le pion à la sidebar
     const tokenSidebar = document.getElementById('tokenSidebar');
-    if (!tokenSidebar) {
-        console.error('Sidebar des pions non trouvée');
-        return;
-    }
+    if (!tokenSidebar) return;
+    
     tokenSidebar.appendChild(token);
     
     // Réinitialiser les styles
@@ -570,8 +618,214 @@ function resetTokenToSidebar(token) {
     token.style.margin = '2px';
     token.style.pointerEvents = 'auto';
     token.dataset.isOnMap = 'false';
+}
+
+function updateNpcsDisplay(npcs) {
+    // Mettre à jour les pions des PNJ
+    const npcTokens = document.querySelectorAll('.token[data-token-type="npc"]');
+    npcTokens.forEach(token => {
+        const entityId = token.dataset.entityId;
+        const npcKey = `npc_${entityId}`;
+        const npcData = npcs[npcKey];
+        
+        if (npcData) {
+            if (npcData.is_visible) {
+                // PNJ visible : afficher le pion
+                token.style.display = 'inline-block';
+                
+                // Mettre à jour l'affichage selon l'identification
+                if (npcData.is_identified) {
+                    // PNJ identifié : nom réel et photo
+                    token.title = npcData.name;
+                    if (npcData.character_profile_photo) {
+                        token.style.backgroundImage = `url('${npcData.character_profile_photo}')`;
+                    } else if (npcData.profile_photo) {
+                        token.style.backgroundImage = `url('${npcData.profile_photo}')`;
+                    }
+                } else {
+                    // PNJ non identifié : silhouette générique
+                    token.title = 'PNJ inconnu';
+                    token.style.backgroundImage = 'url("images/default_npc.png")';
+                }
+            } else {
+                // PNJ non visible : masquer le pion
+                token.style.display = 'none';
+            }
+        }
+    });
     
-    console.log(`Pion ${token.dataset.tokenType}_${token.dataset.entityId} remis dans la sidebar`);
+    // Vérifier s'il y a de nouveaux PNJ à ajouter ou des PNJ à supprimer
+    updateNpcsTokens(npcs);
+    
+    // Mettre à jour la liste des PNJ
+    updateNpcsList(npcs);
+}
+
+function updateNpcsTokens(npcs) {
+    const tokenSidebar = document.getElementById('tokenSidebar');
+    if (!tokenSidebar) return;
+    
+    // Créer un ensemble des IDs de PNJ existants
+    const existingNpcIds = new Set();
+    document.querySelectorAll('.token[data-token-type="npc"]').forEach(token => {
+        existingNpcIds.add(token.dataset.entityId);
+    });
+    
+    // Ajouter les nouveaux PNJ visibles
+    Object.keys(npcs).forEach(npcKey => {
+        const npcData = npcs[npcKey];
+        const entityId = npcKey.replace('npc_', '');
+        
+        if (npcData.is_visible && !existingNpcIds.has(entityId)) {
+            // Créer un nouveau pion pour ce PNJ
+            const newToken = createNpcToken(entityId, npcData);
+            tokenSidebar.appendChild(newToken);
+        }
+    });
+    
+    // Supprimer les PNJ qui ne sont plus visibles
+    document.querySelectorAll('.token[data-token-type="npc"]').forEach(token => {
+        const entityId = token.dataset.entityId;
+        const npcKey = `npc_${entityId}`;
+        const npcData = npcs[npcKey];
+        
+        if (!npcData || !npcData.is_visible) {
+            token.remove();
+        }
+    });
+}
+
+function createNpcToken(entityId, npcData) {
+    const token = document.createElement('div');
+    token.className = 'token';
+    token.dataset.tokenType = 'npc';
+    token.dataset.entityId = entityId;
+    token.dataset.positionX = '0';
+    token.dataset.positionY = '0';
+    token.dataset.isOnMap = 'false';
+    
+    // Logique d'affichage selon l'identification
+    let imageUrl = 'images/default_npc.png';
+    let displayName = 'PNJ inconnu';
+    
+    if (npcData.is_identified) {
+        displayName = npcData.name;
+        if (npcData.character_profile_photo) {
+            imageUrl = npcData.character_profile_photo;
+        } else if (npcData.profile_photo) {
+            imageUrl = npcData.profile_photo;
+        }
+    }
+    
+    token.style.cssText = 'width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #28a745; border-radius: 50%; background-image: url("' + imageUrl + '"); background-size: cover; background-position: center;';
+    token.title = displayName;
+    
+    return token;
+}
+
+function updateMonstersDisplay(monsters) {
+    // Mettre à jour les pions des monstres
+    const monsterTokens = document.querySelectorAll('.token[data-token-type="monster"]');
+    monsterTokens.forEach(token => {
+        const entityId = token.dataset.entityId;
+        const monsterKey = `monster_${entityId}`;
+        const monsterData = monsters[monsterKey];
+        
+        if (monsterData) {
+            if (monsterData.is_visible) {
+                // Monstre visible : afficher le pion
+                token.style.display = 'inline-block';
+                
+                // Mettre à jour l'affichage selon l'identification
+                if (monsterData.is_identified) {
+                    // Monstre identifié : nom réel et photo
+                    token.title = monsterData.name;
+                    token.style.backgroundImage = `url('images/monstres/${monsterData.monster_id}.jpg')`;
+                } else {
+                    // Monstre non identifié : silhouette générique
+                    token.title = 'Monstre inconnu';
+                    token.style.backgroundImage = 'url("images/default_monster.png")';
+                }
+            } else {
+                // Monstre non visible : masquer le pion
+                token.style.display = 'none';
+            }
+        }
+    });
+    
+    // Vérifier s'il y a de nouveaux monstres à ajouter ou des monstres à supprimer
+    updateMonstersTokens(monsters);
+    
+    // Mettre à jour la liste des monstres
+    updateMonstersList(monsters);
+}
+
+function updateMonstersTokens(monsters) {
+    const tokenSidebar = document.getElementById('tokenSidebar');
+    if (!tokenSidebar) return;
+    
+    // Créer un ensemble des IDs de monstres existants
+    const existingMonsterIds = new Set();
+    document.querySelectorAll('.token[data-token-type="monster"]').forEach(token => {
+        existingMonsterIds.add(token.dataset.entityId);
+    });
+    
+    // Ajouter les nouveaux monstres visibles
+    Object.keys(monsters).forEach(monsterKey => {
+        const monsterData = monsters[monsterKey];
+        const entityId = monsterKey.replace('monster_', '');
+        
+        if (monsterData.is_visible && !existingMonsterIds.has(entityId)) {
+            // Créer un nouveau pion pour ce monstre
+            const newToken = createMonsterToken(entityId, monsterData);
+            tokenSidebar.appendChild(newToken);
+        }
+    });
+    
+    // Supprimer les monstres qui ne sont plus visibles
+    document.querySelectorAll('.token[data-token-type="monster"]').forEach(token => {
+        const entityId = token.dataset.entityId;
+        const monsterKey = `monster_${entityId}`;
+        const monsterData = monsters[monsterKey];
+        
+        if (!monsterData || !monsterData.is_visible) {
+            token.remove();
+        }
+    });
+}
+
+function createMonsterToken(entityId, monsterData) {
+    const token = document.createElement('div');
+    token.className = 'token';
+    token.dataset.tokenType = 'monster';
+    token.dataset.entityId = entityId;
+    token.dataset.positionX = '0';
+    token.dataset.positionY = '0';
+    token.dataset.isOnMap = 'false';
+    
+    // Logique d'affichage selon l'identification
+    let imageUrl = 'images/default_monster.png';
+    let displayName = 'Monstre inconnu';
+    
+    if (monsterData.is_identified) {
+        displayName = monsterData.name;
+        imageUrl = `images/monstres/${monsterData.monster_id}.jpg`;
+    }
+    
+    token.style.cssText = 'width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #dc3545; border-radius: 50%; background-image: url("' + imageUrl + '"); background-size: cover; background-position: center;';
+    token.title = displayName;
+    
+    return token;
+}
+
+function updateNpcsList(npcs) {
+    // Cette fonction pourrait être étendue pour mettre à jour dynamiquement la liste des PNJ
+    // Pour l'instant, on se contente de la mise à jour des pions
+}
+
+function updateMonstersList(monsters) {
+    // Cette fonction pourrait être étendue pour mettre à jour dynamiquement la liste des monstres
+    // Pour l'instant, on se contente de la mise à jour des pions
 }
 
 // Arrêter la mise à jour automatique quand la page se ferme
@@ -579,6 +833,5 @@ window.addEventListener('beforeunload', function() {
     stopAutoUpdate();
 });
 </script>
-<?php endif; ?>
 
 <?php include 'includes/footer.php'; ?>
