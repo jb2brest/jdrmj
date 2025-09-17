@@ -36,9 +36,9 @@ require_once 'includes/functions.php';
                         <li class="nav-item">
                             <a class="nav-link" href="public_campaigns.php">Campagnes Publiques</a>
                         </li>
-                        <?php if (isDM()): ?>
+                        <?php if (isDMOrAdmin()): ?>
                         <li class="nav-item">
-                            <a class="nav-link" href="campaigns.php">Mes Campagnes</a>
+                            <a class="nav-link" href="campaigns.php"><?php echo isAdmin() ? 'Toutes les Campagnes' : 'Mes Campagnes'; ?></a>
                         </li>
                         <?php endif; ?>
                         <li class="nav-item">
@@ -96,9 +96,9 @@ require_once 'includes/functions.php';
                     <a href="public_campaigns.php" class="btn btn-outline-light btn-lg">
                         <i class="fas fa-book-open me-2"></i>Campagnes Publiques
                     </a>
-                    <?php if (isDM()): ?>
+                    <?php if (isDMOrAdmin()): ?>
                     <a href="campaigns.php" class="btn btn-outline-light btn-lg">
-                        <i class="fas fa-book me-2"></i>Mes Campagnes
+                        <i class="fas fa-book me-2"></i><?php echo isAdmin() ? 'Toutes les Campagnes' : 'Mes Campagnes'; ?>
                     </a>
                     <?php endif; ?>
                     <a href="create_character.php" class="btn btn-outline-light btn-lg">
@@ -146,7 +146,7 @@ require_once 'includes/functions.php';
     </section>
 
     <!-- DM Features Section -->
-    <?php if (isDM()): ?>
+    <?php if (isDMOrAdmin()): ?>
     <section class="bg-dark text-light py-5">
         <div class="container">
             <h2 class="text-center mb-5">Fonctionnalités Maître de Donjon</h2>

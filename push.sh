@@ -145,6 +145,11 @@ show_help() {
 
 # Fonction pour traiter les arguments en ligne de commande
 parse_arguments() {
+    # Serveur par défaut : test (plus sûr que production)
+    if [ -z "$SERVER" ]; then
+        SERVER="test"
+    fi
+    
     while [[ $# -gt 0 ]]; do
         case $1 in
             --no-tests)
@@ -156,9 +161,7 @@ parse_arguments() {
                 exit 0
                 ;;
             test|staging|production)
-                if [ -z "$SERVER" ]; then
-                    SERVER="$1"
-                fi
+                SERVER="$1"
                 shift
                 ;;
             *)
@@ -578,6 +581,13 @@ create_deployment_commit() {
     git commit -m "Deploy to $SERVER: $MESSAGE" || log_warning "Aucun changement à commiter"
     
     log_success "Commit de livraison créé"
+    
+    # Mettre à jour les versions si c'est un déploiement en production
+    if [ "$SERVER" = "production" ]; then
+        log_info "Mise à jour des versions..."
+        ./update_version.sh "patch" "production" "$MESSAGE" "deployment_script"
+        log_success "Versions mises à jour"
+    fi
 }
 
 # Fonction de nettoyage
@@ -591,13 +601,13 @@ cleanup() {
 
 # Fonction principale
 main() {
-    # Traiter les arguments en ligne de commande
-    parse_arguments "$@"
-    
-    # Si aucun serveur spécifié, utiliser le menu interactif
-    if [ -z "$SERVER" ]; then
+    # Si aucun argument fourni, utiliser le menu interactif
+    if [ $# -eq 0 ]; then
         interactive_menu
     else
+        # Traiter les arguments en ligne de commande
+        parse_arguments "$@"
+        
         # Mode ligne de commande
         if [ -z "$MESSAGE" ]; then
             MESSAGE="$DEFAULT_MESSAGE"

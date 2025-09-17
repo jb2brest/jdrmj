@@ -1,0 +1,208 @@
+https://www.aidedd.org/dnd-filters/index.php
+Avec Classe et races
+Récupération des versioons 2024
+
+Dans la partie "Équipement et Trésor" des feuilles de personnage joueur ou monstre, pour chaque item un bouton "Transférer à" permet d'attribuer l'objet à un autre personnage joueur ou non joueur ou un monstre
+
+Dans l'écran de déroulé d'une campagne, 
+
+https://www.aidedd.org/dnd-builder/index.php
+
+https://www.aidedd.org/regles/classes/clerc/
+
+Pour la production il faut envoyer les fichiers sur ce serveur ftp : 
+Serveur : robindesbriques.fr
+User : u839591438
+Mot de passe : jwkczE.ZiFp5>4T
+Répertoire cible : /domains/robindesbriques.fr/public_html/jdrmj
+
+
+
+
+Dans le grimoire, il faut que graphiquement on ait l'impression d'avoir un grimoire ouvert.
+La page de gauche contient la liste des sorts, triées par niveau, représenté par des boutons. 
+Lors du clic sur un bouton, on charge le détail du sort dans la page de droite.
+
+Au dessus du grimoire
+
+
+On va considérer que l'affichage du grimoire tel qu'actuellement est le mode édition du grimoire. 
+Nous allons ajouter le mode lecture. 
+Le mode lecture n'affiche que les sorts sélectionnés par le joueur en mode édition. 
+on bascule du mode lecture au mode édition en cliquant sur un bouton "Préparer mes sorts" situé à droite de "Emplacements"
+
+il faut lister les sorts mineurs sous forme de bouton. 
+Un clic sur le bouton 
+
+Il faut pouvoir sélectionner un nombre de sorts en fonction de la classe 
+
+
+
+
+Le fichier './aidednddata/Aidedd - Race.csv'. doit être importé en base.
+il doit remplacer le système existant la gestion des races de personnages existante
+
+Une fois que la race est choisie, il faut afficher dans la zone "Caractéristiques" en dessous caractéristiques le bonus lié à la race.
+Il faut aussi ajouter la taille, la vitesse, les visions particulières s'il y en a, les traits s'il y en a et les langues 
+
+Les informations taille et vitesse doivent être sortie de la zone bleu pour être intégrée dans la zone "Information de bases" sous forme de champs non éditables.
+Les langues doivent être sortie de la zone bleu pour être intégrée dans une nouvelle zone de même niveau que "Caractéristiques" appelée "Langues"
+La description de la race et une image de la race doivent être ajoutée dans la zone bleue.
+L'image de la race se trouve dans le répertoire images.
+
+Le fichier './aidednddata/Aidedd - Langues.csv'. doit être importé en base.
+Les langues doivent être affichée dans une liste non éditable. 
+Si la mention "une langue de votre choix" apparait il faut proposer au joueur de sélectionner une langue dans la base parmi celle qu'il ne parle pas déjà.
+
+Le joueur peut selectionner une seule langue supplémentaire par mention "une langue de votre choix". 
+Pour en sélectionner une autre, il faut qu'il supprime son premier choix.
+
+./publish.sh "0.0.50" "Début Races"
+
+Les informations taille et vitesse doivent être supprimés de la zone "Information de bases".
+Le champs taille non éditable doit être ajouté dans la zone "Combat"
+
+Les fichiers './aidednddata/Aidedd - Classe.csv' et './aidednddata/Aidedd - EvolutionClasses.csv' doivent être importés en base.
+ils doivent remplacer le système existant de gestion des classes de personnages
+
+
+Les caractéristiques peuvent être déterminées de deux manières :
+1) Répartition de 27 points suivant le barème des règles (max 15 pour une caractéristique). Le nombre de points consommés est indiqué en bas. Une répartition typique est :
+15 - 14 - 13 - 12 - 10 - 8
+ou
+2) Tirez 6 fois 4d6, gardez les 3 meilleurs d6 à chaque fois, et reportez les scores dans l'ordre de votre choix. Votre tirage donne :
+
+
+Le fichier './aidednddata/Aidedd - Historique.csv'. doit être importé en base.
+Il faut l'utiliser pour permettre au joueur de choisir l'historique de son personnage.
+
+Une fois l'historique choisi, il faut mettre à jour les langues en fonction des informations de la colonne languages.
+deux de votre choix : faire choisir le joueur deux langues supplémentaires
+une de votre choix : faire choisir le joueur une langue supplémentaire
+
+On va remplacer le système de langues par l'affichage de la liste des langues disponibles avecdes cases à cocher. 
+Les langues sélectionnées automatiquement par la race choisie ont une case cochée non éditable portant la mention (Racial) à coté du nom de la langue. 
+Un contrôle vérifie que le joueur ne sélectionne pas plus de langue que possible. (Langues raciales + langues de classe + langues d'historique)
+Le personnage ne peut être créer si le joueur à moins de langue choisie que possible. 
+
+Il faut ajouter l'équipement défini dans la colonne starting_equipment de la table classe. 
+En laissant le choix au joueur entre les kits a, b ou c.
+Les équipements doivent être visibles dans la partie "Équipement et Trésor" de view_character.php .
+
+
+Dans view_character_equipment.php , l'équipement doit apparaître directement dans la zone "Équipement et Objets Magiques. 
+Il n'y a pas de distinction entre l'équipement de départ et l'équipement supplémentaire.
+
+Il faut ajouter aussi les équipements liés à l'historique. (colonne equipment) aux pages create_character.php , view_character.php et view_character_equipment.php 
+Les équipements liés à l'historique doivent être parsés et séparés. 
+Si un équipement mentionne une bourse, il faut créditer le trésor du personnage du nombre de pièces cité.
+Exemple : "une bourse contenant 25 po." : il faut que le trésor du personnage contienne 25 po.
+
+Il faut ajouter, les traits, les capacités spéciales, les compétences sélectionnées et les langues sélectionnées pour le personnage dans view_character.php .
+
+Dans view_character.php , il y a un souci dans "Langues parlées" Les langues sont bien reprises. 
+Mais il y a la mention "une de votre choix (Choix)"
+
+
+Les fichiers './aidednddata/Aidedd - Armes.csv' et './aidednddata/Aidedd - Armures.csv' doivent être importés en base.
+Il faut les utiliser pour détecter les armes et armures présentes dans l'équipement du personnage. 
+Si une arme, une armure ou un bouclier est détectée, il faut proposer un bouton "équiper".
+Si une arme, une armure ou un bouclier est équipée, il faut proposer un bouton "déséquiper".
+Un joueur pour équiper au maximum : une arme à deux main ou une arme à une main et un bouclier.
+Dans view_character.php , il faut ajouter une sous-zone "Classe d'armure" dans la zone combat. 
+Il faut y ajouter le détail de calcul de la CA. 
+CA = (Fomule colonne CA du fichier './aidednddata/Aidedd - Armures.csv' en fonction de l'armure équipée ) + CA du bouclier (si équipée)
+Si aucune armure n'est équipée : CA = 10 + modificateur de DEXT
+
+Dans view_character.php , quand une arme est équipée, il faut ajouter les caractéristiques de l'arme dans la zone "Combat" et proposer de lancer les dés pour calculer les dégats
+Dans view_character.php , pour la partie caractéristique, il faut reprendre un tableau comme dans la page de création de personnage. 
+
+Pour le calcul de la classe d'armure : 
+Exemple :
+Formule de la base de données :(14 + Mod.Dex (max +2))
+Mod.Dex (max +2) : c'est la valeur du modificateur de déxtérité calculé dans la zone "Caractéristiques" avec un maximum de "+2"
+
+Le fichier './aidednddata/sorts.csv'. doit être importé en base.
+
+Ajouter les sorts pour les lanceurs de sorts. 
+
+Il faut mettre en place un Grimoire. 
+Il est accessible si le personnage à la capacité de lancer au moins un sort.
+Il est accessible en édition depuis les pages edit_character.php  et create_character.php.
+Il est accessible en lecture depuis la page view_character.php.
+Le nombre de sort disponible pour chaque niveau est défini par la table class_evolution
+
+La page edit_character.php doit être remplacée par la page create_character.php mais en mode édition. 
+Dans edit_character.php  et create_character.php, si un lanceur de Fenêtre grimoire.
+
+Ajouter des évènements à l'histoire du personnage. 
+
+Pouvoir partager un trésor de PNJ entre les joueurs
+Ajouter la notion de malle à trésor. (Masquée avant fouille des joueurs)
+Ajouter la notion de passage secret (Masqué avant fouille des joueurs)
+Ajouter la notion de piège (Masqué avant fouille des joueurs)
+
+Ajouter le jet d'initiative et jet d'attaque
+https://www.aidedd.org/regles/combat/
+
+Ajouter les défauts
+
+Les lieux : 
+- Salle des gardes
+- Dortoirs
+- Salle du conseil
+- Salle du trone
+- Temples
+- 
+
+
+############################# Dés ################################
+Je voudrais que tu me génères une image contenant un set de dés :
+- 4 faces,
+- 6 faces, 
+- 8 faces, 
+- 10 faces, 
+- 12 faces, 
+- 20 faces,
+Chacun dans une case de même dimension. Il y a donc 6 cases.
+Les dés sont marbrés gris très clair et bleu sans valeurs marquées dessus
+Le fond de l'image est transparent.
+
+- 10 faces dont les faces contiennent les nombres 00, 10, 20, 30, 40, 50, 60, 70, 80, 90) . 
+Les chiffres sont écrit en doré.
+Ils sont générés dans une grille aux cases de taille identique. 
+Chaque ligne correspond à un des dés. 
+Dans chaque case de chaque ligne, la valeur de la face la plus visible change. 
+Si toutes les valeurs du dé de la ligne sont représentées, alors les cases suivantes restent vides.
+
+Je voudrais que tu me génères une image : 
+L'image est découpée en grille aux cases de taille identique.
+Dans chaque case est dessinée un dé 8 faces avec une valeur différente. 
+Les cases contiendront alors les valeurs de 1 à 8.
+Le dés est marbré gris très clair et bleu. Les chiffres sont écrit en doré.
+
+
+
+
+
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="flameGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="orange" />
+      <stop offset="100%" stop-color="red" />
+    </radialGradient>
+    <filter id="flameGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2" />
+    </filter>
+  </defs>
+
+  <!-- Dragon head (simplified silhouette) -->
+  <path d="M100,50 C120,40 140,60 130,80 C140,70 150,90 140,100 C150,100 160,120 140,130 C130,140 110,130 100,120 Z"
+        fill="gold" stroke="darkred" stroke-width="2"/>
+
+  <!-- Animated flame -->
+  <circle id="flame" cx="130" cy="80" r="10" fill="url(#flameGradient)" filter="url(#flameGlow)">
+    <animate attributeName="r" values="8;12;8" dur="1s" repeatCount="indefinite" />
+    <animate attributeName="opacity" values="1;0.6;1" dur="1s" repeatCount="indefinite" />
+  </circle>
+</svg>

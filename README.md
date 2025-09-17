@@ -26,9 +26,19 @@ Un gestionnaire de feuilles de personnage pour Donjons & Dragons 5e, développé
 - [ ] Système de campagnes
 - [ ] Gestion des jets de dés
 
+## 📚 Documentation
+
+Toute la documentation technique est disponible dans le répertoire [`docs/`](docs/INDEX.md).
+
+### 📖 Guides Principaux
+- [Guide d'Installation](docs/INSTALL.md) - Installation détaillée
+- [Guide de Déploiement](docs/DEPLOYMENT.md) - Déploiement et configuration
+- [Configuration Base de Données](docs/DATABASE_CONFIG.md) - Configuration des environnements
+- [Système de Base de Données](docs/DATABASE_SYSTEM_README.md) - Vue d'ensemble
+
 ## 🚀 Installation
 
-Consultez le [Guide d'Installation](INSTALL.md) pour une installation détaillée.
+Consultez le [Guide d'Installation](docs/INSTALL.md) pour une installation détaillée.
 
 ### Prérequis rapides
 - PHP 7.4+

@@ -2,19 +2,25 @@
 require_once 'config/database.php';
 require_once 'includes/functions.php';
 
-requireDM();
+requireDMOrAdmin();
 
 if (!isset($_GET['id'])) {
     header('Location: campaigns.php');
     exit();
 }
 
-$dm_id = $_SESSION['user_id'];
+$user_id = $_SESSION['user_id'];
 $campaign_id = (int)$_GET['id'];
 
 // Charger la campagne
-$stmt = $pdo->prepare("SELECT * FROM campaigns WHERE id = ? AND dm_id = ?");
-$stmt->execute([$campaign_id, $dm_id]);
+// Les admins peuvent voir toutes les campagnes, les MJ seulement les leurs
+if (isAdmin()) {
+    $stmt = $pdo->prepare("SELECT * FROM campaigns WHERE id = ?");
+    $stmt->execute([$campaign_id]);
+} else {
+    $stmt = $pdo->prepare("SELECT * FROM campaigns WHERE id = ? AND dm_id = ?");
+    $stmt->execute([$campaign_id, $user_id]);
+}
 $campaign = $stmt->fetch();
 
 if (!$campaign) {
@@ -23,7 +29,7 @@ if (!$campaign) {
 }
 
 // Définir si l'utilisateur est le MJ propriétaire
-$isOwnerDM = ($dm_id == $campaign['dm_id']);
+$isOwnerDM = ($user_id == $campaign['dm_id']);
 
 // Traitements POST: ajouter membre par invite, créer session rapide
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

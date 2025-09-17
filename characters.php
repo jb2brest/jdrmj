@@ -115,6 +115,11 @@ $characters = $stmt->fetchAll();
                     <li class="nav-item">
                         <a class="nav-link active" href="characters.php">Mes Personnages</a>
                     </li>
+                    <?php if (isDMOrAdmin()): ?>
+                    <li class="nav-item">
+                        <a class="nav-link" href="campaigns.php"><?php echo isAdmin() ? 'Toutes les Campagnes' : 'Mes Campagnes'; ?></a>
+                    </li>
+                    <?php endif; ?>
                     <li class="nav-item">
                         <a class="nav-link" href="create_character.php">Créer un Personnage</a>
                     </li>

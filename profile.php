@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Récupération des statistiques selon le rôle
-if (isDM()) {
+if (isDMOrAdmin()) {
     // Statistiques pour les MJ
     $stmt = $pdo->prepare("SELECT COUNT(*) as session_count FROM game_sessions WHERE dm_id = ?");
     $stmt->execute([$user_id]);
@@ -126,6 +126,9 @@ $unread_notifications = $stmt->fetch()['unread_count'];
         .role-badge.dm {
             background: linear-gradient(45deg, #e74c3c, #c0392b);
         }
+        .role-badge.admin {
+            background: linear-gradient(45deg, #8e44ad, #9b59b6);
+        }
     </style>
 </head>
 <body>
@@ -147,7 +150,10 @@ $unread_notifications = $stmt->fetch()['unread_count'];
                     <li class="nav-item">
                         <a class="nav-link" href="characters.php">Mes Personnages</a>
                     </li>
-                    <?php if (isDM()): ?>
+                    <?php if (isDMOrAdmin()): ?>
+                        <li class="nav-item">
+                            <a class="nav-link" href="campaigns.php"><?php echo isAdmin() ? 'Toutes les Campagnes' : 'Mes Campagnes'; ?></a>
+                        </li>
                         <li class="nav-item">
                             <a class="nav-link" href="sessions.php">Mes Sessions</a>
                         </li>
@@ -190,7 +196,11 @@ $unread_notifications = $stmt->fetch()['unread_count'];
                     <h1><?php echo htmlspecialchars($user['username']); ?></h1>
                     <p class="lead mb-2">
                         <span class="role-badge <?php echo $user['role']; ?>">
-                            <i class="fas fa-<?php echo $user['role'] === 'dm' ? 'crown' : 'user'; ?> me-2"></i>
+                            <i class="fas fa-<?php 
+                                if ($user['role'] === 'admin') echo 'shield-alt';
+                                elseif ($user['role'] === 'dm') echo 'crown';
+                                else echo 'user';
+                            ?> me-2"></i>
                             <?php echo getRoleLabel($user['role']); ?>
                         </span>
                     </p>
@@ -281,15 +291,15 @@ $unread_notifications = $stmt->fetch()['unread_count'];
             <div class="col-md-4">
                 <div class="stat-card">
                     <h3 class="text-primary">
-                        <i class="fas fa-<?php echo isDM() ? 'crown' : 'users'; ?>"></i>
-                        <?php echo isDM() ? $session_count : $character_count; ?>
+                        <i class="fas fa-<?php echo isDMOrAdmin() ? 'crown' : 'users'; ?>"></i>
+                        <?php echo isDMOrAdmin() ? $session_count : $character_count; ?>
                     </h3>
                     <p class="text-muted">
-                        <?php echo isDM() ? 'Sessions créées' : 'Personnages créés'; ?>
+                        <?php echo isDMOrAdmin() ? 'Sessions créées' : 'Personnages créés'; ?>
                     </p>
                 </div>
 
-                <?php if (isDM()): ?>
+                <?php if (isDMOrAdmin()): ?>
                     <div class="stat-card">
                         <h3 class="text-success">
                             <i class="fas fa-users"></i>
@@ -324,7 +334,7 @@ $unread_notifications = $stmt->fetch()['unread_count'];
                     </div>
                     <div class="card-body">
                         <div class="d-grid gap-2">
-                            <?php if (isDM()): ?>
+                            <?php if (isDMOrAdmin()): ?>
                                 <a href="create_session.php" class="btn btn-outline-primary btn-sm">
                                     <i class="fas fa-plus me-2"></i>Créer une session
                                 </a>

@@ -1,0 +1,321 @@
+/* ========================================
+   THÈME PERSONNALISÉ JDR 4 MJ
+   Palette inspirée du logo D&D
+   ======================================== */
+
+:root {
+  /* Couleurs primaires */
+  --bs-primary: #8B4513;
+  --bs-primary-rgb: 139, 69, 19;
+  --bs-secondary: #D2691E;
+  --bs-secondary-rgb: 210, 105, 30;
+  --bs-success: #B22222;
+  --bs-success-rgb: 178, 34, 34;
+  --bs-info: #D2B48C;
+  --bs-info-rgb: 210, 180, 140;
+  --bs-warning: #CD853F;
+  --bs-warning-rgb: 205, 133, 63;
+  --bs-danger: #8B0000;
+  --bs-danger-rgb: 139, 0, 0;
+  --bs-light: #FAF0E6;
+  --bs-light-rgb: 250, 240, 230;
+  --bs-dark: #2F2F2F;
+  --bs-dark-rgb: 47, 47, 47;
+
+  /* Couleurs personnalisées */
+  --dnd-primary: #8B4513;
+  --dnd-primary-light: #A0522D;
+  --dnd-primary-dark: #654321;
+  --dnd-primary-darker: #3E2723;
+  
+  --dnd-secondary: #D2691E;
+  --dnd-secondary-light: #CD853F;
+  --dnd-secondary-dark: #B8860B;
+  --dnd-secondary-darker: #8B7355;
+  
+  --dnd-accent: #B22222;
+  --dnd-accent-light: #DC143C;
+  --dnd-accent-dark: #8B0000;
+  --dnd-accent-darker: #5D0000;
+  
+  --dnd-neutral-light: #F5F5DC;
+  --dnd-neutral: #D2B48C;
+  --dnd-neutral-dark: #8B7355;
+  --dnd-neutral-darker: #2F2F2F;
+  
+  --dnd-bg-light: #FAF0E6;
+  --dnd-bg: #F5F5DC;
+  --dnd-bg-dark: #E6E6FA;
+  --dnd-bg-darker: #2C3E50;
+}
+
+/* ========================================
+   BOUTONS PERSONNALISÉS
+   ======================================== */
+
+.btn-dnd {
+  background: linear-gradient(45deg, var(--dnd-primary), var(--dnd-secondary));
+  border: none;
+  color: white;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-dnd:hover {
+  background: linear-gradient(45deg, var(--dnd-primary-light), var(--dnd-secondary-light));
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.btn-dnd:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.btn-outline-dnd {
+  border: 2px solid var(--dnd-primary);
+  color: var(--dnd-primary);
+  background: transparent;
+  font-weight: 600;
+}
+
+.btn-outline-dnd:hover {
+  background: var(--dnd-primary);
+  color: white;
+  border-color: var(--dnd-primary);
+}
+
+/* ========================================
+   NAVBAR PERSONNALISÉE
+   ======================================== */
+
+.navbar-dark {
+  background: linear-gradient(135deg, var(--dnd-primary-darker) 0%, var(--dnd-secondary-darker) 100%) !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.navbar-brand {
+  font-weight: bold;
+  font-size: 1.5rem;
+}
+
+.navbar-brand img {
+  filter: brightness(1.1);
+}
+
+.nav-link {
+  color: var(--dnd-neutral-light) !important;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.nav-link:hover {
+  color: var(--dnd-secondary-light) !important;
+}
+
+/* ========================================
+   SECTIONS HERO
+   ======================================== */
+
+.hero-section {
+  background: linear-gradient(135deg, var(--dnd-primary-darker) 0%, var(--dnd-secondary-darker) 100%);
+  color: var(--dnd-neutral-light);
+  padding: 100px 0;
+}
+
+.hero-section h1 {
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+/* ========================================
+   CARTES PERSONNALISÉES
+   ======================================== */
+
+.card {
+  border: none;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  background: linear-gradient(135deg, var(--dnd-bg-light) 0%, var(--dnd-bg) 100%);
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+}
+
+.card-header {
+  background: linear-gradient(135deg, var(--dnd-primary) 0%, var(--dnd-secondary) 100%);
+  color: white;
+  border-bottom: none;
+  font-weight: 600;
+}
+
+/* ========================================
+   FORMULAIRES PERSONNALISÉS
+   ======================================== */
+
+.form-control {
+  border: 2px solid var(--dnd-neutral);
+  border-radius: 8px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-control:focus {
+  border-color: var(--dnd-primary);
+  box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
+}
+
+.form-label {
+  color: var(--dnd-neutral-darker);
+  font-weight: 600;
+}
+
+/* ========================================
+   PAGES DE CONNEXION/INSCRIPTION
+   ======================================== */
+
+.login-card, .register-card {
+  background: linear-gradient(135deg, var(--dnd-bg-light) 0%, var(--dnd-bg) 100%);
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  border: 1px solid var(--dnd-neutral);
+}
+
+/* ========================================
+   GRILLES ET LAYOUTS
+   ======================================== */
+
+.character-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: none;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  background: linear-gradient(135deg, var(--dnd-bg-light) 0%, var(--dnd-bg) 100%);
+}
+
+.character-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+}
+
+/* ========================================
+   BADGES ET ALERTES
+   ======================================== */
+
+.badge {
+  font-weight: 600;
+}
+
+.alert {
+  border: none;
+  border-radius: 8px;
+}
+
+.alert-success {
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+  color: #155724;
+}
+
+.alert-danger {
+  background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+  color: #721c24;
+}
+
+.alert-warning {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+  color: #856404;
+}
+
+.alert-info {
+  background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+  color: #0c5460;
+}
+
+/* ========================================
+   GRILLES DE SORTS (GRIMOIRE)
+   ======================================== */
+
+.spell-button {
+  background: linear-gradient(135deg, var(--dnd-bg-light) 0%, var(--dnd-bg) 100%);
+  border: 2px solid var(--dnd-neutral);
+  color: var(--dnd-neutral-darker);
+  transition: all 0.3s ease;
+}
+
+.spell-button:hover {
+  background: linear-gradient(135deg, var(--dnd-primary-light) 0%, var(--dnd-secondary-light) 100%);
+  color: white;
+  border-color: var(--dnd-primary);
+  transform: translateY(-2px);
+}
+
+.spell-button.known {
+  background: linear-gradient(135deg, var(--dnd-accent) 0%, var(--dnd-accent-dark) 100%);
+  color: white;
+  border-color: var(--dnd-accent);
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 60px 0;
+  }
+  
+  .hero-section h1 {
+    font-size: 2rem;
+  }
+  
+  .card {
+    margin-bottom: 1rem;
+  }
+}
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* ========================================
+   UTILITAIRES
+   ======================================== */
+
+.text-dnd-primary {
+  color: var(--dnd-primary) !important;
+}
+
+.text-dnd-secondary {
+  color: var(--dnd-secondary) !important;
+}
+
+.text-dnd-accent {
+  color: var(--dnd-accent) !important;
+}
+
+.bg-dnd-primary {
+  background-color: var(--dnd-primary) !important;
+}
+
+.bg-dnd-secondary {
+  background-color: var(--dnd-secondary) !important;
+}
+
+.bg-dnd-light {
+  background-color: var(--dnd-bg-light) !important;
+}

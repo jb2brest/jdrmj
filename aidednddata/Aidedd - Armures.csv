@@ -1,0 +1,14 @@
+Armure,VO,CA,Force,Discrétion,Poids,Prix,Type,Mettre,oter
+Matelassée,Padded,11 + Mod.Dex,-,Désavantage,4 kg,5 po,Armures légères,1 minute,1 minute
+Cuir,Leather,11 + Mod.Dex,-,-,5 kg,10 po,Armures légères,1 minute,1 minute
+Cuir clouté,Studded leather,12 + Mod.Dex,-,-,"6,5 kg",45 po,Armures légères,1 minute,1 minute
+Peaux,Hide,12 + Mod.Dex (max +2),-,-,6 kg,10 po,Armures intermédiaires,5 minutes,1 minute
+Chemise de mailles,Chain shirt,13 + Mod.Dex (max +2),-,-,10 kg,50 po,Armures intermédiaires,5 minutes,1 minute
+Écailles,Scale mail,14 + Mod.Dex (max +2),-,Désavantage,"22,5 kg",50 po,Armures intermédiaires,5 minutes,1 minute
+Cuirasse,Breastplate,14 + Mod.Dex (max +2),-,-,10 kg,400 po,Armures intermédiaires,5 minutes,1 minute
+Demi-plate,Half plate,15 + Mod.Dex (max +2),-,Désavantage,20 kg,750 po,Armures intermédiaires,5 minutes,1 minute
+Broigne,Ring mail,14,-,Désavantage,20 kg,30 po,Armures lourdes,10 minutes,5 minutes
+Cotte de mailles,Chain mail,16,For 13,Désavantage,"27,5 kg",75 po,Armures lourdes,10 minutes,5 minutes
+Clibanion,Splint,17,For 15,Désavantage,30 kg,200 po,Armures lourdes,10 minutes,5 minutes
+Harnois,Plate,18,For 15,Désavantage,"32,5 kg",1500 po,Armures lourdes,10 minutes,5 minutes
+Bouclier,Shield,2,-,-,3 kg,10 po,Bouclier,1 action,1 action

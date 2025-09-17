@@ -1,0 +1,39 @@
+Arme,VO,Dégât,Poids,Prix,Propriétés,Mains,Type
+Bâton,Quarterstaff,1d6 contondant,2 kg,2 pa,Polyvalente (1d8),1,Armes courantes de corps à corps
+Dague,Dagger,1d4 perforant,500 g,2 po,"Finesse, légère, lancer (portée 6 m/18 m)",1,Armes courantes de corps à corps
+Gourdin,Club,1d4 contondant,1 kg,1 pa,Légère,1,Armes courantes de corps à corps
+Hachette,Handaxe,1d6 tranchant,1 kg,5 po,"Légère, lancer (portée 6 m/18 m)",1,Armes courantes de corps à corps
+Javeline,Javelin,1d6 perforant,1 kg,5 pa,Lancer (portée 9 m/36 m),1,Armes courantes de corps à corps
+Lance,Spear,1d6 perforant,"1,5 kg",1 po,"Lancer (portée 6 m/18 m), polyvalente (1d8)",1,Armes courantes de corps à corps
+Marteau léger,Light hammer,1d4 contondant,1 kg,2 po,"Légère, lancer (portée 6 m/18 m)",1,Armes courantes de corps à corps
+Masse d'armes,Mace,1d6 contondant,2 kg,5 po,-,1,Armes courantes de corps à corps
+Massue,Greatclub,1d8 contondant,5 kg,2 pa,À deux mains,1,Armes courantes de corps à corps
+Serpe,Sickle,1d4 tranchant,1 kg,1 po,Légère,1,Armes courantes de corps à corps
+Arbalète légère,"Crossbow, light",1d8 perforant,"2,5 kg",25 po,"Munitions (portée 24 m/96 m), chargement, à deux mains",2,Armes courantes à distance
+Arc court,Shortbow,1d6 perforant,1 kg,25 po,"Munitions (portée 24 m/96 m), à deux mains",2,Armes courantes à distance
+Fléchette,Dart,1d4 perforant,100 g,5 pc,"Finesse, lancer (portée 6 m/18 m)",1,Armes courantes à distance
+Fronde,Sling,1d4 contondant,-,1 pa,Munitions (portée 9 m/36 m),1,Armes courantes à distance
+Cimeterre,Scimitar,1d6 tranchant,"1,5 kg",25 po,"Finesse, légère",1,Armes de guerre de corps à corps
+Coutille,Glaive,1d10 tranchant,3 kg,20 po,"Lourde, allonge, à deux mains",2,Armes de guerre de corps à corps
+Épée à deux mains,Greatsword,2d6 tranchant,3 kg,50 po,"Lourde, à deux mains",2,Armes de guerre de corps à corps
+Épée courte,Shortsword,1d6 perforant,1 kg,10 po,"Finesse, légère",1,Armes de guerre de corps à corps
+Épée longue,Longsword,1d8 tranchant,"1,5 kg",15 po,Polyvalente (1d10),1,Armes de guerre de corps à corps
+Fléau d'armes,Flail,1d8 contondant,1 kg,10 po,-,1,Armes de guerre de corps à corps
+Fouet,Whip,1d4 tranchant,"1,5 kg",2 po,"Finesse, allonge",1,Armes de guerre de corps à corps
+Hache à deux mains,Greataxe,1d12 tranchant,"3,5 kg",30 po,"Lourde, à deux mains",2,Armes de guerre de corps à corps
+Hache d'armes,Battleaxe,1d8 tranchant,2 kg,10 po,Polyvalente (1d10),1,Armes de guerre de corps à corps
+Hallebarde,Halberd,1d10 tranchant,3 kg,20 po,"Lourde, allonge, à deux mains",2,Armes de guerre de corps à corps
+Lance d’arçon,Lance,1d12 perforant,3 kg,10 po,"Allonge, spécial",1,Armes de guerre de corps à corps
+Maillet,Maul,2d6 contondant,5 kg,10 po,"Lourde, à deux mains",2,Armes de guerre de corps à corps
+Marteau de guerre,Warhammer,1d8 contondant,1 kg,15 po,Polyvalente (1d10),1,Armes de guerre de corps à corps
+Morgenstern,Morningstar,1d8 perforant,2 kg,15 po,-,1,Armes de guerre de corps à corps
+Pic de guerre,War pick,1d8 perforant,1 kg,5 po,-,1,Armes de guerre de corps à corps
+Pique,Pike,1d10 perforant,9 kg,5 po,"Lourde, allonge, à deux mains",2,Armes de guerre de corps à corps
+Rapière,Rapier,1d8 perforant,1 kg,25 po,Finesse,1,Armes de guerre de corps à corps
+Trident,Trident,1d6 perforant,2 kg,5 po,"Lancer (portée 6 m/18 m), polyvalente (1d8)",1,Armes de guerre de corps à corps
+Arbalète de poing,"Crossbow, hand",1d6 perforant,"1,5 kg",75 po,"Munitions (portée 9 m/36 m), légère, chargement",1,Armes de guerre à distance
+Arbalète lourde,"Crossbow, heavy",1d10 perforant,9 kg,50 po,"Munitions (portée 30 m/120 m), lourde, chargement,
+à deux mains",2,Armes de guerre à distance
+Arc long,Longbow,1d8 perforant,1 kg,50 po,"Munitions (portée 45 m/180 m), lourde, à deux mains",2,Armes de guerre à distance
+Filet,Net,,"1,5 kg",1 po,"Spécial, lancer (portée 1,50 m/ 4,50 m)",1,Armes de guerre à distance
+Sarbacane,Blowgun,1 perforant,500 g,10 po,"Munitions (portée 7,50 m/30 m), chargement",1,Armes de guerre à distance

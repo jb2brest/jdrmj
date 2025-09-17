@@ -2,9 +2,9 @@
 require_once 'config/database.php';
 require_once 'includes/functions.php';
 
-requireDM();
+requireDMOrAdmin();
 
-$dm_id = $_SESSION['user_id'];
+$user_id = $_SESSION['user_id'];
 
 // Création d'un code d'invitation simple
 function generateInviteCode($length = 12) {
@@ -29,29 +29,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error_message = "Le titre doit contenir au moins 3 caractères.";
         } else {
             $stmt = $pdo->prepare("INSERT INTO campaigns (dm_id, title, description, game_system, is_public, invite_code) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$dm_id, $title, $description, $game_system, $is_public, $invite_code]);
+            $stmt->execute([$user_id, $title, $description, $game_system, $is_public, $invite_code]);
             $success_message = "Campagne créée avec succès.";
         }
     }
 
     if (isset($_POST['action']) && $_POST['action'] === 'delete' && isset($_POST['campaign_id'])) {
         $campaign_id = (int)$_POST['campaign_id'];
-        $stmt = $pdo->prepare("DELETE FROM campaigns WHERE id = ? AND dm_id = ?");
-        $stmt->execute([$campaign_id, $dm_id]);
+        // Les admins peuvent supprimer toutes les campagnes, les MJ seulement les leurs
+        if (isAdmin()) {
+            $stmt = $pdo->prepare("DELETE FROM campaigns WHERE id = ?");
+            $stmt->execute([$campaign_id]);
+        } else {
+            $stmt = $pdo->prepare("DELETE FROM campaigns WHERE id = ? AND dm_id = ?");
+            $stmt->execute([$campaign_id, $user_id]);
+        }
         $success_message = "Campagne supprimée.";
     }
 
     if (isset($_POST['action']) && $_POST['action'] === 'toggle_visibility' && isset($_POST['campaign_id'])) {
         $campaign_id = (int)$_POST['campaign_id'];
-        $stmt = $pdo->prepare("UPDATE campaigns SET is_public = NOT is_public WHERE id = ? AND dm_id = ?");
-        $stmt->execute([$campaign_id, $dm_id]);
+        // Les admins peuvent modifier la visibilité de toutes les campagnes, les MJ seulement les leurs
+        if (isAdmin()) {
+            $stmt = $pdo->prepare("UPDATE campaigns SET is_public = NOT is_public WHERE id = ?");
+            $stmt->execute([$campaign_id]);
+        } else {
+            $stmt = $pdo->prepare("UPDATE campaigns SET is_public = NOT is_public WHERE id = ? AND dm_id = ?");
+            $stmt->execute([$campaign_id, $user_id]);
+        }
         $success_message = "Visibilité mise à jour.";
     }
 }
 
-// Récupérer les campagnes du MJ
-$stmt = $pdo->prepare("SELECT * FROM campaigns WHERE dm_id = ? ORDER BY created_at DESC");
-$stmt->execute([$dm_id]);
+// Récupérer les campagnes
+// Les admins voient toutes les campagnes, les MJ seulement les leurs
+if (isAdmin()) {
+    $stmt = $pdo->prepare("SELECT c.*, u.username as dm_name FROM campaigns c LEFT JOIN users u ON c.dm_id = u.id ORDER BY c.created_at DESC");
+    $stmt->execute();
+} else {
+    $stmt = $pdo->prepare("SELECT c.*, u.username as dm_name FROM campaigns c LEFT JOIN users u ON c.dm_id = u.id WHERE c.dm_id = ? ORDER BY c.created_at DESC");
+    $stmt->execute([$user_id]);
+}
 $campaigns = $stmt->fetchAll();
 ?>
 <!DOCTYPE html>
@@ -59,7 +77,7 @@ $campaigns = $stmt->fetchAll();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mes Campagnes - JDR 4 MJ</title>
+    <title><?php echo isAdmin() ? 'Toutes les Campagnes' : 'Mes Campagnes'; ?> - JDR 4 MJ</title>
     <link rel="icon" type="image/png" href="images/logo.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -100,7 +118,7 @@ $campaigns = $stmt->fetchAll();
 
     <div class="container mt-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1><i class="fas fa-book me-2"></i>Mes Campagnes</h1>
+            <h1><i class="fas fa-book me-2"></i><?php echo isAdmin() ? 'Toutes les Campagnes' : 'Mes Campagnes'; ?></h1>
         </div>
 
         <?php if (isset($success_message)) echo displayMessage($success_message, 'success'); ?>
@@ -160,7 +178,12 @@ $campaigns = $stmt->fetchAll();
                                         <?php echo $c['is_public'] ? 'Publique' : 'Privée'; ?>
                                     </span>
                                 </div>
-                                <p class="text-muted mb-2">Système : <?php echo htmlspecialchars($c['game_system']); ?></p>
+                                <p class="text-muted mb-2">
+                                    Système : <?php echo htmlspecialchars($c['game_system']); ?>
+                                    <?php if (isAdmin() && !empty($c['dm_name'])): ?>
+                                        <br>MJ : <?php echo htmlspecialchars($c['dm_name']); ?>
+                                    <?php endif; ?>
+                                </p>
                                 <?php if (!empty($c['description'])): ?>
                                     <p class="small mb-3"><?php echo nl2br(htmlspecialchars($c['description'])); ?></p>
                                 <?php endif; ?>
