@@ -2,19 +2,19 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=1.0.6
+VERSION=1.1.0
 
 # Date de déploiement
 DEPLOY_DATE=2025-09-17
 
 # Environnement
-ENVIRONMENT=Test correction SQL production
+ENVIRONMENT=Test correction SQL minor
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=03988243d58d6f2cee86654be8fa128b334f2474
+GIT_COMMIT=9c1712701a7bfdff18a7d63f7611ba1ad96b961c
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20250917-173709
+BUILD_ID=20250917-173719
 
 # Notes de version
 RELEASE_NOTES="production"
