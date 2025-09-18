@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=1.9.0
+VERSION=1.10.0
 
 # Date de déploiement
 DEPLOY_DATE=2025-09-18
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-09-18
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=5c88b5a670091c0e23b99f5d9e2aaac8d210fc90
+GIT_COMMIT=c8211da7b7322ad54e6a8d6ee92bf1d716932ca7
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20250918-214521
+BUILD_ID=20250918-220906
 
 # Notes de version
-RELEASE_NOTES="Classe : magicien"
+RELEASE_NOTES="Classe : moine"
