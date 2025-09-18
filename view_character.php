@@ -54,6 +54,7 @@ $backgroundLanguages = $character['background_languages'] ? json_decode($charact
 // Récupérer les données de rage pour les barbares
 $isBarbarian = strpos(strtolower($character['class_name']), 'barbare') !== false;
 $isBard = strpos(strtolower($character['class_name']), 'barde') !== false;
+$isCleric = strpos(strtolower($character['class_name']), 'clerc') !== false;
 $rageData = null;
 if ($isBarbarian) {
     // Récupérer le nombre maximum de rages pour ce niveau
@@ -81,6 +82,8 @@ if ($isBarbarian) {
     $classCapabilities = getBarbarianCapabilities($character['level']);
 } elseif ($isBard) {
     $classCapabilities = getBardCapabilities($character['level']);
+} elseif ($isCleric) {
+    $classCapabilities = getClericCapabilities($character['level']);
 }
 
 // Capacités raciales
@@ -101,6 +104,12 @@ if ($isBarbarian) {
 $bardCollege = null;
 if ($isBard) {
     $bardCollege = getCharacterBardCollege($character_id);
+}
+
+// Récupérer le domaine divin du clerc
+$clericDomain = null;
+if ($isCleric) {
+    $clericDomain = getCharacterClericDomain($character_id);
 }
 
 // Récupérer les améliorations de caractéristiques
@@ -1198,7 +1207,7 @@ $initiative = $dexterityMod;
                 </div>
                 
                 <!-- Message si aucune capacité -->
-                <?php if (empty($classCapabilities) && empty($raceCapabilities) && !$barbarianPath && !$bardCollege): ?>
+                <?php if (empty($classCapabilities) && empty($raceCapabilities) && !$barbarianPath && !$bardCollege && !$clericDomain): ?>
                     <div class="text-center text-muted">
                         <i class="fas fa-info-circle me-2"></i>Aucune capacité spéciale
                     </div>
@@ -1320,6 +1329,84 @@ $initiative = $dexterityMod;
                             
                             // Afficher les capacités de collège bardique
                             foreach ($collegeCapabilities as $capability):
+                            ?>
+                                <div class="capability-item mt-3">
+                                    <div class="capability-header">
+                                        <h6 class="mb-1 text-info">
+                                            <i class="fas fa-star me-1"></i><?php echo htmlspecialchars($capability['name']); ?>
+                                        </h6>
+                                    </div>
+                                    <div class="capability-description">
+                                        <small class="text-muted"><?php echo nl2br(htmlspecialchars($capability['description'])); ?></small>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                
+                <!-- Domaine divin du clerc -->
+                <?php if ($clericDomain): ?>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5><i class="fas fa-cross me-2"></i>Domaine divin</h5>
+                            <div class="capability-item">
+                                <div class="capability-header">
+                                    <h6 class="mb-1 text-warning">
+                                        <i class="fas fa-star me-1"></i><?php echo htmlspecialchars($clericDomain['domain_name']); ?>
+                                    </h6>
+                                </div>
+                                <div class="capability-description">
+                                    <small class="text-muted"><?php echo nl2br(htmlspecialchars($clericDomain['domain_description'])); ?></small>
+                                </div>
+                            </div>
+                            
+                            <!-- Capacités de domaine divin par niveau -->
+                            <?php
+                            $domainCapabilities = [];
+                            
+                            // Niveau 1 - Capacité de domaine divin
+                            if ($character['level'] >= 1 && !empty($clericDomain['level_1_feature'])) {
+                                $domainCapabilities[] = [
+                                    'name' => 'Capacité de niveau 1',
+                                    'description' => $clericDomain['level_1_feature']
+                                ];
+                            }
+                            
+                            // Niveau 2 - Capacité de domaine divin
+                            if ($character['level'] >= 2 && !empty($clericDomain['level_2_feature'])) {
+                                $domainCapabilities[] = [
+                                    'name' => 'Capacité de niveau 2',
+                                    'description' => $clericDomain['level_2_feature']
+                                ];
+                            }
+                            
+                            // Niveau 6 - Capacité de domaine divin
+                            if ($character['level'] >= 6 && !empty($clericDomain['level_6_feature'])) {
+                                $domainCapabilities[] = [
+                                    'name' => 'Capacité de niveau 6',
+                                    'description' => $clericDomain['level_6_feature']
+                                ];
+                            }
+                            
+                            // Niveau 8 - Capacité de domaine divin
+                            if ($character['level'] >= 8 && !empty($clericDomain['level_8_feature'])) {
+                                $domainCapabilities[] = [
+                                    'name' => 'Capacité de niveau 8',
+                                    'description' => $clericDomain['level_8_feature']
+                                ];
+                            }
+                            
+                            // Niveau 17 - Capacité de domaine divin
+                            if ($character['level'] >= 17 && !empty($clericDomain['level_17_feature'])) {
+                                $domainCapabilities[] = [
+                                    'name' => 'Capacité de niveau 17',
+                                    'description' => $clericDomain['level_17_feature']
+                                ];
+                            }
+                            
+                            // Afficher les capacités de domaine divin
+                            foreach ($domainCapabilities as $capability):
                             ?>
                                 <div class="capability-item mt-3">
                                     <div class="capability-header">

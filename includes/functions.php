@@ -1882,6 +1882,141 @@ function getBardCapabilities($level) {
     return $capabilities;
 }
 
+// Fonction pour obtenir les capacités de clerc selon le niveau
+function getClericCapabilities($level) {
+    $capabilities = [];
+    
+    // Niveau 1 - Sorts
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Sorts',
+            'description' => 'Vous avez appris à utiliser la magie divine. Voir le chapitre 10 pour les règles générales sur la magie et le chapitre 11 pour la liste des sorts de clerc.'
+        ];
+    }
+    
+    // Niveau 1 - Maîtrise d'armures et d'armes
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Maîtrise d\'armures et d\'armes',
+            'description' => 'Vous maîtrisez les armures légères, les armures intermédiaires, les boucliers et les armes courantes.'
+        ];
+    }
+    
+    // Niveau 1 - Maîtrise d'outils
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Maîtrise d\'outils',
+            'description' => 'Vous maîtrisez un type d\'outil d\'artisan de votre choix.'
+        ];
+    }
+    
+    // Niveau 1 - Compétences
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Compétences',
+            'description' => 'Vous choisissez deux compétences parmi : Histoire, Médecine, Perspicacité et Religion.'
+        ];
+    }
+    
+    // Niveau 1 - Domaine divin
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Domaine divin',
+            'description' => 'Vous choisissez un domaine divin qui reflète votre dévotion à votre divinité. Votre choix vous accorde des capacités au niveau 1, puis aux niveaux 2, 6, 8 et 17.'
+        ];
+    }
+    
+    // Niveau 2 - Canalisation de divinité
+    if ($level >= 2) {
+        $capabilities[] = [
+            'name' => 'Canalisation de divinité',
+            'description' => 'Vous pouvez utiliser votre canalisation de divinité pour invoquer la puissance divine. Vous commencez avec une utilisation de cette aptitude. Vous récupérez toutes les utilisations dépensées quand vous terminez un repos long.'
+        ];
+    }
+    
+    // Niveau 4 - Amélioration de caractéristique
+    if ($level >= 4) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 5 - Destruction des morts-vivants
+    if ($level >= 5) {
+        $capabilities[] = [
+            'name' => 'Destruction des morts-vivants',
+            'description' => 'Quand un mort-vivant de défi 1/2 ou moins échoue à son jet de sauvegarde contre votre canalisation de divinité, il est détruit.'
+        ];
+    }
+    
+    // Niveau 8 - Amélioration de caractéristique
+    if ($level >= 8) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 10 - Intervention divine
+    if ($level >= 10) {
+        $capabilities[] = [
+            'name' => 'Intervention divine',
+            'description' => 'Vous pouvez appeler votre divinité pour intercéder en votre faveur quand vous en avez le plus besoin. Vous implorez votre divinité pour qu\'elle intervienne directement dans le monde. Vous décrivez l\'aide que vous souhaitez et lancez un d100.'
+        ];
+    }
+    
+    // Niveau 12 - Amélioration de caractéristique
+    if ($level >= 12) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 14 - Destruction des morts-vivants améliorée
+    if ($level >= 14) {
+        $capabilities[] = [
+            'name' => 'Destruction des morts-vivants améliorée',
+            'description' => 'Quand un mort-vivant de défi 1 ou moins échoue à son jet de sauvegarde contre votre canalisation de divinité, il est détruit.'
+        ];
+    }
+    
+    // Niveau 16 - Amélioration de caractéristique
+    if ($level >= 16) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 18 - Canalisation de divinité améliorée
+    if ($level >= 18) {
+        $capabilities[] = [
+            'name' => 'Canalisation de divinité améliorée',
+            'description' => 'Vous pouvez utiliser votre canalisation de divinité deux fois entre deux repos longs.'
+        ];
+    }
+    
+    // Niveau 19 - Amélioration de caractéristique
+    if ($level >= 19) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 20 - Intervention divine améliorée
+    if ($level >= 20) {
+        $capabilities[] = [
+            'name' => 'Intervention divine améliorée',
+            'description' => 'Votre appel à l\'intervention divine réussit automatiquement, sans que vous ayez besoin de lancer le dé.'
+        ];
+    }
+    
+    return $capabilities;
+}
+
 // Fonction pour obtenir les voies primitives des barbares
 function getBarbarianPaths() {
     global $pdo;
@@ -1902,6 +2037,18 @@ function getBardColleges() {
         return $stmt->fetchAll();
     } catch (PDOException $e) {
         error_log("Erreur getBardColleges: " . $e->getMessage());
+        return [];
+    }
+}
+
+// Fonction pour obtenir les domaines divins
+function getClericDomains() {
+    global $pdo;
+    try {
+        $stmt = $pdo->query("SELECT * FROM cleric_domains ORDER BY name");
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        error_log("Erreur getClericDomains: " . $e->getMessage());
         return [];
     }
 }
@@ -1944,6 +2091,25 @@ function getCharacterBardCollege($characterId) {
     }
 }
 
+// Fonction pour obtenir le domaine divin d'un personnage
+function getCharacterClericDomain($characterId) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("
+            SELECT ccd.*, cd.name as domain_name, cd.description as domain_description,
+                   cd.level_1_feature, cd.level_2_feature, cd.level_6_feature, cd.level_8_feature, cd.level_17_feature
+            FROM character_cleric_domain ccd
+            JOIN cleric_domains cd ON ccd.domain_id = cd.id
+            WHERE ccd.character_id = ?
+        ");
+        $stmt->execute([$characterId]);
+        return $stmt->fetch();
+    } catch (PDOException $e) {
+        error_log("Erreur getCharacterClericDomain: " . $e->getMessage());
+        return null;
+    }
+}
+
 // Fonction pour sauvegarder le choix de voie primitive
 function saveBarbarianPath($characterId, $pathId, $level3Choice = null, $level6Choice = null, $level10Choice = null, $level14Choice = null) {
     global $pdo;
@@ -1981,6 +2147,28 @@ function saveBardCollege($characterId, $collegeId, $level3Choice = null, $level6
         return $stmt->execute([$characterId, $collegeId, $level3Choice, $level6Choice, $level14Choice]);
     } catch (PDOException $e) {
         error_log("Erreur saveBardCollege: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Fonction pour sauvegarder le choix de domaine divin
+function saveClericDomain($characterId, $domainId, $level1Choice = null, $level2Choice = null, $level6Choice = null, $level8Choice = null, $level17Choice = null) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO character_cleric_domain (character_id, domain_id, level_1_choice, level_2_choice, level_6_choice, level_8_choice, level_17_choice)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+            domain_id = VALUES(domain_id),
+            level_1_choice = VALUES(level_1_choice),
+            level_2_choice = VALUES(level_2_choice),
+            level_6_choice = VALUES(level_6_choice),
+            level_8_choice = VALUES(level_8_choice),
+            level_17_choice = VALUES(level_17_choice)
+        ");
+        return $stmt->execute([$characterId, $domainId, $level1Choice, $level2Choice, $level6Choice, $level8Choice, $level17Choice]);
+    } catch (PDOException $e) {
+        error_log("Erreur saveClericDomain: " . $e->getMessage());
         return false;
     }
 }

@@ -50,21 +50,27 @@ if ($character['race_id']) {
 $classCapabilities = [];
 $raceCapabilities = [];
 
-// Vérifier si c'est un barbare ou un barde
+// Vérifier si c'est un barbare, un barde ou un clerc
 $isBarbarian = false;
 $isBard = false;
+$isCleric = false;
 if ($character['class_id']) {
     $stmt = $pdo->prepare("SELECT name FROM classes WHERE id = ?");
     $stmt->execute([$character['class_id']]);
     $class = $stmt->fetch();
     $isBarbarian = $class && strpos(strtolower($class['name']), 'barbare') !== false;
     $isBard = $class && strpos(strtolower($class['name']), 'barde') !== false;
+    $isCleric = $class && strpos(strtolower($class['name']), 'clerc') !== false;
 }
 
 // Capacités de classe basées sur le niveau
 $classCapabilities = [];
 if ($isBarbarian) {
     $classCapabilities = getBarbarianCapabilities($character['level']);
+} elseif ($isBard) {
+    $classCapabilities = getBardCapabilities($character['level']);
+} elseif ($isCleric) {
+    $classCapabilities = getClericCapabilities($character['level']);
 }
 
 // Capacités raciales
@@ -89,6 +95,14 @@ $selectedCollege = null;
 if ($isBard) {
     $bardColleges = getBardColleges();
     $selectedCollege = getCharacterBardCollege($character_id);
+}
+
+// Récupérer les domaines divins et le choix actuel
+$clericDomains = [];
+$selectedDomain = null;
+if ($isCleric) {
+    $clericDomains = getClericDomains();
+    $selectedDomain = getCharacterClericDomain($character_id);
 }
 
 // Récupérer les améliorations de caractéristiques
@@ -206,7 +220,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $barbarian_path_id = isset($_POST['barbarian_path_id']) ? (int)$_POST['barbarian_path_id'] : null;
     
     // Collège bardique (pour les bardes de niveau 3+)
-    $bard_college_id = isset($_POST['bard_college_id']) ? (int)$_POST['bard_college_id'] : null;
+        $bard_college_id = isset($_POST['bard_college_id']) ? (int)$_POST['bard_college_id'] : null;
+        $cleric_domain_id = isset($_POST['cleric_domain_id']) ? (int)$_POST['cleric_domain_id'] : null;
     
     // Améliorations de caractéristiques
     $ability_improvements = [
@@ -327,6 +342,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Sauvegarder le collège bardique si c'est un barde de niveau 3+
             if ($isBard && $level >= 3 && $bard_college_id) {
                 saveBardCollege($character_id, $bard_college_id);
+            }
+            
+            // Sauvegarder le domaine divin si c'est un clerc de niveau 1+
+            if ($isCleric && $level >= 1 && $cleric_domain_id) {
+                saveClericDomain($character_id, $cleric_domain_id);
             }
             
             // Sauvegarder les améliorations de caractéristiques
@@ -1058,6 +1078,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         </div>
                                         <div class="college-description mt-2">
                                             <small class="text-muted"><?php echo nl2br(htmlspecialchars($college['description'])); ?></small>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                
+                <!-- Choix de domaine divin pour les clercs de niveau 1+ -->
+                <?php if ($isCleric && $character['level'] >= 1): ?>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5><i class="fas fa-cross me-2"></i>Domaine divin</h5>
+                            <p class="text-muted">Choisissez votre domaine divin (obligatoire au niveau 1).</p>
+                            <div class="row">
+                                <?php foreach ($clericDomains as $domain): ?>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" 
+                                                   name="cleric_domain_id" 
+                                                   id="domain_<?php echo $domain['id']; ?>" 
+                                                   value="<?php echo $domain['id']; ?>"
+                                                   <?php echo ($selectedDomain && $selectedDomain['domain_id'] == $domain['id']) ? 'checked' : ''; ?>>
+                                            <label class="form-check-label" for="domain_<?php echo $domain['id']; ?>">
+                                                <strong><?php echo htmlspecialchars($domain['name']); ?></strong>
+                                            </label>
+                                        </div>
+                                        <div class="domain-description mt-2">
+                                            <small class="text-muted"><?php echo nl2br(htmlspecialchars($domain['description'])); ?></small>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>
