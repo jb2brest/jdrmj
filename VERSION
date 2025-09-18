@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=1.6.0
+VERSION=1.7.0
 
 # Date de déploiement
 DEPLOY_DATE=2025-09-18
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-09-18
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=37df09f1f68d7bf71db43b890d7ce125ad82783c
+GIT_COMMIT=46449aa196219c0da8c9fda8c6577833c35a31e9
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20250918-195427
+BUILD_ID=20250918-201810
 
 # Notes de version
-RELEASE_NOTES="Classe : barde"
+RELEASE_NOTES="Classe : clerc"
