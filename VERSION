@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=1.3.5
+VERSION=1.3.6
 
 # Date de déploiement
 DEPLOY_DATE=2025-09-18
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-09-18
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=fa736a0209a96eb438f15658a05504e383eb4e64
+GIT_COMMIT=20073e3e355ab737cdd9629e6f5baf85cea6edf1
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20250918-142114
+BUILD_ID=20250918-143532
 
 # Notes de version
-RELEASE_NOTES="Fiche monstre : immunités"
+RELEASE_NOTES="Fiche monstre : actions"
