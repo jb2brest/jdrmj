@@ -23,6 +23,9 @@ Dans view_scene_player.php., dans la liste des participants, il faut utiliser la
 
 Dans view_monster_sheet.php, la zone "Caractéristiques" doit prendre toute la largeur, comme la zone "Équipement et Trésor"
 
+Dans la table dnd_monster, ajoute la colonne "Langues" en récupéreant les informations dans la colonne "Langues" du fichier aidednddata/monstre.csv
+Ajoute ensuite les compétences à la pages view_monster_sheet.php dans une zone "Langues".
+Mets la à côté de la zone "Sens"
 
 Dans view_scene.php, dans la zone "Jets de dés", il faut déplacer la zone "Résultats:" sous le bouton "Lancer les dés" en laissant la zone "Historique des jets (50 derniers) :" sur la droite.
 

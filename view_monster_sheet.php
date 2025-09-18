@@ -19,7 +19,7 @@ $campaign_id = (int)$_GET['campaign_id'];
 $stmt = $pdo->prepare("
     SELECT sn.*, m.id as monster_db_id, m.name as monster_name, m.type, m.size, m.challenge_rating, 
            m.hit_points as max_hit_points, m.armor_class, m.csv_id, c.dm_id, c.id as campaign_id, s.id as place_id,
-           m.strength, m.dexterity, m.constitution, m.intelligence, m.wisdom, m.charisma
+           m.strength, m.dexterity, m.constitution, m.intelligence, m.wisdom, m.charisma, m.competences, m.saving_throws, m.damage_immunities, m.damage_resistances, m.condition_immunities, m.senses, m.languages
     FROM place_npcs sn 
     JOIN dnd_monsters m ON sn.monster_id = m.id 
     JOIN places s ON sn.place_id = s.id
@@ -249,7 +249,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $pdo->prepare("
             SELECT sn.*, m.id as monster_db_id, m.name as monster_name, m.type, m.size, m.challenge_rating, 
                    m.hit_points as max_hit_points, m.armor_class, m.csv_id, c.dm_id, c.id as campaign_id, s.id as place_id,
-                   m.strength, m.dexterity, m.constitution, m.intelligence, m.wisdom, m.charisma
+                   m.strength, m.dexterity, m.constitution, m.intelligence, m.wisdom, m.charisma, m.competences, m.saving_throws, m.damage_immunities, m.damage_resistances, m.condition_immunities, m.senses, m.languages
             FROM place_npcs sn 
             JOIN dnd_monsters m ON sn.monster_id = m.id 
             JOIN places s ON sn.place_id = s.id
@@ -715,6 +715,135 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
                 </div>
             </div>
         </div>
+
+        <!-- Compétences et Jets de sauvegarde -->
+        <?php if (!empty($monster['competences']) || !empty($monster['saving_throws'])): ?>
+        <div class="row">
+            <!-- Compétences -->
+            <?php if (!empty($monster['competences'])): ?>
+            <div class="col-md-6 mb-4">
+                <div class="card stat-card">
+                    <div class="card-header bg-brown text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-star me-2"></i>Compétences
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0"><?php echo htmlspecialchars($monster['competences']); ?></p>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+            
+            <!-- Jets de sauvegarde -->
+            <?php if (!empty($monster['saving_throws'])): ?>
+            <div class="col-md-6 mb-4">
+                <div class="card stat-card">
+                    <div class="card-header bg-brown text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-shield-alt me-2"></i>Jets de sauvegarde
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0"><?php echo htmlspecialchars($monster['saving_throws']); ?></p>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
+
+        <!-- Immunités aux dégâts et Résistances aux dégâts -->
+        <?php if (!empty($monster['damage_immunities']) || !empty($monster['damage_resistances'])): ?>
+        <div class="row">
+            <!-- Immunités aux dégâts -->
+            <?php if (!empty($monster['damage_immunities'])): ?>
+            <div class="col-md-6 mb-4">
+                <div class="card stat-card">
+                    <div class="card-header bg-brown text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-shield-virus me-2"></i>Immunités aux dégâts
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0"><?php echo htmlspecialchars($monster['damage_immunities']); ?></p>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+            
+            <!-- Résistances aux dégâts -->
+            <?php if (!empty($monster['damage_resistances'])): ?>
+            <div class="col-md-6 mb-4">
+                <div class="card stat-card">
+                    <div class="card-header bg-brown text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-shield-alt me-2"></i>Résistances aux dégâts
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0"><?php echo htmlspecialchars($monster['damage_resistances']); ?></p>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
+
+        <!-- Immunités aux états et Sens -->
+        <?php if (!empty($monster['condition_immunities']) || !empty($monster['senses'])): ?>
+        <div class="row">
+            <!-- Immunités aux états -->
+            <?php if (!empty($monster['condition_immunities'])): ?>
+            <div class="col-md-6 mb-4">
+                <div class="card stat-card">
+                    <div class="card-header bg-brown text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-user-shield me-2"></i>Immunités aux états
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0"><?php echo htmlspecialchars($monster['condition_immunities']); ?></p>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+            
+            <!-- Sens -->
+            <?php if (!empty($monster['senses'])): ?>
+            <div class="col-md-6 mb-4">
+                <div class="card stat-card">
+                    <div class="card-header bg-brown text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-eye me-2"></i>Sens
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0"><?php echo htmlspecialchars($monster['senses']); ?></p>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
+
+        <!-- Langues -->
+        <?php if (!empty($monster['languages'])): ?>
+        <div class="row">
+            <div class="col-12 mb-4">
+                <div class="card stat-card">
+                    <div class="card-header bg-brown text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-language me-2"></i>Langues
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0"><?php echo htmlspecialchars($monster['languages']); ?></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
 
         <!-- Description -->
         <?php if (!empty($monster['description'])): ?>
