@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=1.7.0
+VERSION=1.8.0
 
 # Date de déploiement
 DEPLOY_DATE=2025-09-18
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-09-18
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=46449aa196219c0da8c9fda8c6577833c35a31e9
+GIT_COMMIT=7ee299d22d39327405daae0aa469d3d6194c3585
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20250918-201810
+BUILD_ID=20250918-212224
 
 # Notes de version
-RELEASE_NOTES="Classe : clerc"
+RELEASE_NOTES="Classe : guerrier et ensorceleur"
