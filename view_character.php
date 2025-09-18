@@ -302,13 +302,78 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['hp_ac
                r.intelligence_bonus, r.wisdom_bonus, r.charisma_bonus, r.traits,
                cl.name as class_name, cl.description as class_description, cl.hit_dice
         FROM characters c 
+        LEFT JOIN races r ON c.race_id = r.id 
+        LEFT JOIN classes cl ON c.class_id = cl.id 
+        WHERE c.id = ?
+    ");
+    $stmt->execute([$character_id]);
+    $character = $stmt->fetch();
+}
+
+// Traitement des actions POST pour la gestion des points d'expérience
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['xp_action'])) {
+    switch ($_POST['xp_action']) {
+        case 'add':
+            $xp_amount = (int)$_POST['xp_amount'];
+            if ($xp_amount > 0) {
+                $new_xp = $character['experience_points'] + $xp_amount;
+                $stmt = $pdo->prepare("UPDATE characters SET experience_points = ? WHERE id = ?");
+                $stmt->execute([$new_xp, $character_id]);
+                
+                $success_message = "Points d'expérience ajoutés : +{$xp_amount} XP. Total : " . number_format($new_xp) . " XP";
+            }
+            break;
+            
+        case 'remove':
+            $xp_amount = (int)$_POST['xp_amount'];
+            if ($xp_amount > 0) {
+                $new_xp = max(0, $character['experience_points'] - $xp_amount);
+                $stmt = $pdo->prepare("UPDATE characters SET experience_points = ? WHERE id = ?");
+                $stmt->execute([$new_xp, $character_id]);
+                
+                $success_message = "Points d'expérience retirés : -{$xp_amount} XP. Total : " . number_format($new_xp) . " XP";
+            }
+            break;
+            
+        case 'set':
+            $xp_amount = (int)$_POST['xp_amount'];
+            if ($xp_amount >= 0) {
+                $stmt = $pdo->prepare("UPDATE characters SET experience_points = ? WHERE id = ?");
+                $stmt->execute([$xp_amount, $character_id]);
+                
+                $success_message = "Points d'expérience définis à : " . number_format($xp_amount) . " XP";
+            }
+            break;
+    }
+    
+    // Recharger les données du personnage après modification des XP
+    if (isset($success_message)) {
+        $stmt = $pdo->prepare("
+            SELECT c.*, r.name as race_name, r.description as race_description, r.strength_bonus, r.dexterity_bonus, r.constitution_bonus, 
+                   r.intelligence_bonus, r.wisdom_bonus, r.charisma_bonus, r.traits,
+                   cl.name as class_name, cl.description as class_description, cl.hit_dice
+            FROM characters c 
+            LEFT JOIN races r ON c.race_id = r.id 
+            LEFT JOIN classes cl ON c.class_id = cl.id 
+            WHERE c.id = ?
+        ");
+        $stmt->execute([$character_id]);
+        $character = $stmt->fetch();
+    }
+}
+
+// Recharger les données du personnage
+    $stmt = $pdo->prepare("
+        SELECT c.*, r.name as race_name, r.description as race_description, r.strength_bonus, r.dexterity_bonus, r.constitution_bonus, 
+               r.intelligence_bonus, r.wisdom_bonus, r.charisma_bonus, r.traits,
+               cl.name as class_name, cl.description as class_description, cl.hit_dice
+        FROM characters c 
         JOIN races r ON c.race_id = r.id 
         JOIN classes cl ON c.class_id = cl.id 
         WHERE c.id = ?
     ");
     $stmt->execute([$character_id]);
     $character = $stmt->fetch();
-}
 
 // Traitement du transfert d'objets magiques
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['action']) && $_POST['action'] === 'transfer_item') {
@@ -625,6 +690,16 @@ $initiative = $dexterityMod;
             font-weight: bold;
             color: #3498db;
         }
+        .xp-display {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #f39c12;
+        }
+        .clickable-xp:hover {
+            color: #e67e22;
+            transform: scale(1.05);
+            transition: all 0.2s ease;
+        }
         
         /* Styles pour les rages */
         .rage-container {
@@ -813,6 +888,17 @@ $initiative = $dexterityMod;
                                 <div class="stat-label">Classe d'Armure</div>
                             </div>
                         </div>
+                        <div class="col-6">
+                            <div class="stat-box">
+                                <?php if ($canModifyHP): ?>
+                                    <div class="xp-display clickable-xp" data-bs-toggle="modal" data-bs-target="#xpModal" title="Gérer les points d'expérience" style="cursor: pointer;">&nbsp;<?php echo number_format($character['experience_points']); ?></div>
+                                <?php else: ?>
+                                    <div class="xp-display">&nbsp;<?php echo number_format($character['experience_points']); ?></div>
+                                <?php endif; ?>
+                                <div class="stat-label">Exp.</div>
+                                <small class="text-muted">Niveau <?php echo $character['level']; ?></small>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -944,9 +1030,6 @@ $initiative = $dexterityMod;
                     </div>
                     <div class="col-md-3">
                         <strong>Bonus de maîtrise:</strong> &nbsp;+<?php echo $character['proficiency_bonus']; ?>
-                    </div>
-                    <div class="col-md-3">
-                        <strong>Points d'expérience:</strong> &nbsp;<?php echo number_format($character['experience_points']); ?>
                     </div>
                 </div>
                 
@@ -1677,6 +1760,98 @@ $initiative = $dexterityMod;
     </div>
     <?php endif; ?>
 
+    <!-- Modal pour Gestion des Points d'Expérience -->
+    <?php if ($canModifyHP): ?>
+    <div class="modal fade" id="xpModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-star me-2"></i>
+                        Gestion des Points d'Expérience - <?php echo htmlspecialchars($character['name']); ?>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Affichage des Points d'Expérience Actuels -->
+                    <div class="mb-4">
+                        <h6>Points d'Expérience Actuels</h6>
+                        <div class="alert alert-warning">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong><?php echo number_format($character['experience_points']); ?> XP</strong>
+                                    <br>
+                                    <small class="text-muted">Niveau <?php echo $character['level']; ?></small>
+                                </div>
+                                <div class="text-end">
+                                    <i class="fas fa-star fa-2x text-warning"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions Rapides -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-minus text-danger me-2"></i>Retirer des Points d'Expérience</h6>
+                            <div class="d-flex gap-2 mb-2">
+                                <button class="btn btn-outline-danger btn-sm" onclick="quickXpChange(-100)">-100</button>
+                                <button class="btn btn-outline-danger btn-sm" onclick="quickXpChange(-500)">-500</button>
+                                <button class="btn btn-outline-danger btn-sm" onclick="quickXpChange(-1000)">-1000</button>
+                            </div>
+                            <form method="POST" class="d-flex gap-2">
+                                <input type="hidden" name="xp_action" value="remove">
+                                <input type="number" name="xp_amount" class="form-control form-control-sm" placeholder="Points à retirer" min="1" required>
+                                <button type="submit" class="btn btn-danger btn-sm">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </form>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-plus text-success me-2"></i>Ajouter des Points d'Expérience</h6>
+                            <div class="d-flex gap-2 mb-2">
+                                <button class="btn btn-outline-success btn-sm" onclick="quickXpChange(100)">+100</button>
+                                <button class="btn btn-outline-success btn-sm" onclick="quickXpChange(500)">+500</button>
+                                <button class="btn btn-outline-success btn-sm" onclick="quickXpChange(1000)">+1000</button>
+                            </div>
+                            <form method="POST" class="d-flex gap-2">
+                                <input type="hidden" name="xp_action" value="add">
+                                <input type="number" name="xp_amount" class="form-control form-control-sm" placeholder="Points à ajouter" min="1" required>
+                                <button type="submit" class="btn btn-success btn-sm">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Action Avancée -->
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h6><i class="fas fa-edit text-warning me-2"></i>Modifier Directement</h6>
+                            <form method="POST">
+                                <input type="hidden" name="xp_action" value="set">
+                                <div class="d-flex gap-2">
+                                    <input type="number" name="xp_amount" class="form-control" 
+                                           value="<?php echo $character['experience_points']; ?>" 
+                                           min="0" required>
+                                    <button type="submit" class="btn btn-warning">
+                                        <i class="fas fa-edit me-2"></i>
+                                        Définir
+                                    </button>
+                                </div>
+                                <small class="text-muted">Définir directement le nombre total de points d'expérience</small>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <!-- Modal pour Transfert d'Objets -->
     <div class="modal fade" id="transferModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
@@ -1746,6 +1921,21 @@ $initiative = $dexterityMod;
                 form.innerHTML = `
                     <input type="hidden" name="hp_action" value="heal">
                     <input type="hidden" name="healing" value="${amount}">
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+
+        function quickXpChange(amount) {
+            const action = amount > 0 ? 'ajouter' : 'retirer';
+            const absAmount = Math.abs(amount);
+            if (confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} ${absAmount} points d'expérience à <?php echo htmlspecialchars($character['name']); ?> ?`)) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.innerHTML = `
+                    <input type="hidden" name="xp_action" value="${amount > 0 ? 'add' : 'remove'}">
+                    <input type="hidden" name="xp_amount" value="${absAmount}">
                 `;
                 document.body.appendChild(form);
                 form.submit();

@@ -1592,11 +1592,11 @@ function getBarbarianCapabilities($level) {
         ];
     }
     
-    // Niveau 2 - Instinct sauvage
+    // Niveau 2 - Danger sense
     if ($level >= 2) {
         $capabilities[] = [
-            'name' => 'Instinct sauvage',
-            'description' => 'Vous avez un avantage aux jets d\'initiative. De plus, si vous êtes surpris au début du combat et que vous n\'êtes pas encore incapable d\'agir, vous pouvez agir normalement lors de votre premier tour.'
+            'name' => 'Sens du danger',
+            'description' => 'Vous avez un avantage aux jets de sauvegarde de Dextérité contre les effets que vous pouvez voir, comme les pièges et les sorts. Pour bénéficier de cet avantage, vous ne devez pas être aveuglé, assourdi ou neutralisé.'
         ];
     }
     
@@ -1632,11 +1632,11 @@ function getBarbarianCapabilities($level) {
         ];
     }
     
-    // Niveau 7 - Instinct sauvage amélioré
+    // Niveau 7 - Instinct sauvage
     if ($level >= 7) {
         $capabilities[] = [
-            'name' => 'Instinct sauvage amélioré',
-            'description' => 'Vous pouvez utiliser votre réaction pour effectuer un jet de sauvegarde de Dextérité contre un effet que vous pouvez voir, comme un piège ou un sort. Si vous réussissez, vous n\'êtes pas affecté par l\'effet.'
+            'name' => 'Instinct sauvage',
+            'description' => 'Vous avez un avantage aux jets d\'initiative. De plus, si vous êtes surpris au début du combat et que vous n\'êtes pas encore incapable d\'agir, vous pouvez agir normalement lors de votre premier tour.'
         ];
     }
     
