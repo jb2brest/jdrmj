@@ -22,16 +22,17 @@ $campaign_id = (int)$_GET['id'];
 // Charger la campagne selon le rôle
 if (isAdmin()) {
     // Les admins peuvent voir toutes les campagnes
-    $stmt = $pdo->prepare("SELECT * FROM campaigns WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT c.*, u.username AS dm_username FROM campaigns c JOIN users u ON c.dm_id = u.id WHERE c.id = ?");
     $stmt->execute([$campaign_id]);
 } elseif (isDM()) {
     // Les DM peuvent voir leurs campagnes + les campagnes publiques
-    $stmt = $pdo->prepare("SELECT * FROM campaigns WHERE id = ? AND (dm_id = ? OR is_public = 1)");
+    $stmt = $pdo->prepare("SELECT c.*, u.username AS dm_username FROM campaigns c JOIN users u ON c.dm_id = u.id WHERE c.id = ? AND (c.dm_id = ? OR c.is_public = 1)");
     $stmt->execute([$campaign_id, $user_id]);
 } else {
     // Les joueurs peuvent voir les campagnes publiques ET les campagnes où ils sont membres
     $stmt = $pdo->prepare("
-        SELECT c.* FROM campaigns c 
+        SELECT c.*, u.username AS dm_username FROM campaigns c 
+        JOIN users u ON c.dm_id = u.id
         WHERE c.id = ? AND (
             c.is_public = 1 
             OR EXISTS (
@@ -253,8 +254,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isDMOrAdmin()) {
         }
     }
 
-    // Gestion du journal
-    if (isset($_POST['action']) && $_POST['action'] === 'create_journal_entry') {
+    // Gestion du journal (DM propriétaire uniquement)
+    if (isset($_POST['action']) && $_POST['action'] === 'create_journal_entry' && $isOwnerDM) {
         $title = sanitizeInput($_POST['title'] ?? '');
         $content = sanitizeInput($_POST['content'] ?? '');
         
@@ -267,7 +268,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isDMOrAdmin()) {
         }
     }
     
-    if (isset($_POST['action']) && $_POST['action'] === 'update_journal_entry' && isset($_POST['entry_id'])) {
+    if (isset($_POST['action']) && $_POST['action'] === 'update_journal_entry' && isset($_POST['entry_id']) && $isOwnerDM) {
         $entry_id = (int)$_POST['entry_id'];
         $title = sanitizeInput($_POST['title'] ?? '');
         $content = sanitizeInput($_POST['content'] ?? '');
@@ -281,14 +282,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isDMOrAdmin()) {
         }
     }
     
-    if (isset($_POST['action']) && $_POST['action'] === 'delete_journal_entry' && isset($_POST['entry_id'])) {
+    if (isset($_POST['action']) && $_POST['action'] === 'delete_journal_entry' && isset($_POST['entry_id']) && $isOwnerDM) {
         $entry_id = (int)$_POST['entry_id'];
         $stmt = $pdo->prepare("DELETE FROM campaign_journal WHERE id = ? AND campaign_id = ?");
         $stmt->execute([$entry_id, $campaign_id]);
         $success_message = "Événement supprimé du journal.";
     }
     
-    if (isset($_POST['action']) && $_POST['action'] === 'toggle_journal_visibility' && isset($_POST['entry_id'])) {
+    if (isset($_POST['action']) && $_POST['action'] === 'toggle_journal_visibility' && isset($_POST['entry_id']) && $isOwnerDM) {
         $entry_id = (int)$_POST['entry_id'];
         $stmt = $pdo->prepare("UPDATE campaign_journal SET is_public = NOT is_public WHERE id = ? AND campaign_id = ?");
         $stmt->execute([$entry_id, $campaign_id]);
@@ -517,20 +518,68 @@ if (!empty($places)) {
     <title><?php echo htmlspecialchars($campaign['title']); ?> - Campagne</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+    /* Classes marron personnalisées */
+    .btn-brown {
+        background-color: #8B4513;
+        border-color: #8B4513;
+        color: white;
+    }
+    .btn-brown:hover {
+        background-color: #A0522D;
+        border-color: #A0522D;
+        color: white;
+    }
+    .btn-outline-brown {
+        color: #8B4513;
+        border-color: #8B4513;
+    }
+    .btn-outline-brown:hover {
+        background-color: #8B4513;
+        border-color: #8B4513;
+        color: white;
+    }
+    .bg-brown {
+        background-color: #8B4513 !important;
+    }
+    .text-brown {
+        color: #8B4513 !important;
+    }
+    .border-brown {
+        border-color: #8B4513 !important;
+    }
+    .badge.bg-brown {
+        background-color: #8B4513 !important;
+    }
+    .badge.bg-brown-light {
+        background-color: #D2B48C !important;
+        color: #8B4513 !important;
+    }
+    .badge.bg-brown-dark {
+        background-color: #654321 !important;
+        color: white !important;
+    }
+    </style>
 </head>
 <body>
     <?php include 'includes/navbar.php'; ?>
 
     <div class="container mt-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h1><i class="fas fa-book me-2"></i><?php echo htmlspecialchars($campaign['title']); ?></h1>
-            <span class="badge bg-<?php echo $campaign['is_public'] ? 'success' : 'secondary'; ?>"><?php echo $campaign['is_public'] ? 'Publique' : 'Privée'; ?></span>
+            <div>
+                <h1 class="me-3"><i class="fas fa-book me-2"></i><?php echo htmlspecialchars($campaign['title']); ?></h1>
+                <p class="text-muted mb-0">Créée par <?php echo htmlspecialchars($campaign['dm_username']); ?></p>
+            </div>
+            <span class="badge bg-<?php echo $campaign['is_public'] ? 'brown' : 'secondary'; ?> fs-6"><?php echo $campaign['is_public'] ? 'Publique' : 'Privée'; ?></span>
         </div>
         <?php if (isset($success_message)) echo displayMessage($success_message, 'success'); ?>
         <?php if (isset($error_message)) echo displayMessage($error_message, 'error'); ?>
 
         <?php if (!empty($campaign['description'])): ?>
             <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Description</h5>
+                </div>
                 <div class="card-body">
                     <p class="mb-0"><?php echo nl2br(htmlspecialchars($campaign['description'])); ?></p>
                 </div>
@@ -540,7 +589,9 @@ if (!empty($places)) {
         <div class="row g-4">
             <div class="col-lg-6">
                 <div class="card h-100">
-                    <div class="card-header"><i class="fas fa-users me-2"></i>Membres</div>
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-users me-2"></i>Membres</h5>
+                    </div>
                     <div class="card-body">
                         <?php if (empty($members)): ?>
                             <p class="text-muted">Aucun membre pour l'instant.</p>
@@ -550,7 +601,7 @@ if (!empty($places)) {
                                     <li class="list-group-item d-flex justify-content-between align-items-center">
                                         <span>
                                             <i class="fas fa-user me-2"></i><?php echo htmlspecialchars($m['username']); ?>
-                                            <span class="badge bg-<?php echo $m['role'] === 'dm' ? 'danger' : 'primary'; ?> ms-2"><?php echo $m['role'] === 'dm' ? 'MJ' : 'Joueur'; ?></span>
+                                            <span class="badge bg-<?php echo $m['role'] === 'dm' ? 'brown-dark' : 'brown'; ?> ms-2"><?php echo $m['role'] === 'dm' ? 'MJ' : 'Joueur'; ?></span>
                                         </span>
                                         <div class="d-flex align-items-center gap-2">
                                             <small class="text-muted">Depuis <?php echo date('d/m/Y', strtotime($m['joined_at'])); ?></small>
@@ -558,7 +609,7 @@ if (!empty($places)) {
                                                 <form method="POST" onsubmit="return confirm('Exclure ce joueur de la campagne ?');">
                                                     <input type="hidden" name="action" value="remove_member">
                                                     <input type="hidden" name="member_user_id" value="<?php echo (int)$m['id']; ?>">
-                                                    <button class="btn btn-sm btn-outline-danger" title="Exclure">
+                                                    <button class="btn btn-sm btn-outline-brown" title="Exclure">
                                                         <i class="fas fa-user-slash"></i>
                                                     </button>
                                                 </form>
@@ -573,7 +624,7 @@ if (!empty($places)) {
                             <input type="hidden" name="action" value="add_member">
                             <div class="input-group">
                                 <input type="text" class="form-control" name="username_or_email" placeholder="Nom d'utilisateur ou email">
-                                <button class="btn btn-outline-primary" type="submit"><i class="fas fa-user-plus me-2"></i>Ajouter</button>
+                                <button class="btn btn-outline-brown" type="submit"><i class="fas fa-user-plus me-2"></i>Ajouter</button>
                             </div>
                             <div class="form-text">Ou partagez le code d'invitation : <code><?php echo htmlspecialchars($campaign['invite_code']); ?></code></div>
                         </form>
@@ -585,10 +636,10 @@ if (!empty($places)) {
                         
                         <?php if ($is_member && $user_role === 'player'): ?>
                         <!-- Bouton Rejoindre pour les joueurs membres -->
-                        <div class="mt-4 p-3 border rounded bg-success bg-opacity-10">
-                            <h6 class="mb-3 text-success"><i class="fas fa-check-circle me-2"></i>Vous êtes membre de cette campagne</h6>
+                        <div class="mt-4 p-3 border rounded bg-brown-light">
+                            <h6 class="mb-3 text-brown"><i class="fas fa-check-circle me-2"></i>Vous êtes membre de cette campagne</h6>
                             <p class="mb-3">Vous pouvez maintenant rejoindre la partie et accéder à tous les contenus de la campagne.</p>
-                            <a href="view_scene_player.php" class="btn btn-success">
+                            <a href="view_scene_player.php" class="btn btn-brown">
                                 <i class="fas fa-play me-2"></i>Rejoindre la partie
                             </a>
                         </div>
@@ -611,7 +662,7 @@ if (!empty($places)) {
                                     <label class="form-label">Message de candidature</label>
                                     <textarea name="message" class="form-control" rows="3" placeholder="Présentez-vous et expliquez pourquoi vous souhaitez rejoindre cette campagne..."></textarea>
                                 </div>
-                                <button type="submit" class="btn btn-primary">
+                                <button type="submit" class="btn btn-brown">
                                     <i class="fas fa-paper-plane me-2"></i>Envoyer ma candidature
                                 </button>
                             </form>
@@ -623,7 +674,7 @@ if (!empty($places)) {
                             <div class="d-flex align-items-center">
                                 <span class="badge bg-<?php 
                                     echo $user_application['status'] === 'pending' ? 'warning' : 
-                                        ($user_application['status'] === 'approved' ? 'success' : 'danger'); 
+                                        ($user_application['status'] === 'approved' ? 'brown' : 'brown-dark'); 
                                 ?> me-2">
                                     <?php 
                                     echo $user_application['status'] === 'pending' ? 'En attente' : 
@@ -640,7 +691,9 @@ if (!empty($places)) {
 
             <div class="col-lg-6">
                 <div class="card h-100">
-                    <div class="card-header"><i class="fas fa-calendar-alt me-2"></i>Sessions</div>
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Sessions</h5>
+                    </div>
                     <div class="card-body">
                         <?php if (isDMOrAdmin()): ?>
                         <form method="POST" class="mb-3">
@@ -670,7 +723,7 @@ if (!empty($places)) {
                                     <input type="text" class="form-control mt-2" name="meeting_link" placeholder="Lien (si en ligne)">
                                 </div>
                                 <div class="col-12">
-                                    <button class="btn btn-primary"><i class="fas fa-plus me-2"></i>Créer une session</button>
+                                    <button class="btn btn-brown"><i class="fas fa-plus me-2"></i>Créer une session</button>
                                 </div>
                             </div>
                         </form>
@@ -690,7 +743,7 @@ if (!empty($places)) {
                                                 · Places: <?php echo $s['max_players']; ?>
                                             </div>
                                         </div>
-                                        <a href="view_session.php?id=<?php echo $s['id']; ?>" class="btn btn-sm btn-outline-primary view-session-btn" data-session-id="<?php echo $s['id']; ?>"><i class="fas fa-eye"></i></a>
+                                        <a href="view_session.php?id=<?php echo $s['id']; ?>" class="btn btn-sm btn-outline-brown view-session-btn" data-session-id="<?php echo $s['id']; ?>"><i class="fas fa-eye"></i></a>
                                     </li>
                                 <?php endforeach; ?>
                             </ul>
@@ -707,7 +760,7 @@ if (!empty($places)) {
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-photo-video me-2"></i>Lieux de la campagne</h5>
-                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createSceneModal">
+                        <button class="btn btn-brown btn-sm" data-bs-toggle="modal" data-bs-target="#createSceneModal">
                             <i class="fas fa-plus"></i> Nouveau lieu
                         </button>
                     </div>
@@ -719,13 +772,20 @@ if (!empty($places)) {
                                 <?php foreach ($places as $scene): ?>
                                     <div class="col-md-6">
                                         <div class="card h-100">
+                                            <div class="card-header">
+                                                <h6 class="mb-0">
+                                                    <a href="view_scene.php?id=<?php echo (int)$scene['id']; ?>" class="text-decoration-none">
+                                                        <i class="fas fa-photo-video me-2"></i><?php echo htmlspecialchars($scene['title']); ?>
+                                                    </a>
+                                                </h6>
+                                            </div>
                                             <div class="card-body">
                                                 <div class="d-flex justify-content-between align-items-start">
-                                                    <h6 class="card-title mb-2">
-                                                        <a href="view_scene.php?id=<?php echo (int)$scene['id']; ?>" class="text-decoration-none">
-                                                            <i class="fas fa-photo-video me-2"></i><?php echo htmlspecialchars($scene['title']); ?>
-                                                        </a>
-                                                    </h6>
+                                                    <div class="flex-grow-1">
+                                                        <?php if (!empty($scene['description'])): ?>
+                                                            <p class="text-muted small mb-2"><?php echo htmlspecialchars(substr($scene['description'], 0, 100)) . (strlen($scene['description']) > 100 ? '...' : ''); ?></p>
+                                                        <?php endif; ?>
+                                                    </div>
                                                     <div class="dropdown">
                                                         <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
                                                             <i class="fas fa-ellipsis-v"></i>
@@ -754,7 +814,7 @@ if (!empty($places)) {
                                                                 <form method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette lieu ?')">
                                                                     <input type="hidden" name="action" value="delete_scene">
                                                                     <input type="hidden" name="place_id" value="<?php echo (int)$scene['id']; ?>">
-                                                                    <button class="dropdown-item text-danger" type="submit"><i class="fas fa-trash me-2"></i>Supprimer</button>
+                                                                    <button class="dropdown-item text-brown" type="submit"><i class="fas fa-trash me-2"></i>Supprimer</button>
                                                                 </form>
                                                             </li>
                                                         </ul>
@@ -789,7 +849,7 @@ if (!empty($places)) {
                                                                         <?php endif; ?>
                                                                     </span>
                                                                     <?php if ($isOwnerDM && count($places) > 1): ?>
-                                                                        <button class="btn btn-sm btn-outline-primary" onclick="showTransferModal('player', <?php echo $player['player_id']; ?>, <?php echo $scene['id']; ?>, '<?php echo htmlspecialchars($player['username']); ?>')">
+                                                                        <button class="btn btn-sm btn-outline-brown" onclick="showTransferModal('player', <?php echo $player['player_id']; ?>, <?php echo $scene['id']; ?>, '<?php echo htmlspecialchars($player['username']); ?>')">
                                                                             <i class="fas fa-exchange-alt"></i>
                                                                         </button>
                                                                     <?php endif; ?>
@@ -810,7 +870,7 @@ if (!empty($places)) {
                                                                         <i class="fas fa-user-tie me-1"></i><?php echo htmlspecialchars($npc['name']); ?>
                                                                     </span>
                                                                     <?php if ($isOwnerDM && count($places) > 1): ?>
-                                                                        <button class="btn btn-sm btn-outline-primary" onclick="showTransferModal('npc', <?php echo $npc['id']; ?>, <?php echo $scene['id']; ?>, '<?php echo htmlspecialchars($npc['name']); ?>')">
+                                                                        <button class="btn btn-sm btn-outline-brown" onclick="showTransferModal('npc', <?php echo $npc['id']; ?>, <?php echo $scene['id']; ?>, '<?php echo htmlspecialchars($npc['name']); ?>')">
                                                                             <i class="fas fa-exchange-alt"></i>
                                                                         </button>
                                                                     <?php endif; ?>
@@ -832,7 +892,7 @@ if (!empty($places)) {
                                                                         <span class="text-muted">(<?php echo htmlspecialchars($monster['type']); ?>)</span>
                                                                     </span>
                                                                     <?php if ($isOwnerDM && count($places) > 1): ?>
-                                                                        <button class="btn btn-sm btn-outline-primary" onclick="showTransferModal('monster', <?php echo $monster['id']; ?>, <?php echo $scene['id']; ?>, '<?php echo htmlspecialchars($monster['name']); ?>')">
+                                                                        <button class="btn btn-sm btn-outline-brown" onclick="showTransferModal('monster', <?php echo $monster['id']; ?>, <?php echo $scene['id']; ?>, '<?php echo htmlspecialchars($monster['name']); ?>')">
                                                                             <i class="fas fa-exchange-alt"></i>
                                                                         </button>
                                                                     <?php endif; ?>
@@ -863,9 +923,11 @@ if (!empty($places)) {
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-book me-2"></i>Journal de campagne</h5>
-                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createJournalModal">
+                        <?php if ($isOwnerDM): ?>
+                        <button class="btn btn-brown btn-sm" data-bs-toggle="modal" data-bs-target="#createJournalModal">
                             <i class="fas fa-plus"></i> Nouvel événement
                         </button>
+                        <?php endif; ?>
                     </div>
                     <div class="card-body">
                         <?php if (empty($journalEntries)): ?>
@@ -874,12 +936,13 @@ if (!empty($places)) {
                             <div class="row g-3">
                                 <?php foreach ($journalEntries as $entry): ?>
                                     <div class="col-12">
-                                        <div class="card border-<?php echo $entry['is_public'] ? 'success' : 'danger'; ?>">
-                                            <div class="card-header bg-<?php echo $entry['is_public'] ? 'success' : 'danger'; ?> text-white d-flex justify-content-between align-items-center">
+                                        <div class="card border-<?php echo $entry['is_public'] ? 'brown' : 'brown'; ?>">
+                                            <div class="card-header bg-<?php echo $entry['is_public'] ? 'brown' : 'brown'; ?> text-white d-flex justify-content-between align-items-center">
                                                 <h6 class="mb-0">
                                                     <i class="fas fa-<?php echo $entry['is_public'] ? 'eye' : 'eye-slash'; ?> me-2"></i>
                                                     <?php echo htmlspecialchars($entry['title']); ?>
                                                 </h6>
+                                                <?php if ($isOwnerDM): ?>
                                                 <div class="d-flex gap-1">
                                                     <form method="POST" class="d-inline" onsubmit="return confirm('<?php echo ($entry['is_public'] ? 'Rendre privé' : 'Rendre public'); ?> cet événement ?');">
                                                         <input type="hidden" name="action" value="toggle_journal_visibility">
@@ -899,6 +962,7 @@ if (!empty($places)) {
                                                         </button>
                                                     </form>
                                                 </div>
+                                                <?php endif; ?>
                                             </div>
                                             <div class="card-body">
                                                 <div class="text-muted small mb-2">
@@ -967,8 +1031,8 @@ if (!empty($places)) {
                                                     <?php
                                                         $badge = 'secondary';
                                                         if ($a['status'] === 'pending') $badge = 'warning';
-                                                        if ($a['status'] === 'approved') $badge = 'primary';
-                                                        if ($a['status'] === 'declined') $badge = 'danger';
+                                                        if ($a['status'] === 'approved') $badge = 'brown';
+                                                        if ($a['status'] === 'declined') $badge = 'brown-dark';
                                                     ?>
                                                     <span class="badge bg-<?php echo $badge; ?> text-uppercase"><?php echo $a['status']; ?></span>
                                                 </td>
@@ -978,12 +1042,12 @@ if (!empty($places)) {
                                                         <form method="POST" class="d-inline">
                                                             <input type="hidden" name="action" value="approve_application">
                                                             <input type="hidden" name="application_id" value="<?php echo $a['id']; ?>">
-                                                            <button class="btn btn-sm btn-success"><i class="fas fa-check me-1"></i>Accepter</button>
+                                                            <button class="btn btn-sm btn-brown"><i class="fas fa-check me-1"></i>Accepter</button>
                                                         </form>
                                                         <form method="POST" class="d-inline" onsubmit="return confirm('Refuser cette candidature ?');">
                                                             <input type="hidden" name="action" value="decline_application">
                                                             <input type="hidden" name="application_id" value="<?php echo $a['id']; ?>">
-                                                            <button class="btn btn-sm btn-outline-danger"><i class="fas fa-times me-1"></i>Refuser</button>
+                                                            <button class="btn btn-sm btn-outline-brown"><i class="fas fa-times me-1"></i>Refuser</button>
                                                         </form>
                                                     <?php elseif ($a['status'] === 'approved'): ?>
                                                         <form method="POST" class="d-inline" onsubmit="return confirm('Annuler l\'acceptation de cette candidature ? Le joueur sera retiré de la campagne.');">
@@ -995,7 +1059,7 @@ if (!empty($places)) {
                                                         <form method="POST" class="d-inline" onsubmit="return confirm('Annuler le refus de cette candidature ? Elle sera remise en attente.');">
                                                             <input type="hidden" name="action" value="unrevoke_application">
                                                             <input type="hidden" name="application_id" value="<?php echo $a['id']; ?>">
-                                                            <button class="btn btn-sm btn-outline-success"><i class="fas fa-undo me-1"></i>Annuler le refus</button>
+                                                            <button class="btn btn-sm btn-outline-brown"><i class="fas fa-undo me-1"></i>Annuler le refus</button>
                                                         </form>
                                                     <?php else: ?>
                                                         <span class="text-muted">—</span>
@@ -1044,7 +1108,7 @@ if (!empty($places)) {
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-primary">Créer le lieu</button>
+                        <button type="submit" class="btn btn-brown">Créer le lieu</button>
                     </div>
                 </form>
             </div>
@@ -1083,7 +1147,7 @@ if (!empty($places)) {
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-primary">Transférer</button>
+                        <button type="submit" class="btn btn-brown">Transférer</button>
                     </div>
                 </form>
             </div>
@@ -1108,6 +1172,7 @@ if (!empty($places)) {
     </div>
 
     <!-- Modal Créer Événement Journal -->
+    <?php if ($isOwnerDM): ?>
     <div class="modal fade" id="createJournalModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -1136,14 +1201,16 @@ if (!empty($places)) {
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-primary">Créer l'événement</button>
+                        <button type="submit" class="btn btn-brown">Créer l'événement</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
+    <?php endif; ?>
 
     <!-- Modal Modifier Événement Journal -->
+    <?php if ($isOwnerDM): ?>
     <div class="modal fade" id="editJournalModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -1168,12 +1235,13 @@ if (!empty($places)) {
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-primary">Mettre à jour</button>
+                        <button type="submit" class="btn btn-brown">Mettre à jour</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
+    <?php endif; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -1197,7 +1265,7 @@ if (!empty($places)) {
                         modal.show();
                     })
                     .catch(function() {
-                        if (container) { container.innerHTML = '<div class="text-danger p-3">Erreur de chargement.</div>'; }
+                        if (container) { container.innerHTML = '<div class="text-brown p-3">Erreur de chargement.</div>'; }
                         modal.show();
                     });
             });

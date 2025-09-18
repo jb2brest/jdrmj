@@ -2754,7 +2754,7 @@ foreach ($allScenes as $s) {
                         <div class="d-flex align-items-center">
                             <strong class="me-2">${roll.username}</strong>
                             <span class="badge bg-outline-primary me-2">${roll.dice_type}</span>
-                            <small class="text-muted">${roll.quantity} dé${roll.quantity > 1 ? 's' : ''}</small>
+                            <small class="text-muted">${roll.quantity} ${roll.dice_type}${roll.quantity > 1 ? 's' : ''}</small>
                             ${hiddenIndicator}
                         </div>
                         <div class="mt-1">

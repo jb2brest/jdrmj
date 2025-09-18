@@ -62,14 +62,15 @@ try {
     }
     
     // Déterminer si c'est un critique ou un échec critique
-    $has_crit = false;
-    $has_fumble = false;
+    $has_crit = 0;
+    $has_fumble = 0;
     
     if ($dice_sides === 20) {
         $has_crit = in_array(20, $results) ? 1 : 0;
         $has_fumble = in_array(1, $results) ? 1 : 0;
     } else {
         $has_crit = in_array($dice_sides, $results) ? 1 : 0;
+        $has_fumble = 0; // Pas d'échec critique sur les dés autres que D20
     }
     
     // Récupérer le nom d'utilisateur

@@ -166,7 +166,7 @@ function getRoleColor($role) {
 function sanitizeInput($data) {
     $data = trim($data);
     $data = stripslashes($data);
-    $data = htmlspecialchars($data);
+    // Ne pas encoder en HTML ici, cela sera fait lors de l'affichage
     return $data;
 }
 
@@ -1074,7 +1074,31 @@ function detectWeaponsInEquipment($equipmentText) {
     
     foreach ($allWeapons as $weapon) {
         // Rechercher l'arme dans le texte d'équipement (insensible à la casse)
-        if (stripos($equipmentText, $weapon['name']) !== false) {
+        $weaponName = mb_strtolower($weapon['name'], 'UTF-8');
+        $equipmentLower = mb_strtolower($equipmentText, 'UTF-8');
+        
+        // Vérifier différentes variations du nom
+        $patterns = [
+            $weaponName, // Nom exact
+            $weaponName . 's', // Pluriel simple
+            $weaponName . 'es', // Pluriel en -es
+            'une ' . $weaponName, // Avec article "une"
+            'un ' . $weaponName, // Avec article "un"
+            'deux ' . $weaponName . 's', // Avec nombre et pluriel
+            'trois ' . $weaponName . 's', // Avec nombre et pluriel
+            'quatre ' . $weaponName . 's', // Avec nombre et pluriel
+            'cinq ' . $weaponName . 's', // Avec nombre et pluriel
+        ];
+        
+        $found = false;
+        foreach ($patterns as $pattern) {
+            if (stripos($equipmentText, $pattern) !== false) {
+                $found = true;
+                break;
+            }
+        }
+        
+        if ($found) {
             $weapons[] = [
                 'name' => $weapon['name'],
                 'hands' => $weapon['hands'],
@@ -1201,9 +1225,10 @@ function getCharacterEquippedItems($characterId) {
     global $pdo;
     
     $stmt = $pdo->prepare("
-        SELECT item_name, item_type, equipped_slot 
-        FROM character_equipment 
-        WHERE character_id = ? AND is_equipped = 1
+        SELECT ce.item_name, ce.item_type, ce.equipped_slot, w.hands
+        FROM character_equipment ce
+        LEFT JOIN weapons w ON ce.item_name = w.name AND ce.item_type = 'weapon'
+        WHERE ce.character_id = ? AND ce.is_equipped = 1
     ");
     $stmt->execute([$characterId]);
     
@@ -1216,6 +1241,11 @@ function getCharacterEquippedItems($characterId) {
     
     while ($row = $stmt->fetch()) {
         $equipped[$row['equipped_slot']] = $row['item_name'];
+        
+        // Si c'est une arme à deux mains équipée dans main_hand, l'ajouter aussi dans off_hand
+        if ($row['item_type'] === 'weapon' && $row['hands'] == 2 && $row['equipped_slot'] === 'main_hand') {
+            $equipped['off_hand'] = $row['item_name'];
+        }
         
         // Si c'est un bouclier équipé dans off_hand, l'ajouter aussi dans shield
         if ($row['item_type'] === 'shield' && $row['equipped_slot'] === 'off_hand') {
@@ -1267,6 +1297,91 @@ function unequipItem($characterId, $itemName) {
         WHERE character_id = ? AND item_name = ?
     ");
     return $stmt->execute([$characterId, $itemName]);
+}
+
+// Fonction pour synchroniser l'équipement de base vers character_equipment
+function syncBaseEquipmentToCharacterEquipment($characterId) {
+    global $pdo;
+    
+    try {
+        // Récupérer le personnage
+        $stmt = $pdo->prepare("SELECT equipment FROM characters WHERE id = ?");
+        $stmt->execute([$characterId]);
+        $character = $stmt->fetch();
+        
+        if (!$character || empty($character['equipment'])) {
+            return false;
+        }
+        
+        // Détecter les armes, armures et boucliers
+        $detectedWeapons = detectWeaponsInEquipment($character['equipment']);
+        $detectedArmor = detectArmorInEquipment($character['equipment']);
+        $detectedShields = detectShieldsInEquipment($character['equipment']);
+        
+        $pdo->beginTransaction();
+        
+        // Ajouter les armes
+        foreach ($detectedWeapons as $weapon) {
+            // Vérifier si l'arme existe déjà
+            $stmt = $pdo->prepare("SELECT id FROM character_equipment WHERE character_id = ? AND item_name = ? AND item_type = 'weapon'");
+            $stmt->execute([$characterId, $weapon['name']]);
+            
+            if (!$stmt->fetch()) {
+                // Ajouter l'arme
+                $stmt = $pdo->prepare("
+                    INSERT INTO character_equipment (character_id, item_name, item_type, item_description, item_source, quantity, is_equipped, equipped_slot, obtained_from) 
+                    VALUES (?, ?, 'weapon', ?, 'Équipement de base', 1, 0, NULL, 'Équipement de base')
+                ");
+                $description = "Arme: {$weapon['type']}, {$weapon['hands']} main(s), Dégâts: {$weapon['damage']}";
+                if (!empty($weapon['properties'])) {
+                    $description .= ", Propriétés: {$weapon['properties']}";
+                }
+                $stmt->execute([$characterId, $weapon['name'], $description]);
+            }
+        }
+        
+        // Ajouter les armures
+        foreach ($detectedArmor as $armor) {
+            // Vérifier si l'armure existe déjà
+            $stmt = $pdo->prepare("SELECT id FROM character_equipment WHERE character_id = ? AND item_name = ? AND item_type = 'armor'");
+            $stmt->execute([$characterId, $armor['name']]);
+            
+            if (!$stmt->fetch()) {
+                // Ajouter l'armure
+                $stmt = $pdo->prepare("
+                    INSERT INTO character_equipment (character_id, item_name, item_type, item_description, item_source, quantity, is_equipped, equipped_slot, obtained_from) 
+                    VALUES (?, ?, 'armor', ?, 'Équipement de base', 1, 0, NULL, 'Équipement de base')
+                ");
+                $description = "Armure: {$armor['type']}, CA: {$armor['ac_formula']}";
+                $stmt->execute([$characterId, $armor['name'], $description]);
+            }
+        }
+        
+        // Ajouter les boucliers
+        foreach ($detectedShields as $shield) {
+            // Vérifier si le bouclier existe déjà
+            $stmt = $pdo->prepare("SELECT id FROM character_equipment WHERE character_id = ? AND item_name = ? AND item_type = 'shield'");
+            $stmt->execute([$characterId, $shield['name']]);
+            
+            if (!$stmt->fetch()) {
+                // Ajouter le bouclier
+                $stmt = $pdo->prepare("
+                    INSERT INTO character_equipment (character_id, item_name, item_type, item_description, item_source, quantity, is_equipped, equipped_slot, obtained_from) 
+                    VALUES (?, ?, 'shield', ?, 'Équipement de base', 1, 0, NULL, 'Équipement de base')
+                ");
+                $description = "Bouclier, Bonus CA: +{$shield['ac_bonus']}";
+                $stmt->execute([$characterId, $shield['name'], $description]);
+            }
+        }
+        
+        $pdo->commit();
+        return true;
+        
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        error_log("Erreur lors de la synchronisation de l'équipement: " . $e->getMessage());
+        return false;
+    }
 }
 
 // Fonction pour utiliser un emplacement de sort
