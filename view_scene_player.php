@@ -288,6 +288,17 @@ include 'includes/layout.php';
                                     <p class="mb-0">Sélectionnez un dé et lancez !</p>
                                 </div>
                             </div>
+                            
+                            <!-- Historique des jets -->
+                            <div class="mt-3">
+                                <h6 class="mb-2">Historique des jets (50 derniers) :</h6>
+                                <div id="dice-history" class="border rounded p-2 bg-white" style="max-height: 300px; overflow-y: auto;">
+                                    <div class="text-muted text-center py-3">
+                                        <i class="fas fa-history fa-lg mb-2"></i>
+                                        <p class="mb-0 small">Chargement de l'historique...</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1194,17 +1205,27 @@ window.addEventListener('beforeunload', function() {
     if (participantsUpdateInterval) {
         clearInterval(participantsUpdateInterval);
     }
+    if (diceHistoryInterval) {
+        clearInterval(diceHistoryInterval);
+    }
 });
 
 // ===== LOGIQUE DES DÉS =====
 
 let selectedDiceSides = null;
+let currentCampaignId = <?php echo (int)$place['campaign_id']; ?>;
 
 // Gestion de la sélection des dés
 document.addEventListener('DOMContentLoaded', function() {
     const diceButtons = document.querySelectorAll('.dice-btn');
     const rollButton = document.getElementById('roll-dice-btn');
     const resultsDiv = document.getElementById('dice-results');
+    
+        // Charger l'historique des jets au chargement de la page
+        loadDiceHistory();
+        
+        // Mettre à jour l'historique des jets automatiquement toutes les 3 secondes
+        diceHistoryInterval = setInterval(loadDiceHistory, 3000);
     
     // Ajouter les événements aux boutons de dés
     diceButtons.forEach(button => {
@@ -1379,6 +1400,9 @@ function showFinalResults(results) {
     setTimeout(() => {
         resultsDiv.style.animation = '';
     }, 500);
+    
+    // Sauvegarder le jet de dés
+    saveDiceRoll(results, total, maxResult, minResult);
 }
 
 // Mettre à jour l'affichage quand la quantité change
@@ -1387,6 +1411,133 @@ document.getElementById('dice-quantity').addEventListener('change', function() {
         updateDiceSelectionDisplay();
     }
 });
+
+// Fonction pour charger l'historique des jets de dés
+function loadDiceHistory() {
+    // Les joueurs ne voient que les jets visibles (show_hidden=false par défaut)
+    fetch(`get_dice_rolls_history.php?campaign_id=${currentCampaignId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayDiceHistory(data.rolls);
+            } else {
+                console.error('Erreur lors du chargement de l\'historique:', data.error);
+                document.getElementById('dice-history').innerHTML = `
+                    <div class="text-muted text-center py-3">
+                        <i class="fas fa-exclamation-triangle fa-lg mb-2"></i>
+                        <p class="mb-0 small">Erreur lors du chargement de l'historique</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors du chargement de l\'historique:', error);
+            document.getElementById('dice-history').innerHTML = `
+                <div class="text-muted text-center py-3">
+                    <i class="fas fa-exclamation-triangle fa-lg mb-2"></i>
+                    <p class="mb-0 small">Erreur de connexion</p>
+                </div>
+            `;
+        });
+}
+
+// Fonction pour afficher l'historique des jets
+function displayDiceHistory(rolls) {
+    const historyDiv = document.getElementById('dice-history');
+    
+    if (rolls.length === 0) {
+        historyDiv.innerHTML = `
+            <div class="text-muted text-center py-3">
+                <i class="fas fa-dice fa-lg mb-2"></i>
+                <p class="mb-0 small">Aucun jet de dés enregistré</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    rolls.forEach(roll => {
+        const rollDate = new Date(roll.rolled_at);
+        const timeStr = rollDate.toLocaleTimeString('fr-FR', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+        
+        // Déterminer les classes CSS pour les résultats
+        let resultBadges = '';
+        roll.results.forEach(result => {
+            let badgeClass = 'bg-secondary';
+            if (roll.has_crit && result === roll.dice_sides) {
+                badgeClass = 'bg-success';
+            } else if (roll.has_fumble && result === 1 && roll.dice_sides === 20) {
+                badgeClass = 'bg-danger';
+            } else if (result === roll.dice_sides) {
+                badgeClass = 'bg-primary';
+            }
+            resultBadges += `<span class="badge ${badgeClass} me-1">${result}</span>`;
+        });
+        
+        html += `
+            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center">
+                        <strong class="me-2">${roll.username}</strong>
+                        <span class="badge bg-outline-primary me-2">${roll.dice_type}</span>
+                        <small class="text-muted">${roll.quantity} dé${roll.quantity > 1 ? 's' : ''}</small>
+                    </div>
+                    <div class="mt-1">
+                        ${resultBadges}
+                        <span class="ms-2 text-primary"><strong>Total: ${roll.total}</strong></span>
+                    </div>
+                </div>
+                <div class="text-end">
+                    <small class="text-muted">${timeStr}</small>
+                    ${roll.has_crit ? '<i class="fas fa-star text-success ms-1" title="Critique"></i>' : ''}
+                    ${roll.has_fumble ? '<i class="fas fa-times text-danger ms-1" title="Échec critique"></i>' : ''}
+                </div>
+            </div>
+        `;
+    });
+    
+    historyDiv.innerHTML = html;
+}
+
+// Fonction pour sauvegarder un jet de dés
+function saveDiceRoll(results, total, maxResult, minResult) {
+    const diceType = `D${selectedDiceSides}`;
+    const quantity = parseInt(document.getElementById('dice-quantity').value);
+    
+    const rollData = {
+        campaign_id: currentCampaignId,
+        dice_type: diceType,
+        dice_sides: selectedDiceSides,
+        quantity: quantity,
+        results: results,
+        total: total,
+        max_result: maxResult,
+        min_result: minResult
+    };
+    
+    fetch('save_dice_roll.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(rollData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Recharger l'historique après avoir sauvegardé
+            loadDiceHistory();
+        } else {
+            console.error('Erreur lors de la sauvegarde du jet:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Erreur lors de la sauvegarde du jet:', error);
+    });
+}
 </script>
 
 <?php include 'includes/footer.php'; ?>

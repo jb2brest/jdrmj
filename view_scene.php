@@ -951,9 +951,17 @@ foreach ($allScenes as $s) {
                                 </select>
                             </div>
                             
-                            <button type="button" class="btn btn-primary" id="roll-dice-btn" disabled>
-                                <i class="fas fa-play me-2"></i>Lancer les dés
-                            </button>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-primary" id="roll-dice-btn" disabled>
+                                    <i class="fas fa-play me-2"></i>Lancer les dés
+                                </button>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="hide-dice-roll" <?php echo $isOwnerDM ? '' : 'disabled'; ?>>
+                                    <label class="form-check-label" for="hide-dice-roll">
+                                        <small>Masquer ce jet</small>
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                         
                         <!-- Zone de résultats -->
@@ -963,6 +971,17 @@ foreach ($allScenes as $s) {
                                 <div class="text-muted text-center">
                                     <i class="fas fa-dice fa-2x mb-2"></i>
                                     <p class="mb-0">Sélectionnez un dé et lancez !</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Historique des jets -->
+                            <div class="mt-3">
+                                <h6 class="mb-2">Historique des jets (50 derniers) :</h6>
+                                <div id="dice-history" class="border rounded p-2 bg-white" style="max-height: 300px; overflow-y: auto;">
+                                    <div class="text-muted text-center py-3">
+                                        <i class="fas fa-history fa-lg mb-2"></i>
+                                        <p class="mb-0 small">Chargement de l'historique...</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2290,12 +2309,19 @@ foreach ($allScenes as $s) {
     // ===== LOGIQUE DES DÉS =====
 
     let selectedDiceSides = null;
+    let currentCampaignId = <?php echo (int)$place['campaign_id']; ?>;
 
     // Gestion de la sélection des dés
     document.addEventListener('DOMContentLoaded', function() {
         const diceButtons = document.querySelectorAll('.dice-btn');
         const rollButton = document.getElementById('roll-dice-btn');
         const resultsDiv = document.getElementById('dice-results');
+        
+        // Charger l'historique des jets au chargement de la page
+        loadDiceHistory();
+        
+        // Mettre à jour l'historique des jets automatiquement toutes les 3 secondes
+        diceHistoryInterval = setInterval(loadDiceHistory, 3000);
         
         // Ajouter les événements aux boutons de dés
         diceButtons.forEach(button => {
@@ -2470,12 +2496,271 @@ foreach ($allScenes as $s) {
         setTimeout(() => {
             resultsDiv.style.animation = '';
         }, 500);
+        
+        // Sauvegarder le jet de dés
+        saveDiceRoll(results, total, maxResult, minResult);
     }
 
     // Mettre à jour l'affichage quand la quantité change
     document.getElementById('dice-quantity').addEventListener('change', function() {
         if (selectedDiceSides) {
             updateDiceSelectionDisplay();
+        }
+    });
+
+    // Fonction pour charger l'historique des jets de dés
+    function loadDiceHistory() {
+        // Le MJ voit tous les jets (y compris les masqués), les joueurs ne voient que les jets visibles
+        const showHidden = <?php echo $isOwnerDM ? 'true' : 'false'; ?>;
+        const url = `get_dice_rolls_history.php?campaign_id=${currentCampaignId}&show_hidden=${showHidden}`;
+        
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayDiceHistory(data.rolls);
+                } else {
+                    console.error('Erreur lors du chargement de l\'historique:', data.error);
+                    document.getElementById('dice-history').innerHTML = `
+                        <div class="text-muted text-center py-3">
+                            <i class="fas fa-exclamation-triangle fa-lg mb-2"></i>
+                            <p class="mb-0 small">Erreur lors du chargement de l'historique</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Erreur lors du chargement de l\'historique:', error);
+                document.getElementById('dice-history').innerHTML = `
+                    <div class="text-muted text-center py-3">
+                        <i class="fas fa-exclamation-triangle fa-lg mb-2"></i>
+                        <p class="mb-0 small">Erreur de connexion</p>
+                    </div>
+                `;
+            });
+    }
+
+    // Fonction pour afficher l'historique des jets
+    function displayDiceHistory(rolls) {
+        const historyDiv = document.getElementById('dice-history');
+        
+        if (rolls.length === 0) {
+            historyDiv.innerHTML = `
+                <div class="text-muted text-center py-3">
+                    <i class="fas fa-dice fa-lg mb-2"></i>
+                    <p class="mb-0 small">Aucun jet de dés enregistré</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '';
+        rolls.forEach(roll => {
+            const rollDate = new Date(roll.rolled_at);
+            const timeStr = rollDate.toLocaleTimeString('fr-FR', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            // Déterminer les classes CSS pour les résultats
+            let resultBadges = '';
+            roll.results.forEach(result => {
+                let badgeClass = 'bg-secondary';
+                if (roll.has_crit && result === roll.dice_sides) {
+                    badgeClass = 'bg-success';
+                } else if (roll.has_fumble && result === 1 && roll.dice_sides === 20) {
+                    badgeClass = 'bg-danger';
+                } else if (result === roll.dice_sides) {
+                    badgeClass = 'bg-primary';
+                }
+                resultBadges += `<span class="badge ${badgeClass} me-1">${result}</span>`;
+            });
+            
+            // Vérifier si l'utilisateur est le MJ (seul le MJ peut supprimer et modifier la visibilité)
+            const isDM = <?php echo $isOwnerDM ? 'true' : 'false'; ?>;
+            const deleteButton = isDM ? `
+                <button class="btn btn-sm btn-outline-danger ms-2" 
+                        onclick="deleteDiceRoll(${roll.id})" 
+                        title="Supprimer ce jet">
+                    <i class="fas fa-trash"></i>
+                </button>
+            ` : '';
+            
+            // Bouton pour basculer la visibilité (visible uniquement pour le MJ)
+            const toggleVisibilityButton = isDM ? `
+                <button class="btn btn-sm ${roll.is_hidden ? 'btn-outline-warning' : 'btn-outline-info'} ms-2" 
+                        onclick="toggleDiceRollVisibility(${roll.id})" 
+                        title="${roll.is_hidden ? 'Rendre visible pour les joueurs' : 'Masquer pour les joueurs'}">
+                    <i class="fas ${roll.is_hidden ? 'fa-eye' : 'fa-eye-slash'}"></i>
+                </button>
+            ` : '';
+            
+            // Indicateur pour les jets masqués (visible uniquement pour le MJ)
+            const hiddenIndicator = (isDM && roll.is_hidden) ? `
+                <span class="badge bg-warning text-dark ms-1" title="Jet masqué pour les joueurs">
+                    <i class="fas fa-eye-slash"></i>
+                </span>
+            ` : '';
+            
+            html += `
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center">
+                            <strong class="me-2">${roll.username}</strong>
+                            <span class="badge bg-outline-primary me-2">${roll.dice_type}</span>
+                            <small class="text-muted">${roll.quantity} dé${roll.quantity > 1 ? 's' : ''}</small>
+                            ${hiddenIndicator}
+                        </div>
+                        <div class="mt-1">
+                            ${resultBadges}
+                            <span class="ms-2 text-primary"><strong>Total: ${roll.total}</strong></span>
+                        </div>
+                    </div>
+                        <div class="d-flex align-items-center">
+                            <div class="text-end me-2">
+                                <small class="text-muted">${timeStr}</small>
+                                ${roll.has_crit ? '<i class="fas fa-star text-success ms-1" title="Critique"></i>' : ''}
+                                ${roll.has_fumble ? '<i class="fas fa-times text-danger ms-1" title="Échec critique"></i>' : ''}
+                            </div>
+                            ${toggleVisibilityButton}
+                            ${deleteButton}
+                        </div>
+                </div>
+            `;
+        });
+        
+        historyDiv.innerHTML = html;
+    }
+
+    // Fonction pour sauvegarder un jet de dés
+    function saveDiceRoll(results, total, maxResult, minResult) {
+        const diceType = `D${selectedDiceSides}`;
+        const quantity = parseInt(document.getElementById('dice-quantity').value);
+        const isHidden = document.getElementById('hide-dice-roll').checked;
+        
+        const rollData = {
+            campaign_id: currentCampaignId,
+            dice_type: diceType,
+            dice_sides: selectedDiceSides,
+            quantity: quantity,
+            results: results,
+            total: total,
+            max_result: maxResult,
+            min_result: minResult,
+            is_hidden: isHidden
+        };
+        
+        fetch('save_dice_roll.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(rollData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Recharger l'historique après avoir sauvegardé
+                loadDiceHistory();
+            } else {
+                console.error('Erreur lors de la sauvegarde du jet:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors de la sauvegarde du jet:', error);
+        });
+    }
+
+    // Fonction pour basculer la visibilité d'un jet de dés
+    function toggleDiceRollVisibility(rollId) {
+        fetch('toggle_dice_roll_hidden.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ roll_id: rollId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Recharger l'historique après modification
+                loadDiceHistory();
+                
+                // Afficher un message de succès
+                const historyDiv = document.getElementById('dice-history');
+                const successMessage = document.createElement('div');
+                successMessage.className = 'alert alert-info alert-dismissible fade show';
+                successMessage.innerHTML = `
+                    <i class="fas fa-check-circle me-2"></i>${data.message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                historyDiv.insertBefore(successMessage, historyDiv.firstChild);
+                
+                // Supprimer le message après 3 secondes
+                setTimeout(() => {
+                    if (successMessage.parentNode) {
+                        successMessage.remove();
+                    }
+                }, 3000);
+            } else {
+                alert('Erreur lors de la modification : ' + (data.error || 'Erreur inconnue'));
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors de la modification du jet:', error);
+            alert('Erreur de connexion lors de la modification');
+        });
+    }
+
+    // Fonction pour supprimer un jet de dés
+    function deleteDiceRoll(rollId) {
+        if (!confirm('Êtes-vous sûr de vouloir supprimer ce jet de dés ? Cette action est irréversible.')) {
+            return;
+        }
+        
+        fetch('delete_dice_roll.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ roll_id: rollId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Recharger l'historique après suppression
+                loadDiceHistory();
+                
+                // Afficher un message de succès
+                const historyDiv = document.getElementById('dice-history');
+                const successMessage = document.createElement('div');
+                successMessage.className = 'alert alert-success alert-dismissible fade show';
+                successMessage.innerHTML = `
+                    <i class="fas fa-check-circle me-2"></i>${data.message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                historyDiv.insertBefore(successMessage, historyDiv.firstChild);
+                
+                // Supprimer le message après 3 secondes
+                setTimeout(() => {
+                    if (successMessage.parentNode) {
+                        successMessage.remove();
+                    }
+                }, 3000);
+            } else {
+                alert('Erreur lors de la suppression : ' + (data.error || 'Erreur inconnue'));
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors de la suppression du jet:', error);
+            alert('Erreur de connexion lors de la suppression');
+        });
+    }
+
+    // Arrêter la mise à jour automatique quand la page se ferme
+    window.addEventListener('beforeunload', function() {
+        if (diceHistoryInterval) {
+            clearInterval(diceHistoryInterval);
         }
     });
     </script>
