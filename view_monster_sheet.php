@@ -18,7 +18,8 @@ $campaign_id = (int)$_GET['campaign_id'];
 // Récupérer les informations du monstre dans la lieu
 $stmt = $pdo->prepare("
     SELECT sn.*, m.id as monster_db_id, m.name as monster_name, m.type, m.size, m.challenge_rating, 
-           m.hit_points as max_hit_points, m.armor_class, m.csv_id, c.dm_id, c.id as campaign_id, s.id as place_id
+           m.hit_points as max_hit_points, m.armor_class, m.csv_id, c.dm_id, c.id as campaign_id, s.id as place_id,
+           m.strength, m.dexterity, m.constitution, m.intelligence, m.wisdom, m.charisma
     FROM place_npcs sn 
     JOIN dnd_monsters m ON sn.monster_id = m.id 
     JOIN places s ON sn.place_id = s.id
@@ -247,7 +248,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Recharger les données du monstre
         $stmt = $pdo->prepare("
             SELECT sn.*, m.id as monster_db_id, m.name as monster_name, m.type, m.size, m.challenge_rating, 
-                   m.hit_points as max_hit_points, m.armor_class, m.csv_id, c.dm_id, c.id as campaign_id, s.id as place_id
+                   m.hit_points as max_hit_points, m.armor_class, m.csv_id, c.dm_id, c.id as campaign_id, s.id as place_id,
+                   m.strength, m.dexterity, m.constitution, m.intelligence, m.wisdom, m.charisma
             FROM place_npcs sn 
             JOIN dnd_monsters m ON sn.monster_id = m.id 
             JOIN places s ON sn.place_id = s.id
@@ -647,6 +649,66 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
                             <div class="col-12">
                                 <p><strong>Facteur de Puissance :</strong></p>
                                 <p><?php echo htmlspecialchars($monster['challenge_rating']); ?></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Caractéristiques -->
+        <div class="row">
+            <div class="col-12 mb-4">
+                <div class="card stat-card">
+                    <div class="card-header bg-brown text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-dice-d20 me-2"></i>Caractéristiques
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-2 col-6 mb-3">
+                                <div class="text-center">
+                                    <p class="mb-1"><strong>Force</strong></p>
+                                    <h4 class="text-brown mb-1"><?php echo (int)$monster['strength']; ?></h4>
+                                    <small class="text-muted"><?php echo ($monster['strength'] >= 10 ? '+' : '') . floor(($monster['strength'] - 10) / 2); ?></small>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-6 mb-3">
+                                <div class="text-center">
+                                    <p class="mb-1"><strong>Dextérité</strong></p>
+                                    <h4 class="text-brown mb-1"><?php echo (int)$monster['dexterity']; ?></h4>
+                                    <small class="text-muted"><?php echo ($monster['dexterity'] >= 10 ? '+' : '') . floor(($monster['dexterity'] - 10) / 2); ?></small>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-6 mb-3">
+                                <div class="text-center">
+                                    <p class="mb-1"><strong>Constitution</strong></p>
+                                    <h4 class="text-brown mb-1"><?php echo (int)$monster['constitution']; ?></h4>
+                                    <small class="text-muted"><?php echo ($monster['constitution'] >= 10 ? '+' : '') . floor(($monster['constitution'] - 10) / 2); ?></small>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-6 mb-3">
+                                <div class="text-center">
+                                    <p class="mb-1"><strong>Intelligence</strong></p>
+                                    <h4 class="text-brown mb-1"><?php echo (int)$monster['intelligence']; ?></h4>
+                                    <small class="text-muted"><?php echo ($monster['intelligence'] >= 10 ? '+' : '') . floor(($monster['intelligence'] - 10) / 2); ?></small>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-6 mb-3">
+                                <div class="text-center">
+                                    <p class="mb-1"><strong>Sagesse</strong></p>
+                                    <h4 class="text-brown mb-1"><?php echo (int)$monster['wisdom']; ?></h4>
+                                    <small class="text-muted"><?php echo ($monster['wisdom'] >= 10 ? '+' : '') . floor(($monster['wisdom'] - 10) / 2); ?></small>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-6 mb-3">
+                                <div class="text-center">
+                                    <p class="mb-1"><strong>Charisme</strong></p>
+                                    <h4 class="text-brown mb-1"><?php echo (int)$monster['charisma']; ?></h4>
+                                    <small class="text-muted"><?php echo ($monster['charisma'] >= 10 ? '+' : '') . floor(($monster['charisma'] - 10) / 2); ?></small>
+                                </div>
                             </div>
                         </div>
                     </div>
