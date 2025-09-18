@@ -34,6 +34,29 @@ if (!$monster) {
     exit();
 }
 
+// Récupérer les données de combat du monstre
+$monster_db_id = $monster['monster_db_id'];
+
+// Récupérer les actions
+$stmt = $pdo->prepare("SELECT name, description FROM monster_actions WHERE monster_id = ? ORDER BY name");
+$stmt->execute([$monster_db_id]);
+$monster_actions = $stmt->fetchAll();
+
+// Récupérer les actions légendaires
+$stmt = $pdo->prepare("SELECT name, description FROM monster_legendary_actions WHERE monster_id = ? ORDER BY name");
+$stmt->execute([$monster_db_id]);
+$monster_legendary_actions = $stmt->fetchAll();
+
+// Récupérer les attaques spéciales
+$stmt = $pdo->prepare("SELECT name, description FROM monster_special_attacks WHERE monster_id = ? ORDER BY name");
+$stmt->execute([$monster_db_id]);
+$monster_special_attacks = $stmt->fetchAll();
+
+// Récupérer les sorts
+$stmt = $pdo->prepare("SELECT name, description FROM monster_spells WHERE monster_id = ? ORDER BY name");
+$stmt->execute([$monster_db_id]);
+$monster_spells = $stmt->fetchAll();
+
 // Récupérer l'équipement magique du monstre (exclure les poisons)
 $stmt = $pdo->prepare("
     SELECT me.*, mi.nom as magical_item_nom, mi.type as magical_item_type, mi.description as magical_item_description, mi.source as magical_item_source
@@ -715,6 +738,92 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
                 </div>
             </div>
         </div>
+
+        <!-- Combat -->
+        <?php if (!empty($monster_actions) || !empty($monster_legendary_actions) || !empty($monster_special_attacks) || !empty($monster_spells)): ?>
+        <div class="row">
+            <div class="col-12 mb-4">
+                <div class="card stat-card">
+                    <div class="card-header bg-brown text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-sword me-2"></i>Combat
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Actions -->
+                            <?php if (!empty($monster_actions)): ?>
+                            <div class="col-md-6 mb-4">
+                                <h6 class="text-brown mb-3">
+                                    <i class="fas fa-fist-raised me-2"></i>Actions
+                                </h6>
+                                <?php foreach ($monster_actions as $action): ?>
+                                <div class="mb-3">
+                                    <strong class="text-brown"><?php echo htmlspecialchars($action['name']); ?></strong>
+                                    <?php if (!empty($action['description'])): ?>
+                                    <p class="mb-1 small"><?php echo htmlspecialchars($action['description']); ?></p>
+                                    <?php endif; ?>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <?php endif; ?>
+                            
+                            <!-- Actions légendaires -->
+                            <?php if (!empty($monster_legendary_actions)): ?>
+                            <div class="col-md-6 mb-4">
+                                <h6 class="text-brown mb-3">
+                                    <i class="fas fa-crown me-2"></i>Actions légendaires
+                                </h6>
+                                <?php foreach ($monster_legendary_actions as $action): ?>
+                                <div class="mb-3">
+                                    <strong class="text-brown"><?php echo htmlspecialchars($action['name']); ?></strong>
+                                    <?php if (!empty($action['description'])): ?>
+                                    <p class="mb-1 small"><?php echo htmlspecialchars($action['description']); ?></p>
+                                    <?php endif; ?>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <?php endif; ?>
+                            
+                            <!-- Attaques spéciales -->
+                            <?php if (!empty($monster_special_attacks)): ?>
+                            <div class="col-md-6 mb-4">
+                                <h6 class="text-brown mb-3">
+                                    <i class="fas fa-magic me-2"></i>Attaques spéciales
+                                </h6>
+                                <?php foreach ($monster_special_attacks as $attack): ?>
+                                <div class="mb-3">
+                                    <strong class="text-brown"><?php echo htmlspecialchars($attack['name']); ?></strong>
+                                    <?php if (!empty($attack['description'])): ?>
+                                    <p class="mb-1 small"><?php echo htmlspecialchars($attack['description']); ?></p>
+                                    <?php endif; ?>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <?php endif; ?>
+                            
+                            <!-- Sorts -->
+                            <?php if (!empty($monster_spells)): ?>
+                            <div class="col-md-6 mb-4">
+                                <h6 class="text-brown mb-3">
+                                    <i class="fas fa-hat-wizard me-2"></i>Sorts
+                                </h6>
+                                <?php foreach ($monster_spells as $spell): ?>
+                                <div class="mb-3">
+                                    <strong class="text-brown"><?php echo htmlspecialchars($spell['name']); ?></strong>
+                                    <?php if (!empty($spell['description'])): ?>
+                                    <p class="mb-1 small"><?php echo htmlspecialchars($spell['description']); ?></p>
+                                    <?php endif; ?>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
 
         <!-- Compétences et Jets de sauvegarde -->
         <?php if (!empty($monster['competences']) || !empty($monster['saving_throws'])): ?>
