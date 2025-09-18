@@ -1715,6 +1715,173 @@ function getBarbarianCapabilities($level) {
     return $capabilities;
 }
 
+// Fonction pour obtenir les capacités de barde selon le niveau
+function getBardCapabilities($level) {
+    $capabilities = [];
+    
+    // Niveau 1 - Inspiration bardique
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Inspiration bardique',
+            'description' => 'Vous pouvez inspirer les autres par vos mots ou votre musique. Pour ce faire, vous utilisez une action bonus lors de votre tour pour choisir une créature autre que vous dans un rayon de 18 mètres qui peut vous entendre. Cette créature gagne un dé d\'inspiration bardique, un d6.'
+        ];
+    }
+    
+    // Niveau 1 - Sorts
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Sorts',
+            'description' => 'Vous avez appris à utiliser la magie de la même manière que les clercs. Voir le chapitre 10 pour les règles générales sur la magie et le chapitre 11 pour la liste des sorts de barde.'
+        ];
+    }
+    
+    // Niveau 1 - Maîtrise d'armes
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Maîtrise d\'armes',
+            'description' => 'Vous maîtrisez les armes courantes, les arbalètes de poing, les épées longues, les rapières, les épées courtes et les armes à distance simples.'
+        ];
+    }
+    
+    // Niveau 1 - Maîtrise d'armures
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Maîtrise d\'armures',
+            'description' => 'Vous maîtrisez les armures légères.'
+        ];
+    }
+    
+    // Niveau 1 - Maîtrise d'outils
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Maîtrise d\'outils',
+            'description' => 'Vous maîtrisez trois instruments de musique de votre choix.'
+        ];
+    }
+    
+    // Niveau 1 - Compétences
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Compétences',
+            'description' => 'Vous choisissez trois compétences parmi : Acrobaties, Arcanes, Athlétisme, Bluff, Histoire, Intimidation, Investigation, Médecine, Nature, Perception, Perspicacité, Religion, Représentation, Supercherie et Survie.'
+        ];
+    }
+    
+    // Niveau 2 - Chanson de repos
+    if ($level >= 2) {
+        $capabilities[] = [
+            'name' => 'Chanson de repos',
+            'description' => 'Vous pouvez utiliser la musique ou la poésie pour aider vos alliés à récupérer. Si vous ou vos alliés qui peuvent entendre votre performance passez un repos court, chacun récupère des points de vie supplémentaires égaux à votre modificateur de Charisme (minimum 1).'
+        ];
+    }
+    
+    // Niveau 2 - Jack de tous les métiers
+    if ($level >= 2) {
+        $capabilities[] = [
+            'name' => 'Jack de tous les métiers',
+            'description' => 'Vous pouvez ajouter la moitié de votre bonus de maîtrise, arrondi au supérieur, à tout test de caractéristique que vous effectuez et qui n\'inclut déjà pas votre bonus de maîtrise.'
+        ];
+    }
+    
+    // Niveau 3 - Collège bardique
+    if ($level >= 3) {
+        $capabilities[] = [
+            'name' => 'Collège bardique',
+            'description' => 'Vous approfondissez votre formation dans un collège bardique de votre choix : le Collège du Savoir, le Collège de la Gloire, le Collège des Swords, le Collège de la Valor, le Collège des Whispers, ou le Collège des Glamour.'
+        ];
+    }
+    
+    // Niveau 4 - Amélioration de caractéristique
+    if ($level >= 4) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 5 - Inspiration bardique améliorée
+    if ($level >= 5) {
+        $capabilities[] = [
+            'name' => 'Inspiration bardique améliorée',
+            'description' => 'Votre dé d\'inspiration bardique devient un d8. Au niveau 10, il devient un d10, et au niveau 15, il devient un d12.'
+        ];
+    }
+    
+    // Niveau 6 - Contre-charme
+    if ($level >= 6) {
+        $capabilities[] = [
+            'name' => 'Contre-charme',
+            'description' => 'Vous gagnez la capacité d\'utiliser des mots de pouvoir pour perturber les effets magiques qui influencent l\'esprit. En tant qu\'action, vous pouvez commencer une performance qui dure jusqu\'à la fin de votre prochain tour. Pendant cette performance, vous et tous les alliés amicaux dans un rayon de 9 mètres avez un avantage aux jets de sauvegarde contre être charmés ou terrorisés.'
+        ];
+    }
+    
+    // Niveau 8 - Amélioration de caractéristique
+    if ($level >= 8) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 10 - Expertise magique
+    if ($level >= 10) {
+        $capabilities[] = [
+            'name' => 'Expertise magique',
+            'description' => 'Vous pouvez choisir deux sorts de n\'importe quelle classe. Un sort que vous choisissez doit être d\'un niveau que vous pouvez lancer, comme indiqué dans le tableau du barde. Les sorts choisis comptent comme des sorts de barde pour vous, mais ils ne comptent pas dans le nombre de sorts de barde que vous connaissez.'
+        ];
+    }
+    
+    // Niveau 12 - Amélioration de caractéristique
+    if ($level >= 12) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 14 - Expertise magique améliorée
+    if ($level >= 14) {
+        $capabilities[] = [
+            'name' => 'Expertise magique améliorée',
+            'description' => 'Vous pouvez choisir deux sorts de n\'importe quelle classe. Un sort que vous choisissez doit être d\'un niveau que vous pouvez lancer, comme indiqué dans le tableau du barde. Les sorts choisis comptent comme des sorts de barde pour vous, mais ils ne comptent pas dans le nombre de sorts de barde que vous connaissez.'
+        ];
+    }
+    
+    // Niveau 16 - Amélioration de caractéristique
+    if ($level >= 16) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 18 - Expertise magique supérieure
+    if ($level >= 18) {
+        $capabilities[] = [
+            'name' => 'Expertise magique supérieure',
+            'description' => 'Vous pouvez choisir deux sorts de n\'importe quelle classe. Un sort que vous choisissez doit être d\'un niveau que vous pouvez lancer, comme indiqué dans le tableau du barde. Les sorts choisis comptent comme des sorts de barde pour vous, mais ils ne comptent pas dans le nombre de sorts de barde que vous connaissez.'
+        ];
+    }
+    
+    // Niveau 19 - Amélioration de caractéristique
+    if ($level >= 19) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 20 - Inspiration supérieure
+    if ($level >= 20) {
+        $capabilities[] = [
+            'name' => 'Inspiration supérieure',
+            'description' => 'Quand vous lancez un dé d\'inspiration bardique, vous pouvez relancer le dé si le résultat est inférieur à votre modificateur de Charisme. Vous devez utiliser le nouveau résultat.'
+        ];
+    }
+    
+    return $capabilities;
+}
+
 // Fonction pour obtenir les voies primitives des barbares
 function getBarbarianPaths() {
     global $pdo;
@@ -1723,6 +1890,18 @@ function getBarbarianPaths() {
         return $stmt->fetchAll();
     } catch (PDOException $e) {
         error_log("Erreur getBarbarianPaths: " . $e->getMessage());
+        return [];
+    }
+}
+
+// Fonction pour obtenir les collèges bardiques
+function getBardColleges() {
+    global $pdo;
+    try {
+        $stmt = $pdo->query("SELECT * FROM bard_colleges ORDER BY name");
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        error_log("Erreur getBardColleges: " . $e->getMessage());
         return [];
     }
 }
@@ -1746,6 +1925,25 @@ function getCharacterBarbarianPath($characterId) {
     }
 }
 
+// Fonction pour obtenir le collège bardique d'un personnage
+function getCharacterBardCollege($characterId) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("
+            SELECT cbc.*, bc.name as college_name, bc.description as college_description,
+                   bc.level_3_feature, bc.level_6_feature, bc.level_14_feature
+            FROM character_bard_college cbc
+            JOIN bard_colleges bc ON cbc.college_id = bc.id
+            WHERE cbc.character_id = ?
+        ");
+        $stmt->execute([$characterId]);
+        return $stmt->fetch();
+    } catch (PDOException $e) {
+        error_log("Erreur getCharacterBardCollege: " . $e->getMessage());
+        return null;
+    }
+}
+
 // Fonction pour sauvegarder le choix de voie primitive
 function saveBarbarianPath($characterId, $pathId, $level3Choice = null, $level6Choice = null, $level10Choice = null, $level14Choice = null) {
     global $pdo;
@@ -1763,6 +1961,26 @@ function saveBarbarianPath($characterId, $pathId, $level3Choice = null, $level6C
         return $stmt->execute([$characterId, $pathId, $level3Choice, $level6Choice, $level10Choice, $level14Choice]);
     } catch (PDOException $e) {
         error_log("Erreur saveBarbarianPath: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Fonction pour sauvegarder le choix de collège bardique
+function saveBardCollege($characterId, $collegeId, $level3Choice = null, $level6Choice = null, $level14Choice = null) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO character_bard_college (character_id, college_id, level_3_choice, level_6_choice, level_14_choice)
+            VALUES (?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+            college_id = VALUES(college_id),
+            level_3_choice = VALUES(level_3_choice),
+            level_6_choice = VALUES(level_6_choice),
+            level_14_choice = VALUES(level_14_choice)
+        ");
+        return $stmt->execute([$characterId, $collegeId, $level3Choice, $level6Choice, $level14Choice]);
+    } catch (PDOException $e) {
+        error_log("Erreur saveBardCollege: " . $e->getMessage());
         return false;
     }
 }

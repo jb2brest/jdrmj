@@ -53,6 +53,7 @@ $backgroundLanguages = $character['background_languages'] ? json_decode($charact
 
 // Récupérer les données de rage pour les barbares
 $isBarbarian = strpos(strtolower($character['class_name']), 'barbare') !== false;
+$isBard = strpos(strtolower($character['class_name']), 'barde') !== false;
 $rageData = null;
 if ($isBarbarian) {
     // Récupérer le nombre maximum de rages pour ce niveau
@@ -78,6 +79,8 @@ $raceCapabilities = [];
 // Capacités de classe basées sur le niveau
 if ($isBarbarian) {
     $classCapabilities = getBarbarianCapabilities($character['level']);
+} elseif ($isBard) {
+    $classCapabilities = getBardCapabilities($character['level']);
 }
 
 // Capacités raciales
@@ -92,6 +95,12 @@ if ($character['traits']) {
 $barbarianPath = null;
 if ($isBarbarian) {
     $barbarianPath = getCharacterBarbarianPath($character_id);
+}
+
+// Récupérer le collège bardique du barde
+$bardCollege = null;
+if ($isBard) {
+    $bardCollege = getCharacterBardCollege($character_id);
 }
 
 // Récupérer les améliorations de caractéristiques
@@ -1189,7 +1198,7 @@ $initiative = $dexterityMod;
                 </div>
                 
                 <!-- Message si aucune capacité -->
-                <?php if (empty($classCapabilities) && empty($raceCapabilities) && !$barbarianPath): ?>
+                <?php if (empty($classCapabilities) && empty($raceCapabilities) && !$barbarianPath && !$bardCollege): ?>
                     <div class="text-center text-muted">
                         <i class="fas fa-info-circle me-2"></i>Aucune capacité spéciale
                     </div>
@@ -1210,6 +1219,119 @@ $initiative = $dexterityMod;
                                     <small class="text-muted"><?php echo nl2br(htmlspecialchars($barbarianPath['path_description'])); ?></small>
                                 </div>
                             </div>
+                            
+                            <!-- Capacités de voie primitive par niveau -->
+                            <?php
+                            $pathCapabilities = [];
+                            
+                            // Niveau 3 - Capacité de voie primitive
+                            if ($character['level'] >= 3 && !empty($barbarianPath['level_3_feature'])) {
+                                $pathCapabilities[] = [
+                                    'name' => 'Capacité de niveau 3',
+                                    'description' => $barbarianPath['level_3_feature']
+                                ];
+                            }
+                            
+                            // Niveau 6 - Capacité de voie primitive
+                            if ($character['level'] >= 6 && !empty($barbarianPath['level_6_feature'])) {
+                                $pathCapabilities[] = [
+                                    'name' => 'Capacité de niveau 6',
+                                    'description' => $barbarianPath['level_6_feature']
+                                ];
+                            }
+                            
+                            // Niveau 10 - Capacité de voie primitive
+                            if ($character['level'] >= 10 && !empty($barbarianPath['level_10_feature'])) {
+                                $pathCapabilities[] = [
+                                    'name' => 'Capacité de niveau 10',
+                                    'description' => $barbarianPath['level_10_feature']
+                                ];
+                            }
+                            
+                            // Niveau 14 - Capacité de voie primitive
+                            if ($character['level'] >= 14 && !empty($barbarianPath['level_14_feature'])) {
+                                $pathCapabilities[] = [
+                                    'name' => 'Capacité de niveau 14',
+                                    'description' => $barbarianPath['level_14_feature']
+                                ];
+                            }
+                            
+                            // Afficher les capacités de voie primitive
+                            foreach ($pathCapabilities as $capability):
+                            ?>
+                                <div class="capability-item mt-3">
+                                    <div class="capability-header">
+                                        <h6 class="mb-1 text-info">
+                                            <i class="fas fa-star me-1"></i><?php echo htmlspecialchars($capability['name']); ?>
+                                        </h6>
+                                    </div>
+                                    <div class="capability-description">
+                                        <small class="text-muted"><?php echo nl2br(htmlspecialchars($capability['description'])); ?></small>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                
+                <!-- Collège bardique du barde -->
+                <?php if ($bardCollege): ?>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5><i class="fas fa-music me-2"></i>Collège bardique</h5>
+                            <div class="capability-item">
+                                <div class="capability-header">
+                                    <h6 class="mb-1 text-warning">
+                                        <i class="fas fa-star me-1"></i><?php echo htmlspecialchars($bardCollege['college_name']); ?>
+                                    </h6>
+                                </div>
+                                <div class="capability-description">
+                                    <small class="text-muted"><?php echo nl2br(htmlspecialchars($bardCollege['college_description'])); ?></small>
+                                </div>
+                            </div>
+                            
+                            <!-- Capacités de collège bardique par niveau -->
+                            <?php
+                            $collegeCapabilities = [];
+                            
+                            // Niveau 3 - Capacité de collège bardique
+                            if ($character['level'] >= 3 && !empty($bardCollege['level_3_feature'])) {
+                                $collegeCapabilities[] = [
+                                    'name' => 'Capacité de niveau 3',
+                                    'description' => $bardCollege['level_3_feature']
+                                ];
+                            }
+                            
+                            // Niveau 6 - Capacité de collège bardique
+                            if ($character['level'] >= 6 && !empty($bardCollege['level_6_feature'])) {
+                                $collegeCapabilities[] = [
+                                    'name' => 'Capacité de niveau 6',
+                                    'description' => $bardCollege['level_6_feature']
+                                ];
+                            }
+                            
+                            // Niveau 14 - Capacité de collège bardique
+                            if ($character['level'] >= 14 && !empty($bardCollege['level_14_feature'])) {
+                                $collegeCapabilities[] = [
+                                    'name' => 'Capacité de niveau 14',
+                                    'description' => $bardCollege['level_14_feature']
+                                ];
+                            }
+                            
+                            // Afficher les capacités de collège bardique
+                            foreach ($collegeCapabilities as $capability):
+                            ?>
+                                <div class="capability-item mt-3">
+                                    <div class="capability-header">
+                                        <h6 class="mb-1 text-info">
+                                            <i class="fas fa-star me-1"></i><?php echo htmlspecialchars($capability['name']); ?>
+                                        </h6>
+                                    </div>
+                                    <div class="capability-description">
+                                        <small class="text-muted"><?php echo nl2br(htmlspecialchars($capability['description'])); ?></small>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
                         </div>
                     </div>
                 <?php endif; ?>

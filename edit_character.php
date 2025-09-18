@@ -50,13 +50,15 @@ if ($character['race_id']) {
 $classCapabilities = [];
 $raceCapabilities = [];
 
-// Vérifier si c'est un barbare
+// Vérifier si c'est un barbare ou un barde
 $isBarbarian = false;
+$isBard = false;
 if ($character['class_id']) {
     $stmt = $pdo->prepare("SELECT name FROM classes WHERE id = ?");
     $stmt->execute([$character['class_id']]);
     $class = $stmt->fetch();
     $isBarbarian = $class && strpos(strtolower($class['name']), 'barbare') !== false;
+    $isBard = $class && strpos(strtolower($class['name']), 'barde') !== false;
 }
 
 // Capacités de classe basées sur le niveau
@@ -79,6 +81,14 @@ $selectedPath = null;
 if ($isBarbarian) {
     $barbarianPaths = getBarbarianPaths();
     $selectedPath = getCharacterBarbarianPath($character_id);
+}
+
+// Récupérer les collèges bardiques et le choix actuel
+$bardColleges = [];
+$selectedCollege = null;
+if ($isBard) {
+    $bardColleges = getBardColleges();
+    $selectedCollege = getCharacterBardCollege($character_id);
 }
 
 // Récupérer les améliorations de caractéristiques
@@ -195,6 +205,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Voie primitive (pour les barbares de niveau 3+)
     $barbarian_path_id = isset($_POST['barbarian_path_id']) ? (int)$_POST['barbarian_path_id'] : null;
     
+    // Collège bardique (pour les bardes de niveau 3+)
+    $bard_college_id = isset($_POST['bard_college_id']) ? (int)$_POST['bard_college_id'] : null;
+    
     // Améliorations de caractéristiques
     $ability_improvements = [
         'strength_bonus' => (int)($_POST['strength_bonus'] ?? $abilityImprovements['strength_bonus']),
@@ -309,6 +322,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Sauvegarder la voie primitive si c'est un barbare de niveau 3+
             if ($isBarbarian && $level >= 3 && $barbarian_path_id) {
                 saveBarbarianPath($character_id, $barbarian_path_id);
+            }
+            
+            // Sauvegarder le collège bardique si c'est un barde de niveau 3+
+            if ($isBard && $level >= 3 && $bard_college_id) {
+                saveBardCollege($character_id, $bard_college_id);
             }
             
             // Sauvegarder les améliorations de caractéristiques
@@ -1011,6 +1029,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         </div>
                                         <div class="path-description mt-2">
                                             <small class="text-muted"><?php echo nl2br(htmlspecialchars($path['description'])); ?></small>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                
+                <!-- Choix de collège bardique pour les bardes de niveau 3+ -->
+                <?php if ($isBard && $character['level'] >= 3): ?>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5><i class="fas fa-music me-2"></i>Collège bardique</h5>
+                            <p class="text-muted">Choisissez votre collège bardique (obligatoire au niveau 3).</p>
+                            <div class="row">
+                                <?php foreach ($bardColleges as $college): ?>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" 
+                                                   name="bard_college_id" 
+                                                   id="college_<?php echo $college['id']; ?>" 
+                                                   value="<?php echo $college['id']; ?>"
+                                                   <?php echo ($selectedCollege && $selectedCollege['college_id'] == $college['id']) ? 'checked' : ''; ?>>
+                                            <label class="form-check-label" for="college_<?php echo $college['id']; ?>">
+                                                <strong><?php echo htmlspecialchars($college['name']); ?></strong>
+                                            </label>
+                                        </div>
+                                        <div class="college-description mt-2">
+                                            <small class="text-muted"><?php echo nl2br(htmlspecialchars($college['description'])); ?></small>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>
