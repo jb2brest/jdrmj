@@ -50,13 +50,14 @@ if ($character['race_id']) {
 $classCapabilities = [];
 $raceCapabilities = [];
 
-// Vérifier si c'est un barbare, un barde, un clerc, un druide, un ensorceleur ou un guerrier
+// Vérifier si c'est un barbare, un barde, un clerc, un druide, un ensorceleur, un guerrier ou un magicien
 $isBarbarian = false;
 $isBard = false;
 $isCleric = false;
 $isDruid = false;
 $isSorcerer = false;
 $isFighter = false;
+$isWizard = false;
 if ($character['class_id']) {
     $stmt = $pdo->prepare("SELECT name FROM classes WHERE id = ?");
     $stmt->execute([$character['class_id']]);
@@ -67,6 +68,7 @@ if ($character['class_id']) {
     $isDruid = $class && strpos(strtolower($class['name']), 'druide') !== false;
     $isSorcerer = $class && strpos(strtolower($class['name']), 'ensorceleur') !== false;
     $isFighter = $class && strpos(strtolower($class['name']), 'guerrier') !== false;
+    $isWizard = $class && strpos(strtolower($class['name']), 'magicien') !== false;
 }
 
 // Capacités de classe basées sur le niveau
@@ -83,6 +85,8 @@ if ($isBarbarian) {
     $classCapabilities = getSorcererCapabilities($character['level']);
 } elseif ($isFighter) {
     $classCapabilities = getFighterCapabilities($character['level']);
+} elseif ($isWizard) {
+    $classCapabilities = getWizardCapabilities($character['level']);
 }
 
 // Capacités raciales
@@ -139,6 +143,14 @@ $selectedArchetype = null;
 if ($isFighter) {
     $fighterArchetypes = getFighterArchetypes();
     $selectedArchetype = getCharacterFighterArchetype($character_id);
+}
+
+// Récupérer les traditions arcaniques et le choix actuel
+$wizardTraditions = [];
+$selectedTradition = null;
+if ($isWizard) {
+    $wizardTraditions = getWizardTraditions();
+    $selectedTradition = getCharacterWizardTradition($character_id);
 }
 
 // Récupérer les améliorations de caractéristiques
@@ -261,6 +273,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $druid_circle_id = isset($_POST['druid_circle_id']) ? (int)$_POST['druid_circle_id'] : null;
         $sorcerer_origin_id = isset($_POST['sorcerer_origin_id']) ? (int)$_POST['sorcerer_origin_id'] : null;
         $fighter_archetype_id = isset($_POST['fighter_archetype_id']) ? (int)$_POST['fighter_archetype_id'] : null;
+        $wizard_tradition_id = isset($_POST['wizard_tradition_id']) ? (int)$_POST['wizard_tradition_id'] : null;
     
     // Améliorations de caractéristiques
     $ability_improvements = [
@@ -401,6 +414,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Sauvegarder l'archétype martial si c'est un guerrier de niveau 3+
             if ($isFighter && $level >= 3 && $fighter_archetype_id) {
                 saveFighterArchetype($character_id, $fighter_archetype_id);
+            }
+            
+            // Sauvegarder la tradition arcanique si c'est un magicien de niveau 2+
+            if ($isWizard && $level >= 2 && $wizard_tradition_id) {
+                saveWizardTradition($character_id, $wizard_tradition_id);
             }
             
             // Sauvegarder les améliorations de caractéristiques
@@ -1248,6 +1266,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         </div>
                                         <div class="archetype-description mt-2">
                                             <small class="text-muted"><?php echo nl2br(htmlspecialchars($archetype['description'])); ?></small>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                
+                <!-- Choix de tradition arcanique pour les magiciens de niveau 2+ -->
+                <?php if ($isWizard && $character['level'] >= 2): ?>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5><i class="fas fa-hat-wizard me-2"></i>Tradition arcanique</h5>
+                            <p class="text-muted">Choisissez votre tradition arcanique (obligatoire au niveau 2).</p>
+                            <div class="row">
+                                <?php foreach ($wizardTraditions as $tradition): ?>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" 
+                                                   name="wizard_tradition_id" 
+                                                   id="tradition_<?php echo $tradition['id']; ?>" 
+                                                   value="<?php echo $tradition['id']; ?>"
+                                                   <?php echo ($selectedTradition && $selectedTradition['tradition_id'] == $tradition['id']) ? 'checked' : ''; ?>>
+                                            <label class="form-check-label" for="tradition_<?php echo $tradition['id']; ?>">
+                                                <strong><?php echo htmlspecialchars($tradition['name']); ?></strong>
+                                            </label>
+                                        </div>
+                                        <div class="tradition-description mt-2">
+                                            <small class="text-muted"><?php echo nl2br(htmlspecialchars($tradition['description'])); ?></small>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>

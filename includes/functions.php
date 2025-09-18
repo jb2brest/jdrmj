@@ -2558,6 +2558,157 @@ function getFighterCapabilities($level) {
     return $capabilities;
 }
 
+// Fonction pour obtenir les capacités de magicien selon le niveau
+function getWizardCapabilities($level) {
+    $capabilities = [];
+    
+    // Niveau 1 - Sorts
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Sorts',
+            'description' => 'Vous avez appris à utiliser la magie arcanique. Voir le chapitre 10 pour les règles générales sur la magie et le chapitre 11 pour la liste des sorts de magicien.'
+        ];
+    }
+    
+    // Niveau 1 - Maîtrise d'armures et d'armes
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Maîtrise d\'armures et d\'armes',
+            'description' => 'Vous maîtrisez les dagues, les fléchettes, les frondes, les bâtons de jet et les arbalètes légères.'
+        ];
+    }
+    
+    // Niveau 1 - Maîtrise d'outils
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Maîtrise d\'outils',
+            'description' => 'Vous maîtrisez un type d\'outil d\'artisan de votre choix.'
+        ];
+    }
+    
+    // Niveau 1 - Compétences
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Compétences',
+            'description' => 'Vous choisissez deux compétences parmi : Arcana, History, Insight, Investigation, Medicine et Religion.'
+        ];
+    }
+    
+    // Niveau 1 - Rituel
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Rituel',
+            'description' => 'Vous pouvez lancer un sort de magicien que vous connaissez comme rituel si ce sort a le tag rituel.'
+        ];
+    }
+    
+    // Niveau 1 - Récupération de sorts
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Récupération de sorts',
+            'description' => 'Vous avez appris à récupérer une partie de votre énergie magique en étudiant votre grimoire. Une fois par jour quand vous terminez un repos court, vous pouvez récupérer des emplacements de sorts dépensés.'
+        ];
+    }
+    
+    // Niveau 2 - Tradition arcanique
+    if ($level >= 2) {
+        $capabilities[] = [
+            'name' => 'Tradition arcanique',
+            'description' => 'Vous choisissez une tradition arcanique qui reflète votre approche de la magie. Votre choix vous accorde des capacités au niveau 2, puis aux niveaux 6, 10 et 14.'
+        ];
+    }
+    
+    // Niveau 4 - Amélioration de caractéristique
+    if ($level >= 4) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 5 - Récupération de sorts
+    if ($level >= 5) {
+        $capabilities[] = [
+            'name' => 'Récupération de sorts',
+            'description' => 'Vous avez appris à récupérer une partie de votre énergie magique en étudiant votre grimoire. Une fois par jour quand vous terminez un repos court, vous pouvez récupérer des emplacements de sorts dépensés.'
+        ];
+    }
+    
+    // Niveau 6 - Tradition arcanique
+    if ($level >= 6) {
+        $capabilities[] = [
+            'name' => 'Tradition arcanique',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre tradition arcanique.'
+        ];
+    }
+    
+    // Niveau 8 - Amélioration de caractéristique
+    if ($level >= 8) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 10 - Tradition arcanique
+    if ($level >= 10) {
+        $capabilities[] = [
+            'name' => 'Tradition arcanique',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre tradition arcanique.'
+        ];
+    }
+    
+    // Niveau 12 - Amélioration de caractéristique
+    if ($level >= 12) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 14 - Tradition arcanique
+    if ($level >= 14) {
+        $capabilities[] = [
+            'name' => 'Tradition arcanique',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre tradition arcanique.'
+        ];
+    }
+    
+    // Niveau 16 - Amélioration de caractéristique
+    if ($level >= 16) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 18 - Maîtrise des sorts
+    if ($level >= 18) {
+        $capabilities[] = [
+            'name' => 'Maîtrise des sorts',
+            'description' => 'Vous avez atteint une telle maîtrise de certains sorts que vous pouvez les lancer à volonté. Choisissez un sort de magicien de niveau 1 et un sort de magicien de niveau 2 que vous connaissez.'
+        ];
+    }
+    
+    // Niveau 19 - Amélioration de caractéristique
+    if ($level >= 19) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 20 - Signature de sorts
+    if ($level >= 20) {
+        $capabilities[] = [
+            'name' => 'Signature de sorts',
+            'description' => 'Vous avez maîtrisé deux sorts puissants et pouvez les lancer avec une facilité remarquable. Choisissez deux sorts de magicien de niveau 3 que vous connaissez.'
+        ];
+    }
+    
+    return $capabilities;
+}
+
 // Fonction pour obtenir les voies primitives des barbares
 function getBarbarianPaths() {
     global $pdo;
@@ -2626,6 +2777,18 @@ function getFighterArchetypes() {
         return $stmt->fetchAll();
     } catch (PDOException $e) {
         error_log("Erreur getFighterArchetypes: " . $e->getMessage());
+        return [];
+    }
+}
+
+// Fonction pour obtenir les traditions arcaniques
+function getWizardTraditions() {
+    global $pdo;
+    try {
+        $stmt = $pdo->query("SELECT * FROM wizard_traditions ORDER BY name");
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        error_log("Erreur getWizardTraditions: " . $e->getMessage());
         return [];
     }
 }
@@ -2740,6 +2903,25 @@ function getCharacterFighterArchetype($characterId) {
         return $stmt->fetch();
     } catch (PDOException $e) {
         error_log("Erreur getCharacterFighterArchetype: " . $e->getMessage());
+        return null;
+    }
+}
+
+// Fonction pour obtenir la tradition arcanique d'un personnage
+function getCharacterWizardTradition($characterId) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("
+            SELECT cwt.*, wt.name as tradition_name, wt.description as tradition_description,
+                   wt.level_2_feature, wt.level_6_feature, wt.level_10_feature, wt.level_14_feature
+            FROM character_wizard_tradition cwt
+            JOIN wizard_traditions wt ON cwt.tradition_id = wt.id
+            WHERE cwt.character_id = ?
+        ");
+        $stmt->execute([$characterId]);
+        return $stmt->fetch();
+    } catch (PDOException $e) {
+        error_log("Erreur getCharacterWizardTradition: " . $e->getMessage());
         return null;
     }
 }
@@ -2867,6 +3049,27 @@ function saveFighterArchetype($characterId, $archetypeId, $level3Choice = null, 
         return $stmt->execute([$characterId, $archetypeId, $level3Choice, $level7Choice, $level10Choice, $level15Choice, $level18Choice]);
     } catch (PDOException $e) {
         error_log("Erreur saveFighterArchetype: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Fonction pour sauvegarder le choix de tradition arcanique
+function saveWizardTradition($characterId, $traditionId, $level2Choice = null, $level6Choice = null, $level10Choice = null, $level14Choice = null) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO character_wizard_tradition (character_id, tradition_id, level_2_choice, level_6_choice, level_10_choice, level_14_choice)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+            tradition_id = VALUES(tradition_id),
+            level_2_choice = VALUES(level_2_choice),
+            level_6_choice = VALUES(level_6_choice),
+            level_10_choice = VALUES(level_10_choice),
+            level_14_choice = VALUES(level_14_choice)
+        ");
+        return $stmt->execute([$characterId, $traditionId, $level2Choice, $level6Choice, $level10Choice, $level14Choice]);
+    } catch (PDOException $e) {
+        error_log("Erreur saveWizardTradition: " . $e->getMessage());
         return false;
     }
 }
