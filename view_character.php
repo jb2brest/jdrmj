@@ -55,6 +55,9 @@ $backgroundLanguages = $character['background_languages'] ? json_decode($charact
 $isBarbarian = strpos(strtolower($character['class_name']), 'barbare') !== false;
 $isBard = strpos(strtolower($character['class_name']), 'barde') !== false;
 $isCleric = strpos(strtolower($character['class_name']), 'clerc') !== false;
+$isDruid = strpos(strtolower($character['class_name']), 'druide') !== false;
+$isSorcerer = strpos(strtolower($character['class_name']), 'ensorceleur') !== false;
+$isFighter = strpos(strtolower($character['class_name']), 'guerrier') !== false;
 $rageData = null;
 if ($isBarbarian) {
     // Récupérer le nombre maximum de rages pour ce niveau
@@ -84,6 +87,12 @@ if ($isBarbarian) {
     $classCapabilities = getBardCapabilities($character['level']);
 } elseif ($isCleric) {
     $classCapabilities = getClericCapabilities($character['level']);
+} elseif ($isDruid) {
+    $classCapabilities = getDruidCapabilities($character['level']);
+} elseif ($isSorcerer) {
+    $classCapabilities = getSorcererCapabilities($character['level']);
+} elseif ($isFighter) {
+    $classCapabilities = getFighterCapabilities($character['level']);
 }
 
 // Capacités raciales
@@ -110,6 +119,24 @@ if ($isBard) {
 $clericDomain = null;
 if ($isCleric) {
     $clericDomain = getCharacterClericDomain($character_id);
+}
+
+// Récupérer le cercle druidique du druide
+$druidCircle = null;
+if ($isDruid) {
+    $druidCircle = getCharacterDruidCircle($character_id);
+}
+
+// Récupérer l'origine magique de l'ensorceleur
+$sorcererOrigin = null;
+if ($isSorcerer) {
+    $sorcererOrigin = getCharacterSorcererOrigin($character_id);
+}
+
+// Récupérer l'archétype martial du guerrier
+$fighterArchetype = null;
+if ($isFighter) {
+    $fighterArchetype = getCharacterFighterArchetype($character_id);
 }
 
 // Récupérer les améliorations de caractéristiques
@@ -1207,7 +1234,7 @@ $initiative = $dexterityMod;
                 </div>
                 
                 <!-- Message si aucune capacité -->
-                <?php if (empty($classCapabilities) && empty($raceCapabilities) && !$barbarianPath && !$bardCollege && !$clericDomain): ?>
+                <?php if (empty($classCapabilities) && empty($raceCapabilities) && !$barbarianPath && !$bardCollege && !$clericDomain && !$druidCircle && !$sorcererOrigin && !$fighterArchetype): ?>
                     <div class="text-center text-muted">
                         <i class="fas fa-info-circle me-2"></i>Aucune capacité spéciale
                     </div>
@@ -1407,6 +1434,224 @@ $initiative = $dexterityMod;
                             
                             // Afficher les capacités de domaine divin
                             foreach ($domainCapabilities as $capability):
+                            ?>
+                                <div class="capability-item mt-3">
+                                    <div class="capability-header">
+                                        <h6 class="mb-1 text-info">
+                                            <i class="fas fa-star me-1"></i><?php echo htmlspecialchars($capability['name']); ?>
+                                        </h6>
+                                    </div>
+                                    <div class="capability-description">
+                                        <small class="text-muted"><?php echo nl2br(htmlspecialchars($capability['description'])); ?></small>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                
+                <!-- Cercle druidique du druide -->
+                <?php if ($druidCircle): ?>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5><i class="fas fa-leaf me-2"></i>Cercle druidique</h5>
+                            <div class="capability-item">
+                                <div class="capability-header">
+                                    <h6 class="mb-1 text-warning">
+                                        <i class="fas fa-star me-1"></i><?php echo htmlspecialchars($druidCircle['circle_name']); ?>
+                                    </h6>
+                                </div>
+                                <div class="capability-description">
+                                    <small class="text-muted"><?php echo nl2br(htmlspecialchars($druidCircle['circle_description'])); ?></small>
+                                </div>
+                            </div>
+                            
+                            <!-- Capacités de cercle druidique par niveau -->
+                            <?php
+                            $circleCapabilities = [];
+                            
+                            // Niveau 2 - Capacité de cercle druidique
+                            if ($character['level'] >= 2 && !empty($druidCircle['level_2_feature'])) {
+                                $circleCapabilities[] = [
+                                    'name' => 'Capacité de niveau 2',
+                                    'description' => $druidCircle['level_2_feature']
+                                ];
+                            }
+                            
+                            // Niveau 6 - Capacité de cercle druidique
+                            if ($character['level'] >= 6 && !empty($druidCircle['level_6_feature'])) {
+                                $circleCapabilities[] = [
+                                    'name' => 'Capacité de niveau 6',
+                                    'description' => $druidCircle['level_6_feature']
+                                ];
+                            }
+                            
+                            // Niveau 10 - Capacité de cercle druidique
+                            if ($character['level'] >= 10 && !empty($druidCircle['level_10_feature'])) {
+                                $circleCapabilities[] = [
+                                    'name' => 'Capacité de niveau 10',
+                                    'description' => $druidCircle['level_10_feature']
+                                ];
+                            }
+                            
+                            // Niveau 14 - Capacité de cercle druidique
+                            if ($character['level'] >= 14 && !empty($druidCircle['level_14_feature'])) {
+                                $circleCapabilities[] = [
+                                    'name' => 'Capacité de niveau 14',
+                                    'description' => $druidCircle['level_14_feature']
+                                ];
+                            }
+                            
+                            // Afficher les capacités de cercle druidique
+                            foreach ($circleCapabilities as $capability):
+                            ?>
+                                <div class="capability-item mt-3">
+                                    <div class="capability-header">
+                                        <h6 class="mb-1 text-info">
+                                            <i class="fas fa-star me-1"></i><?php echo htmlspecialchars($capability['name']); ?>
+                                        </h6>
+                                    </div>
+                                    <div class="capability-description">
+                                        <small class="text-muted"><?php echo nl2br(htmlspecialchars($capability['description'])); ?></small>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                
+                <!-- Origine magique de l'ensorceleur -->
+                <?php if ($sorcererOrigin): ?>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5><i class="fas fa-magic me-2"></i>Origine magique</h5>
+                            <div class="capability-item">
+                                <div class="capability-header">
+                                    <h6 class="mb-1 text-warning">
+                                        <i class="fas fa-star me-1"></i><?php echo htmlspecialchars($sorcererOrigin['origin_name']); ?>
+                                    </h6>
+                                </div>
+                                <div class="capability-description">
+                                    <small class="text-muted"><?php echo nl2br(htmlspecialchars($sorcererOrigin['origin_description'])); ?></small>
+                                </div>
+                            </div>
+                            
+                            <!-- Capacités d'origine magique par niveau -->
+                            <?php
+                            $originCapabilities = [];
+                            
+                            // Niveau 1 - Capacité d'origine magique
+                            if ($character['level'] >= 1 && !empty($sorcererOrigin['level_1_feature'])) {
+                                $originCapabilities[] = [
+                                    'name' => 'Capacité de niveau 1',
+                                    'description' => $sorcererOrigin['level_1_feature']
+                                ];
+                            }
+                            
+                            // Niveau 6 - Capacité d'origine magique
+                            if ($character['level'] >= 6 && !empty($sorcererOrigin['level_6_feature'])) {
+                                $originCapabilities[] = [
+                                    'name' => 'Capacité de niveau 6',
+                                    'description' => $sorcererOrigin['level_6_feature']
+                                ];
+                            }
+                            
+                            // Niveau 14 - Capacité d'origine magique
+                            if ($character['level'] >= 14 && !empty($sorcererOrigin['level_14_feature'])) {
+                                $originCapabilities[] = [
+                                    'name' => 'Capacité de niveau 14',
+                                    'description' => $sorcererOrigin['level_14_feature']
+                                ];
+                            }
+                            
+                            // Niveau 18 - Capacité d'origine magique
+                            if ($character['level'] >= 18 && !empty($sorcererOrigin['level_18_feature'])) {
+                                $originCapabilities[] = [
+                                    'name' => 'Capacité de niveau 18',
+                                    'description' => $sorcererOrigin['level_18_feature']
+                                ];
+                            }
+                            
+                            // Afficher les capacités d'origine magique
+                            foreach ($originCapabilities as $capability):
+                            ?>
+                                <div class="capability-item mt-3">
+                                    <div class="capability-header">
+                                        <h6 class="mb-1 text-info">
+                                            <i class="fas fa-star me-1"></i><?php echo htmlspecialchars($capability['name']); ?>
+                                        </h6>
+                                    </div>
+                                    <div class="capability-description">
+                                        <small class="text-muted"><?php echo nl2br(htmlspecialchars($capability['description'])); ?></small>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                
+                <!-- Archétype martial du guerrier -->
+                <?php if ($fighterArchetype): ?>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5><i class="fas fa-sword me-2"></i>Archétype martial</h5>
+                            <div class="capability-item">
+                                <div class="capability-header">
+                                    <h6 class="mb-1 text-warning">
+                                        <i class="fas fa-star me-1"></i><?php echo htmlspecialchars($fighterArchetype['archetype_name']); ?>
+                                    </h6>
+                                </div>
+                                <div class="capability-description">
+                                    <small class="text-muted"><?php echo nl2br(htmlspecialchars($fighterArchetype['archetype_description'])); ?></small>
+                                </div>
+                            </div>
+                            
+                            <!-- Capacités d'archétype martial par niveau -->
+                            <?php
+                            $archetypeCapabilities = [];
+                            
+                            // Niveau 3 - Capacité d'archétype martial
+                            if ($character['level'] >= 3 && !empty($fighterArchetype['level_3_feature'])) {
+                                $archetypeCapabilities[] = [
+                                    'name' => 'Capacité de niveau 3',
+                                    'description' => $fighterArchetype['level_3_feature']
+                                ];
+                            }
+                            
+                            // Niveau 7 - Capacité d'archétype martial
+                            if ($character['level'] >= 7 && !empty($fighterArchetype['level_7_feature'])) {
+                                $archetypeCapabilities[] = [
+                                    'name' => 'Capacité de niveau 7',
+                                    'description' => $fighterArchetype['level_7_feature']
+                                ];
+                            }
+                            
+                            // Niveau 10 - Capacité d'archétype martial
+                            if ($character['level'] >= 10 && !empty($fighterArchetype['level_10_feature'])) {
+                                $archetypeCapabilities[] = [
+                                    'name' => 'Capacité de niveau 10',
+                                    'description' => $fighterArchetype['level_10_feature']
+                                ];
+                            }
+                            
+                            // Niveau 15 - Capacité d'archétype martial
+                            if ($character['level'] >= 15 && !empty($fighterArchetype['level_15_feature'])) {
+                                $archetypeCapabilities[] = [
+                                    'name' => 'Capacité de niveau 15',
+                                    'description' => $fighterArchetype['level_15_feature']
+                                ];
+                            }
+                            
+                            // Niveau 18 - Capacité d'archétype martial
+                            if ($character['level'] >= 18 && !empty($fighterArchetype['level_18_feature'])) {
+                                $archetypeCapabilities[] = [
+                                    'name' => 'Capacité de niveau 18',
+                                    'description' => $fighterArchetype['level_18_feature']
+                                ];
+                            }
+                            
+                            // Afficher les capacités d'archétype martial
+                            foreach ($archetypeCapabilities as $capability):
                             ?>
                                 <div class="capability-item mt-3">
                                     <div class="capability-header">

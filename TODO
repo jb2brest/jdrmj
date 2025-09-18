@@ -27,8 +27,8 @@ Dans la table dnd_monster, ajoute la colonne "Langues" en récupéreant les info
 Ajoute ensuite les compétences à la pages view_monster_sheet.php dans une zone "Langues".
 Mets la à côté de la zone "Sens"
 
-Comme le barbare qui doit choisir sa voie, le clerc doit choisir son domaine divin au niveau 1. 
-Il faut reprendre la même mécanique que pour le barbare et l'adapter au clerc.
+Comme le barbare qui doit choisir sa voie, l'ensorceleur doit choisir son origine magique au niveau 1. 
+Il faut reprendre la même mécanique que pour le barbare et l'adapter à l'ensorceleur.
 
 
 Dans view_campaign.php, seul le MJ peut ajouter, modifier, masquer, rendre visible des évènements

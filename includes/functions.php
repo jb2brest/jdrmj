@@ -2017,6 +2017,547 @@ function getClericCapabilities($level) {
     return $capabilities;
 }
 
+// Fonction pour obtenir les capacités de druide selon le niveau
+function getDruidCapabilities($level) {
+    $capabilities = [];
+    
+    // Niveau 1 - Sorts
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Sorts',
+            'description' => 'Vous avez appris à utiliser la magie de la nature. Voir le chapitre 10 pour les règles générales sur la magie et le chapitre 11 pour la liste des sorts de druide.'
+        ];
+    }
+    
+    // Niveau 1 - Maîtrise d'armures et d'armes
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Maîtrise d\'armures et d\'armes',
+            'description' => 'Vous maîtrisez les armures légères, les armures intermédiaires, les boucliers (mais pas les armures en métal), les frondes, les bâtons, les dagues, les fléchettes, les javelots, les massues, les lances, les bâtons de jet, les cimeterres, les lances courtes, les lances longues et les tridents.'
+        ];
+    }
+    
+    // Niveau 1 - Maîtrise d'outils
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Maîtrise d\'outils',
+            'description' => 'Vous maîtrisez un type d\'outil d\'artisan de votre choix.'
+        ];
+    }
+    
+    // Niveau 1 - Compétences
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Compétences',
+            'description' => 'Vous choisissez deux compétences parmi : Animal Handling, Arcana, Insight, Medicine, Nature, Perception, Religion et Survival.'
+        ];
+    }
+    
+    // Niveau 1 - Cercle druidique
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Cercle druidique',
+            'description' => 'Vous choisissez un cercle druidique qui reflète votre lien avec la nature. Votre choix vous accorde des capacités au niveau 2, puis aux niveaux 6, 10 et 14.'
+        ];
+    }
+    
+    // Niveau 2 - Cercle druidique
+    if ($level >= 2) {
+        $capabilities[] = [
+            'name' => 'Cercle druidique',
+            'description' => 'Vous approfondissez votre lien avec la nature et gagnez des capacités liées à votre cercle druidique.'
+        ];
+    }
+    
+    // Niveau 2 - Forme sauvage
+    if ($level >= 2) {
+        $capabilities[] = [
+            'name' => 'Forme sauvage',
+            'description' => 'Vous pouvez utiliser votre action pour vous transformer en bête que vous avez déjà vue. Vous pouvez utiliser cette aptitude deux fois entre deux repos longs.'
+        ];
+    }
+    
+    // Niveau 4 - Amélioration de caractéristique
+    if ($level >= 4) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 6 - Cercle druidique
+    if ($level >= 6) {
+        $capabilities[] = [
+            'name' => 'Cercle druidique',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre cercle druidique.'
+        ];
+    }
+    
+    // Niveau 8 - Amélioration de caractéristique
+    if ($level >= 8) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 10 - Cercle druidique
+    if ($level >= 10) {
+        $capabilities[] = [
+            'name' => 'Cercle druidique',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre cercle druidique.'
+        ];
+    }
+    
+    // Niveau 12 - Amélioration de caractéristique
+    if ($level >= 12) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 14 - Cercle druidique
+    if ($level >= 14) {
+        $capabilities[] = [
+            'name' => 'Cercle druidique',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre cercle druidique.'
+        ];
+    }
+    
+    // Niveau 16 - Amélioration de caractéristique
+    if ($level >= 16) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 18 - Forme sauvage améliorée
+    if ($level >= 18) {
+        $capabilities[] = [
+            'name' => 'Forme sauvage améliorée',
+            'description' => 'Vous pouvez lancer vos sorts de druide même sous forme sauvage. Vous pouvez effectuer les composantes somatiques et verbales d\'un sort de druide même sous forme sauvage.'
+        ];
+    }
+    
+    // Niveau 19 - Amélioration de caractéristique
+    if ($level >= 19) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 20 - Archidruide
+    if ($level >= 20) {
+        $capabilities[] = [
+            'name' => 'Archidruide',
+            'description' => 'Vous pouvez utiliser votre forme sauvage un nombre illimité de fois. De plus, vous pouvez ignorer les composantes verbales et somatiques de vos sorts de druide, et vous ne pouvez pas être désorienté par la magie.'
+        ];
+    }
+    
+    return $capabilities;
+}
+
+// Fonction pour obtenir les capacités d'ensorceleur selon le niveau
+function getSorcererCapabilities($level) {
+    $capabilities = [];
+    
+    // Niveau 1 - Sorts
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Sorts',
+            'description' => 'Vous avez appris à utiliser la magie innée. Voir le chapitre 10 pour les règles générales sur la magie et le chapitre 11 pour la liste des sorts d\'ensorceleur.'
+        ];
+    }
+    
+    // Niveau 1 - Maîtrise d'armures et d'armes
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Maîtrise d\'armures et d\'armes',
+            'description' => 'Vous maîtrisez les dagues, les fléchettes, les frondes, les bâtons de jet et les arbalètes légères.'
+        ];
+    }
+    
+    // Niveau 1 - Maîtrise d'outils
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Maîtrise d\'outils',
+            'description' => 'Vous maîtrisez un type d\'outil d\'artisan de votre choix.'
+        ];
+    }
+    
+    // Niveau 1 - Compétences
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Compétences',
+            'description' => 'Vous choisissez deux compétences parmi : Arcana, Deception, Insight, Intimidation, Persuasion et Religion.'
+        ];
+    }
+    
+    // Niveau 1 - Origine magique
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Origine magique',
+            'description' => 'Vous choisissez une origine magique qui reflète la source de votre pouvoir magique. Votre choix vous accorde des capacités au niveau 1, puis aux niveaux 6, 14 et 18.'
+        ];
+    }
+    
+    // Niveau 2 - Points de sorcellerie
+    if ($level >= 2) {
+        $capabilities[] = [
+            'name' => 'Points de sorcellerie',
+            'description' => 'Vous avez 2 points de sorcellerie, et vous en gagnez plus à mesure que vous montez de niveau. Vous pouvez dépenser ces points pour diverses capacités.'
+        ];
+    }
+    
+    // Niveau 3 - Métamagie
+    if ($level >= 3) {
+        $capabilities[] = [
+            'name' => 'Métamagie',
+            'description' => 'Vous gagnez la capacité de modifier vos sorts au moment de les lancer. Vous gagnez deux options de métamagie de votre choix.'
+        ];
+    }
+    
+    // Niveau 4 - Amélioration de caractéristique
+    if ($level >= 4) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 5 - Points de sorcellerie
+    if ($level >= 5) {
+        $capabilities[] = [
+            'name' => 'Points de sorcellerie',
+            'description' => 'Vous avez 5 points de sorcellerie, et vous en gagnez plus à mesure que vous montez de niveau.'
+        ];
+    }
+    
+    // Niveau 6 - Origine magique
+    if ($level >= 6) {
+        $capabilities[] = [
+            'name' => 'Origine magique',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre origine magique.'
+        ];
+    }
+    
+    // Niveau 7 - Points de sorcellerie
+    if ($level >= 7) {
+        $capabilities[] = [
+            'name' => 'Points de sorcellerie',
+            'description' => 'Vous avez 7 points de sorcellerie, et vous en gagnez plus à mesure que vous montez de niveau.'
+        ];
+    }
+    
+    // Niveau 8 - Amélioration de caractéristique
+    if ($level >= 8) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 9 - Points de sorcellerie
+    if ($level >= 9) {
+        $capabilities[] = [
+            'name' => 'Points de sorcellerie',
+            'description' => 'Vous avez 9 points de sorcellerie, et vous en gagnez plus à mesure que vous montez de niveau.'
+        ];
+    }
+    
+    // Niveau 10 - Métamagie
+    if ($level >= 10) {
+        $capabilities[] = [
+            'name' => 'Métamagie',
+            'description' => 'Vous gagnez une option de métamagie supplémentaire.'
+        ];
+    }
+    
+    // Niveau 11 - Points de sorcellerie
+    if ($level >= 11) {
+        $capabilities[] = [
+            'name' => 'Points de sorcellerie',
+            'description' => 'Vous avez 11 points de sorcellerie, et vous en gagnez plus à mesure que vous montez de niveau.'
+        ];
+    }
+    
+    // Niveau 12 - Amélioration de caractéristique
+    if ($level >= 12) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 13 - Points de sorcellerie
+    if ($level >= 13) {
+        $capabilities[] = [
+            'name' => 'Points de sorcellerie',
+            'description' => 'Vous avez 13 points de sorcellerie, et vous en gagnez plus à mesure que vous montez de niveau.'
+        ];
+    }
+    
+    // Niveau 14 - Origine magique
+    if ($level >= 14) {
+        $capabilities[] = [
+            'name' => 'Origine magique',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre origine magique.'
+        ];
+    }
+    
+    // Niveau 15 - Points de sorcellerie
+    if ($level >= 15) {
+        $capabilities[] = [
+            'name' => 'Points de sorcellerie',
+            'description' => 'Vous avez 15 points de sorcellerie, et vous en gagnez plus à mesure que vous montez de niveau.'
+        ];
+    }
+    
+    // Niveau 16 - Amélioration de caractéristique
+    if ($level >= 16) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 17 - Points de sorcellerie
+    if ($level >= 17) {
+        $capabilities[] = [
+            'name' => 'Points de sorcellerie',
+            'description' => 'Vous avez 17 points de sorcellerie, et vous en gagnez plus à mesure que vous montez de niveau.'
+        ];
+    }
+    
+    // Niveau 18 - Origine magique
+    if ($level >= 18) {
+        $capabilities[] = [
+            'name' => 'Origine magique',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre origine magique.'
+        ];
+    }
+    
+    // Niveau 19 - Amélioration de caractéristique
+    if ($level >= 19) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 20 - Maître de la sorcellerie
+    if ($level >= 20) {
+        $capabilities[] = [
+            'name' => 'Maître de la sorcellerie',
+            'description' => 'Vous gagnez 4 points de sorcellerie supplémentaires. De plus, vous récupérez 4 points de sorcellerie dépensés quand vous terminez un repos court.'
+        ];
+    }
+    
+    return $capabilities;
+}
+
+// Fonction pour obtenir les capacités de guerrier selon le niveau
+function getFighterCapabilities($level) {
+    $capabilities = [];
+    
+    // Niveau 1 - Maîtrise d'armures et d'armes
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Maîtrise d\'armures et d\'armes',
+            'description' => 'Vous maîtrisez toutes les armures, boucliers, armes courantes et armes de guerre.'
+        ];
+    }
+    
+    // Niveau 1 - Maîtrise d'outils
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Maîtrise d\'outils',
+            'description' => 'Vous maîtrisez un type d\'outil d\'artisan de votre choix.'
+        ];
+    }
+    
+    // Niveau 1 - Compétences
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Compétences',
+            'description' => 'Vous choisissez deux compétences parmi : Acrobatics, Animal Handling, Athletics, History, Insight, Intimidation, Perception et Survival.'
+        ];
+    }
+    
+    // Niveau 1 - Style de combat
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Style de combat',
+            'description' => 'Vous adoptez un style de combat particulier comme spécialité. Vous ne pouvez pas prendre le même style de combat plus d\'une fois, même si vous avez d\'autres occasions de le faire.'
+        ];
+    }
+    
+    // Niveau 1 - Second souffle
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Second souffle',
+            'description' => 'Vous avez une réserve limitée d\'endurance que vous pouvez puiser pour vous protéger. En tant qu\'action bonus, vous pouvez récupérer 1d10 + votre niveau de guerrier points de vie.'
+        ];
+    }
+    
+    // Niveau 2 - Action supplémentaire
+    if ($level >= 2) {
+        $capabilities[] = [
+            'name' => 'Action supplémentaire',
+            'description' => 'Vous pouvez vous surmener. En tant qu\'action bonus, vous pouvez faire une attaque d\'arme supplémentaire.'
+        ];
+    }
+    
+    // Niveau 3 - Archétype martial
+    if ($level >= 3) {
+        $capabilities[] = [
+            'name' => 'Archétype martial',
+            'description' => 'Vous choisissez un archétype martial qui reflète votre style de combat. Votre choix vous accorde des capacités au niveau 3, puis aux niveaux 7, 10, 15 et 18.'
+        ];
+    }
+    
+    // Niveau 4 - Amélioration de caractéristique
+    if ($level >= 4) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 5 - Attaque supplémentaire
+    if ($level >= 5) {
+        $capabilities[] = [
+            'name' => 'Attaque supplémentaire',
+            'description' => 'Vous pouvez attaquer deux fois, au lieu d\'une, quand vous effectuez l\'action attaquer lors de votre tour.'
+        ];
+    }
+    
+    // Niveau 6 - Amélioration de caractéristique
+    if ($level >= 6) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 7 - Archétype martial
+    if ($level >= 7) {
+        $capabilities[] = [
+            'name' => 'Archétype martial',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre archétype martial.'
+        ];
+    }
+    
+    // Niveau 8 - Amélioration de caractéristique
+    if ($level >= 8) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 9 - Indomptable
+    if ($level >= 9) {
+        $capabilities[] = [
+            'name' => 'Indomptable',
+            'description' => 'Vous pouvez relancer un jet de sauvegarde que vous venez de faire. Vous devez utiliser le nouveau résultat. Une fois que vous avez utilisé cette aptitude, vous ne pouvez plus l\'utiliser tant que vous n\'avez pas terminé un repos long.'
+        ];
+    }
+    
+    // Niveau 10 - Archétype martial
+    if ($level >= 10) {
+        $capabilities[] = [
+            'name' => 'Archétype martial',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre archétype martial.'
+        ];
+    }
+    
+    // Niveau 11 - Attaque supplémentaire
+    if ($level >= 11) {
+        $capabilities[] = [
+            'name' => 'Attaque supplémentaire',
+            'description' => 'Vous pouvez attaquer trois fois, au lieu d\'une, quand vous effectuez l\'action attaquer lors de votre tour.'
+        ];
+    }
+    
+    // Niveau 12 - Amélioration de caractéristique
+    if ($level >= 12) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 13 - Indomptable
+    if ($level >= 13) {
+        $capabilities[] = [
+            'name' => 'Indomptable',
+            'description' => 'Vous pouvez utiliser votre aptitude Indomptable deux fois entre deux repos longs.'
+        ];
+    }
+    
+    // Niveau 14 - Amélioration de caractéristique
+    if ($level >= 14) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 15 - Archétype martial
+    if ($level >= 15) {
+        $capabilities[] = [
+            'name' => 'Archétype martial',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre archétype martial.'
+        ];
+    }
+    
+    // Niveau 16 - Amélioration de caractéristique
+    if ($level >= 16) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 17 - Action supplémentaire
+    if ($level >= 17) {
+        $capabilities[] = [
+            'name' => 'Action supplémentaire',
+            'description' => 'Vous pouvez utiliser votre aptitude Action supplémentaire deux fois entre deux repos longs.'
+        ];
+    }
+    
+    // Niveau 18 - Archétype martial
+    if ($level >= 18) {
+        $capabilities[] = [
+            'name' => 'Archétype martial',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre archétype martial.'
+        ];
+    }
+    
+    // Niveau 19 - Amélioration de caractéristique
+    if ($level >= 19) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 20 - Attaque supplémentaire
+    if ($level >= 20) {
+        $capabilities[] = [
+            'name' => 'Attaque supplémentaire',
+            'description' => 'Vous pouvez attaquer quatre fois, au lieu d\'une, quand vous effectuez l\'action attaquer lors de votre tour.'
+        ];
+    }
+    
+    return $capabilities;
+}
+
 // Fonction pour obtenir les voies primitives des barbares
 function getBarbarianPaths() {
     global $pdo;
@@ -2049,6 +2590,42 @@ function getClericDomains() {
         return $stmt->fetchAll();
     } catch (PDOException $e) {
         error_log("Erreur getClericDomains: " . $e->getMessage());
+        return [];
+    }
+}
+
+// Fonction pour obtenir les cercles druidiques
+function getDruidCircles() {
+    global $pdo;
+    try {
+        $stmt = $pdo->query("SELECT * FROM druid_circles ORDER BY name");
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        error_log("Erreur getDruidCircles: " . $e->getMessage());
+        return [];
+    }
+}
+
+// Fonction pour obtenir les origines magiques
+function getSorcererOrigins() {
+    global $pdo;
+    try {
+        $stmt = $pdo->query("SELECT * FROM sorcerer_origins ORDER BY name");
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        error_log("Erreur getSorcererOrigins: " . $e->getMessage());
+        return [];
+    }
+}
+
+// Fonction pour obtenir les archétypes martiaux
+function getFighterArchetypes() {
+    global $pdo;
+    try {
+        $stmt = $pdo->query("SELECT * FROM fighter_archetypes ORDER BY name");
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        error_log("Erreur getFighterArchetypes: " . $e->getMessage());
         return [];
     }
 }
@@ -2106,6 +2683,63 @@ function getCharacterClericDomain($characterId) {
         return $stmt->fetch();
     } catch (PDOException $e) {
         error_log("Erreur getCharacterClericDomain: " . $e->getMessage());
+        return null;
+    }
+}
+
+// Fonction pour obtenir le cercle druidique d'un personnage
+function getCharacterDruidCircle($characterId) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("
+            SELECT cdc.*, dc.name as circle_name, dc.description as circle_description,
+                   dc.level_2_feature, dc.level_6_feature, dc.level_10_feature, dc.level_14_feature
+            FROM character_druid_circle cdc
+            JOIN druid_circles dc ON cdc.circle_id = dc.id
+            WHERE cdc.character_id = ?
+        ");
+        $stmt->execute([$characterId]);
+        return $stmt->fetch();
+    } catch (PDOException $e) {
+        error_log("Erreur getCharacterDruidCircle: " . $e->getMessage());
+        return null;
+    }
+}
+
+// Fonction pour obtenir l'origine magique d'un personnage
+function getCharacterSorcererOrigin($characterId) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("
+            SELECT cso.*, so.name as origin_name, so.description as origin_description,
+                   so.level_1_feature, so.level_6_feature, so.level_14_feature, so.level_18_feature
+            FROM character_sorcerer_origin cso
+            JOIN sorcerer_origins so ON cso.origin_id = so.id
+            WHERE cso.character_id = ?
+        ");
+        $stmt->execute([$characterId]);
+        return $stmt->fetch();
+    } catch (PDOException $e) {
+        error_log("Erreur getCharacterSorcererOrigin: " . $e->getMessage());
+        return null;
+    }
+}
+
+// Fonction pour obtenir l'archétype martial d'un personnage
+function getCharacterFighterArchetype($characterId) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("
+            SELECT cfa.*, fa.name as archetype_name, fa.description as archetype_description,
+                   fa.level_3_feature, fa.level_7_feature, fa.level_10_feature, fa.level_15_feature, fa.level_18_feature
+            FROM character_fighter_archetype cfa
+            JOIN fighter_archetypes fa ON cfa.archetype_id = fa.id
+            WHERE cfa.character_id = ?
+        ");
+        $stmt->execute([$characterId]);
+        return $stmt->fetch();
+    } catch (PDOException $e) {
+        error_log("Erreur getCharacterFighterArchetype: " . $e->getMessage());
         return null;
     }
 }
@@ -2169,6 +2803,70 @@ function saveClericDomain($characterId, $domainId, $level1Choice = null, $level2
         return $stmt->execute([$characterId, $domainId, $level1Choice, $level2Choice, $level6Choice, $level8Choice, $level17Choice]);
     } catch (PDOException $e) {
         error_log("Erreur saveClericDomain: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Fonction pour sauvegarder le choix de cercle druidique
+function saveDruidCircle($characterId, $circleId, $level2Choice = null, $level6Choice = null, $level10Choice = null, $level14Choice = null) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO character_druid_circle (character_id, circle_id, level_2_choice, level_6_choice, level_10_choice, level_14_choice)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+            circle_id = VALUES(circle_id),
+            level_2_choice = VALUES(level_2_choice),
+            level_6_choice = VALUES(level_6_choice),
+            level_10_choice = VALUES(level_10_choice),
+            level_14_choice = VALUES(level_14_choice)
+        ");
+        return $stmt->execute([$characterId, $circleId, $level2Choice, $level6Choice, $level10Choice, $level14Choice]);
+    } catch (PDOException $e) {
+        error_log("Erreur saveDruidCircle: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Fonction pour sauvegarder le choix d'origine magique
+function saveSorcererOrigin($characterId, $originId, $level1Choice = null, $level6Choice = null, $level14Choice = null, $level18Choice = null) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO character_sorcerer_origin (character_id, origin_id, level_1_choice, level_6_choice, level_14_choice, level_18_choice)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+            origin_id = VALUES(origin_id),
+            level_1_choice = VALUES(level_1_choice),
+            level_6_choice = VALUES(level_6_choice),
+            level_14_choice = VALUES(level_14_choice),
+            level_18_choice = VALUES(level_18_choice)
+        ");
+        return $stmt->execute([$characterId, $originId, $level1Choice, $level6Choice, $level14Choice, $level18Choice]);
+    } catch (PDOException $e) {
+        error_log("Erreur saveSorcererOrigin: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Fonction pour sauvegarder le choix d'archétype martial
+function saveFighterArchetype($characterId, $archetypeId, $level3Choice = null, $level7Choice = null, $level10Choice = null, $level15Choice = null, $level18Choice = null) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO character_fighter_archetype (character_id, archetype_id, level_3_choice, level_7_choice, level_10_choice, level_15_choice, level_18_choice)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+            archetype_id = VALUES(archetype_id),
+            level_3_choice = VALUES(level_3_choice),
+            level_7_choice = VALUES(level_7_choice),
+            level_10_choice = VALUES(level_10_choice),
+            level_15_choice = VALUES(level_15_choice),
+            level_18_choice = VALUES(level_18_choice)
+        ");
+        return $stmt->execute([$characterId, $archetypeId, $level3Choice, $level7Choice, $level10Choice, $level15Choice, $level18Choice]);
+    } catch (PDOException $e) {
+        error_log("Erreur saveFighterArchetype: " . $e->getMessage());
         return false;
     }
 }

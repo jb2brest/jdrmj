@@ -50,10 +50,13 @@ if ($character['race_id']) {
 $classCapabilities = [];
 $raceCapabilities = [];
 
-// Vérifier si c'est un barbare, un barde ou un clerc
+// Vérifier si c'est un barbare, un barde, un clerc, un druide, un ensorceleur ou un guerrier
 $isBarbarian = false;
 $isBard = false;
 $isCleric = false;
+$isDruid = false;
+$isSorcerer = false;
+$isFighter = false;
 if ($character['class_id']) {
     $stmt = $pdo->prepare("SELECT name FROM classes WHERE id = ?");
     $stmt->execute([$character['class_id']]);
@@ -61,6 +64,9 @@ if ($character['class_id']) {
     $isBarbarian = $class && strpos(strtolower($class['name']), 'barbare') !== false;
     $isBard = $class && strpos(strtolower($class['name']), 'barde') !== false;
     $isCleric = $class && strpos(strtolower($class['name']), 'clerc') !== false;
+    $isDruid = $class && strpos(strtolower($class['name']), 'druide') !== false;
+    $isSorcerer = $class && strpos(strtolower($class['name']), 'ensorceleur') !== false;
+    $isFighter = $class && strpos(strtolower($class['name']), 'guerrier') !== false;
 }
 
 // Capacités de classe basées sur le niveau
@@ -71,6 +77,12 @@ if ($isBarbarian) {
     $classCapabilities = getBardCapabilities($character['level']);
 } elseif ($isCleric) {
     $classCapabilities = getClericCapabilities($character['level']);
+} elseif ($isDruid) {
+    $classCapabilities = getDruidCapabilities($character['level']);
+} elseif ($isSorcerer) {
+    $classCapabilities = getSorcererCapabilities($character['level']);
+} elseif ($isFighter) {
+    $classCapabilities = getFighterCapabilities($character['level']);
 }
 
 // Capacités raciales
@@ -103,6 +115,30 @@ $selectedDomain = null;
 if ($isCleric) {
     $clericDomains = getClericDomains();
     $selectedDomain = getCharacterClericDomain($character_id);
+}
+
+// Récupérer les cercles druidiques et le choix actuel
+$druidCircles = [];
+$selectedCircle = null;
+if ($isDruid) {
+    $druidCircles = getDruidCircles();
+    $selectedCircle = getCharacterDruidCircle($character_id);
+}
+
+// Récupérer les origines magiques et le choix actuel
+$sorcererOrigins = [];
+$selectedOrigin = null;
+if ($isSorcerer) {
+    $sorcererOrigins = getSorcererOrigins();
+    $selectedOrigin = getCharacterSorcererOrigin($character_id);
+}
+
+// Récupérer les archétypes martiaux et le choix actuel
+$fighterArchetypes = [];
+$selectedArchetype = null;
+if ($isFighter) {
+    $fighterArchetypes = getFighterArchetypes();
+    $selectedArchetype = getCharacterFighterArchetype($character_id);
 }
 
 // Récupérer les améliorations de caractéristiques
@@ -222,6 +258,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Collège bardique (pour les bardes de niveau 3+)
         $bard_college_id = isset($_POST['bard_college_id']) ? (int)$_POST['bard_college_id'] : null;
         $cleric_domain_id = isset($_POST['cleric_domain_id']) ? (int)$_POST['cleric_domain_id'] : null;
+        $druid_circle_id = isset($_POST['druid_circle_id']) ? (int)$_POST['druid_circle_id'] : null;
+        $sorcerer_origin_id = isset($_POST['sorcerer_origin_id']) ? (int)$_POST['sorcerer_origin_id'] : null;
+        $fighter_archetype_id = isset($_POST['fighter_archetype_id']) ? (int)$_POST['fighter_archetype_id'] : null;
     
     // Améliorations de caractéristiques
     $ability_improvements = [
@@ -347,6 +386,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Sauvegarder le domaine divin si c'est un clerc de niveau 1+
             if ($isCleric && $level >= 1 && $cleric_domain_id) {
                 saveClericDomain($character_id, $cleric_domain_id);
+            }
+            
+            // Sauvegarder le cercle druidique si c'est un druide de niveau 2+
+            if ($isDruid && $level >= 2 && $druid_circle_id) {
+                saveDruidCircle($character_id, $druid_circle_id);
+            }
+            
+            // Sauvegarder l'origine magique si c'est un ensorceleur de niveau 1+
+            if ($isSorcerer && $level >= 1 && $sorcerer_origin_id) {
+                saveSorcererOrigin($character_id, $sorcerer_origin_id);
+            }
+            
+            // Sauvegarder l'archétype martial si c'est un guerrier de niveau 3+
+            if ($isFighter && $level >= 3 && $fighter_archetype_id) {
+                saveFighterArchetype($character_id, $fighter_archetype_id);
             }
             
             // Sauvegarder les améliorations de caractéristiques
@@ -1107,6 +1161,93 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         </div>
                                         <div class="domain-description mt-2">
                                             <small class="text-muted"><?php echo nl2br(htmlspecialchars($domain['description'])); ?></small>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                
+                <!-- Choix de cercle druidique pour les druides de niveau 2+ -->
+                <?php if ($isDruid && $character['level'] >= 2): ?>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5><i class="fas fa-leaf me-2"></i>Cercle druidique</h5>
+                            <p class="text-muted">Choisissez votre cercle druidique (obligatoire au niveau 2).</p>
+                            <div class="row">
+                                <?php foreach ($druidCircles as $circle): ?>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" 
+                                                   name="druid_circle_id" 
+                                                   id="circle_<?php echo $circle['id']; ?>" 
+                                                   value="<?php echo $circle['id']; ?>"
+                                                   <?php echo ($selectedCircle && $selectedCircle['circle_id'] == $circle['id']) ? 'checked' : ''; ?>>
+                                            <label class="form-check-label" for="circle_<?php echo $circle['id']; ?>">
+                                                <strong><?php echo htmlspecialchars($circle['name']); ?></strong>
+                                            </label>
+                                        </div>
+                                        <div class="circle-description mt-2">
+                                            <small class="text-muted"><?php echo nl2br(htmlspecialchars($circle['description'])); ?></small>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                
+                <!-- Choix d'origine magique pour les ensorceleurs de niveau 1+ -->
+                <?php if ($isSorcerer && $character['level'] >= 1): ?>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5><i class="fas fa-magic me-2"></i>Origine magique</h5>
+                            <p class="text-muted">Choisissez votre origine magique (obligatoire au niveau 1).</p>
+                            <div class="row">
+                                <?php foreach ($sorcererOrigins as $origin): ?>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" 
+                                                   name="sorcerer_origin_id" 
+                                                   id="origin_<?php echo $origin['id']; ?>" 
+                                                   value="<?php echo $origin['id']; ?>"
+                                                   <?php echo ($selectedOrigin && $selectedOrigin['origin_id'] == $origin['id']) ? 'checked' : ''; ?>>
+                                            <label class="form-check-label" for="origin_<?php echo $origin['id']; ?>">
+                                                <strong><?php echo htmlspecialchars($origin['name']); ?></strong>
+                                            </label>
+                                        </div>
+                                        <div class="origin-description mt-2">
+                                            <small class="text-muted"><?php echo nl2br(htmlspecialchars($origin['description'])); ?></small>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                
+                <!-- Choix d'archétype martial pour les guerriers de niveau 3+ -->
+                <?php if ($isFighter && $character['level'] >= 3): ?>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5><i class="fas fa-sword me-2"></i>Archétype martial</h5>
+                            <p class="text-muted">Choisissez votre archétype martial (obligatoire au niveau 3).</p>
+                            <div class="row">
+                                <?php foreach ($fighterArchetypes as $archetype): ?>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" 
+                                                   name="fighter_archetype_id" 
+                                                   id="archetype_<?php echo $archetype['id']; ?>" 
+                                                   value="<?php echo $archetype['id']; ?>"
+                                                   <?php echo ($selectedArchetype && $selectedArchetype['archetype_id'] == $archetype['id']) ? 'checked' : ''; ?>>
+                                            <label class="form-check-label" for="archetype_<?php echo $archetype['id']; ?>">
+                                                <strong><?php echo htmlspecialchars($archetype['name']); ?></strong>
+                                            </label>
+                                        </div>
+                                        <div class="archetype-description mt-2">
+                                            <small class="text-muted"><?php echo nl2br(htmlspecialchars($archetype['description'])); ?></small>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>
