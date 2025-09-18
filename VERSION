@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=1.3.2
+VERSION=1.3.3
 
 # Date de déploiement
 DEPLOY_DATE=2025-09-18
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-09-18
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=d93bff260b59fa23cfc5bb74ff52e4c94d04f06d
+GIT_COMMIT=5614e21579e19fb2885fa8f561e98847f3367205
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20250918-103250
+BUILD_ID=20250918-111349
 
 # Notes de version
-RELEASE_NOTES="PV"
+RELEASE_NOTES="refonte affichage monstre"
