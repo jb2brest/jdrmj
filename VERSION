@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=1.2.3
+VERSION=1.2.4
 
 # Date de déploiement
 DEPLOY_DATE=2025-09-18
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-09-18
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=1722dc2935531f69be591d8ce882aecb2663afbb
+GIT_COMMIT=4d652a061c42177da4a5a07f995ac0f3972276d6
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20250918-074235
+BUILD_ID=20250918-084733
 
 # Notes de version
-RELEASE_NOTES="Changement de lieu OK"
+RELEASE_NOTES="Images Scene OK"
