@@ -59,6 +59,7 @@ $isDruid = strpos(strtolower($character['class_name']), 'druide') !== false;
 $isSorcerer = strpos(strtolower($character['class_name']), 'ensorceleur') !== false;
 $isFighter = strpos(strtolower($character['class_name']), 'guerrier') !== false;
 $isWizard = strpos(strtolower($character['class_name']), 'magicien') !== false;
+$isMonk = strpos(strtolower($character['class_name']), 'moine') !== false;
 $rageData = null;
 if ($isBarbarian) {
     // Récupérer le nombre maximum de rages pour ce niveau
@@ -96,6 +97,8 @@ if ($isBarbarian) {
     $classCapabilities = getFighterCapabilities($character['level']);
 } elseif ($isWizard) {
     $classCapabilities = getWizardCapabilities($character['level']);
+} elseif ($isMonk) {
+    $classCapabilities = getMonkCapabilities($character['level']);
 }
 
 // Capacités raciales
@@ -146,6 +149,12 @@ if ($isFighter) {
 $wizardTradition = null;
 if ($isWizard) {
     $wizardTradition = getCharacterWizardTradition($character_id);
+}
+
+// Récupérer la tradition monastique du moine
+$monkTradition = null;
+if ($isMonk) {
+    $monkTradition = getCharacterMonkTradition($character_id);
 }
 
 // Récupérer les améliorations de caractéristiques
@@ -1243,7 +1252,7 @@ $initiative = $dexterityMod;
                 </div>
                 
                 <!-- Message si aucune capacité -->
-                <?php if (empty($classCapabilities) && empty($raceCapabilities) && !$barbarianPath && !$bardCollege && !$clericDomain && !$druidCircle && !$sorcererOrigin && !$fighterArchetype && !$wizardTradition): ?>
+                <?php if (empty($classCapabilities) && empty($raceCapabilities) && !$barbarianPath && !$bardCollege && !$clericDomain && !$druidCircle && !$sorcererOrigin && !$fighterArchetype && !$wizardTradition && !$monkTradition): ?>
                     <div class="text-center text-muted">
                         <i class="fas fa-info-circle me-2"></i>Aucune capacité spéciale
                     </div>
@@ -1730,6 +1739,76 @@ $initiative = $dexterityMod;
                             }
                             
                             // Afficher les capacités de tradition arcanique
+                            foreach ($traditionCapabilities as $capability):
+                            ?>
+                                <div class="capability-item mt-3">
+                                    <div class="capability-header">
+                                        <h6 class="mb-1 text-info">
+                                            <i class="fas fa-star me-1"></i><?php echo htmlspecialchars($capability['name']); ?>
+                                        </h6>
+                                    </div>
+                                    <div class="capability-description">
+                                        <small class="text-muted"><?php echo nl2br(htmlspecialchars($capability['description'])); ?></small>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                
+                <!-- Tradition monastique du moine -->
+                <?php if ($monkTradition): ?>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5><i class="fas fa-fist-raised me-2"></i>Tradition monastique</h5>
+                            <div class="capability-item">
+                                <div class="capability-header">
+                                    <h6 class="mb-1 text-warning">
+                                        <i class="fas fa-star me-1"></i><?php echo htmlspecialchars($monkTradition['tradition_name']); ?>
+                                    </h6>
+                                </div>
+                                <div class="capability-description">
+                                    <small class="text-muted"><?php echo nl2br(htmlspecialchars($monkTradition['tradition_description'])); ?></small>
+                                </div>
+                            </div>
+                            
+                            <!-- Capacités de tradition monastique par niveau -->
+                            <?php
+                            $traditionCapabilities = [];
+                            
+                            // Niveau 3 - Capacité de tradition monastique
+                            if ($character['level'] >= 3 && !empty($monkTradition['level_3_feature'])) {
+                                $traditionCapabilities[] = [
+                                    'name' => 'Capacité de niveau 3',
+                                    'description' => $monkTradition['level_3_feature']
+                                ];
+                            }
+                            
+                            // Niveau 6 - Capacité de tradition monastique
+                            if ($character['level'] >= 6 && !empty($monkTradition['level_6_feature'])) {
+                                $traditionCapabilities[] = [
+                                    'name' => 'Capacité de niveau 6',
+                                    'description' => $monkTradition['level_6_feature']
+                                ];
+                            }
+                            
+                            // Niveau 11 - Capacité de tradition monastique
+                            if ($character['level'] >= 11 && !empty($monkTradition['level_11_feature'])) {
+                                $traditionCapabilities[] = [
+                                    'name' => 'Capacité de niveau 11',
+                                    'description' => $monkTradition['level_11_feature']
+                                ];
+                            }
+                            
+                            // Niveau 17 - Capacité de tradition monastique
+                            if ($character['level'] >= 17 && !empty($monkTradition['level_17_feature'])) {
+                                $traditionCapabilities[] = [
+                                    'name' => 'Capacité de niveau 17',
+                                    'description' => $monkTradition['level_17_feature']
+                                ];
+                            }
+                            
+                            // Afficher les capacités de tradition monastique
                             foreach ($traditionCapabilities as $capability):
                             ?>
                                 <div class="capability-item mt-3">

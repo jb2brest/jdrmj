@@ -2709,6 +2709,237 @@ function getWizardCapabilities($level) {
     return $capabilities;
 }
 
+// Fonction pour obtenir les capacités de moine selon le niveau
+function getMonkCapabilities($level) {
+    $capabilities = [];
+    
+    // Niveau 1 - Maîtrise d'armures et d'armes
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Maîtrise d\'armures et d\'armes',
+            'description' => 'Vous maîtrisez les armes courantes, les épées courtes et les armes de guerre simples.'
+        ];
+    }
+    
+    // Niveau 1 - Maîtrise d'outils
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Maîtrise d\'outils',
+            'description' => 'Vous maîtrisez un type d\'outil d\'artisan de votre choix.'
+        ];
+    }
+    
+    // Niveau 1 - Compétences
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Compétences',
+            'description' => 'Vous choisissez deux compétences parmi : Acrobatics, Athletics, History, Insight, Religion et Stealth.'
+        ];
+    }
+    
+    // Niveau 1 - Arts martiaux
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Arts martiaux',
+            'description' => 'Vous maîtrisez les arts martiaux, vous permettant de vous battre efficacement sans armes ni armure.'
+        ];
+    }
+    
+    // Niveau 1 - Défense sans armure
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Défense sans armure',
+            'description' => 'Quand vous ne portez pas d\'armure, votre classe d\'armure est égale à 10 + votre modificateur de Dextérité + votre modificateur de Sagesse.'
+        ];
+    }
+    
+    // Niveau 2 - Ki
+    if ($level >= 2) {
+        $capabilities[] = [
+            'name' => 'Ki',
+            'description' => 'Vous avez appris à puiser dans votre énergie vitale pour accomplir des exploits surnaturels. Vous avez un nombre de points de ki égal à votre niveau de moine.'
+        ];
+    }
+    
+    // Niveau 2 - Mouvement sans armure
+    if ($level >= 2) {
+        $capabilities[] = [
+            'name' => 'Mouvement sans armure',
+            'description' => 'Votre vitesse augmente tant que vous ne portez pas d\'armure ni de bouclier.'
+        ];
+    }
+    
+    // Niveau 3 - Tradition monastique
+    if ($level >= 3) {
+        $capabilities[] = [
+            'name' => 'Tradition monastique',
+            'description' => 'Vous choisissez une tradition monastique qui reflète votre approche de la vie monastique. Votre choix vous accorde des capacités au niveau 3, puis aux niveaux 6, 11 et 17.'
+        ];
+    }
+    
+    // Niveau 4 - Amélioration de caractéristique
+    if ($level >= 4) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 4 - Esquive rapide
+    if ($level >= 4) {
+        $capabilities[] = [
+            'name' => 'Esquive rapide',
+            'description' => 'Vous pouvez utiliser votre réaction pour dépenser 1 point de ki quand vous êtes touché par une attaque d\'arme de mêlée pour réduire les dégâts que vous subissez d\'un nombre égal à votre niveau de moine + votre modificateur de Sagesse.'
+        ];
+    }
+    
+    // Niveau 5 - Attaque supplémentaire
+    if ($level >= 5) {
+        $capabilities[] = [
+            'name' => 'Attaque supplémentaire',
+            'description' => 'Vous pouvez attaquer deux fois, au lieu d\'une, quand vous effectuez l\'action attaquer lors de votre tour.'
+        ];
+    }
+    
+    // Niveau 5 - Frappe étourdissante
+    if ($level >= 5) {
+        $capabilities[] = [
+            'name' => 'Frappe étourdissante',
+            'description' => 'Vous pouvez utiliser votre action pour dépenser 1 point de ki et tenter d\'étourdir une créature avec une attaque d\'arme de mêlée.'
+        ];
+    }
+    
+    // Niveau 6 - Tradition monastique
+    if ($level >= 6) {
+        $capabilities[] = [
+            'name' => 'Tradition monastique',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre tradition monastique.'
+        ];
+    }
+    
+    // Niveau 6 - Frappe de ki
+    if ($level >= 6) {
+        $capabilities[] = [
+            'name' => 'Frappe de ki',
+            'description' => 'Vos attaques d\'arme de mêlée comptent comme magiques pour surmonter la résistance et l\'immunité aux attaques non magiques.'
+        ];
+    }
+    
+    // Niveau 7 - Esquive instinctive
+    if ($level >= 7) {
+        $capabilities[] = [
+            'name' => 'Esquive instinctive',
+            'description' => 'Vous pouvez utiliser votre réaction pour dépenser 1 point de ki quand vous êtes touché par une attaque d\'arme de mêlée pour réduire les dégâts que vous subissez d\'un nombre égal à votre niveau de moine + votre modificateur de Sagesse.'
+        ];
+    }
+    
+    // Niveau 8 - Amélioration de caractéristique
+    if ($level >= 8) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 9 - Mouvement sans armure
+    if ($level >= 9) {
+        $capabilities[] = [
+            'name' => 'Mouvement sans armure',
+            'description' => 'Votre vitesse augmente tant que vous ne portez pas d\'armure ni de bouclier.'
+        ];
+    }
+    
+    // Niveau 10 - Pureté du corps
+    if ($level >= 10) {
+        $capabilities[] = [
+            'name' => 'Pureté du corps',
+            'description' => 'Vous êtes immunisé contre la maladie et le poison.'
+        ];
+    }
+    
+    // Niveau 11 - Tradition monastique
+    if ($level >= 11) {
+        $capabilities[] = [
+            'name' => 'Tradition monastique',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre tradition monastique.'
+        ];
+    }
+    
+    // Niveau 12 - Amélioration de caractéristique
+    if ($level >= 12) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 13 - Langue de la lumière et des ténèbres
+    if ($level >= 13) {
+        $capabilities[] = [
+            'name' => 'Langue de la lumière et des ténèbres',
+            'description' => 'Vous apprenez à parler, lire et écrire le céleste et l\'abyssal.'
+        ];
+    }
+    
+    // Niveau 14 - Diamant de l\'âme
+    if ($level >= 14) {
+        $capabilities[] = [
+            'name' => 'Diamant de l\'âme',
+            'description' => 'Vous êtes immunisé contre la maladie et le poison.'
+        ];
+    }
+    
+    // Niveau 15 - Pureté du corps
+    if ($level >= 15) {
+        $capabilities[] = [
+            'name' => 'Pureté du corps',
+            'description' => 'Vous êtes immunisé contre la maladie et le poison.'
+        ];
+    }
+    
+    // Niveau 16 - Amélioration de caractéristique
+    if ($level >= 16) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 17 - Tradition monastique
+    if ($level >= 17) {
+        $capabilities[] = [
+            'name' => 'Tradition monastique',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre tradition monastique.'
+        ];
+    }
+    
+    // Niveau 18 - Vide de l\'esprit
+    if ($level >= 18) {
+        $capabilities[] = [
+            'name' => 'Vide de l\'esprit',
+            'description' => 'Vous êtes immunisé contre la maladie et le poison.'
+        ];
+    }
+    
+    // Niveau 19 - Amélioration de caractéristique
+    if ($level >= 19) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 20 - Perfection du corps
+    if ($level >= 20) {
+        $capabilities[] = [
+            'name' => 'Perfection du corps',
+            'description' => 'Vous atteignez la perfection physique. Votre Force et votre Dextérité augmentent de 4 chacune. Votre maximum pour ces caractéristiques est maintenant 24.'
+        ];
+    }
+    
+    return $capabilities;
+}
+
 // Fonction pour obtenir les voies primitives des barbares
 function getBarbarianPaths() {
     global $pdo;
@@ -2789,6 +3020,18 @@ function getWizardTraditions() {
         return $stmt->fetchAll();
     } catch (PDOException $e) {
         error_log("Erreur getWizardTraditions: " . $e->getMessage());
+        return [];
+    }
+}
+
+// Fonction pour obtenir les traditions monastiques
+function getMonkTraditions() {
+    global $pdo;
+    try {
+        $stmt = $pdo->query("SELECT * FROM monk_traditions ORDER BY name");
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        error_log("Erreur getMonkTraditions: " . $e->getMessage());
         return [];
     }
 }
@@ -2922,6 +3165,25 @@ function getCharacterWizardTradition($characterId) {
         return $stmt->fetch();
     } catch (PDOException $e) {
         error_log("Erreur getCharacterWizardTradition: " . $e->getMessage());
+        return null;
+    }
+}
+
+// Fonction pour obtenir la tradition monastique d'un personnage
+function getCharacterMonkTradition($characterId) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("
+            SELECT cmt.*, mt.name as tradition_name, mt.description as tradition_description,
+                   mt.level_3_feature, mt.level_6_feature, mt.level_11_feature, mt.level_17_feature
+            FROM character_monk_tradition cmt
+            JOIN monk_traditions mt ON cmt.tradition_id = mt.id
+            WHERE cmt.character_id = ?
+        ");
+        $stmt->execute([$characterId]);
+        return $stmt->fetch();
+    } catch (PDOException $e) {
+        error_log("Erreur getCharacterMonkTradition: " . $e->getMessage());
         return null;
     }
 }
@@ -3070,6 +3332,27 @@ function saveWizardTradition($characterId, $traditionId, $level2Choice = null, $
         return $stmt->execute([$characterId, $traditionId, $level2Choice, $level6Choice, $level10Choice, $level14Choice]);
     } catch (PDOException $e) {
         error_log("Erreur saveWizardTradition: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Fonction pour sauvegarder le choix de tradition monastique
+function saveMonkTradition($characterId, $traditionId, $level3Choice = null, $level6Choice = null, $level11Choice = null, $level17Choice = null) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO character_monk_tradition (character_id, tradition_id, level_3_choice, level_6_choice, level_11_choice, level_17_choice)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+            tradition_id = VALUES(tradition_id),
+            level_3_choice = VALUES(level_3_choice),
+            level_6_choice = VALUES(level_6_choice),
+            level_11_choice = VALUES(level_11_choice),
+            level_17_choice = VALUES(level_17_choice)
+        ");
+        return $stmt->execute([$characterId, $traditionId, $level3Choice, $level6Choice, $level11Choice, $level17Choice]);
+    } catch (PDOException $e) {
+        error_log("Erreur saveMonkTradition: " . $e->getMessage());
         return false;
     }
 }

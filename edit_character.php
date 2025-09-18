@@ -50,7 +50,7 @@ if ($character['race_id']) {
 $classCapabilities = [];
 $raceCapabilities = [];
 
-// Vérifier si c'est un barbare, un barde, un clerc, un druide, un ensorceleur, un guerrier ou un magicien
+// Vérifier si c'est un barbare, un barde, un clerc, un druide, un ensorceleur, un guerrier, un magicien ou un moine
 $isBarbarian = false;
 $isBard = false;
 $isCleric = false;
@@ -58,6 +58,7 @@ $isDruid = false;
 $isSorcerer = false;
 $isFighter = false;
 $isWizard = false;
+$isMonk = false;
 if ($character['class_id']) {
     $stmt = $pdo->prepare("SELECT name FROM classes WHERE id = ?");
     $stmt->execute([$character['class_id']]);
@@ -69,6 +70,7 @@ if ($character['class_id']) {
     $isSorcerer = $class && strpos(strtolower($class['name']), 'ensorceleur') !== false;
     $isFighter = $class && strpos(strtolower($class['name']), 'guerrier') !== false;
     $isWizard = $class && strpos(strtolower($class['name']), 'magicien') !== false;
+    $isMonk = $class && strpos(strtolower($class['name']), 'moine') !== false;
 }
 
 // Capacités de classe basées sur le niveau
@@ -87,6 +89,8 @@ if ($isBarbarian) {
     $classCapabilities = getFighterCapabilities($character['level']);
 } elseif ($isWizard) {
     $classCapabilities = getWizardCapabilities($character['level']);
+} elseif ($isMonk) {
+    $classCapabilities = getMonkCapabilities($character['level']);
 }
 
 // Capacités raciales
@@ -151,6 +155,14 @@ $selectedTradition = null;
 if ($isWizard) {
     $wizardTraditions = getWizardTraditions();
     $selectedTradition = getCharacterWizardTradition($character_id);
+}
+
+// Récupérer les traditions monastiques et le choix actuel
+$monkTraditions = [];
+$selectedMonkTradition = null;
+if ($isMonk) {
+    $monkTraditions = getMonkTraditions();
+    $selectedMonkTradition = getCharacterMonkTradition($character_id);
 }
 
 // Récupérer les améliorations de caractéristiques
@@ -274,6 +286,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $sorcerer_origin_id = isset($_POST['sorcerer_origin_id']) ? (int)$_POST['sorcerer_origin_id'] : null;
         $fighter_archetype_id = isset($_POST['fighter_archetype_id']) ? (int)$_POST['fighter_archetype_id'] : null;
         $wizard_tradition_id = isset($_POST['wizard_tradition_id']) ? (int)$_POST['wizard_tradition_id'] : null;
+        $monk_tradition_id = isset($_POST['monk_tradition_id']) ? (int)$_POST['monk_tradition_id'] : null;
     
     // Améliorations de caractéristiques
     $ability_improvements = [
@@ -419,6 +432,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Sauvegarder la tradition arcanique si c'est un magicien de niveau 2+
             if ($isWizard && $level >= 2 && $wizard_tradition_id) {
                 saveWizardTradition($character_id, $wizard_tradition_id);
+            }
+            
+            // Sauvegarder la tradition monastique si c'est un moine de niveau 3+
+            if ($isMonk && $level >= 3 && $monk_tradition_id) {
+                saveMonkTradition($character_id, $monk_tradition_id);
             }
             
             // Sauvegarder les améliorations de caractéristiques
@@ -1290,6 +1308,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                                    value="<?php echo $tradition['id']; ?>"
                                                    <?php echo ($selectedTradition && $selectedTradition['tradition_id'] == $tradition['id']) ? 'checked' : ''; ?>>
                                             <label class="form-check-label" for="tradition_<?php echo $tradition['id']; ?>">
+                                                <strong><?php echo htmlspecialchars($tradition['name']); ?></strong>
+                                            </label>
+                                        </div>
+                                        <div class="tradition-description mt-2">
+                                            <small class="text-muted"><?php echo nl2br(htmlspecialchars($tradition['description'])); ?></small>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                
+                <!-- Choix de tradition monastique pour les moines de niveau 3+ -->
+                <?php if ($isMonk && $character['level'] >= 3): ?>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5><i class="fas fa-fist-raised me-2"></i>Tradition monastique</h5>
+                            <p class="text-muted">Choisissez votre tradition monastique (obligatoire au niveau 3).</p>
+                            <div class="row">
+                                <?php foreach ($monkTraditions as $tradition): ?>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" 
+                                                   name="monk_tradition_id" 
+                                                   id="monk_tradition_<?php echo $tradition['id']; ?>" 
+                                                   value="<?php echo $tradition['id']; ?>"
+                                                   <?php echo ($selectedMonkTradition && $selectedMonkTradition['tradition_id'] == $tradition['id']) ? 'checked' : ''; ?>>
+                                            <label class="form-check-label" for="monk_tradition_<?php echo $tradition['id']; ?>">
                                                 <strong><?php echo htmlspecialchars($tradition['name']); ?></strong>
                                             </label>
                                         </div>
