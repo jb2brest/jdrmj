@@ -29,8 +29,8 @@ Dans view_campaign_player.php, si un PNG ou un monstre n'est pas visible alors l
 Dans view_campaign_player.php, si un PNG ou un monstre est visible, mais pas identifié alors le pion correspondant doit être affiché mais sans la photo du monstre ou du png 
 Dans view_campaign_player.php, si un PNG ou un monstre est visible etidentifié alors le pion correspondant doit être affiché avec la photo du monstre ou du png 
 
-Dans view_scene.php, la photo de profil des PNG ne fonctionne pas bien.
-Exemple : http://localhost/jdrmj_test/view_scene.php?id=7
+Dans view_scene.php, si elle existe, il faut utiliser l'image du monstre.
+Dans view_scene.php, les monstres sont comme les PNJ, ils peuvent être identifiés ou pas. 
 
 Dans view_campaign.php, un joueur ne doit pas voir la liste des lieux. 
 Dans view_campaign.php, un joueur accepté pour la campagne peut rejoindre la partie en cliquant sur "Rejoindre". 

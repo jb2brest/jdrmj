@@ -29,9 +29,18 @@ if (isAdmin()) {
     $stmt = $pdo->prepare("SELECT * FROM campaigns WHERE id = ? AND (dm_id = ? OR is_public = 1)");
     $stmt->execute([$campaign_id, $user_id]);
 } else {
-    // Les joueurs peuvent voir seulement les campagnes publiques
-    $stmt = $pdo->prepare("SELECT * FROM campaigns WHERE id = ? AND is_public = 1");
-    $stmt->execute([$campaign_id]);
+    // Les joueurs peuvent voir les campagnes publiques ET les campagnes où ils sont membres
+    $stmt = $pdo->prepare("
+        SELECT c.* FROM campaigns c 
+        WHERE c.id = ? AND (
+            c.is_public = 1 
+            OR EXISTS (
+                SELECT 1 FROM campaign_members cm 
+                WHERE cm.campaign_id = c.id AND cm.user_id = ?
+            )
+        )
+    ");
+    $stmt->execute([$campaign_id, $user_id]);
 }
 $campaign = $stmt->fetch();
 
@@ -579,13 +588,9 @@ if (!empty($places)) {
                         <div class="mt-4 p-3 border rounded bg-success bg-opacity-10">
                             <h6 class="mb-3 text-success"><i class="fas fa-check-circle me-2"></i>Vous êtes membre de cette campagne</h6>
                             <p class="mb-3">Vous pouvez maintenant rejoindre la partie et accéder à tous les contenus de la campagne.</p>
-                            <?php if (!empty($places)): ?>
-                                <a href="view_scene_player.php?id=<?php echo (int)$places[0]['id']; ?>" class="btn btn-success">
-                                    <i class="fas fa-play me-2"></i>Rejoindre la partie
-                                </a>
-                            <?php else: ?>
-                                <p class="text-muted mb-0">Aucun lieu créé pour l'instant. Attendez que le MJ crée un lieu.</p>
-                            <?php endif; ?>
+                            <a href="view_scene_player.php" class="btn btn-success">
+                                <i class="fas fa-play me-2"></i>Rejoindre la partie
+                            </a>
                         </div>
                         <?php elseif (!$is_member && !$user_application): ?>
                         <!-- Formulaire de candidature pour les joueurs -->

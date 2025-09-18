@@ -84,3 +84,4 @@ ALTER TABLE monster_equipment ADD INDEX idx_magical_item_id (magical_item_id);
 
 
 
+

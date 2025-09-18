@@ -6,23 +6,49 @@ $current_page = "view_scene_player";
 
 requireLogin();
 
-if (!isset($_GET['id'])) {
-    header('Location: campaigns.php');
-    exit();
-}
-
 $user_id = $_SESSION['user_id'];
-$place_id = (int)$_GET['id'];
 
-// Charger le lieu
-$stmt = $pdo->prepare("SELECT p.*, c.title as campaign_title, c.dm_id FROM places p JOIN campaigns c ON p.campaign_id = c.id WHERE p.id = ?");
-$stmt->execute([$place_id]);
+// Trouver le lieu où se trouve le joueur
+$stmt = $pdo->prepare("
+    SELECT p.*, c.title as campaign_title, c.dm_id, c.id as campaign_id
+    FROM places p 
+    JOIN campaigns c ON p.campaign_id = c.id 
+    JOIN place_players pp ON p.id = pp.place_id 
+    WHERE pp.player_id = ?
+    LIMIT 1
+");
+$stmt->execute([$user_id]);
 $place = $stmt->fetch();
 
 if (!$place) {
-    header('Location: campaigns.php');
+    // Le joueur n'est dans aucun lieu, afficher un message informatif
+    $page_title = "Aucun lieu assigné";
+    include 'includes/layout.php';
+    ?>
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-map-marker-alt fa-3x text-muted mb-3"></i>
+                        <h4 class="card-title">Aucun lieu assigné</h4>
+                        <p class="card-text text-muted">
+                            Vous n'êtes actuellement assigné à aucun lieu. 
+                            Le maître du jeu doit vous ajouter à un lieu pour que vous puissiez y accéder.
+                        </p>
+                        <a href="campaigns.php" class="btn btn-primary">
+                            <i class="fas fa-arrow-left me-2"></i>Retour aux campagnes
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php
     exit();
 }
+
+$place_id = (int)$place['id'];
 
 // Vérifier que l'utilisateur est membre de la campagne
 $stmt = $pdo->prepare("SELECT cm.role FROM campaign_members cm WHERE cm.campaign_id = ? AND cm.user_id = ?");
@@ -828,9 +854,40 @@ function updateMonstersList(monsters) {
     // Pour l'instant, on se contente de la mise à jour des pions
 }
 
+// Variable pour stocker l'ID du lieu actuel
+let currentPlaceId = <?php echo (int)$place_id; ?>;
+
+// Fonction pour vérifier si le joueur a changé de lieu
+function checkPlayerLocationChange() {
+    fetch('check_player_location.php')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                if (!data.has_location) {
+                    // Le joueur n'est plus dans aucun lieu
+                    console.log('Joueur retiré de tous les lieux, redirection...');
+                    window.location.href = 'campaigns.php';
+                } else if (data.place_id !== currentPlaceId) {
+                    // Le joueur a changé de lieu
+                    console.log('Joueur déplacé vers un nouveau lieu, rechargement de la page...');
+                    window.location.reload();
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors de la vérification de la localisation:', error);
+        });
+}
+
+// Vérifier le changement de lieu toutes les 3 secondes
+let locationCheckInterval = setInterval(checkPlayerLocationChange, 3000);
+
 // Arrêter la mise à jour automatique quand la page se ferme
 window.addEventListener('beforeunload', function() {
     stopAutoUpdate();
+    if (locationCheckInterval) {
+        clearInterval(locationCheckInterval);
+    }
 });
 </script>
 

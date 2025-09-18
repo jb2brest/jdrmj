@@ -106,9 +106,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
             $chk->execute([$character_id, $dm_id]);
             $char = $chk->fetch();
             if ($char) {
+                // IMPORTANT: Retirer ce personnage de tous les autres lieux de la campagne
+                // Un personnage ne peut pas se trouver dans deux lieux à la fois
+                $stmt = $pdo->prepare("
+                    DELETE FROM place_npcs 
+                    WHERE npc_character_id = ? AND place_id IN (
+                        SELECT id FROM places WHERE campaign_id = ?
+                    )
+                ");
+                $stmt->execute([$character_id, $place['campaign_id']]);
+                
+                // Maintenant ajouter le personnage au nouveau lieu
                 $ins = $pdo->prepare("INSERT INTO place_npcs (place_id, name, npc_character_id) VALUES (?, ?, ?)");
                 $ins->execute([$place_id, $char['name'], $character_id]);
-                $success_message = "PNJ (personnage du MJ) ajouté à la lieu.";
+                $success_message = "PNJ (personnage du MJ) ajouté au lieu (retiré automatiquement des autres lieux).";
                 
                 // Recharger les PNJ
                 $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, c.profile_photo AS character_profile_photo FROM place_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.place_id = ? ORDER BY sn.name ASC");
@@ -135,9 +146,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
             $stmt = $pdo->prepare("SELECT 1 FROM place_players WHERE place_id = ? AND player_id = ?");
             $stmt->execute([$place_id, $player_id]);
             if (!$stmt->fetch()) {
+                // IMPORTANT: Retirer le joueur de tous les autres lieux de la campagne
+                // Un personnage ne peut pas se trouver dans deux lieux à la fois
+                $stmt = $pdo->prepare("
+                    DELETE FROM place_players 
+                    WHERE player_id = ? AND place_id IN (
+                        SELECT id FROM places WHERE campaign_id = ?
+                    )
+                ");
+                $stmt->execute([$player_id, $place['campaign_id']]);
+                
+                // Maintenant ajouter le joueur au nouveau lieu
                 $stmt = $pdo->prepare("INSERT INTO place_players (place_id, player_id, character_id) VALUES (?, ?, ?)");
                 $stmt->execute([$place_id, $player_id, $character_id]);
-                $success_message = "Joueur ajouté au lieu.";
+                $success_message = "Joueur ajouté au lieu (retiré automatiquement des autres lieux).";
                 
                 // Recharger les joueurs
                 $stmt = $pdo->prepare("SELECT sp.player_id, u.username, ch.id AS character_id, ch.name AS character_name, ch.profile_photo, ch.class_id FROM place_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.place_id = ? ORDER BY u.username ASC");

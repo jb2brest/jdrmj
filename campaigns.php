@@ -97,16 +97,20 @@ if (isAdmin()) {
     $stmt->execute([$user_id]);
     $page_title = 'Mes Campagnes';
 } else {
-    // Les joueurs voient seulement les campagnes publiques
+    // Les joueurs voient les campagnes publiques ET les campagnes où ils sont membres
     $stmt = $pdo->prepare("
         SELECT c.*, u.username as dm_name 
         FROM campaigns c 
         LEFT JOIN users u ON c.dm_id = u.id 
         WHERE c.is_public = 1 
+        OR EXISTS (
+            SELECT 1 FROM campaign_members cm 
+            WHERE cm.campaign_id = c.id AND cm.user_id = ?
+        )
         ORDER BY c.created_at DESC
     ");
-    $stmt->execute();
-    $page_title = 'Campagnes Publiques';
+    $stmt->execute([$user_id]);
+    $page_title = 'Mes Campagnes';
 }
 $campaigns = $stmt->fetchAll();
 $current_page = "campaigns";
