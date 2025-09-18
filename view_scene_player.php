@@ -133,6 +133,79 @@ $placeMonsters = $stmt->fetchAll();
 include 'includes/layout.php';
 ?>
 
+<style>
+/* Styles personnalisés pour les dés */
+.dice-btn {
+    transition: all 0.3s ease;
+    min-width: 60px;
+}
+
+.dice-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.dice-btn.btn-primary, .dice-btn.btn-success {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+#dice-results {
+    transition: all 0.3s ease;
+}
+
+#dice-results .badge {
+    font-size: 1.1em;
+    padding: 0.5em 0.75em;
+    margin: 0.2em;
+    animation: bounceIn 0.5s ease;
+}
+
+@keyframes bounceIn {
+    0% { transform: scale(0.3); opacity: 0; }
+    50% { transform: scale(1.05); }
+    70% { transform: scale(0.9); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.dice-rolling {
+    animation: spin 0.1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Amélioration de l'apparence des résultats */
+.alert {
+    border-radius: 0.5rem;
+    border: none;
+    font-weight: 500;
+}
+
+.alert-success {
+    background: linear-gradient(135deg, #d4edda, #c3e6cb);
+    color: #155724;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+    color: #721c24;
+}
+
+.alert-warning {
+    background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+    color: #856404;
+}
+</style>
+
 <div class="container mt-4">
     <!-- En-tête du lieu -->
     <div class="row mb-4">
@@ -147,6 +220,76 @@ include 'includes/layout.php';
                     <a href="view_campaign.php?id=<?php echo (int)$place['campaign_id']; ?>" class="btn btn-outline-primary">
                         <i class="fas fa-arrow-left me-2"></i>Retour à la campagne
                     </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Jets de dés -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-dice me-2"></i>Jets de dés</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Sélection des dés -->
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Choisir un dé :</h6>
+                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                <button type="button" class="btn btn-outline-primary dice-btn" data-sides="4" title="Dé à 4 faces">
+                                    <i class="fas fa-dice-d4"></i> D4
+                                </button>
+                                <button type="button" class="btn btn-outline-primary dice-btn" data-sides="6" title="Dé à 6 faces">
+                                    <i class="fas fa-dice"></i> D6
+                                </button>
+                                <button type="button" class="btn btn-outline-primary dice-btn" data-sides="8" title="Dé à 8 faces">
+                                    <i class="fas fa-dice-d8"></i> D8
+                                </button>
+                                <button type="button" class="btn btn-outline-primary dice-btn" data-sides="10" title="Dé à 10 faces">
+                                    <i class="fas fa-dice-d10"></i> D10
+                                </button>
+                                <button type="button" class="btn btn-outline-primary dice-btn" data-sides="12" title="Dé à 12 faces">
+                                    <i class="fas fa-dice-d12"></i> D12
+                                </button>
+                                <button type="button" class="btn btn-outline-primary dice-btn" data-sides="20" title="Dé à 20 faces">
+                                    <i class="fas fa-dice-d20"></i> D20
+                                </button>
+                                <button type="button" class="btn btn-outline-success dice-btn" data-sides="100" title="Dé percentille">
+                                    <i class="fas fa-percentage"></i> D100
+                                </button>
+                            </div>
+                            
+                            <!-- Options de lancer -->
+                            <div class="mb-3">
+                                <label for="dice-quantity" class="form-label">Nombre de dés :</label>
+                                <select class="form-select" id="dice-quantity" style="max-width: 100px;">
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                    <option value="6">6</option>
+                                </select>
+                            </div>
+                            
+                            <button type="button" class="btn btn-primary" id="roll-dice-btn" disabled>
+                                <i class="fas fa-play me-2"></i>Lancer les dés
+                            </button>
+                        </div>
+                        
+                        <!-- Zone de résultats -->
+                        <div class="col-md-6">
+                            <h6 class="mb-3">Résultats :</h6>
+                            <div id="dice-results" class="border rounded p-3 bg-light" style="min-height: 120px;">
+                                <div class="text-muted text-center">
+                                    <i class="fas fa-dice fa-2x mb-2"></i>
+                                    <p class="mb-0">Sélectionnez un dé et lancez !</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1050,6 +1193,198 @@ window.addEventListener('beforeunload', function() {
     }
     if (participantsUpdateInterval) {
         clearInterval(participantsUpdateInterval);
+    }
+});
+
+// ===== LOGIQUE DES DÉS =====
+
+let selectedDiceSides = null;
+
+// Gestion de la sélection des dés
+document.addEventListener('DOMContentLoaded', function() {
+    const diceButtons = document.querySelectorAll('.dice-btn');
+    const rollButton = document.getElementById('roll-dice-btn');
+    const resultsDiv = document.getElementById('dice-results');
+    
+    // Ajouter les événements aux boutons de dés
+    diceButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Retirer la sélection précédente
+            diceButtons.forEach(btn => {
+                btn.classList.remove('btn-primary', 'btn-success');
+                btn.classList.add('btn-outline-primary', 'btn-outline-success');
+            });
+            
+            // Sélectionner le dé actuel
+            selectedDiceSides = parseInt(this.getAttribute('data-sides'));
+            this.classList.remove('btn-outline-primary', 'btn-outline-success');
+            
+            if (selectedDiceSides === 100) {
+                this.classList.add('btn-success');
+            } else {
+                this.classList.add('btn-primary');
+            }
+            
+            // Activer le bouton de lancer
+            rollButton.disabled = false;
+            
+            // Mettre à jour l'affichage
+            updateDiceSelectionDisplay();
+        });
+    });
+    
+    // Gestion du lancer de dés
+    rollButton.addEventListener('click', function() {
+        if (selectedDiceSides) {
+            rollDice();
+        }
+    });
+});
+
+// Fonction pour mettre à jour l'affichage de la sélection
+function updateDiceSelectionDisplay() {
+    const resultsDiv = document.getElementById('dice-results');
+    const quantity = document.getElementById('dice-quantity').value;
+    
+    if (selectedDiceSides) {
+        resultsDiv.innerHTML = `
+            <div class="text-center">
+                <i class="fas fa-dice-${getDiceIcon(selectedDiceSides)} fa-2x mb-2 text-primary"></i>
+                <p class="mb-0"><strong>${quantity} dé${quantity > 1 ? 's' : ''} à ${selectedDiceSides} face${selectedDiceSides > 1 ? 's' : ''}</strong></p>
+                <small class="text-muted">Prêt à lancer !</small>
+            </div>
+        `;
+    }
+}
+
+// Fonction pour obtenir l'icône du dé
+function getDiceIcon(sides) {
+    switch(sides) {
+        case 4: return 'd4';
+        case 6: return '';
+        case 8: return 'd8';
+        case 10: return 'd10';
+        case 12: return 'd12';
+        case 20: return 'd20';
+        case 100: return '';
+        default: return '';
+    }
+}
+
+// Fonction pour lancer les dés
+function rollDice() {
+    const quantity = parseInt(document.getElementById('dice-quantity').value);
+    const resultsDiv = document.getElementById('dice-results');
+    const rollButton = document.getElementById('roll-dice-btn');
+    
+    // Désactiver le bouton pendant l'animation
+    rollButton.disabled = true;
+    rollButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Lancement...';
+    
+    // Animation de lancer
+    let animationCount = 0;
+    const animationInterval = setInterval(() => {
+        animationCount++;
+        const randomResults = [];
+        for (let i = 0; i < quantity; i++) {
+            randomResults.push(Math.floor(Math.random() * selectedDiceSides) + 1);
+        }
+        
+        resultsDiv.innerHTML = `
+            <div class="text-center">
+                <i class="fas fa-dice-${getDiceIcon(selectedDiceSides)} fa-2x mb-2 text-warning"></i>
+                <div class="mb-2">
+                    ${randomResults.map(result => `<span class="badge bg-warning text-dark me-1">${result}</span>`).join('')}
+                </div>
+                <small class="text-muted">Lancement...</small>
+            </div>
+        `;
+        
+        if (animationCount >= 10) {
+            clearInterval(animationInterval);
+            showFinalResults(randomResults);
+        }
+    }, 100);
+}
+
+// Fonction pour afficher les résultats finaux
+function showFinalResults(results) {
+    const resultsDiv = document.getElementById('dice-results');
+    const rollButton = document.getElementById('roll-dice-btn');
+    const total = results.reduce((sum, result) => sum + result, 0);
+    const maxResult = Math.max(...results);
+    const minResult = Math.min(...results);
+    
+    // Réactiver le bouton
+    rollButton.disabled = false;
+    rollButton.innerHTML = '<i class="fas fa-play me-2"></i>Lancer les dés';
+    
+    // Afficher les résultats
+    let resultsHtml = `
+        <div class="text-center">
+            <i class="fas fa-dice-${getDiceIcon(selectedDiceSides)} fa-2x mb-2 text-success"></i>
+            <h5 class="text-success mb-3">Résultats du lancer</h5>
+    `;
+    
+    // Afficher chaque résultat
+    resultsHtml += '<div class="mb-3">';
+    results.forEach((result, index) => {
+        let badgeClass = 'bg-primary';
+        if (result === selectedDiceSides) {
+            badgeClass = 'bg-success'; // Critique
+        } else if (result === 1 && selectedDiceSides === 20) {
+            badgeClass = 'bg-danger'; // Échec critique (uniquement sur D20)
+        }
+        resultsHtml += `<span class="badge ${badgeClass} me-1 fs-6">${result}</span>`;
+    });
+    resultsHtml += '</div>';
+    
+    // Statistiques
+    resultsHtml += `
+        <div class="row text-center">
+            <div class="col-4">
+                <small class="text-muted">Total</small><br>
+                <strong class="text-primary">${total}</strong>
+            </div>
+            <div class="col-4">
+                <small class="text-muted">Max</small><br>
+                <strong class="text-success">${maxResult}</strong>
+            </div>
+            <div class="col-4">
+                <small class="text-muted">Min</small><br>
+                <strong class="text-danger">${minResult}</strong>
+            </div>
+        </div>
+    `;
+    
+    // Message spécial pour les critiques (uniquement sur D20)
+    if (selectedDiceSides === 20) {
+        if (results.includes(20) && results.includes(1)) {
+            resultsHtml += '<div class="alert alert-warning mt-2 mb-0"><small><i class="fas fa-exclamation-triangle me-1"></i>Critique et échec critique !</small></div>';
+        } else if (results.includes(20)) {
+            resultsHtml += '<div class="alert alert-success mt-2 mb-0"><small><i class="fas fa-star me-1"></i>Critique !</small></div>';
+        } else if (results.includes(1)) {
+            resultsHtml += '<div class="alert alert-danger mt-2 mb-0"><small><i class="fas fa-times me-1"></i>Échec critique !</small></div>';
+        }
+    } else if (results.includes(selectedDiceSides)) {
+        // Critique sur les autres dés (mais pas d'échec critique)
+        resultsHtml += '<div class="alert alert-success mt-2 mb-0"><small><i class="fas fa-star me-1"></i>Critique !</small></div>';
+    }
+    
+    resultsHtml += '</div>';
+    resultsDiv.innerHTML = resultsHtml;
+    
+    // Ajouter un effet sonore visuel (optionnel)
+    resultsDiv.style.animation = 'pulse 0.5s ease-in-out';
+    setTimeout(() => {
+        resultsDiv.style.animation = '';
+    }, 500);
+}
+
+// Mettre à jour l'affichage quand la quantité change
+document.getElementById('dice-quantity').addEventListener('change', function() {
+    if (selectedDiceSides) {
+        updateDiceSelectionDisplay();
     }
 });
 </script>
