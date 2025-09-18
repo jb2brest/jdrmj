@@ -966,7 +966,7 @@ foreach ($allScenes as $s) {
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <!-- Sélection des dés -->
+                        <!-- Sélection des dés et résultats -->
                         <div class="col-md-6">
                             <h6 class="mb-3">Choisir un dé :</h6>
                             <div class="d-flex flex-wrap gap-2 mb-3">
@@ -1017,26 +1017,26 @@ foreach ($allScenes as $s) {
                                     </label>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <!-- Zone de résultats -->
-                        <div class="col-md-6">
-                            <h6 class="mb-3">Résultats :</h6>
-                            <div id="dice-results" class="border rounded p-3 bg-light" style="min-height: 120px;">
-                                <div class="text-muted text-center">
-                                    <i class="fas fa-dice fa-2x mb-2"></i>
-                                    <p class="mb-0">Sélectionnez un dé et lancez !</p>
+                            
+                            <!-- Zone de résultats sous le bouton -->
+                            <div class="mt-3">
+                                <h6 class="mb-3">Résultats :</h6>
+                                <div id="dice-results" class="border rounded p-3 bg-light" style="min-height: 120px;">
+                                    <div class="text-muted text-center">
+                                        <i class="fas fa-dice fa-2x mb-2"></i>
+                                        <p class="mb-0">Sélectionnez un dé et lancez !</p>
+                                    </div>
                                 </div>
                             </div>
-                            
-                            <!-- Historique des jets -->
-                            <div class="mt-3">
-                                <h6 class="mb-2">Historique des jets (50 derniers) :</h6>
-                                <div id="dice-history" class="border rounded p-2 bg-white" style="max-height: 300px; overflow-y: auto;">
-                                    <div class="text-muted text-center py-3">
-                                        <i class="fas fa-history fa-lg mb-2"></i>
-                                        <p class="mb-0 small">Chargement de l'historique...</p>
-                                    </div>
+                        </div>
+                        
+                        <!-- Historique des jets -->
+                        <div class="col-md-6">
+                            <h6 class="mb-2">Historique des jets (50 derniers) :</h6>
+                            <div id="dice-history" class="border rounded p-2 bg-white" style="max-height: 400px; overflow-y: auto;">
+                                <div class="text-muted text-center py-3">
+                                    <i class="fas fa-history fa-lg mb-2"></i>
+                                    <p class="mb-0 small">Chargement de l'historique...</p>
                                 </div>
                             </div>
                         </div>
@@ -1595,9 +1595,6 @@ foreach ($allScenes as $s) {
                                         <div class="d-flex gap-1">
                                             <a href="view_monster_sheet.php?id=<?php echo (int)$monster['id']; ?>&campaign_id=<?php echo (int)$place['campaign_id']; ?>" class="btn btn-sm btn-outline-danger" title="Voir la feuille du monstre" target="_blank">
                                                 <i class="fas fa-dragon"></i>
-                                            </a>
-                                            <a href="bestiary.php?search=<?php echo urlencode($monster['name']); ?>" class="btn btn-sm btn-outline-primary" title="Voir dans le bestiaire" target="_blank">
-                                                <i class="fas fa-book"></i>
                                             </a>
                                             <?php if ($isOwnerDM): ?>
                                                 <form method="POST" class="d-inline" onsubmit="return confirm('<?php echo ($monster['is_identified'] ? 'Désidentifier' : 'Identifier'); ?> <?php echo htmlspecialchars($monster['name']); ?> pour les joueurs ?');">

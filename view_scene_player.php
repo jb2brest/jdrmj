@@ -234,7 +234,7 @@ include 'includes/layout.php';
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        <!-- Sélection des dés -->
+                        <!-- Sélection des dés et résultats -->
                         <div class="col-md-6">
                             <h6 class="mb-3">Choisir un dé :</h6>
                             <div class="d-flex flex-wrap gap-2 mb-3">
@@ -277,26 +277,26 @@ include 'includes/layout.php';
                             <button type="button" class="btn btn-primary" id="roll-dice-btn" disabled>
                                 <i class="fas fa-play me-2"></i>Lancer les dés
                             </button>
-                        </div>
-                        
-                        <!-- Zone de résultats -->
-                        <div class="col-md-6">
-                            <h6 class="mb-3">Résultats :</h6>
-                            <div id="dice-results" class="border rounded p-3 bg-light" style="min-height: 120px;">
-                                <div class="text-muted text-center">
-                                    <i class="fas fa-dice fa-2x mb-2"></i>
-                                    <p class="mb-0">Sélectionnez un dé et lancez !</p>
+                            
+                            <!-- Zone de résultats sous le bouton -->
+                            <div class="mt-3">
+                                <h6 class="mb-3">Résultats :</h6>
+                                <div id="dice-results" class="border rounded p-3 bg-light" style="min-height: 120px;">
+                                    <div class="text-muted text-center">
+                                        <i class="fas fa-dice fa-2x mb-2"></i>
+                                        <p class="mb-0">Sélectionnez un dé et lancez !</p>
+                                    </div>
                                 </div>
                             </div>
-                            
-                            <!-- Historique des jets -->
-                            <div class="mt-3">
-                                <h6 class="mb-2">Historique des jets (50 derniers) :</h6>
-                                <div id="dice-history" class="border rounded p-2 bg-white" style="max-height: 300px; overflow-y: auto;">
-                                    <div class="text-muted text-center py-3">
-                                        <i class="fas fa-history fa-lg mb-2"></i>
-                                        <p class="mb-0 small">Chargement de l'historique...</p>
-                                    </div>
+                        </div>
+                        
+                        <!-- Historique des jets -->
+                        <div class="col-md-6">
+                            <h6 class="mb-2">Historique des jets (50 derniers) :</h6>
+                            <div id="dice-history" class="border rounded p-2 bg-white" style="max-height: 400px; overflow-y: auto;">
+                                <div class="text-muted text-center py-3">
+                                    <i class="fas fa-history fa-lg mb-2"></i>
+                                    <p class="mb-0 small">Chargement de l'historique...</p>
                                 </div>
                             </div>
                         </div>
@@ -1540,4 +1540,5 @@ function saveDiceRoll(results, total, maxResult, minResult) {
 }
 </script>
 
-<?php include 'includes/footer.php'; ?>
+</body>
+</html>

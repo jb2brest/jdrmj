@@ -18,8 +18,10 @@ Répertoire cible : /domains/robindesbriques.fr/public_html/jdrmj
 
 ssh u839591438@robindesbriques.fr
 
-La position des pions n'est pas la bonne dans view_campaign_player.php.
-Il faut utiliser exactement le même système de positionnement que dans view_scene.php pour que les joueurs voient ce que souhaite le Maitre du jeu.
+Dans view_scene.php, pour représenter le pion d'un monstre visible et identifié, il faut utiliser l'image du monstre qui est affichée dans le bestiaire.
+Dans view_scene_player.php., dans la liste des participants, il faut utiliser la même image pour les monstres et les PNJ que les images utilisées dans view_scene.php,
+
+Dans view_scene_player.php, dans la zone "Jets de dés", il faut déplacer la zone "Résultats:" sous le bouton "Lancer les dés" en laissant la zone "Historique des jets (50 derniers) :" sur la droite.
 
 Remplace view_campaign_player.php par view_scene_player.php.
 Dans view_scene_player.php, le joueur observe le lieu où est placé son personnage.

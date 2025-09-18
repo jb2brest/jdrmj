@@ -278,39 +278,148 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        /* Styles personnalisés pour les dés */
+        .dice-btn {
+            transition: all 0.3s ease;
+            min-width: 60px;
+        }
+
+        .dice-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .dice-btn.btn-brown, .dice-btn.btn-success {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        #dice-results {
+            transition: all 0.3s ease;
+        }
+
+        #dice-results .badge {
+            font-size: 1.1em;
+            padding: 0.5em 0.75em;
+            margin: 0.2em;
+            animation: bounceIn 0.5s ease;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .dice-rolling {
+            animation: spin 0.1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Amélioration de l'apparence des résultats */
+        .alert {
+            border-radius: 0.5rem;
+            border: none;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, #d4edda, #c3e6cb);
+            color: #155724;
+        }
+
+        .alert-danger {
+            background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+            color: #721c24;
+        }
+
+        .alert-warning {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            color: #856404;
+        }
+
+        /* Styles pour les barres de points de vie */
+        .progress {
+            border-radius: 3px;
+            background-color: rgba(0,0,0,0.1);
+        }
+
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+
+        .progress-bar.bg-success {
+            background-color: #28a745 !important;
+        }
+
+        .progress-bar.bg-warning {
+            background-color: #ffc107 !important;
+        }
+
+        .progress-bar.bg-brown {
+            background-color: #8B4513 !important;
+        }
+
+        /* Animation pour les barres de PV */
+        .progress-bar {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background-image: linear-gradient(
+                -45deg,
+                rgba(255, 255, 255, .2) 25%,
+                transparent 25%,
+                transparent 50%,
+                rgba(255, 255, 255, .2) 50%,
+                rgba(255, 255, 255, .2) 75%,
+                transparent 75%,
+                transparent
+            );
+            background-size: 1rem 1rem;
+            animation: progress-bar-stripes 1s linear infinite;
+        }
+
+        @keyframes progress-bar-stripes {
+            0% {
+                background-position-x: 1rem;
+            }
+        }
+
+        /* Styles spécifiques pour la fiche de monstre */
         .monster-header {
-            background: linear-gradient(135deg, #8B0000, #DC143C);
+            background: linear-gradient(135deg, #8B4513, #A0522D);
             color: white;
             padding: 2rem 0;
             margin-bottom: 2rem;
         }
-        .hp-bar {
-            height: 30px;
-            background-color: #dc3545;
-            border-radius: 15px;
-            overflow: hidden;
-            position: relative;
-        }
-        .hp-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #dc3545, #ffc107, #28a745);
-            transition: width 0.3s ease;
-        }
-        .hp-text {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-weight: bold;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
-        }
+        
         .stat-card {
-            border-left: 4px solid #dc3545;
+            border-left: 4px solid #8B4513;
         }
+        
         .action-btn {
             margin: 0.25rem;
         }
+        
         .monster-image {
             max-width: 150px;
             max-height: 150px;
@@ -319,15 +428,54 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
             border: 3px solid rgba(255, 255, 255, 0.3);
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
         }
+        
         .monster-image.bg-secondary {
             width: 150px;
             height: 150px;
             border-radius: 10px;
             border: 3px solid rgba(255, 255, 255, 0.3);
         }
+
+        /* Classes personnalisées marron */
+        .btn-brown {
+            background-color: #8B4513;
+            border-color: #8B4513;
+            color: white;
+        }
+
+        .btn-brown:hover {
+            background-color: #A0522D;
+            border-color: #A0522D;
+            color: white;
+        }
+
+        .btn-outline-brown {
+            color: #8B4513;
+            border-color: #8B4513;
+        }
+
+        .btn-outline-brown:hover {
+            background-color: #8B4513;
+            border-color: #8B4513;
+            color: white;
+        }
+
+        .bg-brown {
+            background-color: #8B4513 !important;
+        }
+
+        .text-brown {
+            color: #8B4513 !important;
+        }
+
+        .border-brown {
+            border-color: #8B4513 !important;
+        }
     </style>
 </head>
 <body>
+    <?php include 'includes/navbar.php'; ?>
+    
     <div class="monster-header">
         <div class="container">
             <div class="row align-items-center">
@@ -388,16 +536,39 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
             <!-- Points de Vie -->
             <div class="col-md-6 mb-4">
                 <div class="card stat-card">
-                    <div class="card-header bg-danger text-white">
+                    <div class="card-header bg-brown text-white">
                         <h5 class="mb-0">
                             <i class="fas fa-heart me-2"></i>Points de Vie
                         </h5>
                     </div>
                     <div class="card-body">
-                        <div class="hp-bar mb-3">
-                            <div class="hp-fill" style="width: <?php echo ($monster['current_hit_points'] / $monster['max_hit_points']) * 100; ?>%"></div>
-                            <div class="hp-text">
-                                <?php echo (int)$monster['current_hit_points']; ?> / <?php echo (int)$monster['max_hit_points']; ?>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="text-muted">
+                                    <i class="fas fa-heart text-brown me-1"></i>PV
+                                </small>
+                                <small class="text-muted">
+                                    <?php echo (int)$monster['current_hit_points']; ?> / <?php echo (int)$monster['max_hit_points']; ?>
+                                </small>
+                            </div>
+                            <?php 
+                            $hp_percentage = ($monster['current_hit_points'] / $monster['max_hit_points']) * 100;
+                            $hp_class = 'bg-success';
+                            if ($hp_percentage <= 25) {
+                                $hp_class = 'bg-brown';
+                            } elseif ($hp_percentage <= 50) {
+                                $hp_class = 'bg-warning';
+                            }
+                            ?>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar <?php echo $hp_class; ?>" 
+                                     role="progressbar" 
+                                     style="width: <?php echo $hp_percentage; ?>%"
+                                     aria-valuenow="<?php echo $hp_percentage; ?>" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100"
+                                     title="<?php echo (int)$monster['current_hit_points']; ?> / <?php echo (int)$monster['max_hit_points']; ?> PV">
+                                </div>
                             </div>
                         </div>
                         
@@ -408,7 +579,7 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
                                     <input type="hidden" name="action" value="damage">
                                     <div class="input-group">
                                         <input type="number" name="damage" class="form-control" placeholder="Dégâts" min="1" required>
-                                        <button type="submit" class="btn btn-danger">
+                                        <button type="submit" class="btn btn-brown">
                                             <i class="fas fa-sword"></i>
                                         </button>
                                     </div>
@@ -445,7 +616,7 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
             <!-- Statistiques -->
             <div class="col-md-6 mb-4">
                 <div class="card stat-card">
-                    <div class="card-header bg-primary text-white">
+                    <div class="card-header bg-brown text-white">
                         <h5 class="mb-0">
                             <i class="fas fa-shield-alt me-2"></i>Statistiques
                         </h5>
@@ -454,11 +625,11 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
                         <div class="row">
                             <div class="col-6">
                                 <p><strong>Classe d'Armure :</strong></p>
-                                <h4 class="text-primary"><?php echo (int)$monster['armor_class']; ?></h4>
+                                <h4 class="text-brown"><?php echo (int)$monster['armor_class']; ?></h4>
                             </div>
                             <div class="col-6">
                                 <p><strong>Points de Vie Max :</strong></p>
-                                <h4 class="text-danger"><?php echo (int)$monster['max_hit_points']; ?></h4>
+                                <h4 class="text-brown"><?php echo (int)$monster['max_hit_points']; ?></h4>
                             </div>
                         </div>
                         <hr>
@@ -573,7 +744,7 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
                                                     </small>
                                                 </div>
                                                 <div class="mt-3">
-                                                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                    <button type="button" class="btn btn-sm btn-outline-brown" 
                                                             data-bs-toggle="modal" 
                                                             data-bs-target="#transferModal" 
                                                             data-item-id="<?php echo $item['id']; ?>"
@@ -604,8 +775,8 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
                                 <div class="row">
                                     <?php foreach ($monsterPoisons as $poison): ?>
                                         <div class="col-md-6 mb-3">
-                                            <div class="card h-100 border-danger">
-                                                <div class="card-header d-flex justify-content-between align-items-center bg-danger text-white">
+                                            <div class="card h-100 border-brown">
+                                                <div class="card-header d-flex justify-content-between align-items-center bg-brown text-white">
                                                     <h6 class="mb-0">
                                                         <i class="fas fa-skull-crossbones me-1"></i>
                                                         <?php echo htmlspecialchars($poison['poison_nom']); ?>
@@ -636,7 +807,7 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
                                                     </div>
                                                 </div>
                                                 <div class="card-footer">
-                                                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                    <button type="button" class="btn btn-sm btn-outline-brown" 
                                                             data-bs-toggle="modal" 
                                                             data-bs-target="#transferModal" 
                                                             data-item-id="<?php echo $poison['id']; ?>"
@@ -670,22 +841,22 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-3 mb-2">
-                                <button type="button" class="btn btn-danger w-100" onclick="quickDamage(1)">
+                                <button type="button" class="btn btn-brown w-100" onclick="quickDamage(1)">
                                     <i class="fas fa-sword me-1"></i>-1 PV
                                 </button>
                             </div>
                             <div class="col-md-3 mb-2">
-                                <button type="button" class="btn btn-danger w-100" onclick="quickDamage(5)">
+                                <button type="button" class="btn btn-brown w-100" onclick="quickDamage(5)">
                                     <i class="fas fa-sword me-1"></i>-5 PV
                                 </button>
                             </div>
                             <div class="col-md-3 mb-2">
-                                <button type="button" class="btn btn-danger w-100" onclick="quickDamage(10)">
+                                <button type="button" class="btn btn-brown w-100" onclick="quickDamage(10)">
                                     <i class="fas fa-sword me-1"></i>-10 PV
                                 </button>
                             </div>
                             <div class="col-md-3 mb-2">
-                                <button type="button" class="btn btn-danger w-100" onclick="quickDamage(20)">
+                                <button type="button" class="btn btn-brown w-100" onclick="quickDamage(20)">
                                     <i class="fas fa-sword me-1"></i>-20 PV
                                 </button>
                             </div>
@@ -718,7 +889,7 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-primary">Mettre à jour</button>
+                        <button type="submit" class="btn btn-brown">Mettre à jour</button>
                     </div>
                 </form>
             </div>
@@ -763,7 +934,7 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="button" class="btn btn-primary" onclick="confirmTransfer()">
+                    <button type="button" class="btn btn-brown" onclick="confirmTransfer()">
                         <i class="fas fa-exchange-alt me-1"></i>Transférer
                     </button>
                 </div>
