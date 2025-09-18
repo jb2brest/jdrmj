@@ -60,6 +60,7 @@ $isSorcerer = strpos(strtolower($character['class_name']), 'ensorceleur') !== fa
 $isFighter = strpos(strtolower($character['class_name']), 'guerrier') !== false;
 $isWizard = strpos(strtolower($character['class_name']), 'magicien') !== false;
 $isMonk = strpos(strtolower($character['class_name']), 'moine') !== false;
+$isWarlock = strpos(strtolower($character['class_name']), 'occultiste') !== false;
 $rageData = null;
 if ($isBarbarian) {
     // Récupérer le nombre maximum de rages pour ce niveau
@@ -99,6 +100,8 @@ if ($isBarbarian) {
     $classCapabilities = getWizardCapabilities($character['level']);
 } elseif ($isMonk) {
     $classCapabilities = getMonkCapabilities($character['level']);
+} elseif ($isWarlock) {
+    $classCapabilities = getWarlockCapabilities($character['level']);
 }
 
 // Capacités raciales
@@ -155,6 +158,12 @@ if ($isWizard) {
 $monkTradition = null;
 if ($isMonk) {
     $monkTradition = getCharacterMonkTradition($character_id);
+}
+
+// Récupérer la faveur de pacte de l'occultiste
+$warlockPact = null;
+if ($isWarlock) {
+    $warlockPact = getCharacterWarlockPact($character_id);
 }
 
 // Récupérer les améliorations de caractéristiques
@@ -1252,7 +1261,7 @@ $initiative = $dexterityMod;
                 </div>
                 
                 <!-- Message si aucune capacité -->
-                <?php if (empty($classCapabilities) && empty($raceCapabilities) && !$barbarianPath && !$bardCollege && !$clericDomain && !$druidCircle && !$sorcererOrigin && !$fighterArchetype && !$wizardTradition && !$monkTradition): ?>
+                <?php if (empty($classCapabilities) && empty($raceCapabilities) && !$barbarianPath && !$bardCollege && !$clericDomain && !$druidCircle && !$sorcererOrigin && !$fighterArchetype && !$wizardTradition && !$monkTradition && !$warlockPact): ?>
                     <div class="text-center text-muted">
                         <i class="fas fa-info-circle me-2"></i>Aucune capacité spéciale
                     </div>
@@ -1810,6 +1819,76 @@ $initiative = $dexterityMod;
                             
                             // Afficher les capacités de tradition monastique
                             foreach ($traditionCapabilities as $capability):
+                            ?>
+                                <div class="capability-item mt-3">
+                                    <div class="capability-header">
+                                        <h6 class="mb-1 text-info">
+                                            <i class="fas fa-star me-1"></i><?php echo htmlspecialchars($capability['name']); ?>
+                                        </h6>
+                                    </div>
+                                    <div class="capability-description">
+                                        <small class="text-muted"><?php echo nl2br(htmlspecialchars($capability['description'])); ?></small>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                
+                <!-- Faveur de pacte de l'occultiste -->
+                <?php if ($warlockPact): ?>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5><i class="fas fa-handshake me-2"></i>Faveur de pacte</h5>
+                            <div class="capability-item">
+                                <div class="capability-header">
+                                    <h6 class="mb-1 text-warning">
+                                        <i class="fas fa-star me-1"></i><?php echo htmlspecialchars($warlockPact['pact_name']); ?>
+                                    </h6>
+                                </div>
+                                <div class="capability-description">
+                                    <small class="text-muted"><?php echo nl2br(htmlspecialchars($warlockPact['pact_description'])); ?></small>
+                                </div>
+                            </div>
+                            
+                            <!-- Capacités de faveur de pacte par niveau -->
+                            <?php
+                            $pactCapabilities = [];
+                            
+                            // Niveau 3 - Capacité de faveur de pacte
+                            if ($character['level'] >= 3 && !empty($warlockPact['level_3_feature'])) {
+                                $pactCapabilities[] = [
+                                    'name' => 'Capacité de niveau 3',
+                                    'description' => $warlockPact['level_3_feature']
+                                ];
+                            }
+                            
+                            // Niveau 7 - Capacité de faveur de pacte
+                            if ($character['level'] >= 7 && !empty($warlockPact['level_7_feature'])) {
+                                $pactCapabilities[] = [
+                                    'name' => 'Capacité de niveau 7',
+                                    'description' => $warlockPact['level_7_feature']
+                                ];
+                            }
+                            
+                            // Niveau 15 - Capacité de faveur de pacte
+                            if ($character['level'] >= 15 && !empty($warlockPact['level_15_feature'])) {
+                                $pactCapabilities[] = [
+                                    'name' => 'Capacité de niveau 15',
+                                    'description' => $warlockPact['level_15_feature']
+                                ];
+                            }
+                            
+                            // Niveau 20 - Capacité de faveur de pacte
+                            if ($character['level'] >= 20 && !empty($warlockPact['level_20_feature'])) {
+                                $pactCapabilities[] = [
+                                    'name' => 'Capacité de niveau 20',
+                                    'description' => $warlockPact['level_20_feature']
+                                ];
+                            }
+                            
+                            // Afficher les capacités de faveur de pacte
+                            foreach ($pactCapabilities as $capability):
                             ?>
                                 <div class="capability-item mt-3">
                                     <div class="capability-header">

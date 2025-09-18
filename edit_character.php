@@ -50,7 +50,7 @@ if ($character['race_id']) {
 $classCapabilities = [];
 $raceCapabilities = [];
 
-// Vérifier si c'est un barbare, un barde, un clerc, un druide, un ensorceleur, un guerrier, un magicien ou un moine
+// Vérifier si c'est un barbare, un barde, un clerc, un druide, un ensorceleur, un guerrier, un magicien, un moine ou un occultiste
 $isBarbarian = false;
 $isBard = false;
 $isCleric = false;
@@ -59,6 +59,7 @@ $isSorcerer = false;
 $isFighter = false;
 $isWizard = false;
 $isMonk = false;
+$isWarlock = false;
 if ($character['class_id']) {
     $stmt = $pdo->prepare("SELECT name FROM classes WHERE id = ?");
     $stmt->execute([$character['class_id']]);
@@ -71,6 +72,7 @@ if ($character['class_id']) {
     $isFighter = $class && strpos(strtolower($class['name']), 'guerrier') !== false;
     $isWizard = $class && strpos(strtolower($class['name']), 'magicien') !== false;
     $isMonk = $class && strpos(strtolower($class['name']), 'moine') !== false;
+    $isWarlock = $class && strpos(strtolower($class['name']), 'occultiste') !== false;
 }
 
 // Capacités de classe basées sur le niveau
@@ -91,6 +93,8 @@ if ($isBarbarian) {
     $classCapabilities = getWizardCapabilities($character['level']);
 } elseif ($isMonk) {
     $classCapabilities = getMonkCapabilities($character['level']);
+} elseif ($isWarlock) {
+    $classCapabilities = getWarlockCapabilities($character['level']);
 }
 
 // Capacités raciales
@@ -163,6 +167,14 @@ $selectedMonkTradition = null;
 if ($isMonk) {
     $monkTraditions = getMonkTraditions();
     $selectedMonkTradition = getCharacterMonkTradition($character_id);
+}
+
+// Récupérer les faveurs de pacte et le choix actuel
+$warlockPacts = [];
+$selectedWarlockPact = null;
+if ($isWarlock) {
+    $warlockPacts = getWarlockPacts();
+    $selectedWarlockPact = getCharacterWarlockPact($character_id);
 }
 
 // Récupérer les améliorations de caractéristiques
@@ -287,6 +299,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $fighter_archetype_id = isset($_POST['fighter_archetype_id']) ? (int)$_POST['fighter_archetype_id'] : null;
         $wizard_tradition_id = isset($_POST['wizard_tradition_id']) ? (int)$_POST['wizard_tradition_id'] : null;
         $monk_tradition_id = isset($_POST['monk_tradition_id']) ? (int)$_POST['monk_tradition_id'] : null;
+        $warlock_pact_id = isset($_POST['warlock_pact_id']) ? (int)$_POST['warlock_pact_id'] : null;
     
     // Améliorations de caractéristiques
     $ability_improvements = [
@@ -437,6 +450,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Sauvegarder la tradition monastique si c'est un moine de niveau 3+
             if ($isMonk && $level >= 3 && $monk_tradition_id) {
                 saveMonkTradition($character_id, $monk_tradition_id);
+            }
+            
+            // Sauvegarder la faveur de pacte si c'est un occultiste de niveau 3+
+            if ($isWarlock && $level >= 3 && $warlock_pact_id) {
+                saveWarlockPact($character_id, $warlock_pact_id);
             }
             
             // Sauvegarder les améliorations de caractéristiques
@@ -1342,6 +1360,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         </div>
                                         <div class="tradition-description mt-2">
                                             <small class="text-muted"><?php echo nl2br(htmlspecialchars($tradition['description'])); ?></small>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                
+                <!-- Choix de faveur de pacte pour les occultistes de niveau 3+ -->
+                <?php if ($isWarlock && $character['level'] >= 3): ?>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5><i class="fas fa-handshake me-2"></i>Faveur de pacte</h5>
+                            <p class="text-muted">Choisissez votre faveur de pacte (obligatoire au niveau 3).</p>
+                            <div class="row">
+                                <?php foreach ($warlockPacts as $pact): ?>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" 
+                                                   name="warlock_pact_id" 
+                                                   id="warlock_pact_<?php echo $pact['id']; ?>" 
+                                                   value="<?php echo $pact['id']; ?>"
+                                                   <?php echo ($selectedWarlockPact && $selectedWarlockPact['pact_id'] == $pact['id']) ? 'checked' : ''; ?>>
+                                            <label class="form-check-label" for="warlock_pact_<?php echo $pact['id']; ?>">
+                                                <strong><?php echo htmlspecialchars($pact['name']); ?></strong>
+                                            </label>
+                                        </div>
+                                        <div class="pact-description mt-2">
+                                            <small class="text-muted"><?php echo nl2br(htmlspecialchars($pact['description'])); ?></small>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>

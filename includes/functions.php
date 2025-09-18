@@ -2940,6 +2940,205 @@ function getMonkCapabilities($level) {
     return $capabilities;
 }
 
+// Fonction pour obtenir les capacités d'occultiste selon le niveau
+function getWarlockCapabilities($level) {
+    $capabilities = [];
+    
+    // Niveau 1 - Maîtrise d'armures et d'armes
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Maîtrise d\'armures et d\'armes',
+            'description' => 'Vous maîtrisez les armures légères et les armes courantes.'
+        ];
+    }
+    
+    // Niveau 1 - Maîtrise d'outils
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Maîtrise d\'outils',
+            'description' => 'Vous maîtrisez un type d\'outil d\'artisan de votre choix.'
+        ];
+    }
+    
+    // Niveau 1 - Compétences
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Compétences',
+            'description' => 'Vous choisissez deux compétences parmi : Arcana, Deception, History, Intimidation, Investigation, Nature et Religion.'
+        ];
+    }
+    
+    // Niveau 1 - Sorts
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Sorts',
+            'description' => 'Vous avez appris à utiliser la magie arcanique. Voir le chapitre 10 pour les règles générales sur la magie et le chapitre 11 pour la liste des sorts d\'occultiste.'
+        ];
+    }
+    
+    // Niveau 1 - Faveur de pacte
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Faveur de pacte',
+            'description' => 'Vous obtenez une faveur de pacte qui reflète votre lien avec votre patron. Votre choix vous accorde des capacités au niveau 1, puis aux niveaux 3, 7, 15 et 20.'
+        ];
+    }
+    
+    // Niveau 2 - Invocations mystiques
+    if ($level >= 2) {
+        $capabilities[] = [
+            'name' => 'Invocations mystiques',
+            'description' => 'Vous avez appris à invoquer des pouvoirs magiques. Vous connaissez deux invocations mystiques de votre choix.'
+        ];
+    }
+    
+    // Niveau 3 - Faveur de pacte
+    if ($level >= 3) {
+        $capabilities[] = [
+            'name' => 'Faveur de pacte',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre faveur de pacte.'
+        ];
+    }
+    
+    // Niveau 4 - Amélioration de caractéristique
+    if ($level >= 4) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 5 - Invocations mystiques
+    if ($level >= 5) {
+        $capabilities[] = [
+            'name' => 'Invocations mystiques',
+            'description' => 'Vous connaissez trois invocations mystiques de votre choix.'
+        ];
+    }
+    
+    // Niveau 6 - Faveur de pacte
+    if ($level >= 6) {
+        $capabilities[] = [
+            'name' => 'Faveur de pacte',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre faveur de pacte.'
+        ];
+    }
+    
+    // Niveau 7 - Invocations mystiques
+    if ($level >= 7) {
+        $capabilities[] = [
+            'name' => 'Invocations mystiques',
+            'description' => 'Vous connaissez quatre invocations mystiques de votre choix.'
+        ];
+    }
+    
+    // Niveau 8 - Amélioration de caractéristique
+    if ($level >= 8) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 9 - Invocations mystiques
+    if ($level >= 9) {
+        $capabilities[] = [
+            'name' => 'Invocations mystiques',
+            'description' => 'Vous connaissez cinq invocations mystiques de votre choix.'
+        ];
+    }
+    
+    // Niveau 10 - Faveur de pacte
+    if ($level >= 10) {
+        $capabilities[] = [
+            'name' => 'Faveur de pacte',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre faveur de pacte.'
+        ];
+    }
+    
+    // Niveau 11 - Invocations mystiques
+    if ($level >= 11) {
+        $capabilities[] = [
+            'name' => 'Invocations mystiques',
+            'description' => 'Vous connaissez six invocations mystiques de votre choix.'
+        ];
+    }
+    
+    // Niveau 12 - Amélioration de caractéristique
+    if ($level >= 12) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 13 - Invocations mystiques
+    if ($level >= 13) {
+        $capabilities[] = [
+            'name' => 'Invocations mystiques',
+            'description' => 'Vous connaissez sept invocations mystiques de votre choix.'
+        ];
+    }
+    
+    // Niveau 14 - Faveur de pacte
+    if ($level >= 14) {
+        $capabilities[] = [
+            'name' => 'Faveur de pacte',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre faveur de pacte.'
+        ];
+    }
+    
+    // Niveau 15 - Invocations mystiques
+    if ($level >= 15) {
+        $capabilities[] = [
+            'name' => 'Invocations mystiques',
+            'description' => 'Vous connaissez huit invocations mystiques de votre choix.'
+        ];
+    }
+    
+    // Niveau 16 - Amélioration de caractéristique
+    if ($level >= 16) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 17 - Invocations mystiques
+    if ($level >= 17) {
+        $capabilities[] = [
+            'name' => 'Invocations mystiques',
+            'description' => 'Vous connaissez neuf invocations mystiques de votre choix.'
+        ];
+    }
+    
+    // Niveau 18 - Faveur de pacte
+    if ($level >= 18) {
+        $capabilities[] = [
+            'name' => 'Faveur de pacte',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre faveur de pacte.'
+        ];
+    }
+    
+    // Niveau 19 - Amélioration de caractéristique
+    if ($level >= 19) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 20 - Faveur de pacte
+    if ($level >= 20) {
+        $capabilities[] = [
+            'name' => 'Faveur de pacte',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre faveur de pacte.'
+        ];
+    }
+    
+    return $capabilities;
+}
+
 // Fonction pour obtenir les voies primitives des barbares
 function getBarbarianPaths() {
     global $pdo;
@@ -3032,6 +3231,18 @@ function getMonkTraditions() {
         return $stmt->fetchAll();
     } catch (PDOException $e) {
         error_log("Erreur getMonkTraditions: " . $e->getMessage());
+        return [];
+    }
+}
+
+// Fonction pour obtenir les faveurs de pacte
+function getWarlockPacts() {
+    global $pdo;
+    try {
+        $stmt = $pdo->query("SELECT * FROM warlock_pacts ORDER BY name");
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        error_log("Erreur getWarlockPacts: " . $e->getMessage());
         return [];
     }
 }
@@ -3184,6 +3395,25 @@ function getCharacterMonkTradition($characterId) {
         return $stmt->fetch();
     } catch (PDOException $e) {
         error_log("Erreur getCharacterMonkTradition: " . $e->getMessage());
+        return null;
+    }
+}
+
+// Fonction pour obtenir la faveur de pacte d'un personnage
+function getCharacterWarlockPact($characterId) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("
+            SELECT cwp.*, wp.name as pact_name, wp.description as pact_description,
+                   wp.level_3_feature, wp.level_7_feature, wp.level_15_feature, wp.level_20_feature
+            FROM character_warlock_pact cwp
+            JOIN warlock_pacts wp ON cwp.pact_id = wp.id
+            WHERE cwp.character_id = ?
+        ");
+        $stmt->execute([$characterId]);
+        return $stmt->fetch();
+    } catch (PDOException $e) {
+        error_log("Erreur getCharacterWarlockPact: " . $e->getMessage());
         return null;
     }
 }
@@ -3353,6 +3583,27 @@ function saveMonkTradition($characterId, $traditionId, $level3Choice = null, $le
         return $stmt->execute([$characterId, $traditionId, $level3Choice, $level6Choice, $level11Choice, $level17Choice]);
     } catch (PDOException $e) {
         error_log("Erreur saveMonkTradition: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Fonction pour sauvegarder le choix de faveur de pacte
+function saveWarlockPact($characterId, $pactId, $level3Choice = null, $level7Choice = null, $level15Choice = null, $level20Choice = null) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO character_warlock_pact (character_id, pact_id, level_3_choice, level_7_choice, level_15_choice, level_20_choice)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+            pact_id = VALUES(pact_id),
+            level_3_choice = VALUES(level_3_choice),
+            level_7_choice = VALUES(level_7_choice),
+            level_15_choice = VALUES(level_15_choice),
+            level_20_choice = VALUES(level_20_choice)
+        ");
+        return $stmt->execute([$characterId, $pactId, $level3Choice, $level7Choice, $level15Choice, $level20Choice]);
+    } catch (PDOException $e) {
+        error_log("Erreur saveWarlockPact: " . $e->getMessage());
         return false;
     }
 }
