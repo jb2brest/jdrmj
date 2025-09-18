@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=1.4.1
+VERSION=1.5.0
 
 # Date de déploiement
 DEPLOY_DATE=2025-09-18
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-09-18
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=69ff3f8513ccea1041d86a376a8e60dccecb342e
+GIT_COMMIT=70ba5c1f61d060ad0f2030eaa1151062e5fdcce4
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20250918-165311
+BUILD_ID=20250918-174604
 
 # Notes de version
-RELEASE_NOTES="Scene : amélioration dés"
+RELEASE_NOTES="Classe : barbare"
