@@ -51,12 +51,12 @@ if (!$canView) {
 }
 
 // Récupérer les joueurs présents dans cette lieu
-$stmt = $pdo->prepare("SELECT sp.player_id, u.username, ch.id AS character_id, ch.name AS character_name, ch.profile_photo, ch.class_id FROM place_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.place_id = ? ORDER BY u.username ASC");
+$stmt = $pdo->prepare("SELECT sp.player_id, u.username, ch.id AS character_id, ch.name AS character_name, ch.profile_photo, ch.class_id, ch.hit_points_current, ch.hit_points_max FROM place_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.place_id = ? ORDER BY u.username ASC");
 $stmt->execute([$place_id]);
 $placePlayers = $stmt->fetchAll();
 
 // Récupérer les PNJ de cette lieu
-$stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, sn.is_visible, sn.is_identified, c.profile_photo AS character_profile_photo FROM place_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.place_id = ? AND sn.monster_id IS NULL ORDER BY sn.name ASC");
+$stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, sn.is_visible, sn.is_identified, c.profile_photo AS character_profile_photo, c.hit_points_current, c.hit_points_max FROM place_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.place_id = ? AND sn.monster_id IS NULL ORDER BY sn.name ASC");
 $stmt->execute([$place_id]);
 $placeNpcs = $stmt->fetchAll();
 
@@ -162,7 +162,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                 $success_message = "Joueur ajouté au lieu (retiré automatiquement des autres lieux).";
                 
                 // Recharger les joueurs
-                $stmt = $pdo->prepare("SELECT sp.player_id, u.username, ch.id AS character_id, ch.name AS character_name, ch.profile_photo, ch.class_id FROM place_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.place_id = ? ORDER BY u.username ASC");
+                $stmt = $pdo->prepare("SELECT sp.player_id, u.username, ch.id AS character_id, ch.name AS character_name, ch.profile_photo, ch.class_id, ch.hit_points_current, ch.hit_points_max FROM place_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.place_id = ? ORDER BY u.username ASC");
                 $stmt->execute([$place_id]);
                 $placePlayers = $stmt->fetchAll();
             } else {
@@ -181,7 +181,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         $success_message = "Joueur retiré du lieu.";
         
         // Recharger les joueurs
-        $stmt = $pdo->prepare("SELECT sp.player_id, u.username, ch.id AS character_id, ch.name AS character_name, ch.profile_photo, ch.class_id FROM place_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.place_id = ? ORDER BY u.username ASC");
+        $stmt = $pdo->prepare("SELECT sp.player_id, u.username, ch.id AS character_id, ch.name AS character_name, ch.profile_photo, ch.class_id, ch.hit_points_current, ch.hit_points_max FROM place_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.place_id = ? ORDER BY u.username ASC");
         $stmt->execute([$place_id]);
         $placePlayers = $stmt->fetchAll();
     }
@@ -194,7 +194,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         $success_message = "PNJ retiré du lieu.";
         
         // Recharger les PNJ
-        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, sn.is_visible, sn.is_identified, c.profile_photo AS character_profile_photo FROM place_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.place_id = ? AND sn.monster_id IS NULL ORDER BY sn.name ASC");
+        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, sn.is_visible, sn.is_identified, c.profile_photo AS character_profile_photo, c.hit_points_current, c.hit_points_max FROM place_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.place_id = ? AND sn.monster_id IS NULL ORDER BY sn.name ASC");
         $stmt->execute([$place_id]);
         $placeNpcs = $stmt->fetchAll();
     }
@@ -253,7 +253,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         $success_message = "Visibilité du PNJ mise à jour.";
         
         // Recharger les PNJ
-        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, sn.is_visible, sn.is_identified, c.profile_photo AS character_profile_photo FROM place_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.place_id = ? AND sn.monster_id IS NULL ORDER BY sn.name ASC");
+        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, sn.is_visible, sn.is_identified, c.profile_photo AS character_profile_photo, c.hit_points_current, c.hit_points_max FROM place_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.place_id = ? AND sn.monster_id IS NULL ORDER BY sn.name ASC");
         $stmt->execute([$place_id]);
         $placeNpcs = $stmt->fetchAll();
     }
@@ -279,7 +279,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         $success_message = "Identification du PNJ mise à jour.";
         
         // Recharger les PNJ
-        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, sn.is_visible, sn.is_identified, c.profile_photo AS character_profile_photo FROM place_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.place_id = ? AND sn.monster_id IS NULL ORDER BY sn.name ASC");
+        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, sn.is_visible, sn.is_identified, c.profile_photo AS character_profile_photo, c.hit_points_current, c.hit_points_max FROM place_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.place_id = ? AND sn.monster_id IS NULL ORDER BY sn.name ASC");
         $stmt->execute([$place_id]);
         $placeNpcs = $stmt->fetchAll();
     }
@@ -797,11 +797,66 @@ foreach ($allScenes as $s) {
         color: #721c24;
     }
 
-    .alert-warning {
-        background: linear-gradient(135deg, #fff3cd, #ffeaa7);
-        color: #856404;
-    }
-    </style>
+        .alert-warning {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            color: #856404;
+        }
+
+        /* Styles pour les barres de points de vie */
+        .progress {
+            border-radius: 3px;
+            background-color: rgba(0,0,0,0.1);
+        }
+
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
+
+        .progress-bar.bg-success {
+            background-color: #28a745 !important;
+        }
+
+        .progress-bar.bg-warning {
+            background-color: #ffc107 !important;
+        }
+
+        .progress-bar.bg-danger {
+            background-color: #dc3545 !important;
+        }
+
+        /* Animation pour les barres de PV */
+        .progress-bar {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background-image: linear-gradient(
+                -45deg,
+                rgba(255, 255, 255, .2) 25%,
+                transparent 25%,
+                transparent 50%,
+                rgba(255, 255, 255, .2) 50%,
+                rgba(255, 255, 255, .2) 75%,
+                transparent 75%,
+                transparent
+            );
+            background-size: 1rem 1rem;
+            animation: progress-bar-stripes 1s linear infinite;
+        }
+
+        @keyframes progress-bar-stripes {
+            0% {
+                background-position-x: 1rem;
+            }
+        }
+        </style>
 </head>
 <body>
     <?php include 'includes/navbar.php'; ?>
@@ -1233,10 +1288,43 @@ foreach ($allScenes as $s) {
                                                 <i class="fas fa-user text-white"></i>
                                             </div>
                                         <?php endif; ?>
-                                        <div>
+                                        <div class="flex-grow-1">
                                             <div class="fw-bold"><?php echo htmlspecialchars($player['username']); ?></div>
                                             <?php if ($player['character_name']): ?>
                                                 <small class="text-muted"><?php echo htmlspecialchars($player['character_name']); ?></small>
+                                            <?php endif; ?>
+                                            
+                                            <?php if ($player['character_name'] && $player['hit_points_max'] > 0): ?>
+                                                <!-- Barre de points de vie -->
+                                                <div class="mt-2">
+                                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                                        <small class="text-muted">
+                                                            <i class="fas fa-heart text-danger me-1"></i>PV
+                                                        </small>
+                                                        <small class="text-muted">
+                                                            <?php echo (int)$player['hit_points_current']; ?> / <?php echo (int)$player['hit_points_max']; ?>
+                                                        </small>
+                                                    </div>
+                                                    <?php 
+                                                    $hp_percentage = ($player['hit_points_current'] / $player['hit_points_max']) * 100;
+                                                    $hp_class = 'bg-success';
+                                                    if ($hp_percentage <= 25) {
+                                                        $hp_class = 'bg-danger';
+                                                    } elseif ($hp_percentage <= 50) {
+                                                        $hp_class = 'bg-warning';
+                                                    }
+                                                    ?>
+                                                    <div class="progress" style="height: 6px;">
+                                                        <div class="progress-bar <?php echo $hp_class; ?>" 
+                                                             role="progressbar" 
+                                                             style="width: <?php echo $hp_percentage; ?>%"
+                                                             aria-valuenow="<?php echo $hp_percentage; ?>" 
+                                                             aria-valuemin="0" 
+                                                             aria-valuemax="100"
+                                                             title="<?php echo (int)$player['hit_points_current']; ?> / <?php echo (int)$player['hit_points_max']; ?> PV">
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             <?php endif; ?>
                                         </div>
                                     </div>
@@ -1342,7 +1430,7 @@ foreach ($allScenes as $s) {
                                                     <i class="fas fa-user-tie text-white"></i>
                                                 </div>
                                             <?php endif; ?>
-                                            <div>
+                                            <div class="flex-grow-1">
                                                 <div class="fw-bold"><?php echo htmlspecialchars($npc['name']); ?>
                                                     <?php if (!empty($npc['npc_character_id'])): ?>
                                                         <span class="badge bg-info ms-1">perso MJ</span>
@@ -1350,6 +1438,39 @@ foreach ($allScenes as $s) {
                                                 </div>
                                                 <?php if (!empty($npc['description'])): ?>
                                                     <small class="text-muted"><?php echo htmlspecialchars($npc['description']); ?></small>
+                                                <?php endif; ?>
+                                                
+                                                <?php if (!empty($npc['npc_character_id']) && $npc['hit_points_max'] > 0): ?>
+                                                    <!-- Barre de points de vie pour les PNJ personnages -->
+                                                    <div class="mt-2">
+                                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                                            <small class="text-muted">
+                                                                <i class="fas fa-heart text-danger me-1"></i>PV
+                                                            </small>
+                                                            <small class="text-muted">
+                                                                <?php echo (int)$npc['hit_points_current']; ?> / <?php echo (int)$npc['hit_points_max']; ?>
+                                                            </small>
+                                                        </div>
+                                                        <?php 
+                                                        $hp_percentage = ($npc['hit_points_current'] / $npc['hit_points_max']) * 100;
+                                                        $hp_class = 'bg-success';
+                                                        if ($hp_percentage <= 25) {
+                                                            $hp_class = 'bg-danger';
+                                                        } elseif ($hp_percentage <= 50) {
+                                                            $hp_class = 'bg-warning';
+                                                        }
+                                                        ?>
+                                                        <div class="progress" style="height: 6px;">
+                                                            <div class="progress-bar <?php echo $hp_class; ?>" 
+                                                                 role="progressbar" 
+                                                                 style="width: <?php echo $hp_percentage; ?>%"
+                                                                 aria-valuenow="<?php echo $hp_percentage; ?>" 
+                                                                 aria-valuemin="0" 
+                                                                 aria-valuemax="100"
+                                                                 title="<?php echo (int)$npc['hit_points_current']; ?> / <?php echo (int)$npc['hit_points_max']; ?> PV">
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 <?php endif; ?>
                                             </div>
                                         </div>
@@ -1423,7 +1544,7 @@ foreach ($allScenes as $s) {
                                                     <i class="fas fa-dragon text-white"></i>
                                                 </div>
                                             <?php endif; ?>
-                                            <div>
+                                            <div class="flex-grow-1">
                                                 <div class="fw-bold"><?php echo htmlspecialchars($monster['name']); ?></div>
                                                 <small class="text-muted">
                                                     <?php echo htmlspecialchars($monster['type']); ?> • 
@@ -1432,15 +1553,43 @@ foreach ($allScenes as $s) {
                                                 </small>
                                                 <br>
                                                 <small class="text-muted">
-                                                    CA <?php echo htmlspecialchars($monster['armor_class']); ?> • 
-                                                    PV <?php 
-                                                        $current_hp = $monster['current_hit_points'] ?? $monster['hit_points'];
-                                                        $max_hp = $monster['hit_points'];
-                                                        $hp_percentage = ($current_hp / $max_hp) * 100;
-                                                        $hp_color = $hp_percentage > 50 ? 'text-success' : ($hp_percentage > 25 ? 'text-warning' : 'text-danger');
-                                                        echo "<span class='{$hp_color}'>{$current_hp}</span>/{$max_hp}";
-                                                    ?>
+                                                    CA <?php echo htmlspecialchars($monster['armor_class']); ?>
                                                 </small>
+                                                
+                                                <!-- Barre de points de vie pour les monstres -->
+                                                <div class="mt-2">
+                                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                                        <small class="text-muted">
+                                                            <i class="fas fa-heart text-danger me-1"></i>PV
+                                                        </small>
+                                                        <small class="text-muted">
+                                                            <?php 
+                                                            $current_hp = $monster['current_hit_points'] ?? $monster['hit_points'];
+                                                            $max_hp = $monster['hit_points'];
+                                                            echo (int)$current_hp . ' / ' . (int)$max_hp;
+                                                            ?>
+                                                        </small>
+                                                    </div>
+                                                    <?php 
+                                                    $hp_percentage = ($current_hp / $max_hp) * 100;
+                                                    $hp_class = 'bg-success';
+                                                    if ($hp_percentage <= 25) {
+                                                        $hp_class = 'bg-danger';
+                                                    } elseif ($hp_percentage <= 50) {
+                                                        $hp_class = 'bg-warning';
+                                                    }
+                                                    ?>
+                                                    <div class="progress" style="height: 6px;">
+                                                        <div class="progress-bar <?php echo $hp_class; ?>" 
+                                                             role="progressbar" 
+                                                             style="width: <?php echo $hp_percentage; ?>%"
+                                                             aria-valuenow="<?php echo $hp_percentage; ?>" 
+                                                             aria-valuemin="0" 
+                                                             aria-valuemax="100"
+                                                             title="<?php echo (int)$current_hp; ?> / <?php echo (int)$max_hp; ?> PV">
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                         <div class="d-flex gap-1">
