@@ -121,7 +121,7 @@ $placeNpcs = $stmt->fetchAll();
 // Récupérer les monstres présents dans le lieu (seulement ceux visibles)
 $stmt = $pdo->prepare("
     SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, sn.current_hit_points, sn.is_visible, sn.is_identified,
-           m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class
+           m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class, m.csv_id
     FROM place_npcs sn 
     JOIN dnd_monsters m ON sn.monster_id = m.id 
     WHERE sn.place_id = ? AND sn.monster_id IS NOT NULL AND sn.is_visible = 1
@@ -152,313 +152,283 @@ include 'includes/layout.php';
         </div>
     </div>
 
-    <!-- Plan du lieu -->
-    <?php if (!empty($place['map_url']) && file_exists($place['map_url'])): ?>
+    <!-- Plan du lieu et Participants -->
     <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-map me-2"></i>Plan du lieu</h5>
-                </div>
-                <div class="card-body">
-                    <div class="position-relative">
-                        <!-- Zone du plan avec pions (identique à view_scene.php) -->
-                        <div id="mapContainer" class="position-relative" style="display: inline-block;">
-                            <img id="mapImage" src="<?php echo htmlspecialchars($place['map_url']); ?>" class="img-fluid rounded" alt="Plan du lieu" style="max-height: 500px; cursor: crosshair;">
-                            
-                            <!-- Zone des pions sur le côté -->
-                            <div id="tokenSidebar" class="position-absolute" style="right: -120px; top: 0; width: 100px; height: 500px; border: 2px dashed #ccc; border-radius: 8px; background: rgba(248, 249, 250, 0.8); padding: 10px; overflow-y: auto;">
-                                <div class="text-center mb-2">
-                                    <small class="text-muted">Pions</small>
-                                </div>
+        <!-- Plan du lieu -->
+        <div class="col-lg-8">
+            <?php if (!empty($place['map_url']) && file_exists($place['map_url'])): ?>
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-map me-2"></i>Plan du lieu</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="position-relative">
+                            <!-- Zone du plan avec pions -->
+                            <div id="mapContainer" class="position-relative" style="display: inline-block;">
+                                <img id="mapImage" src="<?php echo htmlspecialchars($place['map_url']); ?>" class="img-fluid rounded" alt="Plan du lieu" style="max-height: 500px; cursor: crosshair;">
                                 
-                                <!-- Pions des joueurs -->
-                                <?php foreach ($placePlayers as $player): ?>
-                                    <?php 
-                                    $tokenKey = 'player_' . $player['player_id'];
-                                    $position = $tokenPositions[$tokenKey] ?? ['x' => 0, 'y' => 0, 'is_on_map' => false];
-                                    $displayName = $player['character_name'] ?: $player['username'];
-                                    $imageUrl = !empty($player['profile_photo']) ? $player['profile_photo'] : 'images/default_character.png';
-                                    ?>
-                                    <div class="token" 
-                                         data-token-type="player" 
-                                         data-entity-id="<?php echo $player['player_id']; ?>"
-                                         data-position-x="<?php echo $position['x']; ?>"
-                                         data-position-y="<?php echo $position['y']; ?>"
-                                         data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
-                                         style="width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #007bff; border-radius: 50%; background-image: url('<?php echo htmlspecialchars($imageUrl); ?>'); background-size: cover; background-position: center;"
-                                         title="<?php echo htmlspecialchars($displayName); ?>">
+                                <!-- Zone des pions sur le côté -->
+                                <div id="tokenSidebar" class="position-absolute" style="right: -120px; top: 0; width: 100px; height: 500px; border: 2px dashed #ccc; border-radius: 8px; background: rgba(248, 249, 250, 0.8); padding: 10px; overflow-y: auto;">
+                                    <div class="text-center mb-2">
+                                        <small class="text-muted">Pions</small>
                                     </div>
-                                <?php endforeach; ?>
-                                
-                                <!-- Pions des PNJ (seulement visibles) -->
-                                <?php foreach ($placeNpcs as $npc): ?>
-                                    <?php 
-                                    $tokenKey = 'npc_' . $npc['id'];
-                                    $position = $tokenPositions[$tokenKey] ?? ['x' => 0, 'y' => 0, 'is_on_map' => false];
                                     
-                                    // Logique d'affichage selon l'identification
-                                    $imageUrl = 'images/default_npc.png';
-                                    $displayName = 'PNJ inconnu';
+                                    <!-- Pions des joueurs -->
+                                    <?php foreach ($placePlayers as $player): ?>
+                                        <?php 
+                                        $tokenKey = 'player_' . $player['player_id'];
+                                        $position = $tokenPositions[$tokenKey] ?? ['x' => 0, 'y' => 0, 'is_on_map' => false];
+                                        $displayName = $player['character_name'] ?: $player['username'];
+                                        $imageUrl = !empty($player['profile_photo']) ? $player['profile_photo'] : 'images/default_character.png';
+                                        ?>
+                                        <div class="token" 
+                                             data-token-type="player" 
+                                             data-entity-id="<?php echo $player['player_id']; ?>"
+                                             data-position-x="<?php echo $position['x']; ?>"
+                                             data-position-y="<?php echo $position['y']; ?>"
+                                             data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
+                                             style="width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #007bff; border-radius: 50%; background-image: url('<?php echo htmlspecialchars($imageUrl); ?>'); background-size: cover; background-position: center;"
+                                             title="<?php echo htmlspecialchars($displayName); ?>">
+                                        </div>
+                                    <?php endforeach; ?>
                                     
-                                    if ($npc['is_identified']) {
-                                        // PNJ identifié : afficher nom et photo
-                                        $displayName = $npc['name'];
-                                        if (!empty($npc['character_profile_photo']) && file_exists($npc['character_profile_photo'])) {
-                                            $imageUrl = $npc['character_profile_photo'];
-                                        } elseif (!empty($npc['profile_photo']) && file_exists($npc['profile_photo'])) {
-                                            $imageUrl = $npc['profile_photo'];
-                                        }
-                                    } else {
-                                        // PNJ non identifié : afficher silhouette générique
+                                    <!-- Pions des PNJ (seulement visibles) -->
+                                    <?php foreach ($placeNpcs as $npc): ?>
+                                        <?php 
+                                        $tokenKey = 'npc_' . $npc['id'];
+                                        $position = $tokenPositions[$tokenKey] ?? ['x' => 0, 'y' => 0, 'is_on_map' => false];
+                                        
+                                        // Logique d'affichage selon l'identification
                                         $imageUrl = 'images/default_npc.png';
-                                    }
-                                    ?>
-                                    <div class="token" 
-                                         data-token-type="npc" 
-                                         data-entity-id="<?php echo $npc['id']; ?>"
-                                         data-position-x="<?php echo $position['x']; ?>"
-                                         data-position-y="<?php echo $position['y']; ?>"
-                                         data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
-                                         style="width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #28a745; border-radius: 50%; background-image: url('<?php echo htmlspecialchars($imageUrl); ?>'); background-size: cover; background-position: center;"
-                                         title="<?php echo htmlspecialchars($displayName); ?>">
-                                    </div>
-                                <?php endforeach; ?>
-                                
-                                <!-- Pions des monstres (seulement visibles) -->
-                                <?php foreach ($placeMonsters as $monster): ?>
-                                    <?php 
-                                    $tokenKey = 'monster_' . $monster['id'];
-                                    $position = $tokenPositions[$tokenKey] ?? ['x' => 0, 'y' => 0, 'is_on_map' => false];
+                                        $displayName = 'PNJ inconnu';
+                                        
+                                        if ($npc['is_identified']) {
+                                            // PNJ identifié : afficher nom et photo
+                                            $displayName = $npc['name'];
+                                            if (!empty($npc['character_profile_photo']) && file_exists($npc['character_profile_photo'])) {
+                                                $imageUrl = $npc['character_profile_photo'];
+                                            } elseif (!empty($npc['profile_photo']) && file_exists($npc['profile_photo'])) {
+                                                $imageUrl = $npc['profile_photo'];
+                                            }
+                                        } else {
+                                            // PNJ non identifié : afficher silhouette générique
+                                            $imageUrl = 'images/default_npc.png';
+                                        }
+                                        ?>
+                                        <div class="token" 
+                                             data-token-type="npc" 
+                                             data-entity-id="<?php echo $npc['id']; ?>"
+                                             data-position-x="<?php echo $position['x']; ?>"
+                                             data-position-y="<?php echo $position['y']; ?>"
+                                             data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
+                                             style="width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #28a745; border-radius: 50%; background-image: url('<?php echo htmlspecialchars($imageUrl); ?>'); background-size: cover; background-position: center;"
+                                             title="<?php echo htmlspecialchars($displayName); ?>">
+                                        </div>
+                                    <?php endforeach; ?>
                                     
-                                    // Logique d'affichage selon l'identification
-                                    $imageUrl = 'images/default_monster.png';
-                                    $displayName = 'Monstre inconnu';
-                                    
-                                    if ($monster['is_identified']) {
-                                        // Monstre identifié : afficher nom et photo
-                                        $displayName = $monster['name'];
-                                        $imageUrl = 'images/monstres/' . $monster['monster_id'] . '.jpg';
-                                    } else {
-                                        // Monstre non identifié : afficher silhouette générique
+                                    <!-- Pions des monstres (seulement visibles) -->
+                                    <?php foreach ($placeMonsters as $monster): ?>
+                                        <?php 
+                                        $tokenKey = 'monster_' . $monster['id'];
+                                        $position = $tokenPositions[$tokenKey] ?? ['x' => 0, 'y' => 0, 'is_on_map' => false];
+                                        
+                                        // Logique d'affichage selon l'identification
                                         $imageUrl = 'images/default_monster.png';
-                                    }
-                                    ?>
-                                    <div class="token" 
-                                         data-token-type="monster" 
-                                         data-entity-id="<?php echo $monster['id']; ?>"
-                                         data-position-x="<?php echo $position['x']; ?>"
-                                         data-position-y="<?php echo $position['y']; ?>"
-                                         data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
-                                         style="width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #dc3545; border-radius: 50%; background-image: url('<?php echo htmlspecialchars($imageUrl); ?>'); background-size: cover; background-position: center;"
-                                         title="<?php echo htmlspecialchars($displayName); ?>">
-                                    </div>
-                                <?php endforeach; ?>
+                                        $displayName = 'Monstre inconnu';
+                                        
+                                        if ($monster['is_identified']) {
+                                            // Monstre identifié : afficher nom et photo
+                                            $displayName = $monster['name'];
+                                            $monster_image_path = "images/monstres/{$monster['csv_id']}.jpg";
+                                            if (file_exists($monster_image_path)) {
+                                                $imageUrl = $monster_image_path;
+                                            } else {
+                                                $imageUrl = 'images/default_monster.png';
+                                            }
+                                        } else {
+                                            // Monstre non identifié : afficher silhouette générique
+                                            $imageUrl = 'images/default_monster.png';
+                                        }
+                                        ?>
+                                        <div class="token" 
+                                             data-token-type="monster" 
+                                             data-entity-id="<?php echo $monster['id']; ?>"
+                                             data-position-x="<?php echo $position['x']; ?>"
+                                             data-position-y="<?php echo $position['y']; ?>"
+                                             data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
+                                             style="width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #dc3545; border-radius: 50%; background-image: url('<?php echo htmlspecialchars($imageUrl); ?>'); background-size: cover; background-position: center;"
+                                             title="<?php echo htmlspecialchars($displayName); ?>">
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            <?php else: ?>
+                <div class="card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-map fa-3x text-muted mb-3"></i>
+                        <h5>Aucun plan disponible</h5>
+                        <p class="text-muted">Le MJ n'a pas encore ajouté de plan pour ce lieu.</p>
+                    </div>
+                </div>
+            <?php endif; ?>
         </div>
-    </div>
-    <?php endif; ?>
 
-    <div class="row g-4">
-        <!-- Mes personnages présents -->
-        <div class="col-lg-6">
+        <!-- Participants -->
+        <div class="col-lg-4">
             <div class="card h-100">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-user-circle me-2"></i>Mes personnages présents</h5>
+                    <h5 class="mb-0"><i class="fas fa-users me-2"></i>Participants</h5>
                 </div>
-                <div class="card-body">
-                    <?php if (empty($player_characters)): ?>
-                        <p class="text-muted">Aucun de vos personnages n'est présent dans ce lieu.</p>
-                        <a href="view_campaign.php?id=<?php echo (int)$place['campaign_id']; ?>" class="btn btn-primary">
-                            <i class="fas fa-arrow-left me-2"></i>Retour à la campagne
-                        </a>
-                    <?php else: ?>
-                        <div class="list-group">
-                            <?php foreach ($player_characters as $character): ?>
-                                <div class="list-group-item">
-                                    <div class="d-flex justify-content-between align-items-center">
+                <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                    <!-- Personnages Joueurs -->
+                    <?php if (!empty($placePlayers)): ?>
+                        <div class="mb-4">
+                            <h6 class="text-primary mb-3"><i class="fas fa-user-circle me-2"></i>Personnages Joueurs</h6>
+                            <div class="list-group list-group-flush">
+                                <?php foreach ($placePlayers as $player): ?>
+                                    <div class="list-group-item px-0 py-2">
                                         <div class="d-flex align-items-center">
-                                            <?php if (!empty($character['profile_photo'])): ?>
-                                                <img src="<?php echo htmlspecialchars($character['profile_photo']); ?>" alt="Photo de <?php echo htmlspecialchars($character['name']); ?>" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                            <?php if (!empty($player['profile_photo'])): ?>
+                                                <img src="<?php echo htmlspecialchars($player['profile_photo']); ?>" alt="Photo de <?php echo htmlspecialchars($player['character_name'] ?: $player['username']); ?>" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
                                             <?php else: ?>
-                                                <div class="bg-secondary rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                                <div class="bg-primary rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
                                                     <i class="fas fa-user text-white"></i>
                                                 </div>
                                             <?php endif; ?>
-                                            <div>
-                                                <h6 class="mb-1"><?php echo htmlspecialchars($character['name']); ?></h6>
+                                            <div class="flex-grow-1">
+                                                <h6 class="mb-1"><?php echo htmlspecialchars($player['character_name'] ?: $player['username']); ?></h6>
                                                 <small class="text-muted">
-                                                    <?php echo htmlspecialchars($character['class_name'] ?? 'Classe inconnue'); ?> - Niveau <?php echo (int)$character['level']; ?>
+                                                    <?php if ($player['character_name']): ?>
+                                                        <?php echo htmlspecialchars($player['class_name'] ?? 'Classe inconnue'); ?> - Niveau <?php echo (int)$player['level']; ?>
+                                                    <?php else: ?>
+                                                        Joueur
+                                                    <?php endif; ?>
                                                 </small>
                                             </div>
+                                            <?php if ($player['character_name'] && !empty($player['character_id']) && $player['player_id'] == $user_id): ?>
+                                                <a href="view_character.php?id=<?php echo (int)$player['character_id']; ?>" class="btn btn-sm btn-outline-primary" title="Ma feuille de personnage">
+                                                    <i class="fas fa-user-circle"></i>
+                                                </a>
+                                            <?php endif; ?>
                                         </div>
-                                        <a href="view_character.php?id=<?php echo (int)$character['id']; ?>" class="btn btn-outline-primary btn-sm">
-                                            <i class="fas fa-eye me-1"></i>Voir la fiche
-                                        </a>
                                     </div>
-                                </div>
-                            <?php endforeach; ?>
+                                <?php endforeach; ?>
+                            </div>
                         </div>
-                    <?php endif; ?>
-                </div>
-            </div>
-        </div>
-
-        <!-- Autres joueurs présents -->
-        <div class="col-lg-6">
-            <div class="card h-100">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-users me-2"></i>Autres joueurs présents</h5>
-                </div>
-                <div class="card-body">
-                    <?php if (empty($other_players)): ?>
-                        <p class="text-muted">Aucun autre joueur présent dans ce lieu.</p>
                     <?php else: ?>
-                        <div class="list-group">
-                            <?php foreach ($other_players as $player): ?>
-                                <div class="list-group-item">
-                                    <div class="d-flex align-items-center">
-                                        <?php if (!empty($player['profile_photo'])): ?>
-                                            <img src="<?php echo htmlspecialchars($player['profile_photo']); ?>" alt="Photo de <?php echo htmlspecialchars($player['character_name'] ?: $player['username']); ?>" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
-                                        <?php else: ?>
-                                            <div class="bg-secondary rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                                <i class="fas fa-user text-white"></i>
-                                            </div>
-                                        <?php endif; ?>
-                                        <div>
-                                            <h6 class="mb-1"><?php echo htmlspecialchars($player['character_name'] ?: $player['username']); ?></h6>
-                                            <small class="text-muted">
-                                                <?php if ($player['character_name']): ?>
-                                                    <?php echo htmlspecialchars($player['class_name'] ?? 'Classe inconnue'); ?> - Niveau <?php echo (int)$player['level']; ?>
-                                                <?php else: ?>
-                                                    Joueur
-                                                <?php endif; ?>
-                                            </small>
-                                        </div>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
+                        <!-- Message si aucun personnage joueur -->
+                        <div class="mb-4">
+                            <h6 class="text-primary mb-3"><i class="fas fa-user-circle me-2"></i>Personnages Joueurs</h6>
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-user-slash fa-2x mb-2"></i>
+                                <p class="mb-0">Aucun personnage joueur dans ce lieu.</p>
+                            </div>
                         </div>
                     <?php endif; ?>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- PNJ présents (seulement visibles) -->
-    <?php if (!empty($placeNpcs)): ?>
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-user-tie me-2"></i>PNJ présents</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <?php foreach ($placeNpcs as $npc): ?>
-                            <div class="col-md-6">
-                                <div class="card">
-                                    <div class="card-body">
+                    <!-- PNJ -->
+                    <?php if (!empty($placeNpcs)): ?>
+                        <div class="mb-4 npcs-section">
+                            <h6 class="text-success mb-3"><i class="fas fa-user-tie me-2"></i>PNJ</h6>
+                            <div class="list-group list-group-flush">
+                                <?php foreach ($placeNpcs as $npc): ?>
+                                    <div class="list-group-item px-0 py-2">
                                         <div class="d-flex align-items-center">
                                             <?php 
                                             // Logique d'affichage selon l'identification
-                                            $photo_to_show = null;
-                                            $displayName = 'PNJ inconnu';
+                                            $imageUrl = 'images/default_npc.png';
+                                            $displayName = 'Créature inconnue';
                                             
                                             if ($npc['is_identified']) {
                                                 // PNJ identifié : afficher nom et photo
                                                 $displayName = $npc['name'];
                                                 if (!empty($npc['character_profile_photo']) && file_exists($npc['character_profile_photo'])) {
-                                                    $photo_to_show = $npc['character_profile_photo'];
+                                                    $imageUrl = $npc['character_profile_photo'];
                                                 } elseif (!empty($npc['profile_photo']) && file_exists($npc['profile_photo'])) {
-                                                    $photo_to_show = $npc['profile_photo'];
+                                                    $imageUrl = $npc['profile_photo'];
                                                 }
+                                            } else {
+                                                // PNJ non identifié : afficher silhouette générique
+                                                $imageUrl = 'images/default_npc.png';
                                             }
                                             ?>
-                                            <?php if (!empty($photo_to_show)): ?>
-                                                <img src="<?php echo htmlspecialchars($photo_to_show); ?>" alt="Photo de <?php echo htmlspecialchars($displayName); ?>" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;">
-                                            <?php else: ?>
-                                                <div class="bg-success rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                                                    <i class="fas fa-user-tie text-white"></i>
-                                                </div>
-                                            <?php endif; ?>
-                                            <div>
+                                            <img src="<?php echo htmlspecialchars($imageUrl); ?>" alt="<?php echo htmlspecialchars($displayName); ?>" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                                            <div class="flex-grow-1">
                                                 <h6 class="mb-1"><?php echo htmlspecialchars($displayName); ?></h6>
-                                                <?php if ($npc['is_identified'] && !empty($npc['description'])): ?>
-                                                    <p class="mb-0 text-muted small"><?php echo htmlspecialchars(substr($npc['description'], 0, 100)); ?><?php echo strlen($npc['description']) > 100 ? '...' : ''; ?></p>
-                                                <?php else: ?>
-                                                    <p class="mb-0 text-muted small">PNJ non identifié</p>
-                                                <?php endif; ?>
+                                                <small class="text-muted">PNJ</small>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                <?php endforeach; ?>
                             </div>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
 
-    <!-- Monstres présents (seulement visibles) -->
-    <?php if (!empty($placeMonsters)): ?>
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-dragon me-2"></i>Monstres présents</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <?php foreach ($placeMonsters as $monster): ?>
-                            <div class="col-md-6">
-                                <div class="card">
-                                    <div class="card-body">
+                    <!-- Monstres -->
+                    <?php if (!empty($placeMonsters)): ?>
+                        <div class="mb-4 monsters-section">
+                            <h6 class="text-danger mb-3"><i class="fas fa-dragon me-2"></i>Monstres</h6>
+                            <div class="list-group list-group-flush">
+                                <?php foreach ($placeMonsters as $monster): ?>
+                                    <div class="list-group-item px-0 py-2">
                                         <div class="d-flex align-items-center">
                                             <?php 
                                             // Logique d'affichage selon l'identification
-                                            $displayName = 'Monstre inconnu';
-                                            $showDetails = false;
+                                            $imageUrl = 'images/default_monster.png';
+                                            $displayName = 'Créature inconnue';
                                             
                                             if ($monster['is_identified']) {
-                                                // Monstre identifié : afficher nom et détails
+                                                // Monstre identifié : afficher nom et photo
                                                 $displayName = $monster['name'];
-                                                $showDetails = true;
+                                                $monster_image_path = "images/monstres/{$monster['csv_id']}.jpg";
+                                                if (file_exists($monster_image_path)) {
+                                                    $imageUrl = $monster_image_path;
+                                                } else {
+                                                    $imageUrl = 'images/default_monster.png';
+                                                }
+                                            } else {
+                                                // Monstre non identifié : afficher silhouette générique
+                                                $imageUrl = 'images/default_monster.png';
                                             }
                                             ?>
-                                            <div class="bg-danger rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                                                <i class="fas fa-dragon text-white"></i>
-                                            </div>
-                                            <div>
+                                            <img src="<?php echo htmlspecialchars($imageUrl); ?>" alt="<?php echo htmlspecialchars($displayName); ?>" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                                            <div class="flex-grow-1">
                                                 <h6 class="mb-1"><?php echo htmlspecialchars($displayName); ?></h6>
-                                                <?php if ($showDetails): ?>
-                                                    <small class="text-muted">
-                                                        <?php echo htmlspecialchars($monster['type']); ?> - <?php echo htmlspecialchars($monster['size']); ?> - CR <?php echo $monster['challenge_rating']; ?>
-                                                    </small>
-                                                    <?php if (!empty($monster['description'])): ?>
-                                                        <p class="mb-0 text-muted small mt-1"><?php echo htmlspecialchars(substr($monster['description'], 0, 100)); ?><?php echo strlen($monster['description']) > 100 ? '...' : ''; ?></p>
+                                                <small class="text-muted">
+                                                    <?php if ($monster['is_identified']): ?>
+                                                        <?php echo htmlspecialchars($monster['type'] ?? 'Type inconnu'); ?> - 
+                                                        <?php if ($monster['quantity'] > 1): ?>
+                                                            <?php echo (int)$monster['quantity']; ?> créatures
+                                                        <?php else: ?>
+                                                            <?php echo htmlspecialchars($monster['size'] ?? 'Taille inconnue'); ?>
+                                                        <?php endif; ?>
+                                                    <?php else: ?>
+                                                        Créature non identifiée
                                                     <?php endif; ?>
-                                                <?php else: ?>
-                                                    <small class="text-muted">Monstre non identifié</small>
-                                                <?php endif; ?>
+                                                </small>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                <?php endforeach; ?>
                             </div>
-                        <?php endforeach; ?>
-                    </div>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- Message si aucun participant -->
+                    <?php if (empty($placePlayers) && empty($placeNpcs) && empty($placeMonsters)): ?>
+                        <div class="text-center text-muted">
+                            <i class="fas fa-users fa-2x mb-3"></i>
+                            <p>Aucun participant dans ce lieu.</p>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
     </div>
-    <?php endif; ?>
+
 
     <!-- Notes du lieu -->
     <?php if (!empty($place['notes'])): ?>
@@ -879,14 +849,207 @@ function checkPlayerLocationChange() {
         });
 }
 
+// Fonction pour mettre à jour la liste des participants
+function updateParticipantsList() {
+    fetch('get_participants_list.php?place_id=<?php echo (int)$place_id; ?>')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateNpcsSection(data.npcs);
+                updateMonstersSection(data.monsters);
+                updateNpcTokens(data.npcs);
+                updateMonsterTokens(data.monsters);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur lors de la mise à jour des participants:', error);
+        });
+}
+
+// Fonction pour mettre à jour les pions des monstres sur la carte
+function updateMonsterTokens(monsters) {
+    // Trouver tous les pions de monstres existants
+    const existingTokens = document.querySelectorAll('.token[data-token-type="monster"]');
+    
+    existingTokens.forEach(token => {
+        const entityId = token.getAttribute('data-entity-id');
+        const monster = monsters.find(m => m.id == entityId);
+        
+        if (monster) {
+            // Mettre à jour l'image du pion
+            let imageUrl = 'images/default_monster.png';
+            if (monster.is_identified) {
+                imageUrl = `images/monstres/${monster.csv_id}.jpg`;
+            }
+            
+            // Mettre à jour le background-image
+            token.style.backgroundImage = `url('${imageUrl}')`;
+            
+            // Mettre à jour le titre
+            const displayName = monster.is_identified ? monster.name : 'Monstre inconnu';
+            token.setAttribute('title', displayName);
+        }
+    });
+}
+
+// Fonction pour mettre à jour les pions des PNJ sur la carte
+function updateNpcTokens(npcs) {
+    // Trouver tous les pions de PNJ existants
+    const existingTokens = document.querySelectorAll('.token[data-token-type="npc"]');
+    
+    existingTokens.forEach(token => {
+        const entityId = token.getAttribute('data-entity-id');
+        const npc = npcs.find(n => n.id == entityId);
+        
+        if (npc) {
+            // Mettre à jour l'image du pion
+            let imageUrl = 'images/default_npc.png';
+            if (npc.is_identified) {
+                if (npc.character_profile_photo) {
+                    imageUrl = npc.character_profile_photo;
+                } else if (npc.profile_photo) {
+                    imageUrl = npc.profile_photo;
+                }
+            }
+            
+            // Mettre à jour le background-image
+            token.style.backgroundImage = `url('${imageUrl}')`;
+            
+            // Mettre à jour le titre
+            const displayName = npc.is_identified ? npc.name : 'PNJ inconnu';
+            token.setAttribute('title', displayName);
+        }
+    });
+}
+
+// Fonction pour mettre à jour la section PNJ
+function updateNpcsSection(npcs) {
+    const npcsSection = document.querySelector('.npcs-section');
+    if (!npcsSection) return;
+    
+    const npcsContainer = npcsSection.querySelector('.list-group');
+    if (!npcsContainer) return;
+    
+    // Vider la liste actuelle
+    npcsContainer.innerHTML = '';
+    
+    if (npcs.length === 0) {
+        // Masquer la section PNJ si aucun PNJ visible
+        npcsSection.style.display = 'none';
+    } else {
+        // Afficher la section PNJ
+        npcsSection.style.display = 'block';
+        
+        // Ajouter les PNJ
+        npcs.forEach(npc => {
+            const npcItem = createNpcItem(npc);
+            npcsContainer.appendChild(npcItem);
+        });
+    }
+}
+
+// Fonction pour mettre à jour la section Monstres
+function updateMonstersSection(monsters) {
+    const monstersSection = document.querySelector('.monsters-section');
+    if (!monstersSection) return;
+    
+    const monstersContainer = monstersSection.querySelector('.list-group');
+    if (!monstersContainer) return;
+    
+    // Vider la liste actuelle
+    monstersContainer.innerHTML = '';
+    
+    if (monsters.length === 0) {
+        // Masquer la section Monstres si aucun monstre visible
+        monstersSection.style.display = 'none';
+    } else {
+        // Afficher la section Monstres
+        monstersSection.style.display = 'block';
+        
+        // Ajouter les monstres
+        monsters.forEach(monster => {
+            const monsterItem = createMonsterItem(monster);
+            monstersContainer.appendChild(monsterItem);
+        });
+    }
+}
+
+// Fonction pour créer un élément PNJ
+function createNpcItem(npc) {
+    const div = document.createElement('div');
+    div.className = 'list-group-item px-0 py-2';
+    
+    const displayName = npc.is_identified ? npc.name : 'Créature inconnue';
+    let imageUrl = 'images/default_npc.png';
+    
+    if (npc.is_identified) {
+        if (npc.character_profile_photo) {
+            imageUrl = npc.character_profile_photo;
+        } else if (npc.profile_photo) {
+            imageUrl = npc.profile_photo;
+        }
+    }
+    
+    div.innerHTML = `
+        <div class="d-flex align-items-center">
+            <img src="${imageUrl}" alt="${displayName}" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;" onerror="this.src='images/default_npc.png'">
+            <div class="flex-grow-1">
+                <h6 class="mb-1">${displayName}</h6>
+                <small class="text-muted">PNJ</small>
+            </div>
+        </div>
+    `;
+    
+    return div;
+}
+
+// Fonction pour créer un élément Monstre
+function createMonsterItem(monster) {
+    const div = document.createElement('div');
+    div.className = 'list-group-item px-0 py-2';
+    
+    const displayName = monster.is_identified ? monster.name : 'Créature inconnue';
+    const imageUrl = monster.is_identified ? `images/monstres/${monster.csv_id}.jpg` : 'images/default_monster.png';
+    
+    let details = '';
+    if (monster.is_identified) {
+        details = `${monster.type || 'Type inconnu'} - `;
+        if (monster.quantity > 1) {
+            details += `${monster.quantity} créatures`;
+        } else {
+            details += monster.size || 'Taille inconnue';
+        }
+    } else {
+        details = 'Créature non identifiée';
+    }
+    
+    div.innerHTML = `
+        <div class="d-flex align-items-center">
+            <img src="${imageUrl}" alt="${displayName}" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;" onerror="this.src='images/default_monster.png'">
+            <div class="flex-grow-1">
+                <h6 class="mb-1">${displayName}</h6>
+                <small class="text-muted">${details}</small>
+            </div>
+        </div>
+    `;
+    
+    return div;
+}
+
 // Vérifier le changement de lieu toutes les 3 secondes
 let locationCheckInterval = setInterval(checkPlayerLocationChange, 3000);
+
+// Mettre à jour la liste des participants toutes les 2 secondes
+let participantsUpdateInterval = setInterval(updateParticipantsList, 2000);
 
 // Arrêter la mise à jour automatique quand la page se ferme
 window.addEventListener('beforeunload', function() {
     stopAutoUpdate();
     if (locationCheckInterval) {
         clearInterval(locationCheckInterval);
+    }
+    if (participantsUpdateInterval) {
+        clearInterval(participantsUpdateInterval);
     }
 });
 </script>
