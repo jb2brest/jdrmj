@@ -2,19 +2,19 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=1.2.2
+VERSION=1.2.3
 
 # Date de déploiement
-DEPLOY_DATE=2025-09-17
+DEPLOY_DATE=2025-09-18
 
 # Environnement
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=39b1438acdc8eeb2b4cd267f5aa540c891c0074b
+GIT_COMMIT=1722dc2935531f69be591d8ce882aecb2663afbb
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20250917-223454
+BUILD_ID=20250918-074235
 
 # Notes de version
-RELEASE_NOTES="Mise à jour du player"
+RELEASE_NOTES="Changement de lieu OK"
