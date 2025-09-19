@@ -2,19 +2,19 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=1.11.0
+VERSION=1.12.0
 
 # Date de déploiement
-DEPLOY_DATE=2025-09-18
+DEPLOY_DATE=2025-09-19
 
 # Environnement
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=52db64489a66796dcaffaadccc91cfd56faae079
+GIT_COMMIT=87ffac9f96483937523e398664e33baf44c45dd8
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20250918-223236
+BUILD_ID=20250919-083438
 
 # Notes de version
-RELEASE_NOTES="Classe : occultiste"
+RELEASE_NOTES="Classe : paladin"
