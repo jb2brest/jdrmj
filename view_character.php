@@ -62,6 +62,8 @@ $isWizard = strpos(strtolower($character['class_name']), 'magicien') !== false;
 $isMonk = strpos(strtolower($character['class_name']), 'moine') !== false;
 $isWarlock = strpos(strtolower($character['class_name']), 'occultiste') !== false;
 $isPaladin = strpos(strtolower($character['class_name']), 'paladin') !== false;
+$isRanger = strpos(strtolower($character['class_name']), 'rôdeur') !== false;
+$isRogue = strpos(strtolower($character['class_name']), 'roublard') !== false;
 $rageData = null;
 if ($isBarbarian) {
     // Récupérer le nombre maximum de rages pour ce niveau
@@ -105,6 +107,10 @@ if ($isBarbarian) {
     $classCapabilities = getWarlockCapabilities($character['level']);
 } elseif ($isPaladin) {
     $classCapabilities = getPaladinCapabilities($character['level']);
+} elseif ($isRanger) {
+    $classCapabilities = getRangerCapabilities($character['level']);
+} elseif ($isRogue) {
+    $classCapabilities = getRogueCapabilities($character['level']);
 }
 
 // Capacités raciales
@@ -125,6 +131,18 @@ if ($isBarbarian) {
 $paladinOath = null;
 if ($isPaladin) {
     $paladinOath = getCharacterPaladinOath($character_id);
+}
+
+// Récupérer l'archétype de rôdeur
+$rangerArchetype = null;
+if ($isRanger) {
+    $rangerArchetype = getCharacterRangerArchetype($character_id);
+}
+
+// Récupérer l'archétype de roublard
+$rogueArchetype = null;
+if ($isRogue) {
+    $rogueArchetype = getCharacterRogueArchetype($character_id);
 }
 
 // Récupérer le collège bardique du barde
@@ -1400,6 +1418,146 @@ $initiative = $dexterityMod;
                             
                             // Afficher les capacités de serment sacré
                             foreach ($oathCapabilities as $capability):
+                            ?>
+                                <div class="capability-item mt-3">
+                                    <div class="capability-header">
+                                        <h6 class="mb-1 text-info">
+                                            <i class="fas fa-star me-1"></i><?php echo htmlspecialchars($capability['name']); ?>
+                                        </h6>
+                                    </div>
+                                    <div class="capability-description">
+                                        <small class="text-muted"><?php echo nl2br(htmlspecialchars($capability['description'])); ?></small>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                
+                <!-- Archétype de rôdeur -->
+                <?php if ($rangerArchetype): ?>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5><i class="fas fa-leaf me-2"></i>Archétype de rôdeur</h5>
+                            <div class="capability-item">
+                                <div class="capability-header">
+                                    <h6 class="mb-1 text-warning">
+                                        <i class="fas fa-leaf me-1"></i><?php echo htmlspecialchars($rangerArchetype['archetype_name']); ?>
+                                    </h6>
+                                </div>
+                                <div class="capability-description">
+                                    <small class="text-muted"><?php echo nl2br(htmlspecialchars($rangerArchetype['archetype_description'])); ?></small>
+                                </div>
+                            </div>
+                            
+                            <!-- Capacités d'archétype de rôdeur par niveau -->
+                            <?php
+                            $archetypeCapabilities = [];
+                            
+                            // Niveau 3 - Capacité d'archétype de rôdeur
+                            if ($character['level'] >= 3 && !empty($rangerArchetype['level_3_feature'])) {
+                                $archetypeCapabilities[] = [
+                                    'name' => 'Capacité de niveau 3',
+                                    'description' => $rangerArchetype['level_3_feature']
+                                ];
+                            }
+                            
+                            // Niveau 7 - Capacité d'archétype de rôdeur
+                            if ($character['level'] >= 7 && !empty($rangerArchetype['level_7_feature'])) {
+                                $archetypeCapabilities[] = [
+                                    'name' => 'Capacité de niveau 7',
+                                    'description' => $rangerArchetype['level_7_feature']
+                                ];
+                            }
+                            
+                            // Niveau 11 - Capacité d'archétype de rôdeur
+                            if ($character['level'] >= 11 && !empty($rangerArchetype['level_11_feature'])) {
+                                $archetypeCapabilities[] = [
+                                    'name' => 'Capacité de niveau 11',
+                                    'description' => $rangerArchetype['level_11_feature']
+                                ];
+                            }
+                            
+                            // Niveau 15 - Capacité d'archétype de rôdeur
+                            if ($character['level'] >= 15 && !empty($rangerArchetype['level_15_feature'])) {
+                                $archetypeCapabilities[] = [
+                                    'name' => 'Capacité de niveau 15',
+                                    'description' => $rangerArchetype['level_15_feature']
+                                ];
+                            }
+                            
+                            // Afficher les capacités d'archétype de rôdeur
+                            foreach ($archetypeCapabilities as $capability):
+                            ?>
+                                <div class="capability-item mt-3">
+                                    <div class="capability-header">
+                                        <h6 class="mb-1 text-info">
+                                            <i class="fas fa-star me-1"></i><?php echo htmlspecialchars($capability['name']); ?>
+                                        </h6>
+                                    </div>
+                                    <div class="capability-description">
+                                        <small class="text-muted"><?php echo nl2br(htmlspecialchars($capability['description'])); ?></small>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                
+                <!-- Archétype de roublard -->
+                <?php if ($rogueArchetype): ?>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5><i class="fas fa-mask me-2"></i>Archétype de roublard</h5>
+                            <div class="capability-item">
+                                <div class="capability-header">
+                                    <h6 class="mb-1 text-warning">
+                                        <i class="fas fa-mask me-1"></i><?php echo htmlspecialchars($rogueArchetype['archetype_name']); ?>
+                                    </h6>
+                                </div>
+                                <div class="capability-description">
+                                    <small class="text-muted"><?php echo nl2br(htmlspecialchars($rogueArchetype['archetype_description'])); ?></small>
+                                </div>
+                            </div>
+                            
+                            <!-- Capacités d'archétype de roublard par niveau -->
+                            <?php
+                            $rogueArchetypeCapabilities = [];
+                            
+                            // Niveau 3 - Capacité d'archétype de roublard
+                            if ($character['level'] >= 3 && !empty($rogueArchetype['level_3_feature'])) {
+                                $rogueArchetypeCapabilities[] = [
+                                    'name' => 'Capacité de niveau 3',
+                                    'description' => $rogueArchetype['level_3_feature']
+                                ];
+                            }
+                            
+                            // Niveau 9 - Capacité d'archétype de roublard
+                            if ($character['level'] >= 9 && !empty($rogueArchetype['level_9_feature'])) {
+                                $rogueArchetypeCapabilities[] = [
+                                    'name' => 'Capacité de niveau 9',
+                                    'description' => $rogueArchetype['level_9_feature']
+                                ];
+                            }
+                            
+                            // Niveau 13 - Capacité d'archétype de roublard
+                            if ($character['level'] >= 13 && !empty($rogueArchetype['level_13_feature'])) {
+                                $rogueArchetypeCapabilities[] = [
+                                    'name' => 'Capacité de niveau 13',
+                                    'description' => $rogueArchetype['level_13_feature']
+                                ];
+                            }
+                            
+                            // Niveau 17 - Capacité d'archétype de roublard
+                            if ($character['level'] >= 17 && !empty($rogueArchetype['level_17_feature'])) {
+                                $rogueArchetypeCapabilities[] = [
+                                    'name' => 'Capacité de niveau 17',
+                                    'description' => $rogueArchetype['level_17_feature']
+                                ];
+                            }
+                            
+                            // Afficher les capacités d'archétype de roublard
+                            foreach ($rogueArchetypeCapabilities as $capability):
                             ?>
                                 <div class="capability-item mt-3">
                                     <div class="capability-header">

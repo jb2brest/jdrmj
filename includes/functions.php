@@ -1090,6 +1090,14 @@ function detectWeaponsInEquipment($equipmentText) {
             'cinq ' . $weaponName . 's', // Avec nombre et pluriel
         ];
         
+        // Patterns spécifiques pour les pluriels français complexes
+        if (strpos($weaponName, 'épée') !== false) {
+            $patterns[] = 'deux épées courtes';
+            $patterns[] = 'trois épées courtes';
+            $patterns[] = 'quatre épées courtes';
+            $patterns[] = 'cinq épées courtes';
+        }
+        
         $found = false;
         foreach ($patterns as $pattern) {
             if (stripos($equipmentText, $pattern) !== false) {
@@ -1940,6 +1948,596 @@ function getPaladinCapabilities($level) {
         $capabilities[] = [
             'name' => 'Serment sacré',
             'description' => 'Vous gagnez une nouvelle capacité liée à votre serment sacré.'
+        ];
+    }
+    
+    return $capabilities;
+}
+
+// Fonction pour obtenir les capacités de rôdeur selon le niveau
+function getRangerCapabilities($level) {
+    $capabilities = [];
+    
+    // Niveau 1 - Maîtrise d'armures
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Maîtrise d\'armures',
+            'description' => 'Vous maîtrisez les armures légères, les armures intermédiaires et les boucliers.'
+        ];
+    }
+    
+    // Niveau 1 - Maîtrise d'armes
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Maîtrise d\'armes',
+            'description' => 'Vous maîtrisez les armes courantes, les armes de guerre, les arbalètes de poing, les épées longues, les rapières, les épées courtes et les armes à distance simples.'
+        ];
+    }
+    
+    // Niveau 1 - Maîtrise d'outils
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Maîtrise d\'outils',
+            'description' => 'Vous maîtrisez un type d\'outil d\'artisan de votre choix.'
+        ];
+    }
+    
+    // Niveau 1 - Compétences
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Compétences',
+            'description' => 'Vous choisissez trois compétences parmi : Athlétisme, Dressage, Investigation, Nature, Perception, Survie, Discrétion et Intuition.'
+        ];
+    }
+    
+    // Niveau 1 - Sorts
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Sorts',
+            'description' => 'Vous avez appris à utiliser la magie de la nature. Voir le chapitre 10 pour les règles générales sur la magie et le chapitre 11 pour la liste des sorts de rôdeur.'
+        ];
+    }
+    
+    // Niveau 1 - Ennemis favoris
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Ennemis favoris',
+            'description' => 'Vous avez une expérience significative dans l\'étude, le suivi, la chasse et même la communication avec un certain type d\'ennemi.'
+        ];
+    }
+    
+    // Niveau 1 - Terrain de prédilection
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Terrain de prédilection',
+            'description' => 'Vous êtes particulièrement familier avec un type d\'environnement naturel et êtes compétent pour voyager et survivre dans de telles régions.'
+        ];
+    }
+    
+    // Niveau 2 - Style de combat
+    if ($level >= 2) {
+        $capabilities[] = [
+            'name' => 'Style de combat',
+            'description' => 'Vous adoptez un style de combat particulier. Votre choix vous accorde des avantages au combat.'
+        ];
+    }
+    
+    // Niveau 2 - Sorts
+    if ($level >= 2) {
+        $capabilities[] = [
+            'name' => 'Sorts',
+            'description' => 'Vous connaissez des sorts supplémentaires de rôdeur.'
+        ];
+    }
+    
+    // Niveau 3 - Archétype de rôdeur
+    if ($level >= 3) {
+        $capabilities[] = [
+            'name' => 'Archétype de rôdeur',
+            'description' => 'Vous choisissez un archétype qui reflète votre approche de la nature et de la chasse. Votre choix vous accorde des capacités au niveau 3, puis aux niveaux 7, 11 et 15.'
+        ];
+    }
+    
+    // Niveau 3 - Sorts
+    if ($level >= 3) {
+        $capabilities[] = [
+            'name' => 'Sorts',
+            'description' => 'Vous connaissez des sorts supplémentaires de rôdeur.'
+        ];
+    }
+    
+    // Niveau 4 - Amélioration de caractéristique
+    if ($level >= 4) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 4 - Sorts
+    if ($level >= 4) {
+        $capabilities[] = [
+            'name' => 'Sorts',
+            'description' => 'Vous connaissez des sorts supplémentaires de rôdeur.'
+        ];
+    }
+    
+    // Niveau 5 - Attaque supplémentaire
+    if ($level >= 5) {
+        $capabilities[] = [
+            'name' => 'Attaque supplémentaire',
+            'description' => 'Vous pouvez attaquer deux fois, au lieu d\'une, quand vous effectuez l\'action attaquer lors de votre tour.'
+        ];
+    }
+    
+    // Niveau 5 - Sorts
+    if ($level >= 5) {
+        $capabilities[] = [
+            'name' => 'Sorts',
+            'description' => 'Vous connaissez des sorts supplémentaires de rôdeur.'
+        ];
+    }
+    
+    // Niveau 6 - Ennemis favoris
+    if ($level >= 6) {
+        $capabilities[] = [
+            'name' => 'Ennemis favoris',
+            'description' => 'Vous gagnez un nouveau type d\'ennemi favori.'
+        ];
+    }
+    
+    // Niveau 6 - Sorts
+    if ($level >= 6) {
+        $capabilities[] = [
+            'name' => 'Sorts',
+            'description' => 'Vous connaissez des sorts supplémentaires de rôdeur.'
+        ];
+    }
+    
+    // Niveau 7 - Archétype de rôdeur
+    if ($level >= 7) {
+        $capabilities[] = [
+            'name' => 'Archétype de rôdeur',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre archétype de rôdeur.'
+        ];
+    }
+    
+    // Niveau 7 - Sorts
+    if ($level >= 7) {
+        $capabilities[] = [
+            'name' => 'Sorts',
+            'description' => 'Vous connaissez des sorts supplémentaires de rôdeur.'
+        ];
+    }
+    
+    // Niveau 8 - Amélioration de caractéristique
+    if ($level >= 8) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 8 - Terrain de prédilection
+    if ($level >= 8) {
+        $capabilities[] = [
+            'name' => 'Terrain de prédilection',
+            'description' => 'Vous gagnez un nouveau type de terrain de prédilection.'
+        ];
+    }
+    
+    // Niveau 8 - Sorts
+    if ($level >= 8) {
+        $capabilities[] = [
+            'name' => 'Sorts',
+            'description' => 'Vous connaissez des sorts supplémentaires de rôdeur.'
+        ];
+    }
+    
+    // Niveau 9 - Sorts
+    if ($level >= 9) {
+        $capabilities[] = [
+            'name' => 'Sorts',
+            'description' => 'Vous connaissez des sorts supplémentaires de rôdeur.'
+        ];
+    }
+    
+    // Niveau 10 - Ennemis favoris
+    if ($level >= 10) {
+        $capabilities[] = [
+            'name' => 'Ennemis favoris',
+            'description' => 'Vous gagnez un nouveau type d\'ennemi favori.'
+        ];
+    }
+    
+    // Niveau 10 - Sorts
+    if ($level >= 10) {
+        $capabilities[] = [
+            'name' => 'Sorts',
+            'description' => 'Vous connaissez des sorts supplémentaires de rôdeur.'
+        ];
+    }
+    
+    // Niveau 11 - Archétype de rôdeur
+    if ($level >= 11) {
+        $capabilities[] = [
+            'name' => 'Archétype de rôdeur',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre archétype de rôdeur.'
+        ];
+    }
+    
+    // Niveau 11 - Sorts
+    if ($level >= 11) {
+        $capabilities[] = [
+            'name' => 'Sorts',
+            'description' => 'Vous connaissez des sorts supplémentaires de rôdeur.'
+        ];
+    }
+    
+    // Niveau 12 - Amélioration de caractéristique
+    if ($level >= 12) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 12 - Sorts
+    if ($level >= 12) {
+        $capabilities[] = [
+            'name' => 'Sorts',
+            'description' => 'Vous connaissez des sorts supplémentaires de rôdeur.'
+        ];
+    }
+    
+    // Niveau 13 - Sorts
+    if ($level >= 13) {
+        $capabilities[] = [
+            'name' => 'Sorts',
+            'description' => 'Vous connaissez des sorts supplémentaires de rôdeur.'
+        ];
+    }
+    
+    // Niveau 14 - Ennemis favoris
+    if ($level >= 14) {
+        $capabilities[] = [
+            'name' => 'Ennemis favoris',
+            'description' => 'Vous gagnez un nouveau type d\'ennemi favori.'
+        ];
+    }
+    
+    // Niveau 14 - Sorts
+    if ($level >= 14) {
+        $capabilities[] = [
+            'name' => 'Sorts',
+            'description' => 'Vous connaissez des sorts supplémentaires de rôdeur.'
+        ];
+    }
+    
+    // Niveau 15 - Archétype de rôdeur
+    if ($level >= 15) {
+        $capabilities[] = [
+            'name' => 'Archétype de rôdeur',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre archétype de rôdeur.'
+        ];
+    }
+    
+    // Niveau 15 - Sorts
+    if ($level >= 15) {
+        $capabilities[] = [
+            'name' => 'Sorts',
+            'description' => 'Vous connaissez des sorts supplémentaires de rôdeur.'
+        ];
+    }
+    
+    // Niveau 16 - Amélioration de caractéristique
+    if ($level >= 16) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 16 - Sorts
+    if ($level >= 16) {
+        $capabilities[] = [
+            'name' => 'Sorts',
+            'description' => 'Vous connaissez des sorts supplémentaires de rôdeur.'
+        ];
+    }
+    
+    // Niveau 17 - Sorts
+    if ($level >= 17) {
+        $capabilities[] = [
+            'name' => 'Sorts',
+            'description' => 'Vous connaissez des sorts supplémentaires de rôdeur.'
+        ];
+    }
+    
+    // Niveau 18 - Terrain de prédilection
+    if ($level >= 18) {
+        $capabilities[] = [
+            'name' => 'Terrain de prédilection',
+            'description' => 'Vous gagnez un nouveau type de terrain de prédilection.'
+        ];
+    }
+    
+    // Niveau 18 - Sorts
+    if ($level >= 18) {
+        $capabilities[] = [
+            'name' => 'Sorts',
+            'description' => 'Vous connaissez des sorts supplémentaires de rôdeur.'
+        ];
+    }
+    
+    // Niveau 19 - Amélioration de caractéristique
+    if ($level >= 19) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 19 - Sorts
+    if ($level >= 19) {
+        $capabilities[] = [
+            'name' => 'Sorts',
+            'description' => 'Vous connaissez des sorts supplémentaires de rôdeur.'
+        ];
+    }
+    
+    // Niveau 20 - Archétype de rôdeur
+    if ($level >= 20) {
+        $capabilities[] = [
+            'name' => 'Archétype de rôdeur',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre archétype de rôdeur.'
+        ];
+    }
+    
+    // Niveau 20 - Sorts
+    if ($level >= 20) {
+        $capabilities[] = [
+            'name' => 'Sorts',
+            'description' => 'Vous connaissez des sorts supplémentaires de rôdeur.'
+        ];
+    }
+    
+    return $capabilities;
+}
+
+// Fonction pour obtenir les capacités de roublard selon le niveau
+function getRogueCapabilities($level) {
+    $capabilities = [];
+    
+    // Niveau 1 - Maîtrise d'armures
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Maîtrise d\'armures',
+            'description' => 'Vous maîtrisez les armures légères.'
+        ];
+    }
+    
+    // Niveau 1 - Maîtrise d'armes
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Maîtrise d\'armes',
+            'description' => 'Vous maîtrisez les armes courantes, les arbalètes de poing, les épées longues, les rapières, les épées courtes et les armes à distance simples.'
+        ];
+    }
+    
+    // Niveau 1 - Maîtrise d'outils
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Maîtrise d\'outils',
+            'description' => 'Vous maîtrisez les outils de voleur. Votre bonus de maîtrise est doublé pour tous les tests d\'Intelligence (Investigation) et de Sagesse (Perception) que vous effectuez pour rechercher des pièges et des portes secrètes.'
+        ];
+    }
+    
+    // Niveau 1 - Compétences
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Compétences',
+            'description' => 'Vous choisissez quatre compétences parmi : Acrobaties, Athlétisme, Discrétion, Escamotage, Intimidation, Investigation, Perception, Persuasion, Représentation et Tromperie.'
+        ];
+    }
+    
+    // Niveau 1 - Attaque sournoise
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Attaque sournoise',
+            'description' => 'Vous savez comment frapper subtilement et exploiter les failles de la garde d\'un ennemi. Une fois par tour, vous pouvez infliger 1d6 dégâts supplémentaires à une créature que vous touchez avec une attaque d\'arme si vous avez un avantage sur le jet d\'attaque.'
+        ];
+    }
+    
+    // Niveau 1 - Argot des voleurs
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Argot des voleurs',
+            'description' => 'Vous connaissez l\'argot des voleurs, un mélange secret de dialecte, de jargon et de codes qui vous permet de cacher des messages dans des conversations apparemment normales.'
+        ];
+    }
+    
+    // Niveau 2 - Esquive
+    if ($level >= 2) {
+        $capabilities[] = [
+            'name' => 'Esquive',
+            'description' => 'Votre agilité et votre vitesse vous permettent de vous déplacer et d\'agir rapidement. Vous pouvez utiliser une action bonus lors de votre tour pour effectuer l\'action se précipiter, se désengager ou se cacher.'
+        ];
+    }
+    
+    // Niveau 3 - Archétype de roublard
+    if ($level >= 3) {
+        $capabilities[] = [
+            'name' => 'Archétype de roublard',
+            'description' => 'Vous choisissez un archétype qui reflète votre style de roublard. Votre choix vous accorde des capacités au niveau 3, puis aux niveaux 9, 13 et 17.'
+        ];
+    }
+    
+    // Niveau 4 - Amélioration de caractéristique
+    if ($level >= 4) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 5 - Attaque sournoise
+    if ($level >= 5) {
+        $capabilities[] = [
+            'name' => 'Attaque sournoise',
+            'description' => 'Les dégâts de votre attaque sournoise augmentent à 3d6.'
+        ];
+    }
+    
+    // Niveau 5 - Esquive
+    if ($level >= 5) {
+        $capabilities[] = [
+            'name' => 'Esquive',
+            'description' => 'Vous pouvez utiliser votre réaction pour réduire de moitié les dégâts d\'une attaque qui vous touche.'
+        ];
+    }
+    
+    // Niveau 6 - Expertise
+    if ($level >= 6) {
+        $capabilities[] = [
+            'name' => 'Expertise',
+            'description' => 'Votre bonus de maîtrise est doublé pour deux compétences de votre choix.'
+        ];
+    }
+    
+    // Niveau 7 - Esquive
+    if ($level >= 7) {
+        $capabilities[] = [
+            'name' => 'Esquive',
+            'description' => 'Vous pouvez utiliser votre réaction pour réduire de moitié les dégâts d\'une attaque qui vous touche.'
+        ];
+    }
+    
+    // Niveau 8 - Amélioration de caractéristique
+    if ($level >= 8) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 9 - Archétype de roublard
+    if ($level >= 9) {
+        $capabilities[] = [
+            'name' => 'Archétype de roublard',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre archétype de roublard.'
+        ];
+    }
+    
+    // Niveau 9 - Attaque sournoise
+    if ($level >= 9) {
+        $capabilities[] = [
+            'name' => 'Attaque sournoise',
+            'description' => 'Les dégâts de votre attaque sournoise augmentent à 5d6.'
+        ];
+    }
+    
+    // Niveau 10 - Amélioration de caractéristique
+    if ($level >= 10) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 11 - Expertise
+    if ($level >= 11) {
+        $capabilities[] = [
+            'name' => 'Expertise',
+            'description' => 'Votre bonus de maîtrise est doublé pour deux compétences de votre choix.'
+        ];
+    }
+    
+    // Niveau 12 - Amélioration de caractéristique
+    if ($level >= 12) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 13 - Archétype de roublard
+    if ($level >= 13) {
+        $capabilities[] = [
+            'name' => 'Archétype de roublard',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre archétype de roublard.'
+        ];
+    }
+    
+    // Niveau 13 - Attaque sournoise
+    if ($level >= 13) {
+        $capabilities[] = [
+            'name' => 'Attaque sournoise',
+            'description' => 'Les dégâts de votre attaque sournoise augmentent à 7d6.'
+        ];
+    }
+    
+    // Niveau 14 - Amélioration de caractéristique
+    if ($level >= 14) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 15 - Esquive
+    if ($level >= 15) {
+        $capabilities[] = [
+            'name' => 'Esquive',
+            'description' => 'Vous pouvez utiliser votre réaction pour réduire de moitié les dégâts d\'une attaque qui vous touche.'
+        ];
+    }
+    
+    // Niveau 16 - Amélioration de caractéristique
+    if ($level >= 16) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 17 - Archétype de roublard
+    if ($level >= 17) {
+        $capabilities[] = [
+            'name' => 'Archétype de roublard',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre archétype de roublard.'
+        ];
+    }
+    
+    // Niveau 17 - Attaque sournoise
+    if ($level >= 17) {
+        $capabilities[] = [
+            'name' => 'Attaque sournoise',
+            'description' => 'Les dégâts de votre attaque sournoise augmentent à 9d6.'
+        ];
+    }
+    
+    // Niveau 18 - Esquive
+    if ($level >= 18) {
+        $capabilities[] = [
+            'name' => 'Esquive',
+            'description' => 'Vous pouvez utiliser votre réaction pour réduire de moitié les dégâts d\'une attaque qui vous touche.'
+        ];
+    }
+    
+    // Niveau 19 - Amélioration de caractéristique
+    if ($level >= 19) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 20 - Attaque sournoise
+    if ($level >= 20) {
+        $capabilities[] = [
+            'name' => 'Attaque sournoise',
+            'description' => 'Les dégâts de votre attaque sournoise augmentent à 10d6.'
         ];
     }
     
@@ -3430,6 +4028,30 @@ function getDruidCircles() {
     }
 }
 
+// Fonction pour obtenir les archétypes de rôdeur
+function getRangerArchetypes() {
+    global $pdo;
+    try {
+        $stmt = $pdo->query("SELECT * FROM ranger_archetypes ORDER BY name");
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        error_log("Erreur getRangerArchetypes: " . $e->getMessage());
+        return [];
+    }
+}
+
+// Fonction pour obtenir les archétypes de roublard
+function getRogueArchetypes() {
+    global $pdo;
+    try {
+        $stmt = $pdo->query("SELECT * FROM rogue_archetypes ORDER BY name");
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        error_log("Erreur getRogueArchetypes: " . $e->getMessage());
+        return [];
+    }
+}
+
 // Fonction pour obtenir les origines magiques
 function getSorcererOrigins() {
     global $pdo;
@@ -3524,6 +4146,44 @@ function getCharacterPaladinOath($characterId) {
         return $stmt->fetch();
     } catch (PDOException $e) {
         error_log("Erreur getCharacterPaladinOath: " . $e->getMessage());
+        return null;
+    }
+}
+
+// Fonction pour obtenir l'archétype de rôdeur d'un personnage
+function getCharacterRangerArchetype($characterId) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("
+            SELECT cra.*, ra.name as archetype_name, ra.description as archetype_description,
+                   ra.level_3_feature, ra.level_7_feature, ra.level_11_feature, ra.level_15_feature
+            FROM character_ranger_archetypes cra
+            JOIN ranger_archetypes ra ON cra.archetype_id = ra.id
+            WHERE cra.character_id = ?
+        ");
+        $stmt->execute([$characterId]);
+        return $stmt->fetch();
+    } catch (PDOException $e) {
+        error_log("Erreur getCharacterRangerArchetype: " . $e->getMessage());
+        return null;
+    }
+}
+
+// Fonction pour obtenir l'archétype de roublard d'un personnage
+function getCharacterRogueArchetype($characterId) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("
+            SELECT cra.*, ra.name as archetype_name, ra.description as archetype_description,
+                   ra.level_3_feature, ra.level_9_feature, ra.level_13_feature, ra.level_17_feature
+            FROM character_rogue_archetypes cra
+            JOIN rogue_archetypes ra ON cra.archetype_id = ra.id
+            WHERE cra.character_id = ?
+        ");
+        $stmt->execute([$characterId]);
+        return $stmt->fetch();
+    } catch (PDOException $e) {
+        error_log("Erreur getCharacterRogueArchetype: " . $e->getMessage());
         return null;
     }
 }
@@ -3718,6 +4378,48 @@ function savePaladinOath($characterId, $oathId, $level3Choice = null, $level7Cho
         return $stmt->execute([$characterId, $oathId, $level3Choice, $level7Choice, $level15Choice, $level20Choice]);
     } catch (PDOException $e) {
         error_log("Erreur savePaladinOath: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Fonction pour sauvegarder le choix d'archétype de rôdeur
+function saveRangerArchetype($characterId, $archetypeId, $level3Choice = null, $level7Choice = null, $level11Choice = null, $level15Choice = null) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO character_ranger_archetypes (character_id, archetype_id, level_3_choice, level_7_choice, level_11_choice, level_15_choice)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+            archetype_id = VALUES(archetype_id),
+            level_3_choice = VALUES(level_3_choice),
+            level_7_choice = VALUES(level_7_choice),
+            level_11_choice = VALUES(level_11_choice),
+            level_15_choice = VALUES(level_15_choice)
+        ");
+        return $stmt->execute([$characterId, $archetypeId, $level3Choice, $level7Choice, $level11Choice, $level15Choice]);
+    } catch (PDOException $e) {
+        error_log("Erreur saveRangerArchetype: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Fonction pour sauvegarder le choix d'archétype de roublard
+function saveRogueArchetype($characterId, $archetypeId, $level3Choice = null, $level9Choice = null, $level13Choice = null, $level17Choice = null) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO character_rogue_archetypes (character_id, archetype_id, level_3_choice, level_9_choice, level_13_choice, level_17_choice)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+            archetype_id = VALUES(archetype_id),
+            level_3_choice = VALUES(level_3_choice),
+            level_9_choice = VALUES(level_9_choice),
+            level_13_choice = VALUES(level_13_choice),
+            level_17_choice = VALUES(level_17_choice)
+        ");
+        return $stmt->execute([$characterId, $archetypeId, $level3Choice, $level9Choice, $level13Choice, $level17Choice]);
+    } catch (PDOException $e) {
+        error_log("Erreur saveRogueArchetype: " . $e->getMessage());
         return false;
     }
 }

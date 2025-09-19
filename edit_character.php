@@ -50,7 +50,7 @@ if ($character['race_id']) {
 $classCapabilities = [];
 $raceCapabilities = [];
 
-// Vérifier si c'est un barbare, un barde, un clerc, un druide, un ensorceleur, un guerrier, un magicien, un moine ou un occultiste
+// Vérifier si c'est un barbare, un barde, un clerc, un druide, un ensorceleur, un guerrier, un magicien, un moine, un occultiste, un paladin, un rôdeur ou un roublard
 $isBarbarian = false;
 $isBard = false;
 $isCleric = false;
@@ -61,6 +61,8 @@ $isWizard = false;
 $isMonk = false;
 $isWarlock = false;
 $isPaladin = false;
+$isRanger = false;
+$isRogue = false;
 if ($character['class_id']) {
     $stmt = $pdo->prepare("SELECT name FROM classes WHERE id = ?");
     $stmt->execute([$character['class_id']]);
@@ -75,6 +77,8 @@ if ($character['class_id']) {
     $isMonk = $class && strpos(strtolower($class['name']), 'moine') !== false;
     $isWarlock = $class && strpos(strtolower($class['name']), 'occultiste') !== false;
     $isPaladin = $class && strpos(strtolower($class['name']), 'paladin') !== false;
+    $isRanger = $class && strpos(strtolower($class['name']), 'rôdeur') !== false;
+    $isRogue = $class && strpos(strtolower($class['name']), 'roublard') !== false;
 }
 
 // Capacités de classe basées sur le niveau
@@ -145,6 +149,22 @@ $selectedCircle = null;
 if ($isDruid) {
     $druidCircles = getDruidCircles();
     $selectedCircle = getCharacterDruidCircle($character_id);
+}
+
+// Récupérer les archétypes de rôdeur et le choix actuel
+$rangerArchetypes = [];
+$selectedArchetype = null;
+if ($isRanger) {
+    $rangerArchetypes = getRangerArchetypes();
+    $selectedArchetype = getCharacterRangerArchetype($character_id);
+}
+
+// Récupérer les archétypes de roublard et le choix actuel
+$rogueArchetypes = [];
+$selectedRogueArchetype = null;
+if ($isRogue) {
+    $rogueArchetypes = getRogueArchetypes();
+    $selectedRogueArchetype = getCharacterRogueArchetype($character_id);
 }
 
 // Récupérer les origines magiques et le choix actuel
@@ -304,6 +324,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Serment sacré (pour les paladins de niveau 3+)
     $paladin_oath_id = isset($_POST['paladin_oath_id']) ? (int)$_POST['paladin_oath_id'] : null;
     
+    // Archétype de rôdeur (pour les rôdeurs de niveau 3+)
+    $ranger_archetype_id = isset($_POST['ranger_archetype_id']) ? (int)$_POST['ranger_archetype_id'] : null;
+    
+    // Archétype de roublard (pour les roublards de niveau 3+)
+    $rogue_archetype_id = isset($_POST['rogue_archetype_id']) ? (int)$_POST['rogue_archetype_id'] : null;
+    
     // Collège bardique (pour les bardes de niveau 3+)
         $bard_college_id = isset($_POST['bard_college_id']) ? (int)$_POST['bard_college_id'] : null;
         $cleric_domain_id = isset($_POST['cleric_domain_id']) ? (int)$_POST['cleric_domain_id'] : null;
@@ -433,6 +459,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Sauvegarder le serment sacré si c'est un paladin de niveau 3+
             if ($isPaladin && $level >= 3 && $paladin_oath_id) {
                 savePaladinOath($character_id, $paladin_oath_id);
+            }
+            
+            // Sauvegarder l'archétype de rôdeur si c'est un rôdeur de niveau 3+
+            if ($isRanger && $level >= 3 && $ranger_archetype_id) {
+                saveRangerArchetype($character_id, $ranger_archetype_id);
+            }
+            
+            // Sauvegarder l'archétype de roublard si c'est un roublard de niveau 3+
+            if ($isRogue && $level >= 3 && $rogue_archetype_id) {
+                saveRogueArchetype($character_id, $rogue_archetype_id);
             }
             
             // Sauvegarder le collège bardique si c'est un barde de niveau 3+
@@ -1204,6 +1240,64 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         </div>
                                         <div class="oath-description mt-2">
                                             <small class="text-muted"><?php echo nl2br(htmlspecialchars($oath['description'])); ?></small>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                
+                <!-- Choix d'archétype de rôdeur pour les rôdeurs de niveau 3+ -->
+                <?php if ($isRanger && $character['level'] >= 3): ?>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5><i class="fas fa-leaf me-2"></i>Archétype de rôdeur</h5>
+                            <p class="text-muted">Choisissez votre archétype de rôdeur (obligatoire au niveau 3).</p>
+                            <div class="row">
+                                <?php foreach ($rangerArchetypes as $archetype): ?>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" 
+                                                   name="ranger_archetype_id" 
+                                                   id="archetype_<?php echo $archetype['id']; ?>" 
+                                                   value="<?php echo $archetype['id']; ?>"
+                                                   <?php echo ($selectedArchetype && $selectedArchetype['archetype_id'] == $archetype['id']) ? 'checked' : ''; ?>>
+                                            <label class="form-check-label" for="archetype_<?php echo $archetype['id']; ?>">
+                                                <strong><?php echo htmlspecialchars($archetype['name']); ?></strong>
+                                            </label>
+                                        </div>
+                                        <div class="archetype-description mt-2">
+                                            <small class="text-muted"><?php echo nl2br(htmlspecialchars($archetype['description'])); ?></small>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                
+                <!-- Choix d'archétype de roublard pour les roublards de niveau 3+ -->
+                <?php if ($isRogue && $character['level'] >= 3): ?>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5><i class="fas fa-mask me-2"></i>Archétype de roublard</h5>
+                            <p class="text-muted">Choisissez votre archétype de roublard (obligatoire au niveau 3).</p>
+                            <div class="row">
+                                <?php foreach ($rogueArchetypes as $archetype): ?>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" 
+                                                   name="rogue_archetype_id" 
+                                                   id="rogue_archetype_<?php echo $archetype['id']; ?>" 
+                                                   value="<?php echo $archetype['id']; ?>"
+                                                   <?php echo ($selectedRogueArchetype && $selectedRogueArchetype['archetype_id'] == $archetype['id']) ? 'checked' : ''; ?>>
+                                            <label class="form-check-label" for="rogue_archetype_<?php echo $archetype['id']; ?>">
+                                                <strong><?php echo htmlspecialchars($archetype['name']); ?></strong>
+                                            </label>
+                                        </div>
+                                        <div class="archetype-description mt-2">
+                                            <small class="text-muted"><?php echo nl2br(htmlspecialchars($archetype['description'])); ?></small>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>
