@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=1.13.0
+VERSION=1.14.0
 
 # Date de déploiement
 DEPLOY_DATE=2025-09-19
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-09-19
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=5fb31969b3dd670d730d6ef72a3f279b50ee0be0
+GIT_COMMIT=bac295170d9c2b6f1c78ee74e9957fd7552cc4e5
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20250919-095034
+BUILD_ID=20250919-170743
 
 # Notes de version
-RELEASE_NOTES="Classe : roublard et rodeur"
+RELEASE_NOTES="Pays et régions"
