@@ -4426,7 +4426,51 @@ function saveRogueArchetype($characterId, $archetypeId, $level3Choice = null, $l
 
 // Fonctions pour la hiérarchie géographique
 
-// Fonction pour obtenir tous les pays
+// Fonction pour obtenir tous les mondes d'un utilisateur
+function getWorldsByUser($userId) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM worlds WHERE created_by = ? ORDER BY name");
+        $stmt->execute([$userId]);
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        error_log("Erreur getWorldsByUser: " . $e->getMessage());
+        return [];
+    }
+}
+
+// Fonction pour obtenir un monde par ID
+function getWorldById($worldId, $userId = null) {
+    global $pdo;
+    try {
+        if ($userId) {
+            $stmt = $pdo->prepare("SELECT * FROM worlds WHERE id = ? AND created_by = ?");
+            $stmt->execute([$worldId, $userId]);
+        } else {
+            $stmt = $pdo->prepare("SELECT * FROM worlds WHERE id = ?");
+            $stmt->execute([$worldId]);
+        }
+        return $stmt->fetch();
+    } catch (PDOException $e) {
+        error_log("Erreur getWorldById: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Fonction pour obtenir tous les pays d'un monde
+function getCountriesByWorld($worldId) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM countries WHERE world_id = ? ORDER BY name");
+        $stmt->execute([$worldId]);
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        error_log("Erreur getCountriesByWorld: " . $e->getMessage());
+        return [];
+    }
+}
+
+// Fonction pour obtenir tous les pays (pour compatibilité)
 function getCountries() {
     global $pdo;
     try {
@@ -4456,19 +4500,20 @@ function getPlacesWithGeography($campaignId = null) {
     global $pdo;
     try {
         $sql = "
-            SELECT p.*, c.name as country_name, r.name as region_name
+            SELECT p.*, c.name as country_name, r.name as region_name, w.name as world_name
             FROM places p
             LEFT JOIN countries c ON p.country_id = c.id
             LEFT JOIN regions r ON p.region_id = r.id
+            LEFT JOIN worlds w ON c.world_id = w.id
         ";
         
         if ($campaignId) {
             $sql .= " WHERE p.campaign_id = ?";
-            $sql .= " ORDER BY c.name, r.name, p.title";
+            $sql .= " ORDER BY w.name, c.name, r.name, p.title";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$campaignId]);
         } else {
-            $sql .= " ORDER BY c.name, r.name, p.title";
+            $sql .= " ORDER BY w.name, c.name, r.name, p.title";
             $stmt = $pdo->query($sql);
         }
         

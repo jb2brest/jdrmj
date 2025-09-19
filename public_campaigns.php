@@ -104,8 +104,8 @@ foreach ($applications as $a) {
             </form>
         </div>
 
-        <?php if (isset($success_message)) echo displayMessage($success_message, 'success'); ?>
-        <?php if (isset($error_message)) echo displayMessage($error_message, 'error'); ?>
+        <?php if (!empty($success_message)) echo displayMessage($success_message, 'success'); ?>
+        <?php if (!empty($error_message)) echo displayMessage($error_message, 'error'); ?>
 
         <?php if (empty($campaigns)): ?>
             <p class="text-muted">Aucune campagne publique trouvée.</p>

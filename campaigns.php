@@ -134,8 +134,8 @@ $current_page = "campaigns";
             <h1><i class="fas fa-book me-2"></i><?php echo isAdmin() ? 'Toutes les Campagnes' : 'Mes Campagnes'; ?></h1>
         </div>
 
-        <?php if (isset($success_message)) echo displayMessage($success_message, 'success'); ?>
-        <?php if (isset($error_message)) echo displayMessage($error_message, 'error'); ?>
+        <?php if (!empty($success_message)) echo displayMessage($success_message, 'success'); ?>
+        <?php if (!empty($error_message)) echo displayMessage($error_message, 'error'); ?>
 
         <?php if (isDMOrAdmin()): ?>
         <div class="card mb-4">

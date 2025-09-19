@@ -268,13 +268,13 @@ $types = $stmt->fetchAll(PDO::FETCH_COLUMN);
                                             <option value="">Sélectionner un lieu</option>
                                             <?php
                                             // Récupérer les lieux du MJ
-                                            $stmt = $pdo->prepare("SELECT s.id, s.title, gs.title AS session_title FROM places s JOIN game_sessions gs ON s.session_id = gs.id WHERE gs.dm_id = ? ORDER BY gs.title, s.position");
+                                            $stmt = $pdo->prepare("SELECT p.id, p.name, c.title AS campaign_title FROM places p JOIN campaigns c ON p.campaign_id = c.id WHERE c.dm_id = ? ORDER BY c.title, p.name");
                                             $stmt->execute([$_SESSION['user_id']]);
                                             $places = $stmt->fetchAll();
                                             foreach ($places as $scene):
                                             ?>
                                                 <option value="<?php echo (int)$scene['id']; ?>">
-                                                    <?php echo htmlspecialchars($scene['session_title'] . ' - ' . $scene['title']); ?>
+                                                    <?php echo htmlspecialchars($scene['campaign_title'] . ' - ' . $scene['name']); ?>
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>

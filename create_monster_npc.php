@@ -32,15 +32,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
     
-    // Vérifier que la lieu existe et appartient au MJ
-    $stmt = $pdo->prepare("SELECT s.id, s.title, gs.title AS session_title FROM places s 
-                          JOIN game_sessions gs ON s.session_id = gs.id 
-                          WHERE s.id = ? AND gs.dm_id = ?");
+    // Vérifier que le lieu existe et appartient au MJ
+    $stmt = $pdo->prepare("SELECT p.id, p.name, c.title AS campaign_title FROM places p 
+                          JOIN campaigns c ON p.campaign_id = c.id 
+                          WHERE p.id = ? AND c.dm_id = ?");
     $stmt->execute([$place_id, $_SESSION['user_id']]);
-    $scene = $stmt->fetch();
+    $place = $stmt->fetch();
     
-    if (!$scene) {
-        header('Location: my_monsters.php?error=scene_not_found');
+    if (!$place) {
+        header('Location: my_monsters.php?error=place_not_found');
         exit();
     }
     
@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->execute([$place_id, $npc_name, $description, $monster_id]);
     
     // Rediriger vers la lieu avec un message de succès
-    header('Location: view_scene.php?id=' . $place_id . '&success=monster_npc_created');
+    header('Location: view_place.php?id=' . $place_id . '&success=monster_npc_created');
     exit();
 }
 

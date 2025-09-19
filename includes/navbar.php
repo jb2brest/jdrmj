@@ -39,6 +39,15 @@
                         </a>
                     </li>
                     
+                    <!-- Mondes (uniquement pour les MJ et Admin) -->
+                    <?php if (isDMOrAdmin()): ?>
+                    <li class="nav-item">
+                        <a class="nav-link <?php echo (isset($current_page) && $current_page === 'manage_worlds') ? 'active' : ''; ?>" href="manage_worlds.php">
+                            <i class="fas fa-globe-americas me-1"></i>Mondes
+                        </a>
+                    </li>
+                    <?php endif; ?>
+                    
                     <!-- Admin (uniquement pour les administrateurs) -->
                     <?php if (isAdmin()): ?>
                     <li class="nav-item">

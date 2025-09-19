@@ -22,17 +22,18 @@ $campaign_id = (int)$_GET['id'];
 // Charger la campagne selon le rôle
 if (isAdmin()) {
     // Les admins peuvent voir toutes les campagnes
-    $stmt = $pdo->prepare("SELECT c.*, u.username AS dm_username FROM campaigns c JOIN users u ON c.dm_id = u.id WHERE c.id = ?");
+    $stmt = $pdo->prepare("SELECT c.*, u.username AS dm_username, w.name AS world_name, w.id AS world_id FROM campaigns c JOIN users u ON c.dm_id = u.id LEFT JOIN worlds w ON c.world_id = w.id WHERE c.id = ?");
     $stmt->execute([$campaign_id]);
 } elseif (isDM()) {
     // Les DM peuvent voir leurs campagnes + les campagnes publiques
-    $stmt = $pdo->prepare("SELECT c.*, u.username AS dm_username FROM campaigns c JOIN users u ON c.dm_id = u.id WHERE c.id = ? AND (c.dm_id = ? OR c.is_public = 1)");
+    $stmt = $pdo->prepare("SELECT c.*, u.username AS dm_username, w.name AS world_name, w.id AS world_id FROM campaigns c JOIN users u ON c.dm_id = u.id LEFT JOIN worlds w ON c.world_id = w.id WHERE c.id = ? AND (c.dm_id = ? OR c.is_public = 1)");
     $stmt->execute([$campaign_id, $user_id]);
 } else {
     // Les joueurs peuvent voir les campagnes publiques ET les campagnes où ils sont membres
     $stmt = $pdo->prepare("
-        SELECT c.*, u.username AS dm_username FROM campaigns c 
+        SELECT c.*, u.username AS dm_username, w.name AS world_name, w.id AS world_id FROM campaigns c 
         JOIN users u ON c.dm_id = u.id
+        LEFT JOIN worlds w ON c.world_id = w.id
         WHERE c.id = ? AND (
             c.is_public = 1 
             OR EXISTS (
@@ -56,6 +57,57 @@ $isOwnerDM = ($user_id == $dm_id);
 
 // Traitements POST: candidatures (tous les utilisateurs connectés)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Gestion de la mise à jour du monde de la campagne (MJ/Admin uniquement)
+    if (isset($_POST['action']) && $_POST['action'] === 'update_campaign_world' && isDMOrAdmin()) {
+        $world_id = !empty($_POST['world_id']) ? (int)$_POST['world_id'] : null;
+        
+        try {
+            $stmt = $pdo->prepare("UPDATE campaigns SET world_id = ? WHERE id = ? AND dm_id = ?");
+            $stmt->execute([$world_id, $campaign_id, $dm_id]);
+            $success_message = "Monde de la campagne mis à jour avec succès.";
+            
+            // Recharger les données de la campagne
+            $stmt = $pdo->prepare("SELECT c.*, u.username AS dm_username, w.name AS world_name, w.id AS world_id FROM campaigns c JOIN users u ON c.dm_id = u.id LEFT JOIN worlds w ON c.world_id = w.id WHERE c.id = ?");
+            $stmt->execute([$campaign_id]);
+            $campaign = $stmt->fetch();
+        } catch (PDOException $e) {
+            $error_message = "Erreur lors de la mise à jour du monde: " . $e->getMessage();
+        }
+    }
+    
+    // Gestion de l'association d'un lieu à la campagne (MJ/Admin uniquement)
+    if (isset($_POST['action']) && $_POST['action'] === 'associate_place' && isDMOrAdmin()) {
+        $place_id = (int)($_POST['place_id'] ?? 0);
+        
+        if ($place_id > 0) {
+            try {
+                // Vérifier que le lieu appartient au monde de la campagne et n'est pas déjà associé
+                $stmt = $pdo->prepare("
+                    SELECT p.id FROM places p
+                    LEFT JOIN countries c ON p.country_id = c.id
+                    WHERE p.id = ? AND c.world_id = ? AND p.campaign_id IS NULL
+                ");
+                $stmt->execute([$place_id, $campaign['world_id']]);
+                $place = $stmt->fetch();
+                
+                if ($place) {
+                    // Associer le lieu à la campagne
+                    $stmt = $pdo->prepare("UPDATE places SET campaign_id = ? WHERE id = ?");
+                    $stmt->execute([$campaign_id, $place_id]);
+                    $success_message = "Lieu associé à la campagne avec succès.";
+                    
+                    // Recharger les lieux de la campagne
+                    $places = getPlacesWithGeography($campaign_id);
+                } else {
+                    $error_message = "Ce lieu ne peut pas être associé à cette campagne.";
+                }
+            } catch (PDOException $e) {
+                $error_message = "Erreur lors de l'association du lieu: " . $e->getMessage();
+            }
+        } else {
+            $error_message = "Lieu invalide sélectionné.";
+        }
+    }
     if (isset($_POST['action']) && $_POST['action'] === 'apply_to_campaign') {
         $message = sanitizeInput($_POST['message'] ?? '');
         $character_id = !empty($_POST['character_id']) ? (int)$_POST['character_id'] : null;
@@ -103,63 +155,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isDMOrAdmin()) {
         }
     }
 
-    // Créer un nouveau pays
-    if (isset($_POST['action']) && $_POST['action'] === 'create_country') {
-        $name = sanitizeInput($_POST['name'] ?? '');
-        $description = sanitizeInput($_POST['description'] ?? '');
-        
-        if ($name !== '') {
-            try {
-                $stmt = $pdo->prepare("INSERT INTO countries (name, description) VALUES (?, ?)");
-                $stmt->execute([$name, $description]);
-                $success_message = "Pays '$name' créé avec succès.";
-            } catch (PDOException $e) {
-                if ($e->getCode() == 23000) { // Erreur de contrainte unique
-                    $error_message = "Un pays avec ce nom existe déjà.";
-                } else {
-                    $error_message = "Erreur lors de la création du pays: " . $e->getMessage();
-                }
-            }
-        } else {
-            $error_message = "Le nom du pays est requis.";
-        }
-    }
 
-    // Créer une nouvelle région
-    if (isset($_POST['action']) && $_POST['action'] === 'create_region') {
-        $country_id = (int)($_POST['country_id'] ?? 0);
-        $name = sanitizeInput($_POST['name'] ?? '');
-        $description = sanitizeInput($_POST['description'] ?? '');
-        
-        if ($country_id > 0 && $name !== '') {
-            try {
-                $stmt = $pdo->prepare("INSERT INTO regions (country_id, name, description) VALUES (?, ?, ?)");
-                $stmt->execute([$country_id, $name, $description]);
-                $success_message = "Région '$name' créée avec succès.";
-            } catch (PDOException $e) {
-                if ($e->getCode() == 23000) { // Erreur de contrainte unique
-                    $error_message = "Une région avec ce nom existe déjà dans ce pays.";
-                } else {
-                    $error_message = "Erreur lors de la création de la région: " . $e->getMessage();
-                }
-            }
-        } else {
-            $error_message = "Le pays et le nom de la région sont requis.";
-        }
-    }
-
-    if (isset($_POST['action']) && $_POST['action'] === 'create_session') {
-        $title = sanitizeInput($_POST['title'] ?? 'Session');
-        $session_date = sanitizeInput($_POST['session_date'] ?? '');
-        $location = sanitizeInput($_POST['location'] ?? '');
-        $is_online = isset($_POST['is_online']) ? 1 : 0;
-        $meeting_link = sanitizeInput($_POST['meeting_link'] ?? '');
-        $max_players = (int)($_POST['max_players'] ?? 6);
-
-        $stmt = $pdo->prepare("INSERT INTO game_sessions (dm_id, title, session_date, location, is_online, meeting_link, max_players, campaign_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$dm_id, $title, $session_date, $location, $is_online, $meeting_link, $max_players, $campaign_id]);
-        $success_message = "Session créée.";
-    }
 
     // Approuver une candidature
     if (isset($_POST['action']) && $_POST['action'] === 'approve_application' && isset($_POST['application_id'])) {
@@ -477,6 +473,30 @@ $stmt = $pdo->prepare("SELECT u.id, u.username, cm.role, cm.joined_at FROM campa
 $stmt->execute([$campaign_id]);
 $members = $stmt->fetchAll();
 
+// Récupérer les mondes disponibles (pour le MJ/Admin)
+$worlds = [];
+if (isDMOrAdmin()) {
+    $stmt = $pdo->prepare("SELECT id, name FROM worlds WHERE created_by = ? ORDER BY name");
+    $stmt->execute([$user_id]);
+    $worlds = $stmt->fetchAll();
+}
+
+// Récupérer les lieux disponibles dans le monde de la campagne (pour l'association)
+$available_places = [];
+if (isDMOrAdmin() && !empty($campaign['world_id'])) {
+    $stmt = $pdo->prepare("
+        SELECT p.id, p.title, p.notes, p.map_url, 
+               c.name as country_name, r.name as region_name
+        FROM places p
+        LEFT JOIN countries c ON p.country_id = c.id
+        LEFT JOIN regions r ON p.region_id = r.id
+        WHERE c.world_id = ? AND p.campaign_id IS NULL
+        ORDER BY c.name, r.name, p.title
+    ");
+    $stmt->execute([$campaign['world_id']]);
+    $available_places = $stmt->fetchAll();
+}
+
 // Vérifier si l'utilisateur actuel est membre de la campagne
 $is_member = false;
 $user_role = null;
@@ -507,10 +527,6 @@ foreach ($members as $member) {
     }
 }
 
-// Récupérer sessions
-$stmt = $pdo->prepare("SELECT * FROM game_sessions WHERE campaign_id = ? ORDER BY session_date DESC, created_at DESC");
-$stmt->execute([$campaign_id]);
-$sessions = $stmt->fetchAll();
 
 // Récupérer candidatures
 $stmt = $pdo->prepare("SELECT ca.id, ca.player_id, ca.character_id, ca.message, ca.status, ca.created_at, u.username, ch.name AS character_name FROM campaign_applications ca JOIN users u ON ca.player_id = u.id LEFT JOIN characters ch ON ca.character_id = ch.id WHERE ca.campaign_id = ? ORDER BY ca.created_at DESC");
@@ -618,8 +634,8 @@ if (!empty($places)) {
             </div>
             <span class="badge bg-<?php echo $campaign['is_public'] ? 'brown' : 'secondary'; ?> fs-6"><?php echo $campaign['is_public'] ? 'Publique' : 'Privée'; ?></span>
         </div>
-        <?php if (isset($success_message)) echo displayMessage($success_message, 'success'); ?>
-        <?php if (isset($error_message)) echo displayMessage($error_message, 'error'); ?>
+        <?php if (!empty($success_message)) echo displayMessage($success_message, 'success'); ?>
+        <?php if (!empty($error_message)) echo displayMessage($error_message, 'error'); ?>
 
         <?php if (!empty($campaign['description'])): ?>
             <div class="card mb-4">
@@ -735,70 +751,53 @@ if (!empty($places)) {
                 </div>
             </div>
 
+            <!-- Zone Monde -->
             <div class="col-lg-6">
                 <div class="card h-100">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Sessions</h5>
+                        <h5 class="mb-0"><i class="fas fa-globe-americas me-2"></i>Monde</h5>
                     </div>
                     <div class="card-body">
                         <?php if (isDMOrAdmin()): ?>
-                        <form method="POST" class="mb-3">
-                            <input type="hidden" name="action" value="create_session">
-                            <div class="row g-2 align-items-end">
-                                <div class="col-md-5">
-                                    <label class="form-label">Titre</label>
-                                    <input type="text" class="form-control" name="title" placeholder="Session 1" required>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label">Date/Heure</label>
-                                    <input type="datetime-local" class="form-control" name="session_date">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Places</label>
-                                    <input type="number" class="form-control" name="max_players" value="6" min="1" max="10">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Lieu</label>
-                                    <input type="text" class="form-control" name="location" placeholder="En ligne / Adresse">
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-check mt-4">
-                                        <input class="form-check-input" type="checkbox" name="is_online" id="is_online">
-                                        <label class="form-check-label" for="is_online">En ligne</label>
+                            <form method="POST">
+                                <input type="hidden" name="action" value="update_campaign_world">
+                                <div class="mb-3">
+                                    <label for="worldSelect" class="form-label">Monde de la campagne</label>
+                                    <select class="form-select" id="worldSelect" name="world_id">
+                                        <option value="">Aucun monde sélectionné</option>
+                                        <?php foreach ($worlds as $world): ?>
+                                            <option value="<?php echo (int)$world['id']; ?>" 
+                                                    <?php echo ($campaign['world_id'] == $world['id']) ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($world['name']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <div class="form-text">
+                                        Sélectionnez le monde dans lequel se déroule cette campagne.
                                     </div>
-                                    <input type="text" class="form-control mt-2" name="meeting_link" placeholder="Lien (si en ligne)">
                                 </div>
-                                <div class="col-12">
-                                    <button class="btn btn-brown"><i class="fas fa-plus me-2"></i>Créer une session</button>
-                                </div>
-                            </div>
-                        </form>
-                        <?php endif; ?>
-
-                        <?php if (empty($sessions)): ?>
-                            <p class="text-muted">Aucune session planifiée.</p>
+                                <button type="submit" class="btn btn-brown">
+                                    <i class="fas fa-save me-2"></i>Mettre à jour
+                                </button>
+                            </form>
                         <?php else: ?>
-                            <ul class="list-group">
-                                <?php foreach ($sessions as $s): ?>
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <strong><?php echo htmlspecialchars($s['title']); ?></strong>
-                                            <div class="small text-muted">
-                                                <?php if (!empty($s['session_date'])): ?>
-                                                    <?php echo date('d/m/Y H:i', strtotime($s['session_date'])) . ' · '; ?>
-                                                <?php endif; ?>
-                                                <?php echo $s['is_online'] ? 'En ligne' : htmlspecialchars($s['location']); ?>
-                                                · Places: <?php echo $s['max_players']; ?>
-                                            </div>
-                                        </div>
-                                        <a href="view_session.php?id=<?php echo $s['id']; ?>" class="btn btn-sm btn-outline-brown view-session-btn" data-session-id="<?php echo $s['id']; ?>"><i class="fas fa-eye"></i></a>
-                                    </li>
-                                <?php endforeach; ?>
-                            </ul>
+                            <?php if (!empty($campaign['world_name'])): ?>
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-globe-americas me-2 text-brown"></i>
+                                    <span class="fw-bold"><?php echo htmlspecialchars($campaign['world_name']); ?></span>
+                                </div>
+                                <p class="text-muted mt-2 mb-0">Cette campagne se déroule dans le monde "<?php echo htmlspecialchars($campaign['world_name']); ?>".</p>
+                            <?php else: ?>
+                                <div class="text-muted">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Aucun monde n'a été défini pour cette campagne.
+                                </div>
+                            <?php endif; ?>
                         <?php endif; ?>
                     </div>
                 </div>
             </div>
+
         </div>
 
         <!-- Section Lieux - Visible uniquement pour les DM et Admin -->
@@ -808,17 +807,9 @@ if (!empty($places)) {
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-photo-video me-2"></i>Lieux de la campagne</h5>
-                        <div class="btn-group" role="group">
-                            <button class="btn btn-brown btn-sm" data-bs-toggle="modal" data-bs-target="#createCountryModal">
-                                <i class="fas fa-globe"></i> Nouveau Pays
-                            </button>
-                            <button class="btn btn-brown btn-sm" data-bs-toggle="modal" data-bs-target="#createRegionModal">
-                                <i class="fas fa-map-marker-alt"></i> Nouvelle région
-                            </button>
-                            <button class="btn btn-brown btn-sm" data-bs-toggle="modal" data-bs-target="#createSceneModal">
-                                <i class="fas fa-plus"></i> Nouveau lieu
-                            </button>
-                        </div>
+                        <button class="btn btn-brown btn-sm" data-bs-toggle="modal" data-bs-target="#associatePlaceModal">
+                            <i class="fas fa-link"></i> Associer un lieu
+                        </button>
                     </div>
                     <div class="card-body">
                         <?php if (empty($places)): ?>
@@ -863,8 +854,12 @@ if (!empty($places)) {
                                 <table class="table table-hover" id="placesTable">
                                     <thead class="table-light">
                                         <tr>
+                                            <th class="sortable" data-column="world">
+                                                <i class="fas fa-globe-americas me-1"></i>Monde
+                                                <i class="fas fa-sort ms-1"></i>
+                                            </th>
                                             <th class="sortable" data-column="country">
-                                                <i class="fas fa-globe me-1"></i>Pays
+                                                <i class="fas fa-flag me-1"></i>Pays
                                                 <i class="fas fa-sort ms-1"></i>
                                             </th>
                                             <th class="sortable" data-column="region">
@@ -885,10 +880,18 @@ if (!empty($places)) {
                                     <tbody>
                                         <?php foreach ($places as $place): ?>
                                             <?php $hasPlayers = hasPlayersInPlace($place['id']); ?>
-                                            <tr data-country="<?php echo htmlspecialchars($place['country_name'] ?? ''); ?>" 
+                                            <tr data-world="<?php echo htmlspecialchars($place['world_name'] ?? ''); ?>"
+                                                data-country="<?php echo htmlspecialchars($place['country_name'] ?? ''); ?>" 
                                                 data-region="<?php echo htmlspecialchars($place['region_name'] ?? ''); ?>"
                                                 data-title="<?php echo htmlspecialchars($place['title']); ?>"
                                                 data-players="<?php echo $hasPlayers ? 'with-players' : 'without-players'; ?>">
+                                                <td>
+                                                    <?php if ($place['world_name']): ?>
+                                                        <span class="badge bg-info"><?php echo htmlspecialchars($place['world_name']); ?></span>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">-</span>
+                                                    <?php endif; ?>
+                                                </td>
                                                 <td>
                                                     <?php if ($place['country_name']): ?>
                                                         <span class="badge bg-primary"><?php echo htmlspecialchars($place['country_name']); ?></span>
@@ -904,7 +907,7 @@ if (!empty($places)) {
                                                     <?php endif; ?>
                                                 </td>
                                                 <td>
-                                                    <a href="view_scene.php?id=<?php echo (int)$place['id']; ?>" class="text-decoration-none fw-bold">
+                                                    <a href="view_place.php?id=<?php echo (int)$place['id']; ?>" class="text-decoration-none fw-bold">
                                                         <?php echo htmlspecialchars($place['title']); ?>
                                                     </a>
                                                     <?php if (!empty($place['notes'])): ?>
@@ -924,7 +927,7 @@ if (!empty($places)) {
                                                 </td>
                                                 <td>
                                                     <div class="btn-group btn-group-sm" role="group">
-                                                        <a href="view_scene.php?id=<?php echo (int)$place['id']; ?>" class="btn btn-outline-primary" title="Voir le lieu">
+                                                        <a href="view_place.php?id=<?php echo (int)$place['id']; ?>" class="btn btn-outline-primary" title="Voir le lieu">
                                                             <i class="fas fa-eye"></i>
                                                         </a>
                                                         <div class="btn-group btn-group-sm" role="group">
@@ -1133,133 +1136,88 @@ if (!empty($places)) {
         <?php endif; ?>
     </div>
 
-    <!-- Modal Création Pays -->
-    <div class="modal fade" id="createCountryModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+
+    <!-- Modal Associer un lieu -->
+    <div class="modal fade" id="associatePlaceModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Nouveau Pays</h5>
+                    <h5 class="modal-title">Associer un lieu à la campagne</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
                 </div>
                 <form method="POST">
                     <div class="modal-body">
-                        <input type="hidden" name="action" value="create_country">
+                        <input type="hidden" name="action" value="associate_place">
                         
-                        <div class="mb-3">
-                            <label for="countryName" class="form-label">Nom du pays</label>
-                            <input type="text" class="form-control" id="countryName" name="name" required maxlength="255" placeholder="Ex: Royaume d'Avalon">
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="countryDescription" class="form-label">Description</label>
-                            <textarea class="form-control" id="countryDescription" name="description" rows="4" placeholder="Description du pays, sa culture, son climat, etc."></textarea>
-                        </div>
+                        <?php if (empty($campaign['world_id'])): ?>
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>Attention :</strong> Aucun monde n'est défini pour cette campagne. 
+                                Veuillez d'abord sélectionner un monde dans la zone "Monde" pour pouvoir associer des lieux.
+                            </div>
+                        <?php elseif (empty($available_places)): ?>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Information :</strong> Aucun lieu disponible dans le monde "<?php echo htmlspecialchars($campaign['world_name']); ?>".
+                                Tous les lieux de ce monde sont déjà associés à des campagnes ou il n'y a pas encore de lieux créés.
+                            </div>
+                        <?php else: ?>
+                            <div class="mb-3">
+                                <label class="form-label">Lieux disponibles dans le monde "<?php echo htmlspecialchars($campaign['world_name']); ?>"</label>
+                                <div class="form-text mb-3">Sélectionnez un lieu à associer à cette campagne :</div>
+                                
+                                <div class="row g-3">
+                                    <?php foreach ($available_places as $place): ?>
+                                        <div class="col-md-6">
+                                            <div class="card h-100">
+                                                <div class="card-body">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" name="place_id" 
+                                                               id="place_<?php echo $place['id']; ?>" 
+                                                               value="<?php echo $place['id']; ?>">
+                                                        <label class="form-check-label w-100" for="place_<?php echo $place['id']; ?>">
+                                                            <div class="d-flex justify-content-between align-items-start">
+                                                                <div>
+                                                                    <h6 class="mb-1"><?php echo htmlspecialchars($place['title']); ?></h6>
+                                                                    <?php if (!empty($place['country_name'])): ?>
+                                                                        <small class="text-muted">
+                                                                            <i class="fas fa-globe me-1"></i><?php echo htmlspecialchars($place['country_name']); ?>
+                                                                            <?php if (!empty($place['region_name'])): ?>
+                                                                                <i class="fas fa-map-marker-alt me-1 ms-2"></i><?php echo htmlspecialchars($place['region_name']); ?>
+                                                                            <?php endif; ?>
+                                                                        </small>
+                                                                    <?php endif; ?>
+                                                                    <?php if (!empty($place['notes'])): ?>
+                                                                        <p class="mb-0 mt-2 small text-muted">
+                                                                            <?php echo htmlspecialchars(truncateText($place['notes'], 100)); ?>
+                                                                        </p>
+                                                                    <?php endif; ?>
+                                                                </div>
+                                                                <?php if (!empty($place['map_url'])): ?>
+                                                                    <div class="ms-2">
+                                                                        <img src="<?php echo htmlspecialchars($place['map_url']); ?>" 
+                                                                             class="img-thumbnail" style="width: 60px; height: 60px; object-fit: cover;"
+                                                                             alt="Plan du lieu">
+                                                                    </div>
+                                                                <?php endif; ?>
+                                                            </div>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-brown">Créer le pays</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Création Région -->
-    <div class="modal fade" id="createRegionModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Nouvelle Région</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                </div>
-                <form method="POST">
-                    <div class="modal-body">
-                        <input type="hidden" name="action" value="create_region">
-                        
-                        <div class="mb-3">
-                            <label for="regionCountry" class="form-label">Pays</label>
-                            <select class="form-select" id="regionCountry" name="country_id" required>
-                                <option value="">Sélectionner un pays</option>
-                                <?php
-                                $countries = getCountries();
-                                foreach ($countries as $country):
-                                ?>
-                                    <option value="<?php echo (int)$country['id']; ?>"><?php echo htmlspecialchars($country['name']); ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="regionName" class="form-label">Nom de la région</label>
-                            <input type="text" class="form-control" id="regionName" name="name" required maxlength="255" placeholder="Ex: Forêt d'Elmwood">
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="regionDescription" class="form-label">Description</label>
-                            <textarea class="form-control" id="regionDescription" name="description" rows="4" placeholder="Description de la région, ses caractéristiques, etc."></textarea>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-brown">Créer la région</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Création Lieu -->
-    <div class="modal fade" id="createSceneModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Nouveau lieu</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                </div>
-                <form method="POST" enctype="multipart/form-data">
-                    <div class="modal-body">
-                        <input type="hidden" name="action" value="create_scene">
-                        
-                        <div class="mb-3">
-                            <label for="sceneTitle" class="form-label">Titre du lieu *</label>
-                            <input type="text" class="form-control" id="sceneTitle" name="title" required>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="sceneCountry" class="form-label">Pays (optionnel)</label>
-                            <select class="form-control" id="sceneCountry" name="country_id">
-                                <option value="">-- Sélectionner un pays --</option>
-                                <?php
-                                $countries = getCountries();
-                                foreach ($countries as $country):
-                                ?>
-                                    <option value="<?php echo $country['id']; ?>"><?php echo htmlspecialchars($country['name']); ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="sceneRegion" class="form-label">Région (optionnel)</label>
-                            <select class="form-control" id="sceneRegion" name="region_id">
-                                <option value="">-- Sélectionner une région --</option>
-                            </select>
-                            <div class="form-text">Sélectionnez d'abord un pays pour voir ses régions</div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="scenePlanFile" class="form-label">Plan du lieu (optionnel)</label>
-                            <input type="file" class="form-control" id="scenePlanFile" name="plan_file" accept="image/png,image/jpeg,image/webp,image/gif">
-                            <div class="form-text">Formats acceptés: JPG, PNG, GIF, WebP (max 10 Mo)</div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="sceneNotes" class="form-label">Notes (optionnel)</label>
-                            <textarea class="form-control" id="sceneNotes" name="notes" rows="3" placeholder="Description du lieu, contexte, etc."></textarea>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-brown">Créer le lieu</button>
+                        <?php if (!empty($campaign['world_id']) && !empty($available_places)): ?>
+                            <button type="submit" class="btn btn-brown">
+                                <i class="fas fa-link me-2"></i>Associer le lieu
+                            </button>
+                        <?php endif; ?>
                     </div>
                 </form>
             </div>
@@ -1305,22 +1263,6 @@ if (!empty($places)) {
         </div>
     </div>
 
-    <!-- Session Detail Modal -->
-    <div class="modal fade" id="sessionDetailModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Détail de la session</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                </div>
-                <div class="modal-body p-0">
-                    <div id="sessionDetailContent">
-                        <div class="text-center p-5 text-muted">Chargement...</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Modal Créer Événement Journal -->
     <?php if ($isOwnerDM): ?>
@@ -1397,30 +1339,6 @@ if (!empty($places)) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        var modalEl = document.getElementById('sessionDetailModal');
-        var modal = modalEl ? new bootstrap.Modal(modalEl) : null;
-        document.querySelectorAll('.view-session-btn').forEach(function(btn) {
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                var sessionId = this.getAttribute('data-session-id');
-                if (!sessionId || !modal) return;
-                var url = 'view_session.php?id=' + encodeURIComponent(sessionId) + '&modal=1';
-                var container = document.getElementById('sessionDetailContent');
-                if (container) {
-                    container.innerHTML = '<div class="text-center p-5 text-muted">Chargement...</div>';
-                }
-                fetch(url, { credentials: 'same-origin' })
-                    .then(function(resp) { return resp.text(); })
-                    .then(function(html) {
-                        if (container) { container.innerHTML = html; }
-                        modal.show();
-                    })
-                    .catch(function() {
-                        if (container) { container.innerHTML = '<div class="text-brown p-3">Erreur de chargement.</div>'; }
-                        modal.show();
-                    });
-            });
-        });
         
         // Fonction pour afficher le modal de transfert
         window.showTransferModal = function(entityType, entityId, fromPlaceId, entityName) {

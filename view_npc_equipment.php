@@ -203,8 +203,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php include 'includes/navbar.php'; ?>
 
     <div class="container mt-4">
-        <?php if (isset($success_message)) echo displayMessage($success_message, 'success'); ?>
-        <?php if (isset($error_message)) echo displayMessage($error_message, 'error'); ?>
+        <?php if (!empty($success_message)) echo displayMessage($success_message, 'success'); ?>
+        <?php if (!empty($error_message)) echo displayMessage($error_message, 'error'); ?>
         
         <div class="row">
             <div class="col-md-4">

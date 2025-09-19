@@ -97,7 +97,7 @@ $sceneMonsters = $stmt->fetchAll();
                         <p class="text-muted mb-0"><?php echo htmlspecialchars($scene['title']); ?> - <?php echo htmlspecialchars($scene['session_title']); ?></p>
                     </div>
                     <div class="text-end">
-                        <a href="view_scene.php?id=<?php echo (int)$place_id; ?>" class="btn btn-outline-primary">
+                        <a href="view_place.php?id=<?php echo (int)$place_id; ?>" class="btn btn-outline-primary">
                             <i class="fas fa-arrow-left me-1"></i>Retour à la Lieu
                         </a>
                     </div>
@@ -244,7 +244,7 @@ $sceneMonsters = $stmt->fetchAll();
                         <i class="fas fa-gem fa-3x text-muted mb-3"></i>
                         <h5 class="text-muted">Aucun participant dans cette lieu</h5>
                         <p class="text-muted">Ajoutez des joueurs, PNJ ou monstres à la lieu pour voir leur équipement.</p>
-                        <a href="view_scene.php?id=<?php echo (int)$place_id; ?>" class="btn btn-primary">
+                        <a href="view_place.php?id=<?php echo (int)$place_id; ?>" class="btn btn-primary">
                             <i class="fas fa-arrow-left me-1"></i>Retour à la Lieu
                         </a>
                     </div>

@@ -46,11 +46,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Récupération des statistiques selon le rôle
 if (isDMOrAdmin()) {
     // Statistiques pour les MJ
-    $stmt = $pdo->prepare("SELECT COUNT(*) as session_count FROM game_sessions WHERE dm_id = ?");
+    $stmt = $pdo->prepare("SELECT COUNT(*) as campaign_count FROM campaigns WHERE dm_id = ?");
     $stmt->execute([$user_id]);
-    $session_count = $stmt->fetch()['session_count'];
+    $campaign_count = $stmt->fetch()['campaign_count'];
     
-    $stmt = $pdo->prepare("SELECT COUNT(*) as player_count FROM session_registrations sr JOIN game_sessions gs ON sr.session_id = gs.id WHERE gs.dm_id = ?");
+    $stmt = $pdo->prepare("SELECT COUNT(*) as player_count FROM campaign_members cm JOIN campaigns c ON cm.campaign_id = c.id WHERE c.dm_id = ? AND cm.role = 'player'");
     $stmt->execute([$user_id]);
     $player_count = $stmt->fetch()['player_count'];
 } else {
@@ -59,9 +59,9 @@ if (isDMOrAdmin()) {
     $stmt->execute([$user_id]);
     $character_count = $stmt->fetch()['character_count'];
     
-    $stmt = $pdo->prepare("SELECT COUNT(*) as session_count FROM session_registrations WHERE player_id = ?");
+    $stmt = $pdo->prepare("SELECT COUNT(*) as campaign_count FROM campaign_members WHERE user_id = ? AND role = 'player'");
     $stmt->execute([$user_id]);
-    $session_count = $stmt->fetch()['session_count'];
+    $campaign_count = $stmt->fetch()['campaign_count'];
 }
 
 // Récupération des notifications non lues
@@ -246,10 +246,10 @@ $current_page = "profile";
                 <div class="stat-card">
                     <h3 class="text-primary">
                         <i class="fas fa-<?php echo isDMOrAdmin() ? 'crown' : 'users'; ?>"></i>
-                        <?php echo isDMOrAdmin() ? $session_count : $character_count; ?>
+                        <?php echo isDMOrAdmin() ? $campaign_count : $character_count; ?>
                     </h3>
                     <p class="text-muted">
-                        <?php echo isDMOrAdmin() ? 'Sessions créées' : 'Personnages créés'; ?>
+                        <?php echo isDMOrAdmin() ? 'Campagnes créées' : 'Personnages créés'; ?>
                     </p>
                 </div>
 
@@ -265,9 +265,9 @@ $current_page = "profile";
                     <div class="stat-card">
                         <h3 class="text-warning">
                             <i class="fas fa-gamepad"></i>
-                            <?php echo $session_count; ?>
+                            <?php echo $campaign_count; ?>
                         </h3>
-                        <p class="text-muted">Sessions participées</p>
+                        <p class="text-muted">Campagnes rejointes</p>
                     </div>
                 <?php endif; ?>
 

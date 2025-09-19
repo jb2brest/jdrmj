@@ -6,9 +6,10 @@
  * Détection automatique de l'environnement
  */
 function detectEnvironment() {
-    // 1. Vérifier la variable d'environnement
-    if (isset($_ENV['APP_ENV'])) {
-        return $_ENV['APP_ENV'];
+    // 1. Vérifier la variable d'environnement (getenv fonctionne aussi en CLI)
+    $appEnv = getenv('APP_ENV') ?: (isset($_ENV['APP_ENV']) ? $_ENV['APP_ENV'] : null);
+    if ($appEnv) {
+        return $appEnv;
     }
     
     // 2. Vérifier le nom du serveur
