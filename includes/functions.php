@@ -4424,6 +4424,100 @@ function saveRogueArchetype($characterId, $archetypeId, $level3Choice = null, $l
     }
 }
 
+// Fonctions pour la hiérarchie géographique
+
+// Fonction pour obtenir tous les pays
+function getCountries() {
+    global $pdo;
+    try {
+        $stmt = $pdo->query("SELECT * FROM countries ORDER BY name");
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        error_log("Erreur getCountries: " . $e->getMessage());
+        return [];
+    }
+}
+
+// Fonction pour obtenir les régions d'un pays
+function getRegionsByCountry($countryId) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM regions WHERE country_id = ? ORDER BY name");
+        $stmt->execute([$countryId]);
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        error_log("Erreur getRegionsByCountry: " . $e->getMessage());
+        return [];
+    }
+}
+
+// Fonction pour obtenir tous les lieux avec leur hiérarchie géographique
+function getPlacesWithGeography($campaignId = null) {
+    global $pdo;
+    try {
+        $sql = "
+            SELECT p.*, c.name as country_name, r.name as region_name
+            FROM places p
+            LEFT JOIN countries c ON p.country_id = c.id
+            LEFT JOIN regions r ON p.region_id = r.id
+        ";
+        
+        if ($campaignId) {
+            $sql .= " WHERE p.campaign_id = ?";
+            $sql .= " ORDER BY c.name, r.name, p.title";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$campaignId]);
+        } else {
+            $sql .= " ORDER BY c.name, r.name, p.title";
+            $stmt = $pdo->query($sql);
+        }
+        
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        error_log("Erreur getPlacesWithGeography: " . $e->getMessage());
+        return [];
+    }
+}
+
+// Fonction pour obtenir un lieu avec sa hiérarchie géographique
+function getPlaceWithGeography($placeId) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("
+            SELECT p.*, c.name as country_name, c.description as country_description,
+                   r.name as region_name, r.description as region_description
+            FROM places p
+            LEFT JOIN countries c ON p.country_id = c.id
+            LEFT JOIN regions r ON p.region_id = r.id
+            WHERE p.id = ?
+        ");
+        $stmt->execute([$placeId]);
+        return $stmt->fetch();
+    } catch (PDOException $e) {
+        error_log("Erreur getPlaceWithGeography: " . $e->getMessage());
+        return null;
+    }
+}
+
+// Fonction pour vérifier si des joueurs sont présents dans un lieu
+function hasPlayersInPlace($placeId) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("
+            SELECT COUNT(*) as count
+            FROM place_players pp
+            JOIN campaign_members cm ON pp.player_id = cm.user_id
+            WHERE pp.place_id = ? AND cm.role = 'player'
+        ");
+        $stmt->execute([$placeId]);
+        $result = $stmt->fetch();
+        return $result['count'] > 0;
+    } catch (PDOException $e) {
+        error_log("Erreur hasPlayersInPlace: " . $e->getMessage());
+        return false;
+    }
+}
+
 // Fonction pour sauvegarder le choix de collège bardique
 function saveBardCollege($characterId, $collegeId, $level3Choice = null, $level6Choice = null, $level14Choice = null) {
     global $pdo;

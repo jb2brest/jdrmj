@@ -103,6 +103,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isDMOrAdmin()) {
         }
     }
 
+    // Créer un nouveau pays
+    if (isset($_POST['action']) && $_POST['action'] === 'create_country') {
+        $name = sanitizeInput($_POST['name'] ?? '');
+        $description = sanitizeInput($_POST['description'] ?? '');
+        
+        if ($name !== '') {
+            try {
+                $stmt = $pdo->prepare("INSERT INTO countries (name, description) VALUES (?, ?)");
+                $stmt->execute([$name, $description]);
+                $success_message = "Pays '$name' créé avec succès.";
+            } catch (PDOException $e) {
+                if ($e->getCode() == 23000) { // Erreur de contrainte unique
+                    $error_message = "Un pays avec ce nom existe déjà.";
+                } else {
+                    $error_message = "Erreur lors de la création du pays: " . $e->getMessage();
+                }
+            }
+        } else {
+            $error_message = "Le nom du pays est requis.";
+        }
+    }
+
+    // Créer une nouvelle région
+    if (isset($_POST['action']) && $_POST['action'] === 'create_region') {
+        $country_id = (int)($_POST['country_id'] ?? 0);
+        $name = sanitizeInput($_POST['name'] ?? '');
+        $description = sanitizeInput($_POST['description'] ?? '');
+        
+        if ($country_id > 0 && $name !== '') {
+            try {
+                $stmt = $pdo->prepare("INSERT INTO regions (country_id, name, description) VALUES (?, ?, ?)");
+                $stmt->execute([$country_id, $name, $description]);
+                $success_message = "Région '$name' créée avec succès.";
+            } catch (PDOException $e) {
+                if ($e->getCode() == 23000) { // Erreur de contrainte unique
+                    $error_message = "Une région avec ce nom existe déjà dans ce pays.";
+                } else {
+                    $error_message = "Erreur lors de la création de la région: " . $e->getMessage();
+                }
+            }
+        } else {
+            $error_message = "Le pays et le nom de la région sont requis.";
+        }
+    }
+
     if (isset($_POST['action']) && $_POST['action'] === 'create_session') {
         $title = sanitizeInput($_POST['title'] ?? 'Session');
         $session_date = sanitizeInput($_POST['session_date'] ?? '');
@@ -335,8 +380,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isDMOrAdmin()) {
             }
             
             if (!isset($error_message)) {
-                $stmt = $pdo->prepare("INSERT INTO places (campaign_id, title, map_url, notes, position) VALUES (?, ?, ?, ?, 0)");
-                $stmt->execute([$campaign_id, $title, $map_url, $notes]);
+                $country_id = isset($_POST['country_id']) && $_POST['country_id'] ? (int)$_POST['country_id'] : null;
+                $region_id = isset($_POST['region_id']) && $_POST['region_id'] ? (int)$_POST['region_id'] : null;
+                
+                $stmt = $pdo->prepare("INSERT INTO places (campaign_id, title, map_url, notes, position, country_id, region_id) VALUES (?, ?, ?, ?, 0, ?, ?)");
+                $stmt->execute([$campaign_id, $title, $map_url, $notes, $country_id, $region_id]);
                 $success_message = "Lieu créée avec succès.";
             }
         } else {
@@ -469,10 +517,8 @@ $stmt = $pdo->prepare("SELECT ca.id, ca.player_id, ca.character_id, ca.message, 
 $stmt->execute([$campaign_id]);
 $applications = $stmt->fetchAll();
 
-// Récupérer lieux
-$stmt = $pdo->prepare("SELECT * FROM places WHERE campaign_id = ? ORDER BY position ASC, created_at ASC");
-$stmt->execute([$campaign_id]);
-$places = $stmt->fetchAll();
+// Récupérer lieux avec hiérarchie géographique
+$places = getPlacesWithGeography($campaign_id);
 
 // Récupérer les événements du journal
 $stmt = $pdo->prepare("SELECT * FROM campaign_journal WHERE campaign_id = ? ORDER BY created_at DESC");
@@ -738,7 +784,9 @@ if (!empty($places)) {
                                         <div>
                                             <strong><?php echo htmlspecialchars($s['title']); ?></strong>
                                             <div class="small text-muted">
-                                                <?php if (!empty($s['session_date'])) echo date('d/m/Y H:i', strtotime($s['session_date'])) . ' · '; ?>
+                                                <?php if (!empty($s['session_date'])): ?>
+                                                    <?php echo date('d/m/Y H:i', strtotime($s['session_date'])) . ' · '; ?>
+                                                <?php endif; ?>
                                                 <?php echo $s['is_online'] ? 'En ligne' : htmlspecialchars($s['location']); ?>
                                                 · Places: <?php echo $s['max_players']; ?>
                                             </div>
@@ -760,157 +808,163 @@ if (!empty($places)) {
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-photo-video me-2"></i>Lieux de la campagne</h5>
-                        <button class="btn btn-brown btn-sm" data-bs-toggle="modal" data-bs-target="#createSceneModal">
-                            <i class="fas fa-plus"></i> Nouveau lieu
-                        </button>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-brown btn-sm" data-bs-toggle="modal" data-bs-target="#createCountryModal">
+                                <i class="fas fa-globe"></i> Nouveau Pays
+                            </button>
+                            <button class="btn btn-brown btn-sm" data-bs-toggle="modal" data-bs-target="#createRegionModal">
+                                <i class="fas fa-map-marker-alt"></i> Nouvelle région
+                            </button>
+                            <button class="btn btn-brown btn-sm" data-bs-toggle="modal" data-bs-target="#createSceneModal">
+                                <i class="fas fa-plus"></i> Nouveau lieu
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body">
                         <?php if (empty($places)): ?>
                             <p class="text-muted">Aucun lieu créé.</p>
                         <?php else: ?>
-                            <div class="row g-3">
-                                <?php foreach ($places as $scene): ?>
-                                    <div class="col-md-6">
-                                        <div class="card h-100">
-                                            <div class="card-header">
-                                                <h6 class="mb-0">
-                                                    <a href="view_scene.php?id=<?php echo (int)$scene['id']; ?>" class="text-decoration-none">
-                                                        <i class="fas fa-photo-video me-2"></i><?php echo htmlspecialchars($scene['title']); ?>
-                                                    </a>
-                                                </h6>
-                                            </div>
-                                            <div class="card-body">
-                                                <div class="d-flex justify-content-between align-items-start">
-                                                    <div class="flex-grow-1">
-                                                        <?php if (!empty($scene['description'])): ?>
-                                                            <p class="text-muted small mb-2"><?php echo htmlspecialchars(substr($scene['description'], 0, 100)) . (strlen($scene['description']) > 100 ? '...' : ''); ?></p>
-                                                        <?php endif; ?>
-                                                    </div>
-                                                    <div class="dropdown">
-                                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                                            <i class="fas fa-ellipsis-v"></i>
-                                                        </button>
-                                                        <ul class="dropdown-menu">
-                                                            <li><a class="dropdown-item" href="view_scene.php?id=<?php echo (int)$scene['id']; ?>"><i class="fas fa-eye me-2"></i>Voir</a></li>
-                                                            <li><hr class="dropdown-divider"></li>
-                                                            <li>
-                                                                <form method="POST" class="d-inline">
-                                                                    <input type="hidden" name="action" value="move_scene">
-                                                                    <input type="hidden" name="place_id" value="<?php echo (int)$scene['id']; ?>">
-                                                                    <input type="hidden" name="direction" value="up">
-                                                                    <button class="dropdown-item" type="submit"><i class="fas fa-arrow-up me-2"></i>Monter</button>
-                                                                </form>
-                                                            </li>
-                                                            <li>
-                                                                <form method="POST" class="d-inline">
-                                                                    <input type="hidden" name="action" value="move_scene">
-                                                                    <input type="hidden" name="place_id" value="<?php echo (int)$scene['id']; ?>">
-                                                                    <input type="hidden" name="direction" value="down">
-                                                                    <button class="dropdown-item" type="submit"><i class="fas fa-arrow-down me-2"></i>Descendre</button>
-                                                                </form>
-                                                            </li>
-                                                            <li><hr class="dropdown-divider"></li>
-                                                            <li>
-                                                                <form method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette lieu ?')">
-                                                                    <input type="hidden" name="action" value="delete_scene">
-                                                                    <input type="hidden" name="place_id" value="<?php echo (int)$scene['id']; ?>">
-                                                                    <button class="dropdown-item text-brown" type="submit"><i class="fas fa-trash me-2"></i>Supprimer</button>
-                                                                </form>
-                                                            </li>
-                                                        </ul>
-                                                    </div>
-                                                </div>
-                                                
-                                                <?php if (!empty($scene['map_url'])): ?>
-                                                    <div class="mb-2">
-                                                        <a href="<?php echo htmlspecialchars($scene['map_url']); ?>" target="_blank" rel="noopener noreferrer" class="text-decoration-none">
-                                                            <i class="fas fa-map me-1"></i>Plan du lieu
-                                                        </a>
-                                                    </div>
-                                                <?php endif; ?>
-                                                
-                                                <?php if (!empty($scene['notes'])): ?>
-                                                    <div class="small text-muted mb-2">
-                                                        <?php echo nl2br(htmlspecialchars($scene['notes'])); ?>
-                                                    </div>
-                                                <?php endif; ?>
-                                                
-                                                <!-- Joueurs présents -->
-                                                <?php if (!empty($placePlayers[$scene['id']])): ?>
-                                                    <div class="mb-2">
-                                                        <small class="text-muted"><i class="fas fa-users me-1"></i>Joueurs :</small>
-                                                        <div class="mt-1">
-                                                            <?php foreach ($placePlayers[$scene['id']] as $player): ?>
-                                                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                                                    <span class="small">
-                                                                        <i class="fas fa-user me-1"></i><?php echo htmlspecialchars($player['username']); ?>
-                                                                        <?php if ($player['character_name']): ?>
-                                                                            <span class="text-muted">(<?php echo htmlspecialchars($player['character_name']); ?>)</span>
-                                                                        <?php endif; ?>
-                                                                    </span>
-                                                                    <?php if ($isOwnerDM && count($places) > 1): ?>
-                                                                        <button class="btn btn-sm btn-outline-brown" onclick="showTransferModal('player', <?php echo $player['player_id']; ?>, <?php echo $scene['id']; ?>, '<?php echo htmlspecialchars($player['username']); ?>')">
-                                                                            <i class="fas fa-exchange-alt"></i>
-                                                                        </button>
-                                                                    <?php endif; ?>
-                                                                </div>
-                                                            <?php endforeach; ?>
-                                                        </div>
-                                                    </div>
-                                                <?php endif; ?>
-                                                
-                                                <!-- PNJ présents -->
-                                                <?php if (!empty($placeNpcs[$scene['id']])): ?>
-                                                    <div class="mb-2">
-                                                        <small class="text-muted"><i class="fas fa-user-tie me-1"></i>PNJ :</small>
-                                                        <div class="mt-1">
-                                                            <?php foreach ($placeNpcs[$scene['id']] as $npc): ?>
-                                                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                                                    <span class="small">
-                                                                        <i class="fas fa-user-tie me-1"></i><?php echo htmlspecialchars($npc['name']); ?>
-                                                                    </span>
-                                                                    <?php if ($isOwnerDM && count($places) > 1): ?>
-                                                                        <button class="btn btn-sm btn-outline-brown" onclick="showTransferModal('npc', <?php echo $npc['id']; ?>, <?php echo $scene['id']; ?>, '<?php echo htmlspecialchars($npc['name']); ?>')">
-                                                                            <i class="fas fa-exchange-alt"></i>
-                                                                        </button>
-                                                                    <?php endif; ?>
-                                                                </div>
-                                                            <?php endforeach; ?>
-                                                        </div>
-                                                    </div>
-                                                <?php endif; ?>
-                                                
-                                                <!-- Monstres présents -->
-                                                <?php if (!empty($placeMonsters[$scene['id']])): ?>
-                                                    <div class="mb-2">
-                                                        <small class="text-muted"><i class="fas fa-dragon me-1"></i>Monstres :</small>
-                                                        <div class="mt-1">
-                                                            <?php foreach ($placeMonsters[$scene['id']] as $monster): ?>
-                                                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                                                    <span class="small">
-                                                                        <i class="fas fa-dragon me-1"></i><?php echo htmlspecialchars($monster['name']); ?>
-                                                                        <span class="text-muted">(<?php echo htmlspecialchars($monster['type']); ?>)</span>
-                                                                    </span>
-                                                                    <?php if ($isOwnerDM && count($places) > 1): ?>
-                                                                        <button class="btn btn-sm btn-outline-brown" onclick="showTransferModal('monster', <?php echo $monster['id']; ?>, <?php echo $scene['id']; ?>, '<?php echo htmlspecialchars($monster['name']); ?>')">
-                                                                            <i class="fas fa-exchange-alt"></i>
-                                                                        </button>
-                                                                    <?php endif; ?>
-                                                                </div>
-                                                            <?php endforeach; ?>
-                                                        </div>
-                                                    </div>
-                                                <?php endif; ?>
-                                                
-                                                <div class="small text-muted mt-2">
-                                                    Créée le <?php echo date('d/m/Y H:i', strtotime($scene['created_at'])); ?>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                <?php endforeach; ?>
+                            <!-- Filtres -->
+                            <div class="row mb-3">
+                                <div class="col-md-3">
+                                    <label for="filterCountry" class="form-label">Filtrer par pays</label>
+                                    <select class="form-select" id="filterCountry">
+                                        <option value="">Tous les pays</option>
+                                        <?php
+                                        $countries = getCountries();
+                                        foreach ($countries as $country):
+                                        ?>
+                                            <option value="<?php echo htmlspecialchars($country['name']); ?>"><?php echo htmlspecialchars($country['name']); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="filterRegion" class="form-label">Filtrer par région</label>
+                                    <select class="form-select" id="filterRegion">
+                                        <option value="">Toutes les régions</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="filterPlayers" class="form-label">Filtrer par présence</label>
+                                    <select class="form-select" id="filterPlayers">
+                                        <option value="">Tous les lieux</option>
+                                        <option value="with-players">Avec joueurs</option>
+                                        <option value="without-players">Sans joueurs</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="searchPlace" class="form-label">Rechercher</label>
+                                    <input type="text" class="form-control" id="searchPlace" placeholder="Nom du lieu...">
+                                </div>
                             </div>
-                        <?php endif; ?>
+                            
+                            <!-- Tableau des lieux -->
+                            <div class="table-responsive">
+                                <table class="table table-hover" id="placesTable">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="sortable" data-column="country">
+                                                <i class="fas fa-globe me-1"></i>Pays
+                                                <i class="fas fa-sort ms-1"></i>
+                                            </th>
+                                            <th class="sortable" data-column="region">
+                                                <i class="fas fa-map-marker-alt me-1"></i>Région
+                                                <i class="fas fa-sort ms-1"></i>
+                                            </th>
+                                            <th class="sortable" data-column="title">
+                                                <i class="fas fa-photo-video me-1"></i>Lieu
+                                                <i class="fas fa-sort ms-1"></i>
+                                            </th>
+                                            <th class="sortable" data-column="players">
+                                                <i class="fas fa-users me-1"></i>Joueurs
+                                                <i class="fas fa-sort ms-1"></i>
+                                            </th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($places as $place): ?>
+                                            <?php $hasPlayers = hasPlayersInPlace($place['id']); ?>
+                                            <tr data-country="<?php echo htmlspecialchars($place['country_name'] ?? ''); ?>" 
+                                                data-region="<?php echo htmlspecialchars($place['region_name'] ?? ''); ?>"
+                                                data-title="<?php echo htmlspecialchars($place['title']); ?>"
+                                                data-players="<?php echo $hasPlayers ? 'with-players' : 'without-players'; ?>">
+                                                <td>
+                                                    <?php if ($place['country_name']): ?>
+                                                        <span class="badge bg-primary"><?php echo htmlspecialchars($place['country_name']); ?></span>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">-</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <?php if ($place['region_name']): ?>
+                                                        <span class="badge bg-secondary"><?php echo htmlspecialchars($place['region_name']); ?></span>
+                                                    <?php else: ?>
+                                                        <span class="text-muted">-</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <a href="view_scene.php?id=<?php echo (int)$place['id']; ?>" class="text-decoration-none fw-bold">
+                                                        <?php echo htmlspecialchars($place['title']); ?>
+                                                    </a>
+                                                    <?php if (!empty($place['notes'])): ?>
+                                                        <br><small class="text-muted"><?php echo htmlspecialchars(substr($place['notes'], 0, 50)) . (strlen($place['notes']) > 50 ? '...' : ''); ?></small>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td class="text-center">
+                                                    <?php if ($hasPlayers): ?>
+                                                        <span class="badge bg-success" title="Joueurs présents">
+                                                            <i class="fas fa-users"></i>
+                                                        </span>
+                                                    <?php else: ?>
+                                                        <span class="badge bg-light text-muted" title="Aucun joueur">
+                                                            <i class="fas fa-user-slash"></i>
+                                                        </span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <div class="btn-group btn-group-sm" role="group">
+                                                        <a href="view_scene.php?id=<?php echo (int)$place['id']; ?>" class="btn btn-outline-primary" title="Voir le lieu">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                        <div class="btn-group btn-group-sm" role="group">
+                                                            <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                                                <i class="fas fa-ellipsis-v"></i>
+                                                            </button>
+                                                            <ul class="dropdown-menu">
+                                                                <li>
+                                                                    <form method="POST" class="d-inline">
+                                                                        <input type="hidden" name="action" value="move_scene">
+                                                                        <input type="hidden" name="place_id" value="<?php echo (int)$place['id']; ?>">
+                                                                        <input type="hidden" name="direction" value="up">
+                                                                        <button class="dropdown-item" type="submit"><i class="fas fa-arrow-up me-2"></i>Monter</button>
+                                                                    </form>
+                                                                </li>
+                                                                <li>
+                                                                    <form method="POST" class="d-inline">
+                                                                        <input type="hidden" name="action" value="move_scene">
+                                                                        <input type="hidden" name="place_id" value="<?php echo (int)$place['id']; ?>">
+                                                                        <input type="hidden" name="direction" value="down">
+                                                                        <button class="dropdown-item" type="submit"><i class="fas fa-arrow-down me-2"></i>Descendre</button>
+                                                                    </form>
+                                                                </li>
+                                                                <li><hr class="dropdown-divider"></li>
+                                                                <li>
+                                                                    <form method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce lieu ?')">
+                                                                        <input type="hidden" name="action" value="delete_scene">
+                                                                        <input type="hidden" name="place_id" value="<?php echo (int)$place['id']; ?>">
+                                                                        <button class="dropdown-item text-danger" type="submit"><i class="fas fa-trash me-2"></i>Supprimer</button>
+                                                                    </form>
+                                                                </li>
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
                     </div>
                 </div>
             </div>
@@ -1076,6 +1130,82 @@ if (!empty($places)) {
             </div>
         </div>
         <?php endif; ?>
+        <?php endif; ?>
+    </div>
+
+    <!-- Modal Création Pays -->
+    <div class="modal fade" id="createCountryModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nouveau Pays</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <form method="POST">
+                    <div class="modal-body">
+                        <input type="hidden" name="action" value="create_country">
+                        
+                        <div class="mb-3">
+                            <label for="countryName" class="form-label">Nom du pays</label>
+                            <input type="text" class="form-control" id="countryName" name="name" required maxlength="255" placeholder="Ex: Royaume d'Avalon">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="countryDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="countryDescription" name="description" rows="4" placeholder="Description du pays, sa culture, son climat, etc."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-brown">Créer le pays</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Création Région -->
+    <div class="modal fade" id="createRegionModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nouvelle Région</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <form method="POST">
+                    <div class="modal-body">
+                        <input type="hidden" name="action" value="create_region">
+                        
+                        <div class="mb-3">
+                            <label for="regionCountry" class="form-label">Pays</label>
+                            <select class="form-select" id="regionCountry" name="country_id" required>
+                                <option value="">Sélectionner un pays</option>
+                                <?php
+                                $countries = getCountries();
+                                foreach ($countries as $country):
+                                ?>
+                                    <option value="<?php echo (int)$country['id']; ?>"><?php echo htmlspecialchars($country['name']); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="regionName" class="form-label">Nom de la région</label>
+                            <input type="text" class="form-control" id="regionName" name="name" required maxlength="255" placeholder="Ex: Forêt d'Elmwood">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="regionDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="regionDescription" name="description" rows="4" placeholder="Description de la région, ses caractéristiques, etc."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-brown">Créer la région</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <!-- Modal Création Lieu -->
@@ -1093,6 +1223,27 @@ if (!empty($places)) {
                         <div class="mb-3">
                             <label for="sceneTitle" class="form-label">Titre du lieu *</label>
                             <input type="text" class="form-control" id="sceneTitle" name="title" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="sceneCountry" class="form-label">Pays (optionnel)</label>
+                            <select class="form-control" id="sceneCountry" name="country_id">
+                                <option value="">-- Sélectionner un pays --</option>
+                                <?php
+                                $countries = getCountries();
+                                foreach ($countries as $country):
+                                ?>
+                                    <option value="<?php echo $country['id']; ?>"><?php echo htmlspecialchars($country['name']); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="sceneRegion" class="form-label">Région (optionnel)</label>
+                            <select class="form-control" id="sceneRegion" name="region_id">
+                                <option value="">-- Sélectionner une région --</option>
+                            </select>
+                            <div class="form-text">Sélectionnez d'abord un pays pour voir ses régions</div>
                         </div>
                         
                         <div class="mb-3">
@@ -1322,6 +1473,150 @@ if (!empty($places)) {
             document.getElementById('editJournalTitle').value = title;
             document.getElementById('editJournalContent').value = content;
         };
+        
+        // Gestion de la sélection pays/région
+        document.getElementById('sceneCountry').addEventListener('change', function() {
+            var countryId = this.value;
+            var regionSelect = document.getElementById('sceneRegion');
+            
+            // Vider la liste des régions
+            regionSelect.innerHTML = '<option value="">-- Sélectionner une région --</option>';
+            
+            if (countryId) {
+                // Charger les régions du pays sélectionné via AJAX
+                fetch('get_regions.php?country_id=' + countryId)
+                    .then(response => response.json())
+                    .then(regions => {
+                        regions.forEach(function(region) {
+                            var option = document.createElement('option');
+                            option.value = region.id;
+                            option.textContent = region.name;
+                            regionSelect.appendChild(option);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors du chargement des régions:', error);
+                    });
+            }
+        });
+        
+        // Gestion du tableau des lieux - Tri et filtres
+        let currentSort = { column: null, direction: 'asc' };
+        
+        // Fonction de tri
+        function sortTable(column) {
+            const table = document.getElementById('placesTable');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            // Déterminer la direction du tri
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.direction = 'asc';
+            }
+            currentSort.column = column;
+            
+            // Mettre à jour les icônes de tri
+            document.querySelectorAll('.sortable i.fa-sort').forEach(icon => {
+                icon.className = 'fas fa-sort ms-1';
+            });
+            const currentHeader = document.querySelector(`[data-column="${column}"] i.fa-sort`);
+            currentHeader.className = currentSort.direction === 'asc' ? 'fas fa-sort-up ms-1' : 'fas fa-sort-down ms-1';
+            
+            // Trier les lignes
+            rows.sort((a, b) => {
+                let aValue = a.getAttribute(`data-${column}`) || '';
+                let bValue = b.getAttribute(`data-${column}`) || '';
+                
+                // Tri spécial pour les joueurs
+                if (column === 'players') {
+                    aValue = aValue === 'with-players' ? 1 : 0;
+                    bValue = bValue === 'with-players' ? 1 : 0;
+                }
+                
+                if (currentSort.direction === 'asc') {
+                    return aValue > bValue ? 1 : -1;
+                } else {
+                    return aValue < bValue ? 1 : -1;
+                }
+            });
+            
+            // Réorganiser les lignes dans le DOM
+            rows.forEach(row => tbody.appendChild(row));
+        }
+        
+        // Ajouter les événements de clic sur les en-têtes
+        document.querySelectorAll('.sortable').forEach(header => {
+            header.style.cursor = 'pointer';
+            header.addEventListener('click', () => {
+                sortTable(header.getAttribute('data-column'));
+            });
+        });
+        
+        // Fonction de filtrage
+        function filterTable() {
+            const countryFilter = document.getElementById('filterCountry').value.toLowerCase();
+            const regionFilter = document.getElementById('filterRegion').value.toLowerCase();
+            const playersFilter = document.getElementById('filterPlayers').value;
+            const searchFilter = document.getElementById('searchPlace').value.toLowerCase();
+            
+            const rows = document.querySelectorAll('#placesTable tbody tr');
+            
+            rows.forEach(row => {
+                const country = row.getAttribute('data-country').toLowerCase();
+                const region = row.getAttribute('data-region').toLowerCase();
+                const title = row.getAttribute('data-title').toLowerCase();
+                const players = row.getAttribute('data-players');
+                
+                let show = true;
+                
+                if (countryFilter && !country.includes(countryFilter)) show = false;
+                if (regionFilter && !region.includes(regionFilter)) show = false;
+                if (playersFilter && players !== playersFilter) show = false;
+                if (searchFilter && !title.includes(searchFilter)) show = false;
+                
+                row.style.display = show ? '' : 'none';
+            });
+        }
+        
+        // Ajouter les événements de filtrage
+        document.getElementById('filterCountry').addEventListener('change', filterTable);
+        document.getElementById('filterRegion').addEventListener('change', filterTable);
+        document.getElementById('filterPlayers').addEventListener('change', filterTable);
+        document.getElementById('searchPlace').addEventListener('input', filterTable);
+        
+        // Gestion de la sélection pays/région pour les filtres
+        document.getElementById('filterCountry').addEventListener('change', function() {
+            const countryId = this.value;
+            const regionSelect = document.getElementById('filterRegion');
+            
+            // Vider la liste des régions
+            regionSelect.innerHTML = '<option value="">Toutes les régions</option>';
+            
+            if (countryId) {
+                // Trouver l'ID du pays sélectionné
+                const countries = <?php echo json_encode($countries); ?>;
+                const selectedCountry = countries.find(c => c.name === countryId);
+                
+                if (selectedCountry) {
+                    // Charger les régions du pays sélectionné
+                    fetch('get_regions.php?country_id=' + selectedCountry.id)
+                        .then(response => response.json())
+                        .then(regions => {
+                            regions.forEach(function(region) {
+                                var option = document.createElement('option');
+                                option.value = region.name;
+                                option.textContent = region.name;
+                                regionSelect.appendChild(option);
+                            });
+                        })
+                        .catch(error => {
+                            console.error('Erreur lors du chargement des régions:', error);
+                        });
+                }
+            }
+        });
     });
     </script>
 </body>

@@ -15,10 +15,15 @@ if (!isset($_GET['id'])) {
 $place_id = (int)$_GET['id'];
 $isModal = isset($_GET['modal']);
 
-// Charger la lieu et sa campagne
-$stmt = $pdo->prepare("SELECT s.*, c.title AS campaign_title, c.id AS campaign_id, c.dm_id, u.username AS dm_username FROM places s JOIN campaigns c ON s.campaign_id = c.id JOIN users u ON c.dm_id = u.id WHERE s.id = ?");
-$stmt->execute([$place_id]);
-$place = $stmt->fetch();
+// Charger la lieu et sa campagne avec hiérarchie géographique
+$place = getPlaceWithGeography($place_id);
+if ($place) {
+    // Récupérer les informations de campagne
+    $stmt = $pdo->prepare("SELECT c.title AS campaign_title, c.id AS campaign_id, c.dm_id, u.username AS dm_username FROM campaigns c JOIN users u ON c.dm_id = u.id WHERE c.id = ?");
+    $stmt->execute([$place['campaign_id']]);
+    $campaignInfo = $stmt->fetch();
+    $place = array_merge($place, $campaignInfo);
+}
 
 if (!$place) {
     header('Location: index.php');
@@ -422,20 +427,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
             $error_message = "Vous n'avez pas les droits pour éditer ce lieu.";
         } else {
             $title = trim($_POST['scene_title'] ?? '');
-            $description = trim($_POST['scene_description'] ?? '');
             $notes = trim($_POST['scene_notes'] ?? '');
             
             if ($title === '') {
                 $error_message = "Le titre du lieu est obligatoire.";
             } else {
-                $stmt = $pdo->prepare("UPDATE places SET title = ?, description = ?, notes = ? WHERE id = ? AND campaign_id = ?");
-                $stmt->execute([$title, $description, $notes, $place_id, $place['campaign_id']]);
+                $country_id = isset($_POST['country_id']) && $_POST['country_id'] ? (int)$_POST['country_id'] : null;
+                $region_id = isset($_POST['region_id']) && $_POST['region_id'] ? (int)$_POST['region_id'] : null;
+                
+                $stmt = $pdo->prepare("UPDATE places SET title = ?, notes = ?, country_id = ?, region_id = ? WHERE id = ? AND campaign_id = ?");
+                $stmt->execute([$title, $notes, $country_id, $region_id, $place_id, $place['campaign_id']]);
                 $success_message = "Lieu mis à jour avec succès.";
                 
                 // Recharger les données du lieu
-                $stmt = $pdo->prepare("SELECT s.*, c.title AS campaign_title, c.id AS campaign_id, c.dm_id, u.username AS dm_username FROM places s JOIN campaigns c ON s.campaign_id = c.id JOIN users u ON c.dm_id = u.id WHERE s.id = ?");
-                $stmt->execute([$place_id]);
-                $place = $stmt->fetch();
+                $place = getPlaceWithGeography($place_id);
+                if ($place) {
+                    $stmt = $pdo->prepare("SELECT c.title AS campaign_title, c.id AS campaign_id, c.dm_id, u.username AS dm_username FROM campaigns c JOIN users u ON c.dm_id = u.id WHERE c.id = ?");
+                    $stmt->execute([$place['campaign_id']]);
+                    $campaignInfo = $stmt->fetch();
+                    $place = array_merge($place, $campaignInfo);
+                }
             }
         }
     }
@@ -905,7 +916,20 @@ foreach ($allScenes as $s) {
         <div>
             <?php if ($isOwnerDM): ?>
                 <div class="d-flex align-items-center">
-                    <h1 class="me-3"><i class="fas fa-photo-video me-2"></i><?php echo htmlspecialchars($place['title']); ?></h1>
+                    <div>
+                        <h1 class="me-3"><i class="fas fa-photo-video me-2"></i><?php echo htmlspecialchars($place['title']); ?></h1>
+                        <?php if ($place['country_name'] || $place['region_name']): ?>
+                            <p class="text-muted mb-0">
+                                <i class="fas fa-map-marker-alt me-1"></i>
+                                <?php 
+                                $location = [];
+                                if ($place['region_name']) $location[] = $place['region_name'];
+                                if ($place['country_name']) $location[] = $place['country_name'];
+                                echo htmlspecialchars(implode(', ', $location));
+                                ?>
+                            </p>
+                        <?php endif; ?>
+                    </div>
                     <div class="btn-group" role="group">
                         <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#editTitleForm">
                             <i class="fas fa-edit me-1"></i>Modifier le nom
@@ -931,7 +955,20 @@ foreach ($allScenes as $s) {
                     </div>
                 </div>
             <?php else: ?>
-                <h1><i class="fas fa-photo-video me-2"></i><?php echo htmlspecialchars($place['title']); ?></h1>
+                <div>
+                    <h1><i class="fas fa-photo-video me-2"></i><?php echo htmlspecialchars($place['title']); ?></h1>
+                    <?php if ($place['country_name'] || $place['region_name']): ?>
+                        <p class="text-muted mb-0">
+                            <i class="fas fa-map-marker-alt me-1"></i>
+                            <?php 
+                            $location = [];
+                            if ($place['region_name']) $location[] = $place['region_name'];
+                            if ($place['country_name']) $location[] = $place['country_name'];
+                            echo htmlspecialchars(implode(', ', $location));
+                            ?>
+                        </p>
+                    <?php endif; ?>
+                </div>
             <?php endif; ?>
             <p class="text-muted mb-0">
                 Campagne: <a href="view_campaign.php?id=<?php echo (int)$place['campaign_id']; ?>" class="text-decoration-none fw-bold" style="color: var(--bs-primary) !important;"><?php echo htmlspecialchars($place['campaign_title']); ?></a> • MJ: <?php echo htmlspecialchars($place['dm_username']); ?>
@@ -2909,6 +2946,32 @@ foreach ($allScenes as $s) {
             clearInterval(diceHistoryInterval);
         }
     });
+    
+    // Gestion de la sélection pays/région dans le formulaire d'édition
+    document.getElementById('editSceneCountry').addEventListener('change', function() {
+        var countryId = this.value;
+        var regionSelect = document.getElementById('editSceneRegion');
+        
+        // Vider la liste des régions
+        regionSelect.innerHTML = '<option value="">-- Sélectionner une région --</option>';
+        
+        if (countryId) {
+            // Charger les régions du pays sélectionné via AJAX
+            fetch('get_regions.php?country_id=' + countryId)
+                .then(response => response.json())
+                .then(regions => {
+                    regions.forEach(function(region) {
+                        var option = document.createElement('option');
+                        option.value = region.id;
+                        option.textContent = region.name;
+                        regionSelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Erreur lors du chargement des régions:', error);
+                });
+        }
+    });
     </script>
 
 <!-- Modal pour éditer le lieu -->
@@ -2933,9 +2996,36 @@ foreach ($allScenes as $s) {
                     </div>
                     
                     <div class="mb-3">
-                        <label for="editSceneDescription" class="form-label">Description</label>
-                        <textarea class="form-control" id="editSceneDescription" name="scene_description" 
-                                  rows="4" placeholder="Décrivez le lieu..."><?php echo htmlspecialchars($place['description'] ?? ''); ?></textarea>
+                        <label for="editSceneCountry" class="form-label">Pays (optionnel)</label>
+                        <select class="form-control" id="editSceneCountry" name="country_id">
+                            <option value="">-- Sélectionner un pays --</option>
+                            <?php
+                            $countries = getCountries();
+                            foreach ($countries as $country):
+                            ?>
+                                <option value="<?php echo $country['id']; ?>" <?php echo ($place['country_id'] == $country['id']) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($country['name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="editSceneRegion" class="form-label">Région (optionnel)</label>
+                        <select class="form-control" id="editSceneRegion" name="region_id">
+                            <option value="">-- Sélectionner une région --</option>
+                            <?php
+                            if ($place['country_id']) {
+                                $regions = getRegionsByCountry($place['country_id']);
+                                foreach ($regions as $region):
+                                ?>
+                                    <option value="<?php echo $region['id']; ?>" <?php echo ($place['region_id'] == $region['id']) ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($region['name']); ?>
+                                    </option>
+                                <?php endforeach;
+                            } ?>
+                        </select>
+                        <div class="form-text">Sélectionnez d'abord un pays pour voir ses régions</div>
                     </div>
                     
                     <div class="mb-3">

@@ -30,3 +30,5 @@ SELECT 'monster_equipment' as table_name, COUNT(*) as remaining_records FROM mon
 
 
 
+
+

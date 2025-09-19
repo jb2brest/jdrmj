@@ -27,9 +27,12 @@ Dans la table dnd_monster, ajoute la colonne "Langues" en récupéreant les info
 Ajoute ensuite les compétences à la pages view_monster_sheet.php dans une zone "Langues".
 Mets la à côté de la zone "Sens"
 
-Comme le barbare qui doit choisir sa voie, le occultiste doit choisir sa faveur de pacte au niveau 3. 
-Il faut reprendre la même mécanique que pour le barbare et l'adapter au occultiste.
+Comme le barbare qui doit choisir sa voie, le Roublard doit choisir son archetype de Roublard au niveau 3. 
+Il faut reprendre la même mécanique que pour le barbare et l'adapter au Roublard.
 
+Dans view_campaign.php, présenter la zone "Lieux de la campagne" sous forme de tableau.
+Il y faut les colonnes : Pays, Région, Lieux, Un symbole pour dire si un personnage joueur est présent.
+Les colonnes sont triables et filtrables
 
 Dans view_campaign.php, seul le MJ peut ajouter, modifier, masquer, rendre visible des évènements
 Dans view_character.php, il faut déplacer la partie "Point d'expérience" de la partie "Combat" dans une stat-box à coté de la classe d'armure dans l'entête du personnage	
