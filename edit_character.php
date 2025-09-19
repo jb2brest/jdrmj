@@ -60,6 +60,7 @@ $isFighter = false;
 $isWizard = false;
 $isMonk = false;
 $isWarlock = false;
+$isPaladin = false;
 if ($character['class_id']) {
     $stmt = $pdo->prepare("SELECT name FROM classes WHERE id = ?");
     $stmt->execute([$character['class_id']]);
@@ -73,6 +74,7 @@ if ($character['class_id']) {
     $isWizard = $class && strpos(strtolower($class['name']), 'magicien') !== false;
     $isMonk = $class && strpos(strtolower($class['name']), 'moine') !== false;
     $isWarlock = $class && strpos(strtolower($class['name']), 'occultiste') !== false;
+    $isPaladin = $class && strpos(strtolower($class['name']), 'paladin') !== false;
 }
 
 // Capacités de classe basées sur le niveau
@@ -111,6 +113,14 @@ $selectedPath = null;
 if ($isBarbarian) {
     $barbarianPaths = getBarbarianPaths();
     $selectedPath = getCharacterBarbarianPath($character_id);
+}
+
+// Récupérer les serments sacrés et le choix actuel
+$paladinOaths = [];
+$selectedOath = null;
+if ($isPaladin) {
+    $paladinOaths = getPaladinOaths();
+    $selectedOath = getCharacterPaladinOath($character_id);
 }
 
 // Récupérer les collèges bardiques et le choix actuel
@@ -291,6 +301,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Voie primitive (pour les barbares de niveau 3+)
     $barbarian_path_id = isset($_POST['barbarian_path_id']) ? (int)$_POST['barbarian_path_id'] : null;
     
+    // Serment sacré (pour les paladins de niveau 3+)
+    $paladin_oath_id = isset($_POST['paladin_oath_id']) ? (int)$_POST['paladin_oath_id'] : null;
+    
     // Collège bardique (pour les bardes de niveau 3+)
         $bard_college_id = isset($_POST['bard_college_id']) ? (int)$_POST['bard_college_id'] : null;
         $cleric_domain_id = isset($_POST['cleric_domain_id']) ? (int)$_POST['cleric_domain_id'] : null;
@@ -415,6 +428,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Sauvegarder la voie primitive si c'est un barbare de niveau 3+
             if ($isBarbarian && $level >= 3 && $barbarian_path_id) {
                 saveBarbarianPath($character_id, $barbarian_path_id);
+            }
+            
+            // Sauvegarder le serment sacré si c'est un paladin de niveau 3+
+            if ($isPaladin && $level >= 3 && $paladin_oath_id) {
+                savePaladinOath($character_id, $paladin_oath_id);
             }
             
             // Sauvegarder le collège bardique si c'est un barde de niveau 3+
@@ -1157,6 +1175,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         </div>
                                         <div class="path-description mt-2">
                                             <small class="text-muted"><?php echo nl2br(htmlspecialchars($path['description'])); ?></small>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                
+                <!-- Choix de serment sacré pour les paladins de niveau 3+ -->
+                <?php if ($isPaladin && $character['level'] >= 3): ?>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5><i class="fas fa-cross me-2"></i>Serment sacré</h5>
+                            <p class="text-muted">Choisissez votre serment sacré (obligatoire au niveau 3).</p>
+                            <div class="row">
+                                <?php foreach ($paladinOaths as $oath): ?>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" 
+                                                   name="paladin_oath_id" 
+                                                   id="oath_<?php echo $oath['id']; ?>" 
+                                                   value="<?php echo $oath['id']; ?>"
+                                                   <?php echo ($selectedOath && $selectedOath['oath_id'] == $oath['id']) ? 'checked' : ''; ?>>
+                                            <label class="form-check-label" for="oath_<?php echo $oath['id']; ?>">
+                                                <strong><?php echo htmlspecialchars($oath['name']); ?></strong>
+                                            </label>
+                                        </div>
+                                        <div class="oath-description mt-2">
+                                            <small class="text-muted"><?php echo nl2br(htmlspecialchars($oath['description'])); ?></small>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>

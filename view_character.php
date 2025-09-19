@@ -61,6 +61,7 @@ $isFighter = strpos(strtolower($character['class_name']), 'guerrier') !== false;
 $isWizard = strpos(strtolower($character['class_name']), 'magicien') !== false;
 $isMonk = strpos(strtolower($character['class_name']), 'moine') !== false;
 $isWarlock = strpos(strtolower($character['class_name']), 'occultiste') !== false;
+$isPaladin = strpos(strtolower($character['class_name']), 'paladin') !== false;
 $rageData = null;
 if ($isBarbarian) {
     // Récupérer le nombre maximum de rages pour ce niveau
@@ -102,6 +103,8 @@ if ($isBarbarian) {
     $classCapabilities = getMonkCapabilities($character['level']);
 } elseif ($isWarlock) {
     $classCapabilities = getWarlockCapabilities($character['level']);
+} elseif ($isPaladin) {
+    $classCapabilities = getPaladinCapabilities($character['level']);
 }
 
 // Capacités raciales
@@ -116,6 +119,12 @@ if ($character['traits']) {
 $barbarianPath = null;
 if ($isBarbarian) {
     $barbarianPath = getCharacterBarbarianPath($character_id);
+}
+
+// Récupérer le serment sacré du paladin
+$paladinOath = null;
+if ($isPaladin) {
+    $paladinOath = getCharacterPaladinOath($character_id);
 }
 
 // Récupérer le collège bardique du barde
@@ -1321,6 +1330,76 @@ $initiative = $dexterityMod;
                             
                             // Afficher les capacités de voie primitive
                             foreach ($pathCapabilities as $capability):
+                            ?>
+                                <div class="capability-item mt-3">
+                                    <div class="capability-header">
+                                        <h6 class="mb-1 text-info">
+                                            <i class="fas fa-star me-1"></i><?php echo htmlspecialchars($capability['name']); ?>
+                                        </h6>
+                                    </div>
+                                    <div class="capability-description">
+                                        <small class="text-muted"><?php echo nl2br(htmlspecialchars($capability['description'])); ?></small>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+                
+                <!-- Serment sacré du paladin -->
+                <?php if ($paladinOath): ?>
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5><i class="fas fa-cross me-2"></i>Serment sacré</h5>
+                            <div class="capability-item">
+                                <div class="capability-header">
+                                    <h6 class="mb-1 text-warning">
+                                        <i class="fas fa-cross me-1"></i><?php echo htmlspecialchars($paladinOath['oath_name']); ?>
+                                    </h6>
+                                </div>
+                                <div class="capability-description">
+                                    <small class="text-muted"><?php echo nl2br(htmlspecialchars($paladinOath['oath_description'])); ?></small>
+                                </div>
+                            </div>
+                            
+                            <!-- Capacités de serment sacré par niveau -->
+                            <?php
+                            $oathCapabilities = [];
+                            
+                            // Niveau 3 - Capacité de serment sacré
+                            if ($character['level'] >= 3 && !empty($paladinOath['level_3_feature'])) {
+                                $oathCapabilities[] = [
+                                    'name' => 'Capacité de niveau 3',
+                                    'description' => $paladinOath['level_3_feature']
+                                ];
+                            }
+                            
+                            // Niveau 7 - Capacité de serment sacré
+                            if ($character['level'] >= 7 && !empty($paladinOath['level_7_feature'])) {
+                                $oathCapabilities[] = [
+                                    'name' => 'Capacité de niveau 7',
+                                    'description' => $paladinOath['level_7_feature']
+                                ];
+                            }
+                            
+                            // Niveau 15 - Capacité de serment sacré
+                            if ($character['level'] >= 15 && !empty($paladinOath['level_15_feature'])) {
+                                $oathCapabilities[] = [
+                                    'name' => 'Capacité de niveau 15',
+                                    'description' => $paladinOath['level_15_feature']
+                                ];
+                            }
+                            
+                            // Niveau 20 - Capacité de serment sacré
+                            if ($character['level'] >= 20 && !empty($paladinOath['level_20_feature'])) {
+                                $oathCapabilities[] = [
+                                    'name' => 'Capacité de niveau 20',
+                                    'description' => $paladinOath['level_20_feature']
+                                ];
+                            }
+                            
+                            // Afficher les capacités de serment sacré
+                            foreach ($oathCapabilities as $capability):
                             ?>
                                 <div class="capability-item mt-3">
                                     <div class="capability-header">

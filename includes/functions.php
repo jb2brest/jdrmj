@@ -1715,6 +1715,237 @@ function getBarbarianCapabilities($level) {
     return $capabilities;
 }
 
+// Fonction pour obtenir les capacités de paladin selon le niveau
+function getPaladinCapabilities($level) {
+    $capabilities = [];
+    
+    // Niveau 1 - Maîtrise d'armures et d'armes
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Maîtrise d\'armures et d\'armes',
+            'description' => 'Vous maîtrisez toutes les armures, les boucliers, les armes courantes et les armes de guerre.'
+        ];
+    }
+    
+    // Niveau 1 - Maîtrise d'outils
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Maîtrise d\'outils',
+            'description' => 'Vous maîtrisez un type d\'outil d\'artisan de votre choix.'
+        ];
+    }
+    
+    // Niveau 1 - Compétences
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Compétences',
+            'description' => 'Vous choisissez deux compétences parmi : Athlétisme, Intimidation, Intuition, Médecine, Persuasion et Religion.'
+        ];
+    }
+    
+    // Niveau 1 - Sorts divins
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Sorts divins',
+            'description' => 'Vous avez appris à utiliser la magie divine. Voir le chapitre 10 pour les règles générales sur la magie et le chapitre 11 pour la liste des sorts de paladin.'
+        ];
+    }
+    
+    // Niveau 1 - Sens divin
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Sens divin',
+            'description' => 'Vous pouvez utiliser votre action pour détecter la présence de magie divine ou profane dans un rayon de 18 mètres autour de vous.'
+        ];
+    }
+    
+    // Niveau 1 - Soins par les mains
+    if ($level >= 1) {
+        $capabilities[] = [
+            'name' => 'Soins par les mains',
+            'description' => 'Vous avez un réservoir de pouvoir de guérison qui se renouvelle quand vous terminez un repos long. Avec ce réservoir, vous pouvez restaurer un nombre de points de vie égal à votre niveau de paladin × 5.'
+        ];
+    }
+    
+    // Niveau 2 - Style de combat
+    if ($level >= 2) {
+        $capabilities[] = [
+            'name' => 'Style de combat',
+            'description' => 'Vous adoptez un style de combat particulier. Votre choix vous accorde des avantages au combat.'
+        ];
+    }
+    
+    // Niveau 2 - Sorts divins
+    if ($level >= 2) {
+        $capabilities[] = [
+            'name' => 'Sorts divins',
+            'description' => 'Vous connaissez des sorts supplémentaires de paladin.'
+        ];
+    }
+    
+    // Niveau 3 - Serment sacré
+    if ($level >= 3) {
+        $capabilities[] = [
+            'name' => 'Serment sacré',
+            'description' => 'Quand vous atteignez le niveau 3, vous prêtez le serment qui lie un paladin pour toujours. Votre choix vous accorde des capacités au niveau 3, puis aux niveaux 7, 15 et 20.'
+        ];
+    }
+    
+    // Niveau 3 - Sorts divins
+    if ($level >= 3) {
+        $capabilities[] = [
+            'name' => 'Sorts divins',
+            'description' => 'Vous connaissez des sorts supplémentaires de paladin.'
+        ];
+    }
+    
+    // Niveau 4 - Amélioration de caractéristique
+    if ($level >= 4) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 5 - Attaque supplémentaire
+    if ($level >= 5) {
+        $capabilities[] = [
+            'name' => 'Attaque supplémentaire',
+            'description' => 'Vous pouvez attaquer deux fois, au lieu d\'une, quand vous effectuez l\'action attaquer lors de votre tour.'
+        ];
+    }
+    
+    // Niveau 5 - Sorts divins
+    if ($level >= 5) {
+        $capabilities[] = [
+            'name' => 'Sorts divins',
+            'description' => 'Vous connaissez des sorts supplémentaires de paladin.'
+        ];
+    }
+    
+    // Niveau 6 - Aura de protection
+    if ($level >= 6) {
+        $capabilities[] = [
+            'name' => 'Aura de protection',
+            'description' => 'Quand vous ou une créature amie dans un rayon de 3 mètres autour de vous devez faire un jet de sauvegarde, la créature gagne un bonus au jet égal à votre modificateur de Charisme (minimum +1).'
+        ];
+    }
+    
+    // Niveau 7 - Serment sacré
+    if ($level >= 7) {
+        $capabilities[] = [
+            'name' => 'Serment sacré',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre serment sacré.'
+        ];
+    }
+    
+    // Niveau 8 - Amélioration de caractéristique
+    if ($level >= 8) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 9 - Sorts divins
+    if ($level >= 9) {
+        $capabilities[] = [
+            'name' => 'Sorts divins',
+            'description' => 'Vous connaissez des sorts supplémentaires de paladin.'
+        ];
+    }
+    
+    // Niveau 10 - Aura de courage
+    if ($level >= 10) {
+        $capabilities[] = [
+            'name' => 'Aura de courage',
+            'description' => 'Vous et les créatures amies dans un rayon de 3 mètres autour de vous ne pouvez pas être effrayés tant que vous êtes conscient.'
+        ];
+    }
+    
+    // Niveau 11 - Frappe divine améliorée
+    if ($level >= 11) {
+        $capabilities[] = [
+            'name' => 'Frappe divine améliorée',
+            'description' => 'Votre frappe divine inflige maintenant 1d8 dégâts radiants supplémentaires.'
+        ];
+    }
+    
+    // Niveau 12 - Amélioration de caractéristique
+    if ($level >= 12) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 13 - Sorts divins
+    if ($level >= 13) {
+        $capabilities[] = [
+            'name' => 'Sorts divins',
+            'description' => 'Vous connaissez des sorts supplémentaires de paladin.'
+        ];
+    }
+    
+    // Niveau 14 - Aura de purification
+    if ($level >= 14) {
+        $capabilities[] = [
+            'name' => 'Aura de purification',
+            'description' => 'Vous et les créatures amies dans un rayon de 3 mètres autour de vous ne pouvez pas être maudits tant que vous êtes conscient.'
+        ];
+    }
+    
+    // Niveau 15 - Serment sacré
+    if ($level >= 15) {
+        $capabilities[] = [
+            'name' => 'Serment sacré',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre serment sacré.'
+        ];
+    }
+    
+    // Niveau 16 - Amélioration de caractéristique
+    if ($level >= 16) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 17 - Sorts divins
+    if ($level >= 17) {
+        $capabilities[] = [
+            'name' => 'Sorts divins',
+            'description' => 'Vous connaissez des sorts supplémentaires de paladin.'
+        ];
+    }
+    
+    // Niveau 18 - Aura de protection améliorée
+    if ($level >= 18) {
+        $capabilities[] = [
+            'name' => 'Aura de protection améliorée',
+            'description' => 'Le rayon de votre aura de protection augmente à 9 mètres.'
+        ];
+    }
+    
+    // Niveau 19 - Amélioration de caractéristique
+    if ($level >= 19) {
+        $capabilities[] = [
+            'name' => 'Amélioration de caractéristique',
+            'description' => 'Vous pouvez augmenter une valeur de caractéristique de votre choix de 2, ou deux valeurs de caractéristique de votre choix de 1. Vous ne pouvez pas augmenter une valeur de caractéristique au-dessus de 20 avec cette aptitude.'
+        ];
+    }
+    
+    // Niveau 20 - Serment sacré
+    if ($level >= 20) {
+        $capabilities[] = [
+            'name' => 'Serment sacré',
+            'description' => 'Vous gagnez une nouvelle capacité liée à votre serment sacré.'
+        ];
+    }
+    
+    return $capabilities;
+}
+
 // Fonction pour obtenir les capacités de barde selon le niveau
 function getBardCapabilities($level) {
     $capabilities = [];
@@ -3151,6 +3382,18 @@ function getBarbarianPaths() {
     }
 }
 
+// Fonction pour obtenir les serments sacrés des paladins
+function getPaladinOaths() {
+    global $pdo;
+    try {
+        $stmt = $pdo->query("SELECT * FROM paladin_oaths ORDER BY name");
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        error_log("Erreur getPaladinOaths: " . $e->getMessage());
+        return [];
+    }
+}
+
 // Fonction pour obtenir les collèges bardiques
 function getBardColleges() {
     global $pdo;
@@ -3262,6 +3505,25 @@ function getCharacterBarbarianPath($characterId) {
         return $stmt->fetch();
     } catch (PDOException $e) {
         error_log("Erreur getCharacterBarbarianPath: " . $e->getMessage());
+        return null;
+    }
+}
+
+// Fonction pour obtenir le serment sacré d'un personnage
+function getCharacterPaladinOath($characterId) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("
+            SELECT cpo.*, po.name as oath_name, po.description as oath_description,
+                   po.level_3_feature, po.level_7_feature, po.level_15_feature, po.level_20_feature
+            FROM character_paladin_oaths cpo
+            JOIN paladin_oaths po ON cpo.oath_id = po.id
+            WHERE cpo.character_id = ?
+        ");
+        $stmt->execute([$characterId]);
+        return $stmt->fetch();
+    } catch (PDOException $e) {
+        error_log("Erreur getCharacterPaladinOath: " . $e->getMessage());
         return null;
     }
 }
@@ -3435,6 +3697,27 @@ function saveBarbarianPath($characterId, $pathId, $level3Choice = null, $level6C
         return $stmt->execute([$characterId, $pathId, $level3Choice, $level6Choice, $level10Choice, $level14Choice]);
     } catch (PDOException $e) {
         error_log("Erreur saveBarbarianPath: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Fonction pour sauvegarder le choix de serment sacré
+function savePaladinOath($characterId, $oathId, $level3Choice = null, $level7Choice = null, $level15Choice = null, $level20Choice = null) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO character_paladin_oaths (character_id, oath_id, level_3_choice, level_7_choice, level_15_choice, level_20_choice)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+            oath_id = VALUES(oath_id),
+            level_3_choice = VALUES(level_3_choice),
+            level_7_choice = VALUES(level_7_choice),
+            level_15_choice = VALUES(level_15_choice),
+            level_20_choice = VALUES(level_20_choice)
+        ");
+        return $stmt->execute([$characterId, $oathId, $level3Choice, $level7Choice, $level15Choice, $level20Choice]);
+    } catch (PDOException $e) {
+        error_log("Erreur savePaladinOath: " . $e->getMessage());
         return false;
     }
 }
