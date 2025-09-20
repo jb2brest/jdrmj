@@ -2,19 +2,19 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.0.0
+VERSION=2.0.1
 
 # Date de déploiement
-DEPLOY_DATE=2025-09-19
+DEPLOY_DATE=2025-09-20
 
 # Environnement
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=f6460cbcd5ef1d6c89a476c5b1d3d30f878dffea
+GIT_COMMIT=89b55abf6aa609f1ad02260af1659354044670a3
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20250919-224403
+BUILD_ID=20250920-191834
 
 # Notes de version
-RELEASE_NOTES="Mondes"
+RELEASE_NOTES="Mondes : ajout PNJ"
