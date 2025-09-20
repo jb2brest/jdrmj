@@ -21,7 +21,15 @@ Ce bouton ouvre une fenêtre de gestion des mondes.
 Dans la fenêtre de gestion des mondes, Le MJ peut voir les mondes existants, créer, modifier et supprimer un monde. 
 Un monde possède un nom, une carte, des pays.
 
+Un pays est composé de région.
+Une région est composée de lieu.
+Le MJ doit pouvoir ajouter crée
 
+Dans view_campaign.php, à coté de la zone "Membres", ajoute une zone Monde où l'on peut déclarer dans quel monde se passe la campagne. 
+
+
+Dans view_campaign.php, remplace les boutons " Nouveau pays, nouvelle région, nouveau lieu" par un bouton "associer un lieu". 
+CE bouton permet de rechercher un lieu dans le monde où se déroule la campagne et de l'ajouter à la liste des lieux de la campagne.
 
 
 Ajouter des évènements à l'histoire du personnage. 

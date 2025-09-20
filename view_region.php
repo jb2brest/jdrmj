@@ -195,6 +195,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $stmt = $pdo->prepare("SELECT * FROM places WHERE region_id = ? ORDER BY title");
 $stmt->execute([$region_id]);
 $places = $stmt->fetchAll();
+
+// Récupérer tous les PNJs de la région (via la hiérarchie région → lieux)
+$stmt = $pdo->prepare("
+    SELECT 
+        pn.id,
+        pn.name,
+        pn.description,
+        pn.profile_photo,
+        pn.is_visible,
+        pn.is_identified,
+        c.name AS character_name,
+        c.profile_photo AS character_profile_photo,
+        cl.name AS class_name,
+        r.name AS race_name,
+        pl.title AS place_name,
+        'PNJ' AS type
+    FROM place_npcs pn
+    JOIN places pl ON pn.place_id = pl.id
+    LEFT JOIN characters c ON pn.npc_character_id = c.id
+    LEFT JOIN classes cl ON c.class_id = cl.id
+    LEFT JOIN races r ON c.race_id = r.id
+    WHERE pl.region_id = ? AND pn.monster_id IS NULL
+    ORDER BY pn.name ASC
+");
+$stmt->execute([$region_id]);
+$region_npcs = $stmt->fetchAll();
+
+// Récupérer tous les monstres de la région (via la hiérarchie région → lieux)
+$stmt = $pdo->prepare("
+    SELECT 
+        pn.id,
+        pn.name,
+        pn.description,
+        pn.profile_photo,
+        pn.is_visible,
+        pn.is_identified,
+        pn.quantity,
+        pn.current_hit_points,
+        dm.name AS monster_name,
+        dm.type,
+        dm.size,
+        dm.challenge_rating,
+        dm.hit_points,
+        dm.armor_class,
+        pl.title AS place_name,
+        'Monstre' AS type
+    FROM place_npcs pn
+    JOIN places pl ON pn.place_id = pl.id
+    JOIN dnd_monsters dm ON pn.monster_id = dm.id
+    WHERE pl.region_id = ? AND pn.monster_id IS NOT NULL
+    ORDER BY pn.name ASC
+");
+$stmt->execute([$region_id]);
+$region_monsters = $stmt->fetchAll();
 ?>
 
 <!DOCTYPE html>
@@ -217,6 +271,53 @@ $places = $stmt->fetchAll();
         }
         .modal-fullscreen .modal-body {
             padding: 0;
+        }
+        
+        /* Styles pour les listes d'entités */
+        .sortable {
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.2s ease;
+        }
+        
+        .sortable:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .entity-row {
+            transition: background-color 0.2s ease;
+        }
+        
+        .entity-row:hover {
+            background-color: rgba(0, 123, 255, 0.05);
+        }
+        
+        .badge {
+            font-size: 0.8em;
+        }
+        
+        .table-responsive {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .form-select, .form-control {
+            border-radius: 6px;
+        }
+        
+        .btn-group-sm .btn {
+            border-radius: 4px;
+        }
+        
+        /* Animation pour les filtres */
+        .entity-row[style*="display: none"] {
+            transition: opacity 0.3s ease;
+            opacity: 0;
+        }
+        
+        .entity-row:not([style*="display: none"]) {
+            transition: opacity 0.3s ease;
+            opacity: 1;
         }
     </style>
 </head>
@@ -333,6 +434,166 @@ $places = $stmt->fetchAll();
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Section PNJs et Monstres -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-users me-2"></i>PNJs et Monstres de la Région</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Filtres et contrôles -->
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label for="typeFilter" class="form-label">Filtrer par type :</label>
+                            <select class="form-select" id="typeFilter">
+                                <option value="">Tous</option>
+                                <option value="PNJ">PNJ</option>
+                                <option value="Monstre">Monstre</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="locationFilter" class="form-label">Filtrer par lieu :</label>
+                            <select class="form-select" id="locationFilter">
+                                <option value="">Tous les lieux</option>
+                                <?php
+                                $unique_places = [];
+                                foreach (array_merge($region_npcs, $region_monsters) as $entity) {
+                                    $place_key = $entity['place_name'];
+                                    if (!in_array($place_key, $unique_places)) {
+                                        $unique_places[] = $place_key;
+                                        echo '<option value="' . htmlspecialchars($place_key) . '">' . htmlspecialchars($place_key) . '</option>';
+                                    }
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="searchFilter" class="form-label">Rechercher :</label>
+                            <input type="text" class="form-control" id="searchFilter" placeholder="Nom, classe, race...">
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button class="btn btn-outline-secondary" id="clearFilters">
+                                <i class="fas fa-times me-1"></i>Effacer les filtres
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tableau des entités -->
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="entitiesTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th class="sortable" data-column="type">
+                                        Type <i class="fas fa-sort ms-1"></i>
+                                    </th>
+                                    <th class="sortable" data-column="name">
+                                        Nom <i class="fas fa-sort ms-1"></i>
+                                    </th>
+                                    <th class="sortable" data-column="class">
+                                        Classe <i class="fas fa-sort ms-1"></i>
+                                    </th>
+                                    <th class="sortable" data-column="race">
+                                        Race <i class="fas fa-sort ms-1"></i>
+                                    </th>
+                                    <th class="sortable" data-column="location">
+                                        Lieu <i class="fas fa-sort ms-1"></i>
+                                    </th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php 
+                                $all_entities = array_merge($region_npcs, $region_monsters);
+                                if (empty($all_entities)): ?>
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4">
+                                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                                            <h5 class="text-muted">Aucun PNJ ou monstre trouvé</h5>
+                                            <p class="text-muted">Les PNJs et monstres apparaîtront ici une fois qu'ils seront ajoutés aux lieux de cette région.</p>
+                                        </td>
+                                    </tr>
+                                <?php else: ?>
+                                    <?php foreach ($all_entities as $entity): ?>
+                                        <tr class="entity-row" 
+                                            data-type="<?php echo htmlspecialchars($entity['type']); ?>"
+                                            data-name="<?php echo htmlspecialchars(strtolower($entity['name'])); ?>"
+                                            data-class="<?php echo htmlspecialchars(strtolower($entity['class_name'] ?? $entity['type'] ?? '')); ?>"
+                                            data-race="<?php echo htmlspecialchars(strtolower($entity['race_name'] ?? $entity['size'] ?? '')); ?>"
+                                            data-location="<?php echo htmlspecialchars(strtolower($entity['place_name'])); ?>"
+                                            data-place-key="<?php echo htmlspecialchars($entity['place_name']); ?>">
+                                            <td>
+                                                <span class="badge <?php echo $entity['type'] === 'PNJ' ? 'bg-primary' : 'bg-danger'; ?>">
+                                                    <i class="fas <?php echo $entity['type'] === 'PNJ' ? 'fa-user' : 'fa-dragon'; ?> me-1"></i>
+                                                    <?php echo htmlspecialchars($entity['type']); ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <?php if (!empty($entity['profile_photo']) || !empty($entity['character_profile_photo'])): ?>
+                                                        <img src="<?php echo htmlspecialchars($entity['profile_photo'] ?: $entity['character_profile_photo']); ?>" 
+                                                             alt="<?php echo htmlspecialchars($entity['name']); ?>" 
+                                                             class="rounded-circle me-2" 
+                                                             style="width: 32px; height: 32px; object-fit: cover;">
+                                                    <?php else: ?>
+                                                        <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center me-2" 
+                                                             style="width: 32px; height: 32px;">
+                                                            <i class="fas <?php echo $entity['type'] === 'PNJ' ? 'fa-user' : 'fa-dragon'; ?> text-white"></i>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                    <div>
+                                                        <strong><?php echo htmlspecialchars($entity['name']); ?></strong>
+                                                        <?php if ($entity['type'] === 'Monstre' && !empty($entity['monster_name']) && $entity['monster_name'] !== $entity['name']): ?>
+                                                            <br><small class="text-muted"><?php echo htmlspecialchars($entity['monster_name']); ?></small>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <?php if ($entity['type'] === 'PNJ'): ?>
+                                                    <?php echo htmlspecialchars($entity['class_name'] ?? 'N/A'); ?>
+                                                <?php else: ?>
+                                                    <span class="text-muted"><?php echo htmlspecialchars($entity['type'] ?? 'N/A'); ?></span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <?php if ($entity['type'] === 'PNJ'): ?>
+                                                    <?php echo htmlspecialchars($entity['race_name'] ?? 'N/A'); ?>
+                                                <?php else: ?>
+                                                    <span class="text-muted"><?php echo htmlspecialchars($entity['size'] ?? 'N/A'); ?></span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <div>
+                                                    <strong><?php echo htmlspecialchars($entity['place_name']); ?></strong>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <?php if ($entity['type'] === 'PNJ'): ?>
+                                                        <a href="view_character.php?id=<?php echo (int)$entity['id']; ?>" 
+                                                           class="btn btn-outline-info btn-sm" title="Voir le PNJ">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                    <?php else: ?>
+                                                        <a href="view_monster_sheet.php?id=<?php echo (int)$entity['monster_id']; ?>" 
+                                                           class="btn btn-outline-info btn-sm" title="Voir le monstre">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -481,6 +742,149 @@ $places = $stmt->fetchAll();
         
         var fullscreenModal = new bootstrap.Modal(document.getElementById('fullscreenMapModal'));
         fullscreenModal.show();
+    }
+
+    // Gestion du tri et filtrage des entités
+    let currentSort = { column: null, direction: 'asc' };
+    let allRows = [];
+
+    // Initialiser les données au chargement de la page
+    document.addEventListener('DOMContentLoaded', function() {
+        const table = document.getElementById('entitiesTable');
+        if (table) {
+            allRows = Array.from(table.querySelectorAll('tbody tr.entity-row'));
+            setupSorting();
+            setupFiltering();
+        }
+    });
+
+    function setupSorting() {
+        const sortableHeaders = document.querySelectorAll('.sortable');
+        sortableHeaders.forEach(header => {
+            header.addEventListener('click', function() {
+                const column = this.dataset.column;
+                const icon = this.querySelector('i');
+                
+                // Déterminer la direction du tri
+                if (currentSort.column === column) {
+                    currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+                } else {
+                    currentSort.direction = 'asc';
+                }
+                currentSort.column = column;
+                
+                // Mettre à jour les icônes
+                sortableHeaders.forEach(h => {
+                    const i = h.querySelector('i');
+                    i.className = 'fas fa-sort ms-1';
+                });
+                icon.className = currentSort.direction === 'asc' ? 'fas fa-sort-up ms-1' : 'fas fa-sort-down ms-1';
+                
+                // Trier les lignes
+                sortRows();
+            });
+        });
+    }
+
+    function setupFiltering() {
+        const typeFilter = document.getElementById('typeFilter');
+        const locationFilter = document.getElementById('locationFilter');
+        const searchFilter = document.getElementById('searchFilter');
+        const clearFilters = document.getElementById('clearFilters');
+
+        [typeFilter, locationFilter, searchFilter].forEach(filter => {
+            filter.addEventListener('change', filterRows);
+            filter.addEventListener('input', filterRows);
+        });
+
+        clearFilters.addEventListener('click', function() {
+            typeFilter.value = '';
+            locationFilter.value = '';
+            searchFilter.value = '';
+            filterRows();
+        });
+    }
+
+    function sortRows() {
+        const tbody = document.querySelector('#entitiesTable tbody');
+        const visibleRows = Array.from(tbody.querySelectorAll('tr.entity-row:not([style*="display: none"])'));
+        
+        visibleRows.sort((a, b) => {
+            let aValue, bValue;
+            
+            switch (currentSort.column) {
+                case 'type':
+                    aValue = a.dataset.type;
+                    bValue = b.dataset.type;
+                    break;
+                case 'name':
+                    aValue = a.dataset.name;
+                    bValue = b.dataset.name;
+                    break;
+                case 'class':
+                    aValue = a.dataset.class;
+                    bValue = b.dataset.class;
+                    break;
+                case 'race':
+                    aValue = a.dataset.race;
+                    bValue = b.dataset.race;
+                    break;
+                case 'location':
+                    aValue = a.dataset.location;
+                    bValue = b.dataset.location;
+                    break;
+                default:
+                    return 0;
+            }
+            
+            if (aValue < bValue) return currentSort.direction === 'asc' ? -1 : 1;
+            if (aValue > bValue) return currentSort.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+        
+        // Réorganiser les lignes dans le DOM
+        visibleRows.forEach(row => tbody.appendChild(row));
+    }
+
+    function filterRows() {
+        const typeFilter = document.getElementById('typeFilter').value;
+        const locationFilter = document.getElementById('locationFilter').value;
+        const searchFilter = document.getElementById('searchFilter').value.toLowerCase();
+        
+        allRows.forEach(row => {
+            let show = true;
+            
+            // Filtre par type
+            if (typeFilter && row.dataset.type !== typeFilter) {
+                show = false;
+            }
+            
+            // Filtre par lieu
+            if (locationFilter && row.dataset.placeKey !== locationFilter) {
+                show = false;
+            }
+            
+            // Filtre par recherche
+            if (searchFilter) {
+                const searchText = (
+                    row.dataset.name + ' ' +
+                    row.dataset.class + ' ' +
+                    row.dataset.race + ' ' +
+                    row.dataset.location
+                ).toLowerCase();
+                
+                if (!searchText.includes(searchFilter)) {
+                    show = false;
+                }
+            }
+            
+            row.style.display = show ? '' : 'none';
+        });
+        
+        // Appliquer le tri aux lignes visibles
+        if (currentSort.column) {
+            sortRows();
+        }
     }
 </script>
 
