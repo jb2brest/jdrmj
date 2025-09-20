@@ -126,6 +126,40 @@ try {
         ];
     }
     
+    // Récupérer les positions et informations des objets
+    $stmt = $pdo->prepare("
+        SELECT id, name, object_type, is_visible, is_identified, position_x, position_y, is_on_map, updated_at
+        FROM place_objects 
+        WHERE place_id = ?
+        ORDER BY updated_at DESC
+    ");
+    $stmt->execute([$place_id]);
+    
+    $objects = [];
+    while ($row = $stmt->fetch()) {
+        $tokenKey = 'object_' . $row['id'];
+        
+        // Ajouter la position à la liste des positions
+        $positions[$tokenKey] = [
+            'x' => (int)$row['position_x'],
+            'y' => (int)$row['position_y'],
+            'is_on_map' => (bool)$row['is_on_map']
+        ];
+        
+        // Ajouter les informations de l'objet
+        $objects[$tokenKey] = [
+            'name' => $row['name'],
+            'object_type' => $row['object_type'],
+            'is_visible' => (bool)$row['is_visible'],
+            'is_identified' => (bool)$row['is_identified']
+        ];
+        
+        // Garder la timestamp la plus récente
+        if ($latest_timestamp === null || $row['updated_at'] > $latest_timestamp) {
+            $latest_timestamp = $row['updated_at'];
+        }
+    }
+    
     // Pour les PNJ et monstres, on retourne toujours les données car ils n'ont pas de updated_at
     // Le JavaScript se chargera de détecter les changements en comparant les données
     
@@ -134,6 +168,7 @@ try {
         'positions' => $positions,
         'npcs' => $npcs,
         'monsters' => $monsters,
+        'objects' => $objects,
         'timestamp' => $latest_timestamp
     ]);
     

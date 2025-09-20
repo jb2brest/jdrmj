@@ -130,6 +130,27 @@ $stmt = $pdo->prepare("
 $stmt->execute([$place_id]);
 $placeMonsters = $stmt->fetchAll();
 
+// Récupérer les objets présents dans le lieu (seulement ceux visibles)
+$stmt = $pdo->prepare("
+    SELECT id, name, description, object_type, is_visible, is_identified, position_x, position_y, is_on_map,
+           item_id, item_name, item_description, letter_content, is_sealed, gold_coins, silver_coins, copper_coins
+    FROM place_objects 
+    WHERE place_id = ? AND is_visible = 1
+    ORDER BY name ASC
+");
+$stmt->execute([$place_id]);
+$placeObjects = $stmt->fetchAll();
+
+// Récupérer les positions des objets depuis place_objects
+foreach ($placeObjects as $object) {
+    $tokenKey = 'object_' . $object['id'];
+    $tokenPositions[$tokenKey] = [
+        'x' => (int)$object['position_x'],
+        'y' => (int)$object['position_y'],
+        'is_on_map' => (bool)$object['is_on_map']
+    ];
+}
+
 include 'includes/layout.php';
 ?>
 
@@ -203,6 +224,58 @@ include 'includes/layout.php';
 .alert-warning {
     background: linear-gradient(135deg, #fff3cd, #ffeaa7);
     color: #856404;
+}
+
+/* Styles pour les pions d'objets */
+.object-token {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(45deg, #FFD700, #FFA500);
+    border: 2px solid #FF8C00;
+    border-radius: 4px;
+    cursor: pointer;
+    z-index: 10;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #8B4513;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.object-token:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+}
+
+/* Styles pour les icônes des pions d'objets */
+.object-token .fa-question {
+    color: #8B4513 !important;
+    font-weight: bold;
+}
+.object-token .fa-flask {
+    color: #dc3545 !important;
+}
+.object-token .fa-magic {
+    color: #0dcaf0 !important;
+}
+.object-token .fa-sword {
+    color: #dc3545 !important;
+}
+.object-token .fa-shield-alt {
+    color: #198754 !important;
+}
+.object-token .fa-envelope {
+    color: #0d6efd !important;
+}
+.object-token .fa-coins {
+    color: #ffc107 !important;
+}
+.object-token .fa-box {
+    color: #6c757d !important;
 }
 </style>
 
@@ -414,6 +487,64 @@ include 'includes/layout.php';
                                              title="<?php echo htmlspecialchars($displayName); ?>">
                                         </div>
                                     <?php endforeach; ?>
+                                    
+                                    <!-- Pions des objets (seulement visibles) -->
+                                    <?php foreach ($placeObjects as $object): ?>
+                                        <?php 
+                                        $tokenKey = 'object_' . $object['id'];
+                                        $position = $tokenPositions[$tokenKey] ?? ['x' => 0, 'y' => 0, 'is_on_map' => false];
+                                        
+                                        // Icône selon le type et l'identification
+                                        $icon_class = 'fa-box';
+                                        $icon_color = '#6c757d';
+                                        
+                                        if (!$object['is_identified']) {
+                                            $icon_class = 'fa-question';
+                                            $icon_color = '#8B4513';
+                                        } else {
+                                            switch ($object['object_type']) {
+                                                case 'poison':
+                                                    $icon_class = 'fa-flask';
+                                                    $icon_color = '#dc3545';
+                                                    break;
+                                                case 'magical_item':
+                                                    $icon_class = 'fa-magic';
+                                                    $icon_color = '#0dcaf0';
+                                                    break;
+                                                case 'weapon':
+                                                    $icon_class = 'fa-sword';
+                                                    $icon_color = '#dc3545';
+                                                    break;
+                                                case 'armor':
+                                                    $icon_class = 'fa-shield-alt';
+                                                    $icon_color = '#198754';
+                                                    break;
+                                                case 'letter':
+                                                    $icon_class = 'fa-envelope';
+                                                    $icon_color = '#0d6efd';
+                                                    break;
+                                                case 'coins':
+                                                    $icon_class = 'fa-coins';
+                                                    $icon_color = '#ffc107';
+                                                    break;
+                                            }
+                                        }
+                                        ?>
+                                        <div class="token object-token"
+                                             data-token-type="object"
+                                             data-entity-id="<?php echo $object['id']; ?>"
+                                             data-object-id="<?php echo $object['id']; ?>"
+                                             data-object-name="<?php echo htmlspecialchars($object['name']); ?>"
+                                             data-object-type="<?php echo $object['object_type']; ?>"
+                                             data-is-identified="<?php echo $object['is_identified'] ? 'true' : 'false'; ?>"
+                                             data-position-x="<?php echo $position['x']; ?>"
+                                             data-position-y="<?php echo $position['y']; ?>"
+                                             data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
+                                             style="width: 24px; height: 24px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #FF8C00; border-radius: 4px; background: linear-gradient(45deg, #FFD700, #FFA500); box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 12px; color: #8B4513; font-weight: bold;"
+                                             title="<?php echo htmlspecialchars($object['name']); ?>">
+                                            <i class="fas <?php echo $icon_class; ?>" style="color: <?php echo $icon_color; ?>;"></i>
+                                        </div>
+                                    <?php endforeach; ?>
                                 </div>
                             </div>
                         </div>
@@ -571,8 +702,96 @@ include 'includes/layout.php';
                         </div>
                     <?php endif; ?>
 
+                    <!-- Objets -->
+                    <?php if (!empty($placeObjects)): ?>
+                        <div class="mb-4 objects-section">
+                            <h6 class="text-warning mb-3"><i class="fas fa-box me-2"></i>Objets</h6>
+                            <div class="list-group list-group-flush">
+                                <?php foreach ($placeObjects as $object): ?>
+                                    <div class="list-group-item px-0 py-2">
+                                        <div class="d-flex align-items-center">
+                                            <?php 
+                                            // Icône selon le type et l'identification
+                                            $icon_class = 'fa-box';
+                                            $icon_color = '#6c757d';
+                                            
+                                            if (!$object['is_identified']) {
+                                                $icon_class = 'fa-question';
+                                                $icon_color = '#8B4513';
+                                            } else {
+                                                switch ($object['object_type']) {
+                                                    case 'poison':
+                                                        $icon_class = 'fa-flask';
+                                                        $icon_color = '#dc3545';
+                                                        break;
+                                                    case 'magical_item':
+                                                        $icon_class = 'fa-magic';
+                                                        $icon_color = '#0dcaf0';
+                                                        break;
+                                                    case 'weapon':
+                                                        $icon_class = 'fa-sword';
+                                                        $icon_color = '#dc3545';
+                                                        break;
+                                                    case 'armor':
+                                                        $icon_class = 'fa-shield-alt';
+                                                        $icon_color = '#198754';
+                                                        break;
+                                                    case 'letter':
+                                                        $icon_class = 'fa-envelope';
+                                                        $icon_color = '#0d6efd';
+                                                        break;
+                                                    case 'coins':
+                                                        $icon_class = 'fa-coins';
+                                                        $icon_color = '#ffc107';
+                                                        break;
+                                                }
+                                            }
+                                            ?>
+                                            <div class="bg-warning rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                <i class="fas <?php echo $icon_class; ?> text-white" style="color: <?php echo $icon_color; ?> !important;"></i>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <h6 class="mb-1"><?php echo htmlspecialchars($object['name']); ?></h6>
+                                                <small class="text-muted">
+                                                    <?php if ($object['is_identified']): ?>
+                                                        <?php 
+                                                        $type_label = ucfirst($object['object_type']);
+                                                        switch ($object['object_type']) {
+                                                            case 'poison':
+                                                                $type_label = 'Poison';
+                                                                break;
+                                                            case 'coins':
+                                                                $type_label = 'Pièces';
+                                                                break;
+                                                            case 'letter':
+                                                                $type_label = 'Lettre';
+                                                                break;
+                                                            case 'weapon':
+                                                                $type_label = 'Arme';
+                                                                break;
+                                                            case 'armor':
+                                                                $type_label = 'Armure';
+                                                                break;
+                                                            case 'magical_item':
+                                                                $type_label = 'Objet magique';
+                                                                break;
+                                                        }
+                                                        echo $type_label;
+                                                        ?>
+                                                    <?php else: ?>
+                                                        Objet mystérieux
+                                                    <?php endif; ?>
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+
                     <!-- Message si aucun participant -->
-                    <?php if (empty($placePlayers) && empty($placeNpcs) && empty($placeMonsters)): ?>
+                    <?php if (empty($placePlayers) && empty($placeNpcs) && empty($placeMonsters) && empty($placeObjects)): ?>
                         <div class="text-center text-muted">
                             <i class="fas fa-users fa-2x mb-3"></i>
                             <p>Aucun participant dans ce lieu.</p>
@@ -654,6 +873,7 @@ let autoUpdateInterval;
 let lastUpdateTime = null;
 let lastNpcsData = {};
 let lastMonstersData = {};
+let lastObjectsData = {};
 
 function startAutoUpdate() {
     // Mettre à jour toutes les 2 secondes
@@ -700,6 +920,14 @@ function updateTokenPositions() {
                 if (JSON.stringify(result.monsters) !== JSON.stringify(lastMonstersData)) {
                     updateMonstersDisplay(result.monsters);
                     lastMonstersData = result.monsters;
+                }
+            }
+            
+            if (result.objects) {
+                // Comparer avec les données précédentes pour détecter les changements
+                if (JSON.stringify(result.objects) !== JSON.stringify(lastObjectsData)) {
+                    updateObjectsDisplay(result.objects);
+                    lastObjectsData = result.objects;
                 }
             }
             
@@ -975,6 +1203,156 @@ function updateNpcsList(npcs) {
 
 function updateMonstersList(monsters) {
     // Cette fonction pourrait être étendue pour mettre à jour dynamiquement la liste des monstres
+    // Pour l'instant, on se contente de la mise à jour des pions
+}
+
+function updateObjectsDisplay(objects) {
+    // Mettre à jour les pions des objets
+    const objectTokens = document.querySelectorAll('.token[data-token-type="object"]');
+    objectTokens.forEach(token => {
+        const entityId = token.dataset.entityId;
+        const objectKey = `object_${entityId}`;
+        const objectData = objects[objectKey];
+        
+        if (objectData) {
+            if (objectData.is_visible) {
+                // Objet visible : afficher le pion
+                token.style.display = 'inline-block';
+                
+                // Mettre à jour l'affichage selon l'identification
+                if (objectData.is_identified) {
+                    // Objet identifié : nom réel et icône spécifique
+                    token.title = objectData.name;
+                    updateObjectTokenIcon(token, objectData.object_type, true);
+                } else {
+                    // Objet non identifié : nom générique et icône "?"
+                    token.title = objectData.name;
+                    updateObjectTokenIcon(token, objectData.object_type, false);
+                }
+            } else {
+                // Objet non visible : masquer le pion
+                token.style.display = 'none';
+            }
+        }
+    });
+    
+    // Vérifier s'il y a de nouveaux objets à ajouter ou des objets à supprimer
+    updateObjectsTokens(objects);
+    
+    // Mettre à jour la liste des objets
+    updateObjectsList(objects);
+}
+
+function updateObjectsTokens(objects) {
+    const tokenSidebar = document.getElementById('tokenSidebar');
+    if (!tokenSidebar) return;
+    
+    // Créer un ensemble des IDs d'objets existants
+    const existingObjectIds = new Set();
+    document.querySelectorAll('.token[data-token-type="object"]').forEach(token => {
+        existingObjectIds.add(token.dataset.entityId);
+    });
+    
+    // Ajouter les nouveaux objets visibles
+    Object.keys(objects).forEach(objectKey => {
+        const objectData = objects[objectKey];
+        const entityId = objectKey.replace('object_', '');
+        
+        if (objectData.is_visible && !existingObjectIds.has(entityId)) {
+            // Créer un nouveau pion pour cet objet
+            const newToken = createObjectToken(entityId, objectData);
+            tokenSidebar.appendChild(newToken);
+        }
+    });
+    
+    // Supprimer les objets qui ne sont plus visibles
+    document.querySelectorAll('.token[data-token-type="object"]').forEach(token => {
+        const entityId = token.dataset.entityId;
+        const objectKey = `object_${entityId}`;
+        const objectData = objects[objectKey];
+        
+        if (!objectData || !objectData.is_visible) {
+            token.remove();
+        }
+    });
+}
+
+function createObjectToken(entityId, objectData) {
+    const token = document.createElement('div');
+    token.className = 'token object-token';
+    token.dataset.tokenType = 'object';
+    token.dataset.entityId = entityId;
+    token.dataset.objectId = entityId;
+    token.dataset.objectName = objectData.name;
+    token.dataset.objectType = objectData.object_type;
+    token.dataset.isIdentified = objectData.is_identified ? 'true' : 'false';
+    token.dataset.positionX = '0';
+    token.dataset.positionY = '0';
+    token.dataset.isOnMap = 'false';
+    
+    // Style du pion
+    token.style.cssText = 'width: 24px; height: 24px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #FF8C00; border-radius: 4px; background: linear-gradient(45deg, #FFD700, #FFA500); box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 12px; color: #8B4513; font-weight: bold;';
+    token.title = objectData.name;
+    
+    // Ajouter l'icône
+    updateObjectTokenIcon(token, objectData.object_type, objectData.is_identified);
+    
+    return token;
+}
+
+function updateObjectTokenIcon(token, objectType, isIdentified) {
+    // Supprimer l'icône existante
+    const existingIcon = token.querySelector('i');
+    if (existingIcon) {
+        existingIcon.remove();
+    }
+    
+    // Créer la nouvelle icône
+    const icon = document.createElement('i');
+    
+    if (!isIdentified) {
+        // Objet non identifié : afficher un "?"
+        icon.className = 'fas fa-question';
+        icon.style.color = '#8B4513';
+        icon.style.fontWeight = 'bold';
+    } else {
+        // Objet identifié : afficher l'icône selon le type
+        switch (objectType) {
+            case 'poison':
+                icon.className = 'fas fa-flask';
+                icon.style.color = '#dc3545';
+                break;
+            case 'magical_item':
+                icon.className = 'fas fa-magic';
+                icon.style.color = '#0dcaf0';
+                break;
+            case 'weapon':
+                icon.className = 'fas fa-sword';
+                icon.style.color = '#dc3545';
+                break;
+            case 'armor':
+                icon.className = 'fas fa-shield-alt';
+                icon.style.color = '#198754';
+                break;
+            case 'letter':
+                icon.className = 'fas fa-envelope';
+                icon.style.color = '#0d6efd';
+                break;
+            case 'coins':
+                icon.className = 'fas fa-coins';
+                icon.style.color = '#ffc107';
+                break;
+            default:
+                icon.className = 'fas fa-box';
+                icon.style.color = '#6c757d';
+        }
+    }
+    
+    token.appendChild(icon);
+}
+
+function updateObjectsList(objects) {
+    // Cette fonction pourrait être étendue pour mettre à jour dynamiquement la liste des objets
     // Pour l'instant, on se contente de la mise à jour des pions
 }
 

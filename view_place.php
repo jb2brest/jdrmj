@@ -88,6 +88,26 @@ while ($row = $stmt->fetch()) {
     ];
 }
 
+// Récupérer les objets du lieu
+$stmt = $pdo->prepare("
+    SELECT id, name, description, object_type, is_visible, is_identified, position_x, position_y, is_on_map,
+           item_id, item_name, item_description, letter_content, is_sealed, gold_coins, silver_coins, copper_coins
+    FROM place_objects 
+    WHERE place_id = ?
+    ORDER BY name ASC
+");
+$stmt->execute([$place_id]);
+$placeObjects = $stmt->fetchAll();
+
+// Récupérer les positions des objets depuis place_objects
+foreach ($placeObjects as $object) {
+    $tokenKey = 'object_' . $object['id'];
+    $tokenPositions[$tokenKey] = [
+        'x' => (int)$object['position_x'],
+        'y' => (int)$object['position_y'],
+        'is_on_map' => (bool)$object['is_on_map']
+    ];
+}
 
 // Récupérer les membres de la campagne pour le formulaire d'ajout de joueurs
 $stmt = $pdo->prepare("
@@ -702,6 +722,227 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
             $error_message = "Veuillez sélectionner un destinataire pour le poison.";
         }
     }
+    
+    // Gestion des objets du lieu
+    if (isset($_POST['action']) && $_POST['action'] === 'add_object') {
+        $object_name = sanitizeInput($_POST['object_name'] ?? '');
+        $object_description = sanitizeInput($_POST['object_description'] ?? '');
+        $object_type = $_POST['object_type'] ?? 'other';
+        $is_visible = isset($_POST['is_visible']) ? 1 : 0;
+        $selected_item = $_POST['selected_item'] ?? '';
+        $letter_content = sanitizeInput($_POST['letter_content'] ?? '');
+        $is_sealed = isset($_POST['is_sealed']) ? 1 : 0;
+        $gold_coins = (int)($_POST['gold_coins'] ?? 0);
+        $silver_coins = (int)($_POST['silver_coins'] ?? 0);
+        $copper_coins = (int)($_POST['copper_coins'] ?? 0);
+        $is_identified = isset($_POST['is_identified']) ? 1 : 0;
+        
+        // Variables pour les informations de l'objet sélectionné
+        $item_id = null;
+        $item_name = null;
+        $item_description = null;
+        
+        if (empty($object_name)) {
+            $error_message = "Le nom de l'objet est requis.";
+        } else {
+            try {
+                // Gestion spéciale pour les pièces
+                if ($object_type === 'coins') {
+                    $coins_total = $gold_coins + $silver_coins + $copper_coins;
+                    if ($coins_total > 0) {
+                        $coins_parts = [];
+                        if ($gold_coins > 0) $coins_parts[] = $gold_coins . ' po';
+                        if ($silver_coins > 0) $coins_parts[] = $silver_coins . ' pa';
+                        if ($copper_coins > 0) $coins_parts[] = $copper_coins . ' pc';
+                        
+                        if (empty($object_name)) {
+                            $object_name = 'Pièces (' . implode(', ', $coins_parts) . ')';
+                        }
+                        if (empty($object_description)) {
+                            $object_description = 'Trésor contenant : ' . implode(', ', $coins_parts);
+                        }
+                    } else {
+                        $error_message = "Veuillez spécifier au moins une quantité de pièces.";
+                    }
+                }
+                
+                // Récupérer les informations de l'objet sélectionné si applicable
+                if (!empty($selected_item) && in_array($object_type, ['poison', 'magical_item', 'weapon', 'armor'])) {
+                    switch ($object_type) {
+                        case 'poison':
+                            $stmt = $pdo->prepare("SELECT id, nom, description FROM poisons WHERE id = ?");
+                            $stmt->execute([$selected_item]);
+                            $item = $stmt->fetch();
+                            if ($item) {
+                                $item_id = $item['id'];
+                                $item_name = $item['nom'];
+                                $item_description = $item['description'];
+                                // Utiliser le nom du poison si pas de nom personnalisé
+                                if (empty($object_name)) {
+                                    $object_name = $item_name;
+                                }
+                            }
+                            break;
+                            
+                        case 'magical_item':
+                            $stmt = $pdo->prepare("SELECT id, nom, description FROM magical_items WHERE id = ?");
+                            $stmt->execute([$selected_item]);
+                            $item = $stmt->fetch();
+                            if ($item) {
+                                $item_id = $item['id'];
+                                $item_name = $item['nom'];
+                                $item_description = $item['description'];
+                                if (empty($object_name)) {
+                                    $object_name = $item_name;
+                                }
+                            }
+                            break;
+                            
+                        case 'weapon':
+                            $stmt = $pdo->prepare("SELECT id, name as nom, CONCAT('Dégâts: ', damage, ' | Poids: ', weight, ' | Prix: ', price, ' | Type: ', type) as description FROM weapons WHERE id = ?");
+                            $stmt->execute([$selected_item]);
+                            $item = $stmt->fetch();
+                            if ($item) {
+                                $item_id = $item['id'];
+                                $item_name = $item['nom'];
+                                $item_description = $item['description'];
+                                if (empty($object_name)) {
+                                    $object_name = $item_name;
+                                }
+                            }
+                            break;
+                            
+                        case 'armor':
+                            $stmt = $pdo->prepare("SELECT id, name as nom, CONCAT('CA: ', ac_formula, ' | Poids: ', weight, ' | Prix: ', price, ' | Type: ', type) as description FROM armor WHERE id = ?");
+                            $stmt->execute([$selected_item]);
+                            $item = $stmt->fetch();
+                            if ($item) {
+                                $item_id = $item['id'];
+                                $item_name = $item['nom'];
+                                $item_description = $item['description'];
+                                if (empty($object_name)) {
+                                    $object_name = $item_name;
+                                }
+                            }
+                            break;
+                    }
+                }
+                
+                // Insérer l'objet dans la base de données
+                $stmt = $pdo->prepare("
+                    INSERT INTO place_objects 
+                    (place_id, name, description, object_type, is_visible, is_identified, item_id, item_name, item_description, letter_content, is_sealed, gold_coins, silver_coins, copper_coins) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ");
+                $stmt->execute([
+                    $place_id, 
+                    $object_name, 
+                    $object_description, 
+                    $object_type, 
+                    $is_visible,
+                    $is_identified,
+                    $item_id,
+                    $item_name,
+                    $item_description,
+                    $letter_content,
+                    $is_sealed,
+                    $gold_coins,
+                    $silver_coins,
+                    $copper_coins
+                ]);
+                
+                $success_message = "Objet '$object_name' ajouté au lieu.";
+                
+                // Recharger les objets
+                $stmt = $pdo->prepare("
+                    SELECT id, name, description, object_type, is_visible, position_x, position_y, is_on_map, 
+                           item_id, item_name, item_description, letter_content, is_sealed, gold_coins, silver_coins, copper_coins
+                    FROM place_objects 
+                    WHERE place_id = ? 
+                    ORDER BY name ASC
+                ");
+                $stmt->execute([$place_id]);
+                $placeObjects = $stmt->fetchAll();
+            } catch (PDOException $e) {
+                $error_message = "Erreur lors de l'ajout de l'objet: " . $e->getMessage();
+            }
+        }
+    }
+    
+    // Supprimer un objet
+    if (isset($_POST['action']) && $_POST['action'] === 'remove_object') {
+        $object_id = (int)($_POST['object_id'] ?? 0);
+        
+        if ($object_id > 0) {
+            try {
+                $stmt = $pdo->prepare("DELETE FROM place_objects WHERE id = ? AND place_id = ?");
+                $stmt->execute([$object_id, $place_id]);
+                
+                if ($stmt->rowCount() > 0) {
+                    $success_message = "Objet supprimé du lieu.";
+                    
+                    // Recharger les objets
+                    $stmt = $pdo->prepare("SELECT id, name, description, object_type, is_visible, is_identified, position_x, position_y, is_on_map, item_id, item_name, item_description, letter_content, is_sealed, gold_coins, silver_coins, copper_coins FROM place_objects WHERE place_id = ? ORDER BY name ASC");
+                    $stmt->execute([$place_id]);
+                    $placeObjects = $stmt->fetchAll();
+                } else {
+                    $error_message = "Objet non trouvé.";
+                }
+            } catch (PDOException $e) {
+                $error_message = "Erreur lors de la suppression: " . $e->getMessage();
+            }
+        }
+    }
+    
+    // Modifier la visibilité d'un objet
+    if (isset($_POST['action']) && $_POST['action'] === 'toggle_object_visibility') {
+        $object_id = (int)($_POST['object_id'] ?? 0);
+        
+        if ($object_id > 0) {
+            try {
+                $stmt = $pdo->prepare("UPDATE place_objects SET is_visible = NOT is_visible WHERE id = ? AND place_id = ?");
+                $stmt->execute([$object_id, $place_id]);
+                
+                if ($stmt->rowCount() > 0) {
+                    $success_message = "Visibilité de l'objet modifiée.";
+                    
+                    // Recharger les objets
+                    $stmt = $pdo->prepare("SELECT id, name, description, object_type, is_visible, is_identified, position_x, position_y, is_on_map, item_id, item_name, item_description, letter_content, is_sealed, gold_coins, silver_coins, copper_coins FROM place_objects WHERE place_id = ? ORDER BY name ASC");
+                    $stmt->execute([$place_id]);
+                    $placeObjects = $stmt->fetchAll();
+                } else {
+                    $error_message = "Objet non trouvé.";
+                }
+            } catch (PDOException $e) {
+                $error_message = "Erreur lors de la modification: " . $e->getMessage();
+            }
+        }
+    }
+    
+    // Modifier l'identification d'un objet
+    if (isset($_POST['action']) && $_POST['action'] === 'toggle_object_identification') {
+        $object_id = (int)($_POST['object_id'] ?? 0);
+        
+        if ($object_id > 0) {
+            try {
+                $stmt = $pdo->prepare("UPDATE place_objects SET is_identified = NOT is_identified WHERE id = ? AND place_id = ?");
+                $stmt->execute([$object_id, $place_id]);
+                
+                if ($stmt->rowCount() > 0) {
+                    $success_message = "Identification de l'objet modifiée.";
+                    
+                    // Recharger les objets
+                    $stmt = $pdo->prepare("SELECT id, name, description, object_type, is_visible, is_identified, position_x, position_y, is_on_map, item_id, item_name, item_description, letter_content, is_sealed, gold_coins, silver_coins, copper_coins FROM place_objects WHERE place_id = ? ORDER BY name ASC");
+                    $stmt->execute([$place_id]);
+                    $placeObjects = $stmt->fetchAll();
+                } else {
+                    $error_message = "Objet non trouvé.";
+                }
+            } catch (PDOException $e) {
+                $error_message = "Erreur lors de la modification: " . $e->getMessage();
+            }
+        }
+    }
 }
 
 // Récupérer la liste des personnages du MJ pour l'ajout en PNJ
@@ -870,6 +1111,170 @@ foreach ($allScenes as $s) {
             0% {
                 background-position-x: 1rem;
             }
+        }
+        
+        /* Styles pour les objets et pions dorés */
+        .object-token {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            border: 2px solid #FF8C00;
+            border-radius: 4px;
+            cursor: pointer;
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #8B4513;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+        
+        .object-token:hover {
+            transform: scale(1.2);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+            z-index: 20;
+        }
+        
+        .object-token.dragging {
+            transform: scale(1.3);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.5);
+            z-index: 30;
+        }
+        
+        /* Styles pour les badges d'objets */
+        .badge.bg-danger {
+            background-color: #dc3545 !important;
+        }
+        
+        .badge.bg-info {
+            background-color: #0dcaf0 !important;
+        }
+        
+        .badge.bg-warning {
+            background-color: #ffc107 !important;
+            color: #000 !important;
+        }
+        
+        .badge.bg-primary {
+            background-color: #0d6efd !important;
+        }
+        
+        .badge.bg-success {
+            background-color: #198754 !important;
+        }
+        
+        .badge.bg-secondary {
+            background-color: #6c757d !important;
+        }
+        
+        /* Animation pour les pions dorés */
+        @keyframes goldenPulse {
+            0% { 
+                box-shadow: 0 2px 4px rgba(0,0,0,0.3), 0 0 0 0 rgba(255, 215, 0, 0.7);
+            }
+            70% { 
+                box-shadow: 0 2px 4px rgba(0,0,0,0.3), 0 0 0 10px rgba(255, 215, 0, 0);
+            }
+            100% { 
+                box-shadow: 0 2px 4px rgba(0,0,0,0.3), 0 0 0 0 rgba(255, 215, 0, 0);
+            }
+        }
+        
+        .object-token.visible {
+            animation: goldenPulse 2s infinite;
+        }
+        
+        /* Styles pour la liste des objets */
+        .list-group-item {
+            border-left: none;
+            border-right: none;
+        }
+        
+        .list-group-item:first-child {
+            border-top: none;
+        }
+        
+        .list-group-item:last-child {
+            border-bottom: none;
+        }
+        
+        .list-group-item:hover {
+            background-color: rgba(0, 123, 255, 0.05);
+        }
+        
+        /* Styles pour les icônes d'objets */
+        .fa-skull-crossbones {
+            color: #dc3545;
+        }
+        
+        .fa-flask {
+            color: #0dcaf0;
+        }
+        
+        .fa-coins {
+            color: #ffc107;
+        }
+        
+        .fa-envelope {
+            color: #0d6efd;
+        }
+        
+        .fa-shield-alt {
+            color: #198754;
+        }
+        
+        .fa-box {
+            color: #6c757d;
+        }
+        
+        .fa-sword {
+            color: #dc3545;
+        }
+        
+        .fa-magic {
+            color: #0dcaf0;
+        }
+        
+        .fa-lock {
+            color: #000;
+        }
+        
+        /* Styles pour les icônes des pions d'objets */
+        .object-token .fa-question {
+            color: #8B4513 !important;
+            font-weight: bold;
+        }
+        
+        .object-token .fa-flask {
+            color: #dc3545 !important;
+        }
+        
+        .object-token .fa-magic {
+            color: #0dcaf0 !important;
+        }
+        
+        .object-token .fa-sword {
+            color: #dc3545 !important;
+        }
+        
+        .object-token .fa-shield-alt {
+            color: #198754 !important;
+        }
+        
+        .object-token .fa-envelope {
+            color: #0d6efd !important;
+        }
+        
+        .object-token .fa-coins {
+            color: #ffc107 !important;
+        }
+        
+        .object-token .fa-box {
+            color: #6c757d !important;
         }
         </style>
 </head>
@@ -1208,6 +1613,66 @@ foreach ($allScenes as $s) {
                                              style="width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #dc3545; border-radius: 50%; background-image: url('<?php echo htmlspecialchars($imageUrl); ?>'); background-size: cover; background-position: center;"
                                              title="<?php echo htmlspecialchars($monster['name']); ?>">
                                         </div>
+                                    <?php endforeach; ?>
+                                    
+                                    <!-- Pions des objets -->
+                                    <?php foreach ($placeObjects as $object): ?>
+                                        <?php if ($object['is_visible']): ?>
+                                            <?php 
+                                            $tokenKey = 'object_' . $object['id'];
+                                            $position = $tokenPositions[$tokenKey] ?? ['x' => 0, 'y' => 0, 'is_on_map' => false];
+                                            
+                                            // Icône selon le type et l'identification
+                                            $icon_class = 'fa-box';
+                                            $icon_color = '#6c757d';
+                                            
+                                            if (!$object['is_identified']) {
+                                                $icon_class = 'fa-question';
+                                                $icon_color = '#8B4513';
+                                            } else {
+                                                switch ($object['object_type']) {
+                                                    case 'poison':
+                                                        $icon_class = 'fa-flask';
+                                                        $icon_color = '#dc3545';
+                                                        break;
+                                                    case 'magical_item':
+                                                        $icon_class = 'fa-magic';
+                                                        $icon_color = '#0dcaf0';
+                                                        break;
+                                                    case 'weapon':
+                                                        $icon_class = 'fa-sword';
+                                                        $icon_color = '#dc3545';
+                                                        break;
+                                                    case 'armor':
+                                                        $icon_class = 'fa-shield-alt';
+                                                        $icon_color = '#198754';
+                                                        break;
+                                                    case 'letter':
+                                                        $icon_class = 'fa-envelope';
+                                                        $icon_color = '#0d6efd';
+                                                        break;
+                                                    case 'coins':
+                                                        $icon_class = 'fa-coins';
+                                                        $icon_color = '#ffc107';
+                                                        break;
+                                                }
+                                            }
+                                            ?>
+                                            <div class="token object-token"
+                                                 data-token-type="object"
+                                                 data-entity-id="<?php echo $object['id']; ?>"
+                                                 data-object-id="<?php echo $object['id']; ?>"
+                                                 data-object-name="<?php echo htmlspecialchars($object['name']); ?>"
+                                                 data-object-type="<?php echo $object['object_type']; ?>"
+                                                 data-is-identified="<?php echo $object['is_identified'] ? 'true' : 'false'; ?>"
+                                                 data-position-x="<?php echo $position['x']; ?>"
+                                                 data-position-y="<?php echo $position['y']; ?>"
+                                                 data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
+                                                 style="width: 24px; height: 24px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #FF8C00; border-radius: 4px; background: linear-gradient(45deg, #FFD700, #FFA500); box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 12px; color: #8B4513; font-weight: bold;"
+                                                 title="<?php echo htmlspecialchars($object['name']); ?>">
+                                                <i class="fas <?php echo $icon_class; ?>" style="color: <?php echo $icon_color; ?>;"></i>
+                                            </div>
+                                        <?php endif; ?>
                                     <?php endforeach; ?>
                                 </div>
                             </div>
@@ -1668,6 +2133,201 @@ foreach ($allScenes as $s) {
                     <?php endif; ?>
                 </div>
             </div>
+            
+            <!-- Section Objets du lieu -->
+            <div class="card mt-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Objets du lieu</span>
+                    <?php if ($isOwnerDM): ?>
+                        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#addObjectModal">
+                            <i class="fas fa-plus me-1"></i>Ajouter objet
+                        </button>
+                    <?php endif; ?>
+                </div>
+                <div class="card-body">
+                    <?php if (empty($placeObjects)): ?>
+                        <div class="text-center py-3">
+                            <i class="fas fa-box-open fa-2x text-muted mb-2"></i>
+                            <p class="text-muted mb-0">Aucun objet dans ce lieu</p>
+                        </div>
+                    <?php else: ?>
+                        <ul class="list-group list-group-flush">
+                            <?php foreach ($placeObjects as $object): ?>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3">
+                                            <?php
+                                            $icon_class = 'fa-box';
+                                            $badge_class = 'bg-secondary';
+                                            $type_label = ucfirst($object['object_type']);
+                                            
+                                            switch ($object['object_type']) {
+                                                case 'poison':
+                                                    $icon_class = 'fa-skull-crossbones';
+                                                    $badge_class = 'bg-danger';
+                                                    $type_label = 'Poison';
+                                                    break;
+                                                case 'coins':
+                                                    $icon_class = 'fa-coins';
+                                                    $badge_class = 'bg-warning';
+                                                    $type_label = 'Pièces';
+                                                    break;
+                                                case 'letter':
+                                                    $icon_class = 'fa-envelope';
+                                                    $badge_class = 'bg-primary';
+                                                    $type_label = 'Lettre';
+                                                    break;
+                                                case 'weapon':
+                                                    $icon_class = 'fa-sword';
+                                                    $badge_class = 'bg-danger';
+                                                    $type_label = 'Arme';
+                                                    break;
+                                                case 'armor':
+                                                    $icon_class = 'fa-shield-alt';
+                                                    $badge_class = 'bg-success';
+                                                    $type_label = 'Armure';
+                                                    break;
+                                                case 'magical_item':
+                                                    $icon_class = 'fa-magic';
+                                                    $badge_class = 'bg-info';
+                                                    $type_label = 'Objet magique';
+                                                    break;
+                                            }
+                                            ?>
+                                            <i class="fas <?php echo $icon_class; ?> fa-lg text-muted"></i>
+                                        </div>
+                                        <div>
+                                            <div class="d-flex align-items-center">
+                                                <strong><?php echo htmlspecialchars($object['name']); ?></strong>
+                                                <span class="badge <?php echo $badge_class; ?> ms-2"><?php echo $type_label; ?></span>
+                                                <?php if ($object['is_visible']): ?>
+                                                    <span class="badge bg-warning ms-1" title="Visible des joueurs">
+                                                        <i class="fas fa-eye"></i>
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="badge bg-secondary ms-1" title="Invisible des joueurs">
+                                                        <i class="fas fa-eye-slash"></i>
+                                                    </span>
+                                                <?php endif; ?>
+                                                <?php if ($object['object_type'] === 'letter' && $object['is_sealed']): ?>
+                                                    <span class="badge bg-dark ms-1" title="Lettre cachetée">
+                                                        <i class="fas fa-lock"></i>
+                                                    </span>
+                                                <?php endif; ?>
+                                                <?php if ($object['is_identified']): ?>
+                                                    <span class="badge bg-success ms-1" title="Identifié par les joueurs">
+                                                        <i class="fas fa-check-circle"></i>
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="badge bg-warning ms-1" title="Non identifié par les joueurs">
+                                                        <i class="fas fa-question-circle"></i>
+                                                    </span>
+                                                <?php endif; ?>
+                                            </div>
+                                            
+                                            <?php if ($object['is_identified']): ?>
+                                                <!-- Affichage pour objet identifié -->
+                                                <?php if (!empty($object['item_name']) && $object['item_name'] !== $object['name']): ?>
+                                                    <small class="text-info">
+                                                        <i class="fas fa-info-circle me-1"></i>
+                                                        Objet sélectionné: <?php echo htmlspecialchars($object['item_name']); ?>
+                                                    </small><br>
+                                                <?php endif; ?>
+                                                
+                                                <?php if (!empty($object['description'])): ?>
+                                                    <small class="text-muted"><?php echo nl2br(htmlspecialchars($object['description'])); ?></small>
+                                                <?php endif; ?>
+                                            <?php else: ?>
+                                                <!-- Affichage pour objet non identifié -->
+                                                <small class="text-muted">
+                                                    <i class="fas fa-question-circle me-1"></i>
+                                                    <?php 
+                                                    // Description générale selon le type
+                                                    switch ($object['object_type']) {
+                                                        case 'poison':
+                                                            echo "Une fiole contenant un liquide suspect. Sa nature exacte reste à déterminer.";
+                                                            break;
+                                                        case 'magical_item':
+                                                            echo "Un objet qui dégage une aura magique. Ses propriétés sont inconnues.";
+                                                            break;
+                                                        case 'weapon':
+                                                            echo "Une arme d'apparence ordinaire. Ses qualités particulières ne sont pas évidentes.";
+                                                            break;
+                                                        case 'armor':
+                                                            echo "Une pièce d'armure standard. Ses propriétés spéciales ne sont pas apparentes.";
+                                                            break;
+                                                        case 'coins':
+                                                            echo "Un trésor de pièces. La valeur exacte n'est pas immédiatement évidente.";
+                                                            break;
+                                                        case 'letter':
+                                                            echo "Une lettre. Son contenu et son expéditeur sont inconnus.";
+                                                            break;
+                                                        default:
+                                                            echo "Un objet mystérieux. Sa nature exacte reste à découvrir.";
+                                                    }
+                                                    ?>
+                                                </small>
+                                            <?php endif; ?>
+                                            
+                                            <?php if ($object['is_identified']): ?>
+                                                <!-- Contenu détaillé pour objets identifiés -->
+                                                <?php if ($object['object_type'] === 'letter' && !empty($object['letter_content'])): ?>
+                                                    <div class="mt-2">
+                                                        <small class="text-muted">
+                                                            <strong>Contenu de la lettre:</strong><br>
+                                                            <?php echo nl2br(htmlspecialchars($object['letter_content'])); ?>
+                                                        </small>
+                                                    </div>
+                                                <?php endif; ?>
+                                                
+                                                <?php if ($object['object_type'] === 'coins' && ($object['gold_coins'] > 0 || $object['silver_coins'] > 0 || $object['copper_coins'] > 0)): ?>
+                                                    <div class="mt-2">
+                                                        <small class="text-muted">
+                                                            <strong>Contenu du trésor:</strong><br>
+                                                            <?php 
+                                                            $coins_parts = [];
+                                                            if ($object['gold_coins'] > 0) $coins_parts[] = '<span class="text-warning"><i class="fas fa-coins"></i> ' . $object['gold_coins'] . ' po</span>';
+                                                            if ($object['silver_coins'] > 0) $coins_parts[] = '<span class="text-secondary"><i class="fas fa-coins"></i> ' . $object['silver_coins'] . ' pa</span>';
+                                                            if ($object['copper_coins'] > 0) $coins_parts[] = '<span class="text-danger"><i class="fas fa-coins"></i> ' . $object['copper_coins'] . ' pc</span>';
+                                                            echo implode(' | ', $coins_parts);
+                                                            ?>
+                                                        </small>
+                                                    </div>
+                                                <?php endif; ?>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                    <?php if ($isOwnerDM): ?>
+                                        <div class="d-flex gap-1">
+                                            <form method="POST" class="d-inline" onsubmit="return confirm('<?php echo ($object['is_visible'] ? 'Masquer' : 'Afficher'); ?> <?php echo htmlspecialchars($object['name']); ?> pour les joueurs ?');">
+                                                <input type="hidden" name="action" value="toggle_object_visibility">
+                                                <input type="hidden" name="object_id" value="<?php echo (int)$object['id']; ?>">
+                                                <button type="submit" class="btn btn-sm <?php echo $object['is_visible'] ? 'btn-outline-warning' : 'btn-outline-success'; ?>" title="<?php echo $object['is_visible'] ? 'Masquer pour les joueurs' : 'Afficher pour les joueurs'; ?>">
+                                                    <i class="fas <?php echo $object['is_visible'] ? 'fa-eye-slash' : 'fa-eye'; ?>"></i>
+                                                </button>
+                                            </form>
+                                            <form method="POST" class="d-inline" onsubmit="return confirm('<?php echo ($object['is_identified'] ? 'Désidentifier' : 'Identifier'); ?> <?php echo htmlspecialchars($object['name']); ?> pour les joueurs ?');">
+                                                <input type="hidden" name="action" value="toggle_object_identification">
+                                                <input type="hidden" name="object_id" value="<?php echo (int)$object['id']; ?>">
+                                                <button type="submit" class="btn btn-sm <?php echo $object['is_identified'] ? 'btn-outline-success' : 'btn-outline-warning'; ?>" title="<?php echo $object['is_identified'] ? 'Désidentifier pour les joueurs' : 'Identifier pour les joueurs'; ?>">
+                                                    <i class="fas <?php echo $object['is_identified'] ? 'fa-check-circle' : 'fa-question-circle'; ?>"></i>
+                                                </button>
+                                            </form>
+                                            <form method="POST" class="d-inline" onsubmit="return confirm('Supprimer <?php echo htmlspecialchars($object['name']); ?> de ce lieu ?');">
+                                                <input type="hidden" name="action" value="remove_object">
+                                                <input type="hidden" name="object_id" value="<?php echo (int)$object['id']; ?>">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer l'objet">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    <?php endif; ?>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -2041,7 +2701,7 @@ foreach ($allScenes as $s) {
         const poisonResults = document.getElementById('poisonResults');
         let poisonSearchTimeout;
 
-        if (poisonSearch) {
+        if (poisonSearch && poisonResults) {
             poisonSearch.addEventListener('input', function() {
                 clearTimeout(poisonSearchTimeout);
                 const query = this.value.trim();
@@ -2316,7 +2976,13 @@ foreach ($allScenes as $s) {
             const clampedY = Math.max(0, Math.min(100, yPercent));
             
             positionTokenOnMap(draggedToken, clampedX, clampedY);
-            saveTokenPosition(draggedToken, clampedX, clampedY, true);
+            
+            // Sauvegarder la position selon le type de pion
+            if (draggedToken.classList.contains('object-token')) {
+                saveObjectTokenPosition(draggedToken, clampedX, clampedY, true);
+            } else {
+                saveTokenPosition(draggedToken, clampedX, clampedY, true);
+            }
         });
 
         // Gestion du dépôt sur la sidebar (retour au côté)
@@ -2331,8 +2997,34 @@ foreach ($allScenes as $s) {
             
             if (!draggedToken) return;
 
-            resetTokenToSidebar(draggedToken);
-            saveTokenPosition(draggedToken, 0, 0, false);
+            // Remettre dans la sidebar selon le type de pion
+            if (draggedToken.classList.contains('object-token')) {
+                positionObjectTokenInSidebar(draggedToken);
+                saveObjectTokenPosition(draggedToken, 0, 0, false);
+            } else {
+                resetTokenToSidebar(draggedToken);
+                saveTokenPosition(draggedToken, 0, 0, false);
+            }
+        });
+
+        // Gestion du drag & drop pour les pions d'objets
+        const objectTokens = document.querySelectorAll('.object-token');
+        objectTokens.forEach(token => {
+            token.draggable = true;
+            
+            token.addEventListener('dragstart', function(e) {
+                draggedToken = this;
+                isDragging = true;
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/html', this.outerHTML);
+                this.style.opacity = '0.5';
+            });
+
+            token.addEventListener('dragend', function(e) {
+                this.style.opacity = '1';
+                draggedToken = null;
+                isDragging = false;
+            });
         });
 
         // Bouton de réinitialisation
@@ -2453,6 +3145,12 @@ foreach ($allScenes as $s) {
                     tokens.forEach(token => {
                         resetTokenToSidebar(token);
                     });
+                    
+                    // Réinitialiser aussi les pions d'objets
+                    const objectTokens = document.querySelectorAll('.object-token');
+                    objectTokens.forEach(token => {
+                        positionObjectTokenInSidebar(token);
+                    });
                 } else {
                     console.error('Erreur lors de la réinitialisation:', result.error);
                 }
@@ -2463,10 +3161,187 @@ foreach ($allScenes as $s) {
         }
     }
     
+    // Fonction pour positionner un pion d'objet dans la sidebar
+    function positionObjectTokenInSidebar(token) {
+        const sidebar = document.getElementById('tokenSidebar');
+        if (!sidebar) {
+            console.error('tokenSidebar non trouvé');
+            return;
+        }
+        
+        // Style pour la sidebar
+        token.style.position = 'static';
+        token.style.margin = '2px';
+        token.style.display = 'inline-block';
+        token.style.float = 'none';
+        token.style.left = 'auto';
+        token.style.top = 'auto';
+        
+        sidebar.appendChild(token);
+        console.log('Pion d\'objet ajouté à la sidebar:', token.dataset.objectName);
+    }
+    
+    // Fonction pour créer les pions d'objets
+    function createObjectToken(objectId, objectName, objectType, isIdentified, x, y, isOnMap) {
+        console.log('createObjectToken appelé:', objectName, objectType, isIdentified, x, y, isOnMap);
+        
+        const mapImage = document.getElementById('mapImage');
+        if (!mapImage) {
+            console.error('mapImage non trouvé dans createObjectToken');
+            return;
+        }
+        
+        const token = document.createElement('div');
+        token.className = 'object-token';
+        token.dataset.objectId = objectId;
+        token.dataset.objectName = objectName;
+        token.dataset.objectType = objectType;
+        token.dataset.isIdentified = isIdentified;
+        token.dataset.positionX = x;
+        token.dataset.positionY = y;
+        token.dataset.isOnMap = isOnMap;
+        
+        // Style du pion carré doré
+        token.style.cssText = `
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            border: 2px solid #FF8C00;
+            border-radius: 4px;
+            cursor: move;
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #8B4513;
+            font-weight: bold;
+        `;
+        
+        // Icône selon le type d'objet et l'identification
+        const icon = document.createElement('i');
+        
+        if (!isIdentified) {
+            // Objet non identifié : afficher un "?"
+            icon.className = 'fas fa-question';
+            icon.style.color = '#8B4513';
+            icon.style.fontWeight = 'bold';
+        } else {
+            // Objet identifié : afficher l'icône selon le type
+            switch (objectType) {
+                case 'poison':
+                    icon.className = 'fas fa-flask';
+                    icon.style.color = '#dc3545';
+                    break;
+                case 'magical_item':
+                    icon.className = 'fas fa-magic';
+                    icon.style.color = '#0dcaf0';
+                    break;
+                case 'weapon':
+                    icon.className = 'fas fa-sword';
+                    icon.style.color = '#dc3545';
+                    break;
+                case 'armor':
+                    icon.className = 'fas fa-shield-alt';
+                    icon.style.color = '#198754';
+                    break;
+                case 'letter':
+                    icon.className = 'fas fa-envelope';
+                    icon.style.color = '#0d6efd';
+                    break;
+                case 'coins':
+                    icon.className = 'fas fa-coins';
+                    icon.style.color = '#ffc107';
+                    break;
+                default:
+                    icon.className = 'fas fa-box';
+                    icon.style.color = '#6c757d';
+            }
+        }
+        
+        token.appendChild(icon);
+        
+        // Tooltip
+        token.title = objectName;
+        
+        // Gestion du drag & drop
+        token.draggable = true;
+        
+        // Positionner le pion selon son état
+        if (isOnMap) {
+            // Si l'objet est sur la carte, le positionner sur la carte
+            positionTokenOnMap(token, x, y);
+        } else {
+            // Sinon, le positionner dans la sidebar
+            positionObjectTokenInSidebar(token);
+        }
+        
+        console.log('Pion d\'objet créé:', objectName, isOnMap ? 'sur la carte' : 'dans la sidebar');
+    }
+    
     // Initialiser le système de pions après que le DOM soit complètement chargé
     document.addEventListener('DOMContentLoaded', function() {
         initializeTokenSystem();
+        initializeObjectTokens();
     });
+    
+    // Gestion des pions dorés pour les objets
+    function initializeObjectTokens() {
+        const mapImage = document.getElementById('mapImage');
+        if (!mapImage) {
+            console.error('mapImage non trouvé');
+            return;
+        }
+        
+        console.log('Initialisation des pions d\'objets...');
+        
+        // Créer les pions dorés pour les objets visibles
+        <?php foreach ($placeObjects as $object): ?>
+            <?php if ($object['is_visible']): ?>
+                console.log('Création du pion pour: <?php echo htmlspecialchars($object['name']); ?> (<?php echo $object['object_type']; ?>, identifié: <?php echo $object['is_identified'] ? 'oui' : 'non'; ?>)');
+                createObjectToken(<?php echo $object['id']; ?>, '<?php echo htmlspecialchars($object['name']); ?>', '<?php echo $object['object_type']; ?>', <?php echo $object['is_identified'] ? 'true' : 'false'; ?>, <?php echo $object['position_x']; ?>, <?php echo $object['position_y']; ?>, <?php echo $object['is_on_map'] ? 'true' : 'false'; ?>);
+            <?php endif; ?>
+        <?php endforeach; ?>
+        
+        console.log('Initialisation des pions terminée');
+    }
+    
+    
+    
+    function saveObjectTokenPosition(token, x, y, isOnMap) {
+        // Mettre à jour les données du token
+        token.dataset.positionX = x;
+        token.dataset.positionY = y;
+        token.dataset.isOnMap = isOnMap;
+        
+        const data = {
+            place_id: <?php echo $place_id; ?>,
+            object_id: parseInt(token.dataset.objectId || token.dataset.entityId),
+            position_x: x,
+            position_y: y,
+            is_on_map: isOnMap
+        };
+        
+        console.log('Sauvegarde position objet:', data);
+        
+        fetch('update_object_position.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (!result.success) {
+                console.error('Erreur lors de la sauvegarde:', result.error);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+        });
+    }
     </script>
     <?php endif; ?>
 
@@ -2489,6 +3364,139 @@ foreach ($allScenes as $s) {
                 }
                 
                 characterIdInput.value = characterId || '';
+            });
+        }
+        
+        // Gestion des types d'objets dynamiques
+        const objectTypeSelect = document.getElementById('objectType');
+        const itemSelection = document.getElementById('itemSelection');
+        const letterContent = document.getElementById('letterContent');
+        const coinsContent = document.getElementById('coinsContent');
+        const selectedItemSelect = document.getElementById('selectedItem');
+        const itemSelectionLabel = document.getElementById('itemSelectionLabel');
+        
+        if (objectTypeSelect) {
+            objectTypeSelect.addEventListener('change', function() {
+                const selectedType = this.value;
+                
+                // Masquer toutes les sections dynamiques
+                itemSelection.style.display = 'none';
+                letterContent.style.display = 'none';
+                coinsContent.style.display = 'none';
+                
+                // Vider les sélections
+                selectedItemSelect.innerHTML = '<option value="">Choisir...</option>';
+                
+                if (selectedType === 'poison') {
+                    loadPoisons();
+                    itemSelectionLabel.textContent = 'Sélectionner un poison';
+                    itemSelection.style.display = 'block';
+                } else if (selectedType === 'magical_item') {
+                    loadMagicalItems();
+                    itemSelectionLabel.textContent = 'Sélectionner un objet magique';
+                    itemSelection.style.display = 'block';
+                } else if (selectedType === 'weapon') {
+                    loadWeapons();
+                    itemSelectionLabel.textContent = 'Sélectionner une arme';
+                    itemSelection.style.display = 'block';
+                } else if (selectedType === 'armor') {
+                    loadArmors();
+                    itemSelectionLabel.textContent = 'Sélectionner une armure';
+                    itemSelection.style.display = 'block';
+                } else if (selectedType === 'letter') {
+                    letterContent.style.display = 'block';
+                } else if (selectedType === 'coins') {
+                    coinsContent.style.display = 'block';
+                }
+            });
+        }
+        
+        // Fonction pour charger les poisons
+        function loadPoisons() {
+            fetch('get_poisons.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        selectedItemSelect.innerHTML = '<option value="">Choisir un poison...</option>';
+                        data.poisons.forEach(poison => {
+                            const option = document.createElement('option');
+                            option.value = poison.id;
+                            option.textContent = poison.nom;
+                            option.setAttribute('data-description', poison.description || '');
+                            selectedItemSelect.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => console.error('Erreur lors du chargement des poisons:', error));
+        }
+        
+        // Fonction pour charger les objets magiques
+        function loadMagicalItems() {
+            fetch('get_magical_items.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        selectedItemSelect.innerHTML = '<option value="">Choisir un objet magique...</option>';
+                        data.items.forEach(item => {
+                            const option = document.createElement('option');
+                            option.value = item.id;
+                            option.textContent = item.nom;
+                            option.setAttribute('data-description', item.description || '');
+                            selectedItemSelect.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => console.error('Erreur lors du chargement des objets magiques:', error));
+        }
+        
+        // Fonction pour charger les armes
+        function loadWeapons() {
+            fetch('get_weapons.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        selectedItemSelect.innerHTML = '<option value="">Choisir une arme...</option>';
+                        data.weapons.forEach(weapon => {
+                            const option = document.createElement('option');
+                            option.value = weapon.id;
+                            option.textContent = weapon.nom;
+                            option.setAttribute('data-description', weapon.description || '');
+                            selectedItemSelect.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => console.error('Erreur lors du chargement des armes:', error));
+        }
+        
+        // Fonction pour charger les armures
+        function loadArmors() {
+            fetch('get_armors.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        selectedItemSelect.innerHTML = '<option value="">Choisir une armure...</option>';
+                        data.armors.forEach(armor => {
+                            const option = document.createElement('option');
+                            option.value = armor.id;
+                            option.textContent = armor.nom;
+                            option.setAttribute('data-description', armor.description || '');
+                            selectedItemSelect.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => console.error('Erreur lors du chargement des armures:', error));
+        }
+        
+        // Mettre à jour la description quand un objet est sélectionné
+        if (selectedItemSelect) {
+            selectedItemSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                const description = selectedOption.getAttribute('data-description');
+                const objectDescription = document.getElementById('objectDescription');
+                
+                if (description && objectDescription) {
+                    objectDescription.value = description;
+                }
             });
         }
     });
@@ -3043,6 +4051,117 @@ foreach ($allScenes as $s) {
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save me-1"></i>Enregistrer les modifications
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<!-- Modal pour ajouter un objet -->
+<?php if ($isOwnerDM): ?>
+<div class="modal fade" id="addObjectModal" tabindex="-1" aria-labelledby="addObjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addObjectModalLabel">
+                    <i class="fas fa-box me-2"></i>Ajouter un objet
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="add_object">
+                    
+                    <div class="mb-3">
+                        <label for="objectName" class="form-label">Nom de l'objet *</label>
+                        <input type="text" class="form-control" id="objectName" name="object_name" required placeholder="Ex: Fiole de poison, Lettre secrète, Pièces d'or...">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="objectType" class="form-label">Type d'objet</label>
+                        <select class="form-select" id="objectType" name="object_type">
+                            <option value="other">Autre</option>
+                            <option value="poison">Poison</option>
+                            <option value="coins">Pièces</option>
+                            <option value="letter">Lettre</option>
+                            <option value="weapon">Arme</option>
+                            <option value="armor">Armure</option>
+                            <option value="magical_item">Objet magique</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Sélection dynamique selon le type -->
+                    <div class="mb-3" id="itemSelection" style="display: none;">
+                        <label for="selectedItem" class="form-label" id="itemSelectionLabel">Sélectionner un objet</label>
+                        <select class="form-select" id="selectedItem" name="selected_item">
+                            <option value="">Choisir...</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Contenu de la lettre -->
+                    <div class="mb-3" id="letterContent" style="display: none;">
+                        <label for="letterContentText" class="form-label">Contenu de la lettre</label>
+                        <textarea class="form-control" id="letterContentText" name="letter_content" rows="4" placeholder="Contenu de la lettre..."></textarea>
+                        
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="isSealed" name="is_sealed">
+                            <label class="form-check-label" for="isSealed">
+                                Lettre cachetée
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Quantités de pièces -->
+                    <div class="mb-3" id="coinsContent" style="display: none;">
+                        <label class="form-label">Quantités de pièces</label>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label for="goldCoins" class="form-label">Pièces d'or</label>
+                                <input type="number" class="form-control" id="goldCoins" name="gold_coins" min="0" value="0">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="silverCoins" class="form-label">Pièces d'argent</label>
+                                <input type="number" class="form-control" id="silverCoins" name="silver_coins" min="0" value="0">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="copperCoins" class="form-label">Pièces de cuivre</label>
+                                <input type="number" class="form-control" id="copperCoins" name="copper_coins" min="0" value="0">
+                            </div>
+                        </div>
+                        <div class="form-text">Indiquez les quantités de chaque type de pièces.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="objectDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="objectDescription" name="object_description" rows="3" placeholder="Description détaillée de l'objet..."></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="isVisible" name="is_visible" checked>
+                            <label class="form-check-label" for="isVisible">
+                                Visible des joueurs (pion doré sur la carte)
+                            </label>
+                        </div>
+                        <div class="form-text">Si coché, l'objet apparaîtra comme un pion doré sur la carte pour les joueurs.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="isIdentified" name="is_identified">
+                            <label class="form-check-label" for="isIdentified">
+                                Identifié par les joueurs
+                            </label>
+                        </div>
+                        <div class="form-text">Si coché, les joueurs connaîtront la vraie nature de l'objet. Sinon, ils ne verront qu'une description générale.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Ajouter l'objet
                     </button>
                 </div>
             </form>
