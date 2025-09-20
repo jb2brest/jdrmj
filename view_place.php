@@ -88,18 +88,19 @@ while ($row = $stmt->fetch()) {
     ];
 }
 
-// Récupérer les objets du lieu
+// Récupérer les objets du lieu (seulement ceux non attribués pour l'affichage normal)
 $stmt = $pdo->prepare("
     SELECT id, name, description, object_type, is_visible, is_identified, position_x, position_y, is_on_map,
-           item_id, item_name, item_description, letter_content, is_sealed, gold_coins, silver_coins, copper_coins
+           item_id, item_name, item_description, letter_content, is_sealed, gold_coins, silver_coins, copper_coins,
+           owner_type, owner_id
     FROM place_objects 
-    WHERE place_id = ?
+    WHERE place_id = ? AND (owner_type = 'none' OR owner_type IS NULL)
     ORDER BY name ASC
 ");
 $stmt->execute([$place_id]);
 $placeObjects = $stmt->fetchAll();
 
-// Récupérer les positions des objets depuis place_objects
+// Récupérer les positions des objets depuis place_objects (seulement les non attribués)
 foreach ($placeObjects as $object) {
     $tokenKey = 'object_' . $object['id'];
     $tokenPositions[$tokenKey] = [
@@ -107,6 +108,21 @@ foreach ($placeObjects as $object) {
         'y' => (int)$object['position_y'],
         'is_on_map' => (bool)$object['is_on_map']
     ];
+}
+
+// Récupérer TOUS les objets du lieu (y compris ceux attribués) pour le MJ
+$allPlaceObjects = [];
+if ($isOwnerDM) {
+    $stmt = $pdo->prepare("
+        SELECT id, name, description, object_type, is_visible, is_identified, position_x, position_y, is_on_map,
+               item_id, item_name, item_description, letter_content, is_sealed, gold_coins, silver_coins, copper_coins,
+               owner_type, owner_id
+        FROM place_objects 
+        WHERE place_id = ?
+        ORDER BY name ASC
+    ");
+    $stmt->execute([$place_id]);
+    $allPlaceObjects = $stmt->fetchAll();
 }
 
 // Récupérer les membres de la campagne pour le formulaire d'ajout de joueurs
@@ -919,30 +935,166 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         }
     }
     
-    // Modifier l'identification d'un objet
-    if (isset($_POST['action']) && $_POST['action'] === 'toggle_object_identification') {
-        $object_id = (int)($_POST['object_id'] ?? 0);
-        
-        if ($object_id > 0) {
-            try {
-                $stmt = $pdo->prepare("UPDATE place_objects SET is_identified = NOT is_identified WHERE id = ? AND place_id = ?");
-                $stmt->execute([$object_id, $place_id]);
-                
-                if ($stmt->rowCount() > 0) {
-                    $success_message = "Identification de l'objet modifiée.";
+        // Modifier l'identification d'un objet
+        if (isset($_POST['action']) && $_POST['action'] === 'toggle_object_identification') {
+            $object_id = (int)($_POST['object_id'] ?? 0);
+            
+            if ($object_id > 0) {
+                try {
+                    $stmt = $pdo->prepare("UPDATE place_objects SET is_identified = NOT is_identified WHERE id = ? AND place_id = ?");
+                    $stmt->execute([$object_id, $place_id]);
                     
-                    // Recharger les objets
-                    $stmt = $pdo->prepare("SELECT id, name, description, object_type, is_visible, is_identified, position_x, position_y, is_on_map, item_id, item_name, item_description, letter_content, is_sealed, gold_coins, silver_coins, copper_coins FROM place_objects WHERE place_id = ? ORDER BY name ASC");
-                    $stmt->execute([$place_id]);
-                    $placeObjects = $stmt->fetchAll();
-                } else {
-                    $error_message = "Objet non trouvé.";
+                    if ($stmt->rowCount() > 0) {
+                        $success_message = "Identification de l'objet modifiée.";
+                        
+                        // Recharger les objets
+                        $stmt = $pdo->prepare("SELECT id, name, description, object_type, is_visible, is_identified, position_x, position_y, is_on_map, item_id, item_name, item_description, letter_content, is_sealed, gold_coins, silver_coins, copper_coins, owner_type, owner_id FROM place_objects WHERE place_id = ? ORDER BY name ASC");
+                        $stmt->execute([$place_id]);
+                        $placeObjects = $stmt->fetchAll();
+                    } else {
+                        $error_message = "Objet non trouvé.";
+                    }
+                } catch (PDOException $e) {
+                    $error_message = "Erreur lors de la modification: " . $e->getMessage();
                 }
-            } catch (PDOException $e) {
-                $error_message = "Erreur lors de la modification: " . $e->getMessage();
             }
         }
-    }
+        
+        // Attribuer un objet à un joueur ou PNJ
+        if (isset($_POST['action']) && $_POST['action'] === 'assign_object') {
+            $object_id = (int)($_POST['object_id'] ?? 0);
+            $owner_type = $_POST['owner_type'] ?? 'none';
+            $owner_id = (int)($_POST['owner_id'] ?? 0);
+            
+            if ($object_id > 0) {
+                try {
+                    // Valider le type de propriétaire
+                    if (!in_array($owner_type, ['none', 'player', 'npc', 'monster'])) {
+                        $error_message = "Type de propriétaire invalide.";
+                    } else {
+                        // Si owner_type est 'none', owner_id doit être NULL
+                        if ($owner_type === 'none') {
+                            $owner_id = null;
+                        } elseif ($owner_id <= 0) {
+                            $error_message = "ID du propriétaire invalide.";
+                        } else {
+                            // Vérifier que le propriétaire existe
+                            if ($owner_type === 'player') {
+                                $stmt = $pdo->prepare("SELECT player_id FROM place_players WHERE place_id = ? AND player_id = ?");
+                                $stmt->execute([$place_id, $owner_id]);
+                                if (!$stmt->fetch()) {
+                                    $error_message = "Joueur non trouvé dans ce lieu.";
+                                }
+                            } elseif ($owner_type === 'npc') {
+                                $stmt = $pdo->prepare("SELECT id FROM place_npcs WHERE place_id = ? AND id = ?");
+                                $stmt->execute([$place_id, $owner_id]);
+                                if (!$stmt->fetch()) {
+                                    $error_message = "PNJ non trouvé dans ce lieu.";
+                                }
+                            } elseif ($owner_type === 'monster') {
+                                $stmt = $pdo->prepare("SELECT id FROM place_npcs WHERE place_id = ? AND id = ? AND monster_id IS NOT NULL");
+                                $stmt->execute([$place_id, $owner_id]);
+                                if (!$stmt->fetch()) {
+                                    $error_message = "Monstre non trouvé dans ce lieu.";
+                                }
+                            }
+                        }
+                        
+                        if (empty($error_message)) {
+                            // Récupérer les informations de l'objet avant attribution
+                            $stmt = $pdo->prepare("SELECT * FROM place_objects WHERE id = ? AND place_id = ?");
+                            $stmt->execute([$object_id, $place_id]);
+                            $object = $stmt->fetch();
+                            
+                            if ($object) {
+                                // Ajouter l'objet à l'inventaire du propriétaire
+                                if ($owner_type === 'player') {
+                                    // Trouver le character_id du joueur
+                                    $stmt = $pdo->prepare("SELECT character_id FROM place_players WHERE place_id = ? AND player_id = ?");
+                                    $stmt->execute([$place_id, $owner_id]);
+                                    $player_data = $stmt->fetch();
+                                    
+                                    if ($player_data && $player_data['character_id']) {
+                                        // Ajouter à l'inventaire du personnage
+                                        $stmt = $pdo->prepare("
+                                            INSERT INTO character_equipment 
+                                            (character_id, item_name, item_type, item_description, item_source, quantity, obtained_from) 
+                                            VALUES (?, ?, ?, ?, ?, 1, ?)
+                                        ");
+                                        $stmt->execute([
+                                            $player_data['character_id'],
+                                            $object['name'],
+                                            $object['object_type'],
+                                            $object['description'],
+                                            'Objet du lieu',
+                                            'Attribution MJ - Lieu: ' . $place['name']
+                                        ]);
+                                    }
+                                } elseif ($owner_type === 'npc') {
+                                    // Ajouter à l'inventaire du PNJ
+                                    $stmt = $pdo->prepare("
+                                        INSERT INTO npc_equipment 
+                                        (npc_id, scene_id, item_name, item_type, item_description, item_source, quantity, obtained_from) 
+                                        VALUES (?, ?, ?, ?, ?, 1, ?)
+                                    ");
+                                    $stmt->execute([
+                                        $owner_id,
+                                        $place_id, // Utiliser place_id comme scene_id
+                                        $object['name'],
+                                        $object['object_type'],
+                                        $object['description'],
+                                        'Objet du lieu',
+                                        'Attribution MJ - Lieu: ' . $place['name']
+                                    ]);
+                                } elseif ($owner_type === 'monster') {
+                                    // Ajouter à l'inventaire du monstre
+                                    $stmt = $pdo->prepare("
+                                        INSERT INTO monster_equipment 
+                                        (monster_id, scene_id, item_name, item_type, item_description, item_source, quantity, obtained_from) 
+                                        VALUES (?, ?, ?, ?, ?, 1, ?)
+                                    ");
+                                    $stmt->execute([
+                                        $owner_id,
+                                        $place_id, // Utiliser place_id comme scene_id
+                                        $object['name'],
+                                        $object['object_type'],
+                                        $object['description'],
+                                        'Objet du lieu',
+                                        'Attribution MJ - Lieu: ' . $place['name']
+                                    ]);
+                                }
+                                
+                                // Mettre à jour l'attribution dans place_objects
+                                $stmt = $pdo->prepare("UPDATE place_objects SET owner_type = ?, owner_id = ? WHERE id = ? AND place_id = ?");
+                                $stmt->execute([$owner_type, $owner_id, $object_id, $place_id]);
+                                
+                                if ($stmt->rowCount() > 0) {
+                                    $success_message = "Objet attribué et ajouté à l'inventaire du propriétaire.";
+                                    
+                                    // Recharger les objets
+                                    $stmt = $pdo->prepare("SELECT id, name, description, object_type, is_visible, is_identified, position_x, position_y, is_on_map, item_id, item_name, item_description, letter_content, is_sealed, gold_coins, silver_coins, copper_coins, owner_type, owner_id FROM place_objects WHERE place_id = ? AND (owner_type = 'none' OR owner_type IS NULL) ORDER BY name ASC");
+                                    $stmt->execute([$place_id]);
+                                    $placeObjects = $stmt->fetchAll();
+                                    
+                                    // Recharger tous les objets pour le MJ
+                                    if ($isOwnerDM) {
+                                        $stmt = $pdo->prepare("SELECT id, name, description, object_type, is_visible, is_identified, position_x, position_y, is_on_map, item_id, item_name, item_description, letter_content, is_sealed, gold_coins, silver_coins, copper_coins, owner_type, owner_id FROM place_objects WHERE place_id = ? ORDER BY name ASC");
+                                        $stmt->execute([$place_id]);
+                                        $allPlaceObjects = $stmt->fetchAll();
+                                    }
+                                } else {
+                                    $error_message = "Erreur lors de l'attribution.";
+                                }
+                            } else {
+                                $error_message = "Objet non trouvé.";
+                            }
+                        }
+                    }
+                } catch (PDOException $e) {
+                    $error_message = "Erreur lors de l'attribution: " . $e->getMessage();
+                }
+            }
+        }
 }
 
 // Récupérer la liste des personnages du MJ pour l'ajout en PNJ
@@ -2151,8 +2303,11 @@ foreach ($allScenes as $s) {
                             <p class="text-muted mb-0">Aucun objet dans ce lieu</p>
                         </div>
                     <?php else: ?>
-                        <ul class="list-group list-group-flush">
-                            <?php foreach ($placeObjects as $object): ?>
+                     <ul class="list-group list-group-flush">
+                         <?php 
+                         // Afficher seulement les objets non attribués (même pour le MJ)
+                         foreach ($placeObjects as $object): 
+                         ?>
                                 <li class="list-group-item d-flex justify-content-between align-items-center">
                                     <div class="d-flex align-items-center">
                                         <div class="me-3">
@@ -2214,15 +2369,20 @@ foreach ($allScenes as $s) {
                                                         <i class="fas fa-lock"></i>
                                                     </span>
                                                 <?php endif; ?>
-                                                <?php if ($object['is_identified']): ?>
-                                                    <span class="badge bg-success ms-1" title="Identifié par les joueurs">
-                                                        <i class="fas fa-check-circle"></i>
-                                                    </span>
-                                                <?php else: ?>
-                                                    <span class="badge bg-warning ms-1" title="Non identifié par les joueurs">
-                                                        <i class="fas fa-question-circle"></i>
-                                                    </span>
-                                                <?php endif; ?>
+                                             <?php if ($object['is_identified']): ?>
+                                                 <span class="badge bg-success ms-1" title="Identifié par les joueurs">
+                                                     <i class="fas fa-check-circle"></i>
+                                                 </span>
+                                             <?php else: ?>
+                                                 <span class="badge bg-warning ms-1" title="Non identifié par les joueurs">
+                                                     <i class="fas fa-question-circle"></i>
+                                                 </span>
+                                             <?php endif; ?>
+                                             <?php if ($object['owner_type'] !== 'none'): ?>
+                                                 <span class="badge bg-info ms-1" title="Attribué à un <?php echo $object['owner_type'] === 'player' ? 'joueur' : 'PNJ'; ?>">
+                                                     <i class="fas fa-user"></i>
+                                                 </span>
+                                             <?php endif; ?>
                                             </div>
                                             
                                             <?php if ($object['is_identified']): ?>
@@ -2234,9 +2394,50 @@ foreach ($allScenes as $s) {
                                                     </small><br>
                                                 <?php endif; ?>
                                                 
-                                                <?php if (!empty($object['description'])): ?>
-                                                    <small class="text-muted"><?php echo nl2br(htmlspecialchars($object['description'])); ?></small>
-                                                <?php endif; ?>
+                                             <?php if (!empty($object['description'])): ?>
+                                                 <small class="text-muted"><?php echo nl2br(htmlspecialchars($object['description'])); ?></small>
+                                             <?php endif; ?>
+                                             
+                                             <?php if ($object['owner_type'] !== 'none'): ?>
+                                                 <div class="mt-1">
+                                                     <small class="text-info">
+                                                         <i class="fas fa-user me-1"></i>
+                                                         <?php 
+                                                         if ($object['owner_type'] === 'player') {
+                                                             // Trouver le nom du joueur
+                                                             $owner_name = 'Joueur inconnu';
+                                                             foreach ($placePlayers as $player) {
+                                                                 if ($player['player_id'] == $object['owner_id']) {
+                                                                     $owner_name = $player['character_name'] ?: $player['username'];
+                                                                     break;
+                                                                 }
+                                                             }
+                                                             echo 'Attribué à: ' . htmlspecialchars($owner_name);
+                                                         } elseif ($object['owner_type'] === 'npc') {
+                                                             // Trouver le nom du PNJ
+                                                             $owner_name = 'PNJ inconnu';
+                                                             foreach ($placeNpcs as $npc) {
+                                                                 if ($npc['id'] == $object['owner_id']) {
+                                                                     $owner_name = $npc['name'];
+                                                                     break;
+                                                                 }
+                                                             }
+                                                             echo 'Attribué à: ' . htmlspecialchars($owner_name);
+                                                         } elseif ($object['owner_type'] === 'monster') {
+                                                             // Trouver le nom du monstre
+                                                             $owner_name = 'Monstre inconnu';
+                                                             foreach ($placeMonsters as $monster) {
+                                                                 if ($monster['id'] == $object['owner_id']) {
+                                                                     $owner_name = $monster['name'];
+                                                                     break;
+                                                                 }
+                                                             }
+                                                             echo 'Attribué à: ' . htmlspecialchars($owner_name);
+                                                         }
+                                                         ?>
+                                                     </small>
+                                                 </div>
+                                             <?php endif; ?>
                                             <?php else: ?>
                                                 <!-- Affichage pour objet non identifié -->
                                                 <small class="text-muted">
@@ -2313,13 +2514,16 @@ foreach ($allScenes as $s) {
                                                     <i class="fas <?php echo $object['is_identified'] ? 'fa-check-circle' : 'fa-question-circle'; ?>"></i>
                                                 </button>
                                             </form>
-                                            <form method="POST" class="d-inline" onsubmit="return confirm('Supprimer <?php echo htmlspecialchars($object['name']); ?> de ce lieu ?');">
-                                                <input type="hidden" name="action" value="remove_object">
-                                                <input type="hidden" name="object_id" value="<?php echo (int)$object['id']; ?>">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer l'objet">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </form>
+                                         <button type="button" class="btn btn-sm btn-outline-info" title="Attribuer l'objet" onclick="showAssignObjectModal(<?php echo $object['id']; ?>, '<?php echo htmlspecialchars($object['name']); ?>', '<?php echo $object['owner_type']; ?>', <?php echo $object['owner_id'] ?: 'null'; ?>)">
+                                             <i class="fas fa-user-plus"></i>
+                                         </button>
+                                         <form method="POST" class="d-inline" onsubmit="return confirm('Supprimer <?php echo htmlspecialchars($object['name']); ?> de ce lieu ?');">
+                                             <input type="hidden" name="action" value="remove_object">
+                                             <input type="hidden" name="object_id" value="<?php echo (int)$object['id']; ?>">
+                                             <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer l'objet">
+                                                 <i class="fas fa-trash"></i>
+                                             </button>
+                                         </form>
                                         </div>
                                     <?php endif; ?>
                                 </li>
@@ -3280,11 +3484,72 @@ foreach ($allScenes as $s) {
         console.log('Pion d\'objet créé:', objectName, isOnMap ? 'sur la carte' : 'dans la sidebar');
     }
     
-    // Initialiser le système de pions après que le DOM soit complètement chargé
-    document.addEventListener('DOMContentLoaded', function() {
-        initializeTokenSystem();
-        initializeObjectTokens();
-    });
+         // Initialiser le système de pions après que le DOM soit complètement chargé
+         document.addEventListener('DOMContentLoaded', function() {
+             initializeTokenSystem();
+             initializeObjectTokens();
+         });
+         
+         // Fonction pour afficher le modal d'attribution d'objet
+         function showAssignObjectModal(objectId, objectName, currentOwnerType, currentOwnerId) {
+             document.getElementById('assignObjectId').value = objectId;
+             document.getElementById('assignObjectName').textContent = objectName;
+             
+             // Réinitialiser les sélections
+             document.getElementById('ownerType').value = currentOwnerType || 'none';
+             updateOwnerOptions();
+             
+             // Si l'objet a déjà un propriétaire, le sélectionner
+             if (currentOwnerId && currentOwnerType !== 'none') {
+                 setTimeout(() => {
+                     document.getElementById('ownerId').value = currentOwnerId;
+                 }, 100);
+             }
+             
+             // Afficher le modal
+             const modal = new bootstrap.Modal(document.getElementById('assignObjectModal'));
+             modal.show();
+         }
+         
+         // Fonction pour mettre à jour les options de propriétaire
+         function updateOwnerOptions() {
+             const ownerType = document.getElementById('ownerType').value;
+             const ownerSelection = document.getElementById('ownerSelection');
+             const ownerId = document.getElementById('ownerId');
+             const ownerSelectionLabel = document.getElementById('ownerSelectionLabel');
+             
+             // Vider les options
+             ownerId.innerHTML = '<option value="">Choisir...</option>';
+             
+             if (ownerType === 'none') {
+                 ownerSelection.style.display = 'none';
+             } else {
+                 ownerSelection.style.display = 'block';
+                 
+                 if (ownerType === 'player') {
+                     ownerSelectionLabel.textContent = 'Sélectionner un joueur';
+                     
+                     // Ajouter les joueurs
+                     <?php foreach ($placePlayers as $player): ?>
+                         ownerId.innerHTML += '<option value="<?php echo $player['player_id']; ?>"><?php echo htmlspecialchars($player['character_name'] ?: $player['username']); ?></option>';
+                     <?php endforeach; ?>
+                 } else if (ownerType === 'npc') {
+                     ownerSelectionLabel.textContent = 'Sélectionner un PNJ';
+                     
+                     // Ajouter les PNJ
+                     <?php foreach ($placeNpcs as $npc): ?>
+                         ownerId.innerHTML += '<option value="<?php echo $npc['id']; ?>"><?php echo htmlspecialchars($npc['name']); ?></option>';
+                     <?php endforeach; ?>
+                 } else if (ownerType === 'monster') {
+                     ownerSelectionLabel.textContent = 'Sélectionner un monstre';
+                     
+                     // Ajouter les monstres
+                     <?php foreach ($placeMonsters as $monster): ?>
+                         ownerId.innerHTML += '<option value="<?php echo $monster['id']; ?>"><?php echo htmlspecialchars($monster['name']); ?></option>';
+                     <?php endforeach; ?>
+                 }
+             }
+         }
     
     // Gestion des pions dorés pour les objets
     function initializeObjectTokens() {
@@ -4162,6 +4427,62 @@ foreach ($allScenes as $s) {
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-plus me-1"></i>Ajouter l'objet
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+         </div>
+         
+         <!-- Note pour le MJ -->
+         <?php if ($isOwnerDM): ?>
+         <div class="alert alert-info mt-4">
+             <i class="fas fa-info-circle me-2"></i>
+             <strong>Note :</strong> Les objets attribués sont automatiquement ajoutés à l'inventaire du propriétaire et peuvent être consultés dans leur fiche respective.
+         </div>
+         <?php endif; ?>
+         
+         <!-- Modal pour attribuer un objet -->
+<div class="modal fade" id="assignObjectModal" tabindex="-1" aria-labelledby="assignObjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="assignObjectModalLabel">
+                    <i class="fas fa-user-plus me-2"></i>Attribuer un objet
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="assign_object">
+                    <input type="hidden" name="object_id" id="assignObjectId">
+
+                    <div class="mb-3">
+                        <label class="form-label">Objet à attribuer</label>
+                        <div class="form-control-plaintext" id="assignObjectName"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="ownerType" class="form-label">Attribuer à</label>
+                        <select class="form-select" id="ownerType" name="owner_type" onchange="updateOwnerOptions()">
+                            <option value="none">Personne (objet libre)</option>
+                            <option value="player">Joueur</option>
+                            <option value="npc">PNJ</option>
+                            <option value="monster">Monstre</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3" id="ownerSelection" style="display: none;">
+                        <label for="ownerId" class="form-label" id="ownerSelectionLabel">Sélectionner</label>
+                        <select class="form-select" id="ownerId" name="owner_id">
+                            <option value="">Choisir...</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-user-plus me-1"></i>Attribuer l'objet
                     </button>
                 </div>
             </form>

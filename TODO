@@ -31,6 +31,45 @@ Dans view_campaign.php, à coté de la zone "Membres", ajoute une zone Monde où
 Dans view_campaign.php, remplace les boutons " Nouveau pays, nouvelle région, nouveau lieu" par un bouton "associer un lieu". 
 CE bouton permet de rechercher un lieu dans le monde où se déroule la campagne et de l'ajouter à la liste des lieux de la campagne.
 
+Il faut ajouter une catérorie PNJ. 
+Un PNJ est un Personnage crée normalement. Puis le PJ le transforme en PNJ.
+
+Dans view_region.php, il faut afficher la liste des PNJs et la liste des monstres vivant dans ce monde en dessous de la Zone "Lieux de cette région".
+La liste est triable et filtrable.
+Les critères suivants sont affichés : type (PNJ ou monstre), Nom, Classe, Race, Lieu où il se trouve. 
+
+Dans view_place.php, le MJ peux stocker des objets.
+Les objets ont une place (description en mode texte) et une description. 
+Un objet peut être, un poison, une fiole, des pièces, une lettre, une pièce d'équipement de personnage. 
+L'objet peut être visible des joueurs, dans ce cas il est réprésenté par un pion doré sur la carte, ou invisible. 
+
+Supprime le choix fiole, pour les objets.
+Remplace "équipement" par les deux choix "Arme" et "Armure"
+Ajoute le choix "Objet magique"
+Si l'objet sélectionné est "poison", il faut proposer au MJ la liste des poisons pour qu'il le sélectionne. (déjà en base de donnée)
+Si l'objet sélectionné est "Objet magique", il faut proposer au MJ la liste des objets magiques pour qu'il le sélectionne (déjà en base de donnée)
+Si l'objet sélectionné est "Arme", il faut proposer au MJ la liste des Armes
+Si l'objet sélectionné est "Armure", il faut proposer au MJ la liste des Armure 
+Si l'objet sélectionné est "lettre", il faut proposer au MJ d'écrire le contenu de la lettre et de définir si la lettre est cachetée ou pas.
+
+Si l'objet sélectionné est "pièces", il faut demander la quantité de pièces d'or, d'argent et de cuivre au MJ.
+Un objet peut être identifié ou pas. 
+
+
+Si un objet est visible, mais n'est pas identifié alors un pion carré et doré contenant un "?" est disposé sur le plan du lieu.
+Si un objet "poison" est visible et identifié alors un pion carré et doré contenant un symbole de fiole est disposé sur le plan du lieu.  
+Si un objet "Objet magique" est visible et identifié alors un pion carré et doré contenant un symbole de baguette magique est disposé sur le plan du lieu.  
+Si un objet "Arme" est visible et identifié alors un pion carré et doré contenant un symbole d'épée est disposé sur le plan du lieu.  
+Si un objet "Armure" est visible et identifié alors un pion carré et doré contenant un symbole d'armure est disposé sur le plan du lieu.  
+Si un objet "lettre" est visible et identifié alors un pion carré et doré contenant un symbole de lettre est disposé sur le plan du lieu.  
+le MJ peut déplacer le pion.
+
+La position des pions objets n'est pas sauvegarder lorsque l'on recharge la page. 
+Les pions objets qui devraient être visible des joueurs, ne le sont pas dans view_scene_player.php
+dans view_scene_player.php la position des objets n'est pas mise à jour automatiquement.
+
+Dans view_place.php, le MJ peut attribuer chaque objet à un joueur ou à un PNJ ou à un monstre
+Quand un objet est attribué, il par dans l'inventaire de son propriétaire et n'est plus identifé sur la carte, ni dans la liste des objets du lieu.
 
 Ajouter des évènements à l'histoire du personnage. 
 

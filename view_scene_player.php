@@ -130,12 +130,12 @@ $stmt = $pdo->prepare("
 $stmt->execute([$place_id]);
 $placeMonsters = $stmt->fetchAll();
 
-// Récupérer les objets présents dans le lieu (seulement ceux visibles)
+// Récupérer les objets présents dans le lieu (seulement ceux visibles et non attribués)
 $stmt = $pdo->prepare("
     SELECT id, name, description, object_type, is_visible, is_identified, position_x, position_y, is_on_map,
            item_id, item_name, item_description, letter_content, is_sealed, gold_coins, silver_coins, copper_coins
     FROM place_objects 
-    WHERE place_id = ? AND is_visible = 1
+    WHERE place_id = ? AND is_visible = 1 AND (owner_type = 'none' OR owner_type IS NULL)
     ORDER BY name ASC
 ");
 $stmt->execute([$place_id]);

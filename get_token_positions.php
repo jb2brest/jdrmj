@@ -126,11 +126,11 @@ try {
         ];
     }
     
-    // Récupérer les positions et informations des objets
+    // Récupérer les positions et informations des objets (seulement ceux non attribués)
     $stmt = $pdo->prepare("
         SELECT id, name, object_type, is_visible, is_identified, position_x, position_y, is_on_map, updated_at
         FROM place_objects 
-        WHERE place_id = ?
+        WHERE place_id = ? AND (owner_type = 'none' OR owner_type IS NULL)
         ORDER BY updated_at DESC
     ");
     $stmt->execute([$place_id]);

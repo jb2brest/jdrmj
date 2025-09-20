@@ -642,13 +642,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
     $character = $stmt->fetch();
 }
 
-// Récupérer l'équipement magique du personnage (exclure les poisons)
+// Récupérer l'équipement magique du personnage (incluant les objets attribués depuis les lieux, excluant les poisons)
 $stmt = $pdo->prepare("
     SELECT ce.*, mi.nom as magical_item_nom, mi.type as magical_item_type, mi.description as magical_item_description, mi.source as magical_item_source
     FROM character_equipment ce
     LEFT JOIN magical_items mi ON ce.magical_item_id = mi.csv_id
     WHERE ce.character_id = ? 
-    AND ce.magical_item_id NOT IN (SELECT csv_id FROM poisons)
+    AND (ce.magical_item_id IS NULL OR ce.magical_item_id NOT IN (SELECT csv_id FROM poisons))
     ORDER BY ce.obtained_at DESC
 ");
 $stmt->execute([$character_id]);
