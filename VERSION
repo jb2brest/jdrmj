@@ -2,19 +2,19 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.1.2
+VERSION=2.2.0
 
 # Date de déploiement
-DEPLOY_DATE=2025-09-20
+DEPLOY_DATE=2025-09-21
 
 # Environnement
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=ee629de47e2afbbcf0f41e86ece9f1445d000844
+GIT_COMMIT=c5205ad5412fa0d59b76dda6909361f66086d417
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20250920-220213
+BUILD_ID=20250921-161008
 
 # Notes de version
-RELEASE_NOTES="Lieu : ajout objet dans l inventaire"
+RELEASE_NOTES="Equipement de base : moine"
