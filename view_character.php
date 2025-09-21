@@ -630,25 +630,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
     $character = $stmt->fetch();
 }
 
-// Récupérer l'équipement magique du personnage depuis place_objects (incluant les objets attribués depuis les lieux, excluant les poisons)
+// Récupérer l'équipement du personnage depuis character_equipment
 $stmt = $pdo->prepare("
-    SELECT po.*, mi.nom as magical_item_nom, mi.type as magical_item_type, mi.description as magical_item_description, mi.source as magical_item_source
-    FROM place_objects po
-    LEFT JOIN magical_items mi ON po.magical_item_id = mi.csv_id
-    WHERE po.owner_type = 'player' AND po.owner_id = ? 
-    AND (po.magical_item_id IS NULL OR po.magical_item_id NOT IN (SELECT csv_id FROM poisons))
-    ORDER BY po.obtained_at DESC
+    SELECT ce.*, mi.nom as magical_item_nom, mi.type as magical_item_type, mi.description as magical_item_description, mi.source as magical_item_source
+    FROM character_equipment ce
+    LEFT JOIN magical_items mi ON ce.magical_item_id = mi.csv_id
+    WHERE ce.character_id = ? 
+    AND (ce.magical_item_id IS NULL OR ce.magical_item_id NOT IN (SELECT csv_id FROM poisons))
+    ORDER BY ce.obtained_at DESC
 ");
 $stmt->execute([$character_id]);
 $magicalEquipment = $stmt->fetchAll();
 
-// Récupérer les poisons du personnage depuis place_objects
+// Récupérer les poisons du personnage depuis character_equipment
 $stmt = $pdo->prepare("
-    SELECT po.*, p.nom as poison_nom, p.type as poison_type, p.description as poison_description, p.source as poison_source
-    FROM place_objects po
-    JOIN poisons p ON po.poison_id = p.id
-    WHERE po.owner_type = 'player' AND po.owner_id = ? 
-    ORDER BY po.obtained_at DESC
+    SELECT ce.*, p.nom as poison_nom, p.type as poison_type, p.description as poison_description, p.source as poison_source
+    FROM character_equipment ce
+    JOIN poisons p ON ce.magical_item_id = p.csv_id
+    WHERE ce.character_id = ? 
+    AND ce.magical_item_id IN (SELECT csv_id FROM poisons)
+    ORDER BY ce.obtained_at DESC
 ");
 $stmt->execute([$character_id]);
 $characterPoisons = $stmt->fetchAll();
@@ -1711,10 +1712,10 @@ $initiative = $dexterityMod;
                             }
                             
                             foreach ($allCharacterItems as $item): 
-                                $displayName = htmlspecialchars($item['display_name']);
-                                $typeLabel = ucfirst(str_replace('_', ' ', $item['object_type']));
+                                $displayName = htmlspecialchars($item['item_name']);
+                                $typeLabel = ucfirst(str_replace('_', ' ', $item['item_type']));
                             ?>
-                            <tr data-type="<?php echo $item['object_type']; ?>" data-equipped="<?php echo $item['is_equipped'] ? 'equipped' : 'unequipped'; ?>">
+                            <tr data-type="<?php echo $item['item_type']; ?>" data-equipped="<?php echo $item['equipped'] ? 'equipped' : 'unequipped'; ?>">
                                 <td>
                                     <strong><?php echo $displayName; ?></strong>
                                     <?php if ($item['quantity'] > 1): ?>
@@ -1723,15 +1724,17 @@ $initiative = $dexterityMod;
                                 </td>
                                 <td>
                                     <span class="badge bg-<?php 
-                                        echo match($item['object_type']) {
+                                        echo match($item['item_type']) {
                                             'weapon' => 'danger',
                                             'armor' => 'primary', 
                                             'shield' => 'info',
                                             'magical_item' => 'success',
                                             'poison' => 'warning',
-                                            'bourse' => 'secondary',
-                                            'outil' => 'info',
-                                            'letter' => 'dark',
+                                            'bag' => 'secondary',
+                                            'tool' => 'info',
+                                            'clothing' => 'light text-dark',
+                                            'consumable' => 'warning',
+                                            'misc' => 'secondary',
                                             default => 'light text-dark'
                                         };
                                     ?>">
@@ -1739,15 +1742,24 @@ $initiative = $dexterityMod;
                                     </span>
                                 </td>
                                 <td>
-                                    <small class="text-muted"><?php echo htmlspecialchars($item['type_precis']); ?></small>
+                                    <small class="text-muted"><?php echo htmlspecialchars($item['item_description'] ?? ''); ?></small>
                                 </td>
                                 <td>
-                                    <?php if ($item['is_equipped']): ?>
+                                    <?php if ($item['equipped']): ?>
                                         <span class="badge bg-success">
                                             <i class="fas fa-check-circle me-1"></i>Équipé
                                         </span>
                                         <?php if ($item['equipped_slot']): ?>
-                                            <br><small class="text-muted"><?php echo ucfirst(str_replace('_', ' ', $item['equipped_slot'])); ?></small>
+                                            <br><small class="text-muted">
+                                                <?php 
+                                                // Gérer les slots multiples (ex: "main_hand,off_hand")
+                                                $slots = explode(',', $item['equipped_slot']);
+                                                $slotLabels = array_map(function($slot) {
+                                                    return ucfirst(str_replace('_', ' ', trim($slot)));
+                                                }, $slots);
+                                                echo implode(' + ', $slotLabels);
+                                                ?>
+                                            </small>
                                         <?php endif; ?>
                                     <?php else: ?>
                                         <span class="badge bg-secondary">
@@ -1756,21 +1768,21 @@ $initiative = $dexterityMod;
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <?php if ($item['object_type'] === 'weapon' || $item['object_type'] === 'armor' || $item['object_type'] === 'shield'): ?>
-                                        <?php if ($item['is_equipped']): ?>
-                                            <button class="btn btn-warning btn-sm" onclick="unequipItem(<?php echo $character_id; ?>, '<?php echo addslashes($item['display_name']); ?>')">
+                                    <?php if ($item['item_type'] === 'weapon' || $item['item_type'] === 'armor' || $item['item_type'] === 'shield'): ?>
+                                        <?php if ($item['equipped']): ?>
+                                            <button class="btn btn-warning btn-sm" onclick="unequipItem(<?php echo $character_id; ?>, '<?php echo addslashes($item['item_name']); ?>')">
                                                 <i class="fas fa-hand-paper me-1"></i>Déséquiper
                                             </button>
                                         <?php else: ?>
                                             <?php 
-                                            $slot = match($item['object_type']) {
+                                            $slot = match($item['item_type']) {
                                                 'weapon' => 'main_hand',
                                                 'armor' => 'armor',
                                                 'shield' => 'off_hand',
                                                 default => 'main_hand'
                                             };
                                             ?>
-                                            <button class="btn btn-success btn-sm" onclick="equipItem(<?php echo $character_id; ?>, '<?php echo addslashes($item['display_name']); ?>', '<?php echo $item['object_type']; ?>', '<?php echo $slot; ?>')">
+                                            <button class="btn btn-success btn-sm" onclick="equipItem(<?php echo $character_id; ?>, '<?php echo addslashes($item['item_name']); ?>', '<?php echo $item['item_type']; ?>', '<?php echo $slot; ?>')">
                                                 <i class="fas fa-hand-rock me-1"></i>Équiper
                                             </button>
                                         <?php endif; ?>
@@ -1783,9 +1795,9 @@ $initiative = $dexterityMod;
                                                 data-bs-toggle="modal" 
                                                 data-bs-target="#transferModal" 
                                                 data-item-id="<?php echo $item['id']; ?>"
-                                                data-item-name="<?php echo htmlspecialchars($item['display_name']); ?>"
-                                                data-item-type="<?php echo htmlspecialchars($item['object_type']); ?>"
-                                                data-source="place_objects">
+                                                data-item-name="<?php echo htmlspecialchars($item['item_name']); ?>"
+                                                data-item-type="<?php echo htmlspecialchars($item['item_type']); ?>"
+                                                data-source="character_equipment">
                                             <i class="fas fa-exchange-alt me-1"></i>Transférer
                                         </button>
                                     <?php endif; ?>

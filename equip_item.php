@@ -39,61 +39,107 @@ try {
     
     // Vérifier les règles d'équipement
     if ($itemType === 'weapon') {
-        // Récupérer les informations de l'arme
+        // Récupérer les informations de l'arme avec recherche flexible
+        $weapon = null;
+        
+        // D'abord essayer une correspondance exacte
         $stmt = $pdo->prepare("SELECT hands FROM weapons WHERE name = ?");
         $stmt->execute([$itemName]);
         $weapon = $stmt->fetch();
         
+        // Si pas trouvé, essayer de chercher sans les articles et avec majuscule
+        if (!$weapon) {
+            $itemNameWithoutArticle = preg_replace('/^(une?|le|la|les|du|de|des)\s+/i', '', $itemName);
+            $itemNameCapitalized = ucfirst($itemNameWithoutArticle);
+            $stmt = $pdo->prepare("SELECT hands FROM weapons WHERE name = ?");
+            $stmt->execute([$itemNameCapitalized]);
+            $weapon = $stmt->fetch();
+        }
+        
+        // Si toujours pas trouvé, chercher par correspondance partielle
+        if (!$weapon) {
+            $itemNameWithoutArticle = preg_replace('/^(une?|le|la|les|du|de|des)\s+/i', '', $itemName);
+            $stmt = $pdo->prepare("SELECT hands FROM weapons WHERE name LIKE ?");
+            $stmt->execute(['%' . $itemNameWithoutArticle . '%']);
+            $weapon = $stmt->fetch();
+        }
+        
+        // Si toujours pas trouvé, chercher avec le mot clé principal (gestion du pluriel)
+        if (!$weapon) {
+            $itemNameWithoutArticle = preg_replace('/^(une?|le|la|les|du|de|des)\s+/i', '', $itemName);
+            // Extraire le dernier mot et enlever le 's' final (ex: "deux hachettes" -> "hachette")
+            $words = explode(' ', $itemNameWithoutArticle);
+            $lastWord = end($words);
+            $keyword = rtrim($lastWord, 's');
+            $stmt = $pdo->prepare("SELECT hands FROM weapons WHERE name LIKE ?");
+            $stmt->execute(['%' . $keyword . '%']);
+            $weapon = $stmt->fetch();
+        }
+        
         if (!$weapon) {
             http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Arme non trouvée']);
+            echo json_encode(['success' => false, 'message' => 'Arme non trouvée: ' . $itemName]);
             exit;
         }
         
         // Vérifier les règles d'équipement
-        if ($weapon['hands'] == 2) {
-            // Arme à deux mains : libérer les deux slots
-            $stmt = $pdo->prepare("
-                UPDATE place_objects 
-                SET is_equipped = 0, equipped_slot = NULL 
-                WHERE owner_type = 'player' AND owner_id = ? AND equipped_slot IN ('main_hand', 'off_hand')
-            ");
-            $stmt->execute([$characterId]);
-        } else {
-            // Arme à une main : libérer seulement le slot principal
-            $stmt = $pdo->prepare("
-                UPDATE place_objects 
-                SET is_equipped = 0, equipped_slot = NULL 
-                WHERE owner_type = 'player' AND owner_id = ? AND equipped_slot = 'main_hand'
-            ");
-            $stmt->execute([$characterId]);
-        }
+        // TOUJOURS libérer tous les slots de main avant d'équiper une nouvelle arme
+        $stmt = $pdo->prepare("
+            UPDATE character_equipment 
+            SET equipped = 0, equipped_slot = NULL 
+            WHERE character_id = ? AND item_type = 'weapon' AND equipped = 1
+        ");
+        $stmt->execute([$characterId]);
     } elseif ($itemType === 'shield') {
         // Bouclier : libérer le slot off_hand
         $stmt = $pdo->prepare("
-            UPDATE place_objects 
-            SET is_equipped = 0, equipped_slot = NULL 
-            WHERE owner_type = 'player' AND owner_id = ? AND equipped_slot = 'off_hand'
+            UPDATE character_equipment 
+            SET equipped = 0, equipped_slot = NULL 
+            WHERE character_id = ? AND equipped_slot = 'off_hand'
         ");
         $stmt->execute([$characterId]);
     } elseif ($itemType === 'armor') {
         // Armure : libérer le slot armor
         $stmt = $pdo->prepare("
-            UPDATE place_objects 
-            SET is_equipped = 0, equipped_slot = NULL 
-            WHERE owner_type = 'player' AND owner_id = ? AND equipped_slot = 'armor'
+            UPDATE character_equipment 
+            SET equipped = 0, equipped_slot = NULL 
+            WHERE character_id = ? AND equipped_slot = 'armor'
         ");
         $stmt->execute([$characterId]);
     }
     
-    // Équiper l'objet
-    $success = equipItem($characterId, $itemName, $itemType, $slot);
-    
-    if ($success) {
-        echo json_encode(['success' => true, 'message' => 'Objet équipé avec succès']);
+    // Équiper l'objet dans la nouvelle table
+    // Cas spécial : "deux hachettes" = équiper dans les deux mains
+    if (strtolower($itemName) === 'deux hachettes') {
+        // Équiper dans les deux slots (stocké comme "main_hand,off_hand")
+        $stmt = $pdo->prepare("
+            UPDATE character_equipment 
+            SET equipped = 1, equipped_slot = 'main_hand,off_hand' 
+            WHERE character_id = ? AND item_name = ? AND item_type = ?
+        ");
+        $success = $stmt->execute([$characterId, $itemName, $itemType]);
+        
+        if ($success && $stmt->rowCount() > 0) {
+            echo json_encode(['success' => true, 'message' => 'Deux hachettes équipées avec succès (une dans chaque main)']);
+        } else {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Erreur lors de l\'équipement des deux hachettes']);
+        }
     } else {
-        http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Erreur lors de l\'équipement']);
+        // Équipement normal
+        $stmt = $pdo->prepare("
+            UPDATE character_equipment 
+            SET equipped = 1, equipped_slot = ? 
+            WHERE character_id = ? AND item_name = ? AND item_type = ?
+        ");
+        $success = $stmt->execute([$slot, $characterId, $itemName, $itemType]);
+        
+        if ($success && $stmt->rowCount() > 0) {
+            echo json_encode(['success' => true, 'message' => 'Objet équipé avec succès']);
+        } else {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Erreur lors de l\'équipement']);
+        }
     }
     
 } catch (Exception $e) {

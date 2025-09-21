@@ -1218,8 +1218,7 @@ function addStartingEquipmentToCharacter($characterId, $equipmentData) {
             if (empty($line)) continue;
             
             // Déterminer le type d'objet et les détails
-            $objectType = 'other';
-            $description = $line;
+            $itemType = 'other';
             $weaponId = null;
             $armorId = null;
             
@@ -1231,74 +1230,71 @@ function addStartingEquipmentToCharacter($characterId, $equipmentData) {
             $stmt->execute([$line]);
             $weapon = $stmt->fetch();
             
-            // Si pas trouvé, essayer de chercher sans les articles
+            // Si pas trouvé, essayer de chercher sans les articles et avec majuscule
             if (!$weapon) {
                 $lineWithoutArticle = preg_replace('/^(une?|le|la|les|du|de|des)\s+/i', '', $line);
+                $lineCapitalized = ucfirst($lineWithoutArticle);
                 $stmt = $pdo->prepare("SELECT id FROM weapons WHERE name = ?");
-                $stmt->execute([$lineWithoutArticle]);
+                $stmt->execute([$lineCapitalized]);
                 $weapon = $stmt->fetch();
             }
             
             // Si toujours pas trouvé, chercher par correspondance partielle
             if (!$weapon) {
+                $lineWithoutArticle = preg_replace('/^(une?|le|la|les|du|de|des)\s+/i', '', $line);
                 $stmt = $pdo->prepare("SELECT id FROM weapons WHERE name LIKE ?");
                 $stmt->execute(['%' . $lineWithoutArticle . '%']);
                 $weapon = $stmt->fetch();
             }
             
             if ($weapon) {
-                $objectType = 'weapon';
+                $itemType = 'weapon';
                 $weaponId = $weapon['id'];
-                $description = "Arme de départ choisie par le joueur";
             }
             
             // Vérifier si c'est une armure connue
-            if ($objectType === 'other') {
+            if ($itemType === 'other') {
                 $stmt = $pdo->prepare("SELECT id FROM armor WHERE name = ?");
                 $stmt->execute([$line]);
                 $armor = $stmt->fetch();
                 if ($armor) {
-                    $objectType = 'armor';
+                    $itemType = 'armor';
                     $armorId = $armor['id'];
-                    $description = "Armure de départ choisie par le joueur";
                 }
             }
             
             // Déterminer le type d'objet pour les objets non-armes/armures
-            if ($objectType === 'other') {
+            if ($itemType === 'other') {
                 // Analyser le nom pour déterminer le type approprié
                 $lineLower = mb_strtolower($line, 'UTF-8');
                 if (strpos($lineLower, 'sac') !== false) {
-                    $objectType = 'bourse'; // Les sacs utilisent le type 'bourse'
+                    $itemType = 'bag'; // Les sacs
                 } elseif (strpos($lineLower, 'marteau') !== false || strpos($lineLower, 'biche') !== false || 
                           strpos($lineLower, 'piton') !== false || strpos($lineLower, 'torche') !== false || 
                           strpos($lineLower, 'allume-feu') !== false || strpos($lineLower, 'corde') !== false) {
-                    $objectType = 'outil'; // Les outils utilisent le type 'outil'
+                    $itemType = 'tool'; // Les outils
                 } elseif (strpos($lineLower, 'ration') !== false || strpos($lineLower, 'eau') !== false || 
                           strpos($lineLower, 'gourde') !== false) {
-                    $objectType = 'bourse'; // Les consommables restent en 'bourse'
+                    $itemType = 'consumable'; // Les consommables
+                } elseif (strpos($lineLower, 'vêtement') !== false || strpos($lineLower, 'habit') !== false) {
+                    $itemType = 'clothing'; // Les vêtements
+                } elseif (strpos($lineLower, 'bourse') !== false) {
+                    $itemType = 'bag'; // Les bourses
                 } else {
-                    $objectType = 'bourse'; // Par défaut, utiliser 'bourse'
+                    $itemType = 'misc'; // Par défaut, objets divers
                 }
             }
             
-            // Ajouter l'objet à l'inventaire du personnage
+            // Ajouter l'objet à l'inventaire du personnage dans la nouvelle table
             $stmt = $pdo->prepare("
-                INSERT INTO place_objects 
-                (place_id, display_name, object_type, type_precis, description, is_identified, is_visible, is_equipped, 
-                 position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, 
-                 gold_coins, silver_coins, copper_coins, letter_content, is_sealed, magical_item_id, 
-                 item_source, quantity, equipped_slot, notes, obtained_at, obtained_from) 
-                VALUES (NULL, ?, ?, ?, ?, 1, 0, 0, 0, 0, 0, 'player', ?, NULL, ?, ?, 0, 0, 0, NULL, 0, NULL, 'Équipement de départ', 1, NULL, NULL, NOW(), 'Sélection équipement de départ')
+                INSERT INTO character_equipment 
+                (character_id, item_name, item_type, quantity, equipped, notes, obtained_at, obtained_from) 
+                VALUES (?, ?, ?, 1, 0, 'Équipement de départ', NOW(), 'Sélection équipement de départ')
             ");
             $stmt->execute([
-                $line,           // display_name
-                $objectType,     // object_type
-                $line,           // type_precis
-                $description,    // description
-                $characterId,    // owner_id
-                $weaponId,       // weapon_id
-                $armorId         // armor_id
+                $characterId,    // character_id
+                $line,           // item_name
+                $itemType        // item_type
             ]);
         }
         
@@ -1547,12 +1543,23 @@ function equipItem($characterId, $itemName, $itemType, $slot) {
 function unequipItem($characterId, $itemName) {
     global $pdo;
     
-    $stmt = $pdo->prepare("
-        UPDATE place_objects 
-        SET is_equipped = 0, equipped_slot = NULL 
-        WHERE owner_type = 'player' AND owner_id = ? AND display_name = ?
-    ");
-    return $stmt->execute([$characterId, $itemName]);
+    // Cas spécial : "deux hachettes" - déséquiper des deux slots
+    if (strtolower($itemName) === 'deux hachettes') {
+        $stmt = $pdo->prepare("
+            UPDATE character_equipment 
+            SET equipped = 0, equipped_slot = NULL 
+            WHERE character_id = ? AND item_name = ?
+        ");
+        return $stmt->execute([$characterId, $itemName]);
+    } else {
+        // Déséquipement normal
+        $stmt = $pdo->prepare("
+            UPDATE character_equipment 
+            SET equipped = 0, equipped_slot = NULL 
+            WHERE character_id = ? AND item_name = ?
+        ");
+        return $stmt->execute([$characterId, $itemName]);
+    }
 }
 
 // Fonction pour synchroniser l'équipement de base vers place_objects
