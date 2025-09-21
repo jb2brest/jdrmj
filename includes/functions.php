@@ -599,6 +599,24 @@ function getCommonWeapons($type = null) {
     return $stmt->fetchAll();
 }
 
+function getWarWeapons($type = null) {
+    global $pdo;
+    
+    $whereClause = '';
+    $params = [];
+    
+    if ($type) {
+        $whereClause = 'WHERE type = ?';
+        $params[] = $type;
+    } else {
+        $whereClause = 'WHERE type IN ("Armes de guerre à distance", "Armes de guerre de corps à corps")';
+    }
+    
+    $stmt = $pdo->prepare("SELECT name, type FROM weapons $whereClause ORDER BY type, name");
+    $stmt->execute($params);
+    return $stmt->fetchAll();
+}
+
 function parseStartingEquipment($equipmentText) {
     if (!$equipmentText) {
         return [];
@@ -631,6 +649,22 @@ function parseStartingEquipment($equipmentText) {
                             'type' => 'weapon_choice',
                             'description' => $description,
                             'options' => getCommonWeapons()
+                        ];
+                    }
+                    // Gestion spéciale pour les armes de guerre
+                    elseif (strpos($description, 'n\'importe quelle arme de guerre') !== false) {
+                        // Déterminer le type d'arme selon la description
+                        $weaponType = null;
+                        if (strpos($description, 'corps à corps') !== false) {
+                            $weaponType = 'Armes de guerre de corps à corps';
+                        } elseif (strpos($description, 'distance') !== false) {
+                            $weaponType = 'Armes de guerre à distance';
+                        }
+                        
+                        $choices[$choice] = [
+                            'type' => 'weapon_choice',
+                            'description' => $description,
+                            'options' => getWarWeapons($weaponType)
                         ];
                     }
                     // Gestion spéciale pour les sacs d'équipement
@@ -1189,10 +1223,29 @@ function addStartingEquipmentToCharacter($characterId, $equipmentData) {
             $weaponId = null;
             $armorId = null;
             
-            // Vérifier si c'est une arme connue
+            // Vérifier si c'est une arme connue (recherche flexible)
+            $weapon = null;
+            
+            // D'abord essayer une correspondance exacte
             $stmt = $pdo->prepare("SELECT id FROM weapons WHERE name = ?");
             $stmt->execute([$line]);
             $weapon = $stmt->fetch();
+            
+            // Si pas trouvé, essayer de chercher sans les articles
+            if (!$weapon) {
+                $lineWithoutArticle = preg_replace('/^(une?|le|la|les|du|de|des)\s+/i', '', $line);
+                $stmt = $pdo->prepare("SELECT id FROM weapons WHERE name = ?");
+                $stmt->execute([$lineWithoutArticle]);
+                $weapon = $stmt->fetch();
+            }
+            
+            // Si toujours pas trouvé, chercher par correspondance partielle
+            if (!$weapon) {
+                $stmt = $pdo->prepare("SELECT id FROM weapons WHERE name LIKE ?");
+                $stmt->execute(['%' . $lineWithoutArticle . '%']);
+                $weapon = $stmt->fetch();
+            }
+            
             if ($weapon) {
                 $objectType = 'weapon';
                 $weaponId = $weapon['id'];
@@ -4703,7 +4756,10 @@ function getPlacesWithGeography($campaignId = null) {
         ";
         
         if ($campaignId) {
-            $sql .= " WHERE p.campaign_id = ?";
+            $sql .= " 
+                INNER JOIN place_campaigns pc ON p.id = pc.place_id 
+                WHERE pc.campaign_id = ?
+            ";
             $sql .= " ORDER BY w.name, c.name, r.name, p.title";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$campaignId]);
@@ -5040,8 +5096,348 @@ function getUsedAbilityPoints($abilityImprovements) {
 }
 
 // Fonction pour calculer les points restants
-function getRemainingAbilityPoints($level, $abilityImprovements) {
+function getRemainingAbilityPoints($level, $abilityImprovements) {                                                            
     $available = getAvailableAbilityPoints($level);
     $used = getUsedAbilityPoints($abilityImprovements);
     return max(0, $available - $used);
+}
+
+// ===== FONCTIONS POUR LA GESTION DES ASSOCIATIONS LIEU-CAMPAGNE =====
+
+// Fonction pour associer un lieu à une campagne
+function associatePlaceToCampaign($placeId, $campaignId) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO place_campaigns (place_id, campaign_id) 
+            VALUES (?, ?) 
+            ON DUPLICATE KEY UPDATE updated_at = CURRENT_TIMESTAMP
+        ");
+        $stmt->execute([$placeId, $campaignId]);
+        return true;
+    } catch (Exception $e) {
+        error_log("Erreur lors de l'association lieu-campagne: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Fonction pour dissocier un lieu d'une campagne
+function dissociatePlaceFromCampaign($placeId, $campaignId) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("DELETE FROM place_campaigns WHERE place_id = ? AND campaign_id = ?");
+        $stmt->execute([$placeId, $campaignId]);
+        return true;
+    } catch (Exception $e) {
+        error_log("Erreur lors de la dissociation lieu-campagne: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Fonction pour obtenir toutes les campagnes associées à un lieu
+function getCampaignsForPlace($placeId) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("
+            SELECT c.*, pc.created_at as associated_at
+            FROM campaigns c
+            JOIN place_campaigns pc ON c.id = pc.campaign_id
+            WHERE pc.place_id = ?
+            ORDER BY c.title
+        ");
+        $stmt->execute([$placeId]);
+        return $stmt->fetchAll();
+    } catch (Exception $e) {
+        error_log("Erreur lors de la récupération des campagnes pour un lieu: " . $e->getMessage());
+        return [];
+    }
+}
+
+// Fonction pour obtenir tous les lieux associés à une campagne
+function getPlacesForCampaign($campaignId) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("
+            SELECT p.*, pc.created_at as associated_at
+            FROM places p
+            JOIN place_campaigns pc ON p.id = pc.place_id
+            WHERE pc.campaign_id = ?
+            ORDER BY p.title
+        ");
+        $stmt->execute([$campaignId]);
+        return $stmt->fetchAll();
+    } catch (Exception $e) {
+        error_log("Erreur lors de la récupération des lieux pour une campagne: " . $e->getMessage());
+        return [];
+    }
+}
+
+// Fonction pour obtenir tous les lieux disponibles (non associés à une campagne spécifique)
+function getAvailablePlacesForCampaign($campaignId) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("
+            SELECT p.*
+            FROM places p
+            WHERE p.id NOT IN (
+                SELECT place_id 
+                FROM place_campaigns 
+                WHERE campaign_id = ?
+            )
+            ORDER BY p.title
+        ");
+        $stmt->execute([$campaignId]);
+        return $stmt->fetchAll();
+    } catch (Exception $e) {
+        error_log("Erreur lors de la récupération des lieux disponibles: " . $e->getMessage());
+        return [];
+    }
+}
+
+// Fonction pour obtenir toutes les campagnes disponibles (non associées à un lieu spécifique)
+function getAvailableCampaignsForPlace($placeId) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("
+            SELECT c.*
+            FROM campaigns c
+            WHERE c.id NOT IN (
+                SELECT campaign_id 
+                FROM place_campaigns 
+                WHERE place_id = ?
+            )
+            ORDER BY c.title
+        ");
+        $stmt->execute([$placeId]);
+        return $stmt->fetchAll();
+    } catch (Exception $e) {
+        error_log("Erreur lors de la récupération des campagnes disponibles: " . $e->getMessage());
+        return [];
+    }
+}
+
+// Fonction pour mettre à jour les associations d'un lieu avec plusieurs campagnes
+function updatePlaceCampaignAssociations($placeId, $campaignIds) {
+    global $pdo;
+    
+    try {
+        $pdo->beginTransaction();
+        
+        // Supprimer toutes les associations existantes pour ce lieu
+        $stmt = $pdo->prepare("DELETE FROM place_campaigns WHERE place_id = ?");
+        $stmt->execute([$placeId]);
+        
+        // Ajouter les nouvelles associations
+        if (!empty($campaignIds)) {
+            $stmt = $pdo->prepare("INSERT INTO place_campaigns (place_id, campaign_id) VALUES (?, ?)");
+            foreach ($campaignIds as $campaignId) {
+                $stmt->execute([$placeId, $campaignId]);
+            }
+        }
+        
+        $pdo->commit();
+        return true;
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        error_log("Erreur lors de la mise à jour des associations lieu-campagne: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Fonction pour mettre à jour les associations d'une campagne avec plusieurs lieux
+function updateCampaignPlaceAssociations($campaignId, $placeIds) {
+    global $pdo;
+    
+    try {
+        $pdo->beginTransaction();
+        
+        // Supprimer toutes les associations existantes pour cette campagne
+        $stmt = $pdo->prepare("DELETE FROM place_campaigns WHERE campaign_id = ?");
+        $stmt->execute([$campaignId]);
+        
+        // Ajouter les nouvelles associations
+        if (!empty($placeIds)) {
+            $stmt = $pdo->prepare("INSERT INTO place_campaigns (place_id, campaign_id) VALUES (?, ?)");
+            foreach ($placeIds as $placeId) {
+                $stmt->execute([$placeId, $campaignId]);
+            }
+        }
+        
+        $pdo->commit();
+        return true;
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        error_log("Erreur lors de la mise à jour des associations campagne-lieu: " . $e->getMessage());
+        return false;
+    }
+}
+
+// ===== FONCTIONS POUR LA CRÉATION DE PERSONNAGE EN 9 ÉTAPES =====
+
+// Fonction pour créer une nouvelle session de création de personnage
+function createCharacterCreationSession($userId) {
+    global $pdo;
+    
+    $sessionId = uniqid('char_creation_', true);
+    
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO character_creation_sessions (user_id, session_id, step, data) 
+            VALUES (?, ?, 1, '{}')
+        ");
+        $stmt->execute([$userId, $sessionId]);
+        return $sessionId;
+    } catch (Exception $e) {
+        error_log("Erreur lors de la création de la session: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Fonction pour récupérer les données d'une session de création
+function getCharacterCreationData($userId, $sessionId) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("
+            SELECT * FROM character_creation_sessions 
+            WHERE user_id = ? AND session_id = ?
+        ");
+        $stmt->execute([$userId, $sessionId]);
+        $session = $stmt->fetch();
+        
+        if ($session) {
+            $session['data'] = json_decode($session['data'], true);
+        }
+        
+        return $session;
+    } catch (Exception $e) {
+        error_log("Erreur lors de la récupération des données de session: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Fonction pour sauvegarder les données d'une étape
+function saveCharacterCreationStep($userId, $sessionId, $step, $data) {
+    global $pdo;
+    
+    try {
+        // Récupérer les données existantes
+        $existingData = getCharacterCreationData($userId, $sessionId);
+        if (!$existingData) {
+            return false;
+        }
+        
+        // Fusionner les nouvelles données avec les existantes
+        $mergedData = array_merge($existingData['data'], $data);
+        
+        $stmt = $pdo->prepare("
+            UPDATE character_creation_sessions 
+            SET step = ?, data = ?, updated_at = CURRENT_TIMESTAMP 
+            WHERE user_id = ? AND session_id = ?
+        ");
+        $stmt->execute([$step, json_encode($mergedData), $userId, $sessionId]);
+        
+        return true;
+    } catch (Exception $e) {
+        error_log("Erreur lors de la sauvegarde de l'étape: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Fonction pour finaliser la création du personnage
+function finalizeCharacterCreation($userId, $sessionId) {
+    global $pdo;
+    
+    try {
+        $sessionData = getCharacterCreationData($userId, $sessionId);
+        if (!$sessionData || $sessionData['step'] < 9) {
+            return false;
+        }
+        
+        $data = $sessionData['data'];
+        
+        $pdo->beginTransaction();
+        
+        // Créer le personnage
+        $stmt = $pdo->prepare("
+            INSERT INTO characters (
+                user_id, name, race_id, class_id, background_id, level, experience_points,
+                strength, dexterity, constitution, intelligence, wisdom, charisma,
+                armor_class, speed, hit_points_max, hit_points_current, proficiency_bonus,
+                alignment, personality_traits, ideals, bonds, flaws,
+                skills, languages, money_gold, profile_photo,
+                is_equipped, equipment_locked, character_locked
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+        
+        $stmt->execute([
+            $userId,
+            $data['name'] ?? 'Nouveau Personnage',
+            $data['race_id'],
+            $data['class_id'],
+            $data['background_id'],
+            $data['level'] ?? 1,
+            $data['experience_points'] ?? 0,
+            $data['strength'] ?? 10,
+            $data['dexterity'] ?? 10,
+            $data['constitution'] ?? 10,
+            $data['intelligence'] ?? 10,
+            $data['wisdom'] ?? 10,
+            $data['charisma'] ?? 10,
+            $data['armor_class'] ?? 10,
+            $data['speed'] ?? 30,
+            $data['hit_points_max'] ?? 8,
+            $data['hit_points_current'] ?? 8,
+            $data['proficiency_bonus'] ?? 2,
+            $data['alignment'] ?? 'Neutre',
+            $data['personality_traits'] ?? '',
+            $data['ideals'] ?? '',
+            $data['bonds'] ?? '',
+            $data['flaws'] ?? '',
+            json_encode($data['skills'] ?? []),
+            json_encode($data['languages'] ?? []),
+            $data['money_gold'] ?? 0,
+            $data['profile_photo'] ?? null,
+            0, // is_equipped
+            0, // equipment_locked
+            0  // character_locked
+        ]);
+        
+        $characterId = $pdo->lastInsertId();
+        
+        // Supprimer la session de création
+        $stmt = $pdo->prepare("DELETE FROM character_creation_sessions WHERE user_id = ? AND session_id = ?");
+        $stmt->execute([$userId, $sessionId]);
+        
+        $pdo->commit();
+        return $characterId;
+        
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        error_log("Erreur lors de la finalisation de la création: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Fonction pour nettoyer les sessions expirées (plus de 24h)
+function cleanupExpiredCharacterSessions() {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("
+            DELETE FROM character_creation_sessions 
+            WHERE created_at < DATE_SUB(NOW(), INTERVAL 24 HOUR)
+        ");
+        $stmt->execute();
+        return $stmt->rowCount();
+    } catch (Exception $e) {
+        error_log("Erreur lors du nettoyage des sessions: " . $e->getMessage());
+        return false;
+    }
 }

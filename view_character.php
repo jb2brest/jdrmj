@@ -14,6 +14,7 @@ if (!isset($_GET['id'])) {
 
 $character_id = (int)$_GET['id'];
 $dm_campaign_id = isset($_GET['dm_campaign_id']) ? (int)$_GET['dm_campaign_id'] : null;
+$character_created = isset($_GET['created']) && $_GET['created'] == '1';
 
 // Récupération du personnage avec ses détails (sans filtrer par propriétaire)
 $stmt = $pdo->prepare("
@@ -920,6 +921,14 @@ $initiative = $dexterityMod;
     <?php include 'includes/navbar.php'; ?>
 
     <div class="container mt-4">
+        <?php if ($character_created): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-user-plus me-2"></i>
+                <strong>Personnage créé avec succès !</strong> Votre personnage a été créé et équipé. Vous pouvez maintenant l'inscrire à une campagne.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+        
         <?php if ($success_message): ?>
             <div class="alert alert-success alert-dismissible fade show" role="alert">
                 <i class="fas fa-check-circle me-2"></i>
@@ -933,6 +942,18 @@ $initiative = $dexterityMod;
                 <i class="fas fa-exclamation-circle me-2"></i>
                 <?php echo htmlspecialchars($error_message); ?>
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+
+        <?php if (!$character['is_equipped'] && $character['user_id'] == $_SESSION['user_id']): ?>
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Votre personnage n'est pas encore équipé !</strong> Vous devez choisir son équipement de départ avant de pouvoir l'inscrire à une campagne.
+                <div class="mt-2">
+                    <a href="select_starting_equipment.php?character_id=<?php echo $character_id; ?>" class="btn btn-warning btn-sm">
+                        <i class="fas fa-shopping-bag me-1"></i>Équiper mon personnage
+                    </a>
+                </div>
             </div>
         <?php endif; ?>
 

@@ -54,15 +54,83 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isDMOrAdmin()) {
 
     if (isset($_POST['action']) && $_POST['action'] === 'delete' && isset($_POST['campaign_id'])) {
         $campaign_id = (int)$_POST['campaign_id'];
-        // Les admins peuvent supprimer toutes les campagnes, les MJ seulement les leurs
-        if (isAdmin()) {
+        
+        try {
+            $pdo->beginTransaction();
+            
+            // Vérifier que l'utilisateur a le droit de supprimer cette campagne
+            if (isAdmin()) {
+                $stmt = $pdo->prepare("SELECT id FROM campaigns WHERE id = ?");
+                $stmt->execute([$campaign_id]);
+            } else {
+                $stmt = $pdo->prepare("SELECT id FROM campaigns WHERE id = ? AND dm_id = ?");
+                $stmt->execute([$campaign_id, $user_id]);
+            }
+            
+            if (!$stmt->fetch()) {
+                throw new Exception("Campagne non trouvée ou vous n'avez pas les droits.");
+            }
+            
+            // 1. Supprimer les notifications liées à la campagne (si la colonne existe)
+            try {
+                $stmt = $pdo->prepare("DELETE FROM notifications WHERE campaign_id = ?");
+                $stmt->execute([$campaign_id]);
+            } catch (PDOException $e) {
+                // La table notifications n'a peut-être pas de colonne campaign_id
+                // Ce n'est pas critique, on continue
+            }
+            
+            // 2. Supprimer les applications de campagne
+            $stmt = $pdo->prepare("DELETE FROM campaign_applications WHERE campaign_id = ?");
+            $stmt->execute([$campaign_id]);
+            
+            // 3. Supprimer les entrées du journal de campagne
+            $stmt = $pdo->prepare("DELETE FROM campaign_journal WHERE campaign_id = ?");
+            $stmt->execute([$campaign_id]);
+            
+            // 4. Dissocier les lieux de la campagne (ne pas les supprimer)
+            $stmt = $pdo->prepare("DELETE FROM place_campaigns WHERE campaign_id = ?");
+            $stmt->execute([$campaign_id]);
+            
+            // 5. Retirer les joueurs des lieux de cette campagne
+            $stmt = $pdo->prepare("
+                DELETE pp FROM place_players pp
+                INNER JOIN place_campaigns pc ON pp.place_id = pc.place_id
+                WHERE pc.campaign_id = ?
+            ");
+            $stmt->execute([$campaign_id]);
+            
+            // 6. Retirer les PNJ des lieux de cette campagne
+            $stmt = $pdo->prepare("
+                DELETE pn FROM place_npcs pn
+                INNER JOIN place_campaigns pc ON pn.place_id = pc.place_id
+                WHERE pc.campaign_id = ?
+            ");
+            $stmt->execute([$campaign_id]);
+            
+            // 7. Retirer les monstres des lieux de cette campagne
+            $stmt = $pdo->prepare("
+                DELETE pm FROM place_monsters pm
+                INNER JOIN place_campaigns pc ON pm.place_id = pc.place_id
+                WHERE pc.campaign_id = ?
+            ");
+            $stmt->execute([$campaign_id]);
+            
+            // 8. Supprimer les membres de la campagne
+            $stmt = $pdo->prepare("DELETE FROM campaign_members WHERE campaign_id = ?");
+            $stmt->execute([$campaign_id]);
+            
+            // 9. Supprimer la campagne elle-même
             $stmt = $pdo->prepare("DELETE FROM campaigns WHERE id = ?");
             $stmt->execute([$campaign_id]);
-        } else {
-            $stmt = $pdo->prepare("DELETE FROM campaigns WHERE id = ? AND dm_id = ?");
-            $stmt->execute([$campaign_id, $user_id]);
+            
+            $pdo->commit();
+            $success_message = "Campagne supprimée avec succès. Les lieux et personnages ont été dissociés mais conservés.";
+            
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            $error_message = "Erreur lors de la suppression de la campagne: " . $e->getMessage();
         }
-        $success_message = "Campagne supprimée.";
     }
 
     if (isset($_POST['action']) && $_POST['action'] === 'toggle_visibility' && isset($_POST['campaign_id'])) {

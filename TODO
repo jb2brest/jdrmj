@@ -101,6 +101,8 @@ Une fois choisi il est redirigé vers la page view_scene_player.php
 Dans view_campaign.php quand le MJ accepte un personnage joueur, il doit l'affecter à un lieu.
 
 Dans edit_character.php il faut supprimer la zone "Equipement de départ".
+Dans create_character.php il faut supprimer la zone "Equipement de départ".
+.php
 
 Un lieu peut être associé à plusieurs campagnes.
 

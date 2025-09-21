@@ -18,18 +18,35 @@ $isModal = isset($_GET['modal']);
 // Charger la lieu et sa campagne avec hiérarchie géographique
 $place = getPlaceWithGeography($place_id);
 if ($place) {
-    // Récupérer les informations de campagne
-    $stmt = $pdo->prepare("SELECT c.title AS campaign_title, c.id AS campaign_id, c.dm_id, u.username AS dm_username FROM campaigns c JOIN users u ON c.dm_id = u.id WHERE c.id = ?");
-    $stmt->execute([$place['campaign_id']]);
-    $campaignInfo = $stmt->fetch();
-    if ($campaignInfo) {
-        $place = array_merge($place, $campaignInfo);
+    // Récupérer les campagnes associées à ce lieu
+    $campaigns = getCampaignsForPlace($place_id);
+    if (!empty($campaigns)) {
+        // Pour l'instant, on prend la première campagne (on pourrait améliorer cela plus tard)
+        $campaign = $campaigns[0];
+        $place['campaign_id'] = $campaign['id'];
+        $place['campaign_title'] = $campaign['title'];
+        $place['dm_id'] = $campaign['dm_id'];
+        
+        // Récupérer le nom d'utilisateur du DM
+        $stmt = $pdo->prepare("SELECT username FROM users WHERE id = ?");
+        $stmt->execute([$campaign['dm_id']]);
+        $dm = $stmt->fetch();
+        $place['dm_username'] = $dm ? $dm['username'] : 'Inconnu';
+    } else {
+        // Si aucun lieu n'est associé à une campagne, rediriger
+        header('Location: index.php');
+        exit();
     }
 }
 
 if (!$place) {
     header('Location: index.php');
     exit();
+}
+
+// Fonction utilitaire pour vérifier si campaign_id est défini
+function hasCampaignId($place) {
+    return isset($place['campaign_id']) && !empty($place['campaign_id']);
 }
 
 $dm_id = (int)$place['dm_id'];
@@ -43,7 +60,7 @@ error_log("DEBUG view_place.php - isOwnerDM: " . ($isOwnerDM ? 'true' : 'false')
 
 // Autoriser les admins, les DM propriétaires et les membres de la campagne à voir le lieu
 $canView = isAdmin() || $isOwnerDM;
-if (!$canView) {
+if (!$canView && isset($place['campaign_id'])) {
     $stmt = $pdo->prepare("SELECT 1 FROM campaign_members WHERE campaign_id = ? AND user_id = ? LIMIT 1");
     $stmt->execute([$place['campaign_id'], $_SESSION['user_id']]);
     $canView = (bool)$stmt->fetch();
@@ -134,8 +151,12 @@ $stmt = $pdo->prepare("
     WHERE cm.campaign_id = ? AND cm.role IN ('player', 'dm')
     ORDER BY u.username ASC
 ");
-$stmt->execute([$place['campaign_id']]);
-$campaignMembers = $stmt->fetchAll();
+if (isset($place['campaign_id'])) {
+    $stmt->execute([$place['campaign_id']]);
+    $campaignMembers = $stmt->fetchAll();
+} else {
+    $campaignMembers = [];
+}
 
 // Traitements POST pour ajouter des PNJ
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
@@ -154,10 +175,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                 $stmt = $pdo->prepare("
                     DELETE FROM place_npcs 
                     WHERE npc_character_id = ? AND place_id IN (
-                        SELECT id FROM places WHERE campaign_id = ?
+                        SELECT p.id FROM places p
+                        INNER JOIN place_campaigns pc ON p.id = pc.place_id
+                        WHERE pc.campaign_id = ?
                     )
                 ");
-                $stmt->execute([$character_id, $place['campaign_id']]);
+                if (hasCampaignId($place)) {
+                    $stmt->execute([$character_id, $place['campaign_id']]);
+                }
                 
                 // Maintenant ajouter le personnage au nouveau lieu
                 $ins = $pdo->prepare("INSERT INTO place_npcs (place_id, name, npc_character_id) VALUES (?, ?, ?)");
@@ -182,9 +207,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         $character_id = !empty($_POST['character_id']) ? (int)$_POST['character_id'] : null;
         
         // Vérifier que le joueur est membre de la campagne
-        $stmt = $pdo->prepare("SELECT 1 FROM campaign_members WHERE campaign_id = ? AND user_id = ?");
-        $stmt->execute([$place['campaign_id'], $player_id]);
-        if ($stmt->fetch()) {
+        if (hasCampaignId($place)) {
+            $stmt = $pdo->prepare("SELECT 1 FROM campaign_members WHERE campaign_id = ? AND user_id = ?");
+            $stmt->execute([$place['campaign_id'], $player_id]);
+        } else {
+            $stmt = null;
+        }
+        if ($stmt && $stmt->fetch()) {
             // Vérifier que le joueur n'est pas déjà dans le lieu
             $stmt = $pdo->prepare("SELECT 1 FROM place_players WHERE place_id = ? AND player_id = ?");
             $stmt->execute([$place_id, $player_id]);
@@ -194,10 +223,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                 $stmt = $pdo->prepare("
                     DELETE FROM place_players 
                     WHERE player_id = ? AND place_id IN (
-                        SELECT id FROM places WHERE campaign_id = ?
+                        SELECT p.id FROM places p
+                        INNER JOIN place_campaigns pc ON p.id = pc.place_id
+                        WHERE pc.campaign_id = ?
                     )
                 ");
-                $stmt->execute([$player_id, $place['campaign_id']]);
+                if (hasCampaignId($place)) {
+                    $stmt->execute([$player_id, $place['campaign_id']]);
+                }
                 
                 // Maintenant ajouter le joueur au nouveau lieu
                 $stmt = $pdo->prepare("INSERT INTO place_players (place_id, player_id, character_id) VALUES (?, ?, ?)");
@@ -348,15 +381,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
             $error_message = "Le nom du lieu ne peut pas être vide.";
         } else {
             // Vérifier que la lieu existe et appartient à la bonne campagne
-            $check_stmt = $pdo->prepare("SELECT id, title FROM places WHERE id = ? AND campaign_id = ?");
+            $check_stmt = $pdo->prepare("
+                SELECT p.id, p.title 
+                FROM places p
+                INNER JOIN place_campaigns pc ON p.id = pc.place_id
+                WHERE p.id = ? AND pc.campaign_id = ?
+            ");
             $check_stmt->execute([$place_id, $place['campaign_id']]);
             $current_scene = $check_stmt->fetch();
             
             if (!$current_scene) {
                 $error_message = "Lieu introuvable ou accès refusé.";
             } else {
-                $stmt = $pdo->prepare("UPDATE places SET title = ? WHERE id = ? AND campaign_id = ?");
-                $result = $stmt->execute([$new_title, $place_id, $place['campaign_id']]);
+                $stmt = $pdo->prepare("UPDATE places SET title = ? WHERE id = ?");
+                $result = $stmt->execute([$new_title, $place_id]);
                 
                 if ($result && $stmt->rowCount() > 0) {
                     $success_message = "Nom du lieu mis à jour avec succès.";
@@ -448,14 +486,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         }
         
         if (!isset($error_message)) {
-            $stmt = $pdo->prepare("UPDATE places SET map_url = ?, notes = ? WHERE id = ? AND campaign_id = ?");
-            $stmt->execute([$newMapUrl, $notes, $place_id, $place['campaign_id']]);
+            $stmt = $pdo->prepare("UPDATE places SET map_url = ?, notes = ? WHERE id = ?");
+            $stmt->execute([$newMapUrl, $notes, $place_id]);
             $success_message = "Plan du lieu mis à jour.";
             
             // Recharger les données du lieu
-            $stmt = $pdo->prepare("SELECT s.*, c.title AS campaign_title, c.id AS campaign_id, c.dm_id, u.username AS dm_username FROM places s JOIN campaigns c ON s.campaign_id = c.id JOIN users u ON c.dm_id = u.id WHERE s.id = ?");
-            $stmt->execute([$place_id]);
-            $place = $stmt->fetch();
+            $place = getPlaceWithGeography($place_id);
+            if ($place) {
+                $campaigns = getCampaignsForPlace($place_id);
+                if (!empty($campaigns)) {
+                    $campaign = $campaigns[0];
+                    $place['campaign_id'] = $campaign['id'];
+                    $place['campaign_title'] = $campaign['title'];
+                    $place['dm_id'] = $campaign['dm_id'];
+                    
+                    $stmt = $pdo->prepare("SELECT username FROM users WHERE id = ?");
+                    $stmt->execute([$campaign['dm_id']]);
+                    $dm = $stmt->fetch();
+                    $place['dm_username'] = $dm ? $dm['username'] : 'Inconnu';
+                }
+            }
         }
     }
     
@@ -473,18 +523,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                 $country_id = isset($_POST['country_id']) && $_POST['country_id'] ? (int)$_POST['country_id'] : null;
                 $region_id = isset($_POST['region_id']) && $_POST['region_id'] ? (int)$_POST['region_id'] : null;
                 
-                $stmt = $pdo->prepare("UPDATE places SET title = ?, notes = ?, country_id = ?, region_id = ? WHERE id = ? AND campaign_id = ?");
-                $stmt->execute([$title, $notes, $country_id, $region_id, $place_id, $place['campaign_id']]);
+                $stmt = $pdo->prepare("UPDATE places SET title = ?, notes = ?, country_id = ?, region_id = ? WHERE id = ?");
+                $stmt->execute([$title, $notes, $country_id, $region_id, $place_id]);
                 $success_message = "Lieu mis à jour avec succès.";
                 
                 // Recharger les données du lieu
                 $place = getPlaceWithGeography($place_id);
                 if ($place) {
-                    $stmt = $pdo->prepare("SELECT c.title AS campaign_title, c.id AS campaign_id, c.dm_id, u.username AS dm_username FROM campaigns c JOIN users u ON c.dm_id = u.id WHERE c.id = ?");
-                    $stmt->execute([$place['campaign_id']]);
-                    $campaignInfo = $stmt->fetch();
-                    if ($campaignInfo) {
-                        $place = array_merge($place, $campaignInfo);
+                    $campaigns = getCampaignsForPlace($place_id);
+                    if (!empty($campaigns)) {
+                        $campaign = $campaigns[0];
+                        $place['campaign_id'] = $campaign['id'];
+                        $place['campaign_title'] = $campaign['title'];
+                        $place['dm_id'] = $campaign['dm_id'];
+                        
+                        $stmt = $pdo->prepare("SELECT username FROM users WHERE id = ?");
+                        $stmt->execute([$campaign['dm_id']]);
+                        $dm = $stmt->fetch();
+                        $place['dm_username'] = $dm ? $dm['username'] : 'Inconnu';
                     }
                 }
             }
@@ -1109,9 +1165,19 @@ if ($isOwnerDM) {
 }
 
 // Récupérer les autres lieux de la campagne pour navigation
-$stmt = $pdo->prepare("SELECT id, title, position FROM places WHERE campaign_id = ? ORDER BY position ASC, created_at ASC");
-$stmt->execute([$place['campaign_id']]);
-$allScenes = $stmt->fetchAll();
+$stmt = $pdo->prepare("
+    SELECT p.id, p.title, p.position 
+    FROM places p
+    INNER JOIN place_campaigns pc ON p.id = pc.place_id
+    WHERE pc.campaign_id = ? 
+    ORDER BY p.position ASC, p.created_at ASC
+");
+if (hasCampaignId($place)) {
+    $stmt->execute([$place['campaign_id']]);
+    $allScenes = $stmt->fetchAll();
+} else {
+    $allScenes = [];
+}
 
 
 

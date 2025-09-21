@@ -15,13 +15,19 @@ $user_id = $_SESSION['user_id'];
 $campaign_id = isset($_GET['campaign_id']) ? (int)$_GET['campaign_id'] : 0;
 $character_id = isset($_GET['character_id']) ? (int)$_GET['character_id'] : 0;
 
-if (!$campaign_id || !$character_id) {
-    header('Location: campaigns.php');
+if (!$character_id) {
+    header('Location: characters.php');
     exit();
 }
 
-// Vérifier que le personnage appartient au joueur
-$stmt = $pdo->prepare("SELECT * FROM characters WHERE id = ? AND user_id = ?");
+// Vérifier que le personnage appartient au joueur et récupérer les informations de race et classe
+$stmt = $pdo->prepare("
+    SELECT c.*, r.name as race_name, cl.name as class_name 
+    FROM characters c 
+    JOIN races r ON c.race_id = r.id 
+    JOIN classes cl ON c.class_id = cl.id 
+    WHERE c.id = ? AND c.user_id = ?
+");
 $stmt->execute([$character_id, $user_id]);
 $character = $stmt->fetch();
 
@@ -30,14 +36,20 @@ if (!$character) {
     exit();
 }
 
-// Vérifier que le personnage est dans la campagne
-$stmt = $pdo->prepare("SELECT * FROM place_players WHERE character_id = ? AND place_id IN (SELECT id FROM places WHERE campaign_id = ?)");
-$stmt->execute([$character_id, $campaign_id]);
-$in_campaign = $stmt->fetch();
+// Vérifier que le personnage est dans la campagne (si campaign_id est fourni)
+if ($campaign_id) {
+    $stmt = $pdo->prepare("
+        SELECT pp.* FROM place_players pp
+        INNER JOIN place_campaigns pc ON pp.place_id = pc.place_id
+        WHERE pp.character_id = ? AND pc.campaign_id = ?
+    ");
+    $stmt->execute([$character_id, $campaign_id]);
+    $in_campaign = $stmt->fetch();
 
-if (!$in_campaign) {
-    header('Location: campaigns.php');
-    exit();
+    if (!$in_campaign) {
+        header('Location: campaigns.php');
+        exit();
+    }
 }
 
 // Vérifier si l'équipement de départ a déjà été choisi
@@ -56,15 +68,26 @@ $equipment_selected = $equipment_count > 0;
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] === 'select_equipment') {
     $starting_equipment = isset($_POST['starting_equipment']) ? $_POST['starting_equipment'] : [];
     $weapon_choices = isset($_POST['weapon_choice']) ? $_POST['weapon_choice'] : [];
+    $background_equipment = isset($_POST['background_equipment']) ? $_POST['background_equipment'] : [];
+    $background_weapon_choices = isset($_POST['background_weapon_choice']) ? $_POST['background_weapon_choice'] : [];
     
     // Debug: Afficher les données reçues
     error_log("DEBUG - starting_equipment: " . json_encode($starting_equipment));
     error_log("DEBUG - weapon_choices: " . json_encode($weapon_choices));
+    error_log("DEBUG - background_equipment: " . json_encode($background_equipment));
+    error_log("DEBUG - background_weapon_choices: " . json_encode($background_weapon_choices));
     
     // Générer l'équipement final
     $equipmentData = generateFinalEquipment($character['class_id'], $starting_equipment, $character['background_id'], $weapon_choices);
     $finalEquipment = $equipmentData['equipment'];
     $backgroundGold = $equipmentData['gold'];
+    
+    // Ajouter l'équipement de l'historique
+    if (!empty($background_equipment)) {
+        $backgroundEquipmentData = generateFinalEquipment($character['class_id'], $background_equipment, $character['background_id'], $background_weapon_choices);
+        $finalEquipment .= "\n" . $backgroundEquipmentData['equipment'];
+        $backgroundGold += $backgroundEquipmentData['gold'];
+    }
     
     // Ajouter l'équipement de départ choisi par le joueur
     addStartingEquipmentToCharacter($character_id, $equipmentData);
@@ -78,8 +101,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         $stmt->execute([$backgroundGold, $character_id]);
     }
     
-    // Rediriger vers la scène de jeu
-    header("Location: view_scene_player.php?campaign_id=$campaign_id");
+    // Marquer le personnage comme équipé et verrouiller les modifications
+    $stmt = $pdo->prepare("UPDATE characters SET is_equipped = 1, equipment_locked = 1, character_locked = 1 WHERE id = ?");
+    $stmt->execute([$character_id]);
+    
+    // Rediriger vers la scène de jeu ou la fiche du personnage
+    if ($campaign_id) {
+        header("Location: view_scene_player.php?campaign_id=$campaign_id");
+    } else {
+        header("Location: view_character.php?id=$character_id");
+    }
     exit();
 }
 
@@ -88,8 +119,12 @@ $startingEquipment = getClassStartingEquipment($character['class_id']);
 
 // Récupérer l'équipement de l'historique
 $backgroundEquipment = [];
+$parsedBackgroundEquipment = [];
 if ($character['background_id']) {
-    $backgroundEquipment = getBackgroundEquipment($character['background_id']);
+    $backgroundEquipmentText = getBackgroundEquipment($character['background_id']);
+    if ($backgroundEquipmentText) {
+        $parsedBackgroundEquipment = parseStartingEquipment($backgroundEquipmentText);
+    }
 }
 
 ?>
@@ -225,13 +260,52 @@ if ($character['background_id']) {
                             </div>
                         <?php endif; ?>
                         
-                        <?php if (!empty($backgroundEquipment)): ?>
+                        <?php if (!empty($parsedBackgroundEquipment)): ?>
                             <h3 class="mt-4"><i class="fas fa-backpack me-2"></i>Équipement d'historique</h3>
-                            <div class="alert alert-info">
-                                <i class="fas fa-info-circle me-2"></i>
-                                <strong>Équipement d'historique :</strong><br>
-                                <?php echo nl2br(htmlspecialchars($backgroundEquipment)); ?>
-                            </div>
+                            <?php foreach ($parsedBackgroundEquipment as $index => $choice): ?>
+                                <div class="equipment-choice" data-choice="<?php echo $index; ?>">
+                                    <h5><?php echo htmlspecialchars($choice['description']); ?></h5>
+                                    
+                                    <?php if (isset($choice['options']) && is_array($choice['options'])): ?>
+                                        <div class="equipment-options">
+                                            <?php foreach ($choice['options'] as $choiceKey => $choiceValue): ?>
+                                                <div class="equipment-option" data-choice="<?php echo $index; ?>" data-option="<?php echo $choiceKey; ?>">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" name="background_equipment[<?php echo $index; ?>]" value="<?php echo $choiceKey; ?>" id="background_equipment_<?php echo $index; ?>_<?php echo $choiceKey; ?>">
+                                                        <label class="form-check-label" for="background_equipment_<?php echo $index; ?>_<?php echo $choiceKey; ?>">
+                                                            <?php if (is_array($choiceValue) && isset($choiceValue['type'])): ?>
+                                                                <?php if ($choiceValue['type'] === 'weapon_choice'): ?>
+                                                                    <strong><?php echo htmlspecialchars($choiceValue['description']); ?></strong>
+                                                                    <div class="mt-2">
+                                                                        <select class="form-select form-select-sm" name="background_weapon_choice[<?php echo $index; ?>][<?php echo $choiceKey; ?>]">
+                                                                            <option value="">Sélectionnez une arme</option>
+                                                                            <?php foreach ($choiceValue['options'] as $weapon): ?>
+                                                                                <option value="<?php echo htmlspecialchars($weapon['name']); ?>">
+                                                                                    <?php echo htmlspecialchars($weapon['name']); ?> (<?php echo htmlspecialchars($weapon['type']); ?>)
+                                                                                </option>
+                                                                            <?php endforeach; ?>
+                                                                        </select>
+                                                                    </div>
+                                                                <?php elseif ($choiceValue['type'] === 'pack'): ?>
+                                                                    <strong><?php echo htmlspecialchars($choiceValue['description']); ?></strong>
+                                                                    <div class="mt-2">
+                                                                        <small class="text-muted">
+                                                                            <strong>Contenu :</strong><br>
+                                                                            <?php echo implode(', ', $choiceValue['contents']); ?>
+                                                                        </small>
+                                                                    </div>
+                                                                <?php endif; ?>
+                                                            <?php else: ?>
+                                                                <?php echo htmlspecialchars($choiceValue); ?>
+                                                            <?php endif; ?>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endforeach; ?>
                         <?php endif; ?>
                     </div>
                     
@@ -305,7 +379,7 @@ if ($character['background_id']) {
             
             // Gestion des sélecteurs d'armes
             function toggleWeaponSelectors() {
-                const weaponSelects = document.querySelectorAll('select[name^="weapon_choice"]');
+                const weaponSelects = document.querySelectorAll('select[name^="weapon_choice"], select[name^="background_weapon_choice"]');
                 weaponSelects.forEach(select => {
                     const option = select.closest('.equipment-option');
                     const radio = option.querySelector('input[type="radio"]');

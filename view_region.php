@@ -108,8 +108,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 if (empty($error_message)) {
                     try {
-                        $stmt = $pdo->prepare("INSERT INTO places (title, notes, map_url, region_id, country_id, campaign_id) VALUES (?, ?, ?, ?, ?, ?)");
-                        $stmt->execute([$title, $notes, $map_url, $region_id, $region['country_id'], null]);
+                        $stmt = $pdo->prepare("INSERT INTO places (title, notes, map_url, region_id, country_id) VALUES (?, ?, ?, ?, ?)");
+                        $stmt->execute([$title, $notes, $map_url, $region_id, $region['country_id']]);
                         $success_message = "Lieu '$title' créé avec succès.";
                     } catch (PDOException $e) {
                         $error_message = "Erreur lors de la création du lieu: " . $e->getMessage();

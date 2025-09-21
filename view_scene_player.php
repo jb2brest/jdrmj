@@ -15,7 +15,8 @@ if ($requested_campaign_id) {
     $stmt = $pdo->prepare("
         SELECT p.*, c.title as campaign_title, c.dm_id, c.id as campaign_id
         FROM places p 
-        JOIN campaigns c ON p.campaign_id = c.id 
+        INNER JOIN place_campaigns pc ON p.id = pc.place_id
+        JOIN campaigns c ON pc.campaign_id = c.id 
         JOIN place_players pp ON p.id = pp.place_id 
         WHERE pp.player_id = ? AND c.id = ?
         LIMIT 1
@@ -66,7 +67,8 @@ if ($requested_campaign_id) {
     $stmt = $pdo->prepare("
         SELECT p.*, c.title as campaign_title, c.dm_id, c.id as campaign_id
         FROM places p 
-        JOIN campaigns c ON p.campaign_id = c.id 
+        INNER JOIN place_campaigns pc ON p.id = pc.place_id
+        JOIN campaigns c ON pc.campaign_id = c.id 
         JOIN place_players pp ON p.id = pp.place_id 
         WHERE pp.player_id = ?
         LIMIT 1

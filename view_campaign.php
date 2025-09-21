@@ -85,16 +85,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $pdo->prepare("
                     SELECT p.id FROM places p
                     LEFT JOIN countries c ON p.country_id = c.id
-                    WHERE p.id = ? AND c.world_id = ? AND p.campaign_id IS NULL
+                    WHERE p.id = ? AND c.world_id = ? AND p.id NOT IN (
+                        SELECT place_id FROM place_campaigns WHERE campaign_id = ?
+                    )
                 ");
-                $stmt->execute([$place_id, $campaign['world_id']]);
+                $stmt->execute([$place_id, $campaign['world_id'], $campaign_id]);
                 $place = $stmt->fetch();
                 
                 if ($place) {
                     // Associer le lieu à la campagne
-                    $stmt = $pdo->prepare("UPDATE places SET campaign_id = ? WHERE id = ?");
-                    $stmt->execute([$campaign_id, $place_id]);
-                    $success_message = "Lieu associé à la campagne avec succès.";
+                    if (associatePlaceToCampaign($place_id, $campaign_id)) {
+                        $success_message = "Lieu associé à la campagne avec succès.";
+                    } else {
+                        $error_message = "Erreur lors de l'association du lieu à la campagne.";
+                    }
                     
                     // Recharger les lieux de la campagne
                     $places = getPlacesWithGeography($campaign_id);
@@ -116,13 +120,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$character_id) {
             $error_message = "Vous devez sélectionner un personnage pour postuler à cette campagne.";
         } else {
-            // Vérifier que le personnage appartient bien au joueur
-            $stmt = $pdo->prepare("SELECT id FROM characters WHERE id = ? AND user_id = ?");
+            // Vérifier que le personnage appartient bien au joueur et est équipé
+            $stmt = $pdo->prepare("SELECT id, is_equipped FROM characters WHERE id = ? AND user_id = ?");
             $stmt->execute([$character_id, $user_id]);
-            $character_exists = $stmt->fetch();
+            $character = $stmt->fetch();
             
-            if (!$character_exists) {
+            if (!$character) {
                 $error_message = "Le personnage sélectionné n'existe pas ou ne vous appartient pas.";
+            } elseif (!$character['is_equipped']) {
+                $error_message = "Le personnage sélectionné n'est pas encore équipé. Vous devez d'abord choisir son équipement de départ.";
             }
         }
         
@@ -203,14 +209,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isDMOrAdmin()) {
                 // Si un lieu est spécifié, assigner le joueur au lieu
                 if ($place_id) {
                     // Vérifier que le lieu appartient à cette campagne
-                    $stmt = $pdo->prepare("SELECT id FROM places WHERE id = ? AND campaign_id = ?");
+                    $stmt = $pdo->prepare("
+                        SELECT p.id FROM places p
+                        INNER JOIN place_campaigns pc ON p.id = pc.place_id
+                        WHERE p.id = ? AND pc.campaign_id = ?
+                    ");
                     $stmt->execute([$place_id, $campaign_id]);
                     if ($stmt->fetch()) {
                         // Retirer le joueur de tous les autres lieux de la campagne
                         $stmt = $pdo->prepare("
                             DELETE FROM place_players 
                             WHERE player_id = ? AND place_id IN (
-                                SELECT id FROM places WHERE campaign_id = ?
+                                SELECT p.id FROM places p
+                                INNER JOIN place_campaigns pc ON p.id = pc.place_id
+                                WHERE pc.campaign_id = ?
                             )
                         ");
                         $stmt->execute([$player_id, $campaign_id]);
@@ -438,9 +450,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isDMOrAdmin()) {
                 $country_id = isset($_POST['country_id']) && $_POST['country_id'] ? (int)$_POST['country_id'] : null;
                 $region_id = isset($_POST['region_id']) && $_POST['region_id'] ? (int)$_POST['region_id'] : null;
                 
-                $stmt = $pdo->prepare("INSERT INTO places (campaign_id, title, map_url, notes, position, country_id, region_id) VALUES (?, ?, ?, ?, 0, ?, ?)");
-                $stmt->execute([$campaign_id, $title, $map_url, $notes, $country_id, $region_id]);
-                $success_message = "Lieu créée avec succès.";
+                $stmt = $pdo->prepare("INSERT INTO places (title, map_url, notes, position, country_id, region_id) VALUES (?, ?, ?, 0, ?, ?)");
+                $stmt->execute([$title, $map_url, $notes, $country_id, $region_id]);
+                $place_id = $pdo->lastInsertId();
+                
+                // Associer le lieu à la campagne
+                if (associatePlaceToCampaign($place_id, $campaign_id)) {
+                    $success_message = "Lieu créé avec succès.";
+                } else {
+                    $error_message = "Lieu créé mais erreur lors de l'association à la campagne.";
+                }
             }
         } else {
             $error_message = "Le titre du lieu est requis.";
@@ -449,9 +468,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isDMOrAdmin()) {
 
     if (isset($_POST['action']) && $_POST['action'] === 'delete_scene' && isset($_POST['place_id'])) {
         $place_id = (int)$_POST['place_id'];
-        $stmt = $pdo->prepare("DELETE FROM places WHERE id = ? AND campaign_id = ?");
+        // Vérifier que le lieu appartient à cette campagne
+        $stmt = $pdo->prepare("
+            SELECT p.id FROM places p
+            INNER JOIN place_campaigns pc ON p.id = pc.place_id
+            WHERE p.id = ? AND pc.campaign_id = ?
+        ");
         $stmt->execute([$place_id, $campaign_id]);
-        $success_message = "Lieu supprimée avec succès.";
+        if ($stmt->fetch()) {
+            // Dissocier le lieu de la campagne
+            if (dissociatePlaceFromCampaign($place_id, $campaign_id)) {
+                $success_message = "Lieu dissocié de la campagne avec succès.";
+            } else {
+                $error_message = "Erreur lors de la dissociation du lieu.";
+            }
+        } else {
+            $error_message = "Ce lieu n'appartient pas à cette campagne.";
+        }
     }
 
     if (isset($_POST['action']) && $_POST['action'] === 'move_scene' && isset($_POST['place_id']) && isset($_POST['direction'])) {
@@ -459,7 +492,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isDMOrAdmin()) {
         $direction = $_POST['direction'];
         
         // Récupérer la position actuelle
-        $stmt = $pdo->prepare("SELECT position FROM places WHERE id = ? AND campaign_id = ?");
+        $stmt = $pdo->prepare("
+            SELECT p.position FROM places p
+            INNER JOIN place_campaigns pc ON p.id = pc.place_id
+            WHERE p.id = ? AND pc.campaign_id = ?
+        ");
         $stmt->execute([$place_id, $campaign_id]);
         $scene = $stmt->fetch();
         
@@ -468,7 +505,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isDMOrAdmin()) {
             $new_position = max(0, $new_position);
             
             // Échanger avec la lieu adjacente
-            $stmt = $pdo->prepare("SELECT id FROM places WHERE campaign_id = ? AND position = ? AND id != ?");
+            $stmt = $pdo->prepare("
+                SELECT p.id FROM places p
+                INNER JOIN place_campaigns pc ON p.id = pc.place_id
+                WHERE pc.campaign_id = ? AND p.position = ? AND p.id != ?
+            ");
             $stmt->execute([$campaign_id, $new_position, $place_id]);
             $adjacent_scene = $stmt->fetch();
             
@@ -490,7 +531,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isDMOrAdmin()) {
         
         if ($entity_type && $entity_id && $from_place_id && $to_place_id && $from_place_id !== $to_place_id) {
             // Vérifier que les lieux appartiennent à la campagne
-            $stmt = $pdo->prepare("SELECT id FROM places WHERE id IN (?, ?) AND campaign_id = ?");
+            $stmt = $pdo->prepare("
+                SELECT p.id FROM places p
+                INNER JOIN place_campaigns pc ON p.id = pc.place_id
+                WHERE p.id IN (?, ?) AND pc.campaign_id = ?
+            ");
             $stmt->execute([$from_place_id, $to_place_id, $campaign_id]);
             $valid_places = $stmt->fetchAll(PDO::FETCH_COLUMN);
             
@@ -549,10 +594,12 @@ if (isDMOrAdmin() && !empty($campaign['world_id'])) {
         FROM places p
         LEFT JOIN countries c ON p.country_id = c.id
         LEFT JOIN regions r ON p.region_id = r.id
-        WHERE c.world_id = ? AND p.campaign_id IS NULL
+        WHERE c.world_id = ? AND p.id NOT IN (
+            SELECT place_id FROM place_campaigns WHERE campaign_id = ?
+        )
         ORDER BY c.name, r.name, p.title
     ");
-    $stmt->execute([$campaign['world_id']]);
+    $stmt->execute([$campaign['world_id'], $campaign_id]);
     $available_places = $stmt->fetchAll();
 }
 
@@ -567,8 +614,8 @@ foreach ($members as $member) {
     }
 }
 
-// Récupérer les personnages de l'utilisateur pour la candidature
-$stmt = $pdo->prepare("SELECT id, name FROM characters WHERE user_id = ? ORDER BY name ASC");
+// Récupérer les personnages de l'utilisateur pour la candidature (seulement ceux qui sont équipés)
+$stmt = $pdo->prepare("SELECT id, name FROM characters WHERE user_id = ? AND is_equipped = 1 ORDER BY name ASC");
 $stmt->execute([$user_id]);
 $user_characters = $stmt->fetchAll();
 
@@ -955,9 +1002,14 @@ if (!empty($places)) {
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0"><i class="fas fa-photo-video me-2"></i>Lieux de la campagne</h5>
-                        <button class="btn btn-brown btn-sm" data-bs-toggle="modal" data-bs-target="#associatePlaceModal">
-                            <i class="fas fa-link"></i> Associer un lieu
-                        </button>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-brown btn-sm" data-bs-toggle="modal" data-bs-target="#associatePlaceModal">
+                                <i class="fas fa-link"></i> Associer un lieu
+                            </button>
+                            <a href="manage_place_campaigns.php?campaign_id=<?php echo $campaign_id; ?>" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-cogs"></i> Gérer les associations
+                            </a>
+                        </div>
                     </div>
                     <div class="card-body">
                         <?php if (empty($places)): ?>
