@@ -78,7 +78,7 @@
                             <li><a class="dropdown-item" href="public_campaigns.php">
                                 <i class="fas fa-book-open me-2"></i>Campagnes Publiques
                             </a></li>
-                            <li><a class="dropdown-item" href="create_character.php">
+                            <li><a class="dropdown-item" href="character_create_step1.php">
                                 <i class="fas fa-plus me-2"></i>Créer un Personnage
                             </a></li>
                             <?php if (isDMOrAdmin()): ?>
@@ -139,7 +139,7 @@
                 <a href="campaigns.php" class="btn btn-outline-light btn-lg">
                     <i class="fas fa-book me-2"></i><?php echo isAdmin() ? 'Toutes les Campagnes' : 'Mes Campagnes'; ?>
                 </a>
-                <a href="create_character.php" class="btn btn-outline-light btn-lg">
+                <a href="character_create_step1.php" class="btn btn-outline-light btn-lg">
                     <i class="fas fa-plus me-2"></i>Créer un Personnage
                 </a>
             </div>

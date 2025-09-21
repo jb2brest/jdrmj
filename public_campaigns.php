@@ -176,7 +176,7 @@ foreach ($applications as $a) {
                                                     <?php endforeach; ?>
                                                 </select>
                                                 <?php if (empty($userCharacters)): ?>
-                                                    <div class="form-text text-danger">Vous n'avez pas encore de personnage. <a href="create_character.php">Créez-en un</a> pour postuler.</div>
+                                                    <div class="form-text text-danger">Vous n'avez pas encore de personnage. <a href="character_create_step1.php">Créez-en un</a> pour postuler.</div>
                                                 <?php endif; ?>
                                             </div>
                                             <div class="mb-3">

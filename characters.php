@@ -110,7 +110,7 @@ $current_page = "characters";
             <h1>
                 <i class="fas fa-users me-2"></i>Mes Personnages
             </h1>
-            <a href="create_character.php" class="btn btn-dnd">
+            <a href="character_create_step1.php" class="btn btn-dnd">
                 <i class="fas fa-plus me-2"></i>Créer un Personnage
             </a>
         </div>
@@ -130,7 +130,7 @@ $current_page = "characters";
                 <i class="fas fa-user-friends"></i>
                 <h3>Aucun personnage créé</h3>
                 <p class="lead">Vous n'avez pas encore créé de personnage. Commencez votre aventure !</p>
-                <a href="create_character.php" class="btn btn-dnd btn-lg">
+                <a href="character_create_step1.php" class="btn btn-dnd btn-lg">
                     <i class="fas fa-plus me-2"></i>Créer votre premier personnage
                 </a>
             </div>

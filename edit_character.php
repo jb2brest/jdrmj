@@ -612,17 +612,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         
         <?php echo $message; ?>
         
-        <?php if (!$character['is_equipped']): ?>
-            <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                <i class="fas fa-exclamation-triangle me-2"></i>
-                <strong>Votre personnage n'est pas encore équipé !</strong> Vous devez choisir son équipement de départ avant de pouvoir l'inscrire à une campagne.
-                <div class="mt-2">
-                    <a href="select_starting_equipment.php?character_id=<?php echo $character_id; ?>" class="btn btn-warning btn-sm">
-                        <i class="fas fa-shopping-bag me-1"></i>Équiper mon personnage
-                    </a>
-                </div>
-            </div>
-        <?php endif; ?>
         
         <form method="POST" action="" enctype="multipart/form-data" onsubmit="return validateForm()">
             <!-- Informations de base -->

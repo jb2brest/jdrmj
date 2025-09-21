@@ -1,6 +1,26 @@
 <?php
 require_once 'config/database.php';
 require_once 'includes/functions.php';
+
+// Fonction pour extraire le nombre du dé des points de vie
+function extractDiceNumber($hitDice) {
+    if (empty($hitDice)) {
+        return 8; // Valeur par défaut
+    }
+    
+    // Extraire le nombre après 'd' (ex: '1d12' -> 12)
+    if (preg_match('/d(\d+)/', $hitDice, $matches)) {
+        return (int)$matches[1];
+    }
+    
+    // Si pas de format 'dX', essayer de convertir directement
+    if (is_numeric($hitDice)) {
+        return (int)$hitDice;
+    }
+    
+    return 8; // Valeur par défaut
+}
+
 $page_title = "Création de Personnage - Étape 4";
 $current_page = "create_character";
 
@@ -143,7 +163,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
             // Calculer les valeurs dérivées
             $armorClass = 10 + $modifiers['dexterity'];
             $speed = $selectedRace['speed'] ?? 30;
-            $hitPoints = $selectedClass['hit_dice'] + $modifiers['constitution'];
+            $hitPoints = extractDiceNumber($selectedClass['hit_dice'] ?? '1d8') + $modifiers['constitution'];
             $proficiencyBonus = 2; // Niveau 1
             
             // Sauvegarder les caractéristiques
@@ -438,9 +458,10 @@ $racialBonuses = [
                                     </div>
                                     <div class="col-md-3">
                                         <strong>Points de vie :</strong><br>
-                                        <span class="text-danger">d<?php echo $selectedClass['hit_dice'] ?? 8; ?> + Con = <span id="hit_points"><?php 
+                                        <span class="text-danger">d<?php echo extractDiceNumber($selectedClass['hit_dice'] ?? '1d8'); ?> + Con = <span id="hit_points"><?php 
                                             $conModifier = floor((($currentStats['constitution'] + ($racialBonuses['constitution'] ?? 0)) - 10) / 2);
-                                            echo (($selectedClass['hit_dice'] ?? 8) + $conModifier); 
+                                            $hitDiceNumber = extractDiceNumber($selectedClass['hit_dice'] ?? '1d8');
+                                            echo ($hitDiceNumber + $conModifier); 
                                         ?></span></span>
                                     </div>
                                     <div class="col-md-3">
@@ -477,7 +498,7 @@ $racialBonuses = [
             
             // Valeurs par défaut
             const racialBonuses = <?php echo json_encode($racialBonuses); ?>;
-            const hitDice = <?php echo isset($selectedClass['hit_dice']) ? (int)$selectedClass['hit_dice'] : 8; ?>;
+            const hitDice = <?php echo extractDiceNumber($selectedClass['hit_dice'] ?? '1d8'); ?>;
             
             function calculatePointsUsed(stats) {
                 const pointCosts = {

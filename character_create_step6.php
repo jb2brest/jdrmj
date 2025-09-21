@@ -52,7 +52,7 @@ if ($selectedBackgroundId) {
 }
 
 // Récupérer toutes les langues disponibles (sauf Commun qui est par défaut)
-$languages = $pdo->query("SELECT * FROM languages WHERE name != 'Commun' ORDER BY name")->fetchAll();
+$allLanguages = $pdo->query("SELECT * FROM languages WHERE name != 'Commun' ORDER BY name")->fetchAll();
 
 // Définir les compétences disponibles
 $allSkills = [
@@ -86,22 +86,74 @@ if ($selectedClass) {
     }
 }
 
-// Calculer les compétences de l'historique
+// Calculer les compétences de l'historique (FIXES)
 $backgroundSkills = [];
 if ($selectedBackground && $selectedBackground['skill_proficiencies']) {
     $backgroundSkills = json_decode($selectedBackground['skill_proficiencies'], true) ?? [];
 }
 
-// Calculer les langues de l'historique
-$backgroundLanguages = [];
-$backgroundLanguageCount = 0;
+// Calculer les compétences raciales (FIXES) - pour l'instant aucune race n'a de compétences spécifiques
+$raceSkills = [];
+
+// Compétences déjà acquises (fixes)
+$fixedSkills = array_merge($backgroundSkills, $raceSkills);
+
+// Calculer les langues fixes et au choix
+$fixedLanguages = [];
+$choiceLanguageCount = 0;
+
+// Langues fixes de la race
+if ($selectedRace && $selectedRace['languages']) {
+    $raceLanguages = $selectedRace['languages'];
+    // Parser les langues de race (format: "commun, elfique, une langue de votre choix")
+    $raceLangArray = array_map('trim', explode(',', $raceLanguages));
+    
+    foreach ($raceLangArray as $lang) {
+        if (strpos($lang, 'choix') !== false) {
+            // Compter les langues au choix de la race
+            if (strpos($lang, 'deux') !== false) {
+                $choiceLanguageCount += 2;
+            } elseif (strpos($lang, 'une') !== false) {
+                $choiceLanguageCount += 1;
+            }
+        } else {
+            // Langue fixe
+            $fixedLanguages[] = $lang;
+        }
+    }
+}
+
+// Langues au choix de l'historique
 if ($selectedBackground && $selectedBackground['languages']) {
     $backgroundLanguages = json_decode($selectedBackground['languages'], true) ?? [];
-    // Compter les langues "de votre choix"
+    // Compter les langues "de votre choix" de l'historique
     foreach ($backgroundLanguages as $lang) {
         if (strpos($lang, 'choix') !== false) {
-            $backgroundLanguageCount++;
+            if (strpos($lang, 'deux') !== false) {
+                $choiceLanguageCount += 2;
+            } elseif (strpos($lang, 'une') !== false) {
+                $choiceLanguageCount += 1;
+            }
         }
+    }
+}
+
+// Filtrer les langues disponibles (exclure celles déjà connues)
+$availableLanguages = [];
+foreach ($allLanguages as $language) {
+    $langName = strtolower($language['name']);
+    $isAlreadyKnown = false;
+    
+    // Vérifier si la langue est déjà connue (fixe)
+    foreach ($fixedLanguages as $fixedLang) {
+        if (strtolower($fixedLang) === $langName) {
+            $isAlreadyKnown = true;
+            break;
+        }
+    }
+    
+    if (!$isAlreadyKnown) {
+        $availableLanguages[] = $language;
     }
 }
 
@@ -124,16 +176,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
         
         // Validation des langues
         $validLanguages = true;
-        if (count($languages) !== $backgroundLanguageCount) {
+        if (count($languages) !== $choiceLanguageCount) {
             $validLanguages = false;
-            $message = displayMessage("Vous devez choisir exactement $backgroundLanguageCount langue(s) de votre historique.", "error");
+            $message = displayMessage("Vous devez choisir exactement $choiceLanguageCount langue(s) supplémentaire(s).", "error");
         }
         
         if ($validSkills && $validLanguages) {
+            // Combiner les compétences fixes et les compétences choisies
+            $allSelectedSkills = array_merge($fixedSkills, $skills);
+            
+            // Combiner les langues fixes et les langues choisies
+            $allSelectedLanguages = array_merge($fixedLanguages, $languages);
+            
             // Sauvegarder les choix
             $dataToSave = [
-                'selected_skills' => $skills,
-                'selected_languages' => $languages
+                'selected_skills' => $allSelectedSkills,
+                'fixed_skills' => $fixedSkills,
+                'chosen_skills' => $skills,
+                'selected_languages' => $allSelectedLanguages,
+                'fixed_languages' => $fixedLanguages,
+                'chosen_languages' => $languages
             ];
             
             if (saveCharacterCreationStep($user_id, $session_id, 7, $dataToSave)) {
@@ -334,72 +396,124 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
                             <div class="selection-counter">
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <h6><i class="fas fa-tasks me-2"></i>Compétences de classe</h6>
+                                        <h6><i class="fas fa-tasks me-2"></i>Compétences</h6>
                                         <p class="mb-0">
-                                            <span class="badge bg-primary me-2" id="skills-selected">0</span>/<span id="skills-total"><?php echo $classSkillCount; ?></span>
-                                            <small class="text-muted ms-2">Choisies</small>
+                                            <span class="badge bg-success me-1"><?php echo count($fixedSkills); ?></span>
+                                            <small class="text-muted">acquises</small>
+                                            <span class="badge bg-primary me-2 ms-2" id="skills-selected">0</span>/<span id="skills-total"><?php echo $classSkillCount; ?></span>
+                                            <small class="text-muted ms-2">à choisir</small>
                                         </p>
                                     </div>
                                     <div class="col-md-6">
-                                        <h6><i class="fas fa-language me-2"></i>Langues de l'historique</h6>
+                                        <h6><i class="fas fa-language me-2"></i>Langues</h6>
                                         <p class="mb-0">
-                                            <span class="badge bg-success me-2" id="languages-selected">0</span>/<span id="languages-total"><?php echo $backgroundLanguageCount; ?></span>
-                                            <small class="text-muted ms-2">Choisies</small>
+                                            <span class="badge bg-success me-1"><?php echo count($fixedLanguages); ?></span>
+                                            <small class="text-muted">acquises</small>
+                                            <span class="badge bg-success me-2 ms-2" id="languages-selected">0</span>/<span id="languages-total"><?php echo $choiceLanguageCount; ?></span>
+                                            <small class="text-muted ms-2">à choisir</small>
                                         </p>
                                     </div>
                                 </div>
                             </div>
                             
                             <div class="row">
-                                <!-- Compétences de classe -->
+                                <!-- Compétences -->
                                 <div class="col-md-6">
-                                    <h5><i class="fas fa-tasks me-2"></i>Compétences de classe</h5>
-                                    <p class="text-muted">Choisissez <?php echo $classSkillCount; ?> compétence(s) parmi :</p>
+                                    <h5><i class="fas fa-tasks me-2"></i>Compétences</h5>
                                     
-                                    <?php foreach ($classSkillChoices as $skill): ?>
-                                        <div class="skill-card" data-skill="<?php echo htmlspecialchars($skill); ?>">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" 
-                                                       name="skills[]" 
-                                                       value="<?php echo htmlspecialchars($skill); ?>" 
-                                                       id="skill_<?php echo strtolower(str_replace(' ', '_', $skill)); ?>">
-                                                <label class="form-check-label" for="skill_<?php echo strtolower(str_replace(' ', '_', $skill)); ?>">
-                                                    <strong><?php echo htmlspecialchars($skill); ?></strong>
-                                                    <div class="skill-ability">(<?php echo $allSkills[$skill] ?? 'Inconnue'; ?>)</div>
-                                                </label>
+                                    <!-- Compétences fixes (déjà acquises) -->
+                                    <?php if (!empty($fixedSkills)): ?>
+                                        <div class="mb-4">
+                                            <h6 class="text-success"><i class="fas fa-check-circle me-2"></i>Compétences acquises automatiquement</h6>
+                                            <div class="alert alert-success">
+                                                <?php foreach ($fixedSkills as $skill): ?>
+                                                    <div class="d-flex align-items-center mb-2">
+                                                        <i class="fas fa-check text-success me-2"></i>
+                                                        <strong><?php echo htmlspecialchars($skill); ?></strong>
+                                                        <span class="skill-ability ms-2">(<?php echo $allSkills[$skill] ?? 'Inconnue'; ?>)</span>
+                                                    </div>
+                                                <?php endforeach; ?>
                                             </div>
                                         </div>
-                                    <?php endforeach; ?>
+                                    <?php endif; ?>
+                                    
+                                    <!-- Compétences de classe au choix -->
+                                    <?php if ($classSkillCount > 0): ?>
+                                        <div class="mb-4">
+                                            <h6 class="text-primary"><i class="fas fa-hand-pointer me-2"></i>Compétences de classe au choix</h6>
+                                            <p class="text-muted">Choisissez <?php echo $classSkillCount; ?> compétence(s) parmi :</p>
+                                            
+                                            <?php foreach ($classSkillChoices as $skill): ?>
+                                                <div class="skill-card" data-skill="<?php echo htmlspecialchars($skill); ?>">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" 
+                                                               name="skills[]" 
+                                                               value="<?php echo htmlspecialchars($skill); ?>" 
+                                                               id="skill_<?php echo strtolower(str_replace(' ', '_', $skill)); ?>">
+                                                        <label class="form-check-label" for="skill_<?php echo strtolower(str_replace(' ', '_', $skill)); ?>">
+                                                            <strong><?php echo htmlspecialchars($skill); ?></strong>
+                                                            <div class="skill-ability">(<?php echo $allSkills[$skill] ?? 'Inconnue'; ?>)</div>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                                 
-                                <!-- Langues de l'historique -->
+                                <!-- Langues -->
                                 <div class="col-md-6">
-                                    <h5><i class="fas fa-language me-2"></i>Langues de l'historique</h5>
-                                    <div class="alert alert-info mb-3">
-                                        <i class="fas fa-info-circle me-2"></i>
-                                        <strong>Langue par défaut :</strong> Tous les personnages parlent le <strong>Commun</strong>.
-                                    </div>
-                                    <?php if ($backgroundLanguageCount > 0): ?>
-                                        <p class="text-muted">Choisissez <?php echo $backgroundLanguageCount; ?> langue(s) supplémentaire(s) :</p>
-                                        
-                                        <?php foreach ($languages as $language): ?>
-                                            <div class="language-card" data-language="<?php echo htmlspecialchars($language['name']); ?>">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" 
-                                                           name="languages[]" 
-                                                           value="<?php echo htmlspecialchars($language['name']); ?>" 
-                                                           id="lang_<?php echo strtolower(str_replace(' ', '_', $language['name'])); ?>">
-                                                    <label class="form-check-label" for="lang_<?php echo strtolower(str_replace(' ', '_', $language['name'])); ?>">
-                                                        <strong><?php echo htmlspecialchars($language['name']); ?></strong>
-                                                        <?php if ($language['type'] === 'exotique'): ?>
-                                                            <span class="badge bg-warning ms-2">Exotique</span>
-                                                        <?php endif; ?>
-                                                    </label>
-                                                </div>
+                                    <h5><i class="fas fa-language me-2"></i>Langues</h5>
+                                    
+                                    <!-- Langues fixes (déjà acquises) -->
+                                    <?php if (!empty($fixedLanguages)): ?>
+                                        <div class="mb-4">
+                                            <h6 class="text-success"><i class="fas fa-check-circle me-2"></i>Langues acquises automatiquement</h6>
+                                            <div class="alert alert-success">
+                                                <?php foreach ($fixedLanguages as $lang): ?>
+                                                    <div class="d-flex align-items-center mb-2">
+                                                        <i class="fas fa-check text-success me-2"></i>
+                                                        <strong><?php echo htmlspecialchars(ucfirst($lang)); ?></strong>
+                                                    </div>
+                                                <?php endforeach; ?>
                                             </div>
-                                        <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
+                                    
+                                    <!-- Langues au choix -->
+                                    <?php if ($choiceLanguageCount > 0): ?>
+                                        <div class="mb-4">
+                                            <h6 class="text-success"><i class="fas fa-hand-pointer me-2"></i>Langues au choix</h6>
+                                            <p class="text-muted">Choisissez <?php echo $choiceLanguageCount; ?> langue(s) supplémentaire(s) :</p>
+                                            <?php if (count($availableLanguages) < count($allLanguages)): ?>
+                                                <div class="alert alert-info">
+                                                    <i class="fas fa-info-circle me-2"></i>
+                                                    <small>Les langues déjà connues (<?php echo implode(', ', array_map('ucfirst', $fixedLanguages)); ?>) ne sont pas proposées dans cette liste.</small>
+                                                </div>
+                                            <?php endif; ?>
+                                            
+                                            <?php foreach ($availableLanguages as $language): ?>
+                                                <div class="language-card" data-language="<?php echo htmlspecialchars($language['name']); ?>">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" 
+                                                               name="languages[]" 
+                                                               value="<?php echo htmlspecialchars($language['name']); ?>" 
+                                                               id="lang_<?php echo strtolower(str_replace(' ', '_', $language['name'])); ?>">
+                                                        <label class="form-check-label" for="lang_<?php echo strtolower(str_replace(' ', '_', $language['name'])); ?>">
+                                                            <strong><?php echo htmlspecialchars($language['name']); ?></strong>
+                                                            <?php if ($language['type'] === 'exotique'): ?>
+                                                                <span class="badge bg-warning ms-2">Exotique</span>
+                                                            <?php endif; ?>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
                                     <?php else: ?>
-                                        <p class="text-muted">Votre historique ne vous accorde pas de langues supplémentaires.</p>
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            <strong>Pas de langues supplémentaires :</strong> Votre race et votre historique ne vous accordent pas de langues au choix.
+                                        </div>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -428,7 +542,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
             const continueBtn = document.getElementById('continueBtn');
             
             const skillsTotal = <?php echo $classSkillCount; ?>;
-            const languagesTotal = <?php echo $backgroundLanguageCount; ?>;
+            const languagesTotal = <?php echo $choiceLanguageCount; ?>;
             
             function updateCounters() {
                 const skillsSelected = document.querySelectorAll('input[name="skills[]"]:checked').length;

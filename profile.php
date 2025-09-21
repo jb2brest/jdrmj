@@ -296,7 +296,7 @@ $current_page = "profile";
                                     <i class="fas fa-list me-2"></i>Gérer mes sessions
                                 </a>
                             <?php else: ?>
-                                <a href="create_character.php" class="btn btn-outline-primary btn-sm">
+                                <a href="character_create_step1.php" class="btn btn-outline-primary btn-sm">
                                     <i class="fas fa-plus me-2"></i>Créer un personnage
                                 </a>
                                 <a href="characters.php" class="btn btn-outline-success btn-sm">

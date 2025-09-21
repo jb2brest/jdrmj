@@ -896,7 +896,7 @@ if (!empty($places)) {
                                     <strong>Personnage requis</strong><br>
                                     Vous devez d'abord créer un personnage pour pouvoir postuler à cette campagne.
                                     <div class="mt-3">
-                                        <a href="create_character.php" class="btn btn-warning">
+                                        <a href="character_create_step1.php" class="btn btn-warning">
                                             <i class="fas fa-user-plus me-2"></i>Créer un personnage
                                         </a>
                                     </div>

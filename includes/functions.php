@@ -1830,6 +1830,12 @@ function resetRageUsage($characterId) {
 
 // Fonction pour obtenir les capacités des barbares selon leur niveau
 function getBarbarianCapabilities($level) {
+    // Utiliser le nouveau système basé sur la base de données si disponible
+    if (function_exists('getClassCapabilities')) {
+        return getClassCapabilities(6, $level); // ID 6 = Barbare
+    }
+    
+    // Ancien système (fallback)
     $capabilities = [];
     
     // Niveau 1 - Rage
@@ -5400,8 +5406,8 @@ function finalizeCharacterCreation($userId, $sessionId) {
             $data['ideals'] ?? '',
             $data['bonds'] ?? '',
             $data['flaws'] ?? '',
-            json_encode($data['skills'] ?? []),
-            json_encode($data['languages'] ?? []),
+            json_encode($data['selected_skills'] ?? []),
+            json_encode($data['selected_languages'] ?? []),
             $data['money_gold'] ?? 0,
             $data['profile_photo'] ?? null,
             0, // is_equipped
@@ -5410,6 +5416,11 @@ function finalizeCharacterCreation($userId, $sessionId) {
         ]);
         
         $characterId = $pdo->lastInsertId();
+        
+        // Assigner les capacités au personnage
+        if (function_exists('updateCharacterCapabilities')) {
+            updateCharacterCapabilities($characterId);
+        }
         
         // Supprimer la session de création
         $stmt = $pdo->prepare("DELETE FROM character_creation_sessions WHERE user_id = ? AND session_id = ?");
