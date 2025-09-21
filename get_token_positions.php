@@ -128,9 +128,9 @@ try {
     
     // Récupérer les positions et informations des objets (seulement ceux non attribués)
     $stmt = $pdo->prepare("
-        SELECT id, name, object_type, is_visible, is_identified, position_x, position_y, is_on_map, updated_at
+        SELECT id, display_name, object_type, is_visible, is_identified, position_x, position_y, is_on_map, updated_at
         FROM place_objects 
-        WHERE place_id = ? AND (owner_type = 'none' OR owner_type IS NULL)
+        WHERE place_id = ? AND (owner_type = 'place' OR owner_type IS NULL)
         ORDER BY updated_at DESC
     ");
     $stmt->execute([$place_id]);
@@ -148,7 +148,7 @@ try {
         
         // Ajouter les informations de l'objet
         $objects[$tokenKey] = [
-            'name' => $row['name'],
+            'name' => $row['display_name'],
             'object_type' => $row['object_type'],
             'is_visible' => (bool)$row['is_visible'],
             'is_identified' => (bool)$row['is_identified']

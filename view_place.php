@@ -90,12 +90,12 @@ while ($row = $stmt->fetch()) {
 
 // Récupérer les objets du lieu (seulement ceux non attribués pour l'affichage normal)
 $stmt = $pdo->prepare("
-    SELECT id, name, description, object_type, is_visible, is_identified, position_x, position_y, is_on_map,
-           item_id, item_name, item_description, letter_content, is_sealed, gold_coins, silver_coins, copper_coins,
-           owner_type, owner_id
+    SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped,
+           position_x, position_y, is_on_map, owner_type, owner_id,
+           poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed
     FROM place_objects 
-    WHERE place_id = ? AND (owner_type = 'none' OR owner_type IS NULL)
-    ORDER BY name ASC
+    WHERE place_id = ? AND (owner_type = 'place' OR owner_type IS NULL)
+    ORDER BY display_name ASC
 ");
 $stmt->execute([$place_id]);
 $placeObjects = $stmt->fetchAll();
@@ -114,12 +114,12 @@ foreach ($placeObjects as $object) {
 $allPlaceObjects = [];
 if ($isOwnerDM) {
     $stmt = $pdo->prepare("
-        SELECT id, name, description, object_type, is_visible, is_identified, position_x, position_y, is_on_map,
-               item_id, item_name, item_description, letter_content, is_sealed, gold_coins, silver_coins, copper_coins,
-               owner_type, owner_id
+        SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped,
+               position_x, position_y, is_on_map, owner_type, owner_id,
+               poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed
         FROM place_objects 
         WHERE place_id = ?
-        ORDER BY name ASC
+        ORDER BY display_name ASC
     ");
     $stmt->execute([$place_id]);
     $allPlaceObjects = $stmt->fetchAll();
@@ -524,14 +524,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         
                         if ($target && $target['character_id']) {
                             // Ajouter l'objet à l'équipement du personnage
-                            $stmt = $pdo->prepare("INSERT INTO character_equipment (character_id, magical_item_id, item_name, item_type, item_description, item_source, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                            $stmt = $pdo->prepare("INSERT INTO place_objects (place_id, display_name, object_type, type_precis, description, is_identified, is_visible, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed, magical_item_id, item_source, quantity, equipped_slot, notes, obtained_at, obtained_from) VALUES (NULL, ?, ?, ?, ?, 1, 0, 0, 0, 0, 0, 'player', ?, NULL, NULL, NULL, 0, 0, 0, NULL, 0, ?, 'Objet du lieu', 1, NULL, ?, NOW(), ?)");
                             $stmt->execute([
-                                $target['character_id'],
-                                $item_id,
                                 $item_info['nom'],
                                 $item_info['type'],
+                                $item_info['nom'],
                                 $item_info['description'],
-                                $item_info['source'],
+                                $target['character_id'],
+                                $item_id,
                                 $assign_notes,
                                 'Attribution MJ - Lieu ' . $place['title']
                             ]);
@@ -648,14 +648,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         
                         if ($target && $target['character_id']) {
                             // Ajouter le poison à l'équipement du personnage
-                            $stmt = $pdo->prepare("INSERT INTO character_equipment (character_id, magical_item_id, item_name, item_type, item_description, item_source, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                            $stmt = $pdo->prepare("INSERT INTO place_objects (place_id, display_name, object_type, type_precis, description, is_identified, is_visible, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed, magical_item_id, item_source, quantity, equipped_slot, notes, obtained_at, obtained_from) VALUES (NULL, ?, 'poison', ?, ?, ?, 1, 0, 0, 0, 0, 0, 'player', ?, ?, NULL, NULL, 0, 0, 0, NULL, 0, ?, 'Objet du lieu', 1, NULL, ?, NOW(), ?)");
                             $stmt->execute([
+                                $poison_info['nom'],
+                                $poison_info['nom'],
+                                $poison_info['description'],
                                 $target['character_id'],
                                 $poison_id,
-                                $poison_info['nom'],
-                                $poison_info['type'],
-                                $poison_info['description'],
-                                $poison_info['source'],
+                                $poison_id,
                                 $assign_notes,
                                 'Attribution MJ - Lieu ' . $place['title']
                             ]);
@@ -772,10 +772,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         if ($copper_coins > 0) $coins_parts[] = $copper_coins . ' pc';
                         
                         if (empty($object_name)) {
-                            $object_name = 'Pièces (' . implode(', ', $coins_parts) . ')';
+                            $object_name = 'Bourse';
                         }
                         if (empty($object_description)) {
-                            $object_description = 'Trésor contenant : ' . implode(', ', $coins_parts);
+                            $object_description = 'Une bourse contenant ' . implode(', ', $coins_parts) . '.';
                         }
                     } else {
                         $error_message = "Veuillez spécifier au moins une quantité de pièces.";
@@ -844,27 +844,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                     }
                 }
                 
-                // Insérer l'objet dans la base de données
+                // Insérer l'objet dans la base de données avec la nouvelle structure
                 $stmt = $pdo->prepare("
                     INSERT INTO place_objects 
-                    (place_id, name, description, object_type, is_visible, is_identified, item_id, item_name, item_description, letter_content, is_sealed, gold_coins, silver_coins, copper_coins) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (place_id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped, 
+                     poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ");
                 $stmt->execute([
                     $place_id, 
                     $object_name, 
-                    $object_description, 
                     $object_type, 
+                    $item_name, // type_precis
+                    $object_description, 
                     $is_visible,
                     $is_identified,
-                    $item_id,
-                    $item_name,
-                    $item_description,
-                    $letter_content,
-                    $is_sealed,
+                    false, // is_equipped (par défaut non équipé)
+                    ($object_type === 'poison') ? $item_id : null, // poison_id
+                    ($object_type === 'weapon') ? $item_id : null, // weapon_id
+                    ($object_type === 'armor') ? $item_id : null,  // armor_id
                     $gold_coins,
                     $silver_coins,
-                    $copper_coins
+                    $copper_coins,
+                    $letter_content,
+                    $is_sealed
                 ]);
                 
                 $success_message = "Objet '$object_name' ajouté au lieu.";
@@ -898,7 +901,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                     $success_message = "Objet supprimé du lieu.";
                     
                     // Recharger les objets
-                    $stmt = $pdo->prepare("SELECT id, name, description, object_type, is_visible, is_identified, position_x, position_y, is_on_map, item_id, item_name, item_description, letter_content, is_sealed, gold_coins, silver_coins, copper_coins FROM place_objects WHERE place_id = ? ORDER BY name ASC");
+                    $stmt = $pdo->prepare("SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed FROM place_objects WHERE place_id = ? ORDER BY display_name ASC");
                     $stmt->execute([$place_id]);
                     $placeObjects = $stmt->fetchAll();
                 } else {
@@ -923,7 +926,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                     $success_message = "Visibilité de l'objet modifiée.";
                     
                     // Recharger les objets
-                    $stmt = $pdo->prepare("SELECT id, name, description, object_type, is_visible, is_identified, position_x, position_y, is_on_map, item_id, item_name, item_description, letter_content, is_sealed, gold_coins, silver_coins, copper_coins FROM place_objects WHERE place_id = ? ORDER BY name ASC");
+                    $stmt = $pdo->prepare("SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed FROM place_objects WHERE place_id = ? ORDER BY display_name ASC");
                     $stmt->execute([$place_id]);
                     $placeObjects = $stmt->fetchAll();
                 } else {
@@ -948,7 +951,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         $success_message = "Identification de l'objet modifiée.";
                         
                         // Recharger les objets
-                        $stmt = $pdo->prepare("SELECT id, name, description, object_type, is_visible, is_identified, position_x, position_y, is_on_map, item_id, item_name, item_description, letter_content, is_sealed, gold_coins, silver_coins, copper_coins, owner_type, owner_id FROM place_objects WHERE place_id = ? ORDER BY name ASC");
+                        $stmt = $pdo->prepare("SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed FROM place_objects WHERE place_id = ? ORDER BY display_name ASC");
                         $stmt->execute([$place_id]);
                         $placeObjects = $stmt->fetchAll();
                     } else {
@@ -1072,13 +1075,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                                     $success_message = "Objet attribué et ajouté à l'inventaire du propriétaire.";
                                     
                                     // Recharger les objets
-                                    $stmt = $pdo->prepare("SELECT id, name, description, object_type, is_visible, is_identified, position_x, position_y, is_on_map, item_id, item_name, item_description, letter_content, is_sealed, gold_coins, silver_coins, copper_coins, owner_type, owner_id FROM place_objects WHERE place_id = ? AND (owner_type = 'none' OR owner_type IS NULL) ORDER BY name ASC");
+                                    $stmt = $pdo->prepare("SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed FROM place_objects WHERE place_id = ? AND (owner_type = 'place' OR owner_type IS NULL) ORDER BY display_name ASC");
                                     $stmt->execute([$place_id]);
                                     $placeObjects = $stmt->fetchAll();
                                     
                                     // Recharger tous les objets pour le MJ
                                     if ($isOwnerDM) {
-                                        $stmt = $pdo->prepare("SELECT id, name, description, object_type, is_visible, is_identified, position_x, position_y, is_on_map, item_id, item_name, item_description, letter_content, is_sealed, gold_coins, silver_coins, copper_coins, owner_type, owner_id FROM place_objects WHERE place_id = ? ORDER BY name ASC");
+                                        $stmt = $pdo->prepare("SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed FROM place_objects WHERE place_id = ? ORDER BY display_name ASC");
                                         $stmt->execute([$place_id]);
                                         $allPlaceObjects = $stmt->fetchAll();
                                     }
@@ -1803,9 +1806,13 @@ foreach ($allScenes as $s) {
                                                         $icon_class = 'fa-envelope';
                                                         $icon_color = '#0d6efd';
                                                         break;
-                                                    case 'coins':
+                                                    case 'bourse':
                                                         $icon_class = 'fa-coins';
                                                         $icon_color = '#ffc107';
+                                                        break;
+                                                    case 'outil':
+                                                        $icon_class = 'fa-tools';
+                                                        $icon_color = '#6c757d';
                                                         break;
                                                 }
                                             }
@@ -1814,14 +1821,14 @@ foreach ($allScenes as $s) {
                                                  data-token-type="object"
                                                  data-entity-id="<?php echo $object['id']; ?>"
                                                  data-object-id="<?php echo $object['id']; ?>"
-                                                 data-object-name="<?php echo htmlspecialchars($object['name']); ?>"
+                                                 data-object-name="<?php echo htmlspecialchars($object['display_name']); ?>"
                                                  data-object-type="<?php echo $object['object_type']; ?>"
                                                  data-is-identified="<?php echo $object['is_identified'] ? 'true' : 'false'; ?>"
                                                  data-position-x="<?php echo $position['x']; ?>"
                                                  data-position-y="<?php echo $position['y']; ?>"
                                                  data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
                                                  style="width: 24px; height: 24px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #FF8C00; border-radius: 4px; background: linear-gradient(45deg, #FFD700, #FFA500); box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 12px; color: #8B4513; font-weight: bold;"
-                                                 title="<?php echo htmlspecialchars($object['name']); ?>">
+                                                 title="<?php echo htmlspecialchars($object['display_name']); ?>">
                                                 <i class="fas <?php echo $icon_class; ?>" style="color: <?php echo $icon_color; ?>;"></i>
                                             </div>
                                         <?php endif; ?>
@@ -2322,10 +2329,15 @@ foreach ($allScenes as $s) {
                                                     $badge_class = 'bg-danger';
                                                     $type_label = 'Poison';
                                                     break;
-                                                case 'coins':
+                                                case 'bourse':
                                                     $icon_class = 'fa-coins';
                                                     $badge_class = 'bg-warning';
-                                                    $type_label = 'Pièces';
+                                                    $type_label = 'Bourse';
+                                                    break;
+                                                case 'outil':
+                                                    $icon_class = 'fa-tools';
+                                                    $badge_class = 'bg-info';
+                                                    $type_label = 'Outil';
                                                     break;
                                                 case 'letter':
                                                     $icon_class = 'fa-envelope';
@@ -2353,7 +2365,7 @@ foreach ($allScenes as $s) {
                                         </div>
                                         <div>
                                             <div class="d-flex align-items-center">
-                                                <strong><?php echo htmlspecialchars($object['name']); ?></strong>
+                                                <strong><?php echo htmlspecialchars($object['display_name']); ?></strong>
                                                 <span class="badge <?php echo $badge_class; ?> ms-2"><?php echo $type_label; ?></span>
                                                 <?php if ($object['is_visible']): ?>
                                                     <span class="badge bg-warning ms-1" title="Visible des joueurs">
@@ -2457,8 +2469,21 @@ foreach ($allScenes as $s) {
                                                         case 'armor':
                                                             echo "Une pièce d'armure standard. Ses propriétés spéciales ne sont pas apparentes.";
                                                             break;
-                                                        case 'coins':
-                                                            echo "Un trésor de pièces. La valeur exacte n'est pas immédiatement évidente.";
+                                                        case 'bourse':
+                                                            $gold = (int)$object['gold_coins'];
+                                                            $silver = (int)$object['silver_coins'];
+                                                            $copper = (int)$object['copper_coins'];
+                                                            
+                                                            if ($gold > 0 || $silver > 0 || $copper > 0) {
+                                                                echo "Une bourse contenant ";
+                                                                $parts = [];
+                                                                if ($gold > 0) $parts[] = "$gold pièce" . ($gold > 1 ? 's' : '') . " d'or";
+                                                                if ($silver > 0) $parts[] = "$silver pièce" . ($silver > 1 ? 's' : '') . " d'argent";
+                                                                if ($copper > 0) $parts[] = "$copper pièce" . ($copper > 1 ? 's' : '') . " de cuivre";
+                                                                echo implode(', ', $parts) . ".";
+                                                            } else {
+                                                                echo "Une bourse vide.";
+                                                            }
                                                             break;
                                                         case 'letter':
                                                             echo "Une lettre. Son contenu et son expéditeur sont inconnus.";
@@ -2500,24 +2525,24 @@ foreach ($allScenes as $s) {
                                     </div>
                                     <?php if ($isOwnerDM): ?>
                                         <div class="d-flex gap-1">
-                                            <form method="POST" class="d-inline" onsubmit="return confirm('<?php echo ($object['is_visible'] ? 'Masquer' : 'Afficher'); ?> <?php echo htmlspecialchars($object['name']); ?> pour les joueurs ?');">
+                                            <form method="POST" class="d-inline" onsubmit="return confirm('<?php echo ($object['is_visible'] ? 'Masquer' : 'Afficher'); ?> <?php echo htmlspecialchars($object['display_name']); ?> pour les joueurs ?');">
                                                 <input type="hidden" name="action" value="toggle_object_visibility">
                                                 <input type="hidden" name="object_id" value="<?php echo (int)$object['id']; ?>">
                                                 <button type="submit" class="btn btn-sm <?php echo $object['is_visible'] ? 'btn-outline-warning' : 'btn-outline-success'; ?>" title="<?php echo $object['is_visible'] ? 'Masquer pour les joueurs' : 'Afficher pour les joueurs'; ?>">
                                                     <i class="fas <?php echo $object['is_visible'] ? 'fa-eye-slash' : 'fa-eye'; ?>"></i>
                                                 </button>
                                             </form>
-                                            <form method="POST" class="d-inline" onsubmit="return confirm('<?php echo ($object['is_identified'] ? 'Désidentifier' : 'Identifier'); ?> <?php echo htmlspecialchars($object['name']); ?> pour les joueurs ?');">
+                                            <form method="POST" class="d-inline" onsubmit="return confirm('<?php echo ($object['is_identified'] ? 'Désidentifier' : 'Identifier'); ?> <?php echo htmlspecialchars($object['display_name']); ?> pour les joueurs ?');">
                                                 <input type="hidden" name="action" value="toggle_object_identification">
                                                 <input type="hidden" name="object_id" value="<?php echo (int)$object['id']; ?>">
                                                 <button type="submit" class="btn btn-sm <?php echo $object['is_identified'] ? 'btn-outline-success' : 'btn-outline-warning'; ?>" title="<?php echo $object['is_identified'] ? 'Désidentifier pour les joueurs' : 'Identifier pour les joueurs'; ?>">
                                                     <i class="fas <?php echo $object['is_identified'] ? 'fa-check-circle' : 'fa-question-circle'; ?>"></i>
                                                 </button>
                                             </form>
-                                         <button type="button" class="btn btn-sm btn-outline-info" title="Attribuer l'objet" onclick="showAssignObjectModal(<?php echo $object['id']; ?>, '<?php echo htmlspecialchars($object['name']); ?>', '<?php echo $object['owner_type']; ?>', <?php echo $object['owner_id'] ?: 'null'; ?>)">
+                                         <button type="button" class="btn btn-sm btn-outline-info" title="Attribuer l'objet" onclick="showAssignObjectModal(<?php echo $object['id']; ?>, '<?php echo htmlspecialchars($object['display_name']); ?>', '<?php echo $object['owner_type']; ?>', <?php echo $object['owner_id'] ?: 'null'; ?>)">
                                              <i class="fas fa-user-plus"></i>
                                          </button>
-                                         <form method="POST" class="d-inline" onsubmit="return confirm('Supprimer <?php echo htmlspecialchars($object['name']); ?> de ce lieu ?');">
+                                         <form method="POST" class="d-inline" onsubmit="return confirm('Supprimer <?php echo htmlspecialchars($object['display_name']); ?> de ce lieu ?');">
                                              <input type="hidden" name="action" value="remove_object">
                                              <input type="hidden" name="object_id" value="<?php echo (int)$object['id']; ?>">
                                              <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer l'objet">
@@ -3454,9 +3479,13 @@ foreach ($allScenes as $s) {
                     icon.className = 'fas fa-envelope';
                     icon.style.color = '#0d6efd';
                     break;
-                case 'coins':
+                case 'bourse':
                     icon.className = 'fas fa-coins';
                     icon.style.color = '#ffc107';
+                    break;
+                case 'outil':
+                    icon.className = 'fas fa-tools';
+                    icon.style.color = '#6c757d';
                     break;
                 default:
                     icon.className = 'fas fa-box';
@@ -3564,8 +3593,8 @@ foreach ($allScenes as $s) {
         // Créer les pions dorés pour les objets visibles
         <?php foreach ($placeObjects as $object): ?>
             <?php if ($object['is_visible']): ?>
-                console.log('Création du pion pour: <?php echo htmlspecialchars($object['name']); ?> (<?php echo $object['object_type']; ?>, identifié: <?php echo $object['is_identified'] ? 'oui' : 'non'; ?>)');
-                createObjectToken(<?php echo $object['id']; ?>, '<?php echo htmlspecialchars($object['name']); ?>', '<?php echo $object['object_type']; ?>', <?php echo $object['is_identified'] ? 'true' : 'false'; ?>, <?php echo $object['position_x']; ?>, <?php echo $object['position_y']; ?>, <?php echo $object['is_on_map'] ? 'true' : 'false'; ?>);
+                console.log('Création du pion pour: <?php echo htmlspecialchars($object['display_name']); ?> (<?php echo $object['object_type']; ?>, identifié: <?php echo $object['is_identified'] ? 'oui' : 'non'; ?>)');
+                createObjectToken(<?php echo $object['id']; ?>, '<?php echo htmlspecialchars($object['display_name']); ?>', '<?php echo $object['object_type']; ?>', <?php echo $object['is_identified'] ? 'true' : 'false'; ?>, <?php echo $object['position_x']; ?>, <?php echo $object['position_y']; ?>, <?php echo $object['is_on_map'] ? 'true' : 'false'; ?>);
             <?php endif; ?>
         <?php endforeach; ?>
         

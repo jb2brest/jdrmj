@@ -7,18 +7,73 @@ $current_page = "view_scene_player";
 requireLogin();
 
 $user_id = $_SESSION['user_id'];
+$requested_campaign_id = isset($_GET['campaign_id']) ? (int)$_GET['campaign_id'] : null;
 
 // Trouver le lieu où se trouve le joueur
-$stmt = $pdo->prepare("
-    SELECT p.*, c.title as campaign_title, c.dm_id, c.id as campaign_id
-    FROM places p 
-    JOIN campaigns c ON p.campaign_id = c.id 
-    JOIN place_players pp ON p.id = pp.place_id 
-    WHERE pp.player_id = ?
-    LIMIT 1
-");
-$stmt->execute([$user_id]);
-$place = $stmt->fetch();
+if ($requested_campaign_id) {
+    // Si un campaign_id est spécifié, chercher dans cette campagne
+    $stmt = $pdo->prepare("
+        SELECT p.*, c.title as campaign_title, c.dm_id, c.id as campaign_id
+        FROM places p 
+        JOIN campaigns c ON p.campaign_id = c.id 
+        JOIN place_players pp ON p.id = pp.place_id 
+        WHERE pp.player_id = ? AND c.id = ?
+        LIMIT 1
+    ");
+    $stmt->execute([$user_id, $requested_campaign_id]);
+    $place = $stmt->fetch();
+    
+    // Si aucun lieu trouvé dans cette campagne, vérifier si le joueur est membre de la campagne
+    if (!$place) {
+        $stmt = $pdo->prepare("SELECT cm.role FROM campaign_members cm WHERE cm.campaign_id = ? AND cm.user_id = ?");
+        $stmt->execute([$requested_campaign_id, $user_id]);
+        $membership = $stmt->fetch();
+        
+        if ($membership) {
+            // Le joueur est membre mais pas assigné à un lieu, afficher un message spécifique
+            $page_title = "Aucun lieu assigné dans cette campagne";
+            include 'includes/layout.php';
+            ?>
+            <div class="container mt-4">
+                <div class="row justify-content-center">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <i class="fas fa-map-marker-alt fa-3x text-muted mb-3"></i>
+                                <h4 class="card-title">Aucun lieu assigné</h4>
+                                <p class="card-text text-muted">
+                                    Vous êtes membre de cette campagne mais n'êtes pas encore assigné à un lieu spécifique. 
+                                    Le maître du jeu doit vous ajouter à un lieu pour que vous puissiez y accéder.
+                                </p>
+                                <a href="view_campaign.php?id=<?php echo $requested_campaign_id; ?>" class="btn btn-primary">
+                                    <i class="fas fa-arrow-left me-2"></i>Retour à la campagne
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php
+            exit();
+        } else {
+            // Le joueur n'est pas membre de cette campagne
+            header('Location: campaigns.php');
+            exit();
+        }
+    }
+} else {
+    // Comportement original : chercher n'importe quel lieu où se trouve le joueur
+    $stmt = $pdo->prepare("
+        SELECT p.*, c.title as campaign_title, c.dm_id, c.id as campaign_id
+        FROM places p 
+        JOIN campaigns c ON p.campaign_id = c.id 
+        JOIN place_players pp ON p.id = pp.place_id 
+        WHERE pp.player_id = ?
+        LIMIT 1
+    ");
+    $stmt->execute([$user_id]);
+    $place = $stmt->fetch();
+}
 
 if (!$place) {
     // Le joueur n'est dans aucun lieu, afficher un message informatif
@@ -132,11 +187,12 @@ $placeMonsters = $stmt->fetchAll();
 
 // Récupérer les objets présents dans le lieu (seulement ceux visibles et non attribués)
 $stmt = $pdo->prepare("
-    SELECT id, name, description, object_type, is_visible, is_identified, position_x, position_y, is_on_map,
-           item_id, item_name, item_description, letter_content, is_sealed, gold_coins, silver_coins, copper_coins
+    SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped,
+           position_x, position_y, is_on_map, owner_type, owner_id,
+           poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed
     FROM place_objects 
-    WHERE place_id = ? AND is_visible = 1 AND (owner_type = 'none' OR owner_type IS NULL)
-    ORDER BY name ASC
+    WHERE place_id = ? AND is_visible = 1 AND (owner_type = 'place' OR owner_type IS NULL)
+    ORDER BY display_name ASC
 ");
 $stmt->execute([$place_id]);
 $placeObjects = $stmt->fetchAll();
@@ -523,9 +579,13 @@ include 'includes/layout.php';
                                                     $icon_class = 'fa-envelope';
                                                     $icon_color = '#0d6efd';
                                                     break;
-                                                case 'coins':
+                                                case 'bourse':
                                                     $icon_class = 'fa-coins';
                                                     $icon_color = '#ffc107';
+                                                    break;
+                                                case 'outil':
+                                                    $icon_class = 'fa-tools';
+                                                    $icon_color = '#6c757d';
                                                     break;
                                             }
                                         }
@@ -534,14 +594,14 @@ include 'includes/layout.php';
                                              data-token-type="object"
                                              data-entity-id="<?php echo $object['id']; ?>"
                                              data-object-id="<?php echo $object['id']; ?>"
-                                             data-object-name="<?php echo htmlspecialchars($object['name']); ?>"
+                                             data-object-name="<?php echo htmlspecialchars($object['display_name']); ?>"
                                              data-object-type="<?php echo $object['object_type']; ?>"
                                              data-is-identified="<?php echo $object['is_identified'] ? 'true' : 'false'; ?>"
                                              data-position-x="<?php echo $position['x']; ?>"
                                              data-position-y="<?php echo $position['y']; ?>"
                                              data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
                                              style="width: 24px; height: 24px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #FF8C00; border-radius: 4px; background: linear-gradient(45deg, #FFD700, #FFA500); box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 12px; color: #8B4513; font-weight: bold;"
-                                             title="<?php echo htmlspecialchars($object['name']); ?>">
+                                             title="<?php echo htmlspecialchars($object['display_name']); ?>">
                                             <i class="fas <?php echo $icon_class; ?>" style="color: <?php echo $icon_color; ?>;"></i>
                                         </div>
                                     <?php endforeach; ?>
@@ -751,7 +811,7 @@ include 'includes/layout.php';
                                                 <i class="fas <?php echo $icon_class; ?> text-white" style="color: <?php echo $icon_color; ?> !important;"></i>
                                             </div>
                                             <div class="flex-grow-1">
-                                                <h6 class="mb-1"><?php echo htmlspecialchars($object['name']); ?></h6>
+                                                <h6 class="mb-1"><?php echo htmlspecialchars($object['display_name']); ?></h6>
                                                 <small class="text-muted">
                                                     <?php if ($object['is_identified']): ?>
                                                         <?php 
@@ -760,8 +820,11 @@ include 'includes/layout.php';
                                                             case 'poison':
                                                                 $type_label = 'Poison';
                                                                 break;
-                                                            case 'coins':
-                                                                $type_label = 'Pièces';
+                                                            case 'bourse':
+                                                                $type_label = 'Bourse';
+                                                                break;
+                                                            case 'outil':
+                                                                $type_label = 'Outil';
                                                                 break;
                                                             case 'letter':
                                                                 $type_label = 'Lettre';
@@ -1338,9 +1401,13 @@ function updateObjectTokenIcon(token, objectType, isIdentified) {
                 icon.className = 'fas fa-envelope';
                 icon.style.color = '#0d6efd';
                 break;
-            case 'coins':
+            case 'bourse':
                 icon.className = 'fas fa-coins';
                 icon.style.color = '#ffc107';
+                break;
+            case 'outil':
+                icon.className = 'fas fa-tools';
+                icon.style.color = '#6c757d';
                 break;
             default:
                 icon.className = 'fas fa-box';

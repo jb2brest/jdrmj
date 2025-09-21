@@ -69,7 +69,69 @@ Les pions objets qui devraient être visible des joueurs, ne le sont pas dans vi
 dans view_scene_player.php la position des objets n'est pas mise à jour automatiquement.
 
 Dans view_place.php, le MJ peut attribuer chaque objet à un joueur ou à un PNJ ou à un monstre
-Quand un objet est attribué, il par dans l'inventaire de son propriétaire et n'est plus identifé sur la carte, ni dans la liste des objets du lieu.
+Quand un objet est attribué, il est ajouté à l'inventaire du joueur ou du PNJ ou du monstre.
+Cet inventaire est celui affiché dans la fiche de personnage ou de monstre. 
+
+Il faut revoir l'enregistrement des objets. 
+Un objet peut être identifié ou pas. 
+Il peut être visible des joueurs ou pas. 
+Il peut être attribué à un lieu, à un monstre, à un personnage joueur ou à un personnage non joueur.
+Un objet à un type : (Poison, Arme, Armure, Bourse, Lettre)
+un objet à un nom d'affichage et type_precis. 
+Le type_precis permet d'identifier le type de poison, d'arme ou d'armure.
+Les objets de type arme ou d'armure peuvent être équipé ou déséquipé par les personnages ou monstres.
+
+Dans view_character.php, il faut remplacer les zones "Équipement de Combat" et "Équipement et Trésor" 
+Par une zone "Equipement" et une zone "Bourse"
+Dans la zone "Bourse" il faut afficher l'argent du Personnage.
+Dans la zone "Equipement", il faut afficher un tableau des objets possédés.
+Le tableau est triable et filtrable. 
+il contient les colonnes "Nom" "type" "type précis".
+il est possible d'équiper les objets.
+
+
+Chaque arme, armure est un objet. 
+
+Quand le personnage d'un joueur est accepté dans une campagne, il doit choisir son équipement de départ.
+Il le fait lorsqu'il clique la première fois sur "Rejoindre la partie" 
+Un fenêtre s'ouvre et lui demande de choisir l'équipement de départ. 
+Une fois choisi il est redirigé vers la page view_scene_player.php
+
+
+Dans view_campaign.php quand le MJ accepte un personnage joueur, il doit l'affecter à un lieu.
+
+Dans edit_character.php il faut supprimer la zone "Equipement de départ".
+
+Un lieu peut être associé à plusieurs campagnes.
+
+L'attribution de l'équipement de départ 
+
+Dans la zone "Choisir l'équipement de départ "
+il faut proposer des objets en fonction de la classe de personnage. 
+Pour un moine :
+il faut choisir en une épée courte ou une arme courante (table weapons : type = "Armes courantes à distance" ou "Armes courantes de corps à corps"
+puis entre un sac d'exploration souterraine ou un sac d'explorateur
+
+un sac d'exploration souterraine contient les objets : 
+un sac à dos, 
+un pied de biche, 
+un marteau, 
+10 pitons, 
+10 torches, 
+une boite d'allume-feu, 
+10 jours de rations 
+corde de chanvre (15m)
+une gourde d'eau. 
+
+un sac d'explorateur contient les objets : 
+un sac à dos, 
+un sac de couchage, 
+une gamelle, 
+une boite d'allume-feu, 
+10 torches, 
+10 jours de rations 
+corde de chanvre (15m)
+une gourde d'eau. 
 
 Ajouter des évènements à l'histoire du personnage. 
 

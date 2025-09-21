@@ -112,6 +112,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = sanitizeInput($_POST['message'] ?? '');
         $character_id = !empty($_POST['character_id']) ? (int)$_POST['character_id'] : null;
         
+        // Validation : le personnage est maintenant obligatoire
+        if (!$character_id) {
+            $error_message = "Vous devez sélectionner un personnage pour postuler à cette campagne.";
+        } else {
+            // Vérifier que le personnage appartient bien au joueur
+            $stmt = $pdo->prepare("SELECT id FROM characters WHERE id = ? AND user_id = ?");
+            $stmt->execute([$character_id, $user_id]);
+            $character_exists = $stmt->fetch();
+            
+            if (!$character_exists) {
+                $error_message = "Le personnage sélectionné n'existe pas ou ne vous appartient pas.";
+            }
+        }
+        
         // Vérifier si l'utilisateur n'est pas déjà membre
         $stmt = $pdo->prepare("SELECT user_id FROM campaign_members WHERE campaign_id = ? AND user_id = ?");
         $stmt->execute([$campaign_id, $user_id]);
@@ -160,27 +174,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isDMOrAdmin()) {
     // Approuver une candidature
     if (isset($_POST['action']) && $_POST['action'] === 'approve_application' && isset($_POST['application_id'])) {
         $application_id = (int)$_POST['application_id'];
+        $place_id = !empty($_POST['place_id']) ? (int)$_POST['place_id'] : null;
+        $character_id = !empty($_POST['character_id']) ? (int)$_POST['character_id'] : null;
+        
         // Vérifier que la candidature correspond à cette campagne du MJ
-        $stmt = $pdo->prepare("SELECT ca.player_id FROM campaign_applications ca JOIN campaigns c ON ca.campaign_id = c.id WHERE ca.id = ? AND ca.campaign_id = ? AND c.dm_id = ?");
+        $stmt = $pdo->prepare("SELECT ca.player_id, ca.character_id FROM campaign_applications ca JOIN campaigns c ON ca.campaign_id = c.id WHERE ca.id = ? AND ca.campaign_id = ? AND c.dm_id = ?");
         $stmt->execute([$application_id, $campaign_id, $dm_id]);
         $app = $stmt->fetch();
         if ($app) {
             $player_id = (int)$app['player_id'];
+            $app_character_id = (int)$app['character_id'];
+            
+            // Utiliser le personnage de la candidature si aucun n'est spécifié
+            if (!$character_id && $app_character_id) {
+                $character_id = $app_character_id;
+            }
+            
             $pdo->beginTransaction();
             try {
                 // Mettre à jour le statut
                 $stmt = $pdo->prepare("UPDATE campaign_applications SET status = 'approved' WHERE id = ?");
                 $stmt->execute([$application_id]);
+                
                 // Ajouter comme membre si pas déjà présent
                 $stmt = $pdo->prepare("INSERT IGNORE INTO campaign_members (campaign_id, user_id, role) VALUES (?, ?, 'player')");
                 $stmt->execute([$campaign_id, $player_id]);
+                
+                // Si un lieu est spécifié, assigner le joueur au lieu
+                if ($place_id) {
+                    // Vérifier que le lieu appartient à cette campagne
+                    $stmt = $pdo->prepare("SELECT id FROM places WHERE id = ? AND campaign_id = ?");
+                    $stmt->execute([$place_id, $campaign_id]);
+                    if ($stmt->fetch()) {
+                        // Retirer le joueur de tous les autres lieux de la campagne
+                        $stmt = $pdo->prepare("
+                            DELETE FROM place_players 
+                            WHERE player_id = ? AND place_id IN (
+                                SELECT id FROM places WHERE campaign_id = ?
+                            )
+                        ");
+                        $stmt->execute([$player_id, $campaign_id]);
+                        
+                        // Ajouter le joueur au nouveau lieu
+                        $stmt = $pdo->prepare("INSERT INTO place_players (place_id, player_id, character_id) VALUES (?, ?, ?)");
+                        $stmt->execute([$place_id, $player_id, $character_id]);
+                    }
+                }
+                
                 // Notification au joueur
                 $title = 'Candidature acceptée';
                 $message = 'Votre candidature à la campagne "' . $campaign['title'] . '" a été acceptée.';
+                if ($place_id) {
+                    $stmt = $pdo->prepare("SELECT title FROM places WHERE id = ?");
+                    $stmt->execute([$place_id]);
+                    $place = $stmt->fetch();
+                    if ($place) {
+                        $message .= ' Vous avez été assigné au lieu "' . $place['title'] . '".';
+                    }
+                }
                 $stmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, related_id) VALUES (?, 'system', ?, ?, ?)");
                 $stmt->execute([$player_id, $title, $message, $campaign_id]);
+                
                 $pdo->commit();
                 $success_message = "Candidature approuvée et joueur ajouté à la campagne.";
+                if ($place_id) {
+                    $success_message .= " Le joueur a été assigné au lieu sélectionné.";
+                }
             } catch (Exception $e) {
                 $pdo->rollBack();
                 $error_message = "Erreur lors de l'approbation.";
@@ -513,6 +572,41 @@ $stmt = $pdo->prepare("SELECT id, name FROM characters WHERE user_id = ? ORDER B
 $stmt->execute([$user_id]);
 $user_characters = $stmt->fetchAll();
 
+// Vérifier l'équipement de départ pour les personnages du joueur dans cette campagne
+$characters_equipment_status = [];
+if ($is_member && $user_role === 'player') {
+    // D'abord, vérifier quels personnages ont été acceptés dans cette campagne
+    $stmt = $pdo->prepare("
+        SELECT character_id 
+        FROM campaign_applications 
+        WHERE campaign_id = ? AND player_id = ? AND status = 'approved'
+    ");
+    $stmt->execute([$campaign_id, $user_id]);
+    $accepted_characters = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    
+    foreach ($user_characters as $char) {
+        // Vérifier si le personnage a été accepté dans cette campagne
+        $is_accepted = in_array($char['id'], $accepted_characters);
+        
+        if ($is_accepted) {
+            // Vérifier si l'équipement de départ a été choisi
+            $stmt = $pdo->prepare("
+                SELECT COUNT(*) as count 
+                FROM place_objects 
+                WHERE owner_type = 'player' AND owner_id = ? 
+                AND (item_source = 'Équipement de départ' OR item_source = 'Classe')
+            ");
+            $stmt->execute([$char['id']]);
+            $equipment_count = $stmt->fetch()['count'];
+            
+            $characters_equipment_status[$char['id']] = [
+                'name' => $char['name'],
+                'equipment_selected' => $equipment_count > 0
+            ];
+        }
+    }
+}
+
 // Vérifier si l'utilisateur a déjà postulé
 $stmt = $pdo->prepare("SELECT id, status, created_at FROM campaign_applications WHERE campaign_id = ? AND player_id = ? ORDER BY created_at DESC LIMIT 1");
 $stmt->execute([$campaign_id, $user_id]);
@@ -701,33 +795,87 @@ if (!empty($places)) {
                         <div class="mt-4 p-3 border rounded bg-brown-light">
                             <h6 class="mb-3 text-brown"><i class="fas fa-check-circle me-2"></i>Vous êtes membre de cette campagne</h6>
                             <p class="mb-3">Vous pouvez maintenant rejoindre la partie et accéder à tous les contenus de la campagne.</p>
-                            <a href="view_scene_player.php" class="btn btn-brown">
-                                <i class="fas fa-play me-2"></i>Rejoindre la partie
-                            </a>
+                            
+                            <?php if (!empty($characters_equipment_status)): ?>
+                                <?php 
+                                $all_equipment_selected = true;
+                                $characters_without_equipment = [];
+                                foreach ($characters_equipment_status as $char_id => $status) {
+                                    if (!$status['equipment_selected']) {
+                                        $all_equipment_selected = false;
+                                        $characters_without_equipment[] = $char_id;
+                                    }
+                                }
+                                ?>
+                                
+                                <?php if ($all_equipment_selected): ?>
+                                    <!-- Tous les personnages ont leur équipement -->
+                                    <a href="view_scene_player.php?campaign_id=<?php echo $campaign_id; ?>" class="btn btn-brown">
+                                        <i class="fas fa-play me-2"></i>Rejoindre la partie
+                                    </a>
+                                <?php else: ?>
+                                    <!-- Certains personnages n'ont pas choisi leur équipement -->
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        <strong>Équipement de départ requis</strong><br>
+                                        Vous devez d'abord choisir l'équipement de départ pour vos personnages :
+                                        <ul class="mb-3 mt-2">
+                                            <?php foreach ($characters_without_equipment as $char_id): ?>
+                                                <li><?php echo htmlspecialchars($characters_equipment_status[$char_id]['name']); ?></li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#selectEquipmentModal">
+                                            <i class="fas fa-shield-alt me-2"></i>Choisir l'équipement de départ
+                                        </button>
+                                    </div>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <!-- Aucun personnage dans la campagne -->
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Vous n'avez pas encore de personnage dans cette campagne.
+                                </div>
+                            <?php endif; ?>
                         </div>
                         <?php elseif (!$is_member && !$user_application): ?>
                         <!-- Formulaire de candidature pour les joueurs -->
                         <div class="mt-4 p-3 border rounded bg-light">
                             <h6 class="mb-3"><i class="fas fa-paper-plane me-2"></i>Postuler à cette campagne</h6>
-                            <form method="POST">
-                                <input type="hidden" name="action" value="apply_to_campaign">
-                                <div class="mb-3">
-                                    <label class="form-label">Personnage (optionnel)</label>
-                                    <select name="character_id" class="form-select">
-                                        <option value="">Aucun personnage spécifique</option>
-                                        <?php foreach ($user_characters as $char): ?>
-                                            <option value="<?php echo $char['id']; ?>"><?php echo htmlspecialchars($char['name']); ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
+                            
+                            <?php if (empty($user_characters)): ?>
+                                <!-- Aucun personnage disponible -->
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>Personnage requis</strong><br>
+                                    Vous devez d'abord créer un personnage pour pouvoir postuler à cette campagne.
+                                    <div class="mt-3">
+                                        <a href="create_character.php" class="btn btn-warning">
+                                            <i class="fas fa-user-plus me-2"></i>Créer un personnage
+                                        </a>
+                                    </div>
                                 </div>
+                            <?php else: ?>
+                                <form method="POST">
+                                    <input type="hidden" name="action" value="apply_to_campaign">
+                                    <div class="mb-3">
+                                        <label class="form-label">Personnage <span class="text-danger">*</span></label>
+                                        <select name="character_id" class="form-select" required>
+                                            <option value="">Sélectionnez un personnage</option>
+                                            <?php foreach ($user_characters as $char): ?>
+                                                <option value="<?php echo $char['id']; ?>"><?php echo htmlspecialchars($char['name']); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <div class="form-text">Vous devez sélectionner un personnage pour postuler à cette campagne.</div>
+                                    </div>
                                 <div class="mb-3">
                                     <label class="form-label">Message de candidature</label>
                                     <textarea name="message" class="form-control" rows="3" placeholder="Présentez-vous et expliquez pourquoi vous souhaitez rejoindre cette campagne..."></textarea>
                                 </div>
-                                <button type="submit" class="btn btn-brown">
-                                    <i class="fas fa-paper-plane me-2"></i>Envoyer ma candidature
-                                </button>
-                            </form>
+                                    <button type="submit" class="btn btn-brown">
+                                        <i class="fas fa-paper-plane me-2"></i>Envoyer ma candidature
+                                    </button>
+                                </form>
+                            <?php endif; ?>
                         </div>
                         <?php elseif ($user_application): ?>
                         <!-- Statut de la candidature -->
@@ -1096,11 +1244,9 @@ if (!empty($places)) {
                                                 <td><small class="text-muted"><?php echo date('d/m/Y H:i', strtotime($a['created_at'])); ?></small></td>
                                                 <td class="text-end">
                                                     <?php if ($a['status'] === 'pending'): ?>
-                                                        <form method="POST" class="d-inline">
-                                                            <input type="hidden" name="action" value="approve_application">
-                                                            <input type="hidden" name="application_id" value="<?php echo $a['id']; ?>">
-                                                            <button class="btn btn-sm btn-brown"><i class="fas fa-check me-1"></i>Accepter</button>
-                                                        </form>
+                                                        <button class="btn btn-sm btn-brown" data-bs-toggle="modal" data-bs-target="#approveModal<?php echo $a['id']; ?>">
+                                                            <i class="fas fa-check me-1"></i>Accepter
+                                                        </button>
                                                         <form method="POST" class="d-inline" onsubmit="return confirm('Refuser cette candidature ?');">
                                                             <input type="hidden" name="action" value="decline_application">
                                                             <input type="hidden" name="application_id" value="<?php echo $a['id']; ?>">
@@ -1537,5 +1683,120 @@ if (!empty($places)) {
         });
     });
     </script>
+
+    <!-- Modal de sélection d'équipement -->
+    <div class="modal fade" id="selectEquipmentModal" tabindex="-1" aria-labelledby="selectEquipmentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="selectEquipmentModalLabel">
+                        <i class="fas fa-shield-alt me-2"></i>Choisir l'équipement de départ
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Sélectionnez le personnage pour lequel vous voulez choisir l'équipement de départ :</p>
+                    <div class="list-group">
+                        <?php 
+                        $characters_without_equipment_modal = [];
+                        foreach ($characters_equipment_status as $char_id => $status) {
+                            if (!$status['equipment_selected']) {
+                                $characters_without_equipment_modal[] = $char_id;
+                            }
+                        }
+                        ?>
+                        <?php foreach ($characters_without_equipment_modal as $char_id): ?>
+                            <a href="select_starting_equipment.php?campaign_id=<?php echo $campaign_id; ?>&character_id=<?php echo $char_id; ?>" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1"><?php echo htmlspecialchars($characters_equipment_status[$char_id]['name']); ?></h6>
+                                    <small class="text-muted">Cliquez pour choisir l'équipement</small>
+                                </div>
+                                <p class="mb-1">Équipement de départ non sélectionné</p>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals d'approbation des candidatures -->
+    <?php foreach ($applications as $a): ?>
+        <?php if ($a['status'] === 'pending'): ?>
+            <div class="modal fade" id="approveModal<?php echo $a['id']; ?>" tabindex="-1" aria-labelledby="approveModalLabel<?php echo $a['id']; ?>" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="approveModalLabel<?php echo $a['id']; ?>">
+                                <i class="fas fa-check me-2"></i>Accepter la candidature
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <form method="POST">
+                            <div class="modal-body">
+                                <input type="hidden" name="action" value="approve_application">
+                                <input type="hidden" name="application_id" value="<?php echo $a['id']; ?>">
+                                
+                                <div class="mb-3">
+                                    <label class="form-label"><strong>Joueur :</strong></label>
+                                    <p class="mb-0"><?php echo htmlspecialchars($a['username']); ?></p>
+                                </div>
+                                
+                                <?php if (!empty($a['character_id'])): ?>
+                                    <div class="mb-3">
+                                        <label class="form-label"><strong>Personnage :</strong></label>
+                                        <p class="mb-0">
+                                            <span class="badge bg-secondary">#<?php echo (int)$a['character_id']; ?></span>
+                                            <?php echo htmlspecialchars($a['character_name'] ?? 'Personnage'); ?>
+                                        </p>
+                                        <input type="hidden" name="character_id" value="<?php echo (int)$a['character_id']; ?>">
+                                    </div>
+                                <?php endif; ?>
+                                
+                                <div class="mb-3">
+                                    <label for="place_id_<?php echo $a['id']; ?>" class="form-label">
+                                        <i class="fas fa-map-marker-alt me-1"></i>Assigner à un lieu <span class="text-muted">(optionnel)</span>
+                                    </label>
+                                    <select name="place_id" id="place_id_<?php echo $a['id']; ?>" class="form-select">
+                                        <option value="">Aucun lieu spécifique</option>
+                                        <?php foreach ($places as $place): ?>
+                                            <option value="<?php echo (int)$place['id']; ?>">
+                                                <?php echo htmlspecialchars($place['title']); ?>
+                                                <?php if (!empty($place['country_name'])): ?>
+                                                    (<?php echo htmlspecialchars($place['country_name']); ?>)
+                                                <?php endif; ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <div class="form-text">
+                                        Si vous sélectionnez un lieu, le joueur sera automatiquement assigné à ce lieu.
+                                        Sinon, il pourra être assigné plus tard via la gestion des lieux.
+                                    </div>
+                                </div>
+                                
+                                <?php if (!empty($a['message'])): ?>
+                                    <div class="mb-3">
+                                        <label class="form-label"><strong>Message de candidature :</strong></label>
+                                        <div class="border rounded p-2 bg-light">
+                                            <small><?php echo nl2br(htmlspecialchars($a['message'])); ?></small>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                <button type="submit" class="btn btn-brown">
+                                    <i class="fas fa-check me-1"></i>Accepter la candidature
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
+    <?php endforeach; ?>
 </body>
 </html>

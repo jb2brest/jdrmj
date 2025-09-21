@@ -234,7 +234,7 @@ $intelligenceMod = getAbilityModifier($character['intelligence'] + $character['i
 $wisdomMod = getAbilityModifier($character['wisdom'] + $character['wisdom_bonus']);
 $charismaMod = getAbilityModifier($character['charisma'] + $character['charisma_bonus']);
 
-// Synchroniser l'équipement de base vers character_equipment
+// Synchroniser l'équipement de base vers place_objects
 syncBaseEquipmentToCharacterEquipment($character_id);
 
 // Récupérer l'équipement équipé du personnage
@@ -479,7 +479,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
     $item_id = (int)$_POST['item_id'];
     $target = $_POST['target'];
     $notes = $_POST['notes'] ?? '';
-    $source = $_POST['source'] ?? 'character_equipment';
+    $source = $_POST['source'] ?? 'place_objects';
     
     // Récupérer les informations de l'objet à transférer selon la source
     $item = null;
@@ -495,8 +495,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
         $stmt->execute([$item_id, $character_id]);
         $item = $stmt->fetch();
     } else {
-        // Récupérer depuis character_equipment
-        $stmt = $pdo->prepare("SELECT * FROM character_equipment WHERE id = ? AND character_id = ?");
+        // Récupérer depuis place_objects
+        $stmt = $pdo->prepare("SELECT * FROM place_objects WHERE id = ? AND owner_type = 'player' AND owner_id = ?");
         $stmt->execute([$item_id, $character_id]);
         $item = $stmt->fetch();
     }
@@ -520,18 +520,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                 $target_char = $stmt->fetch();
                 
                 if ($target_char) {
-                    // Insérer dans character_equipment du nouveau propriétaire
-                    $stmt = $pdo->prepare("INSERT INTO character_equipment (character_id, magical_item_id, item_name, item_type, item_description, item_source, quantity, equipped, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    // Insérer dans place_objects du nouveau propriétaire
+                    $stmt = $pdo->prepare("INSERT INTO place_objects (place_id, display_name, object_type, type_precis, description, is_identified, is_visible, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed, magical_item_id, item_source, quantity, equipped_slot, notes, obtained_at, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                     $stmt->execute([
-                        $target_id,
+                        null, // place_id
+                        $item['display_name'],
+                        $item['object_type'],
+                        $item['type_precis'],
+                        $item['description'],
+                        $item['is_identified'],
+                        false, // is_visible (les objets d'équipement ne sont pas visibles sur la carte)
+                        false, // is_equipped (toujours non équipé lors du transfert)
+                        0, // position_x
+                        0, // position_y
+                        false, // is_on_map
+                        'player', // owner_type
+                        $target_id, // owner_id
+                        $item['poison_id'],
+                        $item['weapon_id'],
+                        $item['armor_id'],
+                        $item['gold_coins'],
+                        $item['silver_coins'],
+                        $item['copper_coins'],
+                        $item['letter_content'],
+                        $item['is_sealed'],
                         $item['magical_item_id'],
-                        $item['item_name'],
-                        $item['item_type'],
-                        $item['item_description'],
                         $item['item_source'],
                         $item['quantity'],
-                        0, // Toujours non équipé lors du transfert (0 = false)
+                        $item['equipped_slot'],
                         $notes ?: $item['notes'],
+                        $item['obtained_at'],
                         'Transfert depuis ' . $character['name']
                     ]);
                     
@@ -539,7 +557,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                     if ($source === 'npc_equipment') {
                         $stmt = $pdo->prepare("DELETE FROM npc_equipment WHERE id = ?");
                     } else {
-                        $stmt = $pdo->prepare("DELETE FROM character_equipment WHERE id = ?");
+                        $stmt = $pdo->prepare("DELETE FROM place_objects WHERE id = ?");
                     }
                     $stmt->execute([$item_id]);
                     
@@ -561,9 +579,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                         $target_id,
                         $target_monster['place_id'],
                         $item['magical_item_id'],
-                        $item['item_name'],
-                        $item['item_type'],
-                        $item['item_description'],
+                        $item['display_name'],
+                        $item['object_type'],
+                        $item['description'],
                         $item['item_source'],
                         $item['quantity'],
                         0, // Toujours non équipé lors du transfert (0 = false)
@@ -575,7 +593,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                     if ($source === 'npc_equipment') {
                         $stmt = $pdo->prepare("DELETE FROM npc_equipment WHERE id = ?");
                     } else {
-                        $stmt = $pdo->prepare("DELETE FROM character_equipment WHERE id = ?");
+                        $stmt = $pdo->prepare("DELETE FROM place_objects WHERE id = ?");
                     }
                     $stmt->execute([$item_id]);
                     
@@ -597,9 +615,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                         $target_id,
                         $target_npc['place_id'],
                         $item['magical_item_id'],
-                        $item['item_name'],
-                        $item['item_type'],
-                        $item['item_description'],
+                        $item['display_name'],
+                        $item['object_type'],
+                        $item['description'],
                         $item['item_source'],
                         $item['quantity'],
                         0, // Toujours non équipé lors du transfert (0 = false)
@@ -611,7 +629,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                     if ($source === 'npc_equipment') {
                         $stmt = $pdo->prepare("DELETE FROM npc_equipment WHERE id = ?");
                     } else {
-                        $stmt = $pdo->prepare("DELETE FROM character_equipment WHERE id = ?");
+                        $stmt = $pdo->prepare("DELETE FROM place_objects WHERE id = ?");
                     }
                     $stmt->execute([$item_id]);
                     
@@ -622,7 +640,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
         }
         
         if ($transfer_success) {
-            $success_message = "Objet '{$item['item_name']}' transféré vers {$target_name} avec succès.";
+            $success_message = "Objet '{$item['display_name']}' transféré vers {$target_name} avec succès.";
         } else {
             $error_message = "Erreur lors du transfert de l'objet.";
         }
@@ -642,25 +660,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
     $character = $stmt->fetch();
 }
 
-// Récupérer l'équipement magique du personnage (incluant les objets attribués depuis les lieux, excluant les poisons)
+// Récupérer l'équipement magique du personnage depuis place_objects (incluant les objets attribués depuis les lieux, excluant les poisons)
 $stmt = $pdo->prepare("
-    SELECT ce.*, mi.nom as magical_item_nom, mi.type as magical_item_type, mi.description as magical_item_description, mi.source as magical_item_source
-    FROM character_equipment ce
-    LEFT JOIN magical_items mi ON ce.magical_item_id = mi.csv_id
-    WHERE ce.character_id = ? 
-    AND (ce.magical_item_id IS NULL OR ce.magical_item_id NOT IN (SELECT csv_id FROM poisons))
-    ORDER BY ce.obtained_at DESC
+    SELECT po.*, mi.nom as magical_item_nom, mi.type as magical_item_type, mi.description as magical_item_description, mi.source as magical_item_source
+    FROM place_objects po
+    LEFT JOIN magical_items mi ON po.magical_item_id = mi.csv_id
+    WHERE po.owner_type = 'player' AND po.owner_id = ? 
+    AND (po.magical_item_id IS NULL OR po.magical_item_id NOT IN (SELECT csv_id FROM poisons))
+    ORDER BY po.obtained_at DESC
 ");
 $stmt->execute([$character_id]);
 $magicalEquipment = $stmt->fetchAll();
 
-// Récupérer les poisons du personnage (stockés dans character_equipment avec magical_item_id correspondant à un poison)
+// Récupérer les poisons du personnage depuis place_objects
 $stmt = $pdo->prepare("
-    SELECT ce.*, p.nom as poison_nom, p.type as poison_type, p.description as poison_description, p.source as poison_source
-    FROM character_equipment ce
-    JOIN poisons p ON ce.magical_item_id = p.csv_id
-    WHERE ce.character_id = ? 
-    ORDER BY ce.obtained_at DESC
+    SELECT po.*, p.nom as poison_nom, p.type as poison_type, p.description as poison_description, p.source as poison_source
+    FROM place_objects po
+    JOIN poisons p ON po.poison_id = p.id
+    WHERE po.owner_type = 'player' AND po.owner_id = ? 
+    ORDER BY po.obtained_at DESC
 ");
 $stmt->execute([$character_id]);
 $characterPoisons = $stmt->fetchAll();
@@ -2250,304 +2268,307 @@ $initiative = $dexterityMod;
             </div>
             <?php endif; ?>
 
-            <!-- Équipement détecté -->
-            <?php if (!empty($detectedWeapons) || !empty($detectedArmor) || !empty($detectedShields)): ?>
+            <!-- Bourse -->
             <div class="info-section">
-                <h3><i class="fas fa-sword me-2"></i>Équipement de Combat</h3>
-                
-                <!-- Armes -->
-                <?php if (!empty($detectedWeapons)): ?>
-                <div class="mb-4">
-                    <h5><i class="fas fa-sword me-2"></i>Armes</h5>
-                    <div class="row">
-                        <?php foreach ($detectedWeapons as $weapon): ?>
-                        <div class="col-md-6 mb-3">
-                            <div class="card">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h6 class="mb-1"><?php echo htmlspecialchars($weapon['name']); ?></h6>
-                                            <small class="text-muted">
-                                                <?php echo $weapon['hands']; ?> main(s) - <?php echo htmlspecialchars($weapon['type']); ?>
-                                            </small>
-                                        </div>
-                                        <div>
-                                            <?php
-                                            $isEquipped = false;
-                                            $equippedSlot = null;
-                                            
-                                            if ($weapon['hands'] == 2) {
-                                                $isEquipped = ($equippedItems['main_hand'] === $weapon['name'] && $equippedItems['off_hand'] === $weapon['name']);
-                                                $equippedSlot = 'main_hand';
-                                            } else {
-                                                $isEquipped = ($equippedItems['main_hand'] === $weapon['name']);
-                                                $equippedSlot = 'main_hand';
-                                            }
-                                            ?>
-                                            
-                                            <?php if ($isEquipped): ?>
-                                                <button class="btn btn-warning btn-sm" onclick="unequipItem(<?php echo $character_id; ?>, '<?php echo addslashes($weapon['name']); ?>')">
-                                                    <i class="fas fa-hand-paper me-1"></i>Déséquiper
-                                                </button>
-                                            <?php else: ?>
-                                                <button class="btn btn-success btn-sm" onclick="equipItem(<?php echo $character_id; ?>, '<?php echo addslashes($weapon['name']); ?>', 'weapon', '<?php echo $equippedSlot; ?>')">
-                                                    <i class="fas fa-hand-rock me-1"></i>Équiper
-                                                </button>
-                                            <?php endif; ?>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-                <?php endif; ?>
-                
-                <!-- Armures -->
-                <?php if (!empty($detectedArmor)): ?>
-                <div class="mb-4">
-                    <h5><i class="fas fa-shield-alt me-2"></i>Armures</h5>
-                    <div class="row">
-                        <?php foreach ($detectedArmor as $armor): ?>
-                        <div class="col-md-6 mb-3">
-                            <div class="card">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h6 class="mb-1"><?php echo htmlspecialchars($armor['name']); ?></h6>
-                                            <small class="text-muted">
-                                                CA: <?php echo htmlspecialchars($armor['ac_formula']); ?> - <?php echo htmlspecialchars($armor['type']); ?>
-                                            </small>
-                                        </div>
-                                        <div>
-                                            <?php $isEquipped = ($equippedItems['armor'] === $armor['name']); ?>
-                                            
-                                            <?php if ($isEquipped): ?>
-                                                <button class="btn btn-warning btn-sm" onclick="unequipItem(<?php echo $character_id; ?>, '<?php echo addslashes($armor['name']); ?>')">
-                                                    <i class="fas fa-hand-paper me-1"></i>Déséquiper
-                                                </button>
-                                            <?php else: ?>
-                                                <button class="btn btn-success btn-sm" onclick="equipItem(<?php echo $character_id; ?>, '<?php echo addslashes($armor['name']); ?>', 'armor', 'armor')">
-                                                    <i class="fas fa-hand-rock me-1"></i>Équiper
-                                                </button>
-                                            <?php endif; ?>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-                <?php endif; ?>
-                
-                <!-- Boucliers -->
-                <?php if (!empty($detectedShields)): ?>
-                <div class="mb-4">
-                    <h5><i class="fas fa-shield me-2"></i>Boucliers</h5>
-                    <div class="row">
-                        <?php foreach ($detectedShields as $shield): ?>
-                        <div class="col-md-6 mb-3">
-                            <div class="card">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h6 class="mb-1"><?php echo htmlspecialchars($shield['name']); ?></h6>
-                                            <small class="text-muted">
-                                                Bonus de CA: +<?php echo $shield['ac_bonus']; ?>
-                                            </small>
-                                        </div>
-                                        <div>
-                                            <?php $isEquipped = ($equippedItems['shield'] === $shield['name']); ?>
-                                            
-                                            <?php if ($isEquipped): ?>
-                                                <button class="btn btn-warning btn-sm" onclick="unequipItem(<?php echo $character_id; ?>, '<?php echo addslashes($shield['name']); ?>')">
-                                                    <i class="fas fa-hand-paper me-1"></i>Déséquiper
-                                                </button>
-                                            <?php else: ?>
-                                                <button class="btn btn-success btn-sm" onclick="equipItem(<?php echo $character_id; ?>, '<?php echo addslashes($shield['name']); ?>', 'shield', 'off_hand')">
-                                                    <i class="fas fa-hand-rock me-1"></i>Équiper
-                                                </button>
-                                            <?php endif; ?>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-                <?php endif; ?>
-            </div>
-            <?php endif; ?>
-
-            <!-- Équipement et trésor -->
-            <div class="info-section">
-                <h3><i class="fas fa-backpack me-2"></i>Équipement et Trésor</h3>
+                <h3><i class="fas fa-coins me-2"></i>Bourse</h3>
                 <div class="row">
-                    <div class="col-md-8">
-                        <?php if ($character['equipment']): ?>
-                            <p><strong>Équipement:</strong></p>
-                            <p><?php echo nl2br(htmlspecialchars($character['equipment'])); ?></p>
-                        <?php else: ?>
-                            <p class="text-muted">Aucun équipement enregistré</p>
-                        <?php endif; ?>
-                        
-                        <!-- Objets magiques attribués par le MJ -->
-                        <?php if (!empty($allMagicalEquipment)): ?>
-                            <div class="mt-4">
-                                <h5><i class="fas fa-gem me-2"></i>Objets Magiques</h5>
-                                <div class="row">
-                                    <?php foreach ($allMagicalEquipment as $item): ?>
-                                        <div class="col-md-6 mb-3">
-                                            <div class="card h-100 <?php echo $item['equipped'] ? 'border-success' : 'border-secondary'; ?>">
-                                                <div class="card-header d-flex justify-content-between align-items-center">
-                                                    <h6 class="mb-0">
-                                                        <?php if ($item['equipped']): ?>
-                                                            <i class="fas fa-check-circle text-success me-2"></i>
-                                                        <?php endif; ?>
-                                                        <?php echo htmlspecialchars($item['item_name']); ?>
-                                                    </h6>
-                                                    <span class="badge bg-<?php echo $item['equipped'] ? 'success' : 'secondary'; ?>">
-                                                        <?php echo $item['equipped'] ? 'Équipé' : 'Non équipé'; ?>
-                                                    </span>
-                                                </div>
-                                                <div class="card-body">
-                                                    <p class="card-text">
-                                                        <strong>Type:</strong> <?php echo htmlspecialchars($item['item_type']); ?><br>
-                                                        <strong>Source:</strong> <?php echo htmlspecialchars($item['item_source']); ?><br>
-                                                        <strong>Quantité:</strong> <?php echo (int)$item['quantity']; ?><br>
-                                                        <strong>Obtenu:</strong> <?php echo date('d/m/Y', strtotime($item['obtained_at'])); ?><br>
-                                                        <strong>Provenance:</strong> <?php echo htmlspecialchars($item['obtained_from']); ?>
-                                                        <?php if (isset($item['npc_name'])): ?>
-                                                            <br><strong>Via PNJ:</strong> <?php echo htmlspecialchars($item['npc_name']); ?> (<?php echo htmlspecialchars($item['scene_title']); ?>)
-                                                        <?php endif; ?>
-                                                    </p>
-                                                    <?php if (!empty($item['item_description'])): ?>
-                                                        <p class="card-text">
-                                                            <strong>Description:</strong><br>
-                                                            <small><?php echo nl2br(htmlspecialchars($item['item_description'])); ?></small>
-                                                        </p>
-                                                    <?php endif; ?>
-                                                    <?php if (!empty($item['notes'])): ?>
-                                                        <p class="card-text">
-                                                            <strong>Notes:</strong><br>
-                                                            <small><em><?php echo nl2br(htmlspecialchars($item['notes'])); ?></em></small>
-                                                        </p>
-                                                    <?php endif; ?>
-                                                </div>
-                                                <div class="card-footer">
-                                                    <?php if ($canModifyHP): ?>
-                                                        <button type="button" class="btn btn-sm btn-outline-primary" 
-                                                                data-bs-toggle="modal" 
-                                                                data-bs-target="#transferModal" 
-                                                                data-item-id="<?php echo $item['id']; ?>"
-                                                                data-item-name="<?php echo htmlspecialchars($item['item_name']); ?>"
-                                                                data-current-owner="character_<?php echo $character_id; ?>"
-                                                                data-current-owner-name="<?php echo htmlspecialchars($character['name']); ?>"
-                                                                data-source="<?php echo isset($item['npc_name']) ? 'npc_equipment' : 'character_equipment'; ?>"
-                                                                title="Transférer cet objet">
-                                                            <i class="fas fa-exchange-alt me-1"></i>Transférer à
-                                                        </button>
-                                                    <?php endif; ?>
-                                                </div>
-                                            </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="fas fa-coins text-warning me-2"></i>Argent du personnage</h5>
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <div class="border rounded p-3 bg-warning bg-opacity-10">
+                                            <h4 class="text-warning mb-1"><?php echo $character['money_gold']; ?></h4>
+                                            <small class="text-muted">PO</small>
+                                            <br><small>Pièces d'or</small>
                                         </div>
-                                    <?php endforeach; ?>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="border rounded p-3 bg-secondary bg-opacity-10">
+                                            <h4 class="text-secondary mb-1"><?php echo $character['money_silver']; ?></h4>
+                                            <small class="text-muted">PA</small>
+                                            <br><small>Pièces d'argent</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="border rounded p-3 bg-danger bg-opacity-10">
+                                            <h4 class="text-danger mb-1"><?php echo $character['money_copper']; ?></h4>
+                                            <small class="text-muted">PC</small>
+                                            <br><small>Pièces de cuivre</small>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        <?php endif; ?>
-                        
-                        <!-- Poisons attribués par le MJ -->
-                        <?php if (!empty($allPoisons)): ?>
-                            <div class="mt-4">
-                                <h5><i class="fas fa-skull-crossbones me-2"></i>Poisons</h5>
-                                <div class="row">
-                                    <?php foreach ($allPoisons as $poison): ?>
-                                        <div class="col-md-6 mb-3">
-                                            <div class="card h-100 border-danger">
-                                                <div class="card-header d-flex justify-content-between align-items-center bg-danger text-white">
-                                                    <h6 class="mb-0">
-                                                        <i class="fas fa-skull-crossbones me-1"></i>
-                                                        <?php echo htmlspecialchars($poison['poison_nom']); ?>
-                                                    </h6>
-                                                    <small class="text-light">
-                                                        <?php echo htmlspecialchars($poison['poison_type']); ?>
-                                                    </small>
-                                                </div>
-                                                <div class="card-body">
-                                                    <p class="card-text small">
-                                                        <?php echo htmlspecialchars($poison['poison_description']); ?>
-                                                    </p>
-                                                    <?php if ($poison['notes']): ?>
-                                                        <p class="card-text small text-muted">
-                                                            <strong>Notes:</strong> <?php echo htmlspecialchars($poison['notes']); ?>
-                                                        </p>
-                                                    <?php endif; ?>
-                                                    <p class="card-text small text-muted">
-                                                        <strong>Source:</strong> <?php echo htmlspecialchars($poison['poison_source']); ?><br>
-                                                        <strong>Obtenu:</strong> <?php echo htmlspecialchars($poison['obtained_from']); ?><br>
-                                                        <strong>Date:</strong> <?php echo date('d/m/Y H:i', strtotime($poison['obtained_at'])); ?>
-                                                        <?php if (isset($poison['npc_name'])): ?>
-                                                            <br><strong>Via PNJ:</strong> <?php echo htmlspecialchars($poison['npc_name']); ?> (<?php echo htmlspecialchars($poison['scene_title']); ?>)
-                                                        <?php endif; ?>
-                                                    </p>
-                                                </div>
-                                                <div class="card-footer">
-                                                    <?php if ($canModifyHP): ?>
-                                                        <button type="button" class="btn btn-sm btn-outline-primary" 
-                                                                data-bs-toggle="modal" 
-                                                                data-bs-target="#transferModal" 
-                                                                data-item-id="<?php echo $poison['id']; ?>"
-                                                                data-item-name="<?php echo htmlspecialchars($poison['poison_nom']); ?>"
-                                                                data-current-owner="character_<?php echo $character_id; ?>"
-                                                                data-current-owner-name="<?php echo htmlspecialchars($character['name']); ?>"
-                                                                data-source="<?php echo isset($poison['npc_name']) ? 'npc_equipment' : 'character_equipment'; ?>"
-                                                                title="Transférer ce poison">
-                                                            <i class="fas fa-exchange-alt me-1"></i>Transférer à
-                                                        </button>
-                                                    <?php endif; ?>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    <?php endforeach; ?>
-                                </div>
-                            </div>
-                        <?php endif; ?>
-                        
-                        <div class="mt-3">
-                            <a href="view_character_equipment.php?id=<?php echo (int)$character_id; ?>" class="btn btn-primary">
-                                <i class="fas fa-cog me-2"></i>Gérer l'équipement détaillé
-                            </a>
-                            <?php if (canCastSpells($character['class_id'])): ?>
-                                <a href="grimoire.php?id=<?php echo (int)$character_id; ?>" class="btn btn-info ms-2">
-                                    <i class="fas fa-book-open me-2"></i>Grimoire
-                                </a>
-                            <?php endif; ?>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <p><strong>Argent:</strong></p>
-                        <ul class="list-unstyled">
-                            <li><?php echo $character['money_gold']; ?> PO (pièces d'or)</li>
-                            <li><?php echo $character['money_silver']; ?> PA (pièces d'argent)</li>
-                            <li><?php echo $character['money_copper']; ?> PC (pièces de cuivre)</li>
-                        </ul>
-                        
-                        <?php if (!empty($allMagicalEquipment)): ?>
-                            <div class="mt-3">
-                                <p><strong>Objets Magiques:</strong></p>
-                                <ul class="list-unstyled">
-                                    <li><span class="badge bg-success"><?php echo count(array_filter($allMagicalEquipment, function($item) { return $item['equipped']; })); ?> Équipé(s)</span></li>
-                                    <li><span class="badge bg-secondary"><?php echo count(array_filter($allMagicalEquipment, function($item) { return !$item['equipped']; })); ?> Non équipé(s)</span></li>
-                                    <li><span class="badge bg-primary"><?php echo count($allMagicalEquipment); ?> Total</span></li>
-                                </ul>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="fas fa-calculator me-2"></i>Valeur totale</h5>
+                                <?php 
+                                $totalCopper = ($character['money_gold'] * 100) + ($character['money_silver'] * 10) + $character['money_copper'];
+                                $totalGold = floor($totalCopper / 100);
+                                $remainingSilver = floor(($totalCopper % 100) / 10);
+                                $remainingCopper = $totalCopper % 10;
+                                ?>
+                                <p class="mb-2"><strong>En pièces de cuivre:</strong> <?php echo $totalCopper; ?> PC</p>
+                                <p class="mb-0"><strong>Équivalent:</strong> <?php echo $totalGold; ?> PO, <?php echo $remainingSilver; ?> PA, <?php echo $remainingCopper; ?> PC</p>
                             </div>
-                        <?php endif; ?>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Équipement -->
+            <div class="info-section">
+                <h3><i class="fas fa-backpack me-2"></i>Équipement</h3>
+                
+                <!-- Filtres et tri -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <input type="text" id="equipmentSearch" class="form-control" placeholder="Rechercher un objet...">
+                    </div>
+                    <div class="col-md-3">
+                        <select id="typeFilter" class="form-select">
+                            <option value="">Tous les types</option>
+                            <option value="weapon">Arme</option>
+                            <option value="armor">Armure</option>
+                            <option value="magical_item">Objet magique</option>
+                            <option value="poison">Poison</option>
+                            <option value="bourse">Bourse</option>
+                            <option value="letter">Lettre</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select id="equippedFilter" class="form-select">
+                            <option value="">Tous</option>
+                            <option value="equipped">Équipés</option>
+                            <option value="unequipped">Non équipés</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-outline-secondary w-100" onclick="resetFilters()">
+                            <i class="fas fa-undo me-1"></i>Réinitialiser
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tableau d'équipement -->
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover" id="equipmentTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th onclick="sortTable(0)" style="cursor: pointer;">
+                                    Nom <i class="fas fa-sort ms-1"></i>
+                                </th>
+                                <th onclick="sortTable(1)" style="cursor: pointer;">
+                                    Type <i class="fas fa-sort ms-1"></i>
+                                </th>
+                                <th onclick="sortTable(2)" style="cursor: pointer;">
+                                    Type précis <i class="fas fa-sort ms-1"></i>
+                                </th>
+                                <th>État</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php 
+                            // Combiner tous les objets du personnage
+                            $allCharacterItems = array_merge($allMagicalEquipment, $characterPoisons);
+                            
+                            // Fonction pour vérifier si un objet existe déjà
+                            function itemExists($items, $name, $type) {
+                                foreach ($items as $item) {
+                                    if ($item['display_name'] === $name && $item['object_type'] === $type) {
+                                        return true;
+                                    }
+                                }
+                                return false;
+                            }
+                            
+                            // Ajouter les objets de base détectés seulement s'ils n'existent pas déjà
+                            if (!empty($detectedWeapons)) {
+                                foreach ($detectedWeapons as $weapon) {
+                                    // Vérifier si cette arme existe déjà dans les objets du personnage
+                                    if (!itemExists($allCharacterItems, $weapon['name'], 'weapon')) {
+                                        $isEquipped = false;
+                                        if ($weapon['hands'] == 2) {
+                                            $isEquipped = ($equippedItems['main_hand'] === $weapon['name'] && $equippedItems['off_hand'] === $weapon['name']);
+                                        } else {
+                                            $isEquipped = ($equippedItems['main_hand'] === $weapon['name']);
+                                        }
+                                        
+                                        $allCharacterItems[] = [
+                                            'id' => 'base_' . $weapon['name'],
+                                            'display_name' => $weapon['name'],
+                                            'object_type' => 'weapon',
+                                            'type_precis' => $weapon['name'],
+                                            'is_equipped' => $isEquipped,
+                                            'equipped_slot' => $isEquipped ? 'main_hand' : null,
+                                            'item_source' => 'Équipement de base',
+                                            'quantity' => 1,
+                                            'obtained_at' => date('Y-m-d H:i:s'),
+                                            'obtained_from' => 'Équipement de base',
+                                            'item_description' => "Arme: {$weapon['type']}, {$weapon['hands']} main(s), Dégâts: {$weapon['damage']}",
+                                            'notes' => null
+                                        ];
+                                    }
+                                }
+                            }
+                            
+                            if (!empty($detectedArmor)) {
+                                foreach ($detectedArmor as $armor) {
+                                    // Vérifier si cette armure existe déjà dans les objets du personnage
+                                    if (!itemExists($allCharacterItems, $armor['name'], 'armor')) {
+                                        $isEquipped = ($equippedItems['armor'] === $armor['name']);
+                                        
+                                        $allCharacterItems[] = [
+                                            'id' => 'base_' . $armor['name'],
+                                            'display_name' => $armor['name'],
+                                            'object_type' => 'armor',
+                                            'type_precis' => $armor['name'],
+                                            'is_equipped' => $isEquipped,
+                                            'equipped_slot' => $isEquipped ? 'armor' : null,
+                                            'item_source' => 'Équipement de base',
+                                            'quantity' => 1,
+                                            'obtained_at' => date('Y-m-d H:i:s'),
+                                            'obtained_from' => 'Équipement de base',
+                                            'item_description' => "Armure: CA {$armor['ac_formula']}, Type: {$armor['type']}",
+                                            'notes' => null
+                                        ];
+                                    }
+                                }
+                            }
+                            
+                            if (!empty($detectedShields)) {
+                                foreach ($detectedShields as $shield) {
+                                    // Vérifier si ce bouclier existe déjà dans les objets du personnage
+                                    if (!itemExists($allCharacterItems, $shield['name'], 'shield')) {
+                                        $isEquipped = ($equippedItems['shield'] === $shield['name']);
+                                        
+                                        $allCharacterItems[] = [
+                                            'id' => 'base_' . $shield['name'],
+                                            'display_name' => $shield['name'],
+                                            'object_type' => 'shield',
+                                            'type_precis' => $shield['name'],
+                                            'is_equipped' => $isEquipped,
+                                            'equipped_slot' => $isEquipped ? 'off_hand' : null,
+                                            'item_source' => 'Équipement de base',
+                                            'quantity' => 1,
+                                            'obtained_at' => date('Y-m-d H:i:s'),
+                                            'obtained_from' => 'Équipement de base',
+                                            'item_description' => "Bouclier: Bonus CA +{$shield['ac_bonus']}",
+                                            'notes' => null
+                                        ];
+                                    }
+                                }
+                            }
+                            
+                            foreach ($allCharacterItems as $item): 
+                                $displayName = htmlspecialchars($item['display_name']);
+                                $typeLabel = ucfirst(str_replace('_', ' ', $item['object_type']));
+                            ?>
+                            <tr data-type="<?php echo $item['object_type']; ?>" data-equipped="<?php echo $item['is_equipped'] ? 'equipped' : 'unequipped'; ?>">
+                                <td>
+                                    <strong><?php echo $displayName; ?></strong>
+                                    <?php if ($item['quantity'] > 1): ?>
+                                        <span class="badge bg-info ms-1">x<?php echo $item['quantity']; ?></span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <span class="badge bg-<?php 
+                                        echo match($item['object_type']) {
+                                            'weapon' => 'danger',
+                                            'armor' => 'primary', 
+                                            'shield' => 'info',
+                                            'magical_item' => 'success',
+                                            'poison' => 'warning',
+                                            'bourse' => 'secondary',
+                                            'outil' => 'info',
+                                            'letter' => 'dark',
+                                            default => 'light text-dark'
+                                        };
+                                    ?>">
+                                        <?php echo $typeLabel; ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <small class="text-muted"><?php echo htmlspecialchars($item['type_precis']); ?></small>
+                                </td>
+                                <td>
+                                    <?php if ($item['is_equipped']): ?>
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle me-1"></i>Équipé
+                                        </span>
+                                        <?php if ($item['equipped_slot']): ?>
+                                            <br><small class="text-muted"><?php echo ucfirst(str_replace('_', ' ', $item['equipped_slot'])); ?></small>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-times-circle me-1"></i>Non équipé
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if ($item['object_type'] === 'weapon' || $item['object_type'] === 'armor' || $item['object_type'] === 'shield'): ?>
+                                        <?php if ($item['is_equipped']): ?>
+                                            <button class="btn btn-warning btn-sm" onclick="unequipItem(<?php echo $character_id; ?>, '<?php echo addslashes($item['display_name']); ?>')">
+                                                <i class="fas fa-hand-paper me-1"></i>Déséquiper
+                                            </button>
+                                        <?php else: ?>
+                                            <?php 
+                                            $slot = match($item['object_type']) {
+                                                'weapon' => 'main_hand',
+                                                'armor' => 'armor',
+                                                'shield' => 'off_hand',
+                                                default => 'main_hand'
+                                            };
+                                            ?>
+                                            <button class="btn btn-success btn-sm" onclick="equipItem(<?php echo $character_id; ?>, '<?php echo addslashes($item['display_name']); ?>', '<?php echo $item['object_type']; ?>', '<?php echo $slot; ?>')">
+                                                <i class="fas fa-hand-rock me-1"></i>Équiper
+                                            </button>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <span class="text-muted">Non équipable</span>
+                                    <?php endif; ?>
+                                    
+                                    <?php if ($canModifyHP && !str_starts_with($item['id'], 'base_')): ?>
+                                        <button type="button" class="btn btn-outline-primary btn-sm ms-1" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#transferModal" 
+                                                data-item-id="<?php echo $item['id']; ?>"
+                                                data-item-name="<?php echo htmlspecialchars($item['display_name']); ?>"
+                                                data-item-type="<?php echo htmlspecialchars($item['object_type']); ?>"
+                                                data-source="place_objects">
+                                            <i class="fas fa-exchange-alt me-1"></i>Transférer
+                                        </button>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                            
+                            <?php if (empty($allCharacterItems)): ?>
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">
+                                    <i class="fas fa-inbox fa-2x mb-2"></i><br>
+                                    Aucun objet trouvé
+                                </td>
+                            </tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <?php if ($canModifyHP): ?>
+                    <div class="mt-3">
+                        <a href="view_character_equipment.php?id=<?php echo (int)$character_id; ?>" class="btn btn-primary">
+                            <i class="fas fa-cog me-2"></i>Gérer l'équipement
+                        </a>
+                    </div>
+                <?php endif; ?>
+            </div>
+
 
             <!-- Informations personnelles -->
             <?php if ($character['personality_traits'] || $character['ideals'] || $character['bonds'] || $character['flaws']): ?>
@@ -3052,6 +3073,116 @@ $initiative = $dexterityMod;
             // Recharger la page pour mettre à jour l'affichage
             window.location.reload();
         }
+
+        // Variables pour le tri
+        let currentSortColumn = -1;
+        let currentSortDirection = 'asc';
+
+        // Fonction de tri du tableau
+        function sortTable(columnIndex) {
+            const table = document.getElementById('equipmentTable');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            // Déterminer la direction du tri
+            if (currentSortColumn === columnIndex) {
+                currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortDirection = 'asc';
+                currentSortColumn = columnIndex;
+            }
+            
+            // Trier les lignes
+            rows.sort((a, b) => {
+                const aText = a.cells[columnIndex].textContent.trim().toLowerCase();
+                const bText = b.cells[columnIndex].textContent.trim().toLowerCase();
+                
+                if (currentSortDirection === 'asc') {
+                    return aText.localeCompare(bText);
+                } else {
+                    return bText.localeCompare(aText);
+                }
+            });
+            
+            // Réorganiser les lignes dans le DOM
+            rows.forEach(row => tbody.appendChild(row));
+            
+            // Mettre à jour les icônes de tri
+            updateSortIcons(columnIndex);
+        }
+
+        // Fonction pour mettre à jour les icônes de tri
+        function updateSortIcons(activeColumn) {
+            const headers = document.querySelectorAll('#equipmentTable th');
+            headers.forEach((header, index) => {
+                const icon = header.querySelector('i');
+                if (index === activeColumn) {
+                    icon.className = currentSortDirection === 'asc' ? 'fas fa-sort-up ms-1' : 'fas fa-sort-down ms-1';
+                } else {
+                    icon.className = 'fas fa-sort ms-1';
+                }
+            });
+        }
+
+        // Fonction de filtrage
+        function filterTable() {
+            const searchTerm = document.getElementById('equipmentSearch').value.toLowerCase();
+            const typeFilter = document.getElementById('typeFilter').value;
+            const equippedFilter = document.getElementById('equippedFilter').value;
+            
+            const table = document.getElementById('equipmentTable');
+            const rows = table.querySelectorAll('tbody tr');
+            
+            rows.forEach(row => {
+                const name = row.cells[0].textContent.toLowerCase();
+                const type = row.dataset.type;
+                const equipped = row.dataset.equipped;
+                
+                let showRow = true;
+                
+                // Filtre de recherche
+                if (searchTerm && !name.includes(searchTerm)) {
+                    showRow = false;
+                }
+                
+                // Filtre de type
+                if (typeFilter && type !== typeFilter) {
+                    showRow = false;
+                }
+                
+                // Filtre d'état d'équipement
+                if (equippedFilter && equipped !== equippedFilter) {
+                    showRow = false;
+                }
+                
+                row.style.display = showRow ? '' : 'none';
+            });
+        }
+
+        // Fonction pour réinitialiser les filtres
+        function resetFilters() {
+            document.getElementById('equipmentSearch').value = '';
+            document.getElementById('typeFilter').value = '';
+            document.getElementById('equippedFilter').value = '';
+            filterTable();
+        }
+
+        // Ajouter les événements de filtrage
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('equipmentSearch');
+            const typeSelect = document.getElementById('typeFilter');
+            const equippedSelect = document.getElementById('equippedFilter');
+            
+            if (searchInput) {
+                searchInput.addEventListener('input', filterTable);
+            }
+            if (typeSelect) {
+                typeSelect.addEventListener('change', filterTable);
+            }
+            if (equippedSelect) {
+                equippedSelect.addEventListener('change', filterTable);
+            }
+        });
     </script>
 </body>
 </html>

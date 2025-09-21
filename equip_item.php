@@ -54,34 +54,34 @@ try {
         if ($weapon['hands'] == 2) {
             // Arme à deux mains : libérer les deux slots
             $stmt = $pdo->prepare("
-                UPDATE character_equipment 
+                UPDATE place_objects 
                 SET is_equipped = 0, equipped_slot = NULL 
-                WHERE character_id = ? AND equipped_slot IN ('main_hand', 'off_hand')
+                WHERE owner_type = 'player' AND owner_id = ? AND equipped_slot IN ('main_hand', 'off_hand')
             ");
             $stmt->execute([$characterId]);
         } else {
             // Arme à une main : libérer seulement le slot principal
             $stmt = $pdo->prepare("
-                UPDATE character_equipment 
+                UPDATE place_objects 
                 SET is_equipped = 0, equipped_slot = NULL 
-                WHERE character_id = ? AND equipped_slot = 'main_hand'
+                WHERE owner_type = 'player' AND owner_id = ? AND equipped_slot = 'main_hand'
             ");
             $stmt->execute([$characterId]);
         }
     } elseif ($itemType === 'shield') {
         // Bouclier : libérer le slot off_hand
         $stmt = $pdo->prepare("
-            UPDATE character_equipment 
+            UPDATE place_objects 
             SET is_equipped = 0, equipped_slot = NULL 
-            WHERE character_id = ? AND equipped_slot = 'off_hand'
+            WHERE owner_type = 'player' AND owner_id = ? AND equipped_slot = 'off_hand'
         ");
         $stmt->execute([$characterId]);
     } elseif ($itemType === 'armor') {
         // Armure : libérer le slot armor
         $stmt = $pdo->prepare("
-            UPDATE character_equipment 
+            UPDATE place_objects 
             SET is_equipped = 0, equipped_slot = NULL 
-            WHERE character_id = ? AND equipped_slot = 'armor'
+            WHERE owner_type = 'player' AND owner_id = ? AND equipped_slot = 'armor'
         ");
         $stmt->execute([$characterId]);
     }
