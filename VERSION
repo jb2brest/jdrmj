@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.3.0
+VERSION=2.3.1
 
 # Date de déploiement
 DEPLOY_DATE=2025-09-21
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-09-21
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=4e23400be9188ebfcc8eb1d897422b185073bcd2
+GIT_COMMIT=7b299bfad33766e8c4aa43860894bcbcb0ca2f61
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20250921-195708
+BUILD_ID=20250921-225613
 
 # Notes de version
 RELEASE_NOTES="Nouveau mode de création de personnage"
