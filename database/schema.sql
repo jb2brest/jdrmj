@@ -15,9 +15,22 @@ CREATE TABLE users (
 -- Table des races D&D
 CREATE TABLE races (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL,
+    name VARCHAR(100) NOT NULL,
     description TEXT,
-    traits TEXT
+    image VARCHAR(255),
+    strength_bonus INT DEFAULT 0,
+    dexterity_bonus INT DEFAULT 0,
+    constitution_bonus INT DEFAULT 0,
+    intelligence_bonus INT DEFAULT 0,
+    wisdom_bonus INT DEFAULT 0,
+    charisma_bonus INT DEFAULT 0,
+    size VARCHAR(10),
+    speed INT DEFAULT 30,
+    vision VARCHAR(255),
+    languages TEXT,
+    traits TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 -- Table des classes D&D

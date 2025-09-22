@@ -10,6 +10,7 @@ if (!isLoggedIn()) {
 
 $user_id = $_SESSION['user_id'];
 
+
 // Création d'un code d'invitation simple
 function generateInviteCode($length = 12) {
     $chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -125,7 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isDMOrAdmin()) {
             $stmt->execute([$campaign_id]);
             
             $pdo->commit();
-            $success_message = "Campagne supprimée avec succès. Les lieux et personnages ont été dissociés mais conservés.";
+            $success_message = "Campagne supprimée avec succès. Toutes les inscriptions des joueurs et personnages participants ont été supprimées.";
             
         } catch (Exception $e) {
             $pdo->rollBack();
@@ -276,14 +277,15 @@ $current_page = "campaigns";
                                         <a class="btn btn-sm btn-outline-primary" href="view_campaign.php?id=<?php echo $c['id']; ?>">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        <?php if (isDMOrAdmin()): ?>
-                                            <form method="POST" onsubmit="return confirm('Supprimer cette campagne ?');">
+                                        <?php if (isAdmin() || (isDM() && $c['dm_id'] == $user_id)): ?>
+                                            <form method="POST" onsubmit="return confirm('Supprimer cette campagne ? Cette action supprimera également toutes les inscriptions des joueurs et personnages participants.');">
                                                 <input type="hidden" name="action" value="delete">
                                                 <input type="hidden" name="campaign_id" value="<?php echo $c['id']; ?>">
-                                                <button class="btn btn-sm btn-outline-danger">
+                                                <button class="btn btn-sm btn-outline-danger" title="<?php echo isAdmin() ? 'Supprimer la campagne (Admin)' : 'Supprimer ma campagne'; ?>">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </form>
+                                        <?php endif; ?>
                                             <form method="POST">
                                                 <input type="hidden" name="action" value="toggle_visibility">
                                                 <input type="hidden" name="campaign_id" value="<?php echo $c['id']; ?>">
@@ -291,7 +293,6 @@ $current_page = "campaigns";
                                                     <i class="fas fa-eye-slash"></i>
                                                 </button>
                                             </form>
-                                        <?php endif; ?>
                                     </div>
                                 </div>
                                 <?php if (isDMOrAdmin()): ?>

@@ -77,21 +77,233 @@ Ce document décrit l'ensemble des tests existants pour l'application de gestion
 
 ## 2. Tests de Gestion des Personnages
 
-### 2.1 Test de création d'un personnage
+> **Note :** Tous les tests de cette section sont automatisés avec Selenium WebDriver et se trouvent dans le fichier `tests/functional/test_character_creation_steps.py`
 
-**Objectif :** Vérifier que le processus de création d'un personnage fonctionne correctement.
+### 2.1 Test de création d'un personnage - Parcours complet par étapes
+
+**Objectif :** Vérifier que le processus de création d'un personnage par étapes fonctionne correctement.
+**Fichier de test :** `test_character_creation_steps.py::TestCharacterCreationSteps::test_complete_character_creation_workflow`
 
 | N° | Action | Résultat attendu |
 |---|---|---|
 | 1 | Se connecter avec un utilisateur valide | Connexion réussie |
-| 2 | Accéder à la page de création (/create_character.php) | La page de création se charge |
-| 3 | Remplir le nom du personnage | Le champ nom est rempli |
-| 4 | Sélectionner une race | La race est sélectionnée |
-| 5 | Sélectionner une classe | La classe est sélectionnée |
-| 6 | Soumettre le formulaire | Redirection vers characters.php ou message de succès |
-| 7 | Vérifier la création | Le personnage est créé et visible dans la liste |
+| 2 | Accéder à la page de création (/character_create_step1.php) | La page de sélection de classe se charge (étape 1/9) |
+| 3 | Sélectionner une classe (ex: Guerrier) | La classe est sélectionnée et le bouton "Continuer" s'active |
+| 4 | Cliquer sur "Continuer vers l'étape 2" | Redirection vers character_create_step2.php |
+| 5 | Sélectionner une race (ex: Humain) | La race est sélectionnée et le bouton "Continuer" s'active |
+| 6 | Cliquer sur "Continuer vers l'étape 3" | Redirection vers character_create_step3.php |
+| 7 | Sélectionner un historique (ex: Soldat) | L'historique est sélectionné et le bouton "Continuer" s'active |
+| 8 | Cliquer sur "Continuer vers l'étape 4" | Redirection vers character_create_step4.php |
+| 9 | Définir les caractéristiques (méthode des 27 points) | Les caractéristiques sont définies et les valeurs dérivées calculées |
+| 10 | Cliquer sur "Continuer vers l'étape 5" | Redirection vers character_create_step5.php |
+| 11 | Compléter les étapes restantes (5-9) | Toutes les étapes sont complétées |
+| 12 | Finaliser la création | Le personnage est créé et visible dans la liste |
 
-### 2.2 Test d'affichage de la liste des personnages
+### 2.2 Test de création d'un personnage - Classe Guerrier
+
+**Objectif :** Vérifier que la création d'un personnage Guerrier fonctionne spécifiquement.
+**Fichier de test :** `test_character_creation_steps.py::TestCharacterCreationSteps::test_warrior_class_creation`
+
+| N° | Action | Résultat attendu |
+|---|---|---|
+| 1 | Se connecter avec un utilisateur valide | Connexion réussie |
+| 2 | Accéder à la page de création étape 1 | La page de sélection de classe se charge |
+| 3 | Sélectionner la classe "Guerrier" | La classe Guerrier est sélectionnée |
+| 4 | Vérifier les informations affichées | Dé de vie d10, Force ou Dextérité comme caractéristique principale |
+| 5 | Continuer vers l'étape 2 | Redirection vers la sélection de race |
+| 6 | Sélectionner une race (ex: Nain) | La race est sélectionnée |
+| 7 | Continuer vers l'étape 3 | Redirection vers la sélection d'historique |
+| 8 | Sélectionner un historique (ex: Soldat) | L'historique est sélectionné |
+| 9 | Continuer vers l'étape 4 | Redirection vers les caractéristiques |
+| 10 | Définir les caractéristiques (Force élevée) | Les caractéristiques sont définies |
+| 11 | Compléter les étapes restantes | Le personnage Guerrier est créé avec succès |
+
+### 2.3 Test de création d'un personnage - Classe Magicien
+
+**Objectif :** Vérifier que la création d'un personnage Magicien fonctionne spécifiquement.
+**Fichier de test :** `test_character_creation_steps.py::TestCharacterCreationSteps::test_wizard_class_creation`
+
+| N° | Action | Résultat attendu |
+|---|---|---|
+| 1 | Se connecter avec un utilisateur valide | Connexion réussie |
+| 2 | Accéder à la page de création étape 1 | La page de sélection de classe se charge |
+| 3 | Sélectionner la classe "Magicien" | La classe Magicien est sélectionnée |
+| 4 | Vérifier les informations affichées | Dé de vie d6, Intelligence comme caractéristique principale |
+| 5 | Continuer vers l'étape 2 | Redirection vers la sélection de race |
+| 6 | Sélectionner une race (ex: Elfe) | La race est sélectionnée |
+| 7 | Continuer vers l'étape 3 | Redirection vers la sélection d'historique |
+| 8 | Sélectionner un historique (ex: Sage) | L'historique est sélectionné |
+| 9 | Continuer vers l'étape 4 | Redirection vers les caractéristiques |
+| 10 | Définir les caractéristiques (Intelligence élevée) | Les caractéristiques sont définies |
+| 11 | Compléter les étapes restantes | Le personnage Magicien est créé avec succès |
+
+### 2.4 Test de création d'un personnage - Classe Clerc
+
+**Objectif :** Vérifier que la création d'un personnage Clerc fonctionne spécifiquement.
+**Fichier de test :** `test_character_creation_steps.py::TestCharacterCreationSteps::test_cleric_class_creation`
+
+| N° | Action | Résultat attendu |
+|---|---|---|
+| 1 | Se connecter avec un utilisateur valide | Connexion réussie |
+| 2 | Accéder à la page de création étape 1 | La page de sélection de classe se charge |
+| 3 | Sélectionner la classe "Clerc" | La classe Clerc est sélectionnée |
+| 4 | Vérifier les informations affichées | Dé de vie d8, Sagesse comme caractéristique principale |
+| 5 | Continuer vers l'étape 2 | Redirection vers la sélection de race |
+| 6 | Sélectionner une race (ex: Demi-elfe) | La race est sélectionnée |
+| 7 | Continuer vers l'étape 3 | Redirection vers la sélection d'historique |
+| 8 | Sélectionner un historique (ex: Acolyte) | L'historique est sélectionné |
+| 9 | Continuer vers l'étape 4 | Redirection vers les caractéristiques |
+| 10 | Définir les caractéristiques (Sagesse élevée) | Les caractéristiques sont définies |
+| 11 | Compléter les étapes restantes | Le personnage Clerc est créé avec succès |
+
+### 2.5 Test de création d'un personnage - Race Humain
+
+**Objectif :** Vérifier que la création d'un personnage Humain fonctionne spécifiquement.
+**Fichier de test :** `test_character_creation_steps.py::TestCharacterCreationSteps::test_human_race_creation`
+
+| N° | Action | Résultat attendu |
+|---|---|---|
+| 1 | Se connecter avec un utilisateur valide | Connexion réussie |
+| 2 | Accéder à la page de création étape 1 | La page de sélection de classe se charge |
+| 3 | Sélectionner une classe (ex: Barde) | La classe est sélectionnée |
+| 4 | Continuer vers l'étape 2 | Redirection vers la sélection de race |
+| 5 | Sélectionner la race "Humain" | La race Humain est sélectionnée |
+| 6 | Vérifier les informations affichées | Versatilité humaine affichée |
+| 7 | Continuer vers l'étape 3 | Redirection vers la sélection d'historique |
+| 8 | Sélectionner un historique (ex: Artisan) | L'historique est sélectionné |
+| 9 | Continuer vers l'étape 4 | Redirection vers les caractéristiques |
+| 10 | Définir les caractéristiques | Les caractéristiques sont définies |
+| 11 | Compléter les étapes restantes | Le personnage Humain est créé avec succès |
+
+### 2.6 Test de création d'un personnage - Race Elfe
+
+**Objectif :** Vérifier que la création d'un personnage Elfe fonctionne spécifiquement.
+**Fichier de test :** `test_character_creation_steps.py::TestCharacterCreationSteps::test_elf_race_creation`
+
+| N° | Action | Résultat attendu |
+|---|---|---|
+| 1 | Se connecter avec un utilisateur valide | Connexion réussie |
+| 2 | Accéder à la page de création étape 1 | La page de sélection de classe se charge |
+| 3 | Sélectionner une classe (ex: Rôdeur) | La classe est sélectionnée |
+| 4 | Continuer vers l'étape 2 | Redirection vers la sélection de race |
+| 5 | Sélectionner la race "Elfe" | La race Elfe est sélectionnée |
+| 6 | Vérifier les informations affichées | Vision dans le noir, Fey Ancestry affichés |
+| 7 | Continuer vers l'étape 3 | Redirection vers la sélection d'historique |
+| 8 | Sélectionner un historique (ex: Ermite) | L'historique est sélectionné |
+| 9 | Continuer vers l'étape 4 | Redirection vers les caractéristiques |
+| 10 | Définir les caractéristiques | Les caractéristiques sont définies |
+| 11 | Compléter les étapes restantes | Le personnage Elfe est créé avec succès |
+
+### 2.7 Test de création d'un personnage - Race Nain
+
+**Objectif :** Vérifier que la création d'un personnage Nain fonctionne spécifiquement.
+**Fichier de test :** `test_character_creation_steps.py::TestCharacterCreationSteps::test_dwarf_race_creation`
+
+| N° | Action | Résultat attendu |
+|---|---|---|
+| 1 | Se connecter avec un utilisateur valide | Connexion réussie |
+| 2 | Accéder à la page de création étape 1 | La page de sélection de classe se charge |
+| 3 | Sélectionner une classe (ex: Paladin) | La classe est sélectionnée |
+| 4 | Continuer vers l'étape 2 | Redirection vers la sélection de race |
+| 5 | Sélectionner la race "Nain" | La race Nain est sélectionnée |
+| 6 | Vérifier les informations affichées | Vision dans le noir, Résistance aux poisons affichés |
+| 7 | Continuer vers l'étape 3 | Redirection vers la sélection d'historique |
+| 8 | Sélectionner un historique (ex: Guild Artisan) | L'historique est sélectionné |
+| 9 | Continuer vers l'étape 4 | Redirection vers les caractéristiques |
+| 10 | Définir les caractéristiques | Les caractéristiques sont définies |
+| 11 | Compléter les étapes restantes | Le personnage Nain est créé avec succès |
+
+### 2.8 Test de création d'un personnage - Historique Soldat
+
+**Objectif :** Vérifier que la création d'un personnage avec l'historique Soldat fonctionne spécifiquement.
+**Fichier de test :** `test_character_creation_steps.py::TestCharacterCreationSteps::test_soldier_background_creation`
+
+| N° | Action | Résultat attendu |
+|---|---|---|
+| 1 | Se connecter avec un utilisateur valide | Connexion réussie |
+| 2 | Accéder à la page de création étape 1 | La page de sélection de classe se charge |
+| 3 | Sélectionner une classe (ex: Guerrier) | La classe est sélectionnée |
+| 4 | Continuer vers l'étape 2 | Redirection vers la sélection de race |
+| 5 | Sélectionner une race (ex: Humain) | La race est sélectionnée |
+| 6 | Continuer vers l'étape 3 | Redirection vers la sélection d'historique |
+| 7 | Sélectionner l'historique "Soldat" | L'historique Soldat est sélectionné |
+| 8 | Vérifier les informations affichées | Compétences, langues et équipement de départ affichés |
+| 9 | Continuer vers l'étape 4 | Redirection vers les caractéristiques |
+| 10 | Définir les caractéristiques | Les caractéristiques sont définies |
+| 11 | Compléter les étapes restantes | Le personnage avec historique Soldat est créé avec succès |
+
+### 2.9 Test de création d'un personnage - Historique Sage
+
+**Objectif :** Vérifier que la création d'un personnage avec l'historique Sage fonctionne spécifiquement.
+**Fichier de test :** `test_character_creation_steps.py::TestCharacterCreationSteps::test_sage_background_creation`
+
+| N° | Action | Résultat attendu |
+|---|---|---|
+| 1 | Se connecter avec un utilisateur valide | Connexion réussie |
+| 2 | Accéder à la page de création étape 1 | La page de sélection de classe se charge |
+| 3 | Sélectionner une classe (ex: Magicien) | La classe est sélectionnée |
+| 4 | Continuer vers l'étape 2 | Redirection vers la sélection de race |
+| 5 | Sélectionner une race (ex: Gnome) | La race est sélectionnée |
+| 6 | Continuer vers l'étape 3 | Redirection vers la sélection d'historique |
+| 7 | Sélectionner l'historique "Sage" | L'historique Sage est sélectionné |
+| 8 | Vérifier les informations affichées | Compétences, langues et équipement de départ affichés |
+| 9 | Continuer vers l'étape 4 | Redirection vers les caractéristiques |
+| 10 | Définir les caractéristiques | Les caractéristiques sont définies |
+| 11 | Compléter les étapes restantes | Le personnage avec historique Sage est créé avec succès |
+
+### 2.10 Test de création d'un personnage - Historique Criminel
+
+**Objectif :** Vérifier que la création d'un personnage avec l'historique Criminel fonctionne spécifiquement.
+**Fichier de test :** `test_character_creation_steps.py::TestCharacterCreationSteps::test_criminal_background_creation`
+
+| N° | Action | Résultat attendu |
+|---|---|---|
+| 1 | Se connecter avec un utilisateur valide | Connexion réussie |
+| 2 | Accéder à la page de création étape 1 | La page de sélection de classe se charge |
+| 3 | Sélectionner une classe (ex: Roublard) | La classe est sélectionnée |
+| 4 | Continuer vers l'étape 2 | Redirection vers la sélection de race |
+| 5 | Sélectionner une race (ex: Tieffelin) | La race est sélectionnée |
+| 6 | Continuer vers l'étape 3 | Redirection vers la sélection d'historique |
+| 7 | Sélectionner l'historique "Criminel" | L'historique Criminel est sélectionné |
+| 8 | Vérifier les informations affichées | Compétences, langues et équipement de départ affichés |
+| 9 | Continuer vers l'étape 4 | Redirection vers les caractéristiques |
+| 10 | Définir les caractéristiques | Les caractéristiques sont définies |
+| 11 | Compléter les étapes restantes | Le personnage avec historique Criminel est créé avec succès |
+
+### 2.11 Test de navigation entre les étapes de création
+
+**Objectif :** Vérifier que la navigation entre les étapes de création fonctionne correctement.
+**Fichier de test :** `test_character_creation_steps.py::TestCharacterCreationSteps::test_step_navigation`
+
+| N° | Action | Résultat attendu |
+|---|---|---|
+| 1 | Se connecter avec un utilisateur valide | Connexion réussie |
+| 2 | Accéder à la page de création étape 1 | La page de sélection de classe se charge |
+| 3 | Sélectionner une classe | La classe est sélectionnée |
+| 4 | Cliquer sur "Continuer" | Redirection vers l'étape 2 |
+| 5 | Cliquer sur "Retour" | Redirection vers l'étape 1 |
+| 6 | Vérifier la persistance des données | La classe sélectionnée est toujours présente |
+| 7 | Continuer vers l'étape 2 | Redirection vers l'étape 2 |
+| 8 | Sélectionner une race | La race est sélectionnée |
+| 9 | Cliquer sur "Retour" | Redirection vers l'étape 1 |
+| 10 | Vérifier la persistance des données | La classe et la race sont toujours présentes |
+
+### 2.12 Test de validation des caractéristiques (méthode des 27 points)
+
+**Objectif :** Vérifier que la validation des caractéristiques fonctionne correctement.
+**Fichier de test :** `test_character_creation_steps.py::TestCharacterCreationSteps::test_characteristics_validation`
+
+| N° | Action | Résultat attendu |
+|---|---|---|
+| 1 | Se connecter avec un utilisateur valide | Connexion réussie |
+| 2 | Accéder à l'étape 4 de création | La page de caractéristiques se charge |
+| 3 | Définir des caractéristiques valides (≤27 points) | Les caractéristiques sont acceptées |
+| 4 | Vérifier le calcul des points | Le compteur de points est correct |
+| 5 | Définir des caractéristiques invalides (>27 points) | Un message d'erreur apparaît |
+| 6 | Vérifier la validation | Le formulaire n'est pas soumis |
+| 7 | Corriger les caractéristiques | Les caractéristiques sont acceptées |
+
+### 2.13 Test d'affichage de la liste des personnages
 
 **Objectif :** Vérifier que la liste des personnages s'affiche correctement.
 
@@ -101,7 +313,7 @@ Ce document décrit l'ensemble des tests existants pour l'application de gestion
 | 2 | Accéder à la page des personnages (/characters.php) | La page se charge avec le titre "Personnages" ou "Characters" |
 | 3 | Vérifier l'affichage | Des cartes de personnages ou un message "aucun personnage" est affiché |
 
-### 2.3 Test de visualisation d'un personnage
+### 2.14 Test de visualisation d'un personnage
 
 **Objectif :** Vérifier que les détails d'un personnage s'affichent correctement.
 
@@ -112,7 +324,7 @@ Ce document décrit l'ensemble des tests existants pour l'application de gestion
 | 3 | Cliquer sur un lien de personnage | Redirection vers view_character.php |
 | 4 | Vérifier l'affichage | Les informations du personnage sont affichées (nom, stats, etc.) |
 
-### 2.4 Test d'édition d'un personnage
+### 2.15 Test d'édition d'un personnage
 
 **Objectif :** Vérifier que l'édition d'un personnage fonctionne.
 
@@ -123,7 +335,7 @@ Ce document décrit l'ensemble des tests existants pour l'application de gestion
 | 3 | Cliquer sur un lien d'édition | Redirection vers edit_character.php |
 | 4 | Vérifier le formulaire | Le formulaire d'édition est présent avec les champs appropriés |
 
-### 2.5 Test de suppression d'un personnage
+### 2.16 Test de suppression d'un personnage
 
 **Objectif :** Vérifier que la suppression d'un personnage fonctionne.
 
@@ -135,7 +347,7 @@ Ce document décrit l'ensemble des tests existants pour l'application de gestion
 | 4 | Confirmer la suppression | Redirection vers characters.php ou message de succès |
 | 5 | Vérifier la suppression | Le personnage n'apparaît plus dans la liste |
 
-### 2.6 Test de gestion de l'équipement d'un personnage
+### 2.17 Test de gestion de l'équipement d'un personnage
 
 **Objectif :** Vérifier que la gestion de l'équipement fonctionne.
 
@@ -532,6 +744,39 @@ Ce document décrit l'ensemble des tests existants pour l'application de gestion
 - Tests PHP pour le système de capacités
 - Rapports HTML générés automatiquement
 - Captures d'écran en cas d'échec
+
+### Exécution des Tests Selenium
+
+#### Prérequis
+```bash
+# Installer les dépendances Python
+pip install -r tests/requirements.txt
+
+# Installer le navigateur (Chrome/Firefox)
+# Chrome: Télécharger ChromeDriver
+# Firefox: Télécharger GeckoDriver
+```
+
+#### Commandes d'exécution
+```bash
+# Exécuter tous les tests de création de personnages
+pytest tests/functional/test_character_creation_steps.py -v
+
+# Exécuter un test spécifique
+pytest tests/functional/test_character_creation_steps.py::TestCharacterCreationSteps::test_warrior_class_creation -v
+
+# Exécuter avec rapport HTML
+pytest tests/functional/test_character_creation_steps.py --html=reports/character_creation_report.html
+
+# Exécuter en mode headless
+pytest tests/functional/test_character_creation_steps.py --headless
+```
+
+#### Configuration des tests
+- **URL de l'application** : Configurée dans `conftest.py`
+- **Données de test** : Définies dans `fixtures/test_data.py`
+- **Timeouts** : 10 secondes par défaut
+- **Captures d'écran** : Automatiques en cas d'échec
 
 ### Gestion des Échecs
 - Les tests peuvent être ignorés si les fonctionnalités ne sont pas disponibles

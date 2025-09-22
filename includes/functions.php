@@ -61,7 +61,8 @@ function getUserRole() {
 
 // Fonction pour vérifier si l'utilisateur est MJ
 function isDM() {
-    return getUserRole() === 'dm';
+    $role = getUserRole();
+    return $role === 'dm' || $role === 'admin';
 }
 
 // Fonction pour vérifier si l'utilisateur est joueur

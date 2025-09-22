@@ -14,7 +14,7 @@ import time
 # from pytest_html import html  # Non disponible dans cette version
 
 # Configuration de l'URL de base de l'application
-BASE_URL = os.getenv('TEST_BASE_URL', 'http://localhost/jdrmj')
+BASE_URL = os.getenv('TEST_BASE_URL', 'http://localhost/jdrmj_test')
 
 @pytest.fixture(scope="session")
 def browser_config():
@@ -69,6 +69,17 @@ def test_user():
         'email': 'test@example.com',
         'password': 'TestPassword123!',
         'is_dm': True
+    }
+
+@pytest.fixture(scope="function")
+def test_admin():
+    """Utilisateur admin de test"""
+    return {
+        'username': 'test_admin',
+        'email': 'admin@test.com',
+        'password': 'TestPassword123!',
+        'is_dm': True,
+        'role': 'admin'
     }
 
 @pytest.fixture(scope="function")
