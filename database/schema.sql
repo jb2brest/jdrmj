@@ -17,7 +17,6 @@ CREATE TABLE races (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
     description TEXT,
-    ability_score_bonus VARCHAR(100),
     traits TEXT
 );
 
@@ -113,15 +112,15 @@ CREATE TABLE character_spells (
 );
 
 -- Insertion des races de base
-INSERT INTO races (name, description, ability_score_bonus, traits) VALUES
-('Humain', 'Les humains sont les plus adaptables et ambitieux parmi les races communes.', '+1 à toutes les caractéristiques', 'Versatilité humaine'),
-('Elfe', 'Les elfes sont un peuple magique de grâce surnaturelle.', '+2 Dextérité, +1 Intelligence', 'Vision dans le noir, Fey Ancestry'),
-('Nain', 'Les nains sont robustes et résistants, parfaits pour la guerre.', '+2 Constitution, +2 Force', 'Vision dans le noir, Résistance aux poisons'),
-('Halfelin', 'Les halfelins sont petits mais courageux.', '+2 Dextérité, +1 Charisme', 'Chanceux, Brave, Agilité halfeline'),
-('Demi-elfe', 'Les demi-elfes combinent ce qu\'il y a de mieux chez les humains et les elfes.', '+2 Charisme, +1 à deux autres caractéristiques', 'Vision dans le noir, Fey Ancestry'),
-('Demi-orc', 'Les demi-orcs combinent la force physique des orcs avec la persévérance des humains.', '+2 Force, +1 Constitution', 'Vision dans le noir, Menace'),
-('Dragonborn', 'Les dragonborns descendent des dragons et possèdent une puissance draconique.', '+2 Force, +1 Charisme', 'Souffle draconique, Résistance aux dégâts'),
-('Tieffelin', 'Les tieffelins descendent des humains et des créatures infernales.', '+2 Charisme, +1 Intelligence', 'Vision dans le noir, Résistance aux dégâts de feu');
+INSERT INTO races (name, description, traits) VALUES
+('Humain', 'Les humains sont les plus adaptables et ambitieux parmi les races communes.', 'Versatilité humaine'),
+('Elfe', 'Les elfes sont un peuple magique de grâce surnaturelle.', 'Vision dans le noir, Fey Ancestry'),
+('Nain', 'Les nains sont robustes et résistants, parfaits pour la guerre.', 'Vision dans le noir, Résistance aux poisons'),
+('Halfelin', 'Les halfelins sont petits mais courageux.', 'Chanceux, Brave, Agilité halfeline'),
+('Demi-elfe', 'Les demi-elfes combinent ce qu\'il y a de mieux chez les humains et les elfes.', 'Vision dans le noir, Fey Ancestry'),
+('Demi-orc', 'Les demi-orcs combinent la force physique des orcs avec la persévérance des humains.', 'Vision dans le noir, Menace'),
+('Dragonborn', 'Les dragonborns descendent des dragons et possèdent une puissance draconique.', 'Souffle draconique, Résistance aux dégâts'),
+('Tieffelin', 'Les tieffelins descendent des humains et des créatures infernales.', 'Vision dans le noir, Résistance aux dégâts de feu');
 
 -- Insertion des classes de base
 INSERT INTO classes (name, description, hit_die, primary_ability, saving_throw_proficiencies) VALUES
@@ -137,6 +136,7 @@ INSERT INTO classes (name, description, hit_die, primary_ability, saving_throw_p
 ('Moine', 'Maître des arts martiaux, utilisant la puissance du corps en harmonie avec l\'esprit.', 8, 'Dextérité et Sagesse', 'Force, Dextérité'),
 ('Rôdeur', 'Guerrier qui utilise la puissance primordiale de la nature.', 10, 'Dextérité et Sagesse', 'Force, Dextérité'),
 ('Artificier', 'Inventeur qui utilise la magie pour créer des objets magiques.', 8, 'Intelligence', 'Constitution, Intelligence');
+
 
 
 
