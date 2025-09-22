@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.3.4
+VERSION=2.3.5
 
 # Date de déploiement
 DEPLOY_DATE=2025-09-22
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-09-22
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=4fe75b86052b97fad7ef9a49ae93df3786276123
+GIT_COMMIT=6d5f6a9dbc1a4cf4de4ea429eb770a2a1c68c4c7
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20250922-140237
+BUILD_ID=20250922-172344
 
 # Notes de version
-RELEASE_NOTES="Suppression de campagne"
+RELEASE_NOTES="Correction déplacement objets"
