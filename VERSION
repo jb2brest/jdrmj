@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.3.3
+VERSION=2.3.4
 
 # Date de déploiement
 DEPLOY_DATE=2025-09-22
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-09-22
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=1c5b808509e0dc7281edf1a1dec52ceff390e1cb
+GIT_COMMIT=4fe75b86052b97fad7ef9a49ae93df3786276123
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20250922-081945
+BUILD_ID=20250922-140237
 
 # Notes de version
-RELEASE_NOTES="Ajout cahier de test"
+RELEASE_NOTES="Suppression de campagne"
