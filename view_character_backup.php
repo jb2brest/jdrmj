@@ -2648,13 +2648,6 @@ $initiative = $dexterityMod;
                     </table>
                 </div>
                 
-                <?php if ($canModifyHP): ?>
-                    <div class="mt-3">
-                        <a href="view_character_equipment.php?id=<?php echo (int)$character_id; ?>" class="btn btn-primary">
-                            <i class="fas fa-cog me-2"></i>Gérer l'équipement
-                        </a>
-                    </div>
-                <?php endif; ?>
             </div>
 
 

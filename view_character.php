@@ -53,8 +53,40 @@ $backgroundSkills = $character['background_skills'] ? json_decode($character['ba
 $backgroundTools = $character['background_tools'] ? json_decode($character['background_tools'], true) : [];
 $backgroundLanguages = $character['background_languages'] ? json_decode($character['background_languages'], true) : [];
 
+// Séparer les compétences des outils/instruments
+$allSkills = [];
+$allTools = [];
+
+// Liste des outils et instruments connus
+$knownTools = [
+    'Chalemie', 'Cor', 'Cornemuse', 'Flûte', 'Flûte de pan', 'Luth', 'Lyre', 'Tambour', 'Tympanon', 'Viole',
+    'Outils de forgeron', 'Outils de charpentier', 'Outils de cuisinier', 'Outils de tanneur', 'Outils de tisserand',
+    'Outils de verrier', 'Outils de potier', 'Outils de cordonnier', 'Outils de bijoutier', 'Outils de calligraphe',
+    'Outils de cartographe', 'Outils de navigateur', 'Outils de herboriste', 'Outils d\'alchimiste', 'Outils de mécanicien',
+    'Outils de voleur', 'Outils d\'artisan', 'Instruments de musique', 'Jeux', 'Véhicules'
+];
+
+// Traiter les compétences du personnage
+foreach ($characterSkills as $skill) {
+    if (in_array($skill, $knownTools)) {
+        $allTools[] = $skill;
+    } else {
+        $allSkills[] = $skill;
+    }
+}
+
+// Ajouter les outils de l'historique, mais filtrer les mentions génériques
+$filteredBackgroundTools = [];
+foreach ($backgroundTools as $tool) {
+    // Filtrer les mentions génériques qui ont été remplacées par des choix spécifiques
+    if (strpos($tool, 'un type d') === false && strpos($tool, 'n\'importe quel') === false) {
+        $filteredBackgroundTools[] = $tool;
+    }
+}
+$allTools = array_unique(array_merge($allTools, $filteredBackgroundTools));
+
 // Combiner les compétences du personnage avec celles de l'historique
-$allSkills = array_unique(array_merge($characterSkills, $backgroundSkills));
+$allSkills = array_unique(array_merge($allSkills, $backgroundSkills));
 
 // Récupérer les données de rage pour les barbares
 $isBarbarian = strpos(strtolower($character['class_name']), 'barbare') !== false;
@@ -208,32 +240,59 @@ $charismaMod = getAbilityModifier($character['charisma'] + $character['charisma_
 // Synchroniser l'équipement de base vers place_objects
 syncBaseEquipmentToCharacterEquipment($character_id);
 
+// Récupérer l'équipement du personnage depuis character_equipment
+$stmt = $pdo->prepare("
+    SELECT ce.*, mi.nom as magical_item_nom, mi.type as magical_item_type, mi.description as magical_item_description, mi.source as magical_item_source
+    FROM character_equipment ce
+    LEFT JOIN magical_items mi ON ce.magical_item_id = mi.csv_id
+    WHERE ce.character_id = ? 
+    AND (ce.magical_item_id IS NULL OR ce.magical_item_id NOT IN (SELECT csv_id FROM poisons))
+    ORDER BY ce.obtained_at DESC
+");
+$stmt->execute([$character_id]);
+$magicalEquipment = $stmt->fetchAll();
+
 // Récupérer l'équipement équipé du personnage
 $equippedItems = getCharacterEquippedItems($character_id);
 
+// Construire le texte d'équipement à partir de character_equipment
+$equipmentText = '';
+foreach ($magicalEquipment as $item) {
+    if ($item['equipped']) {
+        $equipmentText .= $item['item_name'] . ', ';
+    }
+}
+$equipmentText = rtrim($equipmentText, ', ');
+
 // Détecter les armes, armures et boucliers dans l'équipement
-$detectedWeapons = detectWeaponsInEquipment($character['equipment']);
-$detectedArmor = detectArmorInEquipment($character['equipment']);
-$detectedShields = detectShieldsInEquipment($character['equipment']);
+$detectedWeapons = detectWeaponsInEquipment($equipmentText);
+$detectedArmor = detectArmorInEquipment($equipmentText);
+$detectedShields = detectShieldsInEquipment($equipmentText);
 
 // Calculer la classe d'armure
 $equippedArmor = null;
 $equippedShield = null;
 
-if ($equippedItems['armor']) {
-    foreach ($detectedArmor as $armor) {
-        if ($armor['name'] === $equippedItems['armor']) {
-            $equippedArmor = $armor;
-            break;
+// Chercher l'armure équipée dans character_equipment
+foreach ($magicalEquipment as $item) {
+    if ($item['equipped'] && $item['item_type'] === 'armor') {
+        foreach ($detectedArmor as $armor) {
+            if (stripos($item['item_name'], $armor['name']) !== false) {
+                $equippedArmor = $armor;
+                break 2;
+            }
         }
     }
 }
 
-if ($equippedItems['shield']) {
-    foreach ($detectedShields as $shield) {
-        if ($shield['name'] === $equippedItems['shield']) {
-            $equippedShield = $shield;
-            break;
+// Chercher le bouclier équipé dans character_equipment
+foreach ($magicalEquipment as $item) {
+    if ($item['equipped'] && $item['item_type'] === 'shield') {
+        foreach ($detectedShields as $shield) {
+            if (stripos($item['item_name'], $shield['name']) !== false) {
+                $equippedShield = $shield;
+                break 2;
+            }
         }
     }
 }
@@ -241,6 +300,7 @@ if ($equippedItems['shield']) {
 // Ajouter le modificateur de Dextérité au tableau character pour la fonction
 $character['dexterity_modifier'] = $dexterityMod;
 $armorClass = calculateArmorClassExtended($character, $equippedArmor, $equippedShield);
+
 
 // Contrôle d'accès: propriétaire OU MJ de la campagne liée
 $canView = ($character['user_id'] == $_SESSION['user_id']);
@@ -630,17 +690,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
     $character = $stmt->fetch();
 }
 
-// Récupérer l'équipement du personnage depuis character_equipment
-$stmt = $pdo->prepare("
-    SELECT ce.*, mi.nom as magical_item_nom, mi.type as magical_item_type, mi.description as magical_item_description, mi.source as magical_item_source
-    FROM character_equipment ce
-    LEFT JOIN magical_items mi ON ce.magical_item_id = mi.csv_id
-    WHERE ce.character_id = ? 
-    AND (ce.magical_item_id IS NULL OR ce.magical_item_id NOT IN (SELECT csv_id FROM poisons))
-    ORDER BY ce.obtained_at DESC
-");
-$stmt->execute([$character_id]);
-$magicalEquipment = $stmt->fetchAll();
+// $magicalEquipment est déjà défini plus haut
 
 // Récupérer les poisons du personnage depuis character_equipment
 $stmt = $pdo->prepare("
@@ -1442,18 +1492,6 @@ $initiative = $dexterityMod;
                             </div>
                         </div>
                         
-                        <div class="mt-3">
-                            <h6><i class="fas fa-tools me-2"></i>Outils maîtrisés</h6>
-                            <?php if (!empty($backgroundTools)): ?>
-                                <div class="d-flex flex-wrap">
-                                    <?php foreach ($backgroundTools as $tool): ?>
-                                        <span class="badge bg-success me-2 mb-2"><?php echo htmlspecialchars($tool); ?></span>
-                                    <?php endforeach; ?>
-                                </div>
-                            <?php else: ?>
-                                <p class="text-muted">Aucun outil maîtrisé</p>
-                            <?php endif; ?>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -1560,6 +1598,25 @@ $initiative = $dexterityMod;
                     </div>
                 </div>
             </div>
+
+            <!-- Outils et Instruments -->
+            <?php if (!empty($allTools)): ?>
+            <div class="info-section">
+                <h3><i class="fas fa-tools me-2"></i>Outils et Instruments</h3>
+                <div class="row">
+                    <div class="col-12">
+                        <h5><i class="fas fa-check-circle me-2"></i>Outils maîtrisés</h5>
+                        <div class="d-flex flex-wrap">
+                            <?php foreach ($allTools as $tool): ?>
+                                <span class="badge bg-success me-2 mb-2">
+                                    <i class="fas fa-tools me-1"></i><?php echo htmlspecialchars($tool); ?>
+                                </span>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
 
             <!-- Équipement -->
             <div class="info-section">
@@ -1762,10 +1819,11 @@ $initiative = $dexterityMod;
                                         </span>
                                     <?php endif; ?>
                                 </td>
-                                <td>
+                                <td style="min-width: 300px; white-space: nowrap; overflow: visible;">
                                     <?php if ($item['item_type'] === 'weapon' || $item['item_type'] === 'armor' || $item['item_type'] === 'shield'): ?>
                                         <?php if ($item['equipped']): ?>
-                                            <button class="btn btn-warning btn-sm" onclick="unequipItem(<?php echo $character_id; ?>, '<?php echo addslashes($item['item_name']); ?>')">
+                                            <button class="btn btn-warning btn-sm" onclick="unequipItem(<?php echo $character_id; ?>, '<?php echo addslashes($item['item_name']); ?>')"
+                                                    style="white-space: nowrap; min-width: 80px;">
                                                 <i class="fas fa-hand-paper me-1"></i>Déséquiper
                                             </button>
                                         <?php else: ?>
@@ -1777,7 +1835,8 @@ $initiative = $dexterityMod;
                                                 default => 'main_hand'
                                             };
                                             ?>
-                                            <button class="btn btn-success btn-sm" onclick="equipItem(<?php echo $character_id; ?>, '<?php echo addslashes($item['item_name']); ?>', '<?php echo $item['item_type']; ?>', '<?php echo $slot; ?>')">
+                                            <button class="btn btn-success btn-sm" onclick="equipItem(<?php echo $character_id; ?>, '<?php echo addslashes($item['item_name']); ?>', '<?php echo $item['item_type']; ?>', '<?php echo $slot; ?>')"
+                                                    style="white-space: nowrap; min-width: 80px;">
                                                 <i class="fas fa-hand-rock me-1"></i>Équiper
                                             </button>
                                         <?php endif; ?>
@@ -1792,14 +1851,18 @@ $initiative = $dexterityMod;
                                                 data-item-id="<?php echo $item['id']; ?>"
                                                 data-item-name="<?php echo htmlspecialchars($item['item_name']); ?>"
                                                 data-item-type="<?php echo htmlspecialchars($item['item_type']); ?>"
-                                                data-source="character_equipment">
+                                                data-source="character_equipment"
+                                                style="white-space: nowrap; min-width: 80px;">
                                             <i class="fas fa-exchange-alt me-1"></i>Transférer
                                         </button>
-                                        <button type="button" class="btn btn-outline-warning btn-sm ms-1" 
-                                                onclick="dropItem(<?php echo $item['id']; ?>, '<?php echo addslashes($item['item_name']); ?>')"
-                                                title="Déposer l'objet dans le lieu actuel">
-                                            <i class="fas fa-hand-holding me-1"></i>Déposer
-                                        </button>
+                                        <?php if (!$item['equipped']): ?>
+                                            <button type="button" class="btn btn-outline-warning btn-sm ms-1" 
+                                                    onclick="dropItem(<?php echo $item['id']; ?>, '<?php echo addslashes($item['item_name']); ?>')"
+                                                    title="Déposer l'objet dans le lieu actuel"
+                                                    style="white-space: nowrap; min-width: 80px;">
+                                                <i class="fas fa-hand-holding me-1"></i>Déposer
+                                            </button>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </td>
                             </tr>
@@ -1817,13 +1880,6 @@ $initiative = $dexterityMod;
                     </table>
                 </div>
                 
-                <?php if ($canModifyHP): ?>
-                    <div class="mt-3">
-                        <a href="view_character_equipment.php?id=<?php echo (int)$character_id; ?>" class="btn btn-primary">
-                            <i class="fas fa-cog me-2"></i>Gérer l'équipement
-                        </a>
-                    </div>
-                <?php endif; ?>
             </div>
 
 

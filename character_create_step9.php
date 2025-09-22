@@ -34,6 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $class_weapon_choices = $_POST['class_weapon_choices'] ?? [];
     $background_equipment = $_POST['background_equipment'] ?? [];
     $background_weapon_choices = $_POST['background_weapon_choices'] ?? [];
+    $tool_choices = $_POST['tool_choices'] ?? [];
     
     // Générer l'équipement final
     $finalEquipment = '';
@@ -60,7 +61,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'class_equipment_choices' => $class_equipment,
         'class_weapon_choices' => $class_weapon_choices,
         'background_equipment_choices' => $background_equipment,
-        'background_weapon_choices' => $background_weapon_choices
+        'background_weapon_choices' => $background_weapon_choices,
+        'tool_choices' => $tool_choices
     ];
     
     if (saveCharacterCreationStep($user_id, $session_id, 9, $stepData)) {
@@ -127,6 +129,85 @@ if ($backgroundInfo && $backgroundInfo['equipment']) {
     $parsedBackgroundEquipment = parseStartingEquipment($backgroundInfo['equipment']);
 }
 
+// Récupérer les outils disponibles
+$availableTools = [];
+$toolChoices = [];
+
+// Outils de classe
+if ($selectedClassId) {
+    $classProficiencies = getClassProficiencies($selectedClassId);
+    if (!empty($classProficiencies['tool'])) {
+        foreach ($classProficiencies['tool'] as $tool) {
+            if (strpos($tool, 'un type d') !== false || strpos($tool, 'un instrument') !== false) {
+                // C'est un choix d'outil
+                $toolChoices[] = [
+                    'source' => 'class',
+                    'source_name' => $classInfo['name'],
+                    'description' => $tool,
+                    'options' => getToolOptions($tool)
+                ];
+            } else {
+                // C'est un outil fixe
+                $availableTools[] = [
+                    'source' => 'class',
+                    'source_name' => $classInfo['name'],
+                    'name' => $tool
+                ];
+            }
+        }
+    }
+}
+
+// Outils d'historique
+if ($selectedBackgroundId) {
+    $backgroundProficiencies = getBackgroundProficiencies($selectedBackgroundId);
+    if (!empty($backgroundProficiencies['tools'])) {
+        foreach ($backgroundProficiencies['tools'] as $tool) {
+            if (strpos($tool, 'un type d') !== false || strpos($tool, 'un instrument') !== false || strpos($tool, 'kit de') !== false) {
+                // C'est un choix d'outil
+                $toolChoices[] = [
+                    'source' => 'background',
+                    'source_name' => $backgroundInfo['name'],
+                    'description' => $tool,
+                    'options' => getToolOptions($tool)
+                ];
+            } else {
+                // C'est un outil fixe
+                $availableTools[] = [
+                    'source' => 'background',
+                    'source_name' => $backgroundInfo['name'],
+                    'name' => $tool
+                ];
+            }
+        }
+    }
+}
+
+// Vérifier l'équipement de départ pour les choix d'instruments
+if ($classInfo && $classInfo['starting_equipment']) {
+    $parsedClassEquipment = parseStartingEquipment($classInfo['starting_equipment']);
+    foreach ($parsedClassEquipment as $index => $choice) {
+        if (!isset($choice['fixed']) && is_array($choice)) {
+            foreach ($choice as $choiceKey => $choiceValue) {
+                if (is_string($choiceValue) && strpos($choiceValue, 'n\'importe quel autre instrument de musique') !== false) {
+                    // Le barde peut choisir 3 instruments de musique - créer 3 choix séparés
+                    $instrumentOptions = getToolOptions('Instrument de musique');
+                    for ($i = 1; $i <= 3; $i++) {
+                        $toolChoices[] = [
+                            'source' => 'class_equipment',
+                            'source_name' => $classInfo['name'],
+                            'description' => "Instrument de musique $i",
+                            'options' => $instrumentOptions,
+                            'is_multiple_choice' => true,
+                            'choice_index' => $i - 1
+                        ];
+                    }
+                }
+            }
+        }
+    }
+}
+
 // Debug: Afficher les informations pour diagnostiquer
 if (isset($_GET['debug'])) {
     echo "<pre>";
@@ -177,6 +258,21 @@ include 'includes/layout.php';
                             <div class="card-body">
                                 <?php if (!empty($parsedClassEquipment)): ?>
                                     <?php foreach ($parsedClassEquipment as $index => $choice): ?>
+                                        <?php 
+                                        // Vérifier si ce choix contient un choix d'instrument à exclure
+                                        $hasInstrumentChoice = false;
+                                        if (!isset($choice['fixed']) && is_array($choice)) {
+                                            foreach ($choice as $choiceKey => $choiceValue) {
+                                                if (is_string($choiceValue) && strpos($choiceValue, 'n\'importe quel autre instrument de musique') !== false) {
+                                                    $hasInstrumentChoice = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        
+                                        // Ne pas afficher ce choix s'il contient un choix d'instrument
+                                        if (!$hasInstrumentChoice):
+                                        ?>
                                         <div class="equipment-choice mb-3" data-choice="<?php echo $index; ?>">
                                             <?php if (isset($choice['fixed'])): ?>
                                                 <!-- Équipement fixe -->
@@ -225,6 +321,7 @@ include 'includes/layout.php';
                                                 <?php endif; ?>
                                             <?php endif; ?>
                                         </div>
+                                        <?php endif; ?>
                                     <?php endforeach; ?>
                                 <?php else: ?>
                                     <div class="alert alert-warning">
@@ -320,6 +417,138 @@ include 'includes/layout.php';
                     </div>
                 </div>
 
+                <!-- Choix des outils -->
+                <?php if (!empty($availableTools) || !empty($toolChoices)): ?>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5><i class="fas fa-tools me-2"></i>Maîtrise des outils</h5>
+                                <small class="text-muted">Choisissez les outils que votre personnage maîtrise</small>
+                            </div>
+                            <div class="card-body">
+                                <!-- Outils fixes -->
+                                <?php if (!empty($availableTools)): ?>
+                                    <div class="mb-4">
+                                        <h6><i class="fas fa-check-circle text-success me-2"></i>Outils automatiques</h6>
+                                        <div class="row">
+                                            <?php foreach ($availableTools as $tool): ?>
+                                                <div class="col-md-6 mb-2">
+                                                    <div class="alert alert-success mb-0">
+                                                        <i class="fas fa-tools me-2"></i>
+                                                        <strong><?php echo htmlspecialchars($tool['name']); ?></strong>
+                                                        <small class="text-muted">(<?php echo htmlspecialchars($tool['source_name']); ?>)</small>
+                                                    </div>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+
+                                <!-- Choix d'outils -->
+                                <?php if (!empty($toolChoices)): ?>
+                                    <div class="mb-4">
+                                        <h6><i class="fas fa-list me-2"></i>Choix d'outils</h6>
+                                        <?php 
+                                        // Grouper les choix multiples ensemble
+                                        $groupedChoices = [];
+                                        foreach ($toolChoices as $index => $choice) {
+                                            if (isset($choice['is_multiple_choice']) && $choice['is_multiple_choice']) {
+                                                $groupKey = $choice['source'] . '_' . $choice['source_name'];
+                                                if (!isset($groupedChoices[$groupKey])) {
+                                                    $groupedChoices[$groupKey] = [
+                                                        'source_name' => $choice['source_name'],
+                                                        'choices' => []
+                                                    ];
+                                                }
+                                                $groupedChoices[$groupKey]['choices'][] = $choice;
+                                            } else {
+                                                $groupedChoices['single_' . $index] = [
+                                                    'source_name' => $choice['source_name'],
+                                                    'choices' => [$choice]
+                                                ];
+                                            }
+                                        }
+                                        
+                                        foreach ($groupedChoices as $groupKey => $group): ?>
+                                            <?php if (count($group['choices']) > 1): ?>
+                                                <!-- Choix multiples (instruments) -->
+                                                <div class="tool-choice-group mb-3">
+                                                    <div class="card border-primary">
+                                                        <div class="card-header bg-light">
+                                                            <h6 class="mb-0">
+                                                                <i class="fas fa-music me-2"></i>
+                                                                Instruments de musique (choisissez 3)
+                                                            </h6>
+                                                            <small class="text-muted">Source: <?php echo htmlspecialchars($group['source_name']); ?></small>
+                                                        </div>
+                                                        <div class="card-body">
+                                                            <div class="row">
+                                                                <?php foreach ($group['choices'][0]['options'] as $option): ?>
+                                                                    <div class="col-md-6 col-lg-4 mb-2">
+                                                                        <div class="form-check">
+                                                                            <input class="form-check-input instrument-checkbox" type="checkbox" 
+                                                                                   name="tool_choices[instruments][]" 
+                                                                                   value="<?php echo htmlspecialchars($option); ?>" 
+                                                                                   id="instrument_<?php echo md5($option); ?>"
+                                                                                   data-max-selections="3">
+                                                                            <label class="form-check-label" for="instrument_<?php echo md5($option); ?>">
+                                                                                <?php echo htmlspecialchars($option); ?>
+                                                                            </label>
+                                                                        </div>
+                                                                    </div>
+                                                                <?php endforeach; ?>
+                                                            </div>
+                                                            <div class="mt-2">
+                                                                <small class="text-muted">
+                                                                    <span id="instrument-count">0</span>/3 instruments sélectionnés
+                                                                </small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            <?php else: ?>
+                                                <!-- Choix unique -->
+                                                <?php foreach ($group['choices'] as $choice): ?>
+                                                    <div class="tool-choice mb-3" data-choice="<?php echo array_search($choice, $toolChoices); ?>">
+                                                        <div class="card border-primary">
+                                                            <div class="card-header bg-light">
+                                                                <h6 class="mb-0">
+                                                                    <i class="fas fa-tools me-2"></i>
+                                                                    <?php echo htmlspecialchars($choice['description']); ?>
+                                                                </h6>
+                                                                <small class="text-muted">Source: <?php echo htmlspecialchars($choice['source_name']); ?></small>
+                                                            </div>
+                                                            <div class="card-body">
+                                                                <div class="row">
+                                                                    <?php foreach ($choice['options'] as $option): ?>
+                                                                        <div class="col-md-6 col-lg-4 mb-2">
+                                                                            <div class="form-check">
+                                                                                <input class="form-check-input" type="radio" 
+                                                                                       name="tool_choices[<?php echo array_search($choice, $toolChoices); ?>]" 
+                                                                                       value="<?php echo htmlspecialchars($option); ?>" 
+                                                                                       id="tool_choice_<?php echo array_search($choice, $toolChoices); ?>_<?php echo md5($option); ?>">
+                                                                                <label class="form-check-label" for="tool_choice_<?php echo array_search($choice, $toolChoices); ?>_<?php echo md5($option); ?>">
+                                                                                    <?php echo htmlspecialchars($option); ?>
+                                                                                </label>
+                                                                            </div>
+                                                                        </div>
+                                                                    <?php endforeach; ?>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+
                 <!-- Résumé du personnage -->
                 <div class="card mb-4">
                     <div class="card-header">
@@ -405,6 +634,39 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialisation
     toggleWeaponSelectors();
     
+    // Gestion des instruments (cases à cocher)
+    function updateInstrumentCount() {
+        const instrumentCheckboxes = document.querySelectorAll('.instrument-checkbox');
+        const checkedInstruments = Array.from(instrumentCheckboxes).filter(cb => cb.checked);
+        const countElement = document.getElementById('instrument-count');
+        
+        if (countElement) {
+            countElement.textContent = checkedInstruments.length;
+            
+            // Désactiver les cases non cochées si 3 sont déjà sélectionnées
+            if (checkedInstruments.length >= 3) {
+                instrumentCheckboxes.forEach(cb => {
+                    if (!cb.checked) {
+                        cb.disabled = true;
+                    }
+                });
+            } else {
+                instrumentCheckboxes.forEach(cb => {
+                    cb.disabled = false;
+                });
+            }
+        }
+    }
+    
+    // Event listeners pour les cases à cocher d'instruments
+    const instrumentCheckboxes = document.querySelectorAll('.instrument-checkbox');
+    instrumentCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateInstrumentCount);
+    });
+    
+    // Initialisation du compteur
+    updateInstrumentCount();
+    
     // Validation du formulaire
     const form = document.getElementById('step9Form');
     const createBtn = document.getElementById('createCharacterBtn');
@@ -446,6 +708,38 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert('Veuillez sélectionner une arme pour tous les choix d\'armes.');
                 return;
             }
+        }
+        
+        // Vérifier les choix d'outils
+        const toolChoices = document.querySelectorAll('.tool-choice');
+        let allToolChoicesValid = true;
+        
+        toolChoices.forEach(choice => {
+            const radioInputs = choice.querySelectorAll('input[type="radio"]');
+            const hasSelection = Array.from(radioInputs).some(input => input.checked);
+            
+            if (!hasSelection) {
+                allToolChoicesValid = false;
+                choice.style.border = '2px solid #dc3545';
+            } else {
+                choice.style.border = 'none';
+            }
+        });
+        
+        // Vérifier les instruments (cases à cocher)
+        const instrumentCheckboxes = document.querySelectorAll('.instrument-checkbox');
+        const checkedInstruments = Array.from(instrumentCheckboxes).filter(cb => cb.checked);
+        
+        if (instrumentCheckboxes.length > 0 && checkedInstruments.length !== 3) {
+            e.preventDefault();
+            alert('Veuillez sélectionner exactement 3 instruments de musique.');
+            return;
+        }
+        
+        if (!allToolChoicesValid) {
+            e.preventDefault();
+            alert('Veuillez faire tous les choix d\'outils requis.');
+            return;
         }
         
         // Confirmation avant création

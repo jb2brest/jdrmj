@@ -267,6 +267,68 @@ function getToolProficiencies() {
     ];
 }
 
+// Fonction pour obtenir les options d'outils selon le type de choix
+function getToolOptions($toolDescription) {
+    if (strpos($toolDescription, 'un type d\'outil d\'artisan') !== false) {
+        return [
+            'Outils de forgeron',
+            'Outils de charpentier', 
+            'Outils de cuisinier',
+            'Outils de tanneur',
+            'Outils de tisserand',
+            'Outils de verrier',
+            'Outils de potier',
+            'Outils de cordonnier',
+            'Outils de bijoutier',
+            'Outils de calligraphe',
+            'Outils de cartographe',
+            'Outils de navigateur',
+            'Outils de herboriste',
+            'Outils d\'alchimiste',
+            'Outils de mécanicien'
+        ];
+    } elseif (strpos($toolDescription, 'un type d\'instrument de musique') !== false || 
+              strpos($toolDescription, 'n\'importe quel autre instrument de musique') !== false) {
+        return [
+            'Chalemie',
+            'Cor',
+            'Cornemuse',
+            'Flûte',
+            'Flûte de pan',
+            'Luth',
+            'Lyre',
+            'Tambour',
+            'Tympanon',
+            'Viole'
+        ];
+    } elseif (strpos($toolDescription, 'Instrument de musique') !== false) {
+        return [
+            'Chalemie',
+            'Cor',
+            'Cornemuse',
+            'Flûte',
+            'Flûte de pan',
+            'Luth',
+            'Lyre',
+            'Tambour',
+            'Tympanon',
+            'Viole'
+        ];
+    } elseif (strpos($toolDescription, 'kit de') !== false) {
+        // Pour les kits spécifiques, retourner le kit lui-même
+        return [$toolDescription];
+    } else {
+        // Pour les autres cas, retourner une liste générique
+        return [
+            'Outils de voleur',
+            'Outils d\'artisan',
+            'Instruments de musique',
+            'Jeux',
+            'Véhicules'
+        ];
+    }
+}
+
 // Fonction pour obtenir toutes les compétences (y compris armure, armes, outils)
 function getAllSkills() {
     $skills = getSkills();
@@ -1127,7 +1189,12 @@ function parseBackgroundEquipmentSimple($equipmentText) {
     foreach ($parts as $part) {
         $part = trim($part);
         if (!empty($part)) {
-            $items[] = $part;
+            // Filtrer les items génériques d'outils qui sont déjà représentés par des choix spécifiques
+            if (strpos($part, 'un jeu d\'outil d\'artisan') === false && 
+                strpos($part, 'un type d\'outil d\'artisan') === false &&
+                strpos($part, 'n\'importe quel autre instrument') === false) {
+                $items[] = $part;
+            }
         }
     }
     
@@ -5390,6 +5457,24 @@ function finalizeCharacterCreation($userId, $sessionId) {
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         
+        // Préparer les compétences finales (compétences + outils choisis)
+        $finalSkills = $data['selected_skills'] ?? [];
+        if (!empty($data['tool_choices'])) {
+            foreach ($data['tool_choices'] as $key => $toolChoice) {
+                if ($key === 'instruments' && is_array($toolChoice)) {
+                    // Cas spécial pour les instruments (cases à cocher)
+                    foreach ($toolChoice as $instrument) {
+                        if (!empty($instrument)) {
+                            $finalSkills[] = $instrument;
+                        }
+                    }
+                } elseif (!empty($toolChoice)) {
+                    // Cas normal pour les autres choix d'outils
+                    $finalSkills[] = $toolChoice;
+                }
+            }
+        }
+        
         $stmt->execute([
             $userId,
             $data['name'] ?? 'Nouveau Personnage',
@@ -5414,7 +5499,7 @@ function finalizeCharacterCreation($userId, $sessionId) {
             $data['ideals'] ?? '',
             $data['bonds'] ?? '',
             $data['flaws'] ?? '',
-            json_encode($data['selected_skills'] ?? []),
+            json_encode($finalSkills),
             json_encode($data['selected_languages'] ?? []),
             $data['money_gold'] ?? 0,
             $data['profile_photo'] ?? null,

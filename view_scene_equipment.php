@@ -130,9 +130,9 @@ $sceneMonsters = $stmt->fetchAll();
                                                     <strong>Personnage:</strong> <?php echo htmlspecialchars($player['character_name']); ?>
                                                 </p>
                                                 <div class="d-grid gap-2">
-                                                    <a href="view_character_equipment.php?id=<?php echo (int)$player['character_id']; ?>" 
+                                                    <a href="view_character.php?id=<?php echo (int)$player['character_id']; ?>" 
                                                        class="btn btn-outline-primary btn-sm">
-                                                        <i class="fas fa-gem me-1"></i>Voir l'Équipement
+                                                        <i class="fas fa-user me-1"></i>Voir le Personnage
                                                     </a>
                                                 </div>
                                             <?php else: ?>

@@ -398,17 +398,22 @@ $current_page = "admin";
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <a href="index.php" class="btn btn-primary">
                                     <i class="fas fa-home"></i> Retour à l'accueil
                                 </a>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <button class="btn btn-info" onclick="location.reload()">
                                     <i class="fas fa-sync-alt"></i> Actualiser
                                 </button>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
+                                <a href="admin_starting_equipment.php" class="btn btn-success">
+                                    <i class="fas fa-shopping-bag"></i> Équipements de Départ
+                                </a>
+                            </div>
+                            <div class="col-md-3">
                                 <a href="profile.php" class="btn btn-secondary">
                                     <i class="fas fa-user-cog"></i> Profil Admin
                                 </a>
