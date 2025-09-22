@@ -27,7 +27,7 @@ if (!$input || !isset($input['place_id'])) {
 $place_id = (int)$input['place_id'];
 
 // Vérifier que l'utilisateur est le DM de cette scène
-$stmt = $pdo->prepare("SELECT c.dm_id FROM places s JOIN campaigns c ON s.campaign_id = c.id WHERE s.id = ?");
+$stmt = $pdo->prepare("SELECT c.dm_id FROM places s JOIN place_campaigns pc ON s.id = pc.place_id JOIN campaigns c ON pc.campaign_id = c.id WHERE s.id = ?");
 $stmt->execute([$place_id]);
 $scene = $stmt->fetch();
 

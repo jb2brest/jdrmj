@@ -400,7 +400,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                     $success_message = "Nom du lieu mis à jour avec succès.";
                     
                     // Recharger les données du lieu
-                    $stmt = $pdo->prepare("SELECT s.*, c.title AS campaign_title, c.id AS campaign_id, c.dm_id, u.username AS dm_username FROM places s JOIN campaigns c ON s.campaign_id = c.id JOIN users u ON c.dm_id = u.id WHERE s.id = ?");
+                    $stmt = $pdo->prepare("SELECT s.*, c.title AS campaign_title, c.id AS campaign_id, c.dm_id, u.username AS dm_username FROM places s JOIN place_campaigns pc ON s.id = pc.place_id JOIN campaigns c ON pc.campaign_id = c.id JOIN users u ON c.dm_id = u.id WHERE s.id = ?");
                     $stmt->execute([$place_id]);
                     $place = $stmt->fetch();
                     
@@ -1082,11 +1082,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                                         ");
                                         $stmt->execute([
                                             $player_data['character_id'],
-                                            $object['name'],
+                                            $object['display_name'],
                                             $object['object_type'],
                                             $object['description'],
                                             'Objet du lieu',
-                                            'Attribution MJ - Lieu: ' . $place['name']
+                                            'Attribution MJ - Lieu: ' . $place['title']
                                         ]);
                                     }
                                 } elseif ($owner_type === 'npc') {
@@ -1099,11 +1099,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                                     $stmt->execute([
                                         $owner_id,
                                         $place_id, // Utiliser place_id comme scene_id
-                                        $object['name'],
+                                        $object['display_name'],
                                         $object['object_type'],
                                         $object['description'],
                                         'Objet du lieu',
-                                        'Attribution MJ - Lieu: ' . $place['name']
+                                        'Attribution MJ - Lieu: ' . $place['title']
                                     ]);
                                 } elseif ($owner_type === 'monster') {
                                     // Ajouter à l'inventaire du monstre
@@ -1115,11 +1115,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                                     $stmt->execute([
                                         $owner_id,
                                         $place_id, // Utiliser place_id comme scene_id
-                                        $object['name'],
+                                        $object['display_name'],
                                         $object['object_type'],
                                         $object['description'],
                                         'Objet du lieu',
-                                        'Attribution MJ - Lieu: ' . $place['name']
+                                        'Attribution MJ - Lieu: ' . $place['title']
                                     ]);
                                 }
                                 
@@ -1836,69 +1836,8 @@ foreach ($allScenes as $s) {
                                         </div>
                                     <?php endforeach; ?>
                                     
-                                    <!-- Pions des objets -->
-                                    <?php foreach ($placeObjects as $object): ?>
-                                        <?php if ($object['is_visible']): ?>
-                                            <?php 
-                                            $tokenKey = 'object_' . $object['id'];
-                                            $position = $tokenPositions[$tokenKey] ?? ['x' => 0, 'y' => 0, 'is_on_map' => false];
-                                            
-                                            // Icône selon le type et l'identification
-                                            $icon_class = 'fa-box';
-                                            $icon_color = '#6c757d';
-                                            
-                                            if (!$object['is_identified']) {
-                                                $icon_class = 'fa-question';
-                                                $icon_color = '#8B4513';
-                                            } else {
-                                                switch ($object['object_type']) {
-                                                    case 'poison':
-                                                        $icon_class = 'fa-flask';
-                                                        $icon_color = '#dc3545';
-                                                        break;
-                                                    case 'magical_item':
-                                                        $icon_class = 'fa-magic';
-                                                        $icon_color = '#0dcaf0';
-                                                        break;
-                                                    case 'weapon':
-                                                        $icon_class = 'fa-sword';
-                                                        $icon_color = '#dc3545';
-                                                        break;
-                                                    case 'armor':
-                                                        $icon_class = 'fa-shield-alt';
-                                                        $icon_color = '#198754';
-                                                        break;
-                                                    case 'letter':
-                                                        $icon_class = 'fa-envelope';
-                                                        $icon_color = '#0d6efd';
-                                                        break;
-                                                    case 'bourse':
-                                                        $icon_class = 'fa-coins';
-                                                        $icon_color = '#ffc107';
-                                                        break;
-                                                    case 'outil':
-                                                        $icon_class = 'fa-tools';
-                                                        $icon_color = '#6c757d';
-                                                        break;
-                                                }
-                                            }
-                                            ?>
-                                            <div class="token object-token"
-                                                 data-token-type="object"
-                                                 data-entity-id="<?php echo $object['id']; ?>"
-                                                 data-object-id="<?php echo $object['id']; ?>"
-                                                 data-object-name="<?php echo htmlspecialchars($object['display_name']); ?>"
-                                                 data-object-type="<?php echo $object['object_type']; ?>"
-                                                 data-is-identified="<?php echo $object['is_identified'] ? 'true' : 'false'; ?>"
-                                                 data-position-x="<?php echo $position['x']; ?>"
-                                                 data-position-y="<?php echo $position['y']; ?>"
-                                                 data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
-                                                 style="width: 24px; height: 24px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #FF8C00; border-radius: 4px; background: linear-gradient(45deg, #FFD700, #FFA500); box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 12px; color: #8B4513; font-weight: bold;"
-                                                 title="<?php echo htmlspecialchars($object['display_name']); ?>">
-                                                <i class="fas <?php echo $icon_class; ?>" style="color: <?php echo $icon_color; ?>;"></i>
-                                            </div>
-                                        <?php endif; ?>
-                                    <?php endforeach; ?>
+                                    <!-- Pions des objets (générés par JavaScript) -->
+                                    <!-- Les pions d'objets sont maintenant créés dynamiquement par JavaScript -->
                                 </div>
                             </div>
                             
@@ -2465,7 +2404,7 @@ foreach ($allScenes as $s) {
                                             
                                             <?php if ($object['is_identified']): ?>
                                                 <!-- Affichage pour objet identifié -->
-                                                <?php if (!empty($object['item_name']) && $object['item_name'] !== $object['name']): ?>
+                                                <?php if (!empty($object['item_name']) && $object['item_name'] !== $object['display_name']): ?>
                                                     <small class="text-info">
                                                         <i class="fas fa-info-circle me-1"></i>
                                                         Objet sélectionné: <?php echo htmlspecialchars($object['item_name']); ?>
@@ -3199,15 +3138,16 @@ foreach ($allScenes as $s) {
 
     <?php if ($isOwnerDM && !empty($place['map_url'])): ?>
     <script>
+    // Variables globales pour le drag & drop
+    let draggedToken = null;
+    let isDragging = false;
+    
     function initializeTokenSystem() {
         const mapImage = document.getElementById('mapImage');
         const tokens = document.querySelectorAll('.token');
         const resetBtn = document.getElementById('resetTokensBtn');
         
         if (!mapImage || tokens.length === 0) return;
-
-        let draggedToken = null;
-        let isDragging = false;
 
         // Initialiser les positions des pions
         console.log('Initialisation du système de pions...');
@@ -3302,25 +3242,8 @@ foreach ($allScenes as $s) {
             }
         });
 
-        // Gestion du drag & drop pour les pions d'objets
-        const objectTokens = document.querySelectorAll('.object-token');
-        objectTokens.forEach(token => {
-            token.draggable = true;
-            
-            token.addEventListener('dragstart', function(e) {
-                draggedToken = this;
-                isDragging = true;
-                e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData('text/html', this.outerHTML);
-                this.style.opacity = '0.5';
-            });
-
-            token.addEventListener('dragend', function(e) {
-                this.style.opacity = '1';
-                draggedToken = null;
-                isDragging = false;
-            });
-        });
+        // Les pions d'objets sont maintenant gérés par initializeObjectTokensDragDrop()
+        console.log('🔧 Les pions d\'objets seront initialisés par JavaScript');
 
         // Bouton de réinitialisation
         if (resetBtn) {
@@ -3331,34 +3254,6 @@ foreach ($allScenes as $s) {
             });
         }
 
-        function positionTokenOnMap(token, x, y) {
-            console.log(`Positionnement du pion ${token.dataset.tokenType}_${token.dataset.entityId} à ${x}%, ${y}%`);
-            
-            // Retirer le pion de son conteneur actuel
-            token.remove();
-            
-            // Ajouter le pion au conteneur du plan
-            const mapContainer = document.getElementById('mapContainer');
-            if (!mapContainer) {
-                console.error('Conteneur du plan non trouvé');
-                return;
-            }
-            mapContainer.appendChild(token);
-            
-            // Positionner le pion
-            token.style.position = 'absolute';
-            token.style.left = x + '%';
-            token.style.top = y + '%';
-            token.style.transform = 'translate(-50%, -50%)';
-            token.style.zIndex = '1000';
-            token.style.margin = '0';
-            token.style.pointerEvents = 'auto';
-            token.dataset.isOnMap = 'true';
-            token.dataset.positionX = x;
-            token.dataset.positionY = y;
-            
-            console.log(`Pion positionné avec succès à ${x}%, ${y}%`);
-        }
 
         function resetTokenToSidebar(token) {
             // Retirer le pion du conteneur du plan
@@ -3441,11 +3336,8 @@ foreach ($allScenes as $s) {
                         resetTokenToSidebar(token);
                     });
                     
-                    // Réinitialiser aussi les pions d'objets
-                    const objectTokens = document.querySelectorAll('.object-token');
-                    objectTokens.forEach(token => {
-                        positionObjectTokenInSidebar(token);
-                    });
+                    // Les pions d'objets sont maintenant gérés par JavaScript
+                    console.log('🔧 Les pions d\'objets seront réinitialisés par JavaScript');
                 } else {
                     console.error('Erreur lors de la réinitialisation:', result.error);
                 }
@@ -3476,9 +3368,39 @@ foreach ($allScenes as $s) {
         console.log('Pion d\'objet ajouté à la sidebar:', token.dataset.objectName);
     }
     
+    // Fonction pour positionner un pion sur la carte
+    function positionTokenOnMap(token, x, y) {
+        console.log(`Positionnement du pion ${token.dataset.tokenType}_${token.dataset.entityId} à ${x}%, ${y}%`);
+        
+        // Retirer le pion de son conteneur actuel
+        token.remove();
+        
+        // Ajouter le pion au conteneur du plan
+        const mapContainer = document.getElementById('mapContainer');
+        if (!mapContainer) {
+            console.error('Conteneur du plan non trouvé');
+            return;
+        }
+        mapContainer.appendChild(token);
+        
+        // Positionner le pion
+        token.style.position = 'absolute';
+        token.style.left = x + '%';
+        token.style.top = y + '%';
+        token.style.transform = 'translate(-50%, -50%)';
+        token.style.zIndex = '1000';
+        token.style.margin = '0';
+        token.style.pointerEvents = 'auto';
+        token.dataset.isOnMap = 'true';
+        token.dataset.positionX = x;
+        token.dataset.positionY = y;
+        
+        console.log(`Pion positionné avec succès à ${x}%, ${y}%`);
+    }
+    
     // Fonction pour créer les pions d'objets
     function createObjectToken(objectId, objectName, objectType, isIdentified, x, y, isOnMap) {
-        console.log('createObjectToken appelé:', objectName, objectType, isIdentified, x, y, isOnMap);
+        console.log('🔧 createObjectToken appelé:', objectName, objectType, isIdentified, x, y, isOnMap);
         
         const mapImage = document.getElementById('mapImage');
         if (!mapImage) {
@@ -3488,6 +3410,8 @@ foreach ($allScenes as $s) {
         
         const token = document.createElement('div');
         token.className = 'object-token';
+        token.dataset.tokenType = 'object';
+        token.dataset.entityId = objectId;
         token.dataset.objectId = objectId;
         token.dataset.objectName = objectName;
         token.dataset.objectType = objectType;
@@ -3566,6 +3490,7 @@ foreach ($allScenes as $s) {
         
         // Gestion du drag & drop
         token.draggable = true;
+        console.log('🔧 Token rendu draggable:', objectName, 'draggable =', token.draggable);
         
         // Positionner le pion selon son état
         if (isOnMap) {
@@ -3576,7 +3501,18 @@ foreach ($allScenes as $s) {
             positionObjectTokenInSidebar(token);
         }
         
-        console.log('Pion d\'objet créé:', objectName, isOnMap ? 'sur la carte' : 'dans la sidebar');
+        console.log('✅ Pion d\'objet créé:', objectName, isOnMap ? 'sur la carte' : 'dans la sidebar');
+        
+        // Debug: vérifier les attributs du token créé
+        console.log('🔍 Debug token créé:', {
+            className: token.className,
+            objectName: token.dataset.objectName,
+            objectType: token.dataset.objectType,
+            objectId: token.dataset.objectId,
+            entityId: token.dataset.entityId,
+            tokenType: token.dataset.tokenType,
+            draggable: token.draggable
+        });
     }
     
          // Initialiser le système de pions après que le DOM soit complètement chargé
@@ -3665,11 +3601,59 @@ foreach ($allScenes as $s) {
         <?php endforeach; ?>
         
         console.log('Initialisation des pions terminée');
+        
+        // Initialiser le drag & drop pour les tokens d'objets créés
+        initializeObjectTokensDragDrop();
+    }
+    
+    // Fonction pour initialiser le drag & drop des tokens d'objets
+    function initializeObjectTokensDragDrop() {
+        const objectTokens = document.querySelectorAll('.object-token');
+        console.log('🔧 Initialisation drag & drop pour', objectTokens.length, 'tokens d\'objets (après création)');
+        
+        // Debug: lister tous les tokens trouvés
+        objectTokens.forEach((token, index) => {
+            console.log(`🔧 Token ${index + 1}:`, {
+                className: token.className,
+                objectName: token.dataset.objectName,
+                objectType: token.dataset.objectType,
+                objectId: token.dataset.objectId,
+                entityId: token.dataset.entityId,
+                tokenType: token.dataset.tokenType
+            });
+        });
+        
+        objectTokens.forEach(token => {
+            // Vérifier si le token n'a pas déjà été initialisé
+            if (!token.dataset.dragInitialized) {
+                token.draggable = true;
+                token.dataset.dragInitialized = 'true';
+                console.log('🔧 Token initialisé comme draggable:', token.dataset.objectName, 'draggable =', token.draggable);
+                
+                token.addEventListener('dragstart', function(e) {
+                    console.log('🚀 Drag start:', this.dataset.objectName);
+                    draggedToken = this;
+                    isDragging = true;
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/html', this.outerHTML);
+                    this.style.opacity = '0.5';
+                });
+
+                token.addEventListener('dragend', function(e) {
+                    console.log('🏁 Drag end:', this.dataset.objectName);
+                    this.style.opacity = '1';
+                    draggedToken = null;
+                    isDragging = false;
+                });
+            }
+        });
     }
     
     
     
     function saveObjectTokenPosition(token, x, y, isOnMap) {
+        console.log('💾 saveObjectTokenPosition appelé:', token.dataset.objectName, 'x:', x, 'y:', y, 'isOnMap:', isOnMap);
+        
         // Mettre à jour les données du token
         token.dataset.positionX = x;
         token.dataset.positionY = y;
@@ -3683,7 +3667,7 @@ foreach ($allScenes as $s) {
             is_on_map: isOnMap
         };
         
-        console.log('Sauvegarde position objet:', data);
+        console.log('💾 Sauvegarde position objet:', data);
         
         fetch('update_object_position.php', {
             method: 'POST',
@@ -4320,7 +4304,9 @@ foreach ($allScenes as $s) {
     });
     
     // Gestion de la sélection pays/région dans le formulaire d'édition
-    document.getElementById('editSceneCountry').addEventListener('change', function() {
+    const editSceneCountry = document.getElementById('editSceneCountry');
+    if (editSceneCountry) {
+        editSceneCountry.addEventListener('change', function() {
         var countryId = this.value;
         var regionSelect = document.getElementById('editSceneRegion');
         
@@ -4344,6 +4330,7 @@ foreach ($allScenes as $s) {
                 });
         }
     });
+    }
     </script>
 
 <!-- Modal pour éditer le lieu -->

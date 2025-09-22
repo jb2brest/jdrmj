@@ -179,7 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     $item['item_description'],
                                     $target_id,
                                     $item['magical_item_id'],
-                                    $item['quantity'],
+                                    (int)($item['quantity'] ?: 1),
                                     $notes ?: $item['notes'],
                                     'Transfert depuis ' . $monster['name']
                                 ]);

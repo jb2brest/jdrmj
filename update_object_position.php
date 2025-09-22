@@ -38,10 +38,11 @@ if ($place_id <= 0 || $object_id <= 0) {
 try {
     // Vérifier que l'objet appartient au lieu et que l'utilisateur a les droits
     $stmt = $pdo->prepare("
-        SELECT po.id, p.campaign_id, c.dm_id 
+        SELECT po.id, c.dm_id 
         FROM place_objects po 
         JOIN places p ON po.place_id = p.id 
-        JOIN campaigns c ON p.campaign_id = c.id 
+        JOIN place_campaigns pc ON p.id = pc.place_id
+        JOIN campaigns c ON pc.campaign_id = c.id 
         WHERE po.id = ? AND po.place_id = ?
     ");
     $stmt->execute([$object_id, $place_id]);

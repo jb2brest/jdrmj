@@ -31,9 +31,9 @@ $last_update = $input['last_update'] ?? null;
 try {
     // Vérifier que l'utilisateur a accès à ce lieu
     $stmt = $pdo->prepare("
-        SELECT p.id, c.id as campaign_id 
+        SELECT p.id, pc.campaign_id 
         FROM places p 
-        JOIN campaigns c ON p.campaign_id = c.id 
+        JOIN place_campaigns pc ON p.id = pc.place_id
         WHERE p.id = ?
     ");
     $stmt->execute([$place_id]);
@@ -45,7 +45,7 @@ try {
         exit();
     }
     
-    // Vérifier que l'utilisateur est membre de la campagne
+    // Vérifier que l'utilisateur est membre de la campagne ou est le DM
     $stmt = $pdo->prepare("
         SELECT role FROM campaign_members 
         WHERE campaign_id = ? AND user_id = ?
@@ -53,10 +53,20 @@ try {
     $stmt->execute([$place['campaign_id'], $_SESSION['user_id']]);
     $membership = $stmt->fetch();
     
+    // Si pas membre, vérifier si c'est le DM de la campagne
     if (!$membership) {
-        http_response_code(403);
-        echo json_encode(['error' => 'Accès refusé']);
-        exit();
+        $stmt = $pdo->prepare("
+            SELECT dm_id FROM campaigns 
+            WHERE id = ? AND dm_id = ?
+        ");
+        $stmt->execute([$place['campaign_id'], $_SESSION['user_id']]);
+        $is_dm = $stmt->fetch();
+        
+        if (!$is_dm) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Accès refusé - Vous devez être membre de la campagne ou le DM']);
+            exit();
+        }
     }
     
     // Récupérer les positions des pions

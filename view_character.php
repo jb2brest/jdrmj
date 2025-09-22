@@ -499,24 +499,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                         $item['type_precis'],
                         $item['description'],
                         $item['is_identified'],
-                        false, // is_visible (les objets d'équipement ne sont pas visibles sur la carte)
-                        false, // is_equipped (toujours non équipé lors du transfert)
+                        0, // is_visible (les objets d'équipement ne sont pas visibles sur la carte)
+                        0, // is_equipped (toujours non équipé lors du transfert)
                         0, // position_x
                         0, // position_y
-                        false, // is_on_map
+                        0, // is_on_map
                         'player', // owner_type
                         $target_id, // owner_id
-                        $item['poison_id'],
-                        $item['weapon_id'],
-                        $item['armor_id'],
-                        $item['gold_coins'],
-                        $item['silver_coins'],
-                        $item['copper_coins'],
+                        $item['poison_id'] ?: null,
+                        $item['weapon_id'] ?: null,
+                        $item['armor_id'] ?: null,
+                        (int)($item['gold_coins'] ?: 0),
+                        (int)($item['silver_coins'] ?: 0),
+                        (int)($item['copper_coins'] ?: 0),
                         $item['letter_content'],
-                        $item['is_sealed'],
+                        $item['is_sealed'] ?: 0,
                         $item['magical_item_id'],
                         $item['item_source'],
-                        $item['quantity'],
+                        (int)($item['quantity'] ?: 1),
                         $item['equipped_slot'],
                         $notes ?: $item['notes'],
                         $item['obtained_at'],
@@ -1506,11 +1506,6 @@ $initiative = $dexterityMod;
             <?php if ($character['background_name']): ?>
             <div class="info-section">
                 <h3><i class="fas fa-book me-2"></i>Historique: <?php echo htmlspecialchars($character['background_name']); ?></h3>
-                <div class="row">
-                    <div class="col-12">
-                        <p><?php echo htmlspecialchars($character['background_description']); ?></p>
-                    </div>
-                </div>
             </div>
             <?php endif; ?>
 
@@ -1799,6 +1794,11 @@ $initiative = $dexterityMod;
                                                 data-item-type="<?php echo htmlspecialchars($item['item_type']); ?>"
                                                 data-source="character_equipment">
                                             <i class="fas fa-exchange-alt me-1"></i>Transférer
+                                        </button>
+                                        <button type="button" class="btn btn-outline-warning btn-sm ms-1" 
+                                                onclick="dropItem(<?php echo $item['id']; ?>, '<?php echo addslashes($item['item_name']); ?>')"
+                                                title="Déposer l'objet dans le lieu actuel">
+                                            <i class="fas fa-hand-holding me-1"></i>Déposer
                                         </button>
                                     <?php endif; ?>
                                 </td>
@@ -2265,6 +2265,35 @@ $initiative = $dexterityMod;
             });
         }
 
+        function dropItem(itemId, itemName) {
+            if (!confirm(`Êtes-vous sûr de vouloir déposer "${itemName}" dans le lieu actuel ?`)) {
+                return;
+            }
+
+            fetch('drop_item.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    item_id: itemId,
+                    item_name: itemName
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Objet déposé avec succès dans le lieu actuel !');
+                    location.reload();
+                } else {
+                    alert('Erreur: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                alert('Erreur lors du dépôt de l\'objet');
+            });
+        }
 
         // Fonctions pour gérer les rages
         function toggleRage(characterId, rageNumber) {

@@ -602,7 +602,7 @@ include 'includes/layout.php';
                                              data-position-x="<?php echo $position['x']; ?>"
                                              data-position-y="<?php echo $position['y']; ?>"
                                              data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
-                                             style="width: 24px; height: 24px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #FF8C00; border-radius: 4px; background: linear-gradient(45deg, #FFD700, #FFA500); box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 12px; color: #8B4513; font-weight: bold;"
+                                             style="width: 24px; height: 24px; margin: 2px; display: flex; align-items: center; justify-content: center; cursor: move; border: 2px solid #FF8C00; border-radius: 4px; background: linear-gradient(45deg, #FFD700, #FFA500); box-shadow: 0 2px 4px rgba(0,0,0,0.3); font-size: 12px; color: #8B4513; font-weight: bold;"
                                              title="<?php echo htmlspecialchars($object['display_name']); ?>">
                                             <i class="fas <?php echo $icon_class; ?>" style="color: <?php echo $icon_color; ?>;"></i>
                                         </div>
@@ -958,6 +958,8 @@ function updateTokenPositions() {
         last_update: lastUpdateTime
     };
 
+    console.log('🔄 Mise à jour des positions des tokens:', data);
+
     fetch('get_token_positions.php', {
         method: 'POST',
         headers: {
@@ -967,8 +969,10 @@ function updateTokenPositions() {
     })
     .then(response => response.json())
     .then(result => {
+        console.log('📡 Réponse get_token_positions.php:', result);
         if (result.success) {
             if (result.positions) {
+                console.log('📍 Positions reçues:', result.positions);
                 applyPositionUpdates(result.positions);
             }
             
@@ -1006,11 +1010,14 @@ function updateTokenPositions() {
 
 function applyPositionUpdates(positions) {
     const tokens = document.querySelectorAll('.token');
+    console.log('🎯 Application des mises à jour de position pour', tokens.length, 'tokens');
     
     tokens.forEach(token => {
         const tokenType = token.dataset.tokenType;
         const entityId = token.dataset.entityId;
         const tokenKey = `${tokenType}_${entityId}`;
+        
+        console.log(`🔍 Token: ${tokenKey} (${tokenType}_${entityId})`);
         
         if (positions[tokenKey]) {
             const newPosition = positions[tokenKey];
@@ -1018,8 +1025,13 @@ function applyPositionUpdates(positions) {
             const currentY = parseInt(token.dataset.positionY);
             const currentIsOnMap = token.dataset.isOnMap === 'true';
             
+            console.log(`📍 Position actuelle: (${currentX}, ${currentY}, on_map: ${currentIsOnMap})`);
+            console.log(`📍 Nouvelle position: (${newPosition.x}, ${newPosition.y}, on_map: ${newPosition.is_on_map})`);
+            
             // Vérifier si la position a changé
             if (newPosition.x !== currentX || newPosition.y !== currentY || newPosition.is_on_map !== currentIsOnMap) {
+                console.log(`🔄 Mise à jour de la position pour ${tokenKey}`);
+                
                 // Mettre à jour les attributs
                 token.dataset.positionX = newPosition.x;
                 token.dataset.positionY = newPosition.y;
@@ -1030,14 +1042,21 @@ function applyPositionUpdates(positions) {
                     // Vérifier que la carte existe avant de positionner sur la carte
                     const mapContainer = document.getElementById('mapContainer');
                     if (mapContainer) {
+                        console.log(`🗺️ Positionnement sur la carte pour ${tokenKey}`);
                         positionTokenOnMap(token, newPosition.x, newPosition.y);
                     } else {
+                        console.log(`⚠️ Pas de carte, remise dans la sidebar pour ${tokenKey}`);
                         resetTokenToSidebar(token);
                     }
                 } else {
+                    console.log(`📦 Remise dans la sidebar pour ${tokenKey}`);
                     resetTokenToSidebar(token);
                 }
+            } else {
+                console.log(`✅ Position inchangée pour ${tokenKey}`);
             }
+        } else {
+            console.log(`❌ Aucune position trouvée pour ${tokenKey}`);
         }
     });
 }

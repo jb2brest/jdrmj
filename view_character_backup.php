@@ -529,24 +529,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                         $item['type_precis'],
                         $item['description'],
                         $item['is_identified'],
-                        false, // is_visible (les objets d'équipement ne sont pas visibles sur la carte)
-                        false, // is_equipped (toujours non équipé lors du transfert)
+                        0, // is_visible (les objets d'équipement ne sont pas visibles sur la carte)
+                        0, // is_equipped (toujours non équipé lors du transfert)
                         0, // position_x
                         0, // position_y
-                        false, // is_on_map
+                        0, // is_on_map
                         'player', // owner_type
                         $target_id, // owner_id
-                        $item['poison_id'],
-                        $item['weapon_id'],
-                        $item['armor_id'],
-                        $item['gold_coins'],
-                        $item['silver_coins'],
-                        $item['copper_coins'],
+                        $item['poison_id'] ?: null,
+                        $item['weapon_id'] ?: null,
+                        $item['armor_id'] ?: null,
+                        (int)($item['gold_coins'] ?: 0),
+                        (int)($item['silver_coins'] ?: 0),
+                        (int)($item['copper_coins'] ?: 0),
                         $item['letter_content'],
-                        $item['is_sealed'],
+                        $item['is_sealed'] ?: 0,
                         $item['magical_item_id'],
                         $item['item_source'],
-                        $item['quantity'],
+                        (int)($item['quantity'] ?: 1),
                         $item['equipped_slot'],
                         $notes ?: $item['notes'],
                         $item['obtained_at'],

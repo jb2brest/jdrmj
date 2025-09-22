@@ -46,6 +46,9 @@ if (isAdmin()) {
 }
 $campaign = $stmt->fetch();
 
+// Charger les pays pour les filtres
+$countries = getCountries();
+
 if (!$campaign) {
     header('Location: campaigns.php');
     exit();
@@ -1022,7 +1025,6 @@ if (!empty($places)) {
                                     <select class="form-select" id="filterCountry">
                                         <option value="">Tous les pays</option>
                                         <?php
-                                        $countries = getCountries();
                                         foreach ($countries as $country):
                                         ?>
                                             <option value="<?php echo htmlspecialchars($country['name']); ?>"><?php echo htmlspecialchars($country['name']); ?></option>

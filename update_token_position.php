@@ -44,7 +44,7 @@ $is_on_map = (bool)$input['is_on_map'];
 error_log("Données traitées - place_id: $place_id, token_type: $token_type, entity_id: $entity_id, position_x: $position_x, position_y: $position_y, is_on_map: " . ($is_on_map ? 'true' : 'false'));
 
 // Vérifier que l'utilisateur est le DM de cette scène
-$stmt = $pdo->prepare("SELECT c.dm_id FROM places s JOIN campaigns c ON s.campaign_id = c.id WHERE s.id = ?");
+$stmt = $pdo->prepare("SELECT c.dm_id FROM places s JOIN place_campaigns pc ON s.id = pc.place_id JOIN campaigns c ON pc.campaign_id = c.id WHERE s.id = ?");
 $stmt->execute([$place_id]);
 $scene = $stmt->fetch();
 
