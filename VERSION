@@ -2,19 +2,19 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.5.0
+VERSION=2.5.1
 
 # Date de déploiement
-DEPLOY_DATE=2025-09-22
+DEPLOY_DATE=2025-09-23
 
 # Environnement
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=cb9433b8ce634ef96119d9200f1613ca8d36a947
+GIT_COMMIT=4bf64ae170978adc72ee3be8d33cc12a4cbbd4ca
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20250922-234821
+BUILD_ID=20250923-205126
 
 # Notes de version
-RELEASE_NOTES="équipement de depart"
+RELEASE_NOTES="paladin et mage"
