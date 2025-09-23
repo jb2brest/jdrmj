@@ -1540,6 +1540,190 @@ function calculateArmorClassExtended($character, $equippedArmor = null, $equippe
     return $ac;
 }
 
+// Fonction pour calculer les attaques d'un personnage
+function calculateCharacterAttacks($characterId, $character) {
+    global $pdo;
+    
+    // Récupérer l'équipement équipé depuis character_equipment
+    $stmt = $pdo->prepare("
+        SELECT ce.item_name, ce.item_type
+        FROM character_equipment ce
+        WHERE ce.character_id = ? AND ce.equipped = 1 AND ce.item_type = 'weapon'
+    ");
+    $stmt->execute([$characterId]);
+    $equippedWeaponsData = $stmt->fetchAll();
+    
+    // Pour chaque arme équipée, trouver la correspondance dans la table weapons
+    $weaponsWithDetails = [];
+    foreach ($equippedWeaponsData as $weapon) {
+        // Essayer d'abord une correspondance exacte
+        $stmt = $pdo->prepare("SELECT * FROM weapons WHERE name = ?");
+        $stmt->execute([$weapon['item_name']]);
+        $weaponDetails = $stmt->fetch();
+        
+        // Si pas de correspondance exacte, essayer une correspondance partielle
+        if (!$weaponDetails) {
+            $stmt = $pdo->prepare("
+                SELECT * FROM weapons 
+                WHERE ? LIKE CONCAT('%', name, '%')
+                ORDER BY LENGTH(name) DESC
+                LIMIT 1
+            ");
+            $stmt->execute([$weapon['item_name']]);
+            $weaponDetails = $stmt->fetch();
+        }
+        
+        // Si toujours pas trouvé, essayer une correspondance par type d'arme
+        if (!$weaponDetails) {
+            $stmt = $pdo->prepare("
+                SELECT * FROM weapons 
+                WHERE (name LIKE '%hache%' AND ? LIKE '%hache%' AND ? LIKE '%deux mains%')
+                OR (name LIKE '%hache%' AND ? LIKE '%hache%' AND ? LIKE '%armes%')
+                OR (name LIKE '%épée%' AND ? LIKE '%épée%')
+                OR (name LIKE '%arc%' AND ? LIKE '%arc%')
+                OR (name LIKE '%dague%' AND ? LIKE '%dague%')
+                OR (name LIKE '%lance%' AND ? LIKE '%lance%')
+                OR (name LIKE '%marteau%' AND ? LIKE '%marteau%')
+                OR (name LIKE '%bâton%' AND ? LIKE '%bâton%')
+                OR (name LIKE '%gourdin%' AND ? LIKE '%gourdin%')
+                OR (name LIKE '%masse%' AND ? LIKE '%masse%')
+                OR (name LIKE '%fléau%' AND ? LIKE '%fléau%')
+                OR (name LIKE '%fouet%' AND ? LIKE '%fouet%')
+                OR (name LIKE '%trident%' AND ? LIKE '%trident%')
+                OR (name LIKE '%javeline%' AND ? LIKE '%javeline%')
+                OR (name LIKE '%fléchette%' AND ? LIKE '%fléchette%')
+                OR (name LIKE '%fronde%' AND ? LIKE '%fronde%')
+                OR (name LIKE '%arbalète%' AND ? LIKE '%arbalète%')
+                OR (name LIKE '%sarbacane%' AND ? LIKE '%sarbacane%')
+                ORDER BY LENGTH(name) DESC
+                LIMIT 1
+            ");
+            $stmt->execute([
+                $weapon['item_name'], $weapon['item_name'], $weapon['item_name'], $weapon['item_name'],
+                $weapon['item_name'], $weapon['item_name'], $weapon['item_name'], $weapon['item_name'],
+                $weapon['item_name'], $weapon['item_name'], $weapon['item_name'], $weapon['item_name'],
+                $weapon['item_name'], $weapon['item_name'], $weapon['item_name'], $weapon['item_name'],
+                $weapon['item_name'], $weapon['item_name'], $weapon['item_name']
+            ]);
+            $weaponDetails = $stmt->fetch();
+        }
+        if ($weaponDetails) {
+            $weaponDetails['item_name'] = $weapon['item_name'];
+            $weaponDetails['item_type'] = $weapon['item_type'];
+            $weaponsWithDetails[] = $weaponDetails;
+        }
+    }
+    $equippedWeaponsData = $weaponsWithDetails;
+    
+    // Organiser les armes équipées
+    $equippedWeapons = [];
+    foreach ($equippedWeaponsData as $weaponData) {
+        if ($weaponData['hands'] == 2) {
+            // Arme à deux mains
+            $equippedWeapons['main_hand'] = $weaponData;
+            $equippedWeapons['off_hand'] = $weaponData; // Marquer les deux mains comme occupées
+        } else {
+            // Arme à une main
+            if (!isset($equippedWeapons['main_hand'])) {
+                $equippedWeapons['main_hand'] = $weaponData;
+            } elseif (!isset($equippedWeapons['off_hand'])) {
+                $equippedWeapons['off_hand'] = $weaponData;
+            }
+        }
+    }
+    
+    // Calculer les modificateurs
+    $strengthMod = floor(($character['strength'] - 10) / 2);
+    $dexterityMod = floor(($character['dexterity'] - 10) / 2);
+    $proficiencyBonus = $character['proficiency_bonus'];
+    
+    $attacks = [];
+    
+    // Cas 1: Arme à deux mains
+    if (isset($equippedWeapons['main_hand']) && $equippedWeapons['main_hand']['hands'] == 2) {
+        $weapon = $equippedWeapons['main_hand'];
+        $attackBonus = $proficiencyBonus;
+        
+        // Déterminer le modificateur d'attaque (Force ou Dextérité)
+        if (strpos($weapon['properties'], 'finesse') !== false) {
+            $attackBonus += max($strengthMod, $dexterityMod);
+        } elseif (strpos($weapon['type'], 'distance') !== false) {
+            $attackBonus += $dexterityMod;
+        } else {
+            $attackBonus += $strengthMod;
+        }
+        
+        $attacks[] = [
+            'name' => $weapon['name'] . ' (à deux mains)',
+            'attack_bonus' => $attackBonus,
+            'damage' => $weapon['damage'],
+            'type' => 'two_handed'
+        ];
+    }
+    // Cas 2: Deux armes (une dans chaque main)
+    elseif (isset($equippedWeapons['main_hand']) && isset($equippedWeapons['off_hand'])) {
+        // Arme principale
+        $mainWeapon = $equippedWeapons['main_hand'];
+        $mainAttackBonus = $proficiencyBonus;
+        
+        if (strpos($mainWeapon['properties'], 'finesse') !== false) {
+            $mainAttackBonus += max($strengthMod, $dexterityMod);
+        } elseif (strpos($mainWeapon['type'], 'distance') !== false) {
+            $mainAttackBonus += $dexterityMod;
+        } else {
+            $mainAttackBonus += $strengthMod;
+        }
+        
+        $attacks[] = [
+            'name' => $mainWeapon['name'] . ' (main principale)',
+            'attack_bonus' => $mainAttackBonus,
+            'damage' => $mainWeapon['damage'],
+            'type' => 'main_hand'
+        ];
+        
+        // Arme secondaire
+        $offWeapon = $equippedWeapons['off_hand'];
+        $offAttackBonus = $proficiencyBonus;
+        
+        if (strpos($offWeapon['properties'], 'finesse') !== false) {
+            $offAttackBonus += max($strengthMod, $dexterityMod);
+        } elseif (strpos($offWeapon['type'], 'distance') !== false) {
+            $offAttackBonus += $dexterityMod;
+        } else {
+            $offAttackBonus += $strengthMod;
+        }
+        
+        $attacks[] = [
+            'name' => $offWeapon['name'] . ' (main secondaire)',
+            'attack_bonus' => $offAttackBonus,
+            'damage' => $offWeapon['damage'],
+            'type' => 'off_hand'
+        ];
+    }
+    // Cas 3: Une seule arme (main principale)
+    elseif (isset($equippedWeapons['main_hand'])) {
+        $weapon = $equippedWeapons['main_hand'];
+        $attackBonus = $proficiencyBonus;
+        
+        if (strpos($weapon['properties'], 'finesse') !== false) {
+            $attackBonus += max($strengthMod, $dexterityMod);
+        } elseif (strpos($weapon['type'], 'distance') !== false) {
+            $attackBonus += $dexterityMod;
+        } else {
+            $attackBonus += $strengthMod;
+        }
+        
+        $attacks[] = [
+            'name' => $weapon['name'] . ' (main principale)',
+            'attack_bonus' => $attackBonus,
+            'damage' => $weapon['damage'],
+            'type' => 'main_hand'
+        ];
+    }
+    
+    return $attacks;
+}
+
 // Fonction pour obtenir l'équipement équipé d'un personnage
 function getCharacterEquippedItems($characterId) {
     global $pdo;

@@ -299,6 +299,9 @@ foreach ($magicalEquipment as $item) {
 
 // Ajouter le modificateur de Dextérité au tableau character pour la fonction
 $character['dexterity_modifier'] = $dexterityMod;
+
+// Calculer les attaques du personnage
+$characterAttacks = calculateCharacterAttacks($character_id, $character);
 $armorClass = calculateArmorClassExtended($character, $equippedArmor, $equippedShield);
 
 
@@ -1275,9 +1278,9 @@ $initiative = $dexterityMod;
                     </div>
                 </div>
                 
-                <!-- Classe d'armure -->
+                <!-- Classe d'armure et Attaques -->
                 <div class="row mt-3">
-                    <div class="col-12">
+                    <div class="col-md-6">
                         <h5><i class="fas fa-shield-alt me-2"></i>Classe d'armure</h5>
                         <div class="card">
                             <div class="card-body">
@@ -1310,6 +1313,41 @@ $initiative = $dexterityMod;
                                         </small>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-sword me-2"></i>Attaques</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                <?php if (!empty($characterAttacks)): ?>
+                                    <?php foreach ($characterAttacks as $attack): ?>
+                                        <div class="row mb-2">
+                                            <div class="col-12">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <strong><?php echo htmlspecialchars($attack['name']); ?></strong><br>
+                                                        <small class="text-muted"><?php echo htmlspecialchars($attack['damage']); ?></small>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <span class="badge bg-<?php echo $attack['type'] === 'two_handed' ? 'danger' : ($attack['type'] === 'main_hand' ? 'success' : 'info'); ?> fs-6">
+                                                            <?php echo ($attack['attack_bonus'] >= 0 ? '+' : '') . $attack['attack_bonus']; ?>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <?php if ($attack !== end($characterAttacks)): ?>
+                                            <hr class="my-2">
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <div class="text-center text-muted">
+                                        <i class="fas fa-hand-paper fa-2x mb-2"></i>
+                                        <p>Aucune arme équipée</p>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
