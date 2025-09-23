@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.5.1
+VERSION=2.5.2
 
 # Date de déploiement
 DEPLOY_DATE=2025-09-23
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-09-23
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=4bf64ae170978adc72ee3be8d33cc12a4cbbd4ca
+GIT_COMMIT=a12f09f740e4760cee1fa2eaf40e4da46a687da0
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20250923-205126
+BUILD_ID=20250923-212440
 
 # Notes de version
-RELEASE_NOTES="paladin et mage"
+RELEASE_NOTES="Attaque"
