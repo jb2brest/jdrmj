@@ -13,7 +13,7 @@ function getStartingEquipmentBySource($src, $srcId) {
         $stmt = $pdo->prepare("
             SELECT * FROM starting_equipment 
             WHERE src = ? AND src_id = ? 
-            ORDER BY groupe_id, option_indice, id
+            ORDER BY groupe_id, option_letter, id
         ");
         $stmt->execute([$src, $srcId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -68,6 +68,67 @@ function structureStartingEquipmentByGroups($equipment) {
 }
 
 /**
+ * Structure l'équipement de départ par no_choix pour fusionner les options a et b
+ */
+function structureStartingEquipmentByChoices($equipment) {
+    $choices = [];
+    
+    foreach ($equipment as $item) {
+        $choiceId = $item['no_choix'] ?? 0;
+        
+        if (!isset($choices[$choiceId])) {
+            $choices[$choiceId] = [
+                'id' => $choiceId,
+                'type_choix' => $item['type_choix'],
+                'options' => []
+            ];
+        }
+        
+        $choices[$choiceId]['options'][] = $item;
+    }
+    
+    // Fusionner les options a et b du même no_choix
+    $mergedChoices = [];
+    foreach ($choices as $choiceId => $choice) {
+        if ($choiceId == 0) {
+            // Équipement obligatoire sans no_choix
+            $mergedChoices[$choiceId] = $choice;
+        } else {
+            // Grouper par option_letter pour fusionner a et b
+            $groupedOptions = [];
+            foreach ($choice['options'] as $option) {
+                $letter = $option['option_letter'] ?? 'default';
+                if (!isset($groupedOptions[$letter])) {
+                    $groupedOptions[$letter] = [];
+                }
+                $groupedOptions[$letter][] = $option;
+            }
+            
+            // Créer les options fusionnées
+            $mergedOptions = [];
+            foreach ($groupedOptions as $letter => $options) {
+                if (count($options) > 1) {
+                    // Fusionner plusieurs items de la même option
+                    $mergedOption = $options[0]; // Prendre le premier comme base
+                    $mergedOption['merged_items'] = $options; // Garder tous les items
+                    $mergedOptions[] = $mergedOption;
+                } else {
+                    $mergedOptions[] = $options[0];
+                }
+            }
+            
+            $mergedChoices[$choiceId] = [
+                'id' => $choiceId,
+                'type_choix' => $choice['type_choix'],
+                'options' => $mergedOptions
+            ];
+        }
+    }
+    
+    return $mergedChoices;
+}
+
+/**
  * Récupère les détails d'un équipement selon son type
  */
 function getEquipmentDetails($type, $typeId) {
@@ -79,23 +140,32 @@ function getEquipmentDetails($type, $typeId) {
     
     try {
         switch ($type) {
-            case 'Arme':
+            case 'weapon':
                 $stmt = $pdo->prepare("SELECT * FROM weapons WHERE id = ?");
                 break;
-            case 'Armure':
+            case 'armor':
                 $stmt = $pdo->prepare("SELECT * FROM armor WHERE id = ?");
                 break;
-            case 'Bouclier':
+            case 'bouclier':
                 $stmt = $pdo->prepare("SELECT * FROM armor WHERE id = ? AND type = 'Bouclier'");
                 break;
-            case 'Outils':
-                $stmt = $pdo->prepare("SELECT * FROM tools WHERE id = ?");
-                break;
-            case 'Accessoire':
-                // Pour les accessoires, on peut avoir une table générique ou utiliser des données codées
-                return ['name' => 'Accessoire générique', 'description' => 'Accessoire de départ'];
-            case 'Sac':
-                return getEquipmentPackDetails($typeId);
+            case 'outils':
+            case 'sac':
+            case 'nourriture':
+            case 'accessoire':
+            case 'instrument':
+                // Pour les objets génériques, chercher d'abord dans le type spécifié, puis dans tous les types
+                $stmt = $pdo->prepare("SELECT * FROM Object WHERE id = ? AND type = ?");
+                $stmt->execute([$typeId, $type]);
+                $result = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                // Si pas trouvé dans le type spécifié, chercher dans tous les types
+                if (!$result) {
+                    $stmt = $pdo->prepare("SELECT * FROM Object WHERE id = ?");
+                    $stmt->execute([$typeId]);
+                    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+                }
+                return $result;
             default:
                 return null;
         }
@@ -156,28 +226,36 @@ function generateFinalEquipmentNew($classId, $backgroundId, $raceId, $equipmentC
     
     // Récupérer l'équipement de classe
     $classEquipment = getClassStartingEquipmentNew($classId);
-    $classGroups = structureStartingEquipmentByGroups($classEquipment);
+    $classGroups = structureStartingEquipmentByChoices($classEquipment);
     
     // Récupérer l'équipement de background
     $backgroundEquipment = getBackgroundStartingEquipment($backgroundId);
-    $backgroundGroups = structureStartingEquipmentByGroups($backgroundEquipment);
+    $backgroundGroups = structureStartingEquipmentByChoices($backgroundEquipment);
     
     // Récupérer l'équipement de race
     $raceEquipment = getRaceStartingEquipment($raceId);
-    $raceGroups = structureStartingEquipmentByGroups($raceEquipment);
+    $raceGroups = structureStartingEquipmentByChoices($raceEquipment);
     
     // Traiter l'équipement de classe
     foreach ($classGroups as $groupId => $group) {
         if ($group['type_choix'] === 'obligatoire') {
             // Équipement obligatoire - prendre tous les items du groupe
             foreach ($group['options'] as $item) {
-                $equipmentDetails = getEquipmentDetails($item['type'], $item['type_id']);
-                if ($equipmentDetails) {
-                    if ($item['type'] === 'Sac' && isset($equipmentDetails['contents'])) {
-                        $finalEquipment[] = $equipmentDetails['name'];
-                        $finalEquipment = array_merge($finalEquipment, $equipmentDetails['contents']);
-                    } else {
-                        $finalEquipment[] = $equipmentDetails['name'] ?? $item['type'];
+                if (isset($item['merged_items'])) {
+                    // Équipement fusionné - traiter tous les items fusionnés
+                    foreach ($item['merged_items'] as $mergedItem) {
+                        $equipmentDetails = getEquipmentDetails($mergedItem['type'], $mergedItem['type_id']);
+                        if ($equipmentDetails) {
+                            $itemName = $equipmentDetails['name'] ?? $equipmentDetails['nom'] ?? $mergedItem['type'];
+                            $finalEquipment[] = $itemName;
+                        }
+                    }
+                } else {
+                    // Équipement simple
+                    $equipmentDetails = getEquipmentDetails($item['type'], $item['type_id']);
+                    if ($equipmentDetails) {
+                        $itemName = $equipmentDetails['name'] ?? $equipmentDetails['nom'] ?? $item['type'];
+                        $finalEquipment[] = $itemName;
                     }
                 }
             }
@@ -188,20 +266,28 @@ function generateFinalEquipmentNew($classId, $backgroundId, $raceId, $equipmentC
                 $selectedItem = null;
                 
                 foreach ($group['options'] as $item) {
-                    if ($item['option_indice'] === $selectedOption) {
+                    if ($item['option_letter'] === $selectedOption) {
                         $selectedItem = $item;
                         break;
                     }
                 }
                 
                 if ($selectedItem) {
-                    $equipmentDetails = getEquipmentDetails($selectedItem['type'], $selectedItem['type_id']);
-                    if ($equipmentDetails) {
-                        if ($selectedItem['type'] === 'Sac' && isset($equipmentDetails['contents'])) {
-                            $finalEquipment[] = $equipmentDetails['name'];
-                            $finalEquipment = array_merge($finalEquipment, $equipmentDetails['contents']);
-                        } else {
-                            $finalEquipment[] = $equipmentDetails['name'] ?? $selectedItem['type'];
+                    if (isset($selectedItem['merged_items'])) {
+                        // Équipement fusionné - traiter tous les items fusionnés
+                        foreach ($selectedItem['merged_items'] as $mergedItem) {
+                            $equipmentDetails = getEquipmentDetails($mergedItem['type'], $mergedItem['type_id']);
+                            if ($equipmentDetails) {
+                                $itemName = $equipmentDetails['name'] ?? $equipmentDetails['nom'] ?? $mergedItem['type'];
+                                $finalEquipment[] = $itemName;
+                            }
+                        }
+                    } else {
+                        // Équipement simple
+                        $equipmentDetails = getEquipmentDetails($selectedItem['type'], $selectedItem['type_id']);
+                        if ($equipmentDetails) {
+                            $itemName = $equipmentDetails['name'] ?? $equipmentDetails['nom'] ?? $selectedItem['type'];
+                            $finalEquipment[] = $itemName;
                         }
                     }
                 }
@@ -209,39 +295,179 @@ function generateFinalEquipmentNew($classId, $backgroundId, $raceId, $equipmentC
         }
     }
     
+    // Traiter les armes sélectionnées
+    if (isset($equipmentChoices['selected_weapons'])) {
+        foreach ($equipmentChoices['selected_weapons'] as $weapon) {
+            if (!empty($weapon)) {
+                $finalEquipment[] = $weapon;
+            }
+        }
+    }
+    
     // Traiter l'équipement de background
     foreach ($backgroundGroups as $groupId => $group) {
         foreach ($group['options'] as $item) {
-            $equipmentDetails = getEquipmentDetails($item['type'], $item['type_id']);
-            if ($equipmentDetails) {
-                // Vérifier si c'est de l'argent
-                if (strpos($equipmentDetails['name'], 'po') !== false || 
-                    strpos($equipmentDetails['description'], 'po') !== false) {
-                    preg_match('/(\d+)\s*po/i', $equipmentDetails['name'] . ' ' . $equipmentDetails['description'], $matches);
-                    if ($matches) {
-                        $backgroundGold += (int)$matches[1];
+            if (isset($item['merged_items'])) {
+                // Équipement fusionné - traiter tous les items fusionnés
+                foreach ($item['merged_items'] as $mergedItem) {
+                    $equipmentDetails = getEquipmentDetails($mergedItem['type'], $mergedItem['type_id']);
+                    if ($equipmentDetails) {
+                        $itemName = $equipmentDetails['name'] ?? $equipmentDetails['nom'] ?? $mergedItem['type'];
+                        // Vérifier si c'est de l'argent
+                        if (strpos($itemName, 'po') !== false) {
+                            preg_match('/(\d+)\s*po/i', $itemName, $matches);
+                            if ($matches) {
+                                $backgroundGold += (int)$matches[1];
+                            }
+                        } else {
+                            $finalEquipment[] = $itemName;
+                        }
                     }
-                } else {
-                    $finalEquipment[] = $equipmentDetails['name'] ?? $item['type'];
+                }
+            } else {
+                // Équipement simple
+                $equipmentDetails = getEquipmentDetails($item['type'], $item['type_id']);
+                if ($equipmentDetails) {
+                    $itemName = $equipmentDetails['name'] ?? $equipmentDetails['nom'] ?? $item['type'];
+                    // Vérifier si c'est de l'argent
+                    if (strpos($itemName, 'po') !== false) {
+                        preg_match('/(\d+)\s*po/i', $itemName, $matches);
+                        if ($matches) {
+                            $backgroundGold += (int)$matches[1];
+                        }
+                    } else {
+                        $finalEquipment[] = $itemName;
+                    }
                 }
             }
         }
     }
     
+    
     // Traiter l'équipement de race
     foreach ($raceGroups as $groupId => $group) {
         foreach ($group['options'] as $item) {
-            $equipmentDetails = getEquipmentDetails($item['type'], $item['type_id']);
-            if ($equipmentDetails) {
-                $finalEquipment[] = $equipmentDetails['name'] ?? $item['type'];
+            if (isset($item['merged_items'])) {
+                // Équipement fusionné - traiter tous les items fusionnés
+                foreach ($item['merged_items'] as $mergedItem) {
+                    $equipmentDetails = getEquipmentDetails($mergedItem['type'], $mergedItem['type_id']);
+                    if ($equipmentDetails) {
+                        $itemName = $equipmentDetails['name'] ?? $equipmentDetails['nom'] ?? $mergedItem['type'];
+                        $finalEquipment[] = $itemName;
+                    }
+                }
+            } else {
+                // Équipement simple
+                $equipmentDetails = getEquipmentDetails($item['type'], $item['type_id']);
+                if ($equipmentDetails) {
+                    $itemName = $equipmentDetails['name'] ?? $equipmentDetails['nom'] ?? $item['type'];
+                    $finalEquipment[] = $itemName;
+                }
             }
         }
     }
     
     return [
-        'equipment' => implode("\n", $finalEquipment),
+        'equipment' => $finalEquipment,
         'gold' => $backgroundGold
     ];
+}
+
+/**
+ * Détermine le type d'équipement à partir du nom de l'item
+ */
+function detectEquipmentType($itemName) {
+    global $pdo;
+    
+    // Convertir en minuscules pour la comparaison
+    $itemNameLower = strtolower($itemName);
+    
+    // Vérifier d'abord dans les tables spécifiques
+    try {
+        // Vérifier dans weapons
+        $stmt = $pdo->prepare("SELECT 'weapon' as type FROM weapons WHERE LOWER(name) = ? LIMIT 1");
+        $stmt->execute([$itemNameLower]);
+        if ($stmt->fetch()) {
+            return 'weapon';
+        }
+        
+        // Vérifier dans armor (armures et boucliers)
+        $stmt = $pdo->prepare("SELECT 'armor' as type FROM armor WHERE LOWER(name) = ? AND type != 'Bouclier' LIMIT 1");
+        $stmt->execute([$itemNameLower]);
+        if ($stmt->fetch()) {
+            return 'armor';
+        }
+        
+        // Vérifier dans armor pour les boucliers
+        $stmt = $pdo->prepare("SELECT 'shield' as type FROM armor WHERE LOWER(name) = ? AND type = 'Bouclier' LIMIT 1");
+        $stmt->execute([$itemNameLower]);
+        if ($stmt->fetch()) {
+            return 'shield';
+        }
+        
+        // Vérifier dans Object (outils, sacs, nourriture)
+        $stmt = $pdo->prepare("SELECT type FROM Object WHERE LOWER(nom) = ? LIMIT 1");
+        $stmt->execute([$itemNameLower]);
+        $result = $stmt->fetch();
+        if ($result) {
+            switch ($result['type']) {
+                case 'outils':
+                    return 'tool';
+                case 'sac':
+                    return 'bag';
+                case 'nourriture':
+                    return 'consumable';
+                default:
+                    return 'misc';
+            }
+        }
+        
+    } catch (PDOException $e) {
+        error_log("Erreur detectEquipmentType: " . $e->getMessage());
+    }
+    
+    // Détection par mots-clés si pas trouvé dans les tables
+    if (strpos($itemNameLower, 'épée') !== false || 
+        strpos($itemNameLower, 'hache') !== false || 
+        strpos($itemNameLower, 'arc') !== false || 
+        strpos($itemNameLower, 'dague') !== false ||
+        strpos($itemNameLower, 'marteau') !== false ||
+        strpos($itemNameLower, 'lance') !== false ||
+        strpos($itemNameLower, 'javeline') !== false) {
+        return 'weapon';
+    }
+    
+    if (strpos($itemNameLower, 'armure') !== false || 
+        strpos($itemNameLower, 'cuirasse') !== false || 
+        strpos($itemNameLower, 'cotte') !== false ||
+        strpos($itemNameLower, 'robe') !== false) {
+        return 'armor';
+    }
+    
+    if (strpos($itemNameLower, 'bouclier') !== false) {
+        return 'shield';
+    }
+    
+    if (strpos($itemNameLower, 'sac') !== false) {
+        return 'bag';
+    }
+    
+    if (strpos($itemNameLower, 'ration') !== false || 
+        strpos($itemNameLower, 'pain') !== false || 
+        strpos($itemNameLower, 'fromage') !== false ||
+        strpos($itemNameLower, 'viande') !== false) {
+        return 'consumable';
+    }
+    
+    if (strpos($itemNameLower, 'outil') !== false || 
+        strpos($itemNameLower, 'corde') !== false || 
+        strpos($itemNameLower, 'torche') !== false ||
+        strpos($itemNameLower, 'gamelle') !== false) {
+        return 'tool';
+    }
+    
+    // Par défaut
+    return 'misc';
 }
 
 /**
@@ -260,13 +486,16 @@ function addStartingEquipmentToCharacterNew($characterId, $equipmentData) {
             $line = trim($line);
             if (empty($line)) continue;
             
+            // Déterminer le type d'équipement
+            $equipmentType = detectEquipmentType($line);
+            
             // Insérer dans character_equipment
             $stmt = $pdo->prepare("
                 INSERT INTO character_equipment 
                 (character_id, item_name, item_type, item_source, obtained_from, quantity, equipped) 
-                VALUES (?, ?, 'Équipement de départ', 'Équipement de départ', 'Équipement de départ', 1, 0)
+                VALUES (?, ?, ?, 'Équipement de départ', 'Équipement de départ', 1, 0)
             ");
-            $stmt->execute([$characterId, $line]);
+            $stmt->execute([$characterId, $line, $equipmentType]);
         }
         
         // Mettre à jour l'argent du personnage

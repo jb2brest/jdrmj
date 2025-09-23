@@ -3,6 +3,7 @@ session_start();
 require_once 'config/database.php';
 require_once 'includes/functions.php';
 require_once 'includes/capabilities_functions.php';
+require_once 'includes/starting_equipment_functions.php';
 
 // Vérifier que l'utilisateur est connecté
 if (!isset($_SESSION['user_id'])) {
@@ -32,27 +33,68 @@ $data = $sessionData['data'];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $class_equipment = $_POST['class_equipment'] ?? [];
     $class_weapon_choices = $_POST['class_weapon_choices'] ?? [];
+    $class_weapon_choice = $_POST['class_weapon_choice'] ?? []; // Nouveaux menus déroulants
     $background_equipment = $_POST['background_equipment'] ?? [];
     $background_weapon_choices = $_POST['background_weapon_choices'] ?? [];
+    $background_weapon_choice = $_POST['background_weapon_choice'] ?? []; // Nouveaux menus déroulants
     $tool_choices = $_POST['tool_choices'] ?? [];
     
-    // Générer l'équipement final
-    $finalEquipment = '';
-    $totalGold = 0;
+    // Traiter les sélections d'armes et les ajouter à l'équipement final
+    $selectedWeapons = [];
     
-    // Équipement de classe
-    if (!empty($class_equipment)) {
-        $classEquipmentData = generateFinalEquipment($data['class_id'], $class_equipment, $data['background_id'], $class_weapon_choices);
-        $finalEquipment .= $classEquipmentData['equipment'];
-        $totalGold += $classEquipmentData['gold'];
+    // Traiter les armes de classe
+    foreach ($class_weapon_choice as $groupId => $weaponChoices) {
+        if (isset($class_equipment[$groupId])) {
+            $selectedOption = $class_equipment[$groupId];
+            if (isset($weaponChoices[$selectedOption])) {
+                // Gérer les armes multiples pour une option
+                if (is_array($weaponChoices[$selectedOption])) {
+                    foreach ($weaponChoices[$selectedOption] as $weapon) {
+                        if (!empty($weapon)) {
+                            $selectedWeapons[] = $weapon;
+                        }
+                    }
+                } else {
+                    // Arme unique
+                    if (!empty($weaponChoices[$selectedOption])) {
+                        $selectedWeapons[] = $weaponChoices[$selectedOption];
+                    }
+                }
+            }
+        }
     }
     
-    // Équipement d'historique
-    if (!empty($background_equipment)) {
-        $backgroundEquipmentData = generateFinalEquipment($data['class_id'], $background_equipment, $data['background_id'], $background_weapon_choices);
-        $finalEquipment .= "\n" . $backgroundEquipmentData['equipment'];
-        $totalGold += $backgroundEquipmentData['gold'];
+    // Traiter les armes d'historique
+    foreach ($background_weapon_choice as $groupId => $weaponChoices) {
+        if (isset($background_equipment[$groupId])) {
+            $selectedOption = $background_equipment[$groupId];
+            if (isset($weaponChoices[$selectedOption])) {
+                // Gérer les armes multiples pour une option
+                if (is_array($weaponChoices[$selectedOption])) {
+                    foreach ($weaponChoices[$selectedOption] as $weapon) {
+                        if (!empty($weapon)) {
+                            $selectedWeapons[] = $weapon;
+                        }
+                    }
+                } else {
+                    // Arme unique
+                    if (!empty($weaponChoices[$selectedOption])) {
+                        $selectedWeapons[] = $weaponChoices[$selectedOption];
+                    }
+                }
+            }
+        }
     }
+    
+    // Générer l'équipement final avec la nouvelle table starting_equipment
+    $equipmentData = generateFinalEquipmentNew($data['class_id'], $data['background_id'], $data['race_id'], [
+        'class' => $class_equipment,
+        'background' => $background_equipment,
+        'selected_weapons' => $selectedWeapons
+    ]);
+    
+    $finalEquipment = implode("\n", $equipmentData['equipment']);
+    $totalGold = $equipmentData['gold'];
     
     // Sauvegarder les données
     $stepData = [
@@ -72,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($characterId) {
             // Ajouter l'équipement de départ au personnage
             if (!empty($finalEquipment)) {
-                addStartingEquipmentToCharacter($characterId, ['equipment' => $finalEquipment]);
+                addStartingEquipmentToCharacterNew($characterId, ['equipment' => $finalEquipment, 'gold' => $totalGold]);
             }
             
             // Marquer le personnage comme équipé et verrouiller les modifications
@@ -106,105 +148,157 @@ if ($selectedRaceId) {
 }
 
 if ($selectedClassId) {
-    $stmt = $pdo->prepare("SELECT name, starting_equipment FROM classes WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT name FROM classes WHERE id = ?");
     $stmt->execute([$selectedClassId]);
     $classInfo = $stmt->fetch();
 }
 
 if ($selectedBackgroundId) {
-    $stmt = $pdo->prepare("SELECT name, equipment FROM backgrounds WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT name FROM backgrounds WHERE id = ?");
     $stmt->execute([$selectedBackgroundId]);
     $backgroundInfo = $stmt->fetch();
 }
 
-// Parser l'équipement de classe
-$parsedClassEquipment = [];
-if ($classInfo && $classInfo['starting_equipment']) {
-    $parsedClassEquipment = parseStartingEquipment($classInfo['starting_equipment']);
-}
+// Récupérer l'équipement de départ avec la nouvelle table
+$classEquipment = getClassStartingEquipmentNew($selectedClassId);
+$backgroundEquipment = getBackgroundStartingEquipment($selectedBackgroundId);
+$raceEquipment = getRaceStartingEquipment($selectedRaceId);
 
-// Parser l'équipement d'historique
-$parsedBackgroundEquipment = [];
-if ($backgroundInfo && $backgroundInfo['equipment']) {
-    $parsedBackgroundEquipment = parseStartingEquipment($backgroundInfo['equipment']);
-}
+// Structurer par choix (no_choix) pour fusionner les options a et b
+$classGroups = structureStartingEquipmentByChoices($classEquipment);
+$backgroundGroups = structureStartingEquipmentByChoices($backgroundEquipment);
+$raceGroups = structureStartingEquipmentByChoices($raceEquipment);
 
-// Récupérer les outils disponibles
+// Récupérer les outils disponibles (simplifié pour la nouvelle table)
 $availableTools = [];
 $toolChoices = [];
 
-// Outils de classe
-if ($selectedClassId) {
-    $classProficiencies = getClassProficiencies($selectedClassId);
-    if (!empty($classProficiencies['tool'])) {
-        foreach ($classProficiencies['tool'] as $tool) {
-            if (strpos($tool, 'un type d') !== false || strpos($tool, 'un instrument') !== false) {
-                // C'est un choix d'outil
-                $toolChoices[] = [
-                    'source' => 'class',
-                    'source_name' => $classInfo['name'],
-                    'description' => $tool,
-                    'options' => getToolOptions($tool)
-                ];
-            } else {
-                // C'est un outil fixe
-                $availableTools[] = [
-                    'source' => 'class',
-                    'source_name' => $classInfo['name'],
-                    'name' => $tool
-                ];
+// Les outils sont maintenant gérés directement dans l'équipement de départ
+// via la table starting_equipment avec type = 'outils' ou 'instrument'
+
+// Récupérer les armes de guerre et courantes pour les menus déroulants
+$warWeapons = getWarWeapons();
+$commonWeapons = getCommonWeapons();
+$allWeapons = array_merge($warWeapons, $commonWeapons);
+$weaponsByType = [];
+foreach ($allWeapons as $weapon) {
+    $weaponsByType[$weapon['type']][] = $weapon;
+}
+
+// Fonction helper pour détecter si un choix concerne les armes de guerre
+function isWarWeaponsChoice($group) {
+    foreach ($group['options'] as $option) {
+        if (isset($option['type_filter']) && 
+            (strpos($option['type_filter'], 'Armes de guerre') !== false ||
+             strpos($option['type_filter'], 'armes de guerre') !== false)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Fonction helper pour obtenir le type d'armes de guerre d'un choix
+function getWarWeaponsType($group) {
+    foreach ($group['options'] as $option) {
+        if (isset($option['type_filter'])) {
+            if (strpos($option['type_filter'], 'corps à corps') !== false) {
+                return 'Armes de guerre de corps à corps';
+            } elseif (strpos($option['type_filter'], 'distance') !== false) {
+                return 'Armes de guerre à distance';
             }
         }
     }
+    return null;
 }
 
-// Outils d'historique
-if ($selectedBackgroundId) {
-    $backgroundProficiencies = getBackgroundProficiencies($selectedBackgroundId);
-    if (!empty($backgroundProficiencies['tools'])) {
-        foreach ($backgroundProficiencies['tools'] as $tool) {
-            if (strpos($tool, 'un type d') !== false || strpos($tool, 'un instrument') !== false || strpos($tool, 'kit de') !== false) {
-                // C'est un choix d'outil
-                $toolChoices[] = [
-                    'source' => 'background',
-                    'source_name' => $backgroundInfo['name'],
-                    'description' => $tool,
-                    'options' => getToolOptions($tool)
-                ];
-            } else {
-                // C'est un outil fixe
-                $availableTools[] = [
-                    'source' => 'background',
-                    'source_name' => $backgroundInfo['name'],
-                    'name' => $tool
-                ];
+// Fonction helper pour afficher une option d'équipement avec menu déroulant si nécessaire
+function displayEquipmentOption($item, $groupId, $optionLetter, $inputName, $inputId) {
+    echo '<div class="form-check mb-2">';
+    echo '<input class="form-check-input" type="radio" name="' . $inputName . '[' . $groupId . ']" value="' . $optionLetter . '" id="' . $inputId . '">';
+    echo '<label class="form-check-label" for="' . $inputId . '">';
+    
+    if (isset($item['merged_items'])) {
+        // Option avec plusieurs items fusionnés
+        echo '<div class="equipment-option-content">';
+        $weaponSelects = [];
+        
+        foreach ($item['merged_items'] as $index => $mergedItem) {
+            if ($index > 0) {
+                echo ' + ';
             }
-        }
-    }
-}
-
-// Vérifier l'équipement de départ pour les choix d'instruments
-if ($classInfo && $classInfo['starting_equipment']) {
-    $parsedClassEquipment = parseStartingEquipment($classInfo['starting_equipment']);
-    foreach ($parsedClassEquipment as $index => $choice) {
-        if (!isset($choice['fixed']) && is_array($choice)) {
-            foreach ($choice as $choiceKey => $choiceValue) {
-                if (is_string($choiceValue) && strpos($choiceValue, 'n\'importe quel autre instrument de musique') !== false) {
-                    // Le barde peut choisir 3 instruments de musique - créer 3 choix séparés
-                    $instrumentOptions = getToolOptions('Instrument de musique');
-                    for ($i = 1; $i <= 3; $i++) {
-                        $toolChoices[] = [
-                            'source' => 'class_equipment',
-                            'source_name' => $classInfo['name'],
-                            'description' => "Instrument de musique $i",
-                            'options' => $instrumentOptions,
-                            'is_multiple_choice' => true,
-                            'choice_index' => $i - 1
-                        ];
-                    }
+            
+            if (isset($mergedItem['type_filter']) && 
+                (strpos($mergedItem['type_filter'], 'Armes de guerre') !== false ||
+                 strpos($mergedItem['type_filter'], 'Armes courantes') !== false)) {
+                // C'est une arme - afficher un menu déroulant
+                global $weaponsByType;
+                $weaponsType = $mergedItem['type_filter'];
+                $availableWeapons = $weaponsByType[$weaponsType] ?? [];
+                
+                echo '<span class="me-2">' . htmlspecialchars($mergedItem['type_filter']) . ' :</span>';
+                echo '<select class="form-select form-select-sm d-inline-block" name="' . str_replace('equipment', 'weapon_choice', $inputName) . '[' . $groupId . '][' . $optionLetter . '][' . $index . ']" style="width: auto; min-width: 200px;">';
+                echo '<option value="">-- Choisir une arme --</option>';
+                foreach ($availableWeapons as $weapon) {
+                    echo '<option value="' . htmlspecialchars($weapon['name']) . '">' . htmlspecialchars($weapon['name']) . '</option>';
                 }
+                echo '</select>';
+            } else {
+                // Équipement normal
+                echo htmlspecialchars(getEquipmentDisplayName($mergedItem));
             }
         }
+        echo '</div>';
+    } else {
+        // Option avec un seul item
+        if (isset($item['type_filter']) && 
+            (strpos($item['type_filter'], 'Armes de guerre') !== false ||
+             strpos($item['type_filter'], 'Armes courantes') !== false)) {
+            // C'est une arme - afficher un menu déroulant
+            global $weaponsByType;
+            $weaponsType = $item['type_filter'];
+            $availableWeapons = $weaponsByType[$weaponsType] ?? [];
+            
+            echo '<div class="d-flex align-items-center">';
+            echo '<span class="me-2">' . htmlspecialchars($item['type_filter']) . ' :</span>';
+            echo '<select class="form-select form-select-sm" name="' . str_replace('equipment', 'weapon_choice', $inputName) . '[' . $groupId . '][' . $optionLetter . '][0]" style="width: auto; min-width: 200px;">';
+            echo '<option value="">-- Choisir une arme --</option>';
+            foreach ($availableWeapons as $weapon) {
+                echo '<option value="' . htmlspecialchars($weapon['name']) . '">' . htmlspecialchars($weapon['name']) . '</option>';
+            }
+            echo '</select>';
+            echo '</div>';
+        } else {
+            // Équipement normal - affichage standard
+            echo htmlspecialchars(getEquipmentDisplayName($item));
+        }
+    }
+    
+    echo '</label>';
+    echo '</div>';
+}
+
+// Fonction helper pour afficher le nom d'un équipement (simple ou fusionné)
+function getEquipmentDisplayName($item) {
+    if (isset($item['merged_items'])) {
+        // Équipement fusionné - afficher tous les items
+        $names = [];
+        foreach ($item['merged_items'] as $mergedItem) {
+            $equipmentDetails = getEquipmentDetails($mergedItem['type'], $mergedItem['type_id']);
+            $itemName = $equipmentDetails['name'] ?? $equipmentDetails['nom'] ?? $mergedItem['type_filter'] ?? $mergedItem['type'];
+            if ($mergedItem['nb'] > 1) {
+                $itemName .= " (x{$mergedItem['nb']})";
+            }
+            $names[] = $itemName;
+        }
+        return implode(' + ', $names);
+    } else {
+        // Équipement simple
+        $equipmentDetails = getEquipmentDetails($item['type'], $item['type_id']);
+        $itemName = $equipmentDetails['name'] ?? $equipmentDetails['nom'] ?? $item['type_filter'] ?? $item['type'];
+        if ($item['nb'] > 1) {
+            $itemName .= " (x{$item['nb']})";
+        }
+        return $itemName;
     }
 }
 
@@ -215,8 +309,8 @@ if (isset($_GET['debug'])) {
     echo "Selected Background ID: " . ($selectedBackgroundId ?? 'NULL') . "\n";
     echo "Class Info: " . print_r($classInfo, true) . "\n";
     echo "Background Info: " . print_r($backgroundInfo, true) . "\n";
-    echo "Parsed Class Equipment: " . print_r($parsedClassEquipment, true) . "\n";
-    echo "Parsed Background Equipment: " . print_r($parsedBackgroundEquipment, true) . "\n";
+    echo "Class Groups: " . print_r($classGroups, true) . "\n";
+    echo "Background Groups: " . print_r($backgroundGroups, true) . "\n";
     echo "</pre>";
 }
 
@@ -256,72 +350,44 @@ include 'includes/layout.php';
                                 <small class="text-muted"><?php echo htmlspecialchars($classInfo['name'] ?? 'Classe non sélectionnée'); ?></small>
                             </div>
                             <div class="card-body">
-                                <?php if (!empty($parsedClassEquipment)): ?>
-                                    <?php foreach ($parsedClassEquipment as $index => $choice): ?>
-                                        <?php 
-                                        // Vérifier si ce choix contient un choix d'instrument à exclure
-                                        $hasInstrumentChoice = false;
-                                        if (!isset($choice['fixed']) && is_array($choice)) {
-                                            foreach ($choice as $choiceKey => $choiceValue) {
-                                                if (is_string($choiceValue) && strpos($choiceValue, 'n\'importe quel autre instrument de musique') !== false) {
-                                                    $hasInstrumentChoice = true;
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                        
-                                        // Ne pas afficher ce choix s'il contient un choix d'instrument
-                                        if (!$hasInstrumentChoice):
-                                        ?>
-                                        <div class="equipment-choice mb-3" data-choice="<?php echo $index; ?>">
-                                            <?php if (isset($choice['fixed'])): ?>
-                                                <!-- Équipement fixe -->
-                                                <h6><i class="fas fa-check-circle text-success me-2"></i><?php echo htmlspecialchars($choice['fixed']); ?></h6>
+                                <?php if (!empty($classGroups)): ?>
+                                    <?php foreach ($classGroups as $groupId => $group): ?>
+                                        <div class="equipment-group mb-4">
+                                            <h6 class="text-primary">
+                                                <?php if ($group['type_choix'] === 'obligatoire'): ?>
+                                                    <i class="fas fa-check-circle text-success me-2"></i>Équipement obligatoire
+                                                <?php else: ?>
+                                                    <i class="fas fa-list me-2"></i>Choix d'équipement
+                                                <?php endif; ?>
+                                            </h6>
+                                            
+                                            <?php if ($group['type_choix'] === 'obligatoire'): ?>
+                                                <!-- Équipement obligatoire -->
+                                                <?php foreach ($group['options'] as $item): ?>
+                                                    <div class="equipment-item mb-2">
+                                                        <div class="alert alert-success mb-0">
+                                                            <i class="fas fa-check me-2"></i>
+                                                            <?php echo htmlspecialchars(getEquipmentDisplayName($item)); ?>
+                                                        </div>
+                                                    </div>
+                                                <?php endforeach; ?>
                                             <?php else: ?>
                                                 <!-- Choix d'équipement -->
-                                                <h6>Choisissez une option :</h6>
-                                                
-                                                <?php if (is_array($choice) && !empty($choice)): ?>
                                                 <div class="equipment-options">
-                                                    <?php foreach ($choice as $choiceKey => $choiceValue): ?>
-                                                        <div class="equipment-option" data-choice="<?php echo $index; ?>" data-option="<?php echo $choiceKey; ?>">
-                                                            <div class="form-check">
-                                                                <input class="form-check-input" type="radio" name="class_equipment[<?php echo $index; ?>]" value="<?php echo $choiceKey; ?>" id="class_equipment_<?php echo $index; ?>_<?php echo $choiceKey; ?>">
-                                                                <label class="form-check-label" for="class_equipment_<?php echo $index; ?>_<?php echo $choiceKey; ?>">
-                                                                    <?php if (is_array($choiceValue) && isset($choiceValue['type'])): ?>
-                                                                        <?php if ($choiceValue['type'] === 'weapon_choice'): ?>
-                                                                            <strong><?php echo htmlspecialchars($choiceValue['description']); ?></strong>
-                                                                            <div class="mt-2">
-                                                                                <select class="form-select form-select-sm" name="class_weapon_choices[<?php echo $index; ?>][<?php echo $choiceKey; ?>]">
-                                                                                    <option value="">Sélectionnez une arme</option>
-                                                                                    <?php foreach ($choiceValue['options'] as $weapon): ?>
-                                                                                        <option value="<?php echo htmlspecialchars($weapon['name']); ?>">
-                                                                                            <?php echo htmlspecialchars($weapon['name']); ?> (<?php echo htmlspecialchars($weapon['type']); ?>)
-                                                                                        </option>
-                                                                                    <?php endforeach; ?>
-                                                                                </select>
-                                                                            </div>
-                                                                        <?php elseif ($choiceValue['type'] === 'pack'): ?>
-                                                                            <strong><?php echo htmlspecialchars($choiceValue['description']); ?></strong>
-                                                                            <div class="mt-2">
-                                                                                <small class="text-muted">
-                                                                                    <strong>Contenu :</strong><br>
-                                                                                    <?php echo implode(', ', $choiceValue['contents']); ?>
-                                                                                </small>
-                                                                            </div>
-                                                                        <?php endif; ?>
-                                                                    <?php else: ?>
-                                                                        <?php echo htmlspecialchars($choiceValue); ?>
-                                                                    <?php endif; ?>
-                                                                </label>
-                                                            </div>
-                                                        </div>
+                                                    <?php foreach ($group['options'] as $item): ?>
+                                                        <?php 
+                                                        displayEquipmentOption(
+                                                            $item, 
+                                                            $groupId, 
+                                                            $item['option_letter'], 
+                                                            'class_equipment', 
+                                                            'class_equipment_' . $groupId . '_' . $item['option_letter']
+                                                        );
+                                                        ?>
                                                     <?php endforeach; ?>
                                                 </div>
-                                                <?php endif; ?>
                                             <?php endif; ?>
                                         </div>
-                                        <?php endif; ?>
                                     <?php endforeach; ?>
                                 <?php else: ?>
                                     <div class="alert alert-warning">
@@ -329,10 +395,8 @@ include 'includes/layout.php';
                                         <strong>Aucun équipement de classe disponible.</strong>
                                         <?php if (!$classInfo): ?>
                                             <br>Classe non sélectionnée (ID: <?php echo $selectedClassId ?? 'NULL'; ?>)
-                                        <?php elseif (!$classInfo['starting_equipment']): ?>
-                                            <br>Cette classe n'a pas d'équipement de départ défini.
                                         <?php else: ?>
-                                            <br>Erreur lors du parsing de l'équipement.
+                                            <br>Cette classe n'a pas d'équipement de départ défini dans la table starting_equipment.
                                         <?php endif; ?>
                                     </div>
                                 <?php endif; ?>
@@ -348,54 +412,42 @@ include 'includes/layout.php';
                                 <small class="text-muted"><?php echo htmlspecialchars($backgroundInfo['name'] ?? 'Historique non sélectionné'); ?></small>
                             </div>
                             <div class="card-body">
-                                <?php if (!empty($parsedBackgroundEquipment)): ?>
-                                    <?php foreach ($parsedBackgroundEquipment as $index => $choice): ?>
-                                        <div class="equipment-choice mb-3" data-choice="<?php echo $index; ?>">
-                                            <?php if (isset($choice['fixed'])): ?>
-                                                <!-- Équipement fixe -->
-                                                <h6><i class="fas fa-check-circle text-success me-2"></i><?php echo htmlspecialchars($choice['fixed']); ?></h6>
+                                <?php if (!empty($backgroundGroups)): ?>
+                                    <?php foreach ($backgroundGroups as $groupId => $group): ?>
+                                        <div class="equipment-group mb-4">
+                                            <h6 class="text-primary">
+                                                <?php if ($group['type_choix'] === 'obligatoire'): ?>
+                                                    <i class="fas fa-check-circle text-success me-2"></i>Équipement obligatoire
+                                                <?php else: ?>
+                                                    <i class="fas fa-list me-2"></i>Choix d'équipement
+                                                <?php endif; ?>
+                                            </h6>
+                                            
+                                            <?php if ($group['type_choix'] === 'obligatoire'): ?>
+                                                <!-- Équipement obligatoire -->
+                                                <?php foreach ($group['options'] as $item): ?>
+                                                    <div class="equipment-item mb-2">
+                                                        <div class="alert alert-success mb-0">
+                                                            <i class="fas fa-check me-2"></i>
+                                                            <?php echo htmlspecialchars(getEquipmentDisplayName($item)); ?>
+                                                        </div>
+                                                    </div>
+                                                <?php endforeach; ?>
                                             <?php else: ?>
                                                 <!-- Choix d'équipement -->
-                                                <h6>Choisissez une option :</h6>
-                                                
-                                                <?php if (is_array($choice) && !empty($choice)): ?>
                                                 <div class="equipment-options">
-                                                    <?php foreach ($choice as $choiceKey => $choiceValue): ?>
-                                                        <div class="equipment-option" data-choice="<?php echo $index; ?>" data-option="<?php echo $choiceKey; ?>">
-                                                            <div class="form-check">
-                                                                <input class="form-check-input" type="radio" name="background_equipment[<?php echo $index; ?>]" value="<?php echo $choiceKey; ?>" id="background_equipment_<?php echo $index; ?>_<?php echo $choiceKey; ?>">
-                                                                <label class="form-check-label" for="background_equipment_<?php echo $index; ?>_<?php echo $choiceKey; ?>">
-                                                                    <?php if (is_array($choiceValue) && isset($choiceValue['type'])): ?>
-                                                                        <?php if ($choiceValue['type'] === 'weapon_choice'): ?>
-                                                                            <strong><?php echo htmlspecialchars($choiceValue['description']); ?></strong>
-                                                                            <div class="mt-2">
-                                                                                <select class="form-select form-select-sm" name="background_weapon_choices[<?php echo $index; ?>][<?php echo $choiceKey; ?>]">
-                                                                                    <option value="">Sélectionnez une arme</option>
-                                                                                    <?php foreach ($choiceValue['options'] as $weapon): ?>
-                                                                                        <option value="<?php echo htmlspecialchars($weapon['name']); ?>">
-                                                                                            <?php echo htmlspecialchars($weapon['name']); ?> (<?php echo htmlspecialchars($weapon['type']); ?>)
-                                                                                        </option>
-                                                                                    <?php endforeach; ?>
-                                                                                </select>
-                                                                            </div>
-                                                                        <?php elseif ($choiceValue['type'] === 'pack'): ?>
-                                                                            <strong><?php echo htmlspecialchars($choiceValue['description']); ?></strong>
-                                                                            <div class="mt-2">
-                                                                                <small class="text-muted">
-                                                                                    <strong>Contenu :</strong><br>
-                                                                                    <?php echo implode(', ', $choiceValue['contents']); ?>
-                                                                                </small>
-                                                                            </div>
-                                                                        <?php endif; ?>
-                                                                    <?php else: ?>
-                                                                        <?php echo htmlspecialchars($choiceValue); ?>
-                                                                    <?php endif; ?>
-                                                                </label>
-                                                            </div>
-                                                        </div>
+                                                    <?php foreach ($group['options'] as $item): ?>
+                                                        <?php 
+                                                        displayEquipmentOption(
+                                                            $item, 
+                                                            $groupId, 
+                                                            $item['option_letter'], 
+                                                            'background_equipment', 
+                                                            'background_equipment_' . $groupId . '_' . $item['option_letter']
+                                                        );
+                                                        ?>
                                                     <?php endforeach; ?>
                                                 </div>
-                                                <?php endif; ?>
                                             <?php endif; ?>
                                         </div>
                                     <?php endforeach; ?>
@@ -405,10 +457,8 @@ include 'includes/layout.php';
                                         <strong>Aucun équipement d'historique disponible.</strong>
                                         <?php if (!$backgroundInfo): ?>
                                             <br>Historique non sélectionné (ID: <?php echo $selectedBackgroundId ?? 'NULL'; ?>)
-                                        <?php elseif (!$backgroundInfo['equipment']): ?>
-                                            <br>Cet historique n'a pas d'équipement défini.
                                         <?php else: ?>
-                                            <br>Erreur lors du parsing de l'équipement.
+                                            <br>Cet historique n'a pas d'équipement défini dans la table starting_equipment.
                                         <?php endif; ?>
                                     </div>
                                 <?php endif; ?>
@@ -417,137 +467,16 @@ include 'includes/layout.php';
                     </div>
                 </div>
 
-                <!-- Choix des outils -->
-                <?php if (!empty($availableTools) || !empty($toolChoices)): ?>
+                <!-- Note sur les outils -->
                 <div class="row">
                     <div class="col-12">
-                        <div class="card mb-4">
-                            <div class="card-header">
-                                <h5><i class="fas fa-tools me-2"></i>Maîtrise des outils</h5>
-                                <small class="text-muted">Choisissez les outils que votre personnage maîtrise</small>
-                            </div>
-                            <div class="card-body">
-                                <!-- Outils fixes -->
-                                <?php if (!empty($availableTools)): ?>
-                                    <div class="mb-4">
-                                        <h6><i class="fas fa-check-circle text-success me-2"></i>Outils automatiques</h6>
-                                        <div class="row">
-                                            <?php foreach ($availableTools as $tool): ?>
-                                                <div class="col-md-6 mb-2">
-                                                    <div class="alert alert-success mb-0">
-                                                        <i class="fas fa-tools me-2"></i>
-                                                        <strong><?php echo htmlspecialchars($tool['name']); ?></strong>
-                                                        <small class="text-muted">(<?php echo htmlspecialchars($tool['source_name']); ?>)</small>
-                                                    </div>
-                                                </div>
-                                            <?php endforeach; ?>
-                                        </div>
-                                    </div>
-                                <?php endif; ?>
-
-                                <!-- Choix d'outils -->
-                                <?php if (!empty($toolChoices)): ?>
-                                    <div class="mb-4">
-                                        <h6><i class="fas fa-list me-2"></i>Choix d'outils</h6>
-                                        <?php 
-                                        // Grouper les choix multiples ensemble
-                                        $groupedChoices = [];
-                                        foreach ($toolChoices as $index => $choice) {
-                                            if (isset($choice['is_multiple_choice']) && $choice['is_multiple_choice']) {
-                                                $groupKey = $choice['source'] . '_' . $choice['source_name'];
-                                                if (!isset($groupedChoices[$groupKey])) {
-                                                    $groupedChoices[$groupKey] = [
-                                                        'source_name' => $choice['source_name'],
-                                                        'choices' => []
-                                                    ];
-                                                }
-                                                $groupedChoices[$groupKey]['choices'][] = $choice;
-                                            } else {
-                                                $groupedChoices['single_' . $index] = [
-                                                    'source_name' => $choice['source_name'],
-                                                    'choices' => [$choice]
-                                                ];
-                                            }
-                                        }
-                                        
-                                        foreach ($groupedChoices as $groupKey => $group): ?>
-                                            <?php if (count($group['choices']) > 1): ?>
-                                                <!-- Choix multiples (instruments) -->
-                                                <div class="tool-choice-group mb-3">
-                                                    <div class="card border-primary">
-                                                        <div class="card-header bg-light">
-                                                            <h6 class="mb-0">
-                                                                <i class="fas fa-music me-2"></i>
-                                                                Instruments de musique (choisissez 3)
-                                                            </h6>
-                                                            <small class="text-muted">Source: <?php echo htmlspecialchars($group['source_name']); ?></small>
-                                                        </div>
-                                                        <div class="card-body">
-                                                            <div class="row">
-                                                                <?php foreach ($group['choices'][0]['options'] as $option): ?>
-                                                                    <div class="col-md-6 col-lg-4 mb-2">
-                                                                        <div class="form-check">
-                                                                            <input class="form-check-input instrument-checkbox" type="checkbox" 
-                                                                                   name="tool_choices[instruments][]" 
-                                                                                   value="<?php echo htmlspecialchars($option); ?>" 
-                                                                                   id="instrument_<?php echo md5($option); ?>"
-                                                                                   data-max-selections="3">
-                                                                            <label class="form-check-label" for="instrument_<?php echo md5($option); ?>">
-                                                                                <?php echo htmlspecialchars($option); ?>
-                                                                            </label>
-                                                                        </div>
-                                                                    </div>
-                                                                <?php endforeach; ?>
-                                                            </div>
-                                                            <div class="mt-2">
-                                                                <small class="text-muted">
-                                                                    <span id="instrument-count">0</span>/3 instruments sélectionnés
-                                                                </small>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            <?php else: ?>
-                                                <!-- Choix unique -->
-                                                <?php foreach ($group['choices'] as $choice): ?>
-                                                    <div class="tool-choice mb-3" data-choice="<?php echo array_search($choice, $toolChoices); ?>">
-                                                        <div class="card border-primary">
-                                                            <div class="card-header bg-light">
-                                                                <h6 class="mb-0">
-                                                                    <i class="fas fa-tools me-2"></i>
-                                                                    <?php echo htmlspecialchars($choice['description']); ?>
-                                                                </h6>
-                                                                <small class="text-muted">Source: <?php echo htmlspecialchars($choice['source_name']); ?></small>
-                                                            </div>
-                                                            <div class="card-body">
-                                                                <div class="row">
-                                                                    <?php foreach ($choice['options'] as $option): ?>
-                                                                        <div class="col-md-6 col-lg-4 mb-2">
-                                                                            <div class="form-check">
-                                                                                <input class="form-check-input" type="radio" 
-                                                                                       name="tool_choices[<?php echo array_search($choice, $toolChoices); ?>]" 
-                                                                                       value="<?php echo htmlspecialchars($option); ?>" 
-                                                                                       id="tool_choice_<?php echo array_search($choice, $toolChoices); ?>_<?php echo md5($option); ?>">
-                                                                                <label class="form-check-label" for="tool_choice_<?php echo array_search($choice, $toolChoices); ?>_<?php echo md5($option); ?>">
-                                                                                    <?php echo htmlspecialchars($option); ?>
-                                                                                </label>
-                                                                            </div>
-                                                                        </div>
-                                                                    <?php endforeach; ?>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                <?php endforeach; ?>
-                                            <?php endif; ?>
-                                        <?php endforeach; ?>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Note :</strong> Les outils et instruments de musique sont maintenant inclus dans l'équipement de départ ci-dessus. 
+                            Les choix d'outils spécifiques seront gérés automatiquement selon votre classe et historique.
                         </div>
                     </div>
                 </div>
-                <?php endif; ?>
 
                 <!-- Résumé du personnage -->
                 <div class="card mb-4">
@@ -607,65 +536,8 @@ include 'includes/layout.php';
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Gestion des sélecteurs d'armes
-    function toggleWeaponSelectors() {
-        const weaponSelectors = document.querySelectorAll('select[name*="weapon_choices"]');
-        weaponSelectors.forEach(selector => {
-            const parentOption = selector.closest('.equipment-option');
-            const radioInput = parentOption.querySelector('input[type="radio"]');
-            
-            if (radioInput && radioInput.checked) {
-                selector.style.display = 'block';
-                selector.required = true;
-            } else {
-                selector.style.display = 'none';
-                selector.required = false;
-                selector.value = '';
-            }
-        });
-    }
-    
-    // Event listeners pour les radio buttons
-    const radioInputs = document.querySelectorAll('input[type="radio"]');
-    radioInputs.forEach(input => {
-        input.addEventListener('change', toggleWeaponSelectors);
-    });
-    
-    // Initialisation
-    toggleWeaponSelectors();
-    
-    // Gestion des instruments (cases à cocher)
-    function updateInstrumentCount() {
-        const instrumentCheckboxes = document.querySelectorAll('.instrument-checkbox');
-        const checkedInstruments = Array.from(instrumentCheckboxes).filter(cb => cb.checked);
-        const countElement = document.getElementById('instrument-count');
-        
-        if (countElement) {
-            countElement.textContent = checkedInstruments.length;
-            
-            // Désactiver les cases non cochées si 3 sont déjà sélectionnées
-            if (checkedInstruments.length >= 3) {
-                instrumentCheckboxes.forEach(cb => {
-                    if (!cb.checked) {
-                        cb.disabled = true;
-                    }
-                });
-            } else {
-                instrumentCheckboxes.forEach(cb => {
-                    cb.disabled = false;
-                });
-            }
-        }
-    }
-    
-    // Event listeners pour les cases à cocher d'instruments
-    const instrumentCheckboxes = document.querySelectorAll('.instrument-checkbox');
-    instrumentCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', updateInstrumentCount);
-    });
-    
-    // Initialisation du compteur
-    updateInstrumentCount();
+    // Gestion simplifiée pour la nouvelle structure
+    // Les choix d'équipement sont maintenant gérés directement par les radio buttons
     
     // Validation du formulaire
     const form = document.getElementById('step9Form');
@@ -673,72 +545,49 @@ document.addEventListener('DOMContentLoaded', function() {
     
     form.addEventListener('submit', function(e) {
         // Vérifier que tous les choix requis sont faits
-        const requiredChoices = document.querySelectorAll('.equipment-choice');
+        const equipmentGroups = document.querySelectorAll('.equipment-group');
         let allChoicesValid = true;
         
-        requiredChoices.forEach(choice => {
-            // Ignorer les équipements fixes (qui n'ont pas de radio buttons)
-            const radioInputs = choice.querySelectorAll('input[type="radio"]');
-            if (radioInputs.length === 0) {
-                // C'est un équipement fixe, pas besoin de validation
-                return;
-            }
+        equipmentGroups.forEach(group => {
+            const radioInputs = group.querySelectorAll('input[type="radio"]');
+            const weaponSelects = group.querySelectorAll('select[name*="weapon_choice"]');
             
-            const hasSelection = Array.from(radioInputs).some(input => input.checked);
-            
-            if (!hasSelection) {
-                allChoicesValid = false;
-                choice.style.border = '2px solid #dc3545';
-            } else {
-                choice.style.border = 'none';
+            if (radioInputs.length > 0) {
+                // C'est un groupe avec des choix radio
+                const hasSelection = Array.from(radioInputs).some(input => input.checked);
+                
+                if (!hasSelection) {
+                    allChoicesValid = false;
+                    group.style.border = '2px solid #dc3545';
+                } else {
+                    // Vérifier si l'option sélectionnée a des menus déroulants d'armes
+                    const checkedInput = Array.from(radioInputs).find(input => input.checked);
+                    if (checkedInput) {
+                        const weaponSelects = checkedInput.closest('.form-check').querySelectorAll('select[name*="weapon_choice"]');
+                        let hasEmptyWeaponSelect = false;
+                        
+                        weaponSelects.forEach(select => {
+                            if (select.value === '') {
+                                hasEmptyWeaponSelect = true;
+                            }
+                        });
+                        
+                        if (hasEmptyWeaponSelect) {
+                            allChoicesValid = false;
+                            group.style.border = '2px solid #dc3545';
+                        } else {
+                            group.style.border = 'none';
+                        }
+                    } else {
+                        group.style.border = 'none';
+                    }
+                }
             }
         });
         
         if (!allChoicesValid) {
             e.preventDefault();
             alert('Veuillez faire tous les choix d\'équipement requis.');
-            return;
-        }
-        
-        // Vérifier les sélecteurs d'armes
-        const weaponSelectors = document.querySelectorAll('select[name*="weapon_choices"]');
-        for (let selector of weaponSelectors) {
-            if (selector.style.display !== 'none' && !selector.value) {
-                e.preventDefault();
-                alert('Veuillez sélectionner une arme pour tous les choix d\'armes.');
-                return;
-            }
-        }
-        
-        // Vérifier les choix d'outils
-        const toolChoices = document.querySelectorAll('.tool-choice');
-        let allToolChoicesValid = true;
-        
-        toolChoices.forEach(choice => {
-            const radioInputs = choice.querySelectorAll('input[type="radio"]');
-            const hasSelection = Array.from(radioInputs).some(input => input.checked);
-            
-            if (!hasSelection) {
-                allToolChoicesValid = false;
-                choice.style.border = '2px solid #dc3545';
-            } else {
-                choice.style.border = 'none';
-            }
-        });
-        
-        // Vérifier les instruments (cases à cocher)
-        const instrumentCheckboxes = document.querySelectorAll('.instrument-checkbox');
-        const checkedInstruments = Array.from(instrumentCheckboxes).filter(cb => cb.checked);
-        
-        if (instrumentCheckboxes.length > 0 && checkedInstruments.length !== 3) {
-            e.preventDefault();
-            alert('Veuillez sélectionner exactement 3 instruments de musique.');
-            return;
-        }
-        
-        if (!allToolChoicesValid) {
-            e.preventDefault();
-            alert('Veuillez faire tous les choix d\'outils requis.');
             return;
         }
         
@@ -774,7 +623,7 @@ document.addEventListener('DOMContentLoaded', function() {
     transition: width 0.6s ease;
 }
 
-.equipment-choice {
+.equipment-group {
     border: 1px solid #dee2e6;
     border-radius: 8px;
     padding: 15px;
@@ -782,11 +631,11 @@ document.addEventListener('DOMContentLoaded', function() {
     transition: border-color 0.3s ease;
 }
 
-.equipment-choice:hover {
+.equipment-group:hover {
     border-color: #0d6efd;
 }
 
-.equipment-option {
+.equipment-item {
     margin-bottom: 10px;
 }
 
