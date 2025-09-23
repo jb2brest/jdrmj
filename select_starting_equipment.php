@@ -117,13 +117,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
 // Récupérer l'équipement de départ de la classe
 $startingEquipment = getClassStartingEquipment($character['class_id']);
 
-// Récupérer l'équipement de l'historique
+// Récupérer l'équipement de l'historique depuis la table starting_equipment
 $backgroundEquipment = [];
 $parsedBackgroundEquipment = [];
 if ($character['background_id']) {
-    $backgroundEquipmentText = getBackgroundEquipment($character['background_id']);
-    if ($backgroundEquipmentText) {
-        $parsedBackgroundEquipment = parseStartingEquipment($backgroundEquipmentText);
+    $backgroundEquipmentDetailed = getBackgroundStartingEquipment($character['background_id']);
+    if (!empty($backgroundEquipmentDetailed)) {
+        $parsedBackgroundEquipment = structureStartingEquipmentByChoices($backgroundEquipmentDetailed);
     }
 }
 

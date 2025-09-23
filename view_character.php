@@ -1353,6 +1353,24 @@ $initiative = $dexterityMod;
                     </div>
                 </div>
                 
+                <!-- Bouton Grimoire pour les classes de sorts -->
+                <?php 
+                // Classes qui peuvent lancer des sorts
+                $spellcastingClasses = [2, 3, 4, 5, 7, 9, 10, 11]; // Barde, Clerc, Druide, Ensorceleur, Magicien, Occultiste, Paladin, Rôdeur
+                $canCastSpells = in_array($character['class_id'], $spellcastingClasses);
+                ?>
+                <?php if ($canCastSpells): ?>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="d-flex justify-content-center">
+                            <a href="grimoire.php?id=<?php echo $character_id; ?>" class="btn btn-primary btn-lg">
+                                <i class="fas fa-book-open me-2"></i>Grimoire
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+                
                 <!-- Arme équipée -->
                 <?php if ($equippedItems['main_hand']): ?>
                 <div class="row mt-3">

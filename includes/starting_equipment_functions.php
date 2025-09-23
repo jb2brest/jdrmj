@@ -221,148 +221,128 @@ function getEquipmentPackDetails($packId) {
  * Génère l'équipement final basé sur les choix du joueur (nouvelle version)
  */
 function generateFinalEquipmentNew($classId, $backgroundId, $raceId, $equipmentChoices) {
+    global $pdo;
     $finalEquipment = [];
     $backgroundGold = 0;
     
+    // Utiliser l'ancien système car la table starting_equipment n'existe pas
     // Récupérer l'équipement de classe
-    $classEquipment = getClassStartingEquipmentNew($classId);
-    $classGroups = structureStartingEquipmentByChoices($classEquipment);
+    $classEquipment = getClassStartingEquipment($classId);
     
-    // Récupérer l'équipement de background
-    $backgroundEquipment = getBackgroundStartingEquipment($backgroundId);
-    $backgroundGroups = structureStartingEquipmentByChoices($backgroundEquipment);
+    // L'équipement de background est maintenant géré par la table starting_equipment
     
-    // Récupérer l'équipement de race
-    $raceEquipment = getRaceStartingEquipment($raceId);
-    $raceGroups = structureStartingEquipmentByChoices($raceEquipment);
+    // Récupérer l'argent de départ du background depuis la colonne money_gold
+    $stmt = $pdo->prepare("SELECT money_gold FROM backgrounds WHERE id = ?");
+    $stmt->execute([$backgroundId]);
+    $result = $stmt->fetch();
+    if ($result) {
+        $backgroundGold = $result['money_gold'];
+    }
+    
+    // Récupérer l'équipement de race (s'il existe)
+    $raceEquipment = '';
+    // Note: Les races n'ont généralement pas d'équipement de départ dans D&D 5e
     
     // Traiter l'équipement de classe
-    foreach ($classGroups as $groupId => $group) {
-        if ($group['type_choix'] === 'obligatoire') {
-            // Équipement obligatoire - prendre tous les items du groupe
-            foreach ($group['options'] as $item) {
-                if (isset($item['merged_items'])) {
-                    // Équipement fusionné - traiter tous les items fusionnés
-                    foreach ($item['merged_items'] as $mergedItem) {
-                        $equipmentDetails = getEquipmentDetails($mergedItem['type'], $mergedItem['type_id']);
-                        if ($equipmentDetails) {
-                            $itemName = $equipmentDetails['name'] ?? $equipmentDetails['nom'] ?? $mergedItem['type'];
-                            $finalEquipment[] = $itemName;
-                        }
+    foreach ($classEquipment as $index => $item) {
+        if (isset($item['fixed'])) {
+            // Équipement fixe
+            $finalEquipment[] = $item['fixed'];
+        } else {
+            // Choix d'équipement
+            if (isset($equipmentChoices['class'][$index]) && isset($item[$equipmentChoices['class'][$index]])) {
+                $selectedChoice = $item[$equipmentChoices['class'][$index]];
+                
+                // Gestion spéciale pour les armes courantes
+                if (is_array($selectedChoice) && isset($selectedChoice['type']) && $selectedChoice['type'] === 'weapon_choice') {
+                    // Récupérer l'arme sélectionnée
+                    if (isset($equipmentChoices['selected_weapons'][$index][$equipmentChoices['class'][$index]])) {
+                        $selectedWeapon = $equipmentChoices['selected_weapons'][$index][$equipmentChoices['class'][$index]];
+                        $finalEquipment[] = $selectedWeapon;
+                    } else {
+                        // Par défaut, prendre la première arme disponible
+                        $firstWeapon = $selectedChoice['options'][0]['name'] ?? 'Arme courante';
+                        $finalEquipment[] = $firstWeapon;
                     }
+                }
+                // Gestion spéciale pour les sacs d'équipement
+                elseif (is_array($selectedChoice) && isset($selectedChoice['type']) && $selectedChoice['type'] === 'pack') {
+                    // Ajouter le sac et son contenu
+                    $finalEquipment[] = $selectedChoice['description'];
+                    $finalEquipment = array_merge($finalEquipment, $selectedChoice['contents']);
+                }
+                else {
+                    $finalEquipment[] = $selectedChoice;
+                }
+            } else {
+                // Si aucun choix n'a été fait, prendre le premier choix par défaut
+                $firstChoice = array_keys($item)[0];
+                $selectedChoice = $item[$firstChoice];
+                
+                if (is_array($selectedChoice) && isset($selectedChoice['type']) && $selectedChoice['type'] === 'weapon_choice') {
+                    $firstWeapon = $selectedChoice['options'][0]['name'] ?? 'Arme courante';
+                    $finalEquipment[] = $firstWeapon;
+                } elseif (is_array($selectedChoice) && isset($selectedChoice['type']) && $selectedChoice['type'] === 'pack') {
+                    $finalEquipment[] = $selectedChoice['description'];
+                    $finalEquipment = array_merge($finalEquipment, $selectedChoice['contents']);
                 } else {
-                    // Équipement simple
-                    $equipmentDetails = getEquipmentDetails($item['type'], $item['type_id']);
-                    if ($equipmentDetails) {
-                        $itemName = $equipmentDetails['name'] ?? $equipmentDetails['nom'] ?? $item['type'];
-                        $finalEquipment[] = $itemName;
-                    }
+                    $finalEquipment[] = $selectedChoice;
                 }
             }
-        } else {
-            // Équipement à choisir
-            if (isset($equipmentChoices['class'][$groupId])) {
-                $selectedOption = $equipmentChoices['class'][$groupId];
-                $selectedItem = null;
-                
-                foreach ($group['options'] as $item) {
-                    if ($item['option_letter'] === $selectedOption) {
-                        $selectedItem = $item;
-                        break;
-                    }
-                }
-                
-                if ($selectedItem) {
-                    if (isset($selectedItem['merged_items'])) {
-                        // Équipement fusionné - traiter tous les items fusionnés
-                        foreach ($selectedItem['merged_items'] as $mergedItem) {
-                            $equipmentDetails = getEquipmentDetails($mergedItem['type'], $mergedItem['type_id']);
-                            if ($equipmentDetails) {
-                                $itemName = $equipmentDetails['name'] ?? $equipmentDetails['nom'] ?? $mergedItem['type'];
+        }
+    }
+    
+    // Ajouter l'équipement de l'historique depuis la table starting_equipment
+    $backgroundEquipmentDetailed = getBackgroundStartingEquipment($backgroundId);
+    if (!empty($backgroundEquipmentDetailed)) {
+        $backgroundChoices = structureStartingEquipmentByChoices($backgroundEquipmentDetailed);
+        foreach ($backgroundChoices as $choiceIndex => $choiceGroup) {
+            if (isset($choiceGroup['fixed'])) {
+                // Équipement fixe - ajouter directement
+                $finalEquipment[] = $choiceGroup['fixed'];
+            } elseif (isset($choiceGroup['options'])) {
+                // Choix d'équipement - traiter selon les choix du joueur
+                if (isset($equipmentChoices['background'][$choiceIndex])) {
+                    $selectedOptionIndex = $equipmentChoices['background'][$choiceIndex];
+                    if (isset($choiceGroup['options'][$selectedOptionIndex])) {
+                        $selectedChoice = $choiceGroup['options'][$selectedOptionIndex];
+                        if (isset($selectedChoice['merged_items'])) {
+                            // Équipement fusionné - ajouter tous les items
+                            foreach ($selectedChoice['merged_items'] as $item) {
+                                $itemDetails = getEquipmentDetails($item['type'], $item['type_id']);
+                                if ($itemDetails) {
+                                    $itemName = $itemDetails['name'] ?? $itemDetails['nom'];
+                                    if ($item['nb'] > 1) {
+                                        $itemName = $item['nb'] . ' ' . $itemName;
+                                    }
+                                    $finalEquipment[] = $itemName;
+                                }
+                            }
+                        } else {
+                            // Item simple
+                            $itemDetails = getEquipmentDetails($selectedChoice['type'], $selectedChoice['type_id']);
+                            if ($itemDetails) {
+                                $itemName = $itemDetails['name'] ?? $itemDetails['nom'];
+                                if ($selectedChoice['nb'] > 1) {
+                                    $itemName = $selectedChoice['nb'] . ' ' . $itemName;
+                                }
                                 $finalEquipment[] = $itemName;
                             }
                         }
-                    } else {
-                        // Équipement simple
-                        $equipmentDetails = getEquipmentDetails($selectedItem['type'], $selectedItem['type_id']);
-                        if ($equipmentDetails) {
-                            $itemName = $equipmentDetails['name'] ?? $equipmentDetails['nom'] ?? $selectedItem['type'];
-                            $finalEquipment[] = $itemName;
-                        }
                     }
                 }
             }
         }
+    } else {
+        // Pas de données dans starting_equipment - aucun équipement de background
+        // La colonne equipment a été supprimée de la table backgrounds
     }
     
-    // Traiter les armes sélectionnées
-    if (isset($equipmentChoices['selected_weapons'])) {
-        foreach ($equipmentChoices['selected_weapons'] as $weapon) {
-            if (!empty($weapon)) {
-                $finalEquipment[] = $weapon;
-            }
-        }
-    }
-    
-    // Traiter l'équipement de background
-    foreach ($backgroundGroups as $groupId => $group) {
-        foreach ($group['options'] as $item) {
-            if (isset($item['merged_items'])) {
-                // Équipement fusionné - traiter tous les items fusionnés
-                foreach ($item['merged_items'] as $mergedItem) {
-                    $equipmentDetails = getEquipmentDetails($mergedItem['type'], $mergedItem['type_id']);
-                    if ($equipmentDetails) {
-                        $itemName = $equipmentDetails['name'] ?? $equipmentDetails['nom'] ?? $mergedItem['type'];
-                        // Vérifier si c'est de l'argent
-                        if (strpos($itemName, 'po') !== false) {
-                            preg_match('/(\d+)\s*po/i', $itemName, $matches);
-                            if ($matches) {
-                                $backgroundGold += (int)$matches[1];
-                            }
-                        } else {
-                            $finalEquipment[] = $itemName;
-                        }
-                    }
-                }
-            } else {
-                // Équipement simple
-                $equipmentDetails = getEquipmentDetails($item['type'], $item['type_id']);
-                if ($equipmentDetails) {
-                    $itemName = $equipmentDetails['name'] ?? $equipmentDetails['nom'] ?? $item['type'];
-                    // Vérifier si c'est de l'argent
-                    if (strpos($itemName, 'po') !== false) {
-                        preg_match('/(\d+)\s*po/i', $itemName, $matches);
-                        if ($matches) {
-                            $backgroundGold += (int)$matches[1];
-                        }
-                    } else {
-                        $finalEquipment[] = $itemName;
-                    }
-                }
-            }
-        }
-    }
-    
-    
-    // Traiter l'équipement de race
-    foreach ($raceGroups as $groupId => $group) {
-        foreach ($group['options'] as $item) {
-            if (isset($item['merged_items'])) {
-                // Équipement fusionné - traiter tous les items fusionnés
-                foreach ($item['merged_items'] as $mergedItem) {
-                    $equipmentDetails = getEquipmentDetails($mergedItem['type'], $mergedItem['type_id']);
-                    if ($equipmentDetails) {
-                        $itemName = $equipmentDetails['name'] ?? $equipmentDetails['nom'] ?? $mergedItem['type'];
-                        $finalEquipment[] = $itemName;
-                    }
-                }
-            } else {
-                // Équipement simple
-                $equipmentDetails = getEquipmentDetails($item['type'], $item['type_id']);
-                if ($equipmentDetails) {
-                    $itemName = $equipmentDetails['name'] ?? $equipmentDetails['nom'] ?? $item['type'];
-                    $finalEquipment[] = $itemName;
-                }
+    // Ajouter les instruments sélectionnés
+    if (isset($equipmentChoices['selected_instruments'])) {
+        foreach ($equipmentChoices['selected_instruments'] as $instrument) {
+            if (!empty($instrument)) {
+                $finalEquipment[] = $instrument;
             }
         }
     }

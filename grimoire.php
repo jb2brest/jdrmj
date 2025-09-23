@@ -28,7 +28,8 @@ if (!$character) {
 }
 
 // Vérifier si la classe peut lancer des sorts
-if (!canCastSpells($character['class_id'])) {
+$spellcastingClasses = [2, 3, 4, 5, 7, 9, 10, 11]; // Barde, Clerc, Druide, Ensorceleur, Magicien, Occultiste, Paladin, Rôdeur
+if (!in_array($character['class_id'], $spellcastingClasses)) {
     header('Location: view_character.php?id=' . $character_id);
     exit;
 }

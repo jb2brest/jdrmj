@@ -680,6 +680,15 @@ function getWarWeapons($type = null) {
     return $stmt->fetchAll();
 }
 
+// Fonction pour obtenir les instruments de musique disponibles
+function getMusicalInstruments() {
+    global $pdo;
+    
+    $stmt = $pdo->prepare("SELECT nom as name FROM Object WHERE type = 'instrument' ORDER BY nom");
+    $stmt->execute();
+    return $stmt->fetchAll();
+}
+
 function parseStartingEquipment($equipmentText) {
     if (!$equipmentText) {
         return [];
@@ -730,6 +739,14 @@ function parseStartingEquipment($equipmentText) {
                             'options' => getWarWeapons($weaponType)
                         ];
                     }
+                    // Gestion spéciale pour les instruments de musique
+                    elseif (strpos($description, 'n\'importe quel autre instrument') !== false) {
+                        $choices[$choice] = [
+                            'type' => 'instrument_choice',
+                            'description' => $description,
+                            'options' => getMusicalInstruments()
+                        ];
+                    }
                     // Gestion spéciale pour les sacs d'équipement
                     elseif (strpos($description, 'sac d\'exploration souterraine') !== false) {
                         $choices[$choice] = [
@@ -778,17 +795,11 @@ function getClassStartingEquipment($classId) {
 }
 
 // Fonction pour obtenir l'équipement d'un historique
+// NOTE: Cette fonction est dépréciée. Utilisez getBackgroundStartingEquipment() à la place.
 function getBackgroundEquipment($backgroundId) {
-    global $pdo;
-    $stmt = $pdo->prepare("SELECT equipment FROM backgrounds WHERE id = ?");
-    $stmt->execute([$backgroundId]);
-    $result = $stmt->fetch();
-    
-    if (!$result || !$result['equipment']) {
-        return '';
-    }
-    
-    return $result['equipment'];
+    // La colonne equipment a été supprimée de la table backgrounds
+    // Cette fonction retourne maintenant une string vide pour compatibilité
+    return '';
 }
 
 // Fonction pour vérifier si une classe peut lancer des sorts
@@ -1228,6 +1239,18 @@ function generateFinalEquipment($classId, $equipmentChoices, $backgroundId = nul
                         $finalEquipment[] = $firstWeapon;
                     }
                 }
+                // Gestion spéciale pour les instruments de musique
+                elseif (is_array($selectedChoice) && isset($selectedChoice['type']) && $selectedChoice['type'] === 'instrument_choice') {
+                    // Récupérer l'instrument sélectionné
+                    if (isset($weaponChoices[$index][$equipmentChoices[$index]])) {
+                        $selectedInstrument = $weaponChoices[$index][$equipmentChoices[$index]];
+                        $finalEquipment[] = $selectedInstrument;
+                    } else {
+                        // Par défaut, prendre le premier instrument disponible
+                        $firstInstrument = $selectedChoice['options'][0]['name'] ?? 'Instrument de musique';
+                        $finalEquipment[] = $firstInstrument;
+                    }
+                }
                 // Gestion spéciale pour les sacs d'équipement
                 elseif (is_array($selectedChoice) && isset($selectedChoice['type']) && $selectedChoice['type'] === 'pack') {
                     // Ajouter le sac et son contenu
@@ -1245,6 +1268,9 @@ function generateFinalEquipment($classId, $equipmentChoices, $backgroundId = nul
                 if (is_array($selectedChoice) && isset($selectedChoice['type']) && $selectedChoice['type'] === 'weapon_choice') {
                     $firstWeapon = $selectedChoice['options'][0]['name'] ?? 'Arme courante';
                     $finalEquipment[] = $firstWeapon;
+                } elseif (is_array($selectedChoice) && isset($selectedChoice['type']) && $selectedChoice['type'] === 'instrument_choice') {
+                    $firstInstrument = $selectedChoice['options'][0]['name'] ?? 'Instrument de musique';
+                    $finalEquipment[] = $firstInstrument;
                 } elseif (is_array($selectedChoice) && isset($selectedChoice['type']) && $selectedChoice['type'] === 'pack') {
                     $finalEquipment[] = $selectedChoice['description'];
                     $finalEquipment = array_merge($finalEquipment, $selectedChoice['contents']);
@@ -1256,14 +1282,8 @@ function generateFinalEquipment($classId, $equipmentChoices, $backgroundId = nul
     }
     
     // Ajouter l'équipement de l'historique (parsé)
-    if ($backgroundId) {
-        $backgroundEquipment = getBackgroundEquipment($backgroundId);
-        if ($backgroundEquipment) {
-            $parsed = parseBackgroundEquipmentSimple($backgroundEquipment);
-            $finalEquipment = array_merge($finalEquipment, $parsed['items']);
-            $backgroundGold = $parsed['gold'];
-        }
-    }
+    // NOTE: Cette fonction est dépréciée. Utilisez generateFinalEquipmentNew() à la place.
+    // L'équipement de background est maintenant géré par la table starting_equipment
     
     return [
         'equipment' => implode("\n", $finalEquipment),
