@@ -2,19 +2,19 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.6.0
+VERSION=2.6.1
 
 # Date de déploiement
-DEPLOY_DATE=2025-09-23
+DEPLOY_DATE=2025-09-29
 
 # Environnement
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=cb326addfb25790ead20ccf16dfe22c7544833df
+GIT_COMMIT=691a4118e47617527f4cde12170aceee6b2c07cb
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20250923-225424
+BUILD_ID=20250929-100138
 
 # Notes de version
-RELEASE_NOTES="refonte starting equipment"
+RELEASE_NOTES="Classe : Monde"
