@@ -2,19 +2,19 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.6.1
+VERSION=2.6.2
 
 # Date de déploiement
-DEPLOY_DATE=2025-09-29
+DEPLOY_DATE=2025-10-01
 
 # Environnement
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=691a4118e47617527f4cde12170aceee6b2c07cb
+GIT_COMMIT=aad0e1146b8ea15944b8bb25a067ce06a35b64e3
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20250929-100138
+BUILD_ID=20251001-103035
 
 # Notes de version
-RELEASE_NOTES="Classe : Monde"
+RELEASE_NOTES="suppresion monstres personnels"
