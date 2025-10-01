@@ -1,8 +1,9 @@
 <?php
 session_start();
 
-// Inclure le fichier de compatibilité pour les fonctions utilisateur
+// Inclure les fichiers de compatibilité
 require_once __DIR__ . '/user_compatibility.php';
+require_once __DIR__ . '/campaign_compatibility.php';
 
 // Fonction pour calculer le modificateur d'une caractéristique
 function getAbilityModifier($score) {

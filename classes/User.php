@@ -20,12 +20,12 @@ class User
     /**
      * Constructeur
      * 
-     * @param PDO $pdo Instance PDO pour la base de données
+     * @param PDO $pdo Instance PDO pour la base de données (optionnel)
      * @param array $data Données de l'utilisateur (optionnel)
      */
-    public function __construct(PDO $pdo, array $data = [])
+    public function __construct(PDO $pdo = null, array $data = [])
     {
-        $this->pdo = $pdo;
+        $this->pdo = $pdo ?: getPDO();
         
         if (!empty($data)) {
             $this->hydrate($data);
@@ -278,9 +278,10 @@ class User
      * Crée un nouvel utilisateur
      * 
      * @param array $data Données de l'utilisateur
+     * @param PDO $pdo Instance PDO (optionnel)
      * @return User|null Utilisateur créé ou null en cas d'erreur
      */
-    public static function create(PDO $pdo, array $data)
+    public static function create(array $data, PDO $pdo = null)
     {
         // Validation des données requises
         $required = ['username', 'email', 'password'];
@@ -289,6 +290,8 @@ class User
                 throw new InvalidArgumentException("Le champ '$field' est requis");
             }
         }
+
+        $pdo = $pdo ?: getPDO();
 
         // Vérifier si l'utilisateur existe déjà
         if (self::findByUsername($pdo, $data['username'])) {

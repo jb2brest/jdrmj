@@ -276,4 +276,36 @@ class Database
     {
         throw new Exception("La désérialisation de cette classe n'est pas autorisée.");
     }
+
+    // =====================================================
+    // MÉTHODES UTILITAIRES STATIQUES
+    // =====================================================
+
+    /**
+     * Méthode statique pour exécuter une requête et obtenir un résultat
+     * 
+     * @param string $sql Requête SQL
+     * @param array $params Paramètres
+     * @return array|null Premier résultat ou null
+     */
+    public static function fetch($sql, $params = [])
+    {
+        $stmt = self::getInstance()->getPdo()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetch();
+    }
+
+    /**
+     * Méthode statique pour exécuter une requête et obtenir tous les résultats
+     * 
+     * @param string $sql Requête SQL
+     * @param array $params Paramètres
+     * @return array Tous les résultats
+     */
+    public static function fetchAll($sql, $params = [])
+    {
+        $stmt = self::getInstance()->getPdo()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
 }

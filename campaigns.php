@@ -12,15 +12,7 @@ if (!isLoggedIn()) {
 $user_id = $_SESSION['user_id'];
 
 
-// Création d'un code d'invitation simple
-function generateInviteCode($length = 12) {
-    $chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    $code = '';
-    for ($i = 0; $i < $length; $i++) {
-        $code .= $chars[random_int(0, strlen($chars) - 1)];
-    }
-    return $code;
-}
+// La fonction generateInviteCode est maintenant gérée par la classe Campaign
 
 // Traitements POST: créer, supprimer, basculer visibilité (DM et Admin seulement)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isDMOrAdmin()) {
@@ -29,27 +21,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isDMOrAdmin()) {
         $description = sanitizeInput($_POST['description'] ?? '');
         $is_public = isset($_POST['is_public']) ? 1 : 0;
         $game_system = sanitizeInput($_POST['game_system'] ?? 'D&D 5e');
-        $invite_code = generateInviteCode(12);
+        // Le code d'invitation est généré automatiquement par la classe Campaign
 
         if (strlen($title) < 3) {
             $error_message = "Le titre doit contenir au moins 3 caractères.";
         } else {
-            $pdo->beginTransaction();
             try {
-                // Créer la campagne
-                $stmt = $pdo->prepare("INSERT INTO campaigns (dm_id, title, description, game_system, is_public, invite_code) VALUES (?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$user_id, $title, $description, $game_system, $is_public, $invite_code]);
-                $campaign_id = $pdo->lastInsertId();
+                // Utilisation de la classe Campaign pour la création
+                $campaignData = [
+                    'dm_id' => $user_id,
+                    'title' => $title,
+                    'description' => $description,
+                    'game_system' => $game_system,
+                    'is_public' => $is_public
+                ];
                 
-                // Ajouter le DM comme membre de sa propre campagne
-                $stmt = $pdo->prepare("INSERT INTO campaign_members (campaign_id, user_id, role) VALUES (?, ?, 'dm')");
-                $stmt->execute([$campaign_id, $user_id]);
+                $newCampaign = Campaign::create($campaignData);
                 
-                $pdo->commit();
-                $success_message = "Campagne créée avec succès.";
+                if ($newCampaign) {
+                    $success_message = "Campagne créée avec succès.";
+                } else {
+                    $error_message = "Erreur lors de la création de la campagne.";
+                }
             } catch (Exception $e) {
-                $pdo->rollBack();
-                $error_message = "Erreur lors de la création de la campagne.";
+                $error_message = "Erreur lors de la création de la campagne : " . $e->getMessage();
             }
         }
     }
@@ -149,40 +144,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isDMOrAdmin()) {
     }
 }
 
-// Récupérer les campagnes selon le rôle
-if (isAdmin()) {
-    // Les admins voient toutes les campagnes
-    $stmt = $pdo->prepare("SELECT c.*, u.username as dm_name FROM campaigns c LEFT JOIN users u ON c.dm_id = u.id ORDER BY c.created_at DESC");
-    $stmt->execute();
+// Récupérer les campagnes selon le rôle en utilisant la classe Campaign
+$userRole = getUserRole();
+$campaigns = Campaign::getAccessibleCampaigns($user_id, $userRole);
+
+// Définir le titre de la page selon le rôle
+if ($userRole === 'admin') {
     $page_title = 'Toutes les Campagnes';
-} elseif (isDM()) {
-    // Les DM voient leurs campagnes + les campagnes publiques
-    $stmt = $pdo->prepare("
-        SELECT c.*, u.username as dm_name 
-        FROM campaigns c 
-        LEFT JOIN users u ON c.dm_id = u.id 
-        WHERE c.dm_id = ? OR c.is_public = 1 
-        ORDER BY c.created_at DESC
-    ");
-    $stmt->execute([$user_id]);
+} elseif ($userRole === 'dm') {
     $page_title = 'Mes Campagnes';
 } else {
-    // Les joueurs voient les campagnes publiques ET les campagnes où ils sont membres
-    $stmt = $pdo->prepare("
-        SELECT c.*, u.username as dm_name 
-        FROM campaigns c 
-        LEFT JOIN users u ON c.dm_id = u.id 
-        WHERE c.is_public = 1 
-        OR EXISTS (
-            SELECT 1 FROM campaign_members cm 
-            WHERE cm.campaign_id = c.id AND cm.user_id = ?
-        )
-        ORDER BY c.created_at DESC
-    ");
-    $stmt->execute([$user_id]);
-    $page_title = 'Mes Campagnes';
+    $page_title = 'Campagnes Disponibles';
 }
-$campaigns = $stmt->fetchAll();
 $current_page = "campaigns";
 ?>
 <!DOCTYPE html>

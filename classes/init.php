@@ -29,7 +29,7 @@ function getUnivers()
 // Fonction utilitaire pour obtenir une instance PDO (rétrocompatibilité)
 function getPDO()
 {
-    return Univers::getInstance()->getPdo();
+    return Database::getInstance()->getPdo();
 }
 
 // Fonction utilitaire pour obtenir une instance de la base de données (rétrocompatibilité)

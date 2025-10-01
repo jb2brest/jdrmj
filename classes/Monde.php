@@ -429,4 +429,112 @@ class Monde
     {
         return $this->name;
     }
+
+    // ========================================
+    // MÉTHODES DE LOCALISATION
+    // ========================================
+
+    /**
+     * Localise un personnage/joueur dans le monde
+     * 
+     * @param int $user_id ID de l'utilisateur
+     * @param int|null $campaign_id ID de la campagne (optionnel)
+     * @return array|null Informations sur le lieu où se trouve le personnage
+     */
+    public static function localizeCharacter(int $user_id, ?int $campaign_id = null)
+    {
+        try {
+            $pdo = Univers::getInstance()->getPdo();
+            
+            if ($campaign_id) {
+                // Si un campaign_id est spécifié, chercher dans cette campagne
+                $place = Database::fetch("
+                    SELECT p.*, c.title as campaign_title, c.dm_id, c.id as campaign_id
+                    FROM places p 
+                    INNER JOIN place_campaigns pc ON p.id = pc.place_id
+                    JOIN campaigns c ON pc.campaign_id = c.id 
+                    JOIN place_players pp ON p.id = pp.place_id 
+                    WHERE pp.player_id = ? AND c.id = ?
+                    LIMIT 1
+                ", [$user_id, $campaign_id]);
+                
+                if (!$place) {
+                    // Vérifier si le joueur est membre de la campagne
+                    $membership = Database::fetch(
+                        "SELECT cm.role FROM campaign_members cm WHERE cm.campaign_id = ? AND cm.user_id = ?",
+                        [$campaign_id, $user_id]
+                    );
+                    
+                    if ($membership) {
+                        // Le joueur est membre mais pas assigné à un lieu
+                        return [
+                            'status' => 'member_no_place',
+                            'campaign_id' => $campaign_id,
+                            'message' => 'Vous êtes membre de cette campagne mais n\'êtes pas encore assigné à un lieu spécifique.'
+                        ];
+                    } else {
+                        // Le joueur n'est pas membre de cette campagne
+                        return [
+                            'status' => 'not_member',
+                            'campaign_id' => $campaign_id,
+                            'message' => 'Vous n\'êtes pas membre de cette campagne.'
+                        ];
+                    }
+                }
+                
+                return [
+                    'status' => 'found',
+                    'place' => $place,
+                    'message' => 'Personnage localisé avec succès'
+                ];
+                
+            } else {
+                // Comportement original : chercher n'importe quel lieu où se trouve le joueur
+                $place = Database::fetch("
+                    SELECT p.*, c.title as campaign_title, c.dm_id, c.id as campaign_id
+                    FROM places p 
+                    INNER JOIN place_campaigns pc ON p.id = pc.place_id
+                    JOIN campaigns c ON pc.campaign_id = c.id 
+                    JOIN place_players pp ON p.id = pp.place_id 
+                    WHERE pp.player_id = ?
+                    LIMIT 1
+                ", [$user_id]);
+                
+                if (!$place) {
+                    // Vérifier si le joueur est membre d'au moins une campagne
+                    $membership = Database::fetch(
+                        "SELECT cm.role FROM campaign_members cm WHERE cm.user_id = ?",
+                        [$user_id]
+                    );
+                    
+                    if ($membership) {
+                        // Le joueur est membre mais pas assigné à un lieu
+                        return [
+                            'status' => 'member_no_place_any',
+                            'message' => 'Vous êtes membre d\'une campagne mais n\'êtes pas encore assigné à un lieu spécifique.'
+                        ];
+                    } else {
+                        // Le joueur n'est membre d'aucune campagne
+                        return [
+                            'status' => 'no_campaigns',
+                            'message' => 'Vous n\'êtes membre d\'aucune campagne.'
+                        ];
+                    }
+                }
+                
+                return [
+                    'status' => 'found',
+                    'place' => $place,
+                    'message' => 'Personnage localisé avec succès'
+                ];
+            }
+            
+        } catch (Exception $e) {
+            error_log("Erreur lors de la localisation du personnage: " . $e->getMessage());
+            return [
+                'status' => 'error',
+                'message' => 'Erreur lors de la localisation du personnage.'
+            ];
+        }
+    }
 }

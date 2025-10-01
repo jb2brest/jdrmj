@@ -139,8 +139,7 @@ function getCurrentUserObject() {
  * @return User|null Utilisateur créé ou null
  */
 function createUser($data) {
-    global $pdo;
-    return User::create($pdo, $data);
+    return User::create($data);
 }
 
 /**

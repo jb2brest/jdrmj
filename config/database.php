@@ -84,9 +84,12 @@ try {
     define('DB_PASS', $dbConfig['password']);
     define('DB_ENV', detectEnvironment());
     
-    // Création de la connexion PDO
-    $dsn = "mysql:host=" . $dbConfig['host'] . ";dbname=" . $dbConfig['dbname'] . ";charset=" . $dbConfig['charset'];
-    $pdo = new PDO($dsn, $dbConfig['username'], $dbConfig['password'], $dbConfig['options']);
+    // Initialisation du singleton Database
+    require_once __DIR__ . '/../classes/Database.php';
+    $database = Database::getInstance($dbConfig);
+    
+    // Création de la variable $pdo pour la compatibilité avec le code existant
+    $pdo = $database->getPdo();
     
     // Log de l'environnement (uniquement en mode debug)
     if (defined('DEBUG') && DEBUG) {
