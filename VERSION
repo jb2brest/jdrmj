@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.6.2
+VERSION=2.6.3
 
 # Date de déploiement
 DEPLOY_DATE=2025-10-01
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-10-01
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=aad0e1146b8ea15944b8bb25a067ce06a35b64e3
+GIT_COMMIT=cab335d706c55b407a5c46d5d6b08b6753887116
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251001-103035
+BUILD_ID=20251001-134208
 
 # Notes de version
-RELEASE_NOTES="suppresion monstres personnels"
+RELEASE_NOTES="Database singleton"
