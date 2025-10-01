@@ -61,13 +61,7 @@ $stmt = $pdo->prepare("SELECT DISTINCT size FROM dnd_monsters WHERE size IS NOT 
 $stmt->execute();
 $sizes = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
-// Récupérer la collection du MJ
-$userCollection = [];
-if (isDM()) {
-    $stmt = $pdo->prepare("SELECT monster_id FROM user_monster_collection WHERE user_id = ?");
-    $stmt->execute([$_SESSION['user_id']]);
-    $userCollection = $stmt->fetchAll(PDO::FETCH_COLUMN);
-}
+// Collection supprimée - fonctionnalité non disponible
 ?>
 
 <!DOCTYPE html>
@@ -87,11 +81,6 @@ if (isDM()) {
     <div class="container mt-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1><i class="fas fa-dragon me-2"></i>Bestiaire D&D</h1>
-            <?php if (isDM()): ?>
-                <a href="my_monsters.php" class="btn btn-outline-primary">
-                    <i class="fas fa-bookmark me-1"></i>Ma Collection
-                </a>
-            <?php endif; ?>
         </div>
 
         <!-- Filtres de recherche -->
@@ -170,22 +159,8 @@ if (isDM()) {
                             <?php endif; ?>
                         </div>
                         
-                        <div class="card-header d-flex justify-content-between align-items-center">
+                        <div class="card-header">
                             <h6 class="mb-0"><?php echo htmlspecialchars($monster['name']); ?></h6>
-                            <?php if (isDM()): ?>
-                                <form method="POST" action="add_to_collection.php" class="d-inline">
-                                    <input type="hidden" name="monster_id" value="<?php echo (int)$monster['id']; ?>">
-                                    <?php if (in_array($monster['id'], $userCollection)): ?>
-                                        <button type="submit" name="action" value="remove" class="btn btn-sm btn-outline-danger" title="Retirer de ma collection">
-                                            <i class="fas fa-bookmark"></i>
-                                        </button>
-                                    <?php else: ?>
-                                        <button type="submit" name="action" value="add" class="btn btn-sm btn-outline-primary" title="Ajouter à ma collection">
-                                            <i class="far fa-bookmark"></i>
-                                        </button>
-                                    <?php endif; ?>
-                                </form>
-                            <?php endif; ?>
                         </div>
                         <div class="card-body">
                             <div class="row mb-2">
@@ -273,20 +248,6 @@ if (isDM()) {
                                 <?php endif; ?>
                             </div>
                             <div class="modal-footer">
-                                <?php if (isDM()): ?>
-                                    <form method="POST" action="add_to_collection.php" class="d-inline">
-                                        <input type="hidden" name="monster_id" value="<?php echo (int)$monster['id']; ?>">
-                                        <?php if (in_array($monster['id'], $userCollection)): ?>
-                                            <button type="submit" name="action" value="remove" class="btn btn-danger">
-                                                <i class="fas fa-bookmark me-1"></i>Retirer de ma collection
-                                            </button>
-                                        <?php else: ?>
-                                            <button type="submit" name="action" value="add" class="btn btn-primary">
-                                                <i class="far fa-bookmark me-1"></i>Ajouter à ma collection
-                                            </button>
-                                        <?php endif; ?>
-                                    </form>
-                                <?php endif; ?>
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
                             </div>
                         </div>

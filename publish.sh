@@ -176,10 +176,46 @@ log_info "Commit: $COMMIT_MESSAGE"
 log_info "Tag: v$NEW_VERSION"
 echo ""
 
+# Proposer un déploiement automatique
+echo ""
+log_info "Voulez-vous déployer automatiquement cette version ?"
+echo "1. Déployer sur le serveur de test"
+echo "2. Déployer sur le serveur de staging"
+echo "3. Ne pas déployer"
+echo ""
+read -p "Votre choix (1-3): " -r
+case $REPLY in
+    1)
+        log_info "Déploiement sur le serveur de test..."
+        if ./push.sh test "Déploiement automatique v$NEW_VERSION"; then
+            log_success "Déploiement sur le serveur de test réussi"
+        else
+            log_error "Échec du déploiement sur le serveur de test"
+        fi
+        ;;
+    2)
+        log_info "Déploiement sur le serveur de staging..."
+        if ./push.sh staging "Déploiement automatique v$NEW_VERSION"; then
+            log_success "Déploiement sur le serveur de staging réussi"
+        else
+            log_error "Échec du déploiement sur le serveur de staging"
+        fi
+        ;;
+    3)
+        log_info "Déploiement ignoré"
+        ;;
+    *)
+        log_warning "Choix invalide, déploiement ignoré"
+        ;;
+esac
+
 # Afficher les commandes utiles
+echo ""
 log_info "Commandes utiles:"
 echo "  git log --oneline -5                    # Voir les 5 derniers commits"
 echo "  git tag -l | tail -5                    # Voir les 5 derniers tags"
 echo "  git show v$NEW_VERSION                  # Voir les détails du tag"
 echo "  git checkout v$NEW_VERSION              # Revenir à cette version"
+echo "  ./push.sh test \"Message\"                # Déployer sur le serveur de test"
+echo "  ./push.sh staging \"Message\"             # Déployer sur le serveur de staging"
 echo ""

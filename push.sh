@@ -419,6 +419,8 @@ chmod 755 images/
 chmod 644 images/*
 chmod 755 database/
 chmod 644 database/*.sql
+chmod 755 classes/
+chmod 644 classes/*.php
 
 quit
 EOF
@@ -480,6 +482,8 @@ prepare_files() {
         --include="images/**" \
         --include="database/" \
         --include="database/**" \
+        --include="classes/" \
+        --include="classes/**" \
         --include="uploads/" \
         --include="uploads/**" \
         --exclude="*" \
@@ -511,6 +515,71 @@ prepare_files() {
     log_success "Fichiers préparés dans $temp_dir"
 }
 
+# Fonction pour déployer les classes
+deploy_classes() {
+    local deploy_path=$1
+    
+    log_info "Déploiement des classes PHP..."
+    
+    # Vérifier que le répertoire classes existe dans le déploiement
+    if [ ! -d "$deploy_path/classes" ]; then
+        log_error "Répertoire classes non trouvé dans le déploiement"
+        return 1
+    fi
+    
+    # Créer le répertoire de destination s'il n'existe pas
+    sudo mkdir -p "$deploy_path/classes"
+    
+    # Copier les classes
+    sudo cp -r "$deploy_path/classes"/* "$deploy_path/classes/"
+    
+    # Configurer les permissions pour les classes
+    sudo chown -R www-data:www-data "$deploy_path/classes"
+    sudo chmod -R 755 "$deploy_path/classes"
+    
+    # Vérifier la syntaxe PHP des classes
+    log_info "Vérification de la syntaxe PHP des classes..."
+    local syntax_errors=0
+    for file in "$deploy_path/classes"/*.php; do
+        if [ -f "$file" ]; then
+            if ! php -l "$file" >/dev/null 2>&1; then
+                log_error "Erreur de syntaxe dans $(basename "$file")"
+                syntax_errors=$((syntax_errors + 1))
+            fi
+        fi
+    done
+    
+    if [ $syntax_errors -eq 0 ]; then
+        log_success "Toutes les classes ont une syntaxe PHP valide"
+    else
+        log_error "$syntax_errors erreur(s) de syntaxe détectée(s) dans les classes"
+        return 1
+    fi
+    
+    # Tester l'initialisation des classes
+    log_info "Test d'initialisation des classes..."
+    if php -r "
+        try {
+            require_once '$deploy_path/classes/init.php';
+            echo 'Classes initialisées avec succès\n';
+            \$univers = getUnivers();
+            echo 'Univers accessible: ' . \$univers . '\n';
+            \$pdo = getPDO();
+            echo 'PDO accessible: ' . get_class(\$pdo) . '\n';
+        } catch (Exception \$e) {
+            echo 'Erreur: ' . \$e->getMessage() . '\n';
+            exit(1);
+        }
+    " 2>/dev/null; then
+        log_success "Initialisation des classes réussie"
+    else
+        log_error "Erreur lors de l'initialisation des classes"
+        return 1
+    fi
+    
+    log_success "Déploiement des classes terminé"
+}
+
 # Fonction pour livrer sur le serveur
 deploy_to_server() {
     local temp_dir=$1
@@ -537,6 +606,9 @@ deploy_to_server() {
             # Livrer les fichiers
             sudo rsync -av --delete "$temp_dir/" "$DEPLOY_PATH/"
             
+            # Déployer les classes
+            deploy_classes "$DEPLOY_PATH"
+            
             # Ajuster les permissions
     sudo chown -R www-data:www-data "$DEPLOY_PATH"
     sudo chmod -R 755 "$DEPLOY_PATH"
@@ -552,6 +624,9 @@ deploy_to_server() {
             
             sudo mkdir -p "$DEPLOY_PATH"
             sudo rsync -av --delete "$temp_dir/" "$DEPLOY_PATH/"
+            
+            # Déployer les classes
+            deploy_classes "$DEPLOY_PATH"
             
             sudo chown -R www-data:www-data "$DEPLOY_PATH"
             sudo chmod -R 755 "$DEPLOY_PATH"

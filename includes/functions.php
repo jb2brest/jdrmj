@@ -1,6 +1,9 @@
 <?php
 session_start();
 
+// Inclure le fichier de compatibilité pour les fonctions utilisateur
+require_once __DIR__ . '/user_compatibility.php';
+
 // Fonction pour calculer le modificateur d'une caractéristique
 function getAbilityModifier($score) {
     return floor(($score - 10) / 2);
@@ -23,20 +26,26 @@ function calculateMaxHP($level, $hitDie, $constitutionModifier) {
     return max(1, $hp); // Minimum 1 PV
 }
 
-// Fonction pour vérifier si l'utilisateur est connecté
+// DEPRECATED: Cette fonction est maintenant gérée par la classe User
+// Voir includes/user_compatibility.php
+/*
 function isLoggedIn() {
     return isset($_SESSION['user_id']);
 }
+*/
 
-// Fonction pour rediriger si non connecté
+// DEPRECATED: Cette fonction est maintenant gérée par la classe User
+/*
 function requireLogin() {
     if (!isLoggedIn()) {
         header('Location: login.php');
         exit();
     }
 }
+*/
 
-// Fonction pour vérifier le rôle de l'utilisateur
+// DEPRECATED: Cette fonction est maintenant gérée par la classe User
+/*
 function getUserRole() {
     // Si le rôle est déjà en session, le retourner
     if (isset($_SESSION['role'])) {
@@ -58,12 +67,15 @@ function getUserRole() {
     
     return 'player'; // Par défaut
 }
+*/
 
-// Fonction pour vérifier si l'utilisateur est MJ
+// DEPRECATED: Cette fonction est maintenant gérée par la classe User
+/*
 function isDM() {
     $role = getUserRole();
     return $role === 'dm' || $role === 'admin';
 }
+*/
 
 // Fonction pour vérifier si l'utilisateur est joueur
 function isPlayer() {

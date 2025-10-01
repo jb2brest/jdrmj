@@ -1,11 +1,12 @@
 <?php
 require_once 'config/database.php';
+require_once 'classes/init.php';
 require_once 'includes/functions.php';
 
 requireLogin();
 
 $user_id = $_SESSION['user_id'];
-$user = getUserInfo($user_id);
+$user = User::findById($pdo, $user_id);
 
 // Traitement de la mise à jour du profil
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

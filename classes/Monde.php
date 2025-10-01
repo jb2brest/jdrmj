@@ -16,18 +16,14 @@ class Monde
     private $created_by;
     private $created_at;
     private $updated_at;
-    private $pdo;
 
     /**
      * Constructeur de la classe Monde
      * 
-     * @param PDO $pdo Instance de connexion à la base de données
      * @param array $data Données optionnelles pour initialiser l'objet
      */
-    public function __construct(PDO $pdo, array $data = [])
+    public function __construct(array $data = [])
     {
-        $this->pdo = $pdo;
-        
         // Initialiser les propriétés avec les données fournies
         $this->id = $data['id'] ?? null;
         $this->name = $data['name'] ?? '';
@@ -36,6 +32,20 @@ class Monde
         $this->created_by = $data['created_by'] ?? null;
         $this->created_at = $data['created_at'] ?? null;
         $this->updated_at = $data['updated_at'] ?? null;
+    }
+
+    // ========================================
+    // MÉTHODES PRIVÉES
+    // ========================================
+
+    /**
+     * Obtient l'instance PDO depuis l'Univers
+     * 
+     * @return PDO Instance PDO
+     */
+    private function getPdo()
+    {
+        return Univers::getInstance()->getPdo();
     }
 
     // ========================================
@@ -158,18 +168,20 @@ class Monde
         }
 
         try {
+            $pdo = $this->getPdo();
+            
             if ($this->id === null) {
                 // Création d'un nouveau monde
                 $sql = "INSERT INTO worlds (name, description, map_url, created_by) VALUES (?, ?, ?, ?)";
-                $stmt = $this->pdo->prepare($sql);
+                $stmt = $pdo->prepare($sql);
                 $stmt->execute([$this->name, $this->description, $this->map_url, $this->created_by]);
                 
-                $this->id = $this->pdo->lastInsertId();
+                $this->id = $pdo->lastInsertId();
                 return true;
             } else {
                 // Mise à jour d'un monde existant
                 $sql = "UPDATE worlds SET name = ?, description = ?, map_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
-                $stmt = $this->pdo->prepare($sql);
+                $stmt = $pdo->prepare($sql);
                 $result = $stmt->execute([$this->name, $this->description, $this->map_url, $this->id]);
                 
                 return $result;
@@ -195,9 +207,11 @@ class Monde
         }
 
         try {
+            $pdo = $this->getPdo();
+            
             // Vérifier s'il y a des pays dans ce monde
             $sql = "SELECT COUNT(*) FROM countries WHERE world_id = ?";
-            $stmt = $this->pdo->prepare($sql);
+            $stmt = $pdo->prepare($sql);
             $stmt->execute([$this->id]);
             $country_count = $stmt->fetchColumn();
 
@@ -207,7 +221,7 @@ class Monde
 
             // Supprimer le monde
             $sql = "DELETE FROM worlds WHERE id = ?";
-            $stmt = $this->pdo->prepare($sql);
+            $stmt = $pdo->prepare($sql);
             $result = $stmt->execute([$this->id]);
 
             if ($result && $stmt->rowCount() > 0) {
@@ -231,20 +245,20 @@ class Monde
     /**
      * Récupère un monde par son ID
      * 
-     * @param PDO $pdo Instance de connexion à la base de données
      * @param int $id ID du monde
      * @return Monde|null Instance de Monde ou null si non trouvé
      */
-    public static function findById(PDO $pdo, int $id)
+    public static function findById(int $id)
     {
         try {
+            $pdo = Univers::getInstance()->getPdo();
             $sql = "SELECT * FROM worlds WHERE id = ?";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$id]);
             $data = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if ($data) {
-                return new self($pdo, $data);
+                return new self($data);
             }
             return null;
         } catch (PDOException $e) {
@@ -253,15 +267,26 @@ class Monde
     }
 
     /**
+     * Récupère un monde par son ID via l'Univers
+     * 
+     * @param int $id ID du monde
+     * @return Monde|null Instance de Monde ou null si non trouvé
+     */
+    public static function findByIdInUnivers(int $id)
+    {
+        return self::findById($id);
+    }
+
+    /**
      * Récupère tous les mondes d'un utilisateur
      * 
-     * @param PDO $pdo Instance de connexion à la base de données
      * @param int $user_id ID de l'utilisateur
      * @return array Tableau d'instances de Monde
      */
-    public static function findByUser(PDO $pdo, int $user_id)
+    public static function findByUser(int $user_id)
     {
         try {
+            $pdo = Univers::getInstance()->getPdo();
             $sql = "SELECT w.*, 
                     (SELECT COUNT(*) FROM countries WHERE world_id = w.id) as country_count
                     FROM worlds w 
@@ -273,7 +298,7 @@ class Monde
 
             $worlds = [];
             foreach ($results as $data) {
-                $world = new self($pdo, $data);
+                $world = new self($data);
                 $worlds[] = $world;
             }
             return $worlds;
@@ -283,17 +308,28 @@ class Monde
     }
 
     /**
+     * Récupère tous les mondes d'un utilisateur via l'Univers
+     * 
+     * @param int $user_id ID de l'utilisateur
+     * @return array Tableau d'instances de Monde
+     */
+    public static function findByUserInUnivers(int $user_id)
+    {
+        return self::findByUser($user_id);
+    }
+
+    /**
      * Vérifie si un nom de monde existe déjà pour un utilisateur
      * 
-     * @param PDO $pdo Instance de connexion à la base de données
      * @param string $name Nom du monde
      * @param int $user_id ID de l'utilisateur
      * @param int $exclude_id ID du monde à exclure (pour les mises à jour)
      * @return bool True si le nom existe déjà
      */
-    public static function nameExists(PDO $pdo, string $name, int $user_id, int $exclude_id = null)
+    public static function nameExists(string $name, int $user_id, int $exclude_id = null)
     {
         try {
+            $pdo = Univers::getInstance()->getPdo();
             $sql = "SELECT COUNT(*) FROM worlds WHERE name = ? AND created_by = ?";
             $params = [$name, $user_id];
 
@@ -326,8 +362,9 @@ class Monde
         }
 
         try {
+            $pdo = $this->getPdo();
             $sql = "SELECT COUNT(*) FROM countries WHERE world_id = ?";
-            $stmt = $this->pdo->prepare($sql);
+            $stmt = $pdo->prepare($sql);
             $stmt->execute([$this->id]);
             return (int)$stmt->fetchColumn();
         } catch (PDOException $e) {
@@ -338,7 +375,7 @@ class Monde
     /**
      * Récupère les pays de ce monde
      * 
-     * @return array Tableau des pays
+     * @return array Tableau des objets Pays
      */
     public function getCountries()
     {
@@ -347,10 +384,19 @@ class Monde
         }
 
         try {
+            $pdo = $this->getPdo();
             $sql = "SELECT * FROM countries WHERE world_id = ? ORDER BY name";
-            $stmt = $this->pdo->prepare($sql);
+            $stmt = $pdo->prepare($sql);
             $stmt->execute([$this->id]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $countriesData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Convertir les tableaux en objets Pays
+            $countries = [];
+            foreach ($countriesData as $countryData) {
+                $countries[] = new Pays($countryData);
+            }
+            
+            return $countries;
         } catch (PDOException $e) {
             throw new Exception("Erreur lors de la récupération des pays: " . $e->getMessage());
         }

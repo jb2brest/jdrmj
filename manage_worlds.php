@@ -1,5 +1,5 @@
 <?php
-require_once 'config/database.php';
+require_once 'classes/init.php';
 require_once 'includes/functions.php';
 $page_title = "Gestion des Mondes";
 $current_page = "manage_worlds";
@@ -15,6 +15,9 @@ if (!isDMOrAdmin()) {
 $user_id = $_SESSION['user_id'];
 $success_message = '';
 $error_message = '';
+
+// Obtenir l'instance de l'Univers
+$univers = getUnivers();
 
 // Fonction helper pour l'upload d'image
 function uploadWorldImage($file) {
@@ -83,15 +86,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 if (empty($error_message)) {
                     try {
-                        $stmt = $pdo->prepare("INSERT INTO worlds (name, description, map_url, created_by) VALUES (?, ?, ?, ?)");
-                        $stmt->execute([$name, $description, $map_url, $user_id]);
+                        // Créer le monde via l'Univers
+                        $monde = $univers->createMonde($name, $description, $user_id, $map_url);
                         $success_message = "Monde '$name' créé avec succès.";
-                    } catch (PDOException $e) {
-                        if ($e->getCode() == 23000) {
-                            $error_message = "Un monde avec ce nom existe déjà.";
-                        } else {
-                            $error_message = "Erreur lors de la création du monde: " . $e->getMessage();
-                        }
+                    } catch (Exception $e) {
+                        $error_message = $e->getMessage();
                     }
                 }
             }
@@ -105,42 +104,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (empty($name)) {
                 $error_message = "Le nom du monde est requis.";
             } else {
-                // Récupérer l'URL actuelle de la carte
-                $stmt = $pdo->prepare("SELECT map_url FROM worlds WHERE id = ? AND created_by = ?");
-                $stmt->execute([$world_id, $user_id]);
-                $current_world = $stmt->fetch();
-                $map_url = $current_world['map_url'] ?? '';
-                
-                // Gérer l'upload d'image si un nouveau fichier est fourni
-                if (isset($_FILES['map_image']) && $_FILES['map_image']['error'] === UPLOAD_ERR_OK) {
-                    $uploadResult = uploadWorldImage($_FILES['map_image']);
-                    if (!$uploadResult['success']) {
-                        $error_message = $uploadResult['error'];
+                try {
+                    // Récupérer le monde existant
+                    $monde = Monde::findById($world_id);
+                    if (!$monde || $monde->getCreatedBy() != $user_id) {
+                        $error_message = "Monde non trouvé ou vous n'avez pas les droits.";
                     } else {
-                        // Supprimer l'ancienne image si elle existe
-                        if (!empty($map_url) && file_exists($map_url)) {
-                            unlink($map_url);
+                        // Récupérer l'URL actuelle de la carte
+                        $map_url = $monde->getMapUrl();
+                        
+                        // Gérer l'upload d'image si un nouveau fichier est fourni
+                        if (isset($_FILES['map_image']) && $_FILES['map_image']['error'] === UPLOAD_ERR_OK) {
+                            $uploadResult = uploadWorldImage($_FILES['map_image']);
+                            if (!$uploadResult['success']) {
+                                $error_message = $uploadResult['error'];
+                            } else {
+                                // Supprimer l'ancienne image si elle existe
+                                if (!empty($map_url) && file_exists($map_url)) {
+                                    unlink($map_url);
+                                }
+                                $map_url = $uploadResult['file_path'];
+                            }
                         }
-                        $map_url = $uploadResult['file_path'];
-                    }
-                }
-                
-                if (empty($error_message)) {
-                    try {
-                        $stmt = $pdo->prepare("UPDATE worlds SET name = ?, description = ?, map_url = ? WHERE id = ? AND created_by = ?");
-                        $stmt->execute([$name, $description, $map_url, $world_id, $user_id]);
-                        if ($stmt->rowCount() > 0) {
+                        
+                        if (empty($error_message)) {
+                            // Mettre à jour le monde
+                            $monde->setName($name)
+                                  ->setDescription($description)
+                                  ->setMapUrl($map_url);
+                            $monde->save();
                             $success_message = "Monde '$name' mis à jour avec succès.";
-                        } else {
-                            $error_message = "Monde non trouvé ou vous n'avez pas les droits.";
-                        }
-                    } catch (PDOException $e) {
-                        if ($e->getCode() == 23000) {
-                            $error_message = "Un monde avec ce nom existe déjà.";
-                        } else {
-                            $error_message = "Erreur lors de la mise à jour: " . $e->getMessage();
                         }
                     }
+                } catch (Exception $e) {
+                    $error_message = $e->getMessage();
                 }
             }
             break;
@@ -149,56 +146,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $world_id = (int)($_POST['world_id'] ?? 0);
             
             try {
-                // Vérifier s'il y a des pays dans ce monde
-                $stmt = $pdo->prepare("SELECT COUNT(*) FROM countries WHERE world_id = ?");
-                $stmt->execute([$world_id]);
-                $country_count = $stmt->fetchColumn();
-                
-                if ($country_count > 0) {
-                    $error_message = "Impossible de supprimer ce monde car il contient $country_count pays. Supprimez d'abord les pays.";
+                // Récupérer le monde existant
+                $monde = Monde::findById($world_id);
+                if (!$monde || $monde->getCreatedBy() != $user_id) {
+                    $error_message = "Monde non trouvé ou vous n'avez pas les droits.";
                 } else {
-                    // Récupérer l'URL de la carte avant suppression
-                    $stmt = $pdo->prepare("SELECT map_url FROM worlds WHERE id = ? AND created_by = ?");
-                    $stmt->execute([$world_id, $user_id]);
-                    $world = $stmt->fetch();
-                    
-                    // Supprimer le monde
-                    $stmt = $pdo->prepare("DELETE FROM worlds WHERE id = ? AND created_by = ?");
-                    $stmt->execute([$world_id, $user_id]);
-                    
-                    if ($stmt->rowCount() > 0) {
-                        // Supprimer l'image associée si elle existe
-                        if (!empty($world['map_url']) && file_exists($world['map_url'])) {
-                            unlink($world['map_url']);
-                        }
-                        $success_message = "Monde supprimé avec succès.";
-                    } else {
-                        $error_message = "Monde non trouvé ou vous n'avez pas les droits.";
-                    }
+                    // Supprimer le monde (la méthode delete() gère déjà la vérification des pays)
+                    $monde->delete();
+                    $success_message = "Monde supprimé avec succès.";
                 }
-            } catch (PDOException $e) {
-                $error_message = "Erreur lors de la suppression: " . $e->getMessage();
+            } catch (Exception $e) {
+                $error_message = $e->getMessage();
             }
             break;
     }
 }
 
 // Récupérer les mondes de l'utilisateur
-$stmt = $pdo->prepare("SELECT w.*, 
-    (SELECT COUNT(*) FROM countries WHERE world_id = w.id) as country_count
-    FROM worlds w 
-    WHERE w.created_by = ? 
-    ORDER BY w.name");
-$stmt->execute([$user_id]);
-$worlds = $stmt->fetchAll();
+try {
+    $worlds = Monde::findByUser($user_id);
+} catch (Exception $e) {
+    $error_message = "Erreur lors de la récupération des mondes: " . $e->getMessage();
+    $worlds = [];
+}
 
 // Récupérer un monde spécifique pour l'édition
 $edit_world = null;
 if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
     $world_id = (int)$_GET['edit'];
-    $stmt = $pdo->prepare("SELECT * FROM worlds WHERE id = ? AND created_by = ?");
-    $stmt->execute([$world_id, $user_id]);
-    $edit_world = $stmt->fetch();
+    try {
+        $edit_world = Monde::findById($world_id);
+        // Vérifier que l'utilisateur a les droits sur ce monde
+        if ($edit_world && $edit_world->getCreatedBy() != $user_id) {
+            $edit_world = null;
+        }
+    } catch (Exception $e) {
+        $error_message = "Erreur lors de la récupération du monde: " . $e->getMessage();
+    }
 }
 ?>
 
@@ -261,12 +245,12 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
                 <?php foreach ($worlds as $world): ?>
                     <div class="col-lg-4 col-md-6 mb-4">
                         <div class="card h-100">
-                            <?php if (!empty($world['map_url'])): ?>
-                                <img src="<?php echo htmlspecialchars($world['map_url']); ?>" 
-                                     alt="Carte de <?php echo htmlspecialchars($world['name']); ?>" 
+                            <?php if (!empty($world->getMapUrl())): ?>
+                                <img src="<?php echo htmlspecialchars($world->getMapUrl()); ?>" 
+                                     alt="Carte de <?php echo htmlspecialchars($world->getName()); ?>" 
                                      class="card-img-top cursor-pointer" 
                                      style="height: 200px; object-fit: cover;"
-                                     onclick="openMapFullscreen('<?php echo htmlspecialchars($world['map_url']); ?>', '<?php echo htmlspecialchars($world['name']); ?>')"
+                                     onclick="openMapFullscreen('<?php echo htmlspecialchars($world->getMapUrl()); ?>', '<?php echo htmlspecialchars($world->getName()); ?>')"
                                      title="Cliquer pour voir en plein écran">
                             <?php else: ?>
                                 <div class="card-img-top d-flex align-items-center justify-content-center" style="height: 200px; background-color: #f8f9fa;">
@@ -275,32 +259,32 @@ if (isset($_GET['edit']) && is_numeric($_GET['edit'])) {
                             <?php endif; ?>
                             
                             <div class="card-body d-flex flex-column">
-                                <h5 class="card-title"><?php echo htmlspecialchars($world['name']); ?></h5>
+                                <h5 class="card-title"><?php echo htmlspecialchars($world->getName()); ?></h5>
                                 
-                                <?php if (!empty($world['description'])): ?>
-                                    <p class="card-text text-muted"><?php echo nl2br(htmlspecialchars($world['description'])); ?></p>
+                                <?php if (!empty($world->getDescription())): ?>
+                                    <p class="card-text text-muted"><?php echo nl2br(htmlspecialchars($world->getDescription())); ?></p>
                                 <?php endif; ?>
                                 
                                 <div class="mt-auto">
                                     <div class="d-flex justify-content-between align-items-center mb-3">
                                         <small class="text-muted">
                                             <i class="fas fa-flag me-1"></i>
-                                            <?php echo $world['country_count']; ?> pays
+                                            <?php echo $world->getCountryCount(); ?> pays
                                         </small>
                                         <small class="text-muted">
                                             <i class="fas fa-calendar me-1"></i>
-                                            <?php echo date('d/m/Y', strtotime($world['created_at'])); ?>
+                                            <?php echo date('d/m/Y', strtotime($world->getCreatedAt())); ?>
                                         </small>
                                     </div>
                                     
                                     <div class="btn-group w-100" role="group">
-                                        <a href="view_world.php?id=<?php echo $world['id']; ?>" class="btn btn-outline-brown btn-sm">
+                                        <a href="view_world.php?id=<?php echo $world->getId(); ?>" class="btn btn-outline-brown btn-sm">
                                             <i class="fas fa-eye me-1"></i>Voir
                                         </a>
-                                        <button class="btn btn-outline-primary btn-sm" onclick="editWorld(<?php echo htmlspecialchars(json_encode($world)); ?>)">
+                                        <button class="btn btn-outline-primary btn-sm" onclick="editWorld(<?php echo htmlspecialchars(json_encode($world->toArray())); ?>)">
                                             <i class="fas fa-edit me-1"></i>Modifier
                                         </button>
-                                        <button class="btn btn-outline-danger btn-sm" onclick="deleteWorld(<?php echo $world['id']; ?>, '<?php echo htmlspecialchars($world['name']); ?>')">
+                                        <button class="btn btn-outline-danger btn-sm" onclick="deleteWorld(<?php echo $world->getId(); ?>, '<?php echo htmlspecialchars($world->getName()); ?>')">
                                             <i class="fas fa-trash me-1"></i>Supprimer
                                         </button>
                                     </div>

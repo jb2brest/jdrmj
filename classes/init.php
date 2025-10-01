@@ -3,32 +3,37 @@
 /**
  * Fichier d'initialisation des classes
  * 
- * Ce fichier configure l'autoloader et initialise les classes
- * nécessaires au fonctionnement de l'application.
+ * Ce fichier configure l'autoloader et initialise l'Univers
+ * unique de l'application JDR MJ.
  */
 
 // Enregistrer l'autoloader
 require_once __DIR__ . '/Autoloader.php';
 Autoloader::register();
 
-// Initialiser la connexion à la base de données
+// Initialiser l'Univers unique
 try {
-    $database = Database::getInstance();
-    $pdo = $database->getPdo();
+    $univers = Univers::getInstance();
 } catch (Exception $e) {
     // En cas d'erreur, on peut utiliser la connexion existante
     // ou afficher une erreur selon le contexte
-    error_log("Erreur d'initialisation de la base de données: " . $e->getMessage());
+    error_log("Erreur d'initialisation de l'Univers: " . $e->getMessage());
 }
 
-// Fonction utilitaire pour obtenir une instance de la base de données
+// Fonction utilitaire pour obtenir l'Univers
+function getUnivers()
+{
+    return Univers::getInstance();
+}
+
+// Fonction utilitaire pour obtenir une instance PDO (rétrocompatibilité)
+function getPDO()
+{
+    return Univers::getInstance()->getPdo();
+}
+
+// Fonction utilitaire pour obtenir une instance de la base de données (rétrocompatibilité)
 function getDatabase()
 {
     return Database::getInstance();
-}
-
-// Fonction utilitaire pour obtenir une instance PDO
-function getPDO()
-{
-    return Database::getInstance()->getPdo();
 }

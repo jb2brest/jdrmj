@@ -114,7 +114,7 @@ try {
         'campaigns', 'campaign_members', 'campaign_applications',
         'characters', 'character_equipment', 'character_spells',
         'places', 'place_players', 'place_npcs', 'place_monsters',
-        'notifications', 'dice_rolls', 'user_monster_collection'
+        'notifications', 'dice_rolls'
     ];
     
     foreach ($fkTables as $table) {

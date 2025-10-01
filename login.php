@@ -1,5 +1,6 @@
 <?php
 require_once 'config/database.php';
+require_once 'classes/init.php';
 require_once 'includes/functions.php';
 $page_title = "Connexion";
 $current_page = "login";
@@ -15,21 +16,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $message = displayMessage("Veuillez remplir tous les champs.", "error");
     } else {
         try {
-            $stmt = $pdo->prepare("SELECT id, username, password_hash, role FROM users WHERE username = ? OR email = ?");
-            $stmt->execute([$username, $username]);
-            $user = $stmt->fetch();
+            // Utilisation de la classe User pour l'authentification
+            $user = new User($pdo);
+            $authenticatedUser = $user->authenticate($username, $password);
             
-            if ($user && password_verify($password, $user['password_hash'])) {
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['username'] = $user['username'];
-                $_SESSION['role'] = $user['role'];
-                
+            if ($authenticatedUser) {
                 header('Location: characters.php');
                 exit();
             } else {
                 $message = displayMessage("Nom d'utilisateur ou mot de passe incorrect.", "error");
             }
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
             $message = displayMessage("Erreur de connexion : " . $e->getMessage(), "error");
         }
     }

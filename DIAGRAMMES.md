@@ -1,6 +1,6 @@
 # 📊 Diagrammes du Système de Classes
 
-## 🏗️ Architecture générale du système de classes
+## 🏗️ Architecture générale du système de classes avec Univers
 
 ```mermaid
 graph TB
@@ -10,14 +10,19 @@ graph TB
         TEST[Tests<br/>test_monde_class.php]
     end
     
+    subgraph "🌌 Couche Univers (Unique)"
+        UNIVERS[Classe Univers<br/>- Instance unique (Singleton)<br/>- Gestion PDO centralisée<br/>- Cache et statistiques<br/>- Invisible aux utilisateurs]
+    end
+    
     subgraph "🏛️ Couche Classes Métier"
         MONDE[Classe Monde<br/>- Gestion des mondes<br/>- Validation<br/>- Persistance]
+        PAYS[Classe Pays<br/>- Gestion des pays<br/>- Relations avec monde<br/>- Validation]
         DB_CLASS[Classe Database<br/>- Connexions PDO<br/>- Pattern Singleton<br/>- Requêtes SQL]
         AUTO[Autoloader<br/>- Chargement automatique<br/>- Gestion des namespaces]
     end
     
     subgraph "🔧 Couche Infrastructure"
-        INIT[init.php<br/>- Initialisation<br/>- Configuration]
+        INIT[init.php<br/>- Initialisation Univers<br/>- Configuration]
         CONFIG[config/database.php<br/>- Paramètres DB<br/>- Connexion]
     end
     
@@ -30,26 +35,37 @@ graph TB
     end
     
     subgraph "📁 Structure des fichiers"
-        CLASSES_DIR[classes/<br/>- Monde.php<br/>- Database.php<br/>- Autoloader.php<br/>- init.php]
+        CLASSES_DIR[classes/<br/>- Univers.php<br/>- Monde.php<br/>- Pays.php<br/>- Database.php<br/>- Autoloader.php<br/>- init.php]
         INCLUDES_DIR[includes/<br/>- functions.php<br/>- navbar.php]
         CONFIG_DIR[config/<br/>- database.php<br/>- database.test.php]
     end
     
     %% Connexions principales
     UI --> MONDE
+    UI --> PAYS
     DEMO --> MONDE
+    DEMO --> PAYS
     TEST --> MONDE
+    TEST --> PAYS
     
-    MONDE --> DB_CLASS
-    DB_CLASS --> MYSQL
+    %% Univers central
+    UNIVERS --> MONDE
+    UNIVERS --> PAYS
+    UNIVERS --> DB_CLASS
+    UNIVERS --> MYSQL
     
+    MONDE --> PAYS
+    PAYS --> MONDE
+    
+    AUTO --> UNIVERS
     AUTO --> MONDE
+    AUTO --> PAYS
     AUTO --> DB_CLASS
     
     INIT --> AUTO
-    INIT --> DB_CLASS
+    INIT --> UNIVERS
     
-    CONFIG --> DB_CLASS
+    CONFIG --> UNIVERS
     
     %% Connexions base de données
     MONDE --> WORLDS
@@ -58,7 +74,9 @@ graph TB
     REGIONS --> PLACES
     
     %% Structure des fichiers
+    CLASSES_DIR --> UNIVERS
     CLASSES_DIR --> MONDE
+    CLASSES_DIR --> PAYS
     CLASSES_DIR --> DB_CLASS
     CLASSES_DIR --> AUTO
     CLASSES_DIR --> INIT
@@ -68,13 +86,15 @@ graph TB
     
     %% Styles
     classDef appLayer fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef universLayer fill:#ffebee,stroke:#c62828,stroke-width:3px
     classDef classLayer fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
     classDef infraLayer fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
     classDef dataLayer fill:#fff3e0,stroke:#e65100,stroke-width:2px
     classDef fileLayer fill:#fce4ec,stroke:#880e4f,stroke-width:2px
     
     class UI,DEMO,TEST appLayer
-    class MONDE,DB_CLASS,AUTO classLayer
+    class UNIVERS universLayer
+    class MONDE,PAYS,DB_CLASS,AUTO classLayer
     class INIT,CONFIG infraLayer
     class MYSQL,WORLDS,COUNTRIES,REGIONS,PLACES dataLayer
     class CLASSES_DIR,INCLUDES_DIR,CONFIG_DIR fileLayer
@@ -195,7 +215,102 @@ sequenceDiagram
     W-->>U: Affichage liste
 ```
 
-## 🎯 Diagramme de classe Monde
+## 🌌 Diagramme de la classe Univers
+
+```mermaid
+classDiagram
+    class Univers {
+        -static Univers instance
+        -PDO pdo
+        -array config
+        -array cache
+        -array stats
+        
+        -__construct(array config)
+        +getInstance(array config) Univers
+        -loadDefaultConfig() array
+        -initializeDatabase()
+        -loadStats()
+        
+        +getPdo() PDO
+        +getConfig() array
+        +getStats() array
+        +getAppName() string
+        +getAppVersion() string
+        +getEnvironment() string
+        
+        +createMonde(string name, string description, int created_by, string map_url) Monde
+        +getAllMondes() array
+        +getMondeById(int id) Monde
+        
+        +createPays(int world_id, string name, string description, string map_url, string coat_url) Pays
+        +getAllPays() array
+        
+        +cache(string key, mixed value, int ttl) void
+        +getCache(string key) mixed
+        +clearCache(string key) void
+        
+        +getHealthStatus() array
+        +cleanup() void
+        +saveState() array
+        +toArray() array
+        +__toString() string
+    }
+    
+    class Monde {
+        -int id
+        -string name
+        -string description
+        -string map_url
+        -int created_by
+        -datetime created_at
+        -datetime updated_at
+        -PDO pdo
+        
+        +__construct(PDO pdo, array data)
+        +validate() array
+        +save() bool
+        +delete() bool
+        +findByIdInUnivers(int id) Monde
+        +findByUserInUnivers(int user_id) array
+    }
+    
+    class Pays {
+        -int id
+        -int world_id
+        -string name
+        -string description
+        -string map_url
+        -string coat_of_arms_url
+        -datetime created_at
+        -datetime updated_at
+        -PDO pdo
+        
+        +__construct(PDO pdo, array data)
+        +validate() array
+        +save() bool
+        +delete() bool
+        +findByIdInUnivers(int id) Pays
+        +findByUserInUnivers(int user_id) array
+    }
+    
+    class Database {
+        -static Database instance
+        -PDO pdo
+        
+        +getInstance(array config) Database
+        +getPdo() PDO
+    }
+    
+    %% Relations
+    Univers --> Monde : creates and manages
+    Univers --> Pays : creates and manages
+    Univers --> Database : uses for PDO
+    Monde --> Pays : contains
+    Pays --> Monde : belongs to
+```
+
+## 🎯 Diagramme de classes Monde et Pays
 
 ```mermaid
 classDiagram
@@ -231,6 +346,46 @@ classDiagram
         +findById(PDO pdo, int id) Monde
         +findByUser(PDO pdo, int user_id) array
         +nameExists(PDO pdo, string name, int user_id) bool
+    }
+    
+    class Pays {
+        -int id
+        -int world_id
+        -string name
+        -string description
+        -string map_url
+        -string coat_of_arms_url
+        -datetime created_at
+        -datetime updated_at
+        -PDO pdo
+        
+        +__construct(PDO pdo, array data)
+        +getId() int
+        +getWorldId() int
+        +getName() string
+        +getDescription() string
+        +getMapUrl() string
+        +getCoatOfArmsUrl() string
+        +getCreatedAt() datetime
+        +getUpdatedAt() datetime
+        +setWorldId(int world_id) Pays
+        +setName(string name) Pays
+        +setDescription(string description) Pays
+        +setMapUrl(string map_url) Pays
+        +setCoatOfArmsUrl(string coat_of_arms_url) Pays
+        +validate() array
+        +save() bool
+        +delete() bool
+        +getMonde() Monde
+        +getRegionCount() int
+        +getRegions() array
+        +getWorldName() string
+        +toArray() array
+        +__toString() string
+        +findById(PDO pdo, int id) Pays
+        +findByWorld(PDO pdo, int world_id) array
+        +findByUser(PDO pdo, int user_id) array
+        +nameExistsInWorld(PDO pdo, string name, int world_id) bool
     }
     
     class Database {
@@ -271,9 +426,14 @@ classDiagram
         +getLoadedClasses() array
     }
     
+    %% Relations
     Database --> Monde : provides PDO
+    Database --> Pays : provides PDO
     Autoloader --> Monde : loads class
+    Autoloader --> Pays : loads class
     Autoloader --> Database : loads class
+    Monde ||--o{ Pays : contains
+    Pays }o--|| Monde : belongs to
 ```
 
 ## 🔄 Flux de création d'un monde
@@ -304,6 +464,52 @@ sequenceDiagram
         M-->>F: Erreurs de validation
         F-->>U: Affichage des erreurs
     end
+```
+
+## 🏰 Flux de création d'un pays
+
+```mermaid
+sequenceDiagram
+    participant U as Utilisateur
+    participant F as Formulaire
+    participant P as Classe Pays
+    participant M as Classe Monde
+    participant D as Database
+    participant DB as Base de données
+    
+    Note over U,DB: Création d'un nouveau pays
+    
+    U->>F: Remplit le formulaire pays
+    F->>P: new Pays(getPDO())
+    P->>P: setWorldId(world_id)
+    P->>P: setName(name)
+    P->>P: setDescription(description)
+    P->>P: setMapUrl(map_url)
+    P->>P: setCoatOfArmsUrl(coat_url)
+    P->>P: validate()
+    
+    alt Validation réussie
+        P->>D: getPdo()
+        D-->>P: PDO instance
+        P->>DB: INSERT INTO countries
+        DB-->>P: ID du pays créé
+        P-->>F: Succès
+        F-->>U: Message de confirmation
+    else Validation échouée
+        P-->>F: Erreurs de validation
+        F-->>U: Affichage des erreurs
+    end
+    
+    Note over U,DB: Récupération des pays d'un monde
+    
+    U->>F: Demande pays du monde
+    F->>P: Pays::findByWorld(world_id)
+    P->>D: selectAll(SQL, params)
+    D->>DB: SELECT FROM countries WHERE world_id = ?
+    DB-->>D: Résultats
+    D-->>P: Array pays
+    P-->>F: Collection Pays[]
+    F-->>U: Affichage liste pays
 ```
 
 ## 🗄️ Structure de la base de données
@@ -566,4 +772,235 @@ graph LR
 class Monde {
     // ... code de la classe
 }
+```
+
+## 🏞️ Diagramme de classes complet avec Region
+
+```mermaid
+classDiagram
+    class Univers {
+        -static Univers instance
+        -PDO pdo
+        -array config
+        -array cache
+        -array stats
+        
+        -__construct(array config)
+        +getInstance(array config) Univers
+        -loadDefaultConfig() array
+        -initializeDatabase()
+        -loadStats()
+        
+        +getPdo() PDO
+        +getConfig() array
+        +getStats() array
+        +getAppName() string
+        +getAppVersion() string
+        +getEnvironment() string
+        
+        +createMonde(string name, string description, int created_by, string map_url) Monde
+        +getAllMondes() array
+        +getMondeById(int id) Monde
+        
+        +createPays(int world_id, string name, string description, string map_url, string coat_url) Pays
+        +getAllPays() array
+        
+        +createRegion(int country_id, string name, string description, string map_url, string coat_url) Region
+        +getAllRegions() array
+        +getRegionById(int id) Region
+        
+        +cache(string key, mixed value, int ttl) void
+        +getCache(string key) mixed
+        +clearCache(string key) void
+        
+        +getHealthStatus() array
+        +cleanup() void
+        +saveState() array
+        +toArray() array
+        +__toString() string
+    }
+    
+    class Monde {
+        -int id
+        -string name
+        -string description
+        -string map_url
+        -int created_by
+        -datetime created_at
+        -datetime updated_at
+        
+        +__construct(array data)
+        +getId() int
+        +getName() string
+        +getDescription() string
+        +getMapUrl() string
+        +getCreatedBy() int
+        +getCreatedAt() datetime
+        +getUpdatedAt() datetime
+        +setName(string name) Monde
+        +setDescription(string description) Monde
+        +setMapUrl(string map_url) Monde
+        +setCreatedBy(int created_by) Monde
+        +validate() array
+        +save() bool
+        +delete() bool
+        +getCountryCount() int
+        +getCountries() array
+        +toArray() array
+        +__toString() string
+        +findById(int id) Monde
+        +findByUser(int user_id) array
+        +nameExists(string name, int user_id, int exclude_id) bool
+        -getPdo() PDO
+    }
+    
+    class Pays {
+        -int id
+        -int world_id
+        -string name
+        -string description
+        -string map_url
+        -string coat_of_arms_url
+        -datetime created_at
+        -datetime updated_at
+        
+        +__construct(array data)
+        +getId() int
+        +getWorldId() int
+        +getName() string
+        +getDescription() string
+        +getMapUrl() string
+        +getCoatOfArmsUrl() string
+        +getCreatedAt() datetime
+        +getUpdatedAt() datetime
+        +setWorldId(int world_id) Pays
+        +setName(string name) Pays
+        +setDescription(string description) Pays
+        +setMapUrl(string map_url) Pays
+        +setCoatOfArmsUrl(string coat_of_arms_url) Pays
+        +validate() array
+        +save() bool
+        +delete() bool
+        +getMonde() Monde
+        +getRegionCount() int
+        +getRegions() array
+        +getWorldName() string
+        +toArray() array
+        +__toString() string
+        +findById(int id) Pays
+        +findByWorld(int world_id) array
+        +findByUser(int user_id) array
+        +nameExistsInWorld(string name, int world_id, int exclude_id) bool
+        -getPdo() PDO
+    }
+    
+    class Region {
+        -int id
+        -int country_id
+        -string name
+        -string description
+        -string map_url
+        -string coat_of_arms_url
+        -datetime created_at
+        -datetime updated_at
+        
+        +__construct(array data)
+        +getId() int
+        +getCountryId() int
+        +getName() string
+        +getDescription() string
+        +getMapUrl() string
+        +getCoatOfArmsUrl() string
+        +getCreatedAt() datetime
+        +getUpdatedAt() datetime
+        +setCountryId(int country_id) Region
+        +setName(string name) Region
+        +setDescription(string description) Region
+        +setMapUrl(string map_url) Region
+        +setCoatOfArmsUrl(string coat_of_arms_url) Region
+        +validate() array
+        +save() bool
+        +delete() bool
+        +getPays() Pays
+        +getMonde() Monde
+        +getPlaceCount() int
+        +getPlaces() array
+        +getCountryName() string
+        +getWorldName() string
+        +toArray() array
+        +__toString() string
+        +findById(int id) Region
+        +findByCountry(int country_id) array
+        +findByUser(int user_id) array
+        +nameExistsInCountry(string name, int country_id, int exclude_id) bool
+        -getPdo() PDO
+    }
+    
+    class Database {
+        -static Database instance
+        -PDO pdo
+        
+        -__construct()
+        +getInstance() Database
+        +getPdo() PDO
+        +selectAll(string sql, array params) array
+        +selectOne(string sql, array params) array
+        +execute(string sql, array params) bool
+        +insert(string sql, array params) int
+        +beginTransaction() bool
+        +commit() bool
+        +rollback() bool
+        +inTransaction() bool
+        +quote(string value) string
+        +prepare(string sql) PDOStatement
+        +close() void
+    }
+    
+    Univers ||--|| Database : "utilise"
+    Univers ||--o{ Monde : "gère"
+    Univers ||--o{ Pays : "gère"
+    Univers ||--o{ Region : "gère"
+    Monde ||--o{ Pays : "contient"
+    Pays ||--o{ Region : "contient"
+```
+
+## 🌍 Flux de création d'une région
+
+```mermaid
+sequenceDiagram
+    participant U as Utilisateur
+    participant W as Web Interface
+    participant R as Region
+    participant P as Pays
+    participant M as Monde
+    participant DB as Base de Données
+    
+    Note over U,DB: Création d'une nouvelle région
+    
+    U->>W: Saisit données région
+    W->>R: new Region(data)
+    R->>R: validate()
+    
+    alt Données valides
+        R->>P: Vérifier existence pays
+        P->>DB: SELECT FROM countries
+        DB-->>P: Pays trouvé
+        P-->>R: ✅ Pays valide
+        R->>DB: INSERT INTO regions
+        DB-->>R: ID région créée
+        R-->>W: ✅ Région créée
+        W-->>U: Confirmation création
+    else Données invalides
+        R-->>W: ❌ Erreurs validation
+        W-->>U: Affichage erreurs
+    end
+    
+    Note over U,DB: Récupération des régions
+    
+    U->>W: Demande liste régions
+    W->>R: Region::findByUser(user_id)
+    R->>DB: SELECT FROM regions JOIN countries JOIN worlds
+    DB-->>R: Résultats
+    R-->>W: Collection Region[]
+    W-->>U: Affichage liste
 ```

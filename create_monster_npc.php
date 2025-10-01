@@ -16,19 +16,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $description = trim($_POST['description'] ?? '');
     
     if ($monster_id <= 0 || $place_id <= 0 || $npc_name === '') {
-        header('Location: my_monsters.php?error=invalid_parameters');
+        header('Location: bestiary.php?error=invalid_parameters');
         exit();
     }
     
-    // Vérifier que le monstre existe et est dans la collection du MJ
-    $stmt = $pdo->prepare("SELECT m.* FROM dnd_monsters m 
-                          JOIN user_monster_collection umc ON m.id = umc.monster_id 
-                          WHERE m.id = ? AND umc.user_id = ?");
-    $stmt->execute([$monster_id, $_SESSION['user_id']]);
+    // Vérifier que le monstre existe
+    $stmt = $pdo->prepare("SELECT * FROM dnd_monsters WHERE id = ?");
+    $stmt->execute([$monster_id]);
     $monster = $stmt->fetch();
     
     if (!$monster) {
-        header('Location: my_monsters.php?error=monster_not_found');
+        header('Location: bestiary.php?error=monster_not_found');
         exit();
     }
     
@@ -40,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $place = $stmt->fetch();
     
     if (!$place) {
-        header('Location: my_monsters.php?error=place_not_found');
+        header('Location: bestiary.php?error=place_not_found');
         exit();
     }
     
@@ -54,5 +52,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Si accès direct, rediriger vers la collection
-header('Location: my_monsters.php');
+header('Location: bestiary.php');
 exit();

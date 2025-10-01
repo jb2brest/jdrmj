@@ -1,5 +1,5 @@
 <?php
-require_once 'config/database.php';
+require_once 'classes/init.php';
 require_once 'includes/functions.php';
 
 $page_title = "Détails du Pays";
@@ -16,21 +16,19 @@ if ($country_id === 0) {
 
 $user_id = $_SESSION['user_id'];
 
-// Récupérer le pays avec ses informations de monde
-$stmt = $pdo->prepare("SELECT c.*, w.name as world_name, w.created_by 
-                      FROM countries c 
-                      JOIN worlds w ON c.world_id = w.id 
-                      WHERE c.id = ? AND w.created_by = ?");
-$stmt->execute([$country_id, $user_id]);
-$country = $stmt->fetch();
+// Récupérer le pays via la classe Pays
+$pays = Pays::findById($country_id);
 
-if (!$country) {
+if (!$pays || $pays->getMonde()->getCreatedBy() != $user_id) {
     header('Location: manage_worlds.php?error=country_not_found');
     exit();
 }
 
 $success_message = '';
 $error_message = '';
+
+// Obtenir l'instance PDO
+$pdo = getPDO();
 
 // Fonction helper pour tronquer le texte
 function truncateText($text, $length = 100) {
@@ -209,10 +207,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Récupérer les régions du pays
-$stmt = $pdo->prepare("SELECT * FROM regions WHERE country_id = ? ORDER BY name");
-$stmt->execute([$country_id]);
-$regions = $stmt->fetchAll();
+// Récupérer les régions du pays via la classe Pays
+$regions = $pays->getRegions();
 
 // Récupérer tous les PNJs du pays (via la hiérarchie pays → régions → lieux)
 $stmt = $pdo->prepare("
@@ -278,7 +274,7 @@ $country_monsters = $stmt->fetchAll();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($country['name']); ?> - JDR 4 MJ</title>
+    <title><?php echo htmlspecialchars($pays->getName()); ?> - JDR 4 MJ</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
@@ -359,28 +355,28 @@ $country_monsters = $stmt->fetchAll();
                         <div>
                             <h1 class="mb-2">
                                 <i class="fas fa-flag me-2"></i>
-                                <?php echo htmlspecialchars($country['name']); ?>
+                                <?php echo htmlspecialchars($pays->getName()); ?>
                             </h1>
                             <p class="text-muted mb-1">
                                 <i class="fas fa-globe-americas me-1"></i>
-                                Monde: <?php echo htmlspecialchars($country['world_name']); ?>
+                                Monde: <?php echo htmlspecialchars($pays->getWorldName()); ?>
                             </p>
-                            <?php if (!empty($country['description'])): ?>
-                                <p class="text-muted mb-3"><?php echo nl2br(htmlspecialchars($country['description'])); ?></p>
+                            <?php if (!empty($pays->getDescription())): ?>
+                                <p class="text-muted mb-3"><?php echo nl2br(htmlspecialchars($pays->getDescription())); ?></p>
                             <?php endif; ?>
                             <div class="d-flex gap-3">
-                                <a href="view_world.php?id=<?php echo (int)$country['world_id']; ?>" class="btn btn-outline-secondary">
+                                <a href="view_world.php?id=<?php echo (int)$pays->getWorldId(); ?>" class="btn btn-outline-secondary">
                                     <i class="fas fa-arrow-left me-1"></i>Retour au monde
                                 </a>
                             </div>
                         </div>
-                        <?php if (!empty($country['map_url'])): ?>
+                        <?php if (!empty($pays->getMapUrl())): ?>
                             <div class="text-end">
-                                <img src="<?php echo htmlspecialchars($country['map_url']); ?>" 
-                                     alt="Carte de <?php echo htmlspecialchars($country['name']); ?>" 
+                                <img src="<?php echo htmlspecialchars($pays->getMapUrl()); ?>" 
+                                     alt="Carte de <?php echo htmlspecialchars($pays->getName()); ?>" 
                                      class="img-fluid rounded cursor-pointer" 
                                      style="max-height: 200px; max-width: 300px;"
-                                     onclick="openMapFullscreen('<?php echo htmlspecialchars($country['map_url']); ?>', '<?php echo htmlspecialchars($country['name']); ?>')"
+                                     onclick="openMapFullscreen('<?php echo htmlspecialchars($pays->getMapUrl()); ?>', '<?php echo htmlspecialchars($pays->getName()); ?>')"
                                      title="Cliquer pour voir en plein écran">
                             </div>
                         <?php endif; ?>
@@ -408,12 +404,12 @@ $country_monsters = $stmt->fetchAll();
                     <?php foreach ($regions as $region): ?>
                         <div class="col">
                             <div class="card h-100">
-                                <?php if (!empty($region['map_url'])): ?>
-                                    <img src="<?php echo htmlspecialchars($region['map_url']); ?>" 
-                                         alt="Carte de <?php echo htmlspecialchars($region['name']); ?>" 
+                                <?php if (!empty($region->getMapUrl())): ?>
+                                    <img src="<?php echo htmlspecialchars($region->getMapUrl()); ?>" 
+                                         alt="Carte de <?php echo htmlspecialchars($region->getName()); ?>" 
                                          class="card-img-top cursor-pointer" 
                                          style="height: 200px; object-fit: cover;"
-                                         onclick="openMapFullscreen('<?php echo htmlspecialchars($region['map_url']); ?>', '<?php echo htmlspecialchars($region['name']); ?>')"
+                                         onclick="openMapFullscreen('<?php echo htmlspecialchars($region->getMapUrl()); ?>', '<?php echo htmlspecialchars($region->getName()); ?>')"
                                          title="Cliquer pour voir en plein écran">
                                 <?php else: ?>
                                     <div class="card-img-top d-flex align-items-center justify-content-center" style="height: 200px; background-color: #f8f9fa;">
@@ -422,24 +418,24 @@ $country_monsters = $stmt->fetchAll();
                                 <?php endif; ?>
                                 
                                 <div class="card-body d-flex flex-column">
-                                    <h5 class="card-title"><?php echo htmlspecialchars($region['name']); ?></h5>
+                                    <h5 class="card-title"><?php echo htmlspecialchars($region->getName()); ?></h5>
                                     
-                                    <?php if (!empty($region['description'])): ?>
-                                        <p class="card-text text-muted small flex-grow-1"><?php echo nl2br(htmlspecialchars(truncateText($region['description'], 100))); ?></p>
+                                    <?php if (!empty($region->getDescription())): ?>
+                                        <p class="card-text text-muted small flex-grow-1"><?php echo nl2br(htmlspecialchars(truncateText($region->getDescription(), 100))); ?></p>
                                     <?php endif; ?>
                                     
                                     <div class="d-flex justify-content-between align-items-center mt-2">
-                                        <a href="view_region.php?id=<?php echo (int)$region['id']; ?>" class="btn btn-sm btn-outline-primary">
+                                        <a href="view_region.php?id=<?php echo (int)$region->getId(); ?>" class="btn btn-sm btn-outline-primary">
                                             <i class="fas fa-eye me-1"></i>Voir la Région
                                         </a>
                                         <div class="btn-group">
                                             <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editRegionModal"
-                                                    onclick="editRegion(<?php echo htmlspecialchars(json_encode($region)); ?>)">
+                                                    onclick="editRegion(<?php echo htmlspecialchars(json_encode($region->toArray())); ?>)">
                                                 <i class="fas fa-edit"></i>
                                             </button>
-                                            <form method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer la région <?php echo htmlspecialchars($region['name']); ?> ? Tous les lieux associés seront également supprimés.');">
+                                            <form method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer la région <?php echo htmlspecialchars($region->getName()); ?> ? Tous les lieux associés seront également supprimés.');">
                                                 <input type="hidden" name="action" value="delete_region">
-                                                <input type="hidden" name="region_id" value="<?php echo (int)$region['id']; ?>">
+                                                <input type="hidden" name="region_id" value="<?php echo (int)$region->getId(); ?>">
                                                 <button type="submit" class="btn btn-sm btn-outline-danger">
                                                     <i class="fas fa-trash"></i>
                                                 </button>

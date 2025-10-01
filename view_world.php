@@ -1,5 +1,5 @@
 <?php
-require_once 'config/database.php';
+require_once 'classes/init.php';
 require_once 'includes/functions.php';
 $page_title = "Monde";
 $current_page = "view_world";
@@ -20,12 +20,10 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
 $world_id = (int)$_GET['id'];
 $user_id = $_SESSION['user_id'];
 
-// Récupérer le monde
-$stmt = $pdo->prepare("SELECT * FROM worlds WHERE id = ? AND created_by = ?");
-$stmt->execute([$world_id, $user_id]);
-$world = $stmt->fetch();
+// Récupérer le monde via la classe Monde
+$monde = Monde::findById($world_id);
 
-if (!$world) {
+if (!$monde || $monde->getCreatedBy() != $user_id) {
     header('Location: manage_worlds.php?error=world_not_found');
     exit();
 }
@@ -111,15 +109,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 if (empty($error_message)) {
                     try {
-                        $stmt = $pdo->prepare("INSERT INTO countries (name, description, map_url, coat_of_arms_url, world_id) VALUES (?, ?, ?, ?, ?)");
-                        $stmt->execute([$name, $description, $map_url, $coat_of_arms_url, $world_id]);
+                        $univers = getUnivers();
+                        $pays = $univers->createPays($world_id, $name, $description, $map_url, $coat_of_arms_url);
                         $success_message = "Pays '$name' créé avec succès.";
-                    } catch (PDOException $e) {
-                        if ($e->getCode() == 23000) {
-                            $error_message = "Un pays avec ce nom existe déjà dans ce monde.";
-                        } else {
-                            $error_message = "Erreur lors de la création du pays: " . $e->getMessage();
-                        }
+                    } catch (Exception $e) {
+                        $error_message = "Erreur lors de la création du pays: " . $e->getMessage();
                     }
                 }
             }
@@ -133,12 +127,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (empty($name)) {
                 $error_message = "Le nom du pays est requis.";
             } else {
-                // Récupérer les URLs actuelles
-                $stmt = $pdo->prepare("SELECT map_url, coat_of_arms_url FROM countries WHERE id = ? AND world_id = ?");
-                $stmt->execute([$country_id, $world_id]);
-                $current_country = $stmt->fetch();
-                $map_url = $current_country['map_url'] ?? '';
-                $coat_of_arms_url = $current_country['coat_of_arms_url'] ?? '';
+                // Récupérer le pays via la classe Pays
+                $pays = Pays::findById($country_id);
+                if (!$pays || $pays->getWorldId() != $world_id) {
+                    $error_message = "Pays non trouvé.";
+                } else {
+                    $map_url = $pays->getMapUrl();
+                    $coat_of_arms_url = $pays->getCoatOfArmsUrl();
                 
                 // Gérer l'upload de la nouvelle carte si un fichier est fourni
                 if (isset($_FILES['map_image']) && $_FILES['map_image']['error'] === UPLOAD_ERR_OK) {
@@ -168,19 +163,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
                 
-                if (empty($error_message)) {
-                    try {
-                        $stmt = $pdo->prepare("UPDATE countries SET name = ?, description = ?, map_url = ?, coat_of_arms_url = ? WHERE id = ? AND world_id = ?");
-                        $stmt->execute([$name, $description, $map_url, $coat_of_arms_url, $country_id, $world_id]);
-                        if ($stmt->rowCount() > 0) {
-                            $success_message = "Pays '$name' mis à jour avec succès.";
-                        } else {
-                            $error_message = "Pays non trouvé.";
-                        }
-                    } catch (PDOException $e) {
-                        if ($e->getCode() == 23000) {
-                            $error_message = "Un pays avec ce nom existe déjà dans ce monde.";
-                        } else {
+                    if (empty($error_message)) {
+                        try {
+                            // Mettre à jour les propriétés du pays
+                            $pays->setName($name);
+                            $pays->setDescription($description);
+                            $pays->setMapUrl($map_url);
+                            $pays->setCoatOfArmsUrl($coat_of_arms_url);
+                            
+                            if ($pays->save()) {
+                                $success_message = "Pays '$name' mis à jour avec succès.";
+                            } else {
+                                $error_message = "Erreur lors de la mise à jour du pays.";
+                            }
+                        } catch (Exception $e) {
                             $error_message = "Erreur lors de la mise à jour: " . $e->getMessage();
                         }
                     }
@@ -193,31 +189,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             try {
                 // Vérifier s'il y a des régions dans ce pays
-                $stmt = $pdo->prepare("SELECT COUNT(*) FROM regions WHERE country_id = ?");
-                $stmt->execute([$country_id]);
-                $region_count = $stmt->fetchColumn();
+                $pays = Pays::findById($country_id);
+                $region_count = $pays ? $pays->getRegionCount() : 0;
                 
                 if ($region_count > 0) {
                     $error_message = "Impossible de supprimer ce pays car il contient $region_count régions. Supprimez d'abord les régions.";
                 } else {
-                    // Récupérer les URLs des images avant suppression
-                    $stmt = $pdo->prepare("SELECT map_url, coat_of_arms_url FROM countries WHERE id = ? AND world_id = ?");
-                    $stmt->execute([$country_id, $world_id]);
-                    $country = $stmt->fetch();
+                    // Récupérer le pays via la classe Pays
+                    $pays = Pays::findById($country_id);
                     
-                    // Supprimer le pays
-                    $stmt = $pdo->prepare("DELETE FROM countries WHERE id = ? AND world_id = ?");
-                    $stmt->execute([$country_id, $world_id]);
-                    
-                    if ($stmt->rowCount() > 0) {
+                    if ($pays && $pays->getWorldId() == $world_id) {
                         // Supprimer les images associées si elles existent
-                        if (!empty($country['map_url']) && file_exists($country['map_url'])) {
-                            unlink($country['map_url']);
+                        if (!empty($pays->getMapUrl()) && file_exists($pays->getMapUrl())) {
+                            unlink($pays->getMapUrl());
                         }
-                        if (!empty($country['coat_of_arms_url']) && file_exists($country['coat_of_arms_url'])) {
-                            unlink($country['coat_of_arms_url']);
+                        if (!empty($pays->getCoatOfArmsUrl()) && file_exists($pays->getCoatOfArmsUrl())) {
+                            unlink($pays->getCoatOfArmsUrl());
                         }
-                        $success_message = "Pays supprimé avec succès.";
+                        
+                        if ($pays->delete()) {
+                            $success_message = "Pays supprimé avec succès.";
+                        } else {
+                            $error_message = "Erreur lors de la suppression du pays.";
+                        }
                     } else {
                         $error_message = "Pays non trouvé.";
                     }
@@ -229,25 +223,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Récupérer les pays du monde
-$stmt = $pdo->prepare("SELECT c.*, 
-    (SELECT COUNT(*) FROM regions WHERE country_id = c.id) as region_count
-    FROM countries c 
-    WHERE c.world_id = ? 
-    ORDER BY c.name");
-$stmt->execute([$world_id]);
-$countries = $stmt->fetchAll();
+// Récupérer les pays du monde via la classe Monde
+$countries = $monde->getCountries();
 
 // Récupérer un pays spécifique pour l'édition
 $edit_country = null;
 if (isset($_GET['edit_country']) && is_numeric($_GET['edit_country'])) {
     $country_id = (int)$_GET['edit_country'];
-    $stmt = $pdo->prepare("SELECT * FROM countries WHERE id = ? AND world_id = ?");
-    $stmt->execute([$country_id, $world_id]);
-    $edit_country = $stmt->fetch();
+    $edit_country = Pays::findById($country_id);
+    if (!$edit_country || $edit_country->getWorldId() != $world_id) {
+        $edit_country = null;
+    }
 }
 
 // Récupérer tous les PNJs du monde (via la hiérarchie pays → régions → lieux)
+$pdo = getPDO();
 $stmt = $pdo->prepare("
     SELECT 
         pn.id,
@@ -315,7 +305,7 @@ $world_monsters = $stmt->fetchAll();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($world['name']); ?> - JDR 4 MJ</title>
+    <title><?php echo htmlspecialchars($monde->getName()); ?> - JDR 4 MJ</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
@@ -399,10 +389,10 @@ $world_monsters = $stmt->fetchAll();
                             <div>
                                 <h1 class="mb-2">
                                     <i class="fas fa-globe-americas me-2"></i>
-                                    <?php echo htmlspecialchars($world['name']); ?>
+                                    <?php echo htmlspecialchars($monde->getName()); ?>
                                 </h1>
-                                <?php if (!empty($world['description'])): ?>
-                                    <p class="text-muted mb-3"><?php echo nl2br(htmlspecialchars($world['description'])); ?></p>
+                                <?php if (!empty($monde->getDescription())): ?>
+                                    <p class="text-muted mb-3"><?php echo nl2br(htmlspecialchars($monde->getDescription())); ?></p>
                                 <?php endif; ?>
                                 <div class="d-flex gap-3">
                                     <a href="manage_worlds.php" class="btn btn-outline-secondary">
@@ -413,13 +403,13 @@ $world_monsters = $stmt->fetchAll();
                                     </button>
                                 </div>
                             </div>
-                            <?php if (!empty($world['map_url'])): ?>
+                            <?php if (!empty($monde->getMapUrl())): ?>
                                 <div class="text-end">
-                                    <img src="<?php echo htmlspecialchars($world['map_url']); ?>" 
-                                         alt="Carte de <?php echo htmlspecialchars($world['name']); ?>" 
+                                    <img src="<?php echo htmlspecialchars($monde->getMapUrl()); ?>" 
+                                         alt="Carte de <?php echo htmlspecialchars($monde->getName()); ?>" 
                                          class="img-fluid rounded cursor-pointer" 
                                          style="max-height: 200px; max-width: 300px;"
-                                         onclick="openMapFullscreen('<?php echo htmlspecialchars($world['map_url']); ?>', '<?php echo htmlspecialchars($world['name']); ?>')"
+                                         onclick="openMapFullscreen('<?php echo htmlspecialchars($monde->getMapUrl()); ?>', '<?php echo htmlspecialchars($monde->getName()); ?>')"
                                          title="Cliquer pour voir en plein écran">
                                 </div>
                             <?php endif; ?>
@@ -455,23 +445,23 @@ $world_monsters = $stmt->fetchAll();
                                     <div class="col-lg-4 col-md-6 mb-3">
                                         <div class="card h-100">
                                             <div class="card-body">
-                                                <h6 class="card-title"><?php echo htmlspecialchars($country['name']); ?></h6>
-                                                <?php if (!empty($country['description'])): ?>
-                                                    <p class="card-text text-muted small"><?php echo nl2br(htmlspecialchars($country['description'])); ?></p>
+                                                <h6 class="card-title"><?php echo htmlspecialchars($country->getName()); ?></h6>
+                                                <?php if (!empty($country->getDescription())): ?>
+                                                    <p class="card-text text-muted small"><?php echo nl2br(htmlspecialchars($country->getDescription())); ?></p>
                                                 <?php endif; ?>
                                                 <div class="d-flex justify-content-between align-items-center">
                                                     <small class="text-muted">
                                                         <i class="fas fa-map-marked-alt me-1"></i>
-                                                        <?php echo $country['region_count']; ?> régions
+                                                        <?php echo $country->getRegionCount(); ?> régions
                                                     </small>
                                                     <div class="btn-group btn-group-sm">
-                                                        <a href="view_country.php?id=<?php echo (int)$country['id']; ?>" class="btn btn-outline-info btn-sm" title="Voir les régions">
+                                                        <a href="view_country.php?id=<?php echo (int)$country->getId(); ?>" class="btn btn-outline-info btn-sm" title="Voir les régions">
                                                             <i class="fas fa-eye"></i>
                                                         </a>
-                                                        <button class="btn btn-outline-primary btn-sm" onclick="editCountry(<?php echo htmlspecialchars(json_encode($country)); ?>)">
+                                                        <button class="btn btn-outline-primary btn-sm" onclick="editCountry(<?php echo htmlspecialchars(json_encode($country->toArray())); ?>)">
                                                             <i class="fas fa-edit"></i>
                                                         </button>
-                                                        <button class="btn btn-outline-danger btn-sm" onclick="deleteCountry(<?php echo $country['id']; ?>, '<?php echo htmlspecialchars($country['name']); ?>')">
+                                                        <button class="btn btn-outline-danger btn-sm" onclick="deleteCountry(<?php echo $country->getId(); ?>, '<?php echo htmlspecialchars($country->getName()); ?>')">
                                                             <i class="fas fa-trash"></i>
                                                         </button>
                                                     </div>
@@ -859,7 +849,7 @@ $world_monsters = $stmt->fetchAll();
 
         function editWorld() {
             // Rediriger vers la page de gestion des mondes avec l'ID en paramètre
-            window.location.href = 'manage_worlds.php?edit=<?php echo $world_id; ?>';
+            window.location.href = 'manage_worlds.php?edit=<?php echo $monde->getId(); ?>';
         }
         
         function editCountry(country) {

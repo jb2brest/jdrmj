@@ -1,5 +1,6 @@
 <?php
 require_once 'config/database.php';
+require_once 'classes/init.php';
 require_once 'includes/functions.php';
 
 // Les joueurs peuvent voir les campagnes publiques, les DM/Admin peuvent voir toutes les campagnes

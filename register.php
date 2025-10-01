@@ -1,5 +1,6 @@
 <?php
 require_once 'config/database.php';
+require_once 'classes/init.php';
 require_once 'includes/functions.php';
 $page_title = "Inscription";
 $current_page = "register";
@@ -37,22 +38,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $errors[] = "Rôle invalide.";
     }
     
-    // Vérifier si l'utilisateur existe déjà
-    $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ? OR email = ?");
-    $stmt->execute([$username, $email]);
-    if ($stmt->rowCount() > 0) {
-        $errors[] = "Un utilisateur avec ce nom ou cette adresse email existe déjà.";
-    }
-    
     if (empty($errors)) {
-        $password_hash = password_hash($password, PASSWORD_DEFAULT);
-        
         try {
-            $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, role) VALUES (?, ?, ?, ?)");
-            $stmt->execute([$username, $email, $password_hash, $role]);
+            // Utilisation de la classe User pour la création
+            $userData = [
+                'username' => $username,
+                'email' => $email,
+                'password' => $password,
+                'role' => $role
+            ];
             
-            $message = displayMessage("Inscription réussie ! Vous pouvez maintenant vous connecter.", "success");
-        } catch (PDOException $e) {
+            $newUser = User::create($pdo, $userData);
+            
+            if ($newUser) {
+                $message = displayMessage("Inscription réussie ! Vous pouvez maintenant vous connecter.", "success");
+            } else {
+                $message = displayMessage("Erreur lors de la création du compte.", "error");
+            }
+        } catch (Exception $e) {
             $message = displayMessage("Erreur lors de l'inscription : " . $e->getMessage(), "error");
         }
     } else {

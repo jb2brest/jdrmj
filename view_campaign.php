@@ -1,5 +1,6 @@
 <?php
 require_once 'config/database.php';
+require_once 'classes/init.php';
 require_once 'includes/functions.php';
 $page_title = "Détails de Campagne";
 $current_page = "view_campaign";
@@ -22,18 +23,17 @@ $campaign_id = (int)$_GET['id'];
 // Charger la campagne selon le rôle
 if (isAdmin()) {
     // Les admins peuvent voir toutes les campagnes
-    $stmt = $pdo->prepare("SELECT c.*, u.username AS dm_username, w.name AS world_name, w.id AS world_id FROM campaigns c JOIN users u ON c.dm_id = u.id LEFT JOIN worlds w ON c.world_id = w.id WHERE c.id = ?");
+    $stmt = $pdo->prepare("SELECT c.*, u.username AS dm_username FROM campaigns c JOIN users u ON c.dm_id = u.id WHERE c.id = ?");
     $stmt->execute([$campaign_id]);
 } elseif (isDM()) {
     // Les DM peuvent voir leurs campagnes + les campagnes publiques
-    $stmt = $pdo->prepare("SELECT c.*, u.username AS dm_username, w.name AS world_name, w.id AS world_id FROM campaigns c JOIN users u ON c.dm_id = u.id LEFT JOIN worlds w ON c.world_id = w.id WHERE c.id = ? AND (c.dm_id = ? OR c.is_public = 1)");
+    $stmt = $pdo->prepare("SELECT c.*, u.username AS dm_username FROM campaigns c JOIN users u ON c.dm_id = u.id WHERE c.id = ? AND (c.dm_id = ? OR c.is_public = 1)");
     $stmt->execute([$campaign_id, $user_id]);
 } else {
     // Les joueurs peuvent voir les campagnes publiques ET les campagnes où ils sont membres
     $stmt = $pdo->prepare("
-        SELECT c.*, u.username AS dm_username, w.name AS world_name, w.id AS world_id FROM campaigns c 
+        SELECT c.*, u.username AS dm_username FROM campaigns c 
         JOIN users u ON c.dm_id = u.id
-        LEFT JOIN worlds w ON c.world_id = w.id
         WHERE c.id = ? AND (
             c.is_public = 1 
             OR EXISTS (
@@ -45,6 +45,22 @@ if (isAdmin()) {
     $stmt->execute([$campaign_id, $user_id]);
 }
 $campaign = $stmt->fetch();
+
+// Récupérer les informations du monde si la campagne en a un
+$world_name = '';
+$world_id = null;
+if ($campaign && !empty($campaign['world_id'])) {
+    $monde = Monde::findById($campaign['world_id']);
+    if ($monde) {
+        $world_name = $monde->getName();
+        $world_id = $monde->getId();
+    }
+}
+$campaign['world_name'] = $world_name;
+$campaign['world_id'] = $world_id;
+
+// Obtenir l'instance PDO
+$pdo = getPDO();
 
 // Charger les pays pour les filtres
 $countries = getCountries();
@@ -70,9 +86,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $success_message = "Monde de la campagne mis à jour avec succès.";
             
             // Recharger les données de la campagne
-            $stmt = $pdo->prepare("SELECT c.*, u.username AS dm_username, w.name AS world_name, w.id AS world_id FROM campaigns c JOIN users u ON c.dm_id = u.id LEFT JOIN worlds w ON c.world_id = w.id WHERE c.id = ?");
+            $stmt = $pdo->prepare("SELECT c.*, u.username AS dm_username FROM campaigns c JOIN users u ON c.dm_id = u.id WHERE c.id = ?");
             $stmt->execute([$campaign_id]);
             $campaign = $stmt->fetch();
+            
+            // Récupérer les informations du monde si la campagne en a un
+            $world_name = '';
+            $world_id = null;
+            if ($campaign && !empty($campaign['world_id'])) {
+                $monde = Monde::findById($campaign['world_id']);
+                if ($monde) {
+                    $world_name = $monde->getName();
+                    $world_id = $monde->getId();
+                }
+            }
+            $campaign['world_name'] = $world_name;
+            $campaign['world_id'] = $world_id;
         } catch (PDOException $e) {
             $error_message = "Erreur lors de la mise à jour du monde: " . $e->getMessage();
         }
