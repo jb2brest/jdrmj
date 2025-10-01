@@ -11,6 +11,15 @@
 require_once __DIR__ . '/Autoloader.php';
 Autoloader::register();
 
+// Charger la configuration de la base de données
+require_once __DIR__ . '/../config/database.php';
+
+// Charger les classes principales
+require_once __DIR__ . '/Database.php';
+require_once __DIR__ . '/User.php';
+require_once __DIR__ . '/Campaign.php';
+require_once __DIR__ . '/Character.php';
+
 // Initialiser l'Univers unique
 try {
     $univers = Univers::getInstance();

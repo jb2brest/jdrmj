@@ -6,9 +6,9 @@
  * la classe Campaign en arrière-plan pour assurer une transition en douceur.
  */
 
-// S'assurer que la classe Campaign est disponible
+// S'assurer que toutes les classes nécessaires sont disponibles
 if (!class_exists('Campaign')) {
-    require_once __DIR__ . '/../classes/Campaign.php';
+    require_once __DIR__ . '/../classes/init.php';
 }
 
 // =====================================================

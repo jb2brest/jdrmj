@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'config/database.php';
+require_once 'classes/init.php';
 require_once 'includes/functions.php';
 require_once 'includes/starting_equipment_functions.php';
 
@@ -21,25 +21,35 @@ if (!$character_id) {
     exit();
 }
 
-// Vérifier que le personnage appartient au joueur et récupérer les informations de race et classe
-$stmt = $pdo->prepare("
-    SELECT c.*, r.name as race_name, cl.name as class_name 
-    FROM characters c 
-    JOIN races r ON c.race_id = r.id 
-    JOIN classes cl ON c.class_id = cl.id 
-    WHERE c.id = ? AND c.user_id = ?
-");
-$stmt->execute([$character_id, $user_id]);
-$character = $stmt->fetch();
+// Récupérer le personnage avec la classe Character
+$characterObject = Character::findById($character_id);
 
-if (!$character) {
-    header('Location: campaigns.php');
+if (!$characterObject) {
+    header('Location: characters.php');
     exit();
 }
 
-// Vérifier que le personnage est dans la campagne (si campaign_id est fourni)
+// Vérifier que le personnage appartient au joueur
+if (!$characterObject->belongsToUser($user_id)) {
+    header('Location: characters.php');
+    exit();
+}
+
+// Convertir l'objet Character en tableau pour la compatibilité avec le code existant
+$character = $characterObject->toArray();
+
+// Récupérer l'objet Campaign si campaign_id est fourni
+$campaign = null;
 if ($campaign_id) {
-    $stmt = $pdo->prepare("
+    $campaign = Campaign::findById($campaign_id);
+    
+    if (!$campaign) {
+        header('Location: campaigns.php');
+        exit();
+    }
+    
+    // Vérifier que le personnage est dans la campagne
+    $stmt = getPDO()->prepare("
         SELECT pp.* FROM place_players pp
         INNER JOIN place_campaigns pc ON pp.place_id = pc.place_id
         WHERE pp.character_id = ? AND pc.campaign_id = ?
@@ -54,16 +64,7 @@ if ($campaign_id) {
 }
 
 // Vérifier si l'équipement de départ a déjà été choisi
-$stmt = $pdo->prepare("
-    SELECT COUNT(*) as count 
-    FROM place_objects 
-    WHERE owner_type = 'player' AND owner_id = ? 
-    AND (item_source = 'Équipement de départ' OR item_source = 'Classe')
-");
-$stmt->execute([$character_id]);
-$equipment_count = $stmt->fetch()['count'];
-
-$equipment_selected = $equipment_count > 0;
+$equipment_selected = $characterObject->hasStartingEquipment();
 
 // Traitement du formulaire
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] === 'select_equipment') {
@@ -98,17 +99,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     
     // Mettre à jour l'argent du personnage
     if ($backgroundGold > 0) {
-        $stmt = $pdo->prepare("UPDATE characters SET money_gold = money_gold + ? WHERE id = ?");
-        $stmt->execute([$backgroundGold, $character_id]);
+        $characterObject->update(['money_gold' => $characterObject->money_gold + $backgroundGold]);
     }
     
     // Marquer le personnage comme équipé et verrouiller les modifications
-    $stmt = $pdo->prepare("UPDATE characters SET is_equipped = 1, equipment_locked = 1, character_locked = 1 WHERE id = ?");
-    $stmt->execute([$character_id]);
+    $characterObject->update([
+        'is_equipped' => 1,
+        'equipment_locked' => 1,
+        'character_locked' => 1
+    ]);
     
     // Rediriger vers la scène de jeu ou la fiche du personnage
-    if ($campaign_id) {
-        header("Location: view_scene_player.php?campaign_id=$campaign_id");
+    if ($campaign) {
+        $campaignArray = $campaign->toArray();
+        header("Location: view_scene_player.php?campaign_id=" . $campaignArray['id']);
     } else {
         header("Location: view_character.php?id=$character_id");
     }
@@ -134,7 +138,7 @@ if ($character['background_id']) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sélection d'équipement de départ - <?php echo htmlspecialchars($character['name']); ?></title>
+    <title>Sélection d'équipement de départ - <?php echo htmlspecialchars($character['name']); ?><?php if ($campaign): ?><?php $campaignArray = $campaign->toArray(); ?> - <?php echo htmlspecialchars($campaignArray['title']); ?><?php endif; ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -180,7 +184,7 @@ if ($character['background_id']) {
             <div class="row align-items-center">
                 <div class="col-md-8">
                     <h1><i class="fas fa-shield-alt me-3"></i>Sélection d'équipement de départ</h1>
-                    <p class="mb-0">Choisissez l'équipement de départ pour votre personnage</p>
+                    <p class="mb-0">Choisissez l'équipement de départ pour votre personnage<?php if ($campaign): ?><?php $campaignArray = $campaign->toArray(); ?> dans la campagne "<?php echo htmlspecialchars($campaignArray['title']); ?>"<?php endif; ?></p>
                 </div>
                 <div class="col-md-4 text-end">
                     <h3><?php echo htmlspecialchars($character['name']); ?></h3>
@@ -195,9 +199,16 @@ if ($character['background_id']) {
             <div class="alert alert-info">
                 <i class="fas fa-info-circle me-2"></i>
                 L'équipement de départ a déjà été choisi pour ce personnage.
-                <a href="view_scene_player.php?campaign_id=<?php echo $campaign_id; ?>" class="btn btn-primary ms-3">
-                    <i class="fas fa-play me-2"></i>Rejoindre la partie
-                </a>
+                <?php if ($campaign): ?>
+                    <?php $campaignArray = $campaign->toArray(); ?>
+                    <a href="view_scene_player.php?campaign_id=<?php echo $campaignArray['id']; ?>" class="btn btn-primary ms-3">
+                        <i class="fas fa-play me-2"></i>Rejoindre la partie
+                    </a>
+                <?php else: ?>
+                    <a href="view_character.php?id=<?php echo $character_id; ?>" class="btn btn-primary ms-3">
+                        <i class="fas fa-user me-2"></i>Voir le personnage
+                    </a>
+                <?php endif; ?>
             </div>
         <?php else: ?>
             <form method="POST" id="equipmentForm">
@@ -265,7 +276,7 @@ if ($character['background_id']) {
                             <h3 class="mt-4"><i class="fas fa-backpack me-2"></i>Équipement d'historique</h3>
                             <?php foreach ($parsedBackgroundEquipment as $index => $choice): ?>
                                 <div class="equipment-choice" data-choice="<?php echo $index; ?>">
-                                    <h5><?php echo htmlspecialchars($choice['description']); ?></h5>
+                                    <h5><?php echo htmlspecialchars($choice['description'] ?? 'Choix d\'équipement'); ?></h5>
                                     
                                     <?php if (isset($choice['options']) && is_array($choice['options'])): ?>
                                         <div class="equipment-options">
@@ -274,30 +285,22 @@ if ($character['background_id']) {
                                                     <div class="form-check">
                                                         <input class="form-check-input" type="radio" name="background_equipment[<?php echo $index; ?>]" value="<?php echo $choiceKey; ?>" id="background_equipment_<?php echo $index; ?>_<?php echo $choiceKey; ?>">
                                                         <label class="form-check-label" for="background_equipment_<?php echo $index; ?>_<?php echo $choiceKey; ?>">
-                                                            <?php if (is_array($choiceValue) && isset($choiceValue['type'])): ?>
-                                                                <?php if ($choiceValue['type'] === 'weapon_choice'): ?>
-                                                                    <strong><?php echo htmlspecialchars($choiceValue['description']); ?></strong>
-                                                                    <div class="mt-2">
-                                                                        <select class="form-select form-select-sm" name="background_weapon_choice[<?php echo $index; ?>][<?php echo $choiceKey; ?>]">
-                                                                            <option value="">Sélectionnez une arme</option>
-                                                                            <?php foreach ($choiceValue['options'] as $weapon): ?>
-                                                                                <option value="<?php echo htmlspecialchars($weapon['name']); ?>">
-                                                                                    <?php echo htmlspecialchars($weapon['name']); ?> (<?php echo htmlspecialchars($weapon['type']); ?>)
-                                                                                </option>
-                                                                            <?php endforeach; ?>
-                                                                        </select>
-                                                                    </div>
-                                                                <?php elseif ($choiceValue['type'] === 'pack'): ?>
-                                                                    <strong><?php echo htmlspecialchars($choiceValue['description']); ?></strong>
-                                                                    <div class="mt-2">
-                                                                        <small class="text-muted">
-                                                                            <strong>Contenu :</strong><br>
-                                                                            <?php echo implode(', ', $choiceValue['contents']); ?>
-                                                                        </small>
-                                                                    </div>
+                                                            <?php if (is_array($choiceValue)): ?>
+                                                                <?php 
+                                                                // $choiceValue est un objet équipement de la base de données
+                                                                $equipmentName = $choiceValue['name'] ?? $choiceValue['description'] ?? 'Équipement inconnu';
+                                                                $equipmentDescription = $choiceValue['description'] ?? '';
+                                                                $equipmentType = $choiceValue['type'] ?? '';
+                                                                ?>
+                                                                <strong><?php echo htmlspecialchars($equipmentName); ?></strong>
+                                                                <?php if (!empty($equipmentDescription) && $equipmentDescription !== $equipmentName): ?>
+                                                                    <br><small class="text-muted"><?php echo htmlspecialchars($equipmentDescription); ?></small>
+                                                                <?php endif; ?>
+                                                                <?php if (!empty($equipmentType)): ?>
+                                                                    <br><small class="text-muted">Type: <?php echo htmlspecialchars($equipmentType); ?></small>
                                                                 <?php endif; ?>
                                                             <?php else: ?>
-                                                                <?php echo htmlspecialchars($choiceValue); ?>
+                                                                <strong><?php echo htmlspecialchars($choiceValue); ?></strong>
                                                             <?php endif; ?>
                                                         </label>
                                                     </div>

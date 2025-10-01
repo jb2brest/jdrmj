@@ -6,9 +6,9 @@
  * la classe User en arrière-plan pour assurer une transition en douceur.
  */
 
-// S'assurer que la classe User est disponible
+// S'assurer que toutes les classes nécessaires sont disponibles
 if (!class_exists('User')) {
-    require_once __DIR__ . '/../classes/User.php';
+    require_once __DIR__ . '/../classes/init.php';
 }
 
 // Vérifier si les fonctions existent déjà pour éviter les conflits

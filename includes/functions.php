@@ -1,9 +1,13 @@
 <?php
-session_start();
+// Vérifier si une session est déjà active avant de la démarrer
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 // Inclure les fichiers de compatibilité
 require_once __DIR__ . '/user_compatibility.php';
 require_once __DIR__ . '/campaign_compatibility.php';
+require_once __DIR__ . '/character_compatibility.php';
 
 // Fonction pour calculer le modificateur d'une caractéristique
 function getAbilityModifier($score) {

@@ -57,31 +57,49 @@ class Database
      */
     private static function loadConfig()
     {
+        // Utiliser la fonction loadDatabaseConfig() du fichier config/database.php
+        if (function_exists('loadDatabaseConfig')) {
+            return loadDatabaseConfig();
+        }
+        
         // Essayer de charger depuis config/database.php
         if (file_exists(__DIR__ . '/../config/database.php')) {
             require_once __DIR__ . '/../config/database.php';
-            return [
-                'host' => $host ?? 'localhost',
-                'dbname' => $dbname ?? '',
-                'username' => $username ?? '',
-                'password' => $password ?? '',
-                'charset' => 'utf8mb4'
-            ];
+            
+            // Vérifier si les constantes sont définies
+            if (defined('DB_HOST') && defined('DB_NAME') && defined('DB_USER') && defined('DB_PASS')) {
+                return [
+                    'host' => DB_HOST,
+                    'dbname' => DB_NAME,
+                    'username' => DB_USER,
+                    'password' => DB_PASS,
+                    'charset' => 'utf8mb4'
+                ];
+            }
         }
 
         // Essayer de charger depuis config/database.test.php
         if (file_exists(__DIR__ . '/../config/database.test.php')) {
-            require_once __DIR__ . '/../config/database.test.php';
-            return [
-                'host' => $host ?? 'localhost',
-                'dbname' => $dbname ?? '',
-                'username' => $username ?? '',
-                'password' => $password ?? '',
-                'charset' => 'utf8mb4'
-            ];
+            $config = require __DIR__ . '/../config/database.test.php';
+            if (is_array($config)) {
+                return array_merge([
+                    'host' => 'localhost',
+                    'dbname' => 'dnd_characters',
+                    'username' => 'root',
+                    'password' => '',
+                    'charset' => 'utf8mb4'
+                ], $config);
+            }
         }
 
-        throw new Exception("Aucun fichier de configuration de base de données trouvé.");
+        // Configuration par défaut
+        return [
+            'host' => 'localhost',
+            'dbname' => 'dnd_characters',
+            'username' => 'root',
+            'password' => '',
+            'charset' => 'utf8mb4'
+        ];
     }
 
     /**

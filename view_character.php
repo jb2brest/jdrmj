@@ -1,10 +1,9 @@
 <?php
-require_once 'config/database.php';
+require_once 'classes/init.php';
 require_once 'includes/functions.php';
 require_once 'includes/capabilities_functions.php';
 $page_title = "Fiche de Personnage";
 $current_page = "view_character";
-
 
 requireLogin();
 
@@ -17,9 +16,29 @@ $character_id = (int)$_GET['id'];
 $dm_campaign_id = isset($_GET['dm_campaign_id']) ? (int)$_GET['dm_campaign_id'] : null;
 $character_created = isset($_GET['created']) && $_GET['created'] == '1';
 
-// Récupération du personnage avec ses détails (sans filtrer par propriétaire)
-$stmt = $pdo->prepare("
-    SELECT c.*, r.name as race_name, r.description as race_description, 
+// Récupération du personnage avec ses détails
+$characterObject = Character::findById($character_id);
+
+if (!$characterObject) {
+    header('Location: characters.php');
+    exit();
+}
+
+// Vérifier les permissions (propriétaire ou DM)
+$isOwner = $characterObject->belongsToUser($_SESSION['user_id']);
+$isDM = isDM();
+
+if (!$isOwner && !$isDM) {
+    header('Location: characters.php');
+    exit();
+}
+
+// Convertir l'objet Character en tableau pour la compatibilité avec le code HTML
+$character = $characterObject->toArray();
+
+// Récupération des détails supplémentaires (race, classe, background)
+$stmt = getPDO()->prepare("
+    SELECT r.name as race_name, r.description as race_description, 
            r.strength_bonus, r.dexterity_bonus, r.constitution_bonus, 
            r.intelligence_bonus, r.wisdom_bonus, r.charisma_bonus, r.traits,
            r.languages as race_languages,
@@ -34,24 +53,21 @@ $stmt = $pdo->prepare("
     WHERE c.id = ?
 ");
 $stmt->execute([$character_id]);
-$character = $stmt->fetch();
+$characterDetails = $stmt->fetch();
 
-if (!$character) {
+if (!$characterDetails) {
     header('Location: characters.php');
     exit();
 }
-
-// L'équipement final est déjà stocké dans le champ equipment du personnage
-// Plus besoin de parser l'équipement de départ séparément
 
 // Parser les données JSON du personnage
 $characterSkills = $character['skills'] ? json_decode($character['skills'], true) : [];
 $characterLanguages = $character['languages'] ? json_decode($character['languages'], true) : [];
 
 // Parser les données de l'historique depuis la table backgrounds
-$backgroundSkills = $character['background_skills'] ? json_decode($character['background_skills'], true) : [];
-$backgroundTools = $character['background_tools'] ? json_decode($character['background_tools'], true) : [];
-$backgroundLanguages = $character['background_languages'] ? json_decode($character['background_languages'], true) : [];
+$backgroundSkills = $characterDetails['background_skills'] ? json_decode($characterDetails['background_skills'], true) : [];
+$backgroundTools = $characterDetails['background_tools'] ? json_decode($characterDetails['background_tools'], true) : [];
+$backgroundLanguages = $characterDetails['background_languages'] ? json_decode($characterDetails['background_languages'], true) : [];
 
 // Séparer les compétences des outils/instruments
 $allSkills = [];
