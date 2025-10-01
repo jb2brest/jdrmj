@@ -7,7 +7,7 @@
  * Récupère l'équipement de départ pour une source donnée (classe, background, race)
  */
 function getStartingEquipmentBySource($src, $srcId) {
-    global $pdo;
+    $pdo = getPDO();
     
     try {
         $stmt = $pdo->prepare("
@@ -132,7 +132,7 @@ function structureStartingEquipmentByChoices($equipment) {
  * Récupère les détails d'un équipement selon son type
  */
 function getEquipmentDetails($type, $typeId) {
-    global $pdo;
+    $pdo = getPDO();
     
     if (!$typeId) {
         return null;
@@ -221,7 +221,7 @@ function getEquipmentPackDetails($packId) {
  * Génère l'équipement final basé sur les choix du joueur (nouvelle version)
  */
 function generateFinalEquipmentNew($classId, $backgroundId, $raceId, $equipmentChoices) {
-    global $pdo;
+    $pdo = getPDO();
     $finalEquipment = [];
     $backgroundGold = 0;
     
@@ -357,7 +357,7 @@ function generateFinalEquipmentNew($classId, $backgroundId, $raceId, $equipmentC
  * Détermine le type d'équipement à partir du nom de l'item
  */
 function detectEquipmentType($itemName) {
-    global $pdo;
+    $pdo = getPDO();
     
     // Convertir en minuscules pour la comparaison
     $itemNameLower = strtolower($itemName);
@@ -454,7 +454,7 @@ function detectEquipmentType($itemName) {
  * Ajoute l'équipement de départ à un personnage (nouvelle version)
  */
 function addStartingEquipmentToCharacterNew($characterId, $equipmentData) {
-    global $pdo;
+    $pdo = getPDO();
     
     try {
         $pdo->beginTransaction();
@@ -497,7 +497,7 @@ function addStartingEquipmentToCharacterNew($characterId, $equipmentData) {
  * Vérifie si un personnage a déjà son équipement de départ
  */
 function hasStartingEquipment($characterId) {
-    global $pdo;
+    $pdo = getPDO();
     
     try {
         $stmt = $pdo->prepare("
