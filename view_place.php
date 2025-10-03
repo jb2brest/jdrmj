@@ -489,19 +489,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         
                         if ($target && $target['character_id']) {
                             // Ajouter l'objet à l'équipement du personnage
-                            $stmt = $pdo->prepare("INSERT INTO items (place_id, display_name, object_type, type_precis, description, is_identified, is_visible, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed, magical_item_id, item_source, quantity, equipped_slot, notes, obtained_at, obtained_from) VALUES (NULL, ?, ?, ?, ?, 1, 0, 0, 0, 0, 0, 'player', ?, NULL, NULL, NULL, 0, 0, 0, NULL, 0, ?, 'Objet du lieu', 1, NULL, ?, NOW(), ?)");
-                            $stmt->execute([
-                                $item_info['nom'],
-                                $item_info['type'],
-                                $item_info['nom'],
-                                $item_info['description'],
-                                $target['character_id'],
-                                $item_id,
-                                $assign_notes,
-                                'Attribution MJ - Lieu ' . $place['title']
-                            ]);
-                            $insert_success = true;
-                            $target_name = $target['character_name'] ?: $target['username'];
+                            $itemData = [
+                                'place_id' => null,
+                                'display_name' => $item_info['nom'],
+                                'object_type' => $item_info['type'],
+                                'type_precis' => $item_info['nom'],
+                                'description' => $item_info['description'],
+                                'is_identified' => true,
+                                'is_visible' => false,
+                                'is_equipped' => false,
+                                'position_x' => 0,
+                                'position_y' => 0,
+                                'is_on_map' => false,
+                                'owner_type' => 'player',
+                                'owner_id' => $target['character_id'],
+                                'poison_id' => null,
+                                'weapon_id' => null,
+                                'armor_id' => null,
+                                'gold_coins' => 0,
+                                'silver_coins' => 0,
+                                'copper_coins' => 0,
+                                'letter_content' => null,
+                                'is_sealed' => false
+                            ];
+                            
+                            $item = Item::create($itemData);
+                            if ($item) {
+                                $insert_success = true;
+                                $target_name = $target['character_name'] ?: $target['username'];
+                            }
                         } else {
                             $error_message = "Personnage joueur invalide ou sans personnage créé.";
                         }
@@ -605,19 +621,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         
                         if ($target && $target['character_id']) {
                             // Ajouter le poison à l'équipement du personnage
-                            $stmt = $pdo->prepare("INSERT INTO items (place_id, display_name, object_type, type_precis, description, is_identified, is_visible, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed, magical_item_id, item_source, quantity, equipped_slot, notes, obtained_at, obtained_from) VALUES (NULL, ?, 'poison', ?, ?, ?, 1, 0, 0, 0, 0, 0, 'player', ?, ?, NULL, NULL, 0, 0, 0, NULL, 0, ?, 'Objet du lieu', 1, NULL, ?, NOW(), ?)");
-                            $stmt->execute([
-                                $poison_info['nom'],
-                                $poison_info['nom'],
-                                $poison_info['description'],
-                                $target['character_id'],
-                                $poison_id,
-                                $poison_id,
-                                $assign_notes,
-                                'Attribution MJ - Lieu ' . $place['title']
-                            ]);
-                            $insert_success = true;
-                            $target_name = $target['character_name'] ?: $target['username'];
+                            $itemData = [
+                                'place_id' => null,
+                                'display_name' => $poison_info['nom'],
+                                'object_type' => 'poison',
+                                'type_precis' => $poison_info['nom'],
+                                'description' => $poison_info['description'],
+                                'is_identified' => true,
+                                'is_visible' => false,
+                                'is_equipped' => false,
+                                'position_x' => 0,
+                                'position_y' => 0,
+                                'is_on_map' => false,
+                                'owner_type' => 'player',
+                                'owner_id' => $target['character_id'],
+                                'poison_id' => $poison_id,
+                                'weapon_id' => null,
+                                'armor_id' => null,
+                                'gold_coins' => 0,
+                                'silver_coins' => 0,
+                                'copper_coins' => 0,
+                                'letter_content' => null,
+                                'is_sealed' => false
+                            ];
+                            
+                            $item = Item::create($itemData);
+                            if ($item) {
+                                $insert_success = true;
+                                $target_name = $target['character_name'] ?: $target['username'];
+                            }
                         } else {
                             $error_message = "Personnage joueur invalide ou sans personnage créé.";
                         }
@@ -790,30 +822,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                 }
                 
                 // Insérer l'objet dans la base de données avec la nouvelle structure
-                $stmt = $pdo->prepare("
-                    INSERT INTO items 
-                    (place_id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped, 
-                     poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ");
-                $stmt->execute([
-                    $place_id, 
-                    $object_name, 
-                    $object_type, 
-                    $item_name, // type_precis
-                    $object_description, 
-                    $is_visible,
-                    $is_identified,
-                    false, // is_equipped (par défaut non équipé)
-                    ($object_type === 'poison') ? $item_id : null, // poison_id
-                    ($object_type === 'weapon') ? $item_id : null, // weapon_id
-                    ($object_type === 'armor') ? $item_id : null,  // armor_id
-                    $gold_coins,
-                    $silver_coins,
-                    $copper_coins,
-                    $letter_content,
-                    $is_sealed
-                ]);
+                $itemData = [
+                    'place_id' => $place_id,
+                    'display_name' => $object_name,
+                    'object_type' => $object_type,
+                    'type_precis' => $item_name,
+                    'description' => $object_description,
+                    'is_visible' => $is_visible,
+                    'is_identified' => $is_identified,
+                    'is_equipped' => false,
+                    'position_x' => 0,
+                    'position_y' => 0,
+                    'is_on_map' => false,
+                    'owner_type' => 'place',
+                    'owner_id' => null,
+                    'poison_id' => ($object_type === 'poison') ? $item_id : null,
+                    'weapon_id' => ($object_type === 'weapon') ? $item_id : null,
+                    'armor_id' => ($object_type === 'armor') ? $item_id : null,
+                    'gold_coins' => $gold_coins,
+                    'silver_coins' => $silver_coins,
+                    'copper_coins' => $copper_coins,
+                    'letter_content' => $letter_content,
+                    'is_sealed' => $is_sealed
+                ];
+                
+                $item = Item::create($itemData);
                 
                 $success_message = "Objet '$object_name' ajouté au lieu.";
                 
@@ -839,18 +872,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         
         if ($object_id > 0) {
             try {
-                $stmt = $pdo->prepare("DELETE FROM items WHERE id = ? AND place_id = ?");
-                $stmt->execute([$object_id, $place_id]);
-                
-                if ($stmt->rowCount() > 0) {
-                    $success_message = "Objet supprimé du lieu.";
-                    
-                    // Recharger les objets
-                    $placeObjects = $lieu->reloadAllObjects();
+                $item = Item::findById($object_id);
+                if ($item && $item->getPlaceId() == $place_id) {
+                    if ($item->delete()) {
+                        $success_message = "Objet supprimé du lieu.";
+                        
+                        // Recharger les objets
+                        $placeObjects = $lieu->reloadAllObjects();
+                    } else {
+                        $error_message = "Erreur lors de la suppression de l'objet.";
+                    }
                 } else {
                     $error_message = "Objet non trouvé.";
                 }
-            } catch (PDOException $e) {
+            } catch (Exception $e) {
                 $error_message = "Erreur lors de la suppression: " . $e->getMessage();
             }
         }
@@ -862,18 +897,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         
         if ($object_id > 0) {
             try {
-                $stmt = $pdo->prepare("UPDATE items SET is_visible = NOT is_visible WHERE id = ? AND place_id = ?");
-                $stmt->execute([$object_id, $place_id]);
-                
-                if ($stmt->rowCount() > 0) {
-                    $success_message = "Visibilité de l'objet modifiée.";
-                    
-                    // Recharger les objets
-                    $placeObjects = $lieu->reloadAllObjects();
+                $item = Item::findById($object_id);
+                if ($item && $item->getPlaceId() == $place_id) {
+                    $newVisibility = !$item->getIsVisible();
+                    if ($item->setVisible($newVisibility)) {
+                        $success_message = "Visibilité de l'objet modifiée.";
+                        
+                        // Recharger les objets
+                        $placeObjects = $lieu->reloadAllObjects();
+                    } else {
+                        $error_message = "Erreur lors de la mise à jour de la visibilité.";
+                    }
                 } else {
                     $error_message = "Objet non trouvé.";
                 }
-            } catch (PDOException $e) {
+            } catch (Exception $e) {
                 $error_message = "Erreur lors de la modification: " . $e->getMessage();
             }
         }
@@ -885,18 +923,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
             
             if ($object_id > 0) {
                 try {
-                    $stmt = $pdo->prepare("UPDATE items SET is_identified = NOT is_identified WHERE id = ? AND place_id = ?");
-                    $stmt->execute([$object_id, $place_id]);
-                    
-                    if ($stmt->rowCount() > 0) {
-                        $success_message = "Identification de l'objet modifiée.";
-                        
-                        // Recharger les objets
-                        $placeObjects = $lieu->reloadAllObjects();
+                    $item = Item::findById($object_id);
+                    if ($item && $item->getPlaceId() == $place_id) {
+                        $newIdentification = !$item->getIsIdentified();
+                        if ($item->setIdentified($newIdentification)) {
+                            $success_message = "Identification de l'objet modifiée.";
+                            
+                            // Recharger les objets
+                            $placeObjects = $lieu->reloadAllObjects();
+                        } else {
+                            $error_message = "Erreur lors de la mise à jour de l'identification.";
+                        }
                     } else {
                         $error_message = "Objet non trouvé.";
                     }
-                } catch (PDOException $e) {
+                } catch (Exception $e) {
                     $error_message = "Erreur lors de la modification: " . $e->getMessage();
                 }
             }
@@ -998,8 +1039,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                                 }
                                 
                                 // Mettre à jour l'attribution dans items
-                                $stmt = $pdo->prepare("UPDATE items SET owner_type = ?, owner_id = ? WHERE id = ? AND place_id = ?");
-                                $stmt->execute([$owner_type, $owner_id, $object_id, $place_id]);
+                                $item = Item::findById($object_id);
+                                if ($item && $item->getPlaceId() == $place_id) {
+                                    $item->changeOwner($owner_type, $owner_id);
+                                }
                                 
                                 if ($stmt->rowCount() > 0) {
                                     $success_message = "Objet attribué et ajouté à l'inventaire du propriétaire.";
