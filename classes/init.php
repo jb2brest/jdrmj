@@ -19,6 +19,7 @@ require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/User.php';
 require_once __DIR__ . '/Campaign.php';
 require_once __DIR__ . '/Character.php';
+require_once __DIR__ . '/PNJ.php';
 require_once __DIR__ . '/Item.php';
 require_once __DIR__ . '/Lieu.php';
 require_once __DIR__ . '/Monstre.php';
