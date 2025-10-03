@@ -135,10 +135,7 @@ switch ($localization['status']) {
 $place_id = (int)$place['id'];
 
 // Vérifier que l'utilisateur est membre de la campagne
-$membership = Database::fetch(
-    "SELECT cm.role FROM campaign_members cm WHERE cm.campaign_id = ? AND cm.user_id = ?",
-    [$place['campaign_id'], $user_id]
-);
+$membership = User::isMemberOfCampaign($user_id, $place['campaign_id']);
 
 if (!$membership) {
     header('Location: campaigns.php');
@@ -146,44 +143,14 @@ if (!$membership) {
 }
 
 // Récupérer les personnages du joueur présents dans ce lieu
-$player_characters = Database::fetchAll("
-    SELECT c.id, c.name, c.level, c.profile_photo, c.class_id, cl.name as class_name
-    FROM characters c
-    LEFT JOIN classes cl ON c.class_id = cl.id
-    WHERE c.user_id = ? AND c.id IN (
-        SELECT sp.character_id FROM place_players sp WHERE sp.place_id = ? AND sp.character_id IS NOT NULL
-    )
-    ORDER BY c.name ASC
-", [$user_id, $place_id]);
+$lieu = Lieu::findById($place_id);
+$player_characters = $lieu ? $lieu->getPlayerCharacters($user_id) : [];
 
 // Récupérer les positions de tous les pions (comme dans view_scene.php)
-$stmt = $pdo->prepare("
-    SELECT token_type, entity_id, position_x, position_y, is_on_map
-    FROM place_tokens 
-    WHERE place_id = ?
-");
-$stmt->execute([$place_id]);
-$tokenPositions = [];
-while ($row = $stmt->fetch()) {
-    $tokenPositions[$row['token_type'] . '_' . $row['entity_id']] = [
-        'x' => (int)$row['position_x'],
-        'y' => (int)$row['position_y'],
-        'is_on_map' => (bool)$row['is_on_map']
-    ];
-}
+$tokenPositions = $lieu ? $lieu->getTokenPositions() : [];
 
 // Récupérer TOUS les joueurs présents dans le lieu (comme dans view_scene.php)
-$stmt = $pdo->prepare("
-    SELECT sp.player_id, u.username, c.id as character_id, c.name as character_name, c.profile_photo, c.level, cl.name as class_name
-    FROM place_players sp 
-    JOIN users u ON sp.player_id = u.id 
-    LEFT JOIN characters c ON sp.character_id = c.id
-    LEFT JOIN classes cl ON c.class_id = cl.id
-    WHERE sp.place_id = ?
-    ORDER BY u.username ASC
-");
-$stmt->execute([$place_id]);
-$placePlayers = $stmt->fetchAll();
+$placePlayers = $lieu ? $lieu->getAllPlayers() : [];
 
 // Récupérer les autres joueurs (pour l'affichage séparé)
 $other_players = array_filter($placePlayers, function($player) use ($user_id) {
@@ -191,39 +158,13 @@ $other_players = array_filter($placePlayers, function($player) use ($user_id) {
 });
 
 // Récupérer les PNJ présents dans le lieu (seulement ceux visibles)
-$stmt = $pdo->prepare("
-    SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, sn.is_visible, sn.is_identified, c.profile_photo AS character_profile_photo
-    FROM place_npcs sn 
-    LEFT JOIN characters c ON sn.npc_character_id = c.id
-    WHERE sn.place_id = ? AND sn.monster_id IS NULL AND sn.is_visible = 1
-    ORDER BY sn.name ASC
-");
-$stmt->execute([$place_id]);
-$placeNpcs = $stmt->fetchAll();
+$placeNpcs = $lieu ? $lieu->getVisibleNpcs() : [];
 
 // Récupérer les monstres présents dans le lieu (seulement ceux visibles)
-$stmt = $pdo->prepare("
-    SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, sn.current_hit_points, sn.is_visible, sn.is_identified,
-           m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class, m.csv_id
-    FROM place_npcs sn 
-    JOIN dnd_monsters m ON sn.monster_id = m.id 
-    WHERE sn.place_id = ? AND sn.monster_id IS NOT NULL AND sn.is_visible = 1
-    ORDER BY sn.name ASC
-");
-$stmt->execute([$place_id]);
-$placeMonsters = $stmt->fetchAll();
+$placeMonsters = $lieu ? $lieu->getVisibleMonsters() : [];
 
 // Récupérer les objets présents dans le lieu (seulement ceux visibles et non attribués)
-$stmt = $pdo->prepare("
-    SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped,
-           position_x, position_y, is_on_map, owner_type, owner_id,
-           poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed
-    FROM items 
-    WHERE place_id = ? AND is_visible = 1 AND (owner_type = 'place' OR owner_type IS NULL)
-    ORDER BY display_name ASC
-");
-$stmt->execute([$place_id]);
-$placeObjects = $stmt->fetchAll();
+$placeObjects = $lieu ? $lieu->getVisibleObjects() : [];
 
 // Récupérer les positions des objets depuis items
 foreach ($placeObjects as $object) {

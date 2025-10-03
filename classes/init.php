@@ -20,6 +20,8 @@ require_once __DIR__ . '/User.php';
 require_once __DIR__ . '/Campaign.php';
 require_once __DIR__ . '/Character.php';
 require_once __DIR__ . '/Item.php';
+require_once __DIR__ . '/Lieu.php';
+require_once __DIR__ . '/Monstre.php';
 require_once __DIR__ . '/StartingEquipment.php';
 require_once __DIR__ . '/StartingEquipmentChoix.php';
 require_once __DIR__ . '/StartingEquipmentOption.php';

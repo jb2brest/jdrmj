@@ -542,4 +542,84 @@ class User
                 return 'Débutant';
         }
     }
+
+    // =====================================================
+    // MÉTHODES DE GESTION DES CAMPAGNES
+    // =====================================================
+
+    /**
+     * Vérifie si l'utilisateur est membre d'une campagne
+     * 
+     * @param int $userId ID de l'utilisateur
+     * @param int $campaignId ID de la campagne
+     * @param PDO $pdo Instance PDO (optionnel)
+     * @return array|null Informations d'appartenance ou null si pas membre
+     */
+    public static function isMemberOfCampaign($userId, $campaignId, PDO $pdo = null)
+    {
+        $pdo = $pdo ?: getPDO();
+        
+        try {
+            $stmt = $pdo->prepare("
+                SELECT cm.role, cm.joined_at 
+                FROM campaign_members cm 
+                WHERE cm.campaign_id = ? AND cm.user_id = ?
+            ");
+            $stmt->execute([$campaignId, $userId]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            return $result ?: null;
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la vérification de l'appartenance à la campagne: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Vérifie si l'utilisateur est membre d'une campagne (méthode d'instance)
+     * 
+     * @param int $campaignId ID de la campagne
+     * @return array|null Informations d'appartenance ou null si pas membre
+     */
+    public function isMemberOfCampaignInstance($campaignId)
+    {
+        return self::isMemberOfCampaign($this->id, $campaignId, $this->pdo);
+    }
+
+    /**
+     * Obtient toutes les campagnes dont l'utilisateur est membre
+     * 
+     * @param int $userId ID de l'utilisateur
+     * @param PDO $pdo Instance PDO (optionnel)
+     * @return array Liste des campagnes
+     */
+    public static function getCampaigns($userId, PDO $pdo = null)
+    {
+        $pdo = $pdo ?: getPDO();
+        
+        try {
+            $stmt = $pdo->prepare("
+                SELECT c.id, c.title, c.description, c.game_system, cm.role, cm.joined_at
+                FROM campaigns c
+                JOIN campaign_members cm ON c.id = cm.campaign_id
+                WHERE cm.user_id = ?
+                ORDER BY c.title ASC
+            ");
+            $stmt->execute([$userId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération des campagnes de l'utilisateur: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Obtient toutes les campagnes dont l'utilisateur est membre (méthode d'instance)
+     * 
+     * @return array Liste des campagnes
+     */
+    public function getCampaignsInstance()
+    {
+        return self::getCampaigns($this->id, $this->pdo);
+    }
 }
