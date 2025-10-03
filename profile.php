@@ -6,7 +6,7 @@ require_once 'includes/functions.php';
 requireLogin();
 
 $user_id = $_SESSION['user_id'];
-$user = User::findById($pdo, $user_id);
+$user = User::findById($user_id)->toArray();
 
 // Traitement de la mise à jour du profil
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$bio, $experience_level, $preferred_game_system, $timezone, $user_id]);
             
             $success_message = "Profil mis à jour avec succès !";
-            $user = getUserInfo($user_id); // Recharger les données
+            $user = User::findById($user_id)->toArray(); // Recharger les données
         } catch (Exception $e) {
             $error_message = "Erreur lors de la mise à jour du profil.";
         }
