@@ -572,4 +572,132 @@ class Item
         
         return empty($parts) ? '0 PC' : implode(', ', $parts);
     }
+
+    /**
+     * Obtenir les compétences d'armure
+     * 
+     * @return array Tableau des compétences d'armure
+     */
+    public static function getArmorProficiencies()
+    {
+        return [
+            'Armure légère' => 'Armure',
+            'Armure intermédiaire' => 'Armure',
+            'Armure lourde' => 'Armure',
+            'Bouclier' => 'Armure'
+        ];
+    }
+
+    /**
+     * Obtenir les compétences d'armes
+     * 
+     * @return array Tableau des compétences d'armes
+     */
+    public static function getWeaponProficiencies()
+    {
+        return [
+            'Armes courantes' => 'Arme',
+            'Armes de guerre' => 'Arme',
+            'Armes simples' => 'Arme',
+            'Armes à distance' => 'Arme',
+            'Armes de mêlée' => 'Arme',
+            'Armes d\'hast' => 'Arme',
+            'Armes de lancer' => 'Arme'
+        ];
+    }
+
+    /**
+     * Obtenir les compétences d'outils
+     * 
+     * @return array Tableau des compétences d'outils
+     */
+    public static function getToolProficiencies()
+    {
+        return [
+            'Outils d\'artisan' => 'Outil',
+            'Instruments de musique' => 'Outil',
+            'Jeux' => 'Outil',
+            'Véhicules' => 'Outil',
+            'Outils de voleur' => 'Outil',
+            'Outils de forgeron' => 'Outil',
+            'Outils de charpentier' => 'Outil',
+            'Outils de cuisinier' => 'Outil',
+            'Outils de tanneur' => 'Outil',
+            'Outils de tisserand' => 'Outil',
+            'Outils de verrier' => 'Outil',
+            'Outils de potier' => 'Outil',
+            'Outils de cordonnier' => 'Outil',
+            'Outils de bijoutier' => 'Outil',
+            'Outils de calligraphe' => 'Outil',
+            'Outils de cartographe' => 'Outil',
+            'Outils de navigateur' => 'Outil',
+            'Outils de herboriste' => 'Outil',
+            'Outils d\'alchimiste' => 'Outil',
+            'Outils de mécanicien' => 'Outil'
+        ];
+    }
+
+    /**
+     * Obtenir les armes courantes disponibles
+     * 
+     * @param string|null $type Type d'arme spécifique
+     * @return array Tableau des armes courantes
+     */
+    public static function getCommonWeapons($type = null)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        $whereClause = '';
+        $params = [];
+        
+        if ($type) {
+            $whereClause = 'WHERE type = ?';
+            $params[] = $type;
+        } else {
+            $whereClause = 'WHERE type IN ("Armes courantes à distance", "Armes courantes de corps à corps")';
+        }
+        
+        $stmt = $pdo->prepare("SELECT name, type FROM weapons $whereClause ORDER BY type, name");
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Obtenir les armes de guerre disponibles
+     * 
+     * @param string|null $type Type d'arme spécifique
+     * @return array Tableau des armes de guerre
+     */
+    public static function getWarWeapons($type = null)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        $whereClause = '';
+        $params = [];
+        
+        if ($type) {
+            $whereClause = 'WHERE type = ?';
+            $params[] = $type;
+        } else {
+            $whereClause = 'WHERE type IN ("Armes de guerre à distance", "Armes de guerre de corps à corps")';
+        }
+        
+        $stmt = $pdo->prepare("SELECT name, type FROM weapons $whereClause ORDER BY type, name");
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Obtenir les instruments de musique disponibles
+     * 
+     * @return array Tableau des instruments de musique
+     */
+    public static function getMusicalInstruments()
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        $stmt = $pdo->prepare("SELECT nom as name FROM Object WHERE type = 'instrument' ORDER BY nom");
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
 }

@@ -562,6 +562,25 @@ class User
     }
 
     /**
+     * Obtient la couleur du rôle (pour l'affichage)
+     * 
+     * @return string Couleur Bootstrap du rôle
+     */
+    public function getRoleColor()
+    {
+        switch ($this->role) {
+            case 'admin':
+                return 'danger';
+            case 'dm':
+                return 'success';
+            case 'player':
+                return 'primary';
+            default:
+                return 'secondary';
+        }
+    }
+
+    /**
      * Obtient le niveau d'expérience en français
      * 
      * @param string $level Niveau d'expérience

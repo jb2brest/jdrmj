@@ -156,12 +156,16 @@ $current_page = "profile";
                                 elseif ($user['role'] === 'dm') echo 'crown';
                                 else echo 'user';
                             ?> me-2"></i>
-                            <?php echo getRoleLabel($user['role']); ?>
+                            <?php 
+                            $tempUser = new User();
+                            $tempUser->role = $user['role'];
+                            echo $tempUser->getRoleLabel(); 
+                            ?>
                         </span>
                     </p>
                     <p class="mb-0">
                         <i class="fas fa-star me-2"></i>
-                        <?php echo getExperienceLevelLabel($user['experience_level']); ?> en <?php echo htmlspecialchars($user['preferred_game_system']); ?>
+                        <?php echo User::getExperienceLevelLabel($user['experience_level']); ?> en <?php echo htmlspecialchars($user['preferred_game_system']); ?>
                     </p>
                     <p class="mb-0">
                         <i class="fas fa-calendar me-2"></i>

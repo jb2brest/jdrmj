@@ -402,6 +402,410 @@ class Character
     }
     
     /**
+     * Obtenir les compétences D&D avec leurs caractéristiques associées
+     * 
+     * @return array Tableau des compétences avec leurs caractéristiques
+     */
+    public static function getSkills()
+    {
+        return [
+            'Acrobaties' => 'Dextérité',
+            'Arcanes' => 'Intelligence',
+            'Athlétisme' => 'Force',
+            'Discrétion' => 'Dextérité',
+            'Dressage' => 'Sagesse',
+            'Escamotage' => 'Dextérité',
+            'Histoire' => 'Intelligence',
+            'Intimidation' => 'Charisme',
+            'Investigation' => 'Intelligence',
+            'Médecine' => 'Sagesse',
+            'Nature' => 'Intelligence',
+            'Perception' => 'Sagesse',
+            'Perspicacité' => 'Sagesse',
+            'Persuasion' => 'Charisme',
+            'Religion' => 'Intelligence',
+            'Représentation' => 'Charisme',
+            'Survie' => 'Sagesse',
+            'Tromperie' => 'Charisme'
+        ];
+    }
+
+    /**
+     * Obtenir toutes les compétences (y compris armure, armes, outils)
+     * 
+     * @return array Tableau de toutes les compétences
+     */
+    public static function getAllSkills()
+    {
+        $skills = self::getSkills();
+        $armor = \Item::getArmorProficiencies();
+        $weapons = \Item::getWeaponProficiencies();
+        $tools = \Item::getToolProficiencies();
+        
+        return array_merge($skills, $armor, $weapons, $tools);
+    }
+
+    /**
+     * Obtenir les compétences par catégorie
+     * 
+     * @return array Tableau des compétences organisées par catégorie
+     */
+    public static function getSkillsByCategory()
+    {
+        $allSkills = self::getAllSkills();
+        $categories = [
+            'Compétences' => [],
+            'Armure' => [],
+            'Arme' => [],
+            'Outil' => []
+        ];
+        
+        foreach ($allSkills as $skill => $category) {
+            if (in_array($category, ['Force', 'Dextérité', 'Intelligence', 'Sagesse', 'Charisme'])) {
+                $categories['Compétences'][$skill] = $category;
+            } else {
+                $categories[$category][] = $skill;
+            }
+        }
+        
+        return $categories;
+    }
+
+    /**
+     * Obtenir les compétences automatiques d'une classe
+     * 
+     * @param int $classId ID de la classe
+     * @return array Tableau des compétences de classe
+     */
+    public static function getClassProficiencies($classId)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            $stmt = $pdo->prepare("
+                SELECT armor_proficiencies, weapon_proficiencies, tool_proficiencies 
+                FROM classes 
+                WHERE id = ?
+            ");
+            $stmt->execute([$classId]);
+            $class = $stmt->fetch();
+            
+            if (!$class) {
+                return [
+                    'armor' => [],
+                    'weapon' => [],
+                    'tool' => []
+                ];
+            }
+            
+            return [
+                'armor' => json_decode($class['armor_proficiencies'] ?? '[]', true) ?: [],
+                'weapon' => json_decode($class['weapon_proficiencies'] ?? '[]', true) ?: [],
+                'tool' => json_decode($class['tool_proficiencies'] ?? '[]', true) ?: []
+            ];
+        } catch (\PDOException $e) {
+            return [
+                'armor' => [],
+                'weapon' => [],
+                'tool' => []
+            ];
+        }
+    }
+
+    /**
+     * Obtenir les compétences par catégorie avec les compétences automatiques de classe
+     * 
+     * @param int|null $classId ID de la classe
+     * @return array Tableau des compétences avec les compétences de classe
+     */
+    public static function getSkillsByCategoryWithClass($classId = null)
+    {
+        $skillCategories = self::getSkillsByCategory();
+        $classProficiencies = $classId ? self::getClassProficiencies($classId) : ['armor' => [], 'weapon' => [], 'tool' => []];
+        
+        return [
+            'categories' => $skillCategories,
+            'classProficiencies' => $classProficiencies
+        ];
+    }
+
+    /**
+     * Obtenir les jets de sauvegarde
+     * 
+     * @return array Tableau des jets de sauvegarde
+     */
+    public static function getSavingThrows()
+    {
+        return [
+            'Force' => 'strength',
+            'Dextérité' => 'dexterity',
+            'Constitution' => 'constitution',
+            'Intelligence' => 'intelligence',
+            'Sagesse' => 'wisdom',
+            'Charisme' => 'charisma'
+        ];
+    }
+
+    /**
+     * Calculer la classe d'armure avec armure spécifique
+     * 
+     * @param int $dexterityModifier Modificateur de dextérité
+     * @param string|null $armor Type d'armure
+     * @return int Classe d'armure
+     */
+    public static function calculateArmorClassStatic($dexterityModifier, $armor = null)
+    {
+        $baseAC = 10 + $dexterityModifier;
+        
+        if ($armor) {
+            // Logique pour différents types d'armure
+            switch ($armor) {
+                case 'armure de cuir':
+                    $baseAC = 11 + $dexterityModifier;
+                    break;
+                case 'armure de cuir clouté':
+                    $baseAC = 12 + $dexterityModifier;
+                    break;
+                case 'cotte de mailles':
+                    $baseAC = 16;
+                    $baseAC = min($baseAC, 16); // Max 16 avec Dextérité
+                    break;
+                case 'armure de plates':
+                    $baseAC = 18;
+                    break;
+            }
+        }
+        
+        return $baseAC;
+    }
+
+    /**
+     * Calculer le niveau basé sur les points d'expérience
+     * 
+     * @param int $experiencePoints Points d'expérience
+     * @return int Niveau calculé
+     */
+    public static function calculateLevelFromExperienceStatic($experiencePoints)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            $stmt = $pdo->prepare("
+                SELECT level 
+                FROM experience_levels 
+                WHERE experience_points_required <= ? 
+                ORDER BY experience_points_required DESC 
+                LIMIT 1
+            ");
+            $stmt->execute([$experiencePoints]);
+            $result = $stmt->fetch();
+            
+            return $result ? $result['level'] : 1;
+        } catch (\PDOException $e) {
+            // En cas d'erreur, retourner le niveau 1
+            return 1;
+        }
+    }
+
+    /**
+     * Calculer le bonus de maîtrise basé sur les points d'expérience
+     * 
+     * @param int $experiencePoints Points d'expérience
+     * @return int Bonus de maîtrise
+     */
+    public static function calculateProficiencyBonusFromExperience($experiencePoints)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            $stmt = $pdo->prepare("
+                SELECT proficiency_bonus 
+                FROM experience_levels 
+                WHERE experience_points_required <= ? 
+                ORDER BY experience_points_required DESC 
+                LIMIT 1
+            ");
+            $stmt->execute([$experiencePoints]);
+            $result = $stmt->fetch();
+            
+            return $result ? $result['proficiency_bonus'] : 2;
+        } catch (\PDOException $e) {
+            // En cas d'erreur, retourner le bonus de base
+            return 2;
+        }
+    }
+
+    /**
+     * Obtenir les points d'expérience requis pour le niveau suivant
+     * 
+     * @param int $currentLevel Niveau actuel
+     * @return int|null Points d'expérience requis
+     */
+    public static function getExperienceRequiredForNextLevel($currentLevel)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            $nextLevel = $currentLevel + 1;
+            $stmt = $pdo->prepare("
+                SELECT experience_points_required 
+                FROM experience_levels 
+                WHERE level = ?
+            ");
+            $stmt->execute([$nextLevel]);
+            $result = $stmt->fetch();
+            
+            return $result ? $result['experience_points_required'] : null;
+        } catch (\PDOException $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Mettre à jour le niveau et le bonus de maîtrise d'un personnage
+     * 
+     * @param int $characterId ID du personnage
+     * @return bool Succès de l'opération
+     */
+    public static function updateCharacterLevelFromExperience($characterId)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            // Récupérer les points d'expérience du personnage
+            $stmt = $pdo->prepare("SELECT experience_points FROM characters WHERE id = ?");
+            $stmt->execute([$characterId]);
+            $character = $stmt->fetch();
+            
+            if (!$character) {
+                return false;
+            }
+            
+            $experiencePoints = $character['experience_points'];
+            
+            // Calculer le nouveau niveau et bonus de maîtrise
+            $newLevel = self::calculateLevelFromExperienceStatic($experiencePoints);
+            $newProficiencyBonus = self::calculateProficiencyBonusFromExperience($experiencePoints);
+            
+            // Mettre à jour le personnage
+            $stmt = $pdo->prepare("
+                UPDATE characters 
+                SET level = ?, proficiency_bonus = ? 
+                WHERE id = ?
+            ");
+            $stmt->execute([$newLevel, $newProficiencyBonus, $characterId]);
+            
+            return true;
+        } catch (\PDOException $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Obtenir tous les historiques
+     * 
+     * @return array Tableau de tous les historiques
+     */
+    public static function getAllBackgrounds()
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        $stmt = $pdo->query("SELECT * FROM backgrounds ORDER BY name");
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Obtenir un historique par ID
+     * 
+     * @param int $backgroundId ID de l'historique
+     * @return array|null Données de l'historique
+     */
+    public static function getBackgroundById($backgroundId)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        $stmt = $pdo->prepare("SELECT * FROM backgrounds WHERE id = ?");
+        $stmt->execute([$backgroundId]);
+        return $stmt->fetch();
+    }
+
+    /**
+     * Obtenir les compétences d'un historique
+     * 
+     * @param int $backgroundId ID de l'historique
+     * @return array Tableau des compétences de l'historique
+     */
+    public static function getBackgroundProficiencies($backgroundId)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        $stmt = $pdo->prepare("SELECT skill_proficiencies, tool_proficiencies FROM backgrounds WHERE id = ?");
+        $stmt->execute([$backgroundId]);
+        $result = $stmt->fetch();
+        
+        if (!$result) {
+            return ['skills' => [], 'tools' => []];
+        }
+        
+        return [
+            'skills' => json_decode($result['skill_proficiencies'], true) ?? [],
+            'tools' => json_decode($result['tool_proficiencies'], true) ?? []
+        ];
+    }
+
+    /**
+     * Obtenir toutes les langues
+     * 
+     * @return array Tableau de toutes les langues
+     */
+    public static function getAllLanguages()
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        $stmt = $pdo->query("SELECT * FROM languages ORDER BY type, name");
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Obtenir les langues par type
+     * 
+     * @return array Tableau des langues organisées par type
+     */
+    public static function getLanguagesByType()
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        $stmt = $pdo->query("SELECT * FROM languages ORDER BY type, name");
+        $languages = $stmt->fetchAll();
+        
+        $result = [
+            'standard' => [],
+            'exotique' => []
+        ];
+        
+        foreach ($languages as $language) {
+            $result[$language['type']][] = $language;
+        }
+        
+        return $result;
+    }
+
+    /**
+     * Obtenir les langues d'un historique
+     * 
+     * @param int $backgroundId ID de l'historique
+     * @return array Tableau des langues de l'historique
+     */
+    public static function getBackgroundLanguages($backgroundId)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        $stmt = $pdo->prepare("SELECT languages FROM backgrounds WHERE id = ?");
+        $stmt->execute([$backgroundId]);
+        $result = $stmt->fetch();
+        
+        if (!$result || !$result['languages']) {
+            return [];
+        }
+        
+        return json_decode($result['languages'], true) ?? [];
+    }
+    
+    /**
      * Calculer la classe d'armure
      */
     public function calculateArmorClass()

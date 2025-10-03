@@ -37,8 +37,8 @@ $message = '';
 // Récupération des races, classes, historiques et langues
 $races = $pdo->query("SELECT * FROM races ORDER BY name")->fetchAll();
 $classes = $pdo->query("SELECT * FROM classes ORDER BY name")->fetchAll();
-$backgrounds = getAllBackgrounds();
-$languages = getLanguagesByType();
+$backgrounds = Character::getAllBackgrounds();
+$languages = Character::getLanguagesByType();
 
 // Charger les compétences, langues et équipement du personnage existant
 $character_skills = json_decode($character['skills'] ?? '[]', true);
@@ -357,7 +357,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     ];
     
     // Ajouter automatiquement les compétences de classe
-    $classProficiencies = getClassProficiencies($class_id);
+    $classProficiencies = Character::getClassProficiencies($class_id);
     $classSkills = array_merge(
         $classProficiencies['armor'],
         $classProficiencies['weapon'],
@@ -368,7 +368,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $backgroundSkills = [];
     $backgroundTools = [];
     if ($background_id > 0) {
-        $backgroundProficiencies = getBackgroundProficiencies($background_id);
+        $backgroundProficiencies = Character::getBackgroundProficiencies($background_id);
         $backgroundSkills = $backgroundProficiencies['skills'];
         $backgroundTools = $backgroundProficiencies['tools'];
     }
@@ -380,7 +380,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Ajouter automatiquement les langues d'historique
     $backgroundLanguages = [];
     if ($background_id > 0) {
-        $backgroundLanguages = getBackgroundLanguages($background_id);
+        $backgroundLanguages = Character::getBackgroundLanguages($background_id);
     }
     
     // Fusionner toutes les langues
@@ -413,7 +413,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
     
     // Calculer le niveau basé sur l'expérience
-    $level = calculateLevelFromExperience($experience_points);
+    $level = Character::calculateLevelFromExperienceStatic($experience_points);
     
     // Validation des caractéristiques
     $stats = [$strength, $dexterity, $constitution, $intelligence, $wisdom, $charisma];
@@ -430,11 +430,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $stmt->execute([$class_id]);
         $hitDie = $stmt->fetch()['hit_dice'];
         
-        $constitutionModifier = getAbilityModifier($constitution);
-        $maxHP = calculateMaxHP($level, $hitDie, $constitutionModifier);
+        // Créer un objet Character temporaire pour les calculs
+        $tempCharacter = new Character();
+        $tempCharacter->level = $level;
+        $tempCharacter->constitution = $constitution;
+        $tempCharacter->hit_dice = $hitDie;
+        
+        $constitutionModifier = $tempCharacter->getAbilityModifier('constitution');
+        $maxHP = $tempCharacter->calculateMaxHitPoints();
         
         // Calcul du bonus de maîtrise basé sur l'expérience
-        $proficiencyBonus = calculateProficiencyBonusFromExperience($experience_points);
+        $proficiencyBonus = Character::calculateProficiencyBonusFromExperience($experience_points);
         
         try {
             $stmt = $pdo->prepare("
@@ -1529,14 +1535,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <?php
                     $classId = isset($_POST['class_id']) ? (int)$_POST['class_id'] : null;
                     $backgroundId = isset($_POST['background_id']) ? (int)$_POST['background_id'] : null;
-                    $skillData = getSkillsByCategoryWithClass($classId);
+                    $skillData = Character::getSkillsByCategoryWithClass($classId);
                     $skillCategories = $skillData['categories'];
                     $classProficiencies = $skillData['classProficiencies'];
                     
                     // Récupérer les compétences d'historique
                     $backgroundProficiencies = ['skills' => [], 'tools' => []];
                     if ($backgroundId) {
-                        $backgroundProficiencies = getBackgroundProficiencies($backgroundId);
+                        $backgroundProficiencies = Character::getBackgroundProficiencies($backgroundId);
                     }
                     
                     // Debug: Afficher les compétences de classe pour debug
@@ -2341,7 +2347,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             });
             
             // Récupérer les langues d'historique
-            const backgroundLanguages = getBackgroundLanguages();
+            const backgroundLanguages = <?php echo json_encode(Character::getBackgroundLanguages($backgroundId ?? 0)); ?>;
             const hasBackgroundChoice = backgroundLanguages.length > 0;
             
             // Calculer le nombre maximum de langues
@@ -2403,7 +2409,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         
         // Fonction pour récupérer les langues d'historique
-        function getBackgroundLanguages() {
+        function getBackgroundLanguagesStatic() {
             const backgroundSelect = document.getElementById('background_id');
             if (!backgroundSelect.value) return [];
             

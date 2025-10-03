@@ -213,8 +213,8 @@ $toolChoices = [];
 // via la table starting_equipment avec type = 'outils' ou 'instrument'
 
 // Récupérer les armes de guerre et courantes pour les menus déroulants
-$warWeapons = getWarWeapons();
-$commonWeapons = getCommonWeapons();
+$warWeapons = Item::getWarWeapons();
+$commonWeapons = Item::getCommonWeapons();
 $allWeapons = array_merge($warWeapons, $commonWeapons);
 $weaponsByType = [];
 foreach ($allWeapons as $weapon) {

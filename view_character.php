@@ -246,12 +246,20 @@ $allLanguages = $characterLanguages;
 
 // Calcul des modificateurs (nécessaire pour le calcul de la CA)
 // Utiliser les valeurs totales incluant les bonus raciaux
-$strengthMod = getAbilityModifier($character['strength'] + $character['strength_bonus']);
-$dexterityMod = getAbilityModifier($character['dexterity'] + $character['dexterity_bonus']);
-$constitutionMod = getAbilityModifier($character['constitution'] + $character['constitution_bonus']);
-$intelligenceMod = getAbilityModifier($character['intelligence'] + $character['intelligence_bonus']);
-$wisdomMod = getAbilityModifier($character['wisdom'] + $character['wisdom_bonus']);
-$charismaMod = getAbilityModifier($character['charisma'] + $character['charisma_bonus']);
+$tempCharacter = new Character();
+$tempCharacter->strength = $character['strength'] + $character['strength_bonus'];
+$tempCharacter->dexterity = $character['dexterity'] + $character['dexterity_bonus'];
+$tempCharacter->constitution = $character['constitution'] + $character['constitution_bonus'];
+$tempCharacter->intelligence = $character['intelligence'] + $character['intelligence_bonus'];
+$tempCharacter->wisdom = $character['wisdom'] + $character['wisdom_bonus'];
+$tempCharacter->charisma = $character['charisma'] + $character['charisma_bonus'];
+
+$strengthMod = $tempCharacter->getAbilityModifier('strength');
+$dexterityMod = $tempCharacter->getAbilityModifier('dexterity');
+$constitutionMod = $tempCharacter->getAbilityModifier('constitution');
+$intelligenceMod = $tempCharacter->getAbilityModifier('intelligence');
+$wisdomMod = $tempCharacter->getAbilityModifier('wisdom');
+$charismaMod = $tempCharacter->getAbilityModifier('charisma');
 
 // Synchroniser l'équipement de base vers items
 syncBaseEquipmentToCharacterEquipment($character_id);
@@ -1236,12 +1244,21 @@ $initiative = $dexterityMod;
                             <!-- Total -->
                             <tr class="table-primary">
                                 <td><strong>Total</strong></td>
-                                <td><strong><?php echo $finalAbilities['strength']; ?> (<?php echo (getAbilityModifier($finalAbilities['strength']) >= 0 ? '+' : '') . getAbilityModifier($finalAbilities['strength']); ?>)</strong></td>
-                                <td><strong><?php echo $finalAbilities['dexterity']; ?> (<?php echo (getAbilityModifier($finalAbilities['dexterity']) >= 0 ? '+' : '') . getAbilityModifier($finalAbilities['dexterity']); ?>)</strong></td>
-                                <td><strong><?php echo $finalAbilities['constitution']; ?> (<?php echo (getAbilityModifier($finalAbilities['constitution']) >= 0 ? '+' : '') . getAbilityModifier($finalAbilities['constitution']); ?>)</strong></td>
-                                <td><strong><?php echo $finalAbilities['intelligence']; ?> (<?php echo (getAbilityModifier($finalAbilities['intelligence']) >= 0 ? '+' : '') . getAbilityModifier($finalAbilities['intelligence']); ?>)</strong></td>
-                                <td><strong><?php echo $finalAbilities['wisdom']; ?> (<?php echo (getAbilityModifier($finalAbilities['wisdom']) >= 0 ? '+' : '') . getAbilityModifier($finalAbilities['wisdom']); ?>)</strong></td>
-                                <td><strong><?php echo $finalAbilities['charisma']; ?> (<?php echo (getAbilityModifier($finalAbilities['charisma']) >= 0 ? '+' : '') . getAbilityModifier($finalAbilities['charisma']); ?>)</strong></td>
+                                <?php 
+                                $tempChar = new Character();
+                                $tempChar->strength = $finalAbilities['strength'];
+                                $tempChar->dexterity = $finalAbilities['dexterity'];
+                                $tempChar->constitution = $finalAbilities['constitution'];
+                                $tempChar->intelligence = $finalAbilities['intelligence'];
+                                $tempChar->wisdom = $finalAbilities['wisdom'];
+                                $tempChar->charisma = $finalAbilities['charisma'];
+                                ?>
+                                <td><strong><?php echo $finalAbilities['strength']; ?> (<?php echo ($tempChar->getAbilityModifier('strength') >= 0 ? '+' : '') . $tempChar->getAbilityModifier('strength'); ?>)</strong></td>
+                                <td><strong><?php echo $finalAbilities['dexterity']; ?> (<?php echo ($tempChar->getAbilityModifier('dexterity') >= 0 ? '+' : '') . $tempChar->getAbilityModifier('dexterity'); ?>)</strong></td>
+                                <td><strong><?php echo $finalAbilities['constitution']; ?> (<?php echo ($tempChar->getAbilityModifier('constitution') >= 0 ? '+' : '') . $tempChar->getAbilityModifier('constitution'); ?>)</strong></td>
+                                <td><strong><?php echo $finalAbilities['intelligence']; ?> (<?php echo ($tempChar->getAbilityModifier('intelligence') >= 0 ? '+' : '') . $tempChar->getAbilityModifier('intelligence'); ?>)</strong></td>
+                                <td><strong><?php echo $finalAbilities['wisdom']; ?> (<?php echo ($tempChar->getAbilityModifier('wisdom') >= 0 ? '+' : '') . $tempChar->getAbilityModifier('wisdom'); ?>)</strong></td>
+                                <td><strong><?php echo $finalAbilities['charisma']; ?> (<?php echo ($tempChar->getAbilityModifier('charisma') >= 0 ? '+' : '') . $tempChar->getAbilityModifier('charisma'); ?>)</strong></td>
                             </tr>
                         </tbody>
                     </table>

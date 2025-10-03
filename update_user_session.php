@@ -57,8 +57,10 @@ try {
     echo "</ul>\n";
     
     // Afficher le label du rôle
-    echo "<p><strong>Rôle affiché:</strong> " . getRoleLabel($user['role']) . "</p>\n";
-    echo "<p><strong>Couleur du rôle:</strong> " . getRoleColor($user['role']) . "</p>\n";
+    $tempUser = new User();
+    $tempUser->role = $user['role'];
+    echo "<p><strong>Rôle affiché:</strong> " . $tempUser->getRoleLabel() . "</p>\n";
+    echo "<p><strong>Couleur du rôle:</strong> " . $tempUser->getRoleColor() . "</p>\n";
     
     echo "<h2>Actions disponibles:</h2>\n";
     echo "<ul>\n";
