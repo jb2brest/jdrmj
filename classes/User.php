@@ -210,8 +210,9 @@ class User
      * @param int $id ID de l'utilisateur
      * @return User|null Utilisateur trouvé ou null
      */
-    public static function findById(PDO $pdo, $id)
+    public static function findById($id)
     {
+        $pdo = getPDO();
         $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
         $stmt->execute([$id]);
         $userData = $stmt->fetch();
@@ -229,8 +230,9 @@ class User
      * @param string $username Nom d'utilisateur
      * @return User|null Utilisateur trouvé ou null
      */
-    public static function findByUsername(PDO $pdo, $username)
+    public static function findByUsername($username)
     {
+        $pdo = getPDO();
         $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ?");
         $stmt->execute([$username]);
         $userData = $stmt->fetch();
@@ -248,8 +250,9 @@ class User
      * @param string $email Email de l'utilisateur
      * @return User|null Utilisateur trouvé ou null
      */
-    public static function findByEmail(PDO $pdo, $email)
+    public static function findByEmail($email)
     {
+        $pdo = getPDO();
         $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
         $stmt->execute([$email]);
         $userData = $stmt->fetch();
@@ -266,10 +269,10 @@ class User
      * 
      * @return User|null Utilisateur connecté ou null
      */
-    public static function getCurrentUser(PDO $pdo)
+    public static function getCurrentUser()
     {
         if (isset($_SESSION['user_id'])) {
-            return self::findById($pdo, $_SESSION['user_id']);
+            return self::findById($_SESSION['user_id']);
         }
         return null;
     }
@@ -278,10 +281,9 @@ class User
      * Crée un nouvel utilisateur
      * 
      * @param array $data Données de l'utilisateur
-     * @param PDO $pdo Instance PDO (optionnel)
      * @return User|null Utilisateur créé ou null en cas d'erreur
      */
-    public static function create(array $data, PDO $pdo = null)
+    public static function create(array $data)
     {
         // Validation des données requises
         $required = ['username', 'email', 'password'];
@@ -291,14 +293,14 @@ class User
             }
         }
 
-        $pdo = $pdo ?: getPDO();
+        $pdo = getPDO();
 
         // Vérifier si l'utilisateur existe déjà
-        if (self::findByUsername($pdo, $data['username'])) {
+        if (self::findByUsername($data['username'])) {
             throw new InvalidArgumentException("Ce nom d'utilisateur est déjà utilisé");
         }
 
-        if (self::findByEmail($pdo, $data['email'])) {
+        if (self::findByEmail($data['email'])) {
             throw new InvalidArgumentException("Cet email est déjà utilisé");
         }
 
@@ -552,12 +554,11 @@ class User
      * 
      * @param int $userId ID de l'utilisateur
      * @param int $campaignId ID de la campagne
-     * @param PDO $pdo Instance PDO (optionnel)
      * @return array|null Informations d'appartenance ou null si pas membre
      */
-    public static function isMemberOfCampaign($userId, $campaignId, PDO $pdo = null)
+    public static function isMemberOfCampaign($userId, $campaignId)
     {
-        $pdo = $pdo ?: getPDO();
+        $pdo = getPDO();
         
         try {
             $stmt = $pdo->prepare("
@@ -583,19 +584,18 @@ class User
      */
     public function isMemberOfCampaignInstance($campaignId)
     {
-        return self::isMemberOfCampaign($this->id, $campaignId, $this->pdo);
+        return self::isMemberOfCampaign($this->id, $campaignId);
     }
 
     /**
      * Obtient toutes les campagnes dont l'utilisateur est membre
      * 
      * @param int $userId ID de l'utilisateur
-     * @param PDO $pdo Instance PDO (optionnel)
      * @return array Liste des campagnes
      */
-    public static function getCampaigns($userId, PDO $pdo = null)
+    public static function getCampaigns($userId)
     {
-        $pdo = $pdo ?: getPDO();
+        $pdo = getPDO();
         
         try {
             $stmt = $pdo->prepare("

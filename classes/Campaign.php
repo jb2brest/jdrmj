@@ -474,7 +474,7 @@ class Campaign
             FROM places p
             JOIN place_campaigns pc ON p.id = pc.place_id
             WHERE pc.campaign_id = ?
-            ORDER BY p.name ASC
+            ORDER BY p.title ASC
         ");
         $stmt->execute([$this->id]);
         return $stmt->fetchAll();
@@ -495,7 +495,7 @@ class Campaign
                 FROM place_campaigns pc 
                 WHERE pc.campaign_id = ?
             )
-            ORDER BY p.name ASC
+            ORDER BY p.title ASC
         ");
         $stmt->execute([$this->id]);
         return $stmt->fetchAll();
@@ -692,6 +692,52 @@ class Campaign
         } catch (PDOException $e) {
             error_log("Erreur lors de la vérification du personnage dans la campagne: " . $e->getMessage());
             return false;
+        }
+    }
+    
+    /**
+     * Vérifier si un lieu peut être associé à cette campagne
+     */
+    public function canAssociatePlace($placeId)
+    {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT p.id FROM places p
+                LEFT JOIN countries c ON p.country_id = c.id
+                WHERE p.id = ? AND c.world_id = ? AND p.id NOT IN (
+                    SELECT place_id FROM place_campaigns WHERE campaign_id = ?
+                )
+            ");
+            $stmt->execute([$placeId, $this->world_id, $this->id]);
+            $place = $stmt->fetch();
+            
+            return $place !== false;
+            
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la vérification de l'association du lieu: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Mettre à jour le monde de la campagne
+     */
+    public function updateWorld($worldId)
+    {
+        try {
+            $stmt = $this->pdo->prepare("UPDATE campaigns SET world_id = ? WHERE id = ? AND dm_id = ?");
+            $result = $stmt->execute([$worldId, $this->id, $this->dm_id]);
+            
+            if ($result && $stmt->rowCount() > 0) {
+                $this->world_id = $worldId;
+                return ['success' => true, 'message' => 'Monde de la campagne mis à jour avec succès.'];
+            } else {
+                return ['success' => false, 'message' => 'Aucune modification effectuée.'];
+            }
+            
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la mise à jour du monde: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Erreur lors de la mise à jour: ' . $e->getMessage()];
         }
     }
 }

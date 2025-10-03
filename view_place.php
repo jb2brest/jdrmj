@@ -29,7 +29,7 @@ if ($lieu) {
         $place['dm_id'] = $campaign['dm_id'];
         
         // Récupérer le nom d'utilisateur du DM
-        $dm_user = User::findById(getPDO(), $campaign['dm_id']);
+        $dm_user = User::findById($campaign['dm_id']);
         $place['dm_username'] = $dm_user ? $dm_user->getUsername() : 'Inconnu';
     } else {
         // Si aucun lieu n'est associé à une campagne, rediriger
@@ -284,24 +284,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         if ($new_title === '') {
             $error_message = "Le nom du lieu ne peut pas être vide.";
         } else {
-            // Vérifier que la lieu existe et appartient à la bonne campagne
-            $check_stmt = $pdo->prepare("
-                SELECT p.id, p.title 
-                FROM places p
-                INNER JOIN place_campaigns pc ON p.id = pc.place_id
-                WHERE p.id = ? AND pc.campaign_id = ?
-            ");
-            $check_stmt->execute([$place_id, $place['campaign_id']]);
-            $current_scene = $check_stmt->fetch();
+            // Vérifier que le lieu existe et appartient à la bonne campagne
+            $campaign = Campaign::findById($place['campaign_id']);
+            $associatedPlaces = $campaign ? $campaign->getAssociatedPlaces() : [];
+            $current_scene = null;
+            foreach ($associatedPlaces as $associatedPlace) {
+                if ($associatedPlace['id'] == $place_id) {
+                    $current_scene = [
+                        'id' => $associatedPlace['id'],
+                        'title' => $associatedPlace['title'] ?? $associatedPlace['name']
+                    ];
+                    break;
+                }
+            }
             
             if (!$current_scene) {
                 $error_message = "Lieu introuvable ou accès refusé.";
             } else {
-                $stmt = $pdo->prepare("UPDATE places SET title = ? WHERE id = ?");
-                $result = $stmt->execute([$new_title, $place_id]);
+                $result = $lieu->updateTitle($new_title);
                 
-                if ($result && $stmt->rowCount() > 0) {
-                    $success_message = "Nom du lieu mis à jour avec succès.";
+                if ($result['success']) {
+                    $success_message = $result['message'];
                     
                     // Recharger les données du lieu
                     $lieu = Lieu::findById($place_id);
@@ -314,7 +317,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                             $place['campaign_title'] = $campaign['title'];
                             $place['dm_id'] = $campaign['dm_id'];
                             
-                            $dm_user = User::findById(getPDO(), $campaign['dm_id']);
+                            $dm_user = User::findById($campaign['dm_id']);
                             $place['dm_username'] = $dm_user ? $dm_user->getUsername() : 'Inconnu';
                         }
                     }
@@ -323,7 +326,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         $error_message = "Erreur lors du rechargement des données du lieu.";
                     }
                 } else {
-                    $error_message = "Erreur lors de la mise à jour du nom du lieu. Aucune ligne modifiée.";
+                    $error_message = $result['message'];
                 }
             }
         }
@@ -414,7 +417,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                     $place['campaign_title'] = $campaign['title'];
                     $place['dm_id'] = $campaign['dm_id'];
                     
-                    $dm_user = User::findById(getPDO(), $campaign['dm_id']);
+                    $dm_user = User::findById($campaign['dm_id']);
                     $place['dm_username'] = $dm_user ? $dm_user->getUsername() : 'Inconnu';
                 }
             } else {
@@ -450,7 +453,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         $place['campaign_title'] = $campaign['title'];
                         $place['dm_id'] = $campaign['dm_id'];
                         
-                        $dm_user = User::findById(getPDO(), $campaign['dm_id']);
+                        $dm_user = User::findById($campaign['dm_id']);
                         $place['dm_username'] = $dm_user ? $dm_user->getUsername() : 'Inconnu';
                     }
                 } else {
@@ -529,18 +532,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         
                         if ($target) {
                             // Ajouter l'objet à l'équipement du PNJ
-                            $stmt = $pdo->prepare("INSERT INTO npc_equipment (npc_id, place_id, magical_item_id, item_name, item_type, item_description, item_source, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                            $stmt->execute([
-                                $target_id,
-                                $place_id,
-                                $item_id,
-                                $item_info['nom'],
-                                $item_info['type'],
-                                $item_info['description'],
-                                $item_info['source'],
-                                $assign_notes,
-                                'Attribution MJ - Lieu ' . $place['title']
-                            ]);
+                            $itemData = [
+                                'place_id' => $place_id,
+                                'display_name' => $item_info['nom'],
+                                'object_type' => $item_info['type'],
+                                'type_precis' => $item_info['nom'],
+                                'description' => $item_info['description'],
+                                'is_identified' => true,
+                                'is_visible' => false,
+                                'is_equipped' => false,
+                                'position_x' => 0,
+                                'position_y' => 0,
+                                'is_on_map' => false,
+                                'owner_type' => 'npc',
+                                'owner_id' => $target_id,
+                                'poison_id' => null,
+                                'weapon_id' => null,
+                                'armor_id' => null,
+                                'gold_coins' => 0,
+                                'silver_coins' => 0,
+                                'copper_coins' => 0,
+                                'letter_content' => null,
+                                'is_sealed' => false
+                            ];
+                            
+                            $item = Item::create($itemData);
                             $insert_success = true;
                             $target_name = $target['name'];
                         } else {
@@ -554,18 +570,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         
                         if ($target) {
                             // Ajouter l'objet à l'équipement du monstre
-                            $stmt = $pdo->prepare("INSERT INTO monster_equipment (monster_id, place_id, magical_item_id, item_name, item_type, item_description, item_source, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                            $stmt->execute([
-                                $target_id,
-                                $place_id,
-                                $item_id,
-                                $item_info['nom'],
-                                $item_info['type'],
-                                $item_info['description'],
-                                $item_info['source'],
-                                $assign_notes,
-                                'Attribution MJ - Lieu ' . $target['name']
-                            ]);
+                            $itemData = [
+                                'place_id' => $place_id,
+                                'display_name' => $item_info['nom'],
+                                'object_type' => $item_info['type'],
+                                'type_precis' => $item_info['nom'],
+                                'description' => $item_info['description'],
+                                'is_identified' => true,
+                                'is_visible' => false,
+                                'is_equipped' => false,
+                                'position_x' => 0,
+                                'position_y' => 0,
+                                'is_on_map' => false,
+                                'owner_type' => 'monster',
+                                'owner_id' => $target_id,
+                                'poison_id' => null,
+                                'weapon_id' => null,
+                                'armor_id' => null,
+                                'gold_coins' => 0,
+                                'silver_coins' => 0,
+                                'copper_coins' => 0,
+                                'letter_content' => null,
+                                'is_sealed' => false
+                            ];
+                            
+                            $item = Item::create($itemData);
                             $insert_success = true;
                             $target_name = $target['name'];
                         } else {
@@ -661,18 +690,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         
                         if ($target) {
                             // Ajouter le poison à l'équipement du PNJ
-                            $stmt = $pdo->prepare("INSERT INTO npc_equipment (npc_id, place_id, magical_item_id, item_name, item_type, item_description, item_source, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                            $stmt->execute([
-                                $target_id,
-                                $place_id,
-                                $poison_id,
-                                $poison_info['nom'],
-                                $poison_info['type'],
-                                $poison_info['description'],
-                                $poison_info['source'],
-                                $assign_notes,
-                                'Attribution MJ - Lieu ' . $target['name']
-                            ]);
+                            $itemData = [
+                                'place_id' => $place_id,
+                                'display_name' => $poison_info['nom'],
+                                'object_type' => 'poison',
+                                'type_precis' => $poison_info['nom'],
+                                'description' => $poison_info['description'],
+                                'is_identified' => true,
+                                'is_visible' => false,
+                                'is_equipped' => false,
+                                'position_x' => 0,
+                                'position_y' => 0,
+                                'is_on_map' => false,
+                                'owner_type' => 'npc',
+                                'owner_id' => $target_id,
+                                'poison_id' => $poison_id,
+                                'weapon_id' => null,
+                                'armor_id' => null,
+                                'gold_coins' => 0,
+                                'silver_coins' => 0,
+                                'copper_coins' => 0,
+                                'letter_content' => null,
+                                'is_sealed' => false
+                            ];
+                            
+                            $item = Item::create($itemData);
                             $insert_success = true;
                             $target_name = $target['name'];
                         } else {
@@ -686,18 +728,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         
                         if ($target) {
                             // Ajouter le poison à l'équipement du monstre
-                            $stmt = $pdo->prepare("INSERT INTO monster_equipment (monster_id, place_id, magical_item_id, item_name, item_type, item_description, item_source, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                            $stmt->execute([
-                                $target_id,
-                                $place_id,
-                                $poison_id,
-                                $poison_info['nom'],
-                                $poison_info['type'],
-                                $poison_info['description'],
-                                $poison_info['source'],
-                                $assign_notes,
-                                'Attribution MJ - Lieu ' . $target['name']
-                            ]);
+                            $itemData = [
+                                'place_id' => $place_id,
+                                'display_name' => $poison_info['nom'],
+                                'object_type' => 'poison',
+                                'type_precis' => $poison_info['nom'],
+                                'description' => $poison_info['description'],
+                                'is_identified' => true,
+                                'is_visible' => false,
+                                'is_equipped' => false,
+                                'position_x' => 0,
+                                'position_y' => 0,
+                                'is_on_map' => false,
+                                'owner_type' => 'monster',
+                                'owner_id' => $target_id,
+                                'poison_id' => $poison_id,
+                                'weapon_id' => null,
+                                'armor_id' => null,
+                                'gold_coins' => 0,
+                                'silver_coins' => 0,
+                                'copper_coins' => 0,
+                                'letter_content' => null,
+                                'is_sealed' => false
+                            ];
+                            
+                            $item = Item::create($itemData);
                             $insert_success = true;
                             $target_name = $target['name'];
                         } else {
@@ -746,122 +801,131 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         if (empty($object_name)) {
             $error_message = "Le nom de l'objet est requis.";
         } else {
-            try {
-                // Gestion spéciale pour les pièces
-                if ($object_type === 'coins') {
-                    $coins_total = $gold_coins + $silver_coins + $copper_coins;
-                    if ($coins_total > 0) {
-                        $coins_parts = [];
-                        if ($gold_coins > 0) $coins_parts[] = $gold_coins . ' po';
-                        if ($silver_coins > 0) $coins_parts[] = $silver_coins . ' pa';
-                        if ($copper_coins > 0) $coins_parts[] = $copper_coins . ' pc';
+            // Gestion spéciale pour les pièces
+            if ($object_type === 'coins') {
+                $coins_total = $gold_coins + $silver_coins + $copper_coins;
+                if ($coins_total > 0) {
+                    $coins_parts = [];
+                    if ($gold_coins > 0) $coins_parts[] = $gold_coins . ' po';
+                    if ($silver_coins > 0) $coins_parts[] = $silver_coins . ' pa';
+                    if ($copper_coins > 0) $coins_parts[] = $copper_coins . ' pc';
+                    
+                    if (empty($object_name)) {
+                        $object_name = 'Bourse';
+                    }
+                    if (empty($object_description)) {
+                        $object_description = 'Une bourse contenant ' . implode(', ', $coins_parts) . '.';
+                    }
+                } else {
+                    $error_message = "Veuillez spécifier au moins une quantité de pièces.";
+                }
+            }
+            
+            // Récupérer les informations de l'objet sélectionné si applicable
+            if (!empty($selected_item) && in_array($object_type, ['poison', 'magical_item', 'weapon', 'armor'])) {
+                switch ($object_type) {
+                    case 'poison':
+                        $item = Lieu::getPoisonInfo($selected_item);
+                        if ($item) {
+                            $item_id = $item['id'];
+                            $item_name = $item['nom'];
+                            $item_description = $item['description'];
+                            // Utiliser le nom du poison si pas de nom personnalisé
+                            if (empty($object_name)) {
+                                $object_name = $item_name;
+                            }
+                        }
+                        break;
                         
-                        if (empty($object_name)) {
-                            $object_name = 'Bourse';
+                    case 'magical_item':
+                        $item = Lieu::getMagicalItemInfo($selected_item);
+                        if ($item) {
+                            $item_id = $item['id'];
+                            $item_name = $item['nom'];
+                            $item_description = $item['description'];
+                            if (empty($object_name)) {
+                                $object_name = $item_name;
+                            }
                         }
-                        if (empty($object_description)) {
-                            $object_description = 'Une bourse contenant ' . implode(', ', $coins_parts) . '.';
+                        break;
+                        
+                    case 'weapon':
+                        $item = Lieu::getWeaponInfo($selected_item);
+                        if ($item) {
+                            $item_id = $item['id'];
+                            $item_name = $item['nom'];
+                            $item_description = $item['description'];
+                            if (empty($object_name)) {
+                                $object_name = $item_name;
+                            }
                         }
-                    } else {
-                        $error_message = "Veuillez spécifier au moins une quantité de pièces.";
-                    }
+                        break;
+                        
+                    case 'armor':
+                        $item = Lieu::getArmorInfo($selected_item);
+                        if ($item) {
+                            $item_id = $item['id'];
+                            $item_name = $item['nom'];
+                            $item_description = $item['description'];
+                            if (empty($object_name)) {
+                                $object_name = $item_name;
+                            }
+                        }
+                        break;
                 }
-                
-                // Récupérer les informations de l'objet sélectionné si applicable
-                if (!empty($selected_item) && in_array($object_type, ['poison', 'magical_item', 'weapon', 'armor'])) {
-                    switch ($object_type) {
-                        case 'poison':
-                            $item = Lieu::getPoisonInfo($selected_item);
-                            if ($item) {
-                                $item_id = $item['id'];
-                                $item_name = $item['nom'];
-                                $item_description = $item['description'];
-                                // Utiliser le nom du poison si pas de nom personnalisé
-                                if (empty($object_name)) {
-                                    $object_name = $item_name;
-                                }
-                            }
-                            break;
-                            
-                        case 'magical_item':
-                            $item = Lieu::getMagicalItemInfo($selected_item);
-                            if ($item) {
-                                $item_id = $item['id'];
-                                $item_name = $item['nom'];
-                                $item_description = $item['description'];
-                                if (empty($object_name)) {
-                                    $object_name = $item_name;
-                                }
-                            }
-                            break;
-                            
-                        case 'weapon':
-                            $item = Lieu::getWeaponInfo($selected_item);
-                            if ($item) {
-                                $item_id = $item['id'];
-                                $item_name = $item['nom'];
-                                $item_description = $item['description'];
-                                if (empty($object_name)) {
-                                    $object_name = $item_name;
-                                }
-                            }
-                            break;
-                            
-                        case 'armor':
-                            $item = Lieu::getArmorInfo($selected_item);
-                            if ($item) {
-                                $item_id = $item['id'];
-                                $item_name = $item['nom'];
-                                $item_description = $item['description'];
-                                if (empty($object_name)) {
-                                    $object_name = $item_name;
-                                }
-                            }
-                            break;
-                    }
-                }
-                
-                // Insérer l'objet dans la base de données avec la nouvelle structure
-                $itemData = [
-                    'place_id' => $place_id,
-                    'display_name' => $object_name,
-                    'object_type' => $object_type,
-                    'type_precis' => $item_name,
-                    'description' => $object_description,
-                    'is_visible' => $is_visible,
-                    'is_identified' => $is_identified,
-                    'is_equipped' => false,
-                    'position_x' => 0,
-                    'position_y' => 0,
-                    'is_on_map' => false,
-                    'owner_type' => 'place',
-                    'owner_id' => null,
-                    'poison_id' => ($object_type === 'poison') ? $item_id : null,
-                    'weapon_id' => ($object_type === 'weapon') ? $item_id : null,
-                    'armor_id' => ($object_type === 'armor') ? $item_id : null,
-                    'gold_coins' => $gold_coins,
-                    'silver_coins' => $silver_coins,
-                    'copper_coins' => $copper_coins,
-                    'letter_content' => $letter_content,
-                    'is_sealed' => $is_sealed
+            }
+            
+            // Insérer l'objet dans la base de données avec la nouvelle structure
+            $itemData = [
+                'place_id' => $place_id,
+                'display_name' => $object_name,
+                'object_type' => $object_type,
+                'type_precis' => $item_name,
+                'description' => $object_description,
+                'is_visible' => $is_visible,
+                'is_identified' => $is_identified,
+                'is_equipped' => false,
+                'position_x' => 0,
+                'position_y' => 0,
+                'is_on_map' => false,
+                'owner_type' => 'place',
+                'owner_id' => null,
+                'poison_id' => ($object_type === 'poison') ? $item_id : null,
+                'weapon_id' => ($object_type === 'weapon') ? $item_id : null,
+                'armor_id' => ($object_type === 'armor') ? $item_id : null,
+                'gold_coins' => $gold_coins,
+                'silver_coins' => $silver_coins,
+                'copper_coins' => $copper_coins,
+                'letter_content' => $letter_content,
+                'is_sealed' => $is_sealed
+            ];
+            
+            $item = Item::create($itemData);
+            
+            $success_message = "Objet '$object_name' ajouté au lieu.";
+            
+            // Recharger les objets
+            $items = Item::findByPlaceId($place_id);
+            $placeObjects = [];
+            foreach ($items as $item) {
+                $placeObjects[] = [
+                    'id' => $item->getId(),
+                    'name' => $item->getDisplayName(),
+                    'description' => $item->getDescription(),
+                    'object_type' => $item->getObjectType(),
+                    'is_visible' => $item->getIsVisible(),
+                    'position_x' => $item->getPositionX(),
+                    'position_y' => $item->getPositionY(),
+                    'is_on_map' => $item->getIsOnMap(),
+                    'item_id' => $item->getPoisonId() ?: $item->getWeaponId() ?: $item->getArmorId(),
+                    'item_name' => $item->getTypePrecis(),
+                    'item_description' => $item->getDescription(),
+                    'letter_content' => $item->getLetterContent(),
+                    'is_sealed' => $item->getIsSealed(),
+                    'gold_coins' => $item->getGoldCoins(),
+                    'silver_coins' => $item->getSilverCoins(),
+                    'copper_coins' => $item->getCopperCoins()
                 ];
-                
-                $item = Item::create($itemData);
-                
-                $success_message = "Objet '$object_name' ajouté au lieu.";
-                
-                // Recharger les objets
-                $stmt = $pdo->prepare("
-                    SELECT id, name, description, object_type, is_visible, position_x, position_y, is_on_map, 
-                           item_id, item_name, item_description, letter_content, is_sealed, gold_coins, silver_coins, copper_coins
-                    FROM items 
-                    WHERE place_id = ? 
-                    ORDER BY name ASC
-                ");
-                $stmt->execute([$place_id]);
-                $placeObjects = $stmt->fetchAll();
-            } catch (PDOException $e) {
-                $error_message = "Erreur lors de l'ajout de l'objet: " . $e->getMessage();
             }
         }
     }
@@ -950,120 +1014,147 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
             $owner_id = (int)($_POST['owner_id'] ?? 0);
             
             if ($object_id > 0) {
-                try {
-                    // Valider le type de propriétaire
-                    if (!in_array($owner_type, ['none', 'player', 'npc', 'monster'])) {
-                        $error_message = "Type de propriétaire invalide.";
+                // Valider le type de propriétaire
+                if (!in_array($owner_type, ['none', 'player', 'npc', 'monster'])) {
+                    $error_message = "Type de propriétaire invalide.";
+                } else {
+                    // Si owner_type est 'none', owner_id doit être NULL
+                    if ($owner_type === 'none') {
+                        $owner_id = null;
+                    } elseif ($owner_id <= 0) {
+                        $error_message = "ID du propriétaire invalide.";
                     } else {
-                        // Si owner_type est 'none', owner_id doit être NULL
-                        if ($owner_type === 'none') {
-                            $owner_id = null;
-                        } elseif ($owner_id <= 0) {
-                            $error_message = "ID du propriétaire invalide.";
-                        } else {
-                            // Vérifier que le propriétaire existe
-                            if ($owner_type === 'player') {
-                                if (!$lieu->isPlayerPresent($owner_id)) {
-                                    $error_message = "Joueur non trouvé dans ce lieu.";
-                                }
-                            } elseif ($owner_type === 'npc') {
-                                if (!$lieu->npcExists($owner_id)) {
-                                    $error_message = "PNJ non trouvé dans ce lieu.";
-                                }
-                            } elseif ($owner_type === 'monster') {
-                                if (!$lieu->monsterExists($owner_id)) {
-                                    $error_message = "Monstre non trouvé dans ce lieu.";
-                                }
+                        // Vérifier que le propriétaire existe
+                        if ($owner_type === 'player') {
+                            if (!$lieu->isPlayerPresent($owner_id)) {
+                                $error_message = "Joueur non trouvé dans ce lieu.";
                             }
-                        }
-                        
-                        if (empty($error_message)) {
-                            // Récupérer les informations de l'objet avant attribution
-                            $object = $lieu->getObjectInfo($object_id);
-                            
-                            if ($object) {
-                                // Ajouter l'objet à l'inventaire du propriétaire
-                                if ($owner_type === 'player') {
-                                    // Trouver le character_id du joueur
-                                    $character_id = $lieu->getPlayerCharacterId($owner_id);
-                                    $player_data = $character_id ? ['character_id' => $character_id] : null;
-                                    
-                                    if ($player_data && $player_data['character_id']) {
-                                        // Ajouter à l'inventaire du personnage
-                                        $stmt = $pdo->prepare("
-                                            INSERT INTO character_equipment 
-                                            (character_id, item_name, item_type, item_description, item_source, quantity, obtained_from) 
-                                            VALUES (?, ?, ?, ?, ?, 1, ?)
-                                        ");
-                                        $stmt->execute([
-                                            $player_data['character_id'],
-                                            $object['display_name'],
-                                            $object['object_type'],
-                                            $object['description'],
-                                            'Objet du lieu',
-                                            'Attribution MJ - Lieu: ' . $place['title']
-                                        ]);
-                                    }
-                                } elseif ($owner_type === 'npc') {
-                                    // Ajouter à l'inventaire du PNJ
-                                    $stmt = $pdo->prepare("
-                                        INSERT INTO npc_equipment 
-                                        (npc_id, scene_id, item_name, item_type, item_description, item_source, quantity, obtained_from) 
-                                        VALUES (?, ?, ?, ?, ?, 1, ?)
-                                    ");
-                                    $stmt->execute([
-                                        $owner_id,
-                                        $place_id, // Utiliser place_id comme scene_id
-                                        $object['display_name'],
-                                        $object['object_type'],
-                                        $object['description'],
-                                        'Objet du lieu',
-                                        'Attribution MJ - Lieu: ' . $place['title']
-                                    ]);
-                                } elseif ($owner_type === 'monster') {
-                                    // Ajouter à l'inventaire du monstre
-                                    $stmt = $pdo->prepare("
-                                        INSERT INTO monster_equipment 
-                                        (monster_id, scene_id, item_name, item_type, item_description, item_source, quantity, obtained_from) 
-                                        VALUES (?, ?, ?, ?, ?, 1, ?)
-                                    ");
-                                    $stmt->execute([
-                                        $owner_id,
-                                        $place_id, // Utiliser place_id comme scene_id
-                                        $object['display_name'],
-                                        $object['object_type'],
-                                        $object['description'],
-                                        'Objet du lieu',
-                                        'Attribution MJ - Lieu: ' . $place['title']
-                                    ]);
-                                }
-                                
-                                // Mettre à jour l'attribution dans items
-                                $item = Item::findById($object_id);
-                                if ($item && $item->getPlaceId() == $place_id) {
-                                    $item->changeOwner($owner_type, $owner_id);
-                                }
-                                
-                                if ($stmt->rowCount() > 0) {
-                                    $success_message = "Objet attribué et ajouté à l'inventaire du propriétaire.";
-                                    
-                                    // Recharger les objets
-                                    $placeObjects = $lieu->reloadVisibleObjects();
-                                    
-                                    // Recharger tous les objets pour le MJ
-                                    if ($isOwnerDM) {
-                                        $allPlaceObjects = $lieu->reloadAllObjects();
-                                    }
-                                } else {
-                                    $error_message = "Erreur lors de l'attribution.";
-                                }
-                            } else {
-                                $error_message = "Objet non trouvé.";
+                        } elseif ($owner_type === 'npc') {
+                            if (!$lieu->npcExists($owner_id)) {
+                                $error_message = "PNJ non trouvé dans ce lieu.";
+                            }
+                        } elseif ($owner_type === 'monster') {
+                            if (!$lieu->monsterExists($owner_id)) {
+                                $error_message = "Monstre non trouvé dans ce lieu.";
                             }
                         }
                     }
-                } catch (PDOException $e) {
-                    $error_message = "Erreur lors de l'attribution: " . $e->getMessage();
+                    
+                    if (empty($error_message)) {
+                        // Récupérer les informations de l'objet avant attribution
+                        $object = $lieu->getObjectInfo($object_id);
+                        
+                        if ($object) {
+                            // Ajouter l'objet à l'inventaire du propriétaire
+                            if ($owner_type === 'player') {
+                                // Trouver le character_id du joueur
+                                $character_id = $lieu->getPlayerCharacterId($owner_id);
+                                $player_data = $character_id ? ['character_id' => $character_id] : null;
+                                
+                                if ($player_data && $player_data['character_id']) {
+                                    // Ajouter à l'inventaire du personnage
+                                    $itemData = [
+                                        'place_id' => $place_id,
+                                        'display_name' => $object['display_name'],
+                                        'object_type' => $object['object_type'],
+                                        'type_precis' => $object['type_precis'] ?? $object['display_name'],
+                                        'description' => $object['description'],
+                                        'is_identified' => $object['is_identified'] ?? true,
+                                        'is_visible' => false,
+                                        'is_equipped' => false,
+                                        'position_x' => 0,
+                                        'position_y' => 0,
+                                        'is_on_map' => false,
+                                        'owner_type' => 'player',
+                                        'owner_id' => $player_data['character_id'],
+                                        'poison_id' => $object['poison_id'] ?? null,
+                                        'weapon_id' => $object['weapon_id'] ?? null,
+                                        'armor_id' => $object['armor_id'] ?? null,
+                                        'gold_coins' => $object['gold_coins'] ?? 0,
+                                        'silver_coins' => $object['silver_coins'] ?? 0,
+                                        'copper_coins' => $object['copper_coins'] ?? 0,
+                                        'letter_content' => $object['letter_content'] ?? null,
+                                        'is_sealed' => $object['is_sealed'] ?? false
+                                    ];
+                                    
+                                    $item = Item::create($itemData);
+                                }
+                            } elseif ($owner_type === 'npc') {
+                                // Ajouter à l'inventaire du PNJ
+                                $itemData = [
+                                    'place_id' => $place_id,
+                                    'display_name' => $object['display_name'],
+                                    'object_type' => $object['object_type'],
+                                    'type_precis' => $object['type_precis'] ?? $object['display_name'],
+                                    'description' => $object['description'],
+                                    'is_identified' => $object['is_identified'] ?? true,
+                                    'is_visible' => false,
+                                    'is_equipped' => false,
+                                    'position_x' => 0,
+                                    'position_y' => 0,
+                                    'is_on_map' => false,
+                                    'owner_type' => 'npc',
+                                    'owner_id' => $owner_id,
+                                    'poison_id' => $object['poison_id'] ?? null,
+                                    'weapon_id' => $object['weapon_id'] ?? null,
+                                    'armor_id' => $object['armor_id'] ?? null,
+                                    'gold_coins' => $object['gold_coins'] ?? 0,
+                                    'silver_coins' => $object['silver_coins'] ?? 0,
+                                    'copper_coins' => $object['copper_coins'] ?? 0,
+                                    'letter_content' => $object['letter_content'] ?? null,
+                                    'is_sealed' => $object['is_sealed'] ?? false
+                                ];
+                                
+                                $item = Item::create($itemData);
+                            } elseif ($owner_type === 'monster') {
+                                // Ajouter à l'inventaire du monstre
+                                $itemData = [
+                                    'place_id' => $place_id,
+                                    'display_name' => $object['display_name'],
+                                    'object_type' => $object['object_type'],
+                                    'type_precis' => $object['type_precis'] ?? $object['display_name'],
+                                    'description' => $object['description'],
+                                    'is_identified' => $object['is_identified'] ?? true,
+                                    'is_visible' => false,
+                                    'is_equipped' => false,
+                                    'position_x' => 0,
+                                    'position_y' => 0,
+                                    'is_on_map' => false,
+                                    'owner_type' => 'monster',
+                                    'owner_id' => $owner_id,
+                                    'poison_id' => $object['poison_id'] ?? null,
+                                    'weapon_id' => $object['weapon_id'] ?? null,
+                                    'armor_id' => $object['armor_id'] ?? null,
+                                    'gold_coins' => $object['gold_coins'] ?? 0,
+                                    'silver_coins' => $object['silver_coins'] ?? 0,
+                                    'copper_coins' => $object['copper_coins'] ?? 0,
+                                    'letter_content' => $object['letter_content'] ?? null,
+                                    'is_sealed' => $object['is_sealed'] ?? false
+                                ];
+                                
+                                $item = Item::create($itemData);
+                            }
+                            
+                            // Mettre à jour l'attribution dans items
+                            $item = Item::findById($object_id);
+                            if ($item && $item->getPlaceId() == $place_id) {
+                                $item->changeOwner($owner_type, $owner_id);
+                                $success_message = "Objet attribué et ajouté à l'inventaire du propriétaire.";
+                                
+                                // Recharger les objets
+                                $placeObjects = $lieu->reloadVisibleObjects();
+                                
+                                // Recharger tous les objets pour le MJ
+                                if ($isOwnerDM) {
+                                    $allPlaceObjects = $lieu->reloadAllObjects();
+                                }
+                            } else {
+                                $error_message = "Erreur lors de l'attribution de l'objet.";
+                            }
+                        } else {
+                            $error_message = "Objet non trouvé.";
+                        }
+                    }
                 }
             }
         }
@@ -1076,16 +1167,17 @@ if ($isOwnerDM) {
 }
 
 // Récupérer les autres lieux de la campagne pour navigation
-$stmt = $pdo->prepare("
-    SELECT p.id, p.title, p.position 
-    FROM places p
-    INNER JOIN place_campaigns pc ON p.id = pc.place_id
-    WHERE pc.campaign_id = ? 
-    ORDER BY p.position ASC, p.created_at ASC
-");
 if (hasCampaignId($place)) {
-    $stmt->execute([$place['campaign_id']]);
-    $allScenes = $stmt->fetchAll();
+    $campaign = Campaign::findById($place['campaign_id']);
+    $associatedPlaces = $campaign ? $campaign->getAssociatedPlaces() : [];
+    $allScenes = [];
+    foreach ($associatedPlaces as $associatedPlace) {
+        $allScenes[] = [
+            'id' => $associatedPlace['id'],
+            'title' => $associatedPlace['title'] ?? $associatedPlace['name'],
+            'position' => $associatedPlace['position'] ?? 0
+        ];
+    }
 } else {
     $allScenes = [];
 }

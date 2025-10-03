@@ -80,30 +80,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action']) && $_POST['action'] === 'update_campaign_world' && isDMOrAdmin()) {
         $world_id = !empty($_POST['world_id']) ? (int)$_POST['world_id'] : null;
         
-        try {
-            $stmt = $pdo->prepare("UPDATE campaigns SET world_id = ? WHERE id = ? AND dm_id = ?");
-            $stmt->execute([$world_id, $campaign_id, $dm_id]);
-            $success_message = "Monde de la campagne mis à jour avec succès.";
-            
-            // Recharger les données de la campagne
-            $stmt = $pdo->prepare("SELECT c.*, u.username AS dm_username FROM campaigns c JOIN users u ON c.dm_id = u.id WHERE c.id = ?");
-            $stmt->execute([$campaign_id]);
-            $campaign = $stmt->fetch();
-            
-            // Récupérer les informations du monde si la campagne en a un
-            $world_name = '';
-            $world_id = null;
-            if ($campaign && !empty($campaign['world_id'])) {
-                $monde = Monde::findById($campaign['world_id']);
-                if ($monde) {
-                    $world_name = $monde->getName();
-                    $world_id = $monde->getId();
+        $campaign = Campaign::findById($campaign_id);
+        if ($campaign) {
+            $result = $campaign->updateWorld($world_id);
+            if ($result['success']) {
+                $success_message = $result['message'];
+                
+                // Recharger les données de la campagne
+                $campaign = Campaign::findById($campaign_id);
+                if ($campaign) {
+                    $campaign_data = $campaign->toArray();
+                    $campaign = $campaign_data;
+                    
+                    // Récupérer les informations du monde si la campagne en a un
+                    $world_name = '';
+                    $world_id = null;
+                    if (!empty($campaign['world_id'])) {
+                        $monde = Monde::findById($campaign['world_id']);
+                        if ($monde) {
+                            $world_name = $monde->getName();
+                            $world_id = $monde->getId();
+                        }
+                    }
+                    $campaign['world_name'] = $world_name;
+                    $campaign['world_id'] = $world_id;
                 }
+            } else {
+                $error_message = $result['message'];
             }
-            $campaign['world_name'] = $world_name;
-            $campaign['world_id'] = $world_id;
-        } catch (PDOException $e) {
-            $error_message = "Erreur lors de la mise à jour du monde: " . $e->getMessage();
+        } else {
+            $error_message = "Campagne non trouvée.";
         }
     }
     
@@ -112,33 +118,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $place_id = (int)($_POST['place_id'] ?? 0);
         
         if ($place_id > 0) {
-            try {
-                // Vérifier que le lieu appartient au monde de la campagne et n'est pas déjà associé
-                $stmt = $pdo->prepare("
-                    SELECT p.id FROM places p
-                    LEFT JOIN countries c ON p.country_id = c.id
-                    WHERE p.id = ? AND c.world_id = ? AND p.id NOT IN (
-                        SELECT place_id FROM place_campaigns WHERE campaign_id = ?
-                    )
-                ");
-                $stmt->execute([$place_id, $campaign['world_id'], $campaign_id]);
-                $place = $stmt->fetch();
-                
-                if ($place) {
-                    // Associer le lieu à la campagne
-                    if (associatePlaceToCampaign($place_id, $campaign_id)) {
-                        $success_message = "Lieu associé à la campagne avec succès.";
-                    } else {
-                        $error_message = "Erreur lors de l'association du lieu à la campagne.";
-                    }
-                    
-                    // Recharger les lieux de la campagne
-                    $places = getPlacesWithGeography($campaign_id);
+            // Vérifier que le lieu appartient au monde de la campagne et n'est pas déjà associé
+            $campaign = Campaign::findById($campaign_id);
+            if ($campaign && $campaign->canAssociatePlace($place_id)) {
+                // Associer le lieu à la campagne
+                if (associatePlaceToCampaign($place_id, $campaign_id)) {
+                    $success_message = "Lieu associé à la campagne avec succès.";
                 } else {
-                    $error_message = "Ce lieu ne peut pas être associé à cette campagne.";
+                    $error_message = "Erreur lors de l'association du lieu à la campagne.";
                 }
-            } catch (PDOException $e) {
-                $error_message = "Erreur lors de l'association du lieu: " . $e->getMessage();
+                
+                // Recharger les lieux de la campagne
+                $places = getPlacesWithGeography($campaign_id);
+            } else {
+                $error_message = "Ce lieu ne peut pas être associé à cette campagne.";
             }
         } else {
             $error_message = "Lieu invalide sélectionné.";

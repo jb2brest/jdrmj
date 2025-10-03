@@ -875,6 +875,29 @@ class Lieu
     }
     
     /**
+     * Mettre à jour le titre du lieu
+     */
+    public function updateTitle($title)
+    {
+        try {
+            $stmt = $this->pdo->prepare("UPDATE places SET title = ? WHERE id = ?");
+            $result = $stmt->execute([$title, $this->id]);
+            
+            if ($result && $stmt->rowCount() > 0) {
+                // Mettre à jour la propriété de l'objet
+                $this->title = $title;
+                return ['success' => true, 'message' => 'Nom du lieu mis à jour avec succès.'];
+            } else {
+                return ['success' => false, 'message' => 'Aucune modification effectuée.'];
+            }
+            
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la mise à jour du titre: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Erreur lors de la mise à jour: ' . $e->getMessage()];
+        }
+    }
+    
+    /**
      * Mettre à jour les informations du lieu
      */
     public function updatePlace($title, $notes, $countryId = null, $regionId = null)
