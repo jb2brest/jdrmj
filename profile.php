@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Récupération des statistiques selon le rôle
-if (isDMOrAdmin()) {
+if (User::isDMOrAdmin()) {
     // Statistiques pour les MJ
     $stmt = $pdo->prepare("SELECT COUNT(*) as campaign_count FROM campaigns WHERE dm_id = ?");
     $stmt->execute([$user_id]);
@@ -246,15 +246,15 @@ $current_page = "profile";
             <div class="col-md-4">
                 <div class="stat-card">
                     <h3 class="text-primary">
-                        <i class="fas fa-<?php echo isDMOrAdmin() ? 'crown' : 'users'; ?>"></i>
-                        <?php echo isDMOrAdmin() ? $campaign_count : $character_count; ?>
+                        <i class="fas fa-<?php echo User::isDMOrAdmin() ? 'crown' : 'users'; ?>"></i>
+                        <?php echo User::isDMOrAdmin() ? $campaign_count : $character_count; ?>
                     </h3>
                     <p class="text-muted">
-                        <?php echo isDMOrAdmin() ? 'Campagnes créées' : 'Personnages créés'; ?>
+                        <?php echo User::isDMOrAdmin() ? 'Campagnes créées' : 'Personnages créés'; ?>
                     </p>
                 </div>
 
-                <?php if (isDMOrAdmin()): ?>
+                <?php if (User::isDMOrAdmin()): ?>
                     <div class="stat-card">
                         <h3 class="text-success">
                             <i class="fas fa-users"></i>
@@ -289,7 +289,7 @@ $current_page = "profile";
                     </div>
                     <div class="card-body">
                         <div class="d-grid gap-2">
-                            <?php if (isDMOrAdmin()): ?>
+                            <?php if (User::isDMOrAdmin()): ?>
                                 <a href="create_session.php" class="btn btn-outline-primary btn-sm">
                                     <i class="fas fa-plus me-2"></i>Créer une session
                                 </a>

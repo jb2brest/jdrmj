@@ -21,7 +21,7 @@ $user_id = $_SESSION['user_id'];
 $campaign_id = (int)$_GET['id'];
 
 // Charger la campagne selon le rôle
-if (isAdmin()) {
+if (User::isAdmin()) {
     // Les admins peuvent voir toutes les campagnes
     $stmt = $pdo->prepare("SELECT c.*, u.username AS dm_username FROM campaigns c JOIN users u ON c.dm_id = u.id WHERE c.id = ?");
     $stmt->execute([$campaign_id]);
@@ -77,7 +77,7 @@ $isOwnerDM = ($user_id == $dm_id);
 // Traitements POST: candidatures (tous les utilisateurs connectés)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Gestion de la mise à jour du monde de la campagne (MJ/Admin uniquement)
-    if (isset($_POST['action']) && $_POST['action'] === 'update_campaign_world' && isDMOrAdmin()) {
+    if (isset($_POST['action']) && $_POST['action'] === 'update_campaign_world' && User::isDMOrAdmin()) {
         $world_id = !empty($_POST['world_id']) ? (int)$_POST['world_id'] : null;
         
         $campaign = Campaign::findById($campaign_id);
@@ -114,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     // Gestion de l'association d'un lieu à la campagne (MJ/Admin uniquement)
-    if (isset($_POST['action']) && $_POST['action'] === 'associate_place' && isDMOrAdmin()) {
+    if (isset($_POST['action']) && $_POST['action'] === 'associate_place' && User::isDMOrAdmin()) {
         $place_id = (int)($_POST['place_id'] ?? 0);
         
         if ($place_id > 0) {
@@ -183,7 +183,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Traitements POST: ajouter membre par invite, créer session rapide (DM et Admin seulement)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isDMOrAdmin()) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
     if (isset($_POST['action']) && $_POST['action'] === 'add_member') {
         $username_or_email = sanitizeInput($_POST['username_or_email'] ?? '');
         if ($username_or_email !== '') {
@@ -604,7 +604,7 @@ $members = $stmt->fetchAll();
 
 // Récupérer les mondes disponibles (pour le MJ/Admin)
 $worlds = [];
-if (isDMOrAdmin()) {
+if (User::isDMOrAdmin()) {
     $stmt = $pdo->prepare("SELECT id, name FROM worlds WHERE created_by = ? ORDER BY name");
     $stmt->execute([$user_id]);
     $worlds = $stmt->fetchAll();
@@ -612,7 +612,7 @@ if (isDMOrAdmin()) {
 
 // Récupérer les lieux disponibles dans le monde de la campagne (pour l'association)
 $available_places = [];
-if (isDMOrAdmin() && !empty($campaign['world_id'])) {
+if (User::isDMOrAdmin() && !empty($campaign['world_id'])) {
     $stmt = $pdo->prepare("
         SELECT p.id, p.title, p.notes, p.map_url, 
                c.name as country_name, r.name as region_name
@@ -833,7 +833,7 @@ if (!empty($places)) {
                                         </span>
                                         <div class="d-flex align-items-center gap-2">
                                             <small class="text-muted">Depuis <?php echo date('d/m/Y', strtotime($m['joined_at'])); ?></small>
-                                            <?php if ($m['role'] !== 'dm' && isDMOrAdmin()): ?>
+                                            <?php if ($m['role'] !== 'dm' && User::isDMOrAdmin()): ?>
                                                 <form method="POST" onsubmit="return confirm('Exclure ce joueur de la campagne ?');">
                                                     <input type="hidden" name="action" value="remove_member">
                                                     <input type="hidden" name="member_user_id" value="<?php echo (int)$m['id']; ?>">
@@ -847,7 +847,7 @@ if (!empty($places)) {
                                 <?php endforeach; ?>
                             </ul>
                         <?php endif; ?>
-                        <?php if (isDMOrAdmin()): ?>
+                        <?php if (User::isDMOrAdmin()): ?>
                         <form method="POST" class="mt-3">
                             <input type="hidden" name="action" value="add_member">
                             <div class="input-group">
@@ -978,7 +978,7 @@ if (!empty($places)) {
                         <h5 class="mb-0"><i class="fas fa-globe-americas me-2"></i>Monde</h5>
                     </div>
                     <div class="card-body">
-                        <?php if (isDMOrAdmin()): ?>
+                        <?php if (User::isDMOrAdmin()): ?>
                             <form method="POST">
                                 <input type="hidden" name="action" value="update_campaign_world">
                                 <div class="mb-3">
@@ -1021,7 +1021,7 @@ if (!empty($places)) {
         </div>
 
         <!-- Section Lieux - Visible uniquement pour les DM et Admin -->
-        <?php if (isDMOrAdmin()): ?>
+        <?php if (User::isDMOrAdmin()): ?>
         <div class="row g-4 mt-1">
             <div class="col-12">
                 <div class="card">

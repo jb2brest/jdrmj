@@ -7,7 +7,7 @@ $current_page = "view_world";
 requireLogin();
 
 // Vérifier que l'utilisateur est MJ ou Admin
-if (!isDMOrAdmin()) {
+if (!User::isDMOrAdmin()) {
     header('Location: index.php');
     exit();
 }

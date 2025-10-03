@@ -59,7 +59,7 @@ $show_hero = true;
     </section>
 
     <!-- DM Features Section -->
-    <?php if (isDMOrAdmin()): ?>
+    <?php if (User::isDMOrAdmin()): ?>
     <section class="bg-dark text-light py-5">
         <div class="container">
             <h2 class="text-center mb-5">Fonctionnalités Maître de Donjon</h2>

@@ -3,7 +3,7 @@ require_once 'config/database.php';
 require_once 'includes/functions.php';
 
 // Vérifier que l'utilisateur est admin
-requireAdmin();
+User::requireAdmin();
 
 // Fonction pour lire le fichier VERSION
 function getApplicationVersion() {

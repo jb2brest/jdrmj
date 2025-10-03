@@ -4,7 +4,7 @@ require_once 'includes/functions.php';
 require_once 'includes/object_auto_insert.php';
 
 // Vérifier que l'utilisateur est admin
-requireAdmin();
+User::requireAdmin();
 
 header('Content-Type: application/json');
 

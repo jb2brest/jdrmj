@@ -6,7 +6,7 @@ $page_title = "Détails de la Région";
 $current_page = "manage_worlds"; // Pour garder le bouton "Mondes" actif dans la navbar
 
 requireLogin();
-requireDMOrAdmin();
+User::requireDMOrAdmin();
 
 $region_id = (int)($_GET['id'] ?? 0);
 if ($region_id === 0) {

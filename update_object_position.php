@@ -54,7 +54,7 @@ try {
     }
     
     // Vérifier que l'utilisateur est le MJ de la campagne ou un admin
-    if (!isAdmin() && $_SESSION['user_id'] != $object['dm_id']) {
+    if (!User::isAdmin() && $_SESSION['user_id'] != $object['dm_id']) {
         echo json_encode(['success' => false, 'error' => 'Non autorisé']);
         exit();
     }

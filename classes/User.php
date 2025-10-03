@@ -199,6 +199,42 @@ class User
     {
         return self::isDMOrAdmin();
     }
+    
+    /**
+     * Redirige si l'utilisateur n'est pas MJ
+     */
+    public static function requireDM()
+    {
+        self::requireLogin();
+        if (!self::isDM()) {
+            header('Location: profile.php?error=dm_required');
+            exit();
+        }
+    }
+    
+    /**
+     * Redirige si l'utilisateur n'est pas MJ ou admin
+     */
+    public static function requireDMOrAdmin()
+    {
+        self::requireLogin();
+        if (!self::isDMOrAdmin()) {
+            header('Location: profile.php?error=dm_or_admin_required');
+            exit();
+        }
+    }
+    
+    /**
+     * Redirige si l'utilisateur n'est pas admin
+     */
+    public static function requireAdmin()
+    {
+        self::requireLogin();
+        if (!self::isAdmin()) {
+            header('Location: profile.php?error=admin_required');
+            exit();
+        }
+    }
 
     // =====================================================
     // MÉTHODES DE GESTION DES UTILISATEURS

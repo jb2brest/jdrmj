@@ -1,5 +1,5 @@
 <?php
-require_once 'config/database.php';
+
 require_once 'includes/functions.php';
 $page_title = "Scène de Jeu";
 $current_page = "view_place";
@@ -49,23 +49,23 @@ function hasCampaignId($place) {
 }
 
 $dm_id = (int)$place['dm_id'];
-$isOwnerDM = (isDMOrAdmin() && $_SESSION['user_id'] === $dm_id);
+$isOwnerDM = (User::isDMOrAdmin() && $_SESSION['user_id'] === $dm_id);
 
 // DEBUG: Logs pour déboguer les permissions
 error_log("DEBUG view_place.php - User ID: " . ($_SESSION['user_id'] ?? 'NOT_SET'));
 error_log("DEBUG view_place.php - DM ID: " . $dm_id);
-error_log("DEBUG view_place.php - isDM(): " . (isDM() ? 'true' : 'false'));
+error_log("DEBUG view_place.php - isDM(): " . (User::isDM() ? 'true' : 'false'));
 error_log("DEBUG view_place.php - isOwnerDM: " . ($isOwnerDM ? 'true' : 'false'));
 
 // Autoriser les admins, les DM propriétaires et les membres de la campagne à voir le lieu
-$canView = isAdmin() || $isOwnerDM;
+$canView = User::isAdmin() || $isOwnerDM;
 if (!$canView && isset($place['campaign_id'])) {
     $campaign = Campaign::findById($place['campaign_id']);
     $canView = $campaign ? $campaign->isMember($_SESSION['user_id']) : false;
 }
 
 // Seuls les admins et les DM propriétaires peuvent éditer le lieu
-$canEdit = isAdmin() || $isOwnerDM;
+$canEdit = User::isAdmin() || $isOwnerDM;
 
 if (!$canView) {
     header('Location: index.php');

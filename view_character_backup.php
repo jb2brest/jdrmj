@@ -275,10 +275,10 @@ $armorClass = calculateArmorClassExtended($character, $equippedArmor, $equippedS
 // Contrôle d'accès: propriétaire OU MJ de la campagne liée
 $canView = ($character['user_id'] == $_SESSION['user_id']);
 
-if (!$canView && isDMOrAdmin() && $dm_campaign_id) {
+if (!$canView && User::isDMOrAdmin() && $dm_campaign_id) {
     // Vérifier que la campagne appartient au MJ connecté ou que l'utilisateur est admin
     $ownsCampaign = false;
-    if (isAdmin()) {
+    if (User::isAdmin()) {
         $ownsCampaign = true; // Les admins peuvent voir toutes les feuilles
     } else {
         $stmt = $pdo->prepare("SELECT id FROM campaigns WHERE id = ? AND dm_id = ?");
@@ -313,9 +313,9 @@ if (!$canView) {
 
 // Vérifier si l'utilisateur peut modifier les points de vie (propriétaire ou MJ)
 $canModifyHP = ($character['user_id'] == $_SESSION['user_id']);
-if (!$canModifyHP && isDMOrAdmin() && $dm_campaign_id) {
+if (!$canModifyHP && User::isDMOrAdmin() && $dm_campaign_id) {
     // Vérifier que la campagne appartient au MJ connecté ou que l'utilisateur est admin
-    if (isAdmin()) {
+    if (User::isAdmin()) {
         $canModifyHP = true; // Les admins peuvent modifier toutes les feuilles
     } else {
         $stmt = $pdo->prepare("SELECT id FROM campaigns WHERE id = ? AND dm_id = ?");
@@ -1454,7 +1454,6 @@ $initiative = $dexterityMod;
                             <?php endforeach; ?>
                         </div>
                     </div>
-                <?php endif; ?>
                 
                 <!-- Serment sacré du paladin -->
                 <?php if ($paladinOath): ?>

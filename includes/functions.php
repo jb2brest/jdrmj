@@ -82,52 +82,57 @@ function isDM() {
 }
 */
 
-// Fonction pour vérifier si l'utilisateur est joueur
+// =====================================================
+// FONCTIONS DÉPRÉCIÉES - UTILISER LA CLASSE User
+// =====================================================
+
+/**
+ * @deprecated Utiliser User::isPlayer() à la place
+ */
 function isPlayer() {
-    return getUserRole() === 'player';
+    return User::isPlayer();
 }
 
-// Fonction pour vérifier si l'utilisateur est admin
+/**
+ * @deprecated Utiliser User::isAdmin() à la place
+ */
 function isAdmin() {
-    return getUserRole() === 'admin';
+    return User::isAdmin();
 }
 
-// Fonction pour vérifier si l'utilisateur est MJ ou admin
+/**
+ * @deprecated Utiliser User::isDMOrAdmin() à la place
+ */
 function isDMOrAdmin() {
-    $role = getUserRole();
-    return $role === 'dm' || $role === 'admin';
+    return User::isDMOrAdmin();
 }
 
-// Fonction pour vérifier si l'utilisateur a des privilèges élevés (MJ ou admin)
+/**
+ * @deprecated Utiliser User::hasElevatedPrivileges() à la place
+ */
 function hasElevatedPrivileges() {
-    return isDMOrAdmin();
+    return User::hasElevatedPrivileges();
 }
 
-// Fonction pour rediriger si l'utilisateur n'est pas MJ
+/**
+ * @deprecated Utiliser User::requireDM() à la place
+ */
 function requireDM() {
-    requireLogin();
-    if (!isDM()) {
-        header('Location: profile.php?error=dm_required');
-        exit();
-    }
+    User::requireDM();
 }
 
-// Fonction pour rediriger si l'utilisateur n'est pas MJ ou admin
+/**
+ * @deprecated Utiliser User::requireDMOrAdmin() à la place
+ */
 function requireDMOrAdmin() {
-    requireLogin();
-    if (!isDMOrAdmin()) {
-        header('Location: profile.php?error=dm_or_admin_required');
-        exit();
-    }
+    User::requireDMOrAdmin();
 }
 
-// Fonction pour rediriger si l'utilisateur n'est pas admin
+/**
+ * @deprecated Utiliser User::requireAdmin() à la place
+ */
 function requireAdmin() {
-    requireLogin();
-    if (!isAdmin()) {
-        header('Location: profile.php?error=admin_required');
-        exit();
-    }
+    User::requireAdmin();
 }
 
 // Fonction pour obtenir les informations complètes de l'utilisateur
@@ -285,66 +290,6 @@ function getToolProficiencies() {
 }
 
 // Fonction pour obtenir les options d'outils selon le type de choix
-function getToolOptions($toolDescription) {
-    if (strpos($toolDescription, 'un type d\'outil d\'artisan') !== false) {
-        return [
-            'Outils de forgeron',
-            'Outils de charpentier', 
-            'Outils de cuisinier',
-            'Outils de tanneur',
-            'Outils de tisserand',
-            'Outils de verrier',
-            'Outils de potier',
-            'Outils de cordonnier',
-            'Outils de bijoutier',
-            'Outils de calligraphe',
-            'Outils de cartographe',
-            'Outils de navigateur',
-            'Outils de herboriste',
-            'Outils d\'alchimiste',
-            'Outils de mécanicien'
-        ];
-    } elseif (strpos($toolDescription, 'un type d\'instrument de musique') !== false || 
-              strpos($toolDescription, 'n\'importe quel autre instrument de musique') !== false) {
-        return [
-            'Chalemie',
-            'Cor',
-            'Cornemuse',
-            'Flûte',
-            'Flûte de pan',
-            'Luth',
-            'Lyre',
-            'Tambour',
-            'Tympanon',
-            'Viole'
-        ];
-    } elseif (strpos($toolDescription, 'Instrument de musique') !== false) {
-        return [
-            'Chalemie',
-            'Cor',
-            'Cornemuse',
-            'Flûte',
-            'Flûte de pan',
-            'Luth',
-            'Lyre',
-            'Tambour',
-            'Tympanon',
-            'Viole'
-        ];
-    } elseif (strpos($toolDescription, 'kit de') !== false) {
-        // Pour les kits spécifiques, retourner le kit lui-même
-        return [$toolDescription];
-    } else {
-        // Pour les autres cas, retourner une liste générique
-        return [
-            'Outils de voleur',
-            'Outils d\'artisan',
-            'Instruments de musique',
-            'Jeux',
-            'Véhicules'
-        ];
-    }
-}
 
 // Fonction pour obtenir toutes les compétences (y compris armure, armes, outils)
 function getAllSkills() {
@@ -632,33 +577,6 @@ function getBackgroundLanguages($backgroundId) {
 
 // Fonction pour parser l'équipement de départ d'une classe
 // Fonction pour obtenir le contenu d'un sac d'équipement
-function getEquipmentPackContents($packName) {
-    $packs = [
-        'sac d\'exploration souterraine' => [
-            'un sac à dos',
-            'un pied de biche',
-            'un marteau',
-            '10 pitons',
-            '10 torches',
-            'une boite d\'allume-feu',
-            '10 jours de rations',
-            'corde de chanvre (15m)',
-            'une gourde d\'eau'
-        ],
-        'sac d\'explorateur' => [
-            'un sac à dos',
-            'un sac de couchage',
-            'une gamelle',
-            'une boite d\'allume-feu',
-            '10 torches',
-            '10 jours de rations',
-            'corde de chanvre (15m)',
-            'une gourde d\'eau'
-        ]
-    ];
-    
-    return $packs[$packName] ?? [];
-}
 
 // Fonction pour obtenir les armes courantes disponibles
 function getCommonWeapons($type = null) {
@@ -706,118 +624,8 @@ function getMusicalInstruments() {
     return $stmt->fetchAll();
 }
 
-function parseStartingEquipment($equipmentText) {
-    if (!$equipmentText) {
-        return [];
-    }
-    
-    $equipmentChoices = [];
-    $lines = explode("\n", trim($equipmentText));
-    
-    foreach ($lines as $line) {
-        $line = trim($line);
-        if (empty($line)) continue;
-        
-        // Vérifier si la ligne contient des choix (a), (b), (c)
-        if (preg_match('/\([abc]\)/', $line)) {
-            // C'est un choix d'équipement
-            $choices = [];
-            
-            // Extraire tous les choix (a), (b), (c) avec leurs descriptions
-            if (preg_match_all('/\(([abc])\)\s*([^(]+?)(?=\s*\([abc]\)|$)/', $line, $matches, PREG_SET_ORDER)) {
-                foreach ($matches as $match) {
-                    $choice = $match[1];
-                    $description = trim($match[2]);
-                    
-                    // Nettoyer la description (enlever les "ou" en fin)
-                    $description = preg_replace('/\s+ou\s*$/', '', $description);
-                    
-                    // Gestion spéciale pour les armes courantes
-                    if (strpos($description, 'n\'importe quelle arme courante') !== false) {
-                        $choices[$choice] = [
-                            'type' => 'weapon_choice',
-                            'description' => $description,
-                            'options' => getCommonWeapons()
-                        ];
-                    }
-                    // Gestion spéciale pour les armes de guerre
-                    elseif (strpos($description, 'n\'importe quelle arme de guerre') !== false) {
-                        // Déterminer le type d'arme selon la description
-                        $weaponType = null;
-                        if (strpos($description, 'corps à corps') !== false) {
-                            $weaponType = 'Armes de guerre de corps à corps';
-                        } elseif (strpos($description, 'distance') !== false) {
-                            $weaponType = 'Armes de guerre à distance';
-                        }
-                        
-                        $choices[$choice] = [
-                            'type' => 'weapon_choice',
-                            'description' => $description,
-                            'options' => getWarWeapons($weaponType)
-                        ];
-                    }
-                    // Gestion spéciale pour les instruments de musique
-                    elseif (strpos($description, 'n\'importe quel autre instrument') !== false) {
-                        $choices[$choice] = [
-                            'type' => 'instrument_choice',
-                            'description' => $description,
-                            'options' => getMusicalInstruments()
-                        ];
-                    }
-                    // Gestion spéciale pour les sacs d'équipement
-                    elseif (strpos($description, 'sac d\'exploration souterraine') !== false) {
-                        $choices[$choice] = [
-                            'type' => 'pack',
-                            'description' => $description,
-                            'contents' => getEquipmentPackContents('sac d\'exploration souterraine')
-                        ];
-                    }
-                    elseif (strpos($description, 'sac d\'explorateur') !== false) {
-                        $choices[$choice] = [
-                            'type' => 'pack',
-                            'description' => $description,
-                            'contents' => getEquipmentPackContents('sac d\'explorateur')
-                        ];
-                    }
-                    else {
-                        $choices[$choice] = $description;
-                    }
-                }
-            }
-            
-            if (!empty($choices)) {
-                $equipmentChoices[] = $choices;
-            }
-        } else {
-            // C'est un équipement fixe (sans choix)
-            $equipmentChoices[] = ['fixed' => $line];
-        }
-    }
-    
-    return $equipmentChoices;
-}
 
-// Fonction pour obtenir l'équipement de départ d'une classe
-function getClassStartingEquipment($classId) {
-    global $pdo;
-    $stmt = $pdo->prepare("SELECT starting_equipment FROM classes WHERE id = ?");
-    $stmt->execute([$classId]);
-    $result = $stmt->fetch();
-    
-    if (!$result || !$result['starting_equipment']) {
-        return [];
-    }
-    
-    return parseStartingEquipment($result['starting_equipment']);
-}
 
-// Fonction pour obtenir l'équipement d'un historique
-// NOTE: Cette fonction est dépréciée. Utilisez getBackgroundStartingEquipment() à la place.
-function getBackgroundEquipment($backgroundId) {
-    // La colonne equipment a été supprimée de la table backgrounds
-    // Cette fonction retourne maintenant une string vide pour compatibilité
-    return '';
-}
 
 // Fonction pour vérifier si une classe peut lancer des sorts
 function canCastSpells($classId) {
@@ -1070,164 +878,9 @@ function getSpellSlotsUsage($characterId) {
 
 
 // Fonction pour parser l'équipement d'historique et extraire les pièces d'or
-function parseBackgroundEquipment($equipmentText) {
-    if (!$equipmentText) {
-        return ['items' => [], 'gold' => 0];
-    }
-    
-    $items = [];
-    $gold = 0;
-    
-    // Diviser le texte par virgules et points
-    $parts = preg_split('/[,.]/', $equipmentText);
-    
-    foreach ($parts as $part) {
-        $part = trim($part);
-        if (empty($part)) continue;
-        
-        // Chercher les mentions de bourse avec des pièces d'or
-        if (preg_match('/bourse.*?(\d+)\s*po/i', $part, $matches)) {
-            $gold += (int)$matches[1];
-            // Remplacer la mention de la bourse par juste "une bourse"
-            $part = preg_replace('/bourse.*?(\d+)\s*po/i', 'une bourse', $part);
-        }
-        
-        // Chercher d'autres mentions de pièces d'or
-        if (preg_match('/(\d+)\s*po/i', $part, $matches)) {
-            $gold += (int)$matches[1];
-            // Supprimer la mention des pièces d'or
-            $part = preg_replace('/\d+\s*po/i', '', $part);
-        }
-        
-        // Nettoyer le texte
-        $part = trim($part);
-        if (!empty($part)) {
-            $items[] = $part;
-        }
-    }
-    
-    return ['items' => $items, 'gold' => $gold];
-}
 
-// Fonction améliorée pour parser l'équipement d'historique et extraire les pièces d'or
-function parseBackgroundEquipmentImproved($equipmentText) {
-    if (!$equipmentText) {
-        return ['items' => [], 'gold' => 0];
-    }
-    
-    $items = [];
-    $gold = 0;
-    
-    // Diviser le texte par virgules et points
-    $parts = preg_split('/[,.]/', $equipmentText);
-    
-    foreach ($parts as $part) {
-        $part = trim($part);
-        if (empty($part)) continue;
-        
-        // Chercher les mentions de bourse avec des pièces d'or
-        if (preg_match('/bourse.*?(\d+)\s*po/i', $part, $matches)) {
-            $gold += (int)$matches[1];
-            // Remplacer la mention de la bourse par juste "une bourse"
-            $part = preg_replace('/bourse.*?(\d+)\s*po/i', 'une bourse', $part);
-        }
-        
-        // Chercher d'autres mentions de pièces d'or
-        if (preg_match('/(\d+)\s*po/i', $part, $matches)) {
-            $gold += (int)$matches[1];
-            // Supprimer la mention des pièces d'or
-            $part = preg_replace('/\d+\s*po/i', '', $part);
-        }
-        
-        // Nettoyer le texte
-        $part = trim($part);
-        if (!empty($part)) {
-            $items[] = $part;
-        }
-    }
-    
-    return ['items' => $items, 'gold' => $gold];
-}
 
-// Fonction pour parser l'équipement d'historique et extraire les pièces d'or (version corrigée)
-function parseBackgroundEquipmentFixed($equipmentText) {
-    if (!$equipmentText) {
-        return ['items' => [], 'gold' => 0];
-    }
-    
-    $items = [];
-    $gold = 0;
-    
-    // Diviser le texte par virgules et points
-    $parts = preg_split('/[,.]/', $equipmentText);
-    
-    foreach ($parts as $part) {
-        $part = trim($part);
-        if (empty($part)) continue;
-        
-        // Chercher les mentions de bourse avec des pièces d'or
-        if (preg_match('/bourse.*?(\d+)\s*po/i', $part, $matches)) {
-            $gold += (int)$matches[1];
-            // Remplacer la mention de la bourse par juste "une bourse"
-            $part = preg_replace('/bourse.*?(\d+)\s*po/i', 'une bourse', $part);
-        }
-        
-        // Chercher d'autres mentions de pièces d'or
-        if (preg_match('/(\d+)\s*po/i', $part, $matches)) {
-            $gold += (int)$matches[1];
-            // Supprimer la mention des pièces d'or
-            $part = preg_replace('/\d+\s*po/i', '', $part);
-        }
-        
-        // Nettoyer le texte
-        $part = trim($part);
-        if (!empty($part)) {
-            $items[] = $part;
-        }
-    }
-    
-    return ['items' => $items, 'gold' => $gold];
-}
 
-// Fonction pour parser l'équipement d'historique et extraire les pièces d'or (version simple)
-function parseBackgroundEquipmentSimple($equipmentText) {
-    if (!$equipmentText) {
-        return ['items' => [], 'gold' => 0];
-    }
-    
-    $items = [];
-    $gold = 0;
-    
-    // Chercher toutes les mentions de pièces d'or
-    if (preg_match_all('/(\d+)\s*po/i', $equipmentText, $matches)) {
-        foreach ($matches[1] as $amount) {
-            $gold += (int)$amount;
-        }
-    }
-    
-    // Supprimer toutes les mentions de pièces d'or du texte
-    $cleanText = preg_replace('/\d+\s*po/i', '', $equipmentText);
-    
-    // Nettoyer les mentions de bourse
-    $cleanText = preg_replace('/bourse\s+contenant/i', 'bourse', $cleanText);
-    
-    // Diviser le texte par virgules et points
-    $parts = preg_split('/[,.]/', $cleanText);
-    
-    foreach ($parts as $part) {
-        $part = trim($part);
-        if (!empty($part)) {
-            // Filtrer les items génériques d'outils qui sont déjà représentés par des choix spécifiques
-            if (strpos($part, 'un jeu d\'outil d\'artisan') === false && 
-                strpos($part, 'un type d\'outil d\'artisan') === false &&
-                strpos($part, 'n\'importe quel autre instrument') === false) {
-                $items[] = $part;
-            }
-        }
-    }
-    
-    return ['items' => $items, 'gold' => $gold];
-}
 
 // Fonction pour générer l'équipement final basé sur les choix du joueur
 function generateFinalEquipment($classId, $equipmentChoices, $backgroundId = null, $weaponChoices = []) {
@@ -4976,49 +4629,8 @@ function saveRogueArchetype($characterId, $archetypeId, $level3Choice = null, $l
 
 // Fonctions pour la hiérarchie géographique
 
-// Fonction pour obtenir tous les mondes d'un utilisateur
-function getWorldsByUser($userId) {
-    global $pdo;
-    try {
-        $stmt = $pdo->prepare("SELECT * FROM worlds WHERE created_by = ? ORDER BY name");
-        $stmt->execute([$userId]);
-        return $stmt->fetchAll();
-    } catch (PDOException $e) {
-        error_log("Erreur getWorldsByUser: " . $e->getMessage());
-        return [];
-    }
-}
 
-// Fonction pour obtenir un monde par ID
-function getWorldById($worldId, $userId = null) {
-    global $pdo;
-    try {
-        if ($userId) {
-            $stmt = $pdo->prepare("SELECT * FROM worlds WHERE id = ? AND created_by = ?");
-            $stmt->execute([$worldId, $userId]);
-        } else {
-            $stmt = $pdo->prepare("SELECT * FROM worlds WHERE id = ?");
-            $stmt->execute([$worldId]);
-        }
-        return $stmt->fetch();
-    } catch (PDOException $e) {
-        error_log("Erreur getWorldById: " . $e->getMessage());
-        return false;
-    }
-}
 
-// Fonction pour obtenir tous les pays d'un monde
-function getCountriesByWorld($worldId) {
-    global $pdo;
-    try {
-        $stmt = $pdo->prepare("SELECT * FROM countries WHERE world_id = ? ORDER BY name");
-        $stmt->execute([$worldId]);
-        return $stmt->fetchAll();
-    } catch (PDOException $e) {
-        error_log("Erreur getCountriesByWorld: " . $e->getMessage());
-        return [];
-    }
-}
 
 // Fonction pour obtenir tous les pays (pour compatibilité)
 function getCountries() {
@@ -5077,44 +4689,7 @@ function getPlacesWithGeography($campaignId = null) {
     }
 }
 
-// Fonction pour obtenir un lieu avec sa hiérarchie géographique
-function getPlaceWithGeography($placeId) {
-    global $pdo;
-    try {
-        $stmt = $pdo->prepare("
-            SELECT p.*, c.name as country_name, c.description as country_description,
-                   r.name as region_name, r.description as region_description
-            FROM places p
-            LEFT JOIN countries c ON p.country_id = c.id
-            LEFT JOIN regions r ON p.region_id = r.id
-            WHERE p.id = ?
-        ");
-        $stmt->execute([$placeId]);
-        return $stmt->fetch();
-    } catch (PDOException $e) {
-        error_log("Erreur getPlaceWithGeography: " . $e->getMessage());
-        return null;
-    }
-}
 
-// Fonction pour vérifier si des joueurs sont présents dans un lieu
-function hasPlayersInPlace($placeId) {
-    global $pdo;
-    try {
-        $stmt = $pdo->prepare("
-            SELECT COUNT(*) as count
-            FROM place_players pp
-            JOIN campaign_members cm ON pp.player_id = cm.user_id
-            WHERE pp.place_id = ? AND cm.role = 'player'
-        ");
-        $stmt->execute([$placeId]);
-        $result = $stmt->fetch();
-        return $result['count'] > 0;
-    } catch (PDOException $e) {
-        error_log("Erreur hasPlayersInPlace: " . $e->getMessage());
-        return false;
-    }
-}
 
 // Fonction pour sauvegarder le choix de collège bardique
 function saveBardCollege($characterId, $collegeId, $level3Choice = null, $level6Choice = null, $level14Choice = null) {

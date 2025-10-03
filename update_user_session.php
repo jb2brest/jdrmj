@@ -49,11 +49,11 @@ try {
     // Tester les fonctions de rôle
     echo "<h2>Test des fonctions de rôle:</h2>\n";
     echo "<ul>\n";
-    echo "<li>isAdmin(): " . (isAdmin() ? '✅ Oui' : '❌ Non') . "</li>\n";
-    echo "<li>isDM(): " . (isDM() ? '✅ Oui' : '❌ Non') . "</li>\n";
-    echo "<li>isPlayer(): " . (isPlayer() ? '✅ Oui' : '❌ Non') . "</li>\n";
-    echo "<li>isDMOrAdmin(): " . (isDMOrAdmin() ? '✅ Oui' : '❌ Non') . "</li>\n";
-    echo "<li>hasElevatedPrivileges(): " . (hasElevatedPrivileges() ? '✅ Oui' : '❌ Non') . "</li>\n";
+    echo "<li>isAdmin(): " . (User::isAdmin() ? '✅ Oui' : '❌ Non') . "</li>\n";
+    echo "<li>isDM(): " . (User::isDM() ? '✅ Oui' : '❌ Non') . "</li>\n";
+    echo "<li>isPlayer(): " . (User::isPlayer() ? '✅ Oui' : '❌ Non') . "</li>\n";
+    echo "<li>isDMOrAdmin(): " . (User::isDMOrAdmin() ? '✅ Oui' : '❌ Non') . "</li>\n";
+    echo "<li>hasElevatedPrivileges(): " . (User::hasElevatedPrivileges() ? '✅ Oui' : '❌ Non') . "</li>\n";
     echo "</ul>\n";
     
     // Afficher le label du rôle
@@ -63,10 +63,10 @@ try {
     echo "<h2>Actions disponibles:</h2>\n";
     echo "<ul>\n";
     echo "<li><a href='profile.php'>Voir le profil</a></li>\n";
-    if (isAdmin()) {
+    if (User::isAdmin()) {
         echo "<li><a href='admin_versions.php'>Page d'administration des versions</a></li>\n";
     }
-    if (isDMOrAdmin()) {
+    if (User::isDMOrAdmin()) {
         echo "<li><a href='campaigns.php'>Gérer les campagnes</a></li>\n";
     }
     echo "<li><a href='index.php'>Retour à l'accueil</a></li>\n";
