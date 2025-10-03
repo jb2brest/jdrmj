@@ -17,30 +17,31 @@ $isModal = isset($_GET['modal']);
 
 // Charger le lieu et sa campagne avec hiérarchie géographique
 $lieu = Lieu::findById($place_id);
-if ($lieu) {
-    // Récupérer les campagnes associées à ce lieu
-    $campaigns = $lieu->getCampaigns();
-    if (!empty($campaigns)) {
-        // Pour l'instant, on prend la première campagne (on pourrait améliorer cela plus tard)
-        $campaign = $campaigns[0];
-        $place = $lieu->toArray();
-        $place['campaign_id'] = $campaign['id'];
-        $place['campaign_title'] = $campaign['title'];
-        $place['dm_id'] = $campaign['dm_id'];
-        
-        // Récupérer le nom d'utilisateur du DM
-        $dm_user = User::findById($campaign['dm_id']);
-        $place['dm_username'] = $dm_user ? $dm_user->getUsername() : 'Inconnu';
-    } else {
-        // Si aucun lieu n'est associé à une campagne, rediriger
-        header('Location: index.php');
-        exit();
-    }
-}
-
-if (!$place) {
+if (!$lieu) {
     header('Location: index.php');
     exit();
+}
+
+$place = $lieu->toArray();
+
+// Récupérer les campagnes associées à ce lieu
+$campaigns = $lieu->getCampaigns();
+if (!empty($campaigns)) {
+    // Pour l'instant, on prend la première campagne (on pourrait améliorer cela plus tard)
+    $campaign = $campaigns[0];
+    $place['campaign_id'] = $campaign['id'];
+    $place['campaign_title'] = $campaign['title'];
+    $place['dm_id'] = $campaign['dm_id'];
+    
+    // Récupérer le nom d'utilisateur du DM
+    $dm_user = User::findById($campaign['dm_id']);
+    $place['dm_username'] = $dm_user ? $dm_user->getUsername() : 'Inconnu';
+} else {
+    // Le lieu n'est associé à aucune campagne
+    $place['campaign_id'] = null;
+    $place['campaign_title'] = null;
+    $place['dm_id'] = null;
+    $place['dm_username'] = null;
 }
 
 // Fonction utilitaire pour vérifier si campaign_id est défini
@@ -59,9 +60,12 @@ error_log("DEBUG view_place.php - isOwnerDM: " . ($isOwnerDM ? 'true' : 'false')
 
 // Autoriser les admins, les DM propriétaires et les membres de la campagne à voir le lieu
 $canView = User::isAdmin() || $isOwnerDM;
-if (!$canView && isset($place['campaign_id'])) {
+if (!$canView && isset($place['campaign_id']) && $place['campaign_id']) {
     $campaign = Campaign::findById($place['campaign_id']);
     $canView = $campaign ? $campaign->isMember($_SESSION['user_id']) : false;
+} elseif (!$canView && (!isset($place['campaign_id']) || !$place['campaign_id'])) {
+    // Si le lieu n'est associé à aucune campagne, permettre la visualisation
+    $canView = true;
 }
 
 // Seuls les admins et les DM propriétaires peuvent éditer le lieu

@@ -477,12 +477,100 @@ class Region
 
         try {
             $pdo = $this->getPdo();
-            $sql = "SELECT * FROM places WHERE region_id = ? ORDER BY name";
+            $sql = "SELECT * FROM places WHERE region_id = ? ORDER BY title";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$this->id]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             throw new Exception("Erreur lors de la récupération des lieux: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Récupère tous les PNJs de la région (via la hiérarchie région → lieux)
+     * 
+     * @return array Liste des PNJs
+     * @throws Exception En cas d'erreur
+     */
+    public function getNpcs()
+    {
+        if ($this->id === null) {
+            return [];
+        }
+
+        try {
+            $pdo = $this->getPdo();
+            $stmt = $pdo->prepare("
+                SELECT 
+                    pn.id,
+                    pn.name,
+                    pn.description,
+                    pn.profile_photo,
+                    pn.is_visible,
+                    pn.is_identified,
+                    c.name AS character_name,
+                    c.profile_photo AS character_profile_photo,
+                    cl.name AS class_name,
+                    r.name AS race_name,
+                    pl.title AS place_name,
+                    'PNJ' AS type
+                FROM place_npcs pn
+                JOIN places pl ON pn.place_id = pl.id
+                LEFT JOIN characters c ON pn.npc_character_id = c.id
+                LEFT JOIN classes cl ON c.class_id = cl.id
+                LEFT JOIN races r ON c.race_id = r.id
+                WHERE pl.region_id = ? AND pn.monster_id IS NULL
+                ORDER BY pn.name ASC
+            ");
+            $stmt->execute([$this->id]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            throw new Exception("Erreur lors de la récupération des PNJs: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Récupère tous les monstres de la région (via la hiérarchie région → lieux)
+     * 
+     * @return array Liste des monstres
+     * @throws Exception En cas d'erreur
+     */
+    public function getMonsters()
+    {
+        if ($this->id === null) {
+            return [];
+        }
+
+        try {
+            $pdo = $this->getPdo();
+            $stmt = $pdo->prepare("
+                SELECT 
+                    pn.id,
+                    pn.name,
+                    pn.description,
+                    pn.profile_photo,
+                    pn.is_visible,
+                    pn.is_identified,
+                    pn.quantity,
+                    pn.current_hit_points,
+                    dm.name AS monster_name,
+                    dm.type,
+                    dm.size,
+                    dm.challenge_rating,
+                    dm.hit_points,
+                    dm.armor_class,
+                    pl.title AS place_name,
+                    'Monstre' AS type
+                FROM place_npcs pn
+                JOIN places pl ON pn.place_id = pl.id
+                JOIN dnd_monsters dm ON pn.monster_id = dm.id
+                WHERE pl.region_id = ? AND pn.monster_id IS NOT NULL
+                ORDER BY pn.name ASC
+            ");
+            $stmt->execute([$this->id]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            throw new Exception("Erreur lors de la récupération des monstres: " . $e->getMessage());
         }
     }
 

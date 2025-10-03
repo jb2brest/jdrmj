@@ -27,9 +27,6 @@ if (!$region || $region->getMonde()->getCreatedBy() != $user_id) {
 $success_message = '';
 $error_message = '';
 
-// Obtenir l'instance PDO
-$pdo = getPDO();
-
 // Fonction helper pour tronquer le texte
 function truncateText($text, $length = 100) {
     if (strlen($text) <= $length) {
@@ -129,40 +126,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (empty($title)) {
                 $error_message = "Le nom du lieu est requis.";
             } else {
-                // Récupérer l'URL actuelle
-                $stmt = $pdo->prepare("SELECT map_url FROM places WHERE id = ? AND region_id = ?");
-                $stmt->execute([$place_id, $region_id]);
-                $current_place = $stmt->fetch();
-                $map_url = $current_place['map_url'] ?? '';
+                // Récupérer le lieu via la classe Lieu
+                $lieu = Lieu::findById($place_id);
+                if (!$lieu || $lieu->getRegionId() != $region_id) {
+                    $error_message = "Lieu non trouvé.";
+                } else {
+                    $map_url = $lieu->getMapUrl() ?? '';
                 
-                // Gérer l'upload de la nouvelle carte si un fichier est fourni
-                if (isset($_FILES['map_image']) && $_FILES['map_image']['error'] === UPLOAD_ERR_OK) {
-                    $uploadResult = uploadPlaceImage($_FILES['map_image']);
-                    if (!$uploadResult['success']) {
-                        $error_message = $uploadResult['error'];
-                    } else {
-                        // Supprimer l'ancienne carte si elle existe
-                        if (!empty($map_url) && file_exists($map_url)) {
-                            unlink($map_url);
+                    // Gérer l'upload de la nouvelle carte si un fichier est fourni
+                    if (isset($_FILES['map_image']) && $_FILES['map_image']['error'] === UPLOAD_ERR_OK) {
+                        $uploadResult = uploadPlaceImage($_FILES['map_image']);
+                        if (!$uploadResult['success']) {
+                            $error_message = $uploadResult['error'];
+                        } else {
+                            // Supprimer l'ancienne carte si elle existe
+                            if (!empty($map_url) && file_exists($map_url)) {
+                                unlink($map_url);
+                            }
+                            $map_url = $uploadResult['file_path'];
                         }
-                        $map_url = $uploadResult['file_path'];
                     }
-                }
-                
-                if (empty($error_message)) {
-                    try {
-                        $lieu = Lieu::findById($place_id);
-                        if ($lieu && $lieu->getRegionId() == $region_id) {
+                    
+                    if (empty($error_message)) {
+                        try {
                             $lieu->setTitle($title);
                             $lieu->setNotes($notes);
                             $lieu->setMapUrl($map_url);
                             $lieu->save();
                             $success_message = "Lieu '$title' mis à jour avec succès.";
-                        } else {
-                            $error_message = "Lieu non trouvé.";
+                        } catch (Exception $e) {
+                            $error_message = $e->getMessage();
                         }
-                    } catch (Exception $e) {
-                        $error_message = $e->getMessage();
                     }
                 }
             }
@@ -189,59 +183,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Récupérer les lieux de la région via la classe Region
 $places = $region->getPlaces();
 
-// Récupérer tous les PNJs de la région (via la hiérarchie région → lieux)
-$stmt = $pdo->prepare("
-    SELECT 
-        pn.id,
-        pn.name,
-        pn.description,
-        pn.profile_photo,
-        pn.is_visible,
-        pn.is_identified,
-        c.name AS character_name,
-        c.profile_photo AS character_profile_photo,
-        cl.name AS class_name,
-        r.name AS race_name,
-        pl.title AS place_name,
-        'PNJ' AS type
-    FROM place_npcs pn
-    JOIN places pl ON pn.place_id = pl.id
-    LEFT JOIN characters c ON pn.npc_character_id = c.id
-    LEFT JOIN classes cl ON c.class_id = cl.id
-    LEFT JOIN races r ON c.race_id = r.id
-    WHERE pl.region_id = ? AND pn.monster_id IS NULL
-    ORDER BY pn.name ASC
-");
-$stmt->execute([$region_id]);
-$region_npcs = $stmt->fetchAll();
-
-// Récupérer tous les monstres de la région (via la hiérarchie région → lieux)
-$stmt = $pdo->prepare("
-    SELECT 
-        pn.id,
-        pn.name,
-        pn.description,
-        pn.profile_photo,
-        pn.is_visible,
-        pn.is_identified,
-        pn.quantity,
-        pn.current_hit_points,
-        dm.name AS monster_name,
-        dm.type,
-        dm.size,
-        dm.challenge_rating,
-        dm.hit_points,
-        dm.armor_class,
-        pl.title AS place_name,
-        'Monstre' AS type
-    FROM place_npcs pn
-    JOIN places pl ON pn.place_id = pl.id
-    JOIN dnd_monsters dm ON pn.monster_id = dm.id
-    WHERE pl.region_id = ? AND pn.monster_id IS NOT NULL
-    ORDER BY pn.name ASC
-");
-$stmt->execute([$region_id]);
-$region_monsters = $stmt->fetchAll();
+// Récupérer tous les PNJs et monstres de la région via la classe Region
+$region_npcs = $region->getNpcs();
+$region_monsters = $region->getMonsters();
 ?>
 
 <!DOCTYPE html>
