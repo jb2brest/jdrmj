@@ -62,6 +62,16 @@ class Monstre
     }
     
     /**
+     * Obtenir l'instance PDO
+     * 
+     * @return PDO
+     */
+    private function getPdo()
+    {
+        return $this->pdo ?: \Database::getInstance()->getPdo();
+    }
+
+    /**
      * Hydratation de l'objet avec les données
      */
     public function hydrate(array $data)
@@ -587,17 +597,231 @@ class Monstre
 
         try {
             $pdo = $this->getPdo();
-            $stmt = $pdo->prepare("
-                SELECT s.*, ms.description as monster_spell_description
-                FROM monster_spells ms
-                JOIN spells s ON ms.spell_id = s.id
-                WHERE ms.monster_id = ?
-                ORDER BY s.level, s.name
-            ");
-            $stmt->execute([$this->id]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            // Essayer d'abord avec la structure attendue
+            try {
+                $stmt = $pdo->prepare("
+                    SELECT s.*, ms.description as monster_spell_description
+                    FROM monster_spells ms
+                    JOIN spells s ON ms.spell_id = s.id
+                    WHERE ms.monster_id = ?
+                    ORDER BY s.level, s.name
+                ");
+                $stmt->execute([$this->id]);
+                return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            } catch (PDOException $e) {
+                // Si la colonne spell_id n'existe pas, essayer une approche alternative
+                $stmt = $pdo->prepare("
+                    SELECT name, description
+                    FROM monster_spells
+                    WHERE monster_id = ?
+                    ORDER BY name
+                ");
+                $stmt->execute([$this->id]);
+                return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
         } catch (PDOException $e) {
             throw new Exception("Erreur lors de la récupération des sorts: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Récupère les informations d'un monstre dans un lieu spécifique
+     * 
+     * @param int $npcId ID du NPC monstre dans le lieu
+     * @param PDO $pdo Instance PDO (optionnel)
+     * @return array|null Informations du monstre dans le lieu ou null
+     */
+    public static function getMonsterInPlace($npcId, $pdo = null)
+    {
+        try {
+            $pdo = $pdo ?: \Database::getInstance()->getPdo();
+            $stmt = $pdo->prepare("
+                SELECT sn.*, m.id as monster_db_id, m.name as monster_name, m.type, m.size, m.challenge_rating, 
+                       m.hit_points as max_hit_points, m.armor_class, m.csv_id,
+                       m.strength, m.dexterity, m.constitution, m.intelligence, m.wisdom, m.charisma, 
+                       m.competences, m.saving_throws, m.damage_immunities, m.damage_resistances, 
+                       m.condition_immunities, m.senses, m.languages, s.id as place_id
+                FROM place_npcs sn 
+                JOIN dnd_monsters m ON sn.monster_id = m.id 
+                JOIN places s ON sn.place_id = s.id
+                WHERE sn.id = ? AND sn.monster_id IS NOT NULL
+            ");
+            $stmt->execute([$npcId]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            throw new Exception("Erreur lors de la récupération du monstre dans le lieu: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Récupère l'équipement magique d'un monstre (excluant les poisons)
+     * 
+     * @param int $npcId ID du NPC monstre dans le lieu
+     * @param int $campaignId ID de la campagne
+     * @param PDO $pdo Instance PDO (optionnel)
+     * @return array Liste de l'équipement magique
+     */
+    public static function getMonsterMagicalEquipment($npcId, $campaignId, $pdo = null)
+    {
+        try {
+            $pdo = $pdo ?: \Database::getInstance()->getPdo();
+            $stmt = $pdo->prepare("
+                SELECT me.*, mi.nom as magical_item_nom, mi.type as magical_item_type, 
+                       mi.description as magical_item_description, mi.source as magical_item_source
+                FROM monster_equipment me
+                LEFT JOIN magical_items mi ON me.magical_item_id = mi.csv_id
+                WHERE me.monster_id = ? AND me.campaign_id = ? 
+                AND me.magical_item_id NOT IN (SELECT csv_id FROM poisons)
+                ORDER BY me.obtained_at DESC
+            ");
+            $stmt->execute([$npcId, $campaignId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            throw new Exception("Erreur lors de la récupération de l'équipement magique: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Récupère les poisons d'un monstre
+     * 
+     * @param int $npcId ID du NPC monstre dans le lieu
+     * @param int $campaignId ID de la campagne
+     * @param PDO $pdo Instance PDO (optionnel)
+     * @return array Liste des poisons
+     */
+    public static function getMonsterPoisons($npcId, $campaignId, $pdo = null)
+    {
+        try {
+            $pdo = $pdo ?: \Database::getInstance()->getPdo();
+            $stmt = $pdo->prepare("
+                SELECT me.*, p.nom as poison_nom, p.type as poison_type, 
+                       p.description as poison_description, p.source as poison_source
+                FROM monster_equipment me
+                JOIN poisons p ON me.magical_item_id = p.csv_id
+                WHERE me.monster_id = ? AND me.campaign_id = ?
+                ORDER BY me.obtained_at DESC
+            ");
+            $stmt->execute([$npcId, $campaignId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            throw new Exception("Erreur lors de la récupération des poisons: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Récupérer un équipement spécifique d'un monstre
+     * 
+     * @param int $itemId ID de l'équipement
+     * @param int $npcId ID du PNJ monstre dans le lieu
+     * @param int $campaignId ID de la campagne
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return array|null Données de l'équipement ou null si non trouvé
+     * @throws Exception En cas d'erreur
+     */
+    public static function getMonsterEquipmentById($itemId, $npcId, $campaignId, $pdo = null)
+    {
+        try {
+            $pdo = $pdo ?: \Database::getInstance()->getPdo();
+            $stmt = $pdo->prepare("SELECT * FROM monster_equipment WHERE id = ? AND monster_id = ? AND campaign_id = ?");
+            $stmt->execute([$itemId, $npcId, $campaignId]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            throw new Exception("Erreur lors de la récupération de l'équipement: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Récupérer les informations d'un monstre dans un lieu
+     * 
+     * @param int $npcId ID du PNJ monstre dans le lieu
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return array|null Données du monstre ou null si non trouvé
+     * @throws Exception En cas d'erreur
+     */
+    public static function getMonsterInfoInPlace($npcId, $pdo = null)
+    {
+        try {
+            $pdo = $pdo ?: \Database::getInstance()->getPdo();
+            $stmt = $pdo->prepare("SELECT sn.name FROM place_npcs sn WHERE sn.id = ?");
+            $stmt->execute([$npcId]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            throw new Exception("Erreur lors de la récupération des informations du monstre: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Ajouter un équipement à un monstre
+     * 
+     * @param int $monsterId ID du monstre
+     * @param int $campaignId ID de la campagne
+     * @param array $equipmentData Données de l'équipement
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return bool Succès de l'ajout
+     * @throws Exception En cas d'erreur
+     */
+    public static function addMonsterEquipment($monsterId, $campaignId, $equipmentData, $pdo = null)
+    {
+        try {
+            $pdo = $pdo ?: \Database::getInstance()->getPdo();
+            $stmt = $pdo->prepare("INSERT INTO monster_equipment (monster_id, campaign_id, magical_item_id, item_name, item_type, item_description, item_source, quantity, equipped, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([
+                $monsterId,
+                $campaignId,
+                $equipmentData['magical_item_id'],
+                $equipmentData['item_name'],
+                $equipmentData['item_type'],
+                $equipmentData['item_description'],
+                $equipmentData['item_source'],
+                $equipmentData['quantity'],
+                $equipmentData['equipped'] ?? 0,
+                $equipmentData['notes'],
+                $equipmentData['obtained_from']
+            ]);
+            return true;
+        } catch (PDOException $e) {
+            throw new Exception("Erreur lors de l'ajout de l'équipement: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Supprimer un équipement d'un monstre
+     * 
+     * @param int $itemId ID de l'équipement
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return bool Succès de la suppression
+     * @throws Exception En cas d'erreur
+     */
+    public static function deleteMonsterEquipment($itemId, $pdo = null)
+    {
+        try {
+            $pdo = $pdo ?: \Database::getInstance()->getPdo();
+            $stmt = $pdo->prepare("DELETE FROM monster_equipment WHERE id = ?");
+            $stmt->execute([$itemId]);
+            return true;
+        } catch (PDOException $e) {
+            throw new Exception("Erreur lors de la suppression de l'équipement: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Mettre à jour les points de vie actuels d'un monstre dans un lieu
+     * 
+     * @param int $npcId ID du PNJ monstre dans le lieu
+     * @param int $currentHp Nouveaux points de vie actuels
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return bool Succès de la mise à jour
+     * @throws Exception En cas d'erreur
+     */
+    public static function updateCurrentHitPoints($npcId, $currentHp, $pdo = null)
+    {
+        try {
+            $pdo = $pdo ?: \Database::getInstance()->getPdo();
+            $stmt = $pdo->prepare("UPDATE place_npcs SET current_hit_points = ? WHERE id = ?");
+            $stmt->execute([$currentHp, $npcId]);
+            return true;
+        } catch (PDOException $e) {
+            throw new Exception("Erreur lors de la mise à jour des points de vie: " . $e->getMessage());
         }
     }
 

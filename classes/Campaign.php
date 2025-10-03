@@ -15,6 +15,7 @@ class Campaign
     private $gameSystem;
     private $isPublic;
     private $inviteCode;
+    private $worldId;
     private $createdAt;
     private $updatedAt;
     private $pdo;
@@ -48,6 +49,7 @@ class Campaign
         $this->gameSystem = $data['game_system'] ?? 'D&D 5e';
         $this->isPublic = $data['is_public'] ?? true;
         $this->inviteCode = $data['invite_code'] ?? null;
+        $this->worldId = $data['world_id'] ?? null;
         $this->createdAt = $data['created_at'] ?? null;
         $this->updatedAt = $data['updated_at'] ?? null;
     }
@@ -629,6 +631,16 @@ class Campaign
         return $this->updatedAt;
     }
 
+    public function getWorldId()
+    {
+        return $this->worldId;
+    }
+
+    public function setWorldId($worldId)
+    {
+        $this->worldId = $worldId;
+    }
+
     // =====================================================
     // MÉTHODES UTILITAIRES
     // =====================================================
@@ -735,7 +747,7 @@ class Campaign
                     SELECT place_id FROM place_campaigns WHERE campaign_id = ?
                 )
             ");
-            $stmt->execute([$placeId, $this->world_id, $this->id]);
+            $stmt->execute([$placeId, $this->worldId, $this->id]);
             $place = $stmt->fetch();
             
             return $place !== false;
@@ -756,7 +768,7 @@ class Campaign
             $result = $stmt->execute([$worldId, $this->id, $this->dm_id]);
             
             if ($result && $stmt->rowCount() > 0) {
-                $this->world_id = $worldId;
+                $this->worldId = $worldId;
                 return ['success' => true, 'message' => 'Monde de la campagne mis à jour avec succès.'];
             } else {
                 return ['success' => false, 'message' => 'Aucune modification effectuée.'];

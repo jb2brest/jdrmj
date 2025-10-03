@@ -803,6 +803,27 @@ class Lieu
     }
     
     /**
+     * Vérifier s'il y a des joueurs dans un lieu
+     * 
+     * @param int $placeId ID du lieu
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return bool True si il y a des joueurs, false sinon
+     * @throws Exception En cas d'erreur
+     */
+    public static function hasPlayersInPlace($placeId, $pdo = null)
+    {
+        try {
+            $pdo = $pdo ?: \Database::getInstance()->getPdo();
+            $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM place_players WHERE place_id = ?");
+            $stmt->execute([$placeId]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return (int)$result['count'] > 0;
+        } catch (PDOException $e) {
+            throw new Exception("Erreur lors de la vérification des joueurs dans le lieu: " . $e->getMessage());
+        }
+    }
+
+    /**
      * Récupérer les informations détaillées d'un monstre dans le lieu
      */
     public function getMonsterDetails($npcId)

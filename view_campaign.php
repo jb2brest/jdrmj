@@ -2,6 +2,21 @@
 require_once 'config/database.php';
 require_once 'classes/init.php';
 require_once 'includes/functions.php';
+
+/**
+ * Tronque un texte à une longueur donnée
+ * 
+ * @param string $text Le texte à tronquer
+ * @param int $length La longueur maximale
+ * @return string Le texte tronqué
+ */
+function truncateText($text, $length = 100) {
+    if (strlen($text) <= $length) {
+        return $text;
+    }
+    return substr($text, 0, $length) . '...';
+}
+
 $page_title = "Détails de Campagne";
 $current_page = "view_campaign";
 
@@ -1107,7 +1122,7 @@ if (!empty($places)) {
                                     </thead>
                                     <tbody>
                                         <?php foreach ($places as $place): ?>
-                                            <?php $hasPlayers = hasPlayersInPlace($place['id']); ?>
+                                            <?php $hasPlayers = Lieu::hasPlayersInPlace($place['id']); ?>
                                             <tr data-world="<?php echo htmlspecialchars($place['world_name'] ?? ''); ?>"
                                                 data-country="<?php echo htmlspecialchars($place['country_name'] ?? ''); ?>" 
                                                 data-region="<?php echo htmlspecialchars($place['region_name'] ?? ''); ?>"

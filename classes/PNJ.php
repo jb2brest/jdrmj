@@ -457,4 +457,58 @@ class PNJ extends Character
     {
         $this->npc_character_id = $npcCharacterId;
     }
+
+    /**
+     * Récupérer les informations d'un PNJ dans un lieu
+     * 
+     * @param int $npcId ID du PNJ dans le lieu
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return array|null Données du PNJ ou null si non trouvé
+     * @throws Exception En cas d'erreur
+     */
+    public static function getNpcInfoInPlace($npcId, $pdo = null)
+    {
+        try {
+            $pdo = $pdo ?: \Database::getInstance()->getPdo();
+            $stmt = $pdo->prepare("SELECT sn.name FROM place_npcs sn WHERE sn.id = ?");
+            $stmt->execute([$npcId]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            throw new Exception("Erreur lors de la récupération des informations du PNJ: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Ajouter un équipement à un PNJ
+     * 
+     * @param int $npcId ID du PNJ
+     * @param int $sceneId ID du lieu/scène
+     * @param array $equipmentData Données de l'équipement
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return bool Succès de l'ajout
+     * @throws Exception En cas d'erreur
+     */
+    public static function addNpcEquipment($npcId, $sceneId, $equipmentData, $pdo = null)
+    {
+        try {
+            $pdo = $pdo ?: \Database::getInstance()->getPdo();
+            $stmt = $pdo->prepare("INSERT INTO npc_equipment (npc_id, scene_id, magical_item_id, item_name, item_type, item_description, item_source, quantity, equipped, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([
+                $npcId,
+                $sceneId,
+                $equipmentData['magical_item_id'],
+                $equipmentData['item_name'],
+                $equipmentData['item_type'],
+                $equipmentData['item_description'],
+                $equipmentData['item_source'],
+                $equipmentData['quantity'],
+                $equipmentData['equipped'] ?? 0,
+                $equipmentData['notes'],
+                $equipmentData['obtained_from']
+            ]);
+            return true;
+        } catch (PDOException $e) {
+            throw new Exception("Erreur lors de l'ajout de l'équipement: " . $e->getMessage());
+        }
+    }
 }

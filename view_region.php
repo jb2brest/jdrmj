@@ -102,12 +102,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 if (empty($error_message)) {
                     try {
-                        $lieu = new Lieu([
+                        $lieu = new Lieu(null, [
                             'title' => $title,
                             'notes' => $notes,
                             'map_url' => $map_url,
                             'region_id' => $region_id,
-                            'country_id' => $region['country_id']
+                            'country_id' => $region->getCountryId()
                         ]);
                         $lieu->save();
                         $success_message = "Lieu '$title' créé avec succès.";
