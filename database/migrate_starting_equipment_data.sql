@@ -1,58 +1,98 @@
--- Script de migration pour convertir les données d'équipement de départ existantes
--- vers la nouvelle table starting_equipment
+-- Script de migration des données de starting_equipment vers les nouvelles tables
+-- Ce script migre les données existantes de starting_equipment vers starting_equipment_choix et starting_equipment_options
 
--- D'abord, créons la table si elle n'existe pas
-SOURCE create_starting_equipment_table.sql;
+-- 1. Créer les choix d'équipement à partir des données existantes
+-- Grouper par src, src_id, no_choix, option_letter pour créer les choix
+INSERT INTO starting_equipment_choix (src, src_id, no_choix, option_letter, created_at, updated_at)
+SELECT DISTINCT 
+    se.src,
+    se.src_id,
+    se.no_choix,
+    se.option_letter,
+    se.created_at,
+    se.updated_at
+FROM starting_equipment se
+WHERE se.no_choix IS NOT NULL
+ORDER BY se.src, se.src_id, se.no_choix, se.option_letter;
 
--- Exemples de données pour les classes (à adapter selon vos données réelles)
--- Ces exemples montrent comment structurer les données pour différentes classes
+-- 2. Migrer les options d'équipement
+-- Chaque ligne de starting_equipment devient une option dans starting_equipment_options
+INSERT INTO starting_equipment_options (
+    starting_equipment_choix_id, src, src_id, type, type_id, type_filter, nb, created_at, updated_at
+)
+SELECT 
+    sc.id as starting_equipment_choix_id,
+    se.src,
+    se.src_id,
+    se.type,
+    se.type_id,
+    se.type_filter,
+    se.nb,
+    se.created_at,
+    se.updated_at
+FROM starting_equipment se
+INNER JOIN starting_equipment_choix sc ON (
+    se.src = sc.src 
+    AND se.src_id = sc.src_id 
+    AND se.no_choix = sc.no_choix
+    AND (se.option_letter = sc.option_letter OR (se.option_letter IS NULL AND sc.option_letter IS NULL))
+)
+WHERE se.no_choix IS NOT NULL;
 
--- Exemple pour le Guerrier (classe ID 1)
--- Choix d'arme: (a) hache à deux mains ou (b) arme de guerre de corps à corps
-INSERT INTO starting_equipment (src, src_id, type, type_id, option_indice, groupe_id, type_choix) VALUES
-('class', 1, 'Armure', NULL, 'a', 1, 'à_choisir'),  -- Armure de cuir clouté OU armure de cuir
-('class', 1, 'Bouclier', NULL, 'a', 1, 'à_choisir'), -- Bouclier OU arme à deux mains
-('class', 1, 'Arme', NULL, 'a', 2, 'à_choisir'),     -- Hache à deux mains OU arme de guerre de corps à corps
-('class', 1, 'Arme', NULL, 'b', 2, 'à_choisir'),     -- Alternative pour le choix d'arme
-('class', 1, 'Arme', NULL, NULL, 3, 'obligatoire'),  -- Arbalète de poing et 20 carreaux
-('class', 1, 'Accessoire', NULL, NULL, 4, 'obligatoire'); -- Sac d'explorateur
+-- 3. Gérer les équipements sans no_choix (équipements obligatoires simples)
+-- Créer des choix pour les équipements qui n'ont pas de no_choix
+INSERT INTO starting_equipment_choix (src, src_id, no_choix, option_letter, created_at, updated_at)
+SELECT DISTINCT 
+    se.src,
+    se.src_id,
+    0 as no_choix, -- Utiliser 0 pour les équipements sans choix
+    NULL as option_letter,
+    se.created_at,
+    se.updated_at
+FROM starting_equipment se
+WHERE se.no_choix IS NULL
+ORDER BY se.src, se.src_id;
 
--- Exemple pour le Magicien (classe ID 2)
-INSERT INTO starting_equipment (src, src_id, type, type_id, option_indice, groupe_id, type_choix) VALUES
-('class', 2, 'Arme', NULL, 'a', 1, 'à_choisir'),     -- Bâton OU dague
-('class', 2, 'Accessoire', NULL, 'a', 2, 'à_choisir'), -- Sac à composantes OU sac d'érudit
-('class', 2, 'Accessoire', NULL, NULL, 3, 'obligatoire'); -- Sac d'explorateur
+-- 4. Migrer les équipements sans no_choix vers les options
+INSERT INTO starting_equipment_options (
+    starting_equipment_choix_id, src, src_id, type, type_id, type_filter, nb, created_at, updated_at
+)
+SELECT 
+    sc.id as starting_equipment_choix_id,
+    se.src,
+    se.src_id,
+    se.type,
+    se.type_id,
+    se.type_filter,
+    se.nb,
+    se.created_at,
+    se.updated_at
+FROM starting_equipment se
+INNER JOIN starting_equipment_choix sc ON (
+    se.src = sc.src 
+    AND se.src_id = sc.src_id 
+    AND sc.no_choix = 0
+)
+WHERE se.no_choix IS NULL;
 
--- Exemple pour le Clerc (classe ID 3)
-INSERT INTO starting_equipment (src, src_id, type, type_id, option_indice, groupe_id, type_choix) VALUES
-('class', 3, 'Arme', NULL, 'a', 1, 'à_choisir'),     -- Masse de guerre OU masse d'armes
-('class', 3, 'Armure', NULL, 'a', 2, 'à_choisir'),   -- Cotte de mailles OU armure de cuir
-('class', 3, 'Accessoire', NULL, 'a', 3, 'à_choisir'), -- Bouclier OU arme à deux mains
-('class', 3, 'Accessoire', NULL, NULL, 4, 'obligatoire'); -- Sac d'explorateur
+-- 5. Vérification des données migrées
+-- Compter les enregistrements dans chaque table
+SELECT 'starting_equipment' as table_name, COUNT(*) as count FROM starting_equipment
+UNION ALL
+SELECT 'starting_equipment_choix' as table_name, COUNT(*) as count FROM starting_equipment_choix
+UNION ALL
+SELECT 'starting_equipment_options' as table_name, COUNT(*) as count FROM starting_equipment_options;
 
--- Exemple pour le Rôdeur (classe ID 4)
-INSERT INTO starting_equipment (src, src_id, type, type_id, option_indice, groupe_id, type_choix) VALUES
-('class', 4, 'Armure', NULL, 'a', 1, 'à_choisir'),   -- Armure d'écailles OU armure de cuir
-('class', 4, 'Arme', NULL, 'a', 2, 'à_choisir'),     -- Deux épées courtes OU deux armes courantes de corps à corps
-('class', 4, 'Arme', NULL, 'b', 2, 'à_choisir'),     -- Alternative pour le choix d'arme
-('class', 4, 'Accessoire', NULL, 'a', 3, 'à_choisir'), -- Sac d'explorateur OU sac d'exploration souterraine
-('class', 4, 'Arme', NULL, NULL, 4, 'obligatoire');  -- Arc long et carquois de 20 flèches
-
--- Exemples pour les backgrounds (à adapter selon vos données)
--- Exemple pour l'Acolyte (background ID 1)
-INSERT INTO starting_equipment (src, src_id, type, type_id, option_indice, groupe_id, type_choix) VALUES
-('background', 1, 'Accessoire', NULL, NULL, 1, 'obligatoire'), -- Symbole sacré
-('background', 1, 'Accessoire', NULL, NULL, 2, 'obligatoire'), -- Livre de prières
-('background', 1, 'Accessoire', NULL, NULL, 3, 'obligatoire'), -- Encens
-('background', 1, 'Accessoire', NULL, NULL, 4, 'obligatoire'), -- Vêtements communs
-('background', 1, 'Accessoire', NULL, NULL, 5, 'obligatoire'); -- Bourse avec 15 po
-
--- Exemple pour l'Artisan (background ID 2)
-INSERT INTO starting_equipment (src, src_id, type, type_id, option_indice, groupe_id, type_choix) VALUES
-('background', 2, 'Outils', NULL, NULL, 1, 'obligatoire'),     -- Jeu d'outils d'artisan
-('background', 2, 'Accessoire', NULL, NULL, 2, 'obligatoire'), -- Lettre de recommandation
-('background', 2, 'Accessoire', NULL, NULL, 3, 'obligatoire'), -- Vêtements de voyage
-('background', 2, 'Accessoire', NULL, NULL, 4, 'obligatoire'); -- Bourse avec 10 po
-
--- Note: Les type_id seront remplis plus tard quand on aura les tables d'armes, armures, etc.
--- Pour l'instant, on utilise NULL pour les équipements génériques
+-- 6. Afficher un échantillon des données migrées
+SELECT 
+    'Choix créés' as type,
+    sc.src,
+    sc.src_id,
+    sc.no_choix,
+    sc.option_letter,
+    COUNT(so.id) as nb_options
+FROM starting_equipment_choix sc
+LEFT JOIN starting_equipment_options so ON sc.id = so.starting_equipment_choix_id
+GROUP BY sc.id, sc.src, sc.src_id, sc.no_choix, sc.option_letter
+ORDER BY sc.src, sc.src_id, sc.no_choix
+LIMIT 10;

@@ -1,462 +1,518 @@
 <?php
-session_start();
+/**
+ * Sélection de l'équipement de départ - Version adaptée à la nouvelle structure
+ */
+
 require_once 'classes/init.php';
 require_once 'includes/functions.php';
-require_once 'includes/starting_equipment_functions.php';
 
-// Vérifier que l'utilisateur est connecté
+/**
+ * Fonction pour ajouter un item à l'équipement d'un personnage
+ */
+function addItemToCharacter($characterId, $itemType, $itemId, $quantity = 1) {
+    $pdo = getPDO();
+    
+    try {
+        $itemName = '';
+        
+        // Récupérer le nom de l'item selon son type
+        switch ($itemType) {
+            case 'weapon':
+                $stmt = $pdo->prepare("SELECT name FROM weapons WHERE id = ?");
+                $stmt->execute([$itemId]);
+                $result = $stmt->fetch();
+                if ($result) {
+                    $itemName = $result['name'];
+                }
+                break;
+                
+            case 'armor':
+            case 'bouclier':
+                $stmt = $pdo->prepare("SELECT name FROM armor WHERE id = ?");
+                $stmt->execute([$itemId]);
+                $result = $stmt->fetch();
+                if ($result) {
+                    $itemName = $result['name'];
+                }
+                break;
+                
+            case 'instrument':
+            case 'outils':
+            case 'nourriture':
+            case 'sac':
+                $stmt = $pdo->prepare("SELECT nom FROM Object WHERE id = ?");
+                $stmt->execute([$itemId]);
+                $result = $stmt->fetch();
+                if ($result) {
+                    $itemName = $result['nom'];
+                }
+                break;
+        }
+        
+        if ($itemName) {
+            // Ajouter l'item à l'équipement du personnage
+            $stmt = $pdo->prepare("
+                INSERT INTO character_equipment 
+                (character_id, item_name, item_type, quantity, equipped, obtained_from, obtained_at) 
+                VALUES (?, ?, ?, ?, 0, 'Équipement de départ', NOW())
+            ");
+            $stmt->execute([$characterId, $itemName, $itemType, $quantity]);
+            return true;
+        }
+        
+        return false;
+        
+    } catch (Exception $e) {
+        error_log("Erreur lors de l'ajout de l'item au personnage: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Vérifier la session
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
-    exit();
+    exit;
 }
 
-$user_id = $_SESSION['user_id'];
-
-// Récupérer les paramètres
-$campaign_id = isset($_GET['campaign_id']) ? (int)$_GET['campaign_id'] : 0;
-$character_id = isset($_GET['character_id']) ? (int)$_GET['character_id'] : 0;
-
+$character_id = $_GET['character_id'] ?? null;
 if (!$character_id) {
     header('Location: characters.php');
-    exit();
+    exit;
 }
 
-// Récupérer le personnage avec la classe Character
-$characterObject = Character::findById($character_id);
+// Récupérer les informations du personnage
+$pdo = getPDO();
+$stmt = $pdo->prepare("
+    SELECT c.*, cl.name as class_name, b.name as background_name
+    FROM characters c
+    LEFT JOIN classes cl ON c.class_id = cl.id
+    LEFT JOIN backgrounds b ON c.background_id = b.id
+    WHERE c.id = ? AND c.user_id = ?
+");
+$stmt->execute([$character_id, $_SESSION['user_id']]);
+$character = $stmt->fetch();
 
-if (!$characterObject) {
+if (!$character) {
     header('Location: characters.php');
-    exit();
+    exit;
 }
 
-// Vérifier que le personnage appartient au joueur
-if (!$characterObject->belongsToUser($user_id)) {
-    header('Location: characters.php');
-    exit();
+// Récupérer les choix d'équipement de classe
+$classChoix = StartingEquipmentChoix::findBySource('class', $character['class_id']);
+
+// Récupérer les choix d'équipement de background
+$backgroundChoix = StartingEquipmentChoix::findBySource('background', $character['background_id']);
+
+// Grouper les choix par no_choix
+function groupChoixByNoChoix($choixArray) {
+    $grouped = [];
+    foreach ($choixArray as $choix) {
+        $noChoix = $choix->getNoChoix();
+        if (!isset($grouped[$noChoix])) {
+            $grouped[$noChoix] = [];
+        }
+        $grouped[$noChoix][] = $choix;
+    }
+    
+    // Trier chaque groupe par option_letter (ordre alphabétique)
+    foreach ($grouped as $noChoix => $choixGroup) {
+        usort($choixGroup, function($a, $b) {
+            $letterA = $a->getOptionLetter() ?? '';
+            $letterB = $b->getOptionLetter() ?? '';
+            return strcmp($letterA, $letterB);
+        });
+        $grouped[$noChoix] = $choixGroup;
+    }
+    
+    return $grouped;
 }
 
-// Convertir l'objet Character en tableau pour la compatibilité avec le code existant
-$character = $characterObject->toArray();
+$groupedClassChoix = groupChoixByNoChoix($classChoix);
+$groupedBackgroundChoix = groupChoixByNoChoix($backgroundChoix);
 
-// Récupérer l'objet Campaign si campaign_id est fourni
-$campaign = null;
-if ($campaign_id) {
-    $campaign = Campaign::findById($campaign_id);
-    
-    if (!$campaign) {
-        header('Location: campaigns.php');
-        exit();
-    }
-    
-    // Vérifier que le personnage est dans la campagne
-    $stmt = getPDO()->prepare("
-        SELECT pp.* FROM place_players pp
-        INNER JOIN place_campaigns pc ON pp.place_id = pc.place_id
-        WHERE pp.character_id = ? AND pc.campaign_id = ?
-    ");
-    $stmt->execute([$character_id, $campaign_id]);
-    $in_campaign = $stmt->fetch();
-
-    if (!$in_campaign) {
-        header('Location: campaigns.php');
-        exit();
+// Traitement de la soumission du formulaire
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'select_equipment') {
+    try {
+        // Nettoyer l'ancien équipement de départ
+        $stmt = $pdo->prepare("DELETE FROM character_equipment WHERE character_id = ? AND obtained_from = 'Équipement de départ'");
+        $stmt->execute([$character_id]);
+        
+        $selectedClassEquipment = $_POST['class_equipment'] ?? [];
+        $selectedBackgroundEquipment = $_POST['background_equipment'] ?? [];
+        $selectedWeaponChoices = $_POST['weapon_choice'] ?? [];
+        $selectedWeaponChoicesBackground = $_POST['weapon_choice_background'] ?? [];
+        
+        // Traiter les choix d'équipement de classe
+        foreach ($selectedClassEquipment as $choiceIndex => $optionLetter) {
+            // Récupérer le choix correspondant
+            $choixGroup = null;
+            $noChoix = null;
+            $index = 0;
+            foreach ($groupedClassChoix as $nc => $cg) {
+                if ($nc == 0) continue; // Ignorer l'équipement par défaut
+                if ($index == $choiceIndex) {
+                    $choixGroup = $cg;
+                    $noChoix = $nc;
+                    break;
+                }
+                $index++;
+            }
+            
+            if ($choixGroup) {
+                // Trouver l'option sélectionnée
+                foreach ($choixGroup as $choix) {
+                    if ($choix->getOptionLetter() === $optionLetter) {
+                        // Ajouter l'équipement au personnage
+                        $options = StartingEquipmentOption::findByStartingEquipmentChoixId($choix->getId());
+                        foreach ($options as $option) {
+                            // Vérifier si c'est une arme avec choix spécifique
+                            if ($option->needsWeaponDropdown()) {
+                                if (isset($selectedWeaponChoices[$choiceIndex][$option->getId()])) {
+                                    $weaponId = $selectedWeaponChoices[$choiceIndex][$option->getId()];
+                                    // Ajouter l'arme spécifique
+                                    addItemToCharacter($character_id, 'weapon', $weaponId, $option->getNb());
+                                }
+                            } else {
+                                // Ajouter l'équipement normal
+                                addItemToCharacter($character_id, $option->getType(), $option->getTypeId(), $option->getNb());
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // Traiter les choix d'équipement de background
+        foreach ($selectedBackgroundEquipment as $choiceIndex => $optionLetter) {
+            // Logique similaire pour le background
+            $choixGroup = null;
+            $noChoix = null;
+            $index = 0;
+            foreach ($groupedBackgroundChoix as $nc => $cg) {
+                if ($nc == 0) continue; // Ignorer l'équipement par défaut
+                if ($index == $choiceIndex) {
+                    $choixGroup = $cg;
+                    $noChoix = $nc;
+                    break;
+                }
+                $index++;
+            }
+            
+            if ($choixGroup) {
+                foreach ($choixGroup as $choix) {
+                    if ($choix->getOptionLetter() === $optionLetter) {
+                        $options = StartingEquipmentOption::findByStartingEquipmentChoixId($choix->getId());
+                        foreach ($options as $option) {
+                            if ($option->needsWeaponDropdown()) {
+                                if (isset($selectedWeaponChoicesBackground[$choiceIndex][$option->getId()])) {
+                                    $weaponId = $selectedWeaponChoicesBackground[$choiceIndex][$option->getId()];
+                                    addItemToCharacter($character_id, 'weapon', $weaponId, $option->getNb());
+                                }
+                            } else {
+                                addItemToCharacter($character_id, $option->getType(), $option->getTypeId(), $option->getNb());
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // Ajouter l'équipement par défaut
+        foreach ($groupedClassChoix as $noChoix => $choixGroup) {
+            if ($noChoix == 0) {
+                $defaultChoix = $choixGroup[0];
+                $options = StartingEquipmentOption::findByStartingEquipmentChoixId($defaultChoix->getId());
+                foreach ($options as $option) {
+                    addItemToCharacter($character_id, $option->getType(), $option->getTypeId(), $option->getNb());
+                }
+            }
+        }
+        
+        foreach ($groupedBackgroundChoix as $noChoix => $choixGroup) {
+            if ($noChoix == 0) {
+                $defaultChoix = $choixGroup[0];
+                $options = StartingEquipmentOption::findByStartingEquipmentChoixId($defaultChoix->getId());
+                foreach ($options as $option) {
+                    addItemToCharacter($character_id, $option->getType(), $option->getTypeId(), $option->getNb());
+                }
+            }
+        }
+        
+        // Rediriger vers la page du personnage
+        header('Location: view_character.php?id=' . $character_id);
+        exit;
+        
+    } catch (Exception $e) {
+        $error_message = "Erreur lors de la sélection de l'équipement : " . $e->getMessage();
+        error_log($error_message);
     }
 }
-
-// Vérifier si l'équipement de départ a déjà été choisi
-$equipment_selected = $characterObject->hasStartingEquipment();
-
-// Traitement du formulaire
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] === 'select_equipment') {
-    $starting_equipment = isset($_POST['starting_equipment']) ? $_POST['starting_equipment'] : [];
-    $weapon_choices = isset($_POST['weapon_choice']) ? $_POST['weapon_choice'] : [];
-    $background_equipment = isset($_POST['background_equipment']) ? $_POST['background_equipment'] : [];
-    $background_weapon_choices = isset($_POST['background_weapon_choice']) ? $_POST['background_weapon_choice'] : [];
-    
-    // Debug: Afficher les données reçues
-    error_log("DEBUG - starting_equipment: " . json_encode($starting_equipment));
-    error_log("DEBUG - weapon_choices: " . json_encode($weapon_choices));
-    error_log("DEBUG - background_equipment: " . json_encode($background_equipment));
-    error_log("DEBUG - background_weapon_choices: " . json_encode($background_weapon_choices));
-    
-    // Générer l'équipement final
-    $equipmentData = generateFinalEquipment($character['class_id'], $starting_equipment, $character['background_id'], $weapon_choices);
-    $finalEquipment = $equipmentData['equipment'];
-    $backgroundGold = $equipmentData['gold'];
-    
-    // Ajouter l'équipement de l'historique
-    if (!empty($background_equipment)) {
-        $backgroundEquipmentData = generateFinalEquipment($character['class_id'], $background_equipment, $character['background_id'], $background_weapon_choices);
-        $finalEquipment .= "\n" . $backgroundEquipmentData['equipment'];
-        $backgroundGold += $backgroundEquipmentData['gold'];
-    }
-    
-    // Ajouter l'équipement de départ choisi par le joueur
-    addStartingEquipmentToCharacter($character_id, $equipmentData);
-    
-    // Synchroniser l'équipement de base avec la base de données
-    syncBaseEquipmentToCharacterEquipment($character_id);
-    
-    // Mettre à jour l'argent du personnage
-    if ($backgroundGold > 0) {
-        $characterObject->update(['money_gold' => $characterObject->money_gold + $backgroundGold]);
-    }
-    
-    // Marquer le personnage comme équipé et verrouiller les modifications
-    $characterObject->update([
-        'is_equipped' => 1,
-        'equipment_locked' => 1,
-        'character_locked' => 1
-    ]);
-    
-    // Rediriger vers la scène de jeu ou la fiche du personnage
-    if ($campaign) {
-        $campaignArray = $campaign->toArray();
-        header("Location: view_scene_player.php?campaign_id=" . $campaignArray['id']);
-    } else {
-        header("Location: view_character.php?id=$character_id");
-    }
-    exit();
-}
-
-// Récupérer l'équipement de départ de la classe
-$startingEquipment = getClassStartingEquipment($character['class_id']);
-
-// Récupérer l'équipement de l'historique depuis la table starting_equipment
-$backgroundEquipment = [];
-$parsedBackgroundEquipment = [];
-if ($character['background_id']) {
-    $backgroundEquipmentDetailed = getBackgroundStartingEquipment($character['background_id']);
-    if (!empty($backgroundEquipmentDetailed)) {
-        $parsedBackgroundEquipment = structureStartingEquipmentByChoices($backgroundEquipmentDetailed);
-    }
-}
-
 ?>
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sélection d'équipement de départ - <?php echo htmlspecialchars($character['name']); ?><?php if ($campaign): ?><?php $campaignArray = $campaign->toArray(); ?> - <?php echo htmlspecialchars($campaignArray['title']); ?><?php endif; ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Sélection d'équipement de départ - <?php echo htmlspecialchars($character['name']); ?></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        .equipment-choice {
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-            background-color: #f8f9fa;
-        }
-        .equipment-choice.selected {
-            border-color: #0d6efd;
-            background-color: #e7f3ff;
-        }
-        .equipment-option {
-            cursor: pointer;
-            padding: 10px;
-            border: 1px solid #dee2e6;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            background-color: white;
-            transition: all 0.2s;
-        }
-        .equipment-option:hover {
-            border-color: #0d6efd;
-            background-color: #f8f9fa;
-        }
-        .equipment-option.selected {
-            border-color: #0d6efd;
-            background-color: #e7f3ff;
-        }
-        .character-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px 0;
-            margin-bottom: 30px;
-        }
-    </style>
 </head>
 <body>
-    <div class="character-header">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h1><i class="fas fa-shield-alt me-3"></i>Sélection d'équipement de départ</h1>
-                    <p class="mb-0">Choisissez l'équipement de départ pour votre personnage<?php if ($campaign): ?><?php $campaignArray = $campaign->toArray(); ?> dans la campagne "<?php echo htmlspecialchars($campaignArray['title']); ?>"<?php endif; ?></p>
-                </div>
-                <div class="col-md-4 text-end">
-                    <h3><?php echo htmlspecialchars($character['name']); ?></h3>
-                    <p class="mb-0"><?php echo htmlspecialchars($character['race_name']); ?> <?php echo htmlspecialchars($character['class_name']); ?></p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="container">
-        <?php if ($equipment_selected): ?>
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle me-2"></i>
-                L'équipement de départ a déjà été choisi pour ce personnage.
-                <?php if ($campaign): ?>
-                    <?php $campaignArray = $campaign->toArray(); ?>
-                    <a href="view_scene_player.php?campaign_id=<?php echo $campaignArray['id']; ?>" class="btn btn-primary ms-3">
-                        <i class="fas fa-play me-2"></i>Rejoindre la partie
-                    </a>
-                <?php else: ?>
-                    <a href="view_character.php?id=<?php echo $character_id; ?>" class="btn btn-primary ms-3">
-                        <i class="fas fa-user me-2"></i>Voir le personnage
-                    </a>
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h1><i class="fas fa-sword me-2"></i>Sélection d'équipement de départ</h1>
+                <p class="text-muted">Personnage : <strong><?php echo htmlspecialchars($character['name']); ?></strong></p>
+                
+                <?php if (isset($error_message)): ?>
+                    <div class="alert alert-danger" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i><?php echo htmlspecialchars($error_message); ?>
+                    </div>
                 <?php endif; ?>
             </div>
-        <?php else: ?>
-            <form method="POST" id="equipmentForm">
-                <input type="hidden" name="action" value="select_equipment">
-                
-                <div class="row">
-                    <div class="col-md-8">
-                        <h3><i class="fas fa-sword me-2"></i>Équipement de classe</h3>
-                        
-                        <?php if (!empty($startingEquipment)): ?>
-                            <?php foreach ($startingEquipment as $index => $item): ?>
-                                <div class="equipment-choice" data-index="<?php echo $index; ?>" <?php if (isset($item['fixed'])): ?>data-fixed="true"<?php endif; ?>>
-                                    <?php if (isset($item['fixed'])): ?>
-                                        <!-- Équipement fixe -->
-                                        <h5><i class="fas fa-check-circle text-success me-2"></i><?php echo htmlspecialchars($item['fixed']); ?></h5>
-                                        <p class="text-muted">Cet équipement est automatiquement attribué.</p>
-                                    <?php else: ?>
-                                        <!-- Choix d'équipement -->
-                                        <h5>Choisissez une option :</h5>
-                                        <?php foreach ($item as $choiceKey => $choiceValue): ?>
-                                            <div class="equipment-option" data-choice="<?php echo $choiceKey; ?>">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="radio" name="starting_equipment[<?php echo $index; ?>]" value="<?php echo $choiceKey; ?>" id="equipment_<?php echo $index; ?>_<?php echo $choiceKey; ?>">
-                                                    <label class="form-check-label" for="equipment_<?php echo $index; ?>_<?php echo $choiceKey; ?>">
-                                                        <?php if (is_array($choiceValue) && isset($choiceValue['type'])): ?>
-                                                            <?php if ($choiceValue['type'] === 'weapon_choice'): ?>
-                                                                <strong><?php echo htmlspecialchars($choiceValue['description']); ?></strong>
-                                                                <div class="mt-2">
-                                                                    <select class="form-select form-select-sm" name="weapon_choice[<?php echo $index; ?>][<?php echo $choiceKey; ?>]">
-                                                                        <option value="">Sélectionnez une arme</option>
-                                                                        <?php foreach ($choiceValue['options'] as $weapon): ?>
-                                                                            <option value="<?php echo htmlspecialchars($weapon['name']); ?>">
-                                                                                <?php echo htmlspecialchars($weapon['name']); ?> (<?php echo htmlspecialchars($weapon['type']); ?>)
-                                                                            </option>
-                                                                        <?php endforeach; ?>
-                                                                    </select>
-                                                                </div>
-                                                            <?php elseif ($choiceValue['type'] === 'pack'): ?>
-                                                                <strong><?php echo htmlspecialchars($choiceValue['description']); ?></strong>
-                                                                <div class="mt-2">
-                                                                    <small class="text-muted">
-                                                                        <strong>Contenu :</strong><br>
-                                                                        <?php echo implode(', ', $choiceValue['contents']); ?>
-                                                                    </small>
-                                                                </div>
-                                                            <?php endif; ?>
-                                                        <?php else: ?>
-                                                            <?php echo htmlspecialchars($choiceValue); ?>
-                                                        <?php endif; ?>
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <div class="alert alert-warning">
-                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                Aucun équipement de départ défini pour cette classe.
-                            </div>
-                        <?php endif; ?>
-                        
-                        <?php if (!empty($parsedBackgroundEquipment)): ?>
-                            <h3 class="mt-4"><i class="fas fa-backpack me-2"></i>Équipement d'historique</h3>
-                            <?php foreach ($parsedBackgroundEquipment as $index => $choice): ?>
-                                <div class="equipment-choice" data-choice="<?php echo $index; ?>">
-                                    <h5><?php echo htmlspecialchars($choice['description'] ?? 'Choix d\'équipement'); ?></h5>
-                                    
-                                    <?php if (isset($choice['options']) && is_array($choice['options'])): ?>
-                                        <div class="equipment-options">
-                                            <?php foreach ($choice['options'] as $choiceKey => $choiceValue): ?>
-                                                <div class="equipment-option" data-choice="<?php echo $index; ?>" data-option="<?php echo $choiceKey; ?>">
-                                                    <div class="form-check">
-                                                        <input class="form-check-input" type="radio" name="background_equipment[<?php echo $index; ?>]" value="<?php echo $choiceKey; ?>" id="background_equipment_<?php echo $index; ?>_<?php echo $choiceKey; ?>">
-                                                        <label class="form-check-label" for="background_equipment_<?php echo $index; ?>_<?php echo $choiceKey; ?>">
-                                                            <?php if (is_array($choiceValue)): ?>
-                                                                <?php 
-                                                                // $choiceValue est un objet équipement de la base de données
-                                                                $equipmentName = $choiceValue['name'] ?? $choiceValue['description'] ?? 'Équipement inconnu';
-                                                                $equipmentDescription = $choiceValue['description'] ?? '';
-                                                                $equipmentType = $choiceValue['type'] ?? '';
-                                                                ?>
-                                                                <strong><?php echo htmlspecialchars($equipmentName); ?></strong>
-                                                                <?php if (!empty($equipmentDescription) && $equipmentDescription !== $equipmentName): ?>
-                                                                    <br><small class="text-muted"><?php echo htmlspecialchars($equipmentDescription); ?></small>
-                                                                <?php endif; ?>
-                                                                <?php if (!empty($equipmentType)): ?>
-                                                                    <br><small class="text-muted">Type: <?php echo htmlspecialchars($equipmentType); ?></small>
-                                                                <?php endif; ?>
-                                                            <?php else: ?>
-                                                                <strong><?php echo htmlspecialchars($choiceValue); ?></strong>
-                                                            <?php endif; ?>
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                            <?php endforeach; ?>
+        </div>
+
+        <form method="POST" id="equipmentForm">
+            <input type="hidden" name="action" value="select_equipment">
+            <input type="hidden" name="character_id" value="<?php echo $character_id; ?>">
+            
+            <div class="row">
+                <div class="col-md-8">
+                    <!-- Équipement de classe -->
+                    <h3><i class="fas fa-sword me-2"></i>Équipement de classe - <?php echo htmlspecialchars($character['class_name']); ?></h3>
+                    
+                    <?php if (!empty($groupedClassChoix)): ?>
+                        <?php $choiceIndex = 0; ?>
+                        <?php foreach ($groupedClassChoix as $noChoix => $choixGroup): ?>
+                            <div class="equipment-choice mb-4 p-3 border rounded">
+                                <?php if ($noChoix == 0): ?>
+                                    <!-- Équipement par défaut -->
+                                    <h5><i class="fas fa-check-circle text-success me-2"></i>Équipement par défaut</h5>
+                                    <p class="text-muted">Cet équipement est automatiquement attribué.</p>
+                                    <?php 
+                                    // Prendre le premier choix du groupe (ils sont tous identiques)
+                                    $defaultChoix = $choixGroup[0];
+                                    if ($defaultChoix->hasOptions()): 
+                                    ?>
+                                        <div class="mt-2">
+                                            <small class="text-muted">
+                                                <strong>Équipement :</strong><br>
+                                                <?php 
+                                                $itemNames = [];
+                                                    foreach ($defaultChoix->getOptions() as $option) {
+                                                        $itemNames[] = $option->getNameWithQuantity();
+                                                    }
+                                                echo implode(', ', $itemNames);
+                                                ?>
+                                            </small>
                                         </div>
                                     <?php endif; ?>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </div>
-                    
-                    <div class="col-md-4">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5><i class="fas fa-user me-2"></i>Informations du personnage</h5>
-                            </div>
-                            <div class="card-body">
-                                <p><strong>Nom :</strong> <?php echo htmlspecialchars($character['name']); ?></p>
-                                <p><strong>Race :</strong> <?php echo htmlspecialchars($character['race_name']); ?></p>
-                                <p><strong>Classe :</strong> <?php echo htmlspecialchars($character['class_name']); ?></p>
-                                <p><strong>Niveau :</strong> <?php echo $character['level']; ?></p>
-                                <?php if ($character['background_name']): ?>
-                                    <p><strong>Historique :</strong> <?php echo htmlspecialchars($character['background_name']); ?></p>
+                                <?php else: ?>
+                                    <!-- Choix d'équipement -->
+                                    <h5>Choix <?php echo $noChoix; ?></h5>
+                                    <p class="text-muted">Choisissez une option :</p>
+                                    <?php foreach ($choixGroup as $choix): ?>
+                                        <div class="equipment-option mb-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="class_equipment[<?php echo $choiceIndex; ?>]" value="<?php echo $choix->getOptionLetter(); ?>" id="class_<?php echo $choiceIndex; ?>_<?php echo $choix->getOptionLetter(); ?>" required>
+                                                <label class="form-check-label" for="class_<?php echo $choiceIndex; ?>_<?php echo $choix->getOptionLetter(); ?>">
+                                                    <strong>Option <?php echo $choix->getOptionLetter(); ?> :</strong>
+                                                    <?php if ($choix->hasOptions()): ?>
+                                                        <?php 
+                                                        $itemNames = [];
+                                                        $hasWeaponDropdown = false;
+                                                        foreach ($choix->getOptions() as $option) {
+                                                            if ($option->needsWeaponDropdown()) {
+                                                                $hasWeaponDropdown = true;
+                                                                $itemNames[] = $option->getTypeLabel() . ' (' . $option->getTypeFilter() . ')';
+                                                            } else {
+                                                                $itemNames[] = $option->getNameWithQuantity();
+                                                            }
+                                                        }
+                                                        echo implode(', ', $itemNames);
+                                                        ?>
+                                                    <?php endif; ?>
+                                                </label>
+                                            </div>
+                                            
+                                            <?php if ($choix->hasOptions()): ?>
+                                                <?php foreach ($choix->getOptions() as $option): ?>
+                                                    <?php if ($option->needsWeaponDropdown()): ?>
+                                                        <div class="weapon-dropdown mt-2 ms-4" style="display: none;">
+                                                            <label class="form-label small">Choisir une arme :</label>
+                                                            <select class="form-select form-select-sm" name="weapon_choice[<?php echo $choiceIndex; ?>][<?php echo $option->getId(); ?>]">
+                                                                <option value="">-- Sélectionner une arme --</option>
+                                                                <?php 
+                                                                $weapons = $option->getFilteredWeapons();
+                                                                foreach ($weapons as $weapon): 
+                                                                ?>
+                                                                    <option value="<?php echo $weapon['id']; ?>">
+                                                                        <?php echo htmlspecialchars($weapon['name']); ?>
+                                                                        <?php if ($weapon['damage']): ?>
+                                                                            (<?php echo htmlspecialchars($weapon['damage']); ?>)
+                                                                        <?php endif; ?>
+                                                                    </option>
+                                                                <?php endforeach; ?>
+                                                            </select>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endforeach; ?>
                                 <?php endif; ?>
                             </div>
-                        </div>
+                            <?php $choiceIndex++; ?>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+
+                    <!-- Équipement de background -->
+                    <?php if (!empty($groupedBackgroundChoix)): ?>
+                        <h3 class="mt-5"><i class="fas fa-user me-2"></i>Équipement de background - <?php echo htmlspecialchars($character['background_name']); ?></h3>
                         
-                        <div class="card mt-3">
-                            <div class="card-header">
-                                <h5><i class="fas fa-coins me-2"></i>Argent de départ</h5>
+                        <?php $choiceIndex = 0; ?>
+                        <?php foreach ($groupedBackgroundChoix as $noChoix => $choixGroup): ?>
+                            <div class="equipment-choice mb-4 p-3 border rounded">
+                                <?php if ($noChoix == 0): ?>
+                                    <!-- Équipement par défaut -->
+                                    <h5><i class="fas fa-check-circle text-success me-2"></i>Équipement par défaut</h5>
+                                    <p class="text-muted">Cet équipement est automatiquement attribué.</p>
+                                    <?php 
+                                    // Prendre le premier choix du groupe (ils sont tous identiques)
+                                    $defaultChoix = $choixGroup[0];
+                                    if ($defaultChoix->hasOptions()): 
+                                    ?>
+                                        <div class="mt-2">
+                                            <small class="text-muted">
+                                                <strong>Équipement :</strong><br>
+                                                <?php 
+                                                $itemNames = [];
+                                                    foreach ($defaultChoix->getOptions() as $option) {
+                                                        $itemNames[] = $option->getNameWithQuantity();
+                                                    }
+                                                echo implode(', ', $itemNames);
+                                                ?>
+                                            </small>
+                                        </div>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <!-- Choix d'équipement -->
+                                    <h5>Choix <?php echo $noChoix; ?></h5>
+                                    <p class="text-muted">Choisissez une option :</p>
+                                    <?php foreach ($choixGroup as $choix): ?>
+                                        <div class="equipment-option mb-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="background_equipment[<?php echo $choiceIndex; ?>]" value="<?php echo $choix->getOptionLetter(); ?>" id="background_<?php echo $choiceIndex; ?>_<?php echo $choix->getOptionLetter(); ?>" required>
+                                                <label class="form-check-label" for="background_<?php echo $choiceIndex; ?>_<?php echo $choix->getOptionLetter(); ?>">
+                                                    <strong>Option <?php echo $choix->getOptionLetter(); ?> :</strong>
+                                                    <?php if ($choix->hasOptions()): ?>
+                                                        <?php 
+                                                        $itemNames = [];
+                                                        $hasWeaponDropdown = false;
+                                                        foreach ($choix->getOptions() as $option) {
+                                                            if ($option->needsWeaponDropdown()) {
+                                                                $hasWeaponDropdown = true;
+                                                                $itemNames[] = $option->getTypeLabel() . ' (' . $option->getTypeFilter() . ')';
+                                                            } else {
+                                                                $itemNames[] = $option->getNameWithQuantity();
+                                                            }
+                                                        }
+                                                        echo implode(', ', $itemNames);
+                                                        ?>
+                                                    <?php endif; ?>
+                                                </label>
+                                            </div>
+                                            
+                                            <?php if ($choix->hasOptions()): ?>
+                                                <?php foreach ($choix->getOptions() as $option): ?>
+                                                    <?php if ($option->needsWeaponDropdown()): ?>
+                                                        <div class="weapon-dropdown mt-2 ms-4" style="display: none;">
+                                                            <label class="form-label small">Choisir une arme :</label>
+                                                            <select class="form-select form-select-sm" name="weapon_choice_background[<?php echo $choiceIndex; ?>][<?php echo $option->getId(); ?>]">
+                                                                <option value="">-- Sélectionner une arme --</option>
+                                                                <?php 
+                                                                $weapons = $option->getFilteredWeapons();
+                                                                foreach ($weapons as $weapon): 
+                                                                ?>
+                                                                    <option value="<?php echo $weapon['id']; ?>">
+                                                                        <?php echo htmlspecialchars($weapon['name']); ?>
+                                                                        <?php if ($weapon['damage']): ?>
+                                                                            (<?php echo htmlspecialchars($weapon['damage']); ?>)
+                                                                        <?php endif; ?>
+                                                                    </option>
+                                                                <?php endforeach; ?>
+                                                            </select>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                <?php endforeach; ?>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
                             </div>
-                            <div class="card-body">
-                                <p><strong>Argent actuel :</strong></p>
-                                <ul class="list-unstyled">
-                                    <li><?php echo $character['money_gold']; ?> PO (pièces d'or)</li>
-                                    <li><?php echo $character['money_silver']; ?> PA (pièces d'argent)</li>
-                                    <li><?php echo $character['money_copper']; ?> PC (pièces de cuivre)</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
+                            <?php $choiceIndex++; ?>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
                 
-                <div class="row mt-4">
-                    <div class="col-12 text-center">
-                        <button type="submit" class="btn btn-success btn-lg">
-                            <i class="fas fa-check me-2"></i>Confirmer l'équipement et rejoindre la partie
-                        </button>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-info-circle me-2"></i>Informations</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">
+                                Sélectionnez l'équipement de départ pour votre personnage. 
+                                Les équipements marqués comme "par défaut" seront automatiquement attribués.
+                            </p>
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Confirmer la sélection
+                                </button>
+                                <a href="view_character.php?id=<?php echo $character_id; ?>" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Retour au personnage
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </form>
-        <?php endif; ?>
+            </div>
+        </form>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Gestion de la sélection d'équipement
+        // Gérer l'affichage des menus déroulants d'armes
         document.addEventListener('DOMContentLoaded', function() {
-            const equipmentOptions = document.querySelectorAll('.equipment-option');
-            
-            equipmentOptions.forEach(option => {
-                option.addEventListener('click', function() {
-                    const radio = this.querySelector('input[type="radio"]');
-                    const choiceContainer = this.closest('.equipment-choice');
-                    
-                    // Désélectionner toutes les options de ce choix
-                    choiceContainer.querySelectorAll('.equipment-option').forEach(opt => {
-                        opt.classList.remove('selected');
-                    });
-                    
-                    // Sélectionner l'option cliquée
-                    this.classList.add('selected');
-                    radio.checked = true;
-                    
-                    // Activer/désactiver les sélecteurs d'armes
-                    toggleWeaponSelectors();
+            // Fonction pour afficher/masquer les menus déroulants d'armes
+            function toggleWeaponDropdowns() {
+                // Masquer tous les menus déroulants d'armes
+                document.querySelectorAll('.weapon-dropdown').forEach(function(dropdown) {
+                    dropdown.style.display = 'none';
                 });
-            });
-            
-            // Gestion des sélecteurs d'armes
-            function toggleWeaponSelectors() {
-                const weaponSelects = document.querySelectorAll('select[name^="weapon_choice"], select[name^="background_weapon_choice"]');
-                weaponSelects.forEach(select => {
-                    const option = select.closest('.equipment-option');
-                    const radio = option.querySelector('input[type="radio"]');
-                    
-                    if (radio && radio.checked) {
-                        select.disabled = false;
-                        select.required = true;
-                        select.style.borderColor = '#dee2e6';
-                    } else {
-                        select.disabled = true;
-                        select.required = false;
-                        select.style.borderColor = '#dee2e6';
-                        // Réinitialiser la valeur si l'option n'est pas sélectionnée
-                        if (!radio.checked) {
-                            select.value = '';
-                        }
+                
+                // Afficher les menus déroulants pour les options sélectionnées
+                document.querySelectorAll('input[type="radio"]:checked').forEach(function(radio) {
+                    const optionDiv = radio.closest('.equipment-option');
+                    if (optionDiv) {
+                        const weaponDropdowns = optionDiv.querySelectorAll('.weapon-dropdown');
+                        weaponDropdowns.forEach(function(dropdown) {
+                            dropdown.style.display = 'block';
+                        });
                     }
                 });
             }
             
-            // Initialiser l'état des sélecteurs
-            toggleWeaponSelectors();
-            
-            // Validation du formulaire
-            document.getElementById('equipmentForm').addEventListener('submit', function(e) {
-                const requiredChoices = document.querySelectorAll('.equipment-choice:not([data-fixed])');
-                let allSelected = true;
-                let errorMessage = '';
-                
-                console.log('Validation - Nombre de choix requis:', requiredChoices.length);
-                
-                requiredChoices.forEach((choice, index) => {
-                    const selected = choice.querySelector('input[type="radio"]:checked');
-                    console.log(`Choix ${index}:`, selected ? selected.value : 'Aucun');
-                    
-                    if (!selected) {
-                        allSelected = false;
-                        choice.style.borderColor = '#dc3545';
-                        errorMessage = 'Veuillez faire tous les choix d\'équipement requis.';
-                    } else {
-                        choice.style.borderColor = '#dee2e6';
-                        
-                        // Vérifier les sélecteurs d'armes seulement pour l'option sélectionnée
-                        const selectedOption = choice.querySelector('.equipment-option.selected');
-                        if (selectedOption) {
-                            const weaponSelect = selectedOption.querySelector('select[name^="weapon_choice"]');
-                            if (weaponSelect && !weaponSelect.disabled && !weaponSelect.value) {
-                                allSelected = false;
-                                weaponSelect.style.borderColor = '#dc3545';
-                                errorMessage = 'Veuillez sélectionner une arme pour le choix d\'arme sélectionné.';
-                                console.log('Erreur: Sélecteur d\'arme vide pour l\'option sélectionnée');
-                            } else if (weaponSelect) {
-                                weaponSelect.style.borderColor = '#dee2e6';
-                                console.log('Sélecteur d\'arme OK:', weaponSelect.value);
-                            }
-                            // Si pas de sélecteur d'arme, c'est normal (ex: épée courte)
-                            console.log('Option sélectionnée OK:', selectedOption.querySelector('input[type="radio"]').value);
-                        }
-                        
-                        // Réinitialiser les sélecteurs non sélectionnés
-                        choice.querySelectorAll('.equipment-option:not(.selected) select[name^="weapon_choice"]').forEach(select => {
-                            select.style.borderColor = '#dee2e6';
-                        });
-                    }
-                });
-                
-                console.log('Validation - Tous les choix sélectionnés:', allSelected);
-                
-                if (!allSelected) {
-                    e.preventDefault();
-                    alert(errorMessage);
-                }
+            // Écouter les changements sur les boutons radio
+            document.querySelectorAll('input[type="radio"]').forEach(function(radio) {
+                radio.addEventListener('change', toggleWeaponDropdowns);
             });
+            
+            // Initialiser l'affichage
+            toggleWeaponDropdowns();
         });
     </script>
 </body>

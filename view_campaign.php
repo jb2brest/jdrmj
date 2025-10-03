@@ -671,9 +671,9 @@ if ($is_member && $user_role === 'player') {
             // Vérifier si l'équipement de départ a été choisi
             $stmt = $pdo->prepare("
                 SELECT COUNT(*) as count 
-                FROM place_objects 
-                WHERE owner_type = 'player' AND owner_id = ? 
-                AND (item_source = 'Équipement de départ' OR item_source = 'Classe')
+                FROM character_equipment 
+                WHERE character_id = ? 
+                AND obtained_from = 'Équipement de départ'
             ");
             $stmt->execute([$char['id']]);
             $equipment_count = $stmt->fetch()['count'];

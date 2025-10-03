@@ -224,15 +224,15 @@ $character_languages = array_filter($character_languages, function($lang) {
     return !preg_match('/une? (langue )?de votre choix/i', $lang);
 });
 
-// Charger l'équipement depuis la table place_objects
-$stmt = $pdo->prepare("SELECT * FROM place_objects WHERE owner_type = 'player' AND owner_id = ?");
+// Charger l'équipement depuis la table items
+$stmt = $pdo->prepare("SELECT * FROM items WHERE owner_type = 'player' AND owner_id = ?");
 $stmt->execute([$character_id]);
 $equipment_items = $stmt->fetchAll();
 
 // Reconstruire l'équipement de départ basé sur l'équipement actuel
 $character_equipment = [];
 if (count($equipment_items) > 0) {
-    // Nouveau système : équipement dans la table place_objects
+    // Nouveau système : équipement dans la table items
     foreach ($equipment_items as $item) {
         // Charger les équipements de départ (pas les objets magiques ou les objets obtenus en jeu)
         if ($item['item_source'] === 'Attribution MJ' || 

@@ -669,4 +669,29 @@ class Campaign
         $result = $stmt->fetch();
         return (int)$result['count'];
     }
+    
+    /**
+     * Vérifier si un personnage est dans cette campagne
+     * 
+     * @param Character $character Le personnage à vérifier
+     * @return bool True si le personnage est dans la campagne, false sinon
+     */
+    public function isCharacterIn(Character $character)
+    {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT pp.* FROM place_players pp
+                INNER JOIN place_campaigns pc ON pp.place_id = pc.place_id
+                WHERE pp.character_id = ? AND pc.campaign_id = ?
+            ");
+            $stmt->execute([$character->id, $this->id]);
+            $result = $stmt->fetch();
+            
+            return $result !== false;
+            
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la vérification du personnage dans la campagne: " . $e->getMessage());
+            return false;
+        }
+    }
 }

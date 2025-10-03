@@ -503,7 +503,7 @@ function hasStartingEquipment($characterId) {
         $stmt = $pdo->prepare("
             SELECT COUNT(*) as count 
             FROM character_equipment 
-            WHERE character_id = ? AND item_source = 'Équipement de départ'
+            WHERE character_id = ? AND obtained_from = 'Équipement de départ'
         ");
         $stmt->execute([$characterId]);
         $result = $stmt->fetch();

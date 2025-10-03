@@ -1767,7 +1767,7 @@ function getCharacterEquippedItems($characterId) {
     
     $stmt = $pdo->prepare("
         SELECT po.display_name as item_name, po.object_type as item_type, po.equipped_slot, w.hands
-        FROM place_objects po
+        FROM items po
         LEFT JOIN weapons w ON po.display_name = w.name AND po.object_type = 'weapon'
         WHERE po.owner_type = 'player' AND po.owner_id = ? AND po.is_equipped = 1
     ");
@@ -1806,7 +1806,7 @@ function equipItem($characterId, $itemName, $itemType, $slot) {
         
         // Déséquiper l'objet actuellement dans ce slot
         $stmt = $pdo->prepare("
-            UPDATE place_objects 
+            UPDATE items 
             SET is_equipped = 0, equipped_slot = NULL 
             WHERE owner_type = 'player' AND owner_id = ? AND equipped_slot = ?
         ");
@@ -1814,7 +1814,7 @@ function equipItem($characterId, $itemName, $itemType, $slot) {
         
         // Équiper le nouvel objet
         $stmt = $pdo->prepare("
-            UPDATE place_objects 
+            UPDATE items 
             SET is_equipped = 1, equipped_slot = ? 
             WHERE owner_type = 'player' AND owner_id = ? AND display_name = ? AND object_type = ?
         ");
@@ -1851,7 +1851,7 @@ function unequipItem($characterId, $itemName) {
     }
 }
 
-// Fonction pour synchroniser l'équipement de base vers place_objects
+// Fonction pour synchroniser l'équipement de base vers items
 function syncBaseEquipmentToCharacterEquipment($characterId) {
     global $pdo;
     
@@ -1875,13 +1875,13 @@ function syncBaseEquipmentToCharacterEquipment($characterId) {
         // Ajouter les armes
         foreach ($detectedWeapons as $weapon) {
             // Vérifier si l'arme existe déjà
-            $stmt = $pdo->prepare("SELECT id FROM place_objects WHERE owner_type = 'player' AND owner_id = ? AND display_name = ? AND object_type = 'weapon'");
+            $stmt = $pdo->prepare("SELECT id FROM items WHERE owner_type = 'player' AND owner_id = ? AND display_name = ? AND object_type = 'weapon'");
             $stmt->execute([$characterId, $weapon['name']]);
             
             if (!$stmt->fetch()) {
                 // Ajouter l'arme
                 $stmt = $pdo->prepare("
-                    INSERT INTO place_objects (place_id, display_name, object_type, type_precis, description, is_identified, is_visible, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed, magical_item_id, item_source, quantity, equipped_slot, notes, obtained_at, obtained_from) 
+                    INSERT INTO items (place_id, display_name, object_type, type_precis, description, is_identified, is_visible, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed, magical_item_id, item_source, quantity, equipped_slot, notes, obtained_at, obtained_from) 
                     VALUES (NULL, ?, 'weapon', ?, ?, 1, 0, 0, 0, 0, 0, 'player', ?, NULL, NULL, NULL, 0, 0, 0, NULL, 0, NULL, 'Équipement de base', 1, NULL, NULL, NOW(), 'Équipement de base')
                 ");
                 $description = "Arme: {$weapon['type']}, {$weapon['hands']} main(s), Dégâts: {$weapon['damage']}";
@@ -1895,13 +1895,13 @@ function syncBaseEquipmentToCharacterEquipment($characterId) {
         // Ajouter les armures
         foreach ($detectedArmor as $armor) {
             // Vérifier si l'armure existe déjà
-            $stmt = $pdo->prepare("SELECT id FROM place_objects WHERE owner_type = 'player' AND owner_id = ? AND display_name = ? AND object_type = 'armor'");
+            $stmt = $pdo->prepare("SELECT id FROM items WHERE owner_type = 'player' AND owner_id = ? AND display_name = ? AND object_type = 'armor'");
             $stmt->execute([$characterId, $armor['name']]);
             
             if (!$stmt->fetch()) {
                 // Ajouter l'armure
                 $stmt = $pdo->prepare("
-                    INSERT INTO place_objects (place_id, display_name, object_type, type_precis, description, is_identified, is_visible, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed, magical_item_id, item_source, quantity, equipped_slot, notes, obtained_at, obtained_from) 
+                    INSERT INTO items (place_id, display_name, object_type, type_precis, description, is_identified, is_visible, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed, magical_item_id, item_source, quantity, equipped_slot, notes, obtained_at, obtained_from) 
                     VALUES (NULL, ?, 'armor', ?, ?, 1, 0, 0, 0, 0, 0, 'player', ?, NULL, NULL, NULL, 0, 0, 0, NULL, 0, NULL, 'Équipement de base', 1, NULL, NULL, NOW(), 'Équipement de base')
                 ");
                 $description = "Armure: {$armor['type']}, CA: {$armor['ac_formula']}";
@@ -1912,13 +1912,13 @@ function syncBaseEquipmentToCharacterEquipment($characterId) {
         // Ajouter les boucliers
         foreach ($detectedShields as $shield) {
             // Vérifier si le bouclier existe déjà
-            $stmt = $pdo->prepare("SELECT id FROM place_objects WHERE owner_type = 'player' AND owner_id = ? AND display_name = ? AND object_type = 'armor'");
+            $stmt = $pdo->prepare("SELECT id FROM items WHERE owner_type = 'player' AND owner_id = ? AND display_name = ? AND object_type = 'armor'");
             $stmt->execute([$characterId, $shield['name']]);
             
             if (!$stmt->fetch()) {
                 // Ajouter le bouclier
                 $stmt = $pdo->prepare("
-                    INSERT INTO place_objects (place_id, display_name, object_type, type_precis, description, is_identified, is_visible, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed, magical_item_id, item_source, quantity, equipped_slot, notes, obtained_at, obtained_from) 
+                    INSERT INTO items (place_id, display_name, object_type, type_precis, description, is_identified, is_visible, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed, magical_item_id, item_source, quantity, equipped_slot, notes, obtained_at, obtained_from) 
                     VALUES (NULL, ?, 'armor', ?, ?, 1, 0, 0, 0, 0, 0, 'player', ?, NULL, NULL, NULL, 0, 0, 0, NULL, 0, NULL, 'Équipement de base', 1, NULL, NULL, NOW(), 'Équipement de base')
                 ");
                 $description = "Bouclier, Bonus CA: +{$shield['ac_bonus']}";

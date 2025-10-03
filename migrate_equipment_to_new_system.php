@@ -1,7 +1,7 @@
 <?php
 /**
  * Script de migration de l'équipement vers le nouveau système
- * Migre l'équipement depuis place_objects vers character_equipment
+ * Migre l'équipement depuis items vers character_equipment
  */
 
 require_once 'config/database.php';
@@ -24,15 +24,15 @@ try {
     
     echo "✓ Tables d'équipement créées avec succès<br>\n";
     
-    // 2. Migrer l'équipement des personnages depuis place_objects
+    // 2. Migrer l'équipement des personnages depuis items
     echo "<h2>2. Migration de l'équipement des personnages...</h2>\n";
     
-    // Récupérer tous les objets des personnages depuis place_objects
+    // Récupérer tous les objets des personnages depuis items
     $stmt = $pdo->prepare("
         SELECT 
             po.*,
             c.name as character_name
-        FROM place_objects po
+        FROM items po
         JOIN characters c ON po.owner_id = c.id
         WHERE po.owner_type = 'player'
         AND po.owner_id IS NOT NULL
@@ -112,7 +112,7 @@ try {
         SELECT 
             po.*,
             n.name as npc_name
-        FROM place_objects po
+        FROM items po
         JOIN npcs n ON po.owner_id = n.id
         WHERE po.owner_type = 'npc'
         AND po.owner_id IS NOT NULL
@@ -196,7 +196,7 @@ try {
         SELECT 
             po.*,
             m.name as monster_name
-        FROM place_objects po
+        FROM items po
         JOIN monsters m ON po.owner_id = m.id
         WHERE po.owner_type = 'monster'
         AND po.owner_id IS NOT NULL
@@ -314,7 +314,7 @@ try {
     
     echo "<h2>✅ Migration terminée avec succès !</h2>\n";
     echo "<p>L'équipement a été migré vers le nouveau système. Vous pouvez maintenant utiliser les pages d'équipement dédiées.</p>\n";
-    echo "<p><strong>Note:</strong> Les anciens objets dans place_objects sont conservés pour référence, mais le nouveau système utilise les tables d'équipement dédiées.</p>\n";
+    echo "<p><strong>Note:</strong> Les anciens objets dans items sont conservés pour référence, mais le nouveau système utilise les tables d'équipement dédiées.</p>\n";
     
 } catch (Exception $e) {
     echo "<h2>❌ Erreur lors de la migration</h2>\n";

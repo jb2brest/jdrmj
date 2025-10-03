@@ -985,9 +985,9 @@ class Character
         try {
             $stmt = $this->pdo->prepare("
                 SELECT COUNT(*) as count 
-                FROM place_objects 
-                WHERE owner_type = 'player' AND owner_id = ? 
-                AND (item_source = 'Équipement de départ' OR item_source = 'Classe')
+                FROM character_equipment 
+                WHERE character_id = ? 
+                AND obtained_from = 'Équipement de départ'
             ");
             $stmt->execute([$this->id]);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);

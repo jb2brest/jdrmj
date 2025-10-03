@@ -253,7 +253,7 @@ $intelligenceMod = getAbilityModifier($character['intelligence'] + $character['i
 $wisdomMod = getAbilityModifier($character['wisdom'] + $character['wisdom_bonus']);
 $charismaMod = getAbilityModifier($character['charisma'] + $character['charisma_bonus']);
 
-// Synchroniser l'équipement de base vers place_objects
+// Synchroniser l'équipement de base vers items
 syncBaseEquipmentToCharacterEquipment($character_id);
 
 // Récupérer l'équipement du personnage depuis character_equipment
@@ -528,7 +528,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
     $item_id = (int)$_POST['item_id'];
     $target = $_POST['target'];
     $notes = $_POST['notes'] ?? '';
-    $source = $_POST['source'] ?? 'place_objects';
+    $source = $_POST['source'] ?? 'items';
     
     // Récupérer les informations de l'objet à transférer selon la source
     $item = null;
@@ -544,8 +544,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
         $stmt->execute([$item_id, $character_id]);
         $item = $stmt->fetch();
     } else {
-        // Récupérer depuis place_objects
-        $stmt = $pdo->prepare("SELECT * FROM place_objects WHERE id = ? AND owner_type = 'player' AND owner_id = ?");
+        // Récupérer depuis items
+        $stmt = $pdo->prepare("SELECT * FROM items WHERE id = ? AND owner_type = 'player' AND owner_id = ?");
         $stmt->execute([$item_id, $character_id]);
         $item = $stmt->fetch();
     }
@@ -569,8 +569,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                 $target_char = $stmt->fetch();
                 
                 if ($target_char) {
-                    // Insérer dans place_objects du nouveau propriétaire
-                    $stmt = $pdo->prepare("INSERT INTO place_objects (place_id, display_name, object_type, type_precis, description, is_identified, is_visible, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed, magical_item_id, item_source, quantity, equipped_slot, notes, obtained_at, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    // Insérer dans items du nouveau propriétaire
+                    $stmt = $pdo->prepare("INSERT INTO items (place_id, display_name, object_type, type_precis, description, is_identified, is_visible, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed, magical_item_id, item_source, quantity, equipped_slot, notes, obtained_at, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                     $stmt->execute([
                         null, // place_id
                         $item['display_name'],
@@ -606,7 +606,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                     if ($source === 'npc_equipment') {
                         $stmt = $pdo->prepare("DELETE FROM npc_equipment WHERE id = ?");
                     } else {
-                        $stmt = $pdo->prepare("DELETE FROM place_objects WHERE id = ?");
+                        $stmt = $pdo->prepare("DELETE FROM items WHERE id = ?");
                     }
                     $stmt->execute([$item_id]);
                     
@@ -642,7 +642,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                     if ($source === 'npc_equipment') {
                         $stmt = $pdo->prepare("DELETE FROM npc_equipment WHERE id = ?");
                     } else {
-                        $stmt = $pdo->prepare("DELETE FROM place_objects WHERE id = ?");
+                        $stmt = $pdo->prepare("DELETE FROM items WHERE id = ?");
                     }
                     $stmt->execute([$item_id]);
                     
@@ -678,7 +678,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                     if ($source === 'npc_equipment') {
                         $stmt = $pdo->prepare("DELETE FROM npc_equipment WHERE id = ?");
                     } else {
-                        $stmt = $pdo->prepare("DELETE FROM place_objects WHERE id = ?");
+                        $stmt = $pdo->prepare("DELETE FROM items WHERE id = ?");
                     }
                     $stmt->execute([$item_id]);
                     

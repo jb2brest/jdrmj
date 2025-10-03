@@ -218,14 +218,14 @@ $stmt = $pdo->prepare("
     SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped,
            position_x, position_y, is_on_map, owner_type, owner_id,
            poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed
-    FROM place_objects 
+    FROM items 
     WHERE place_id = ? AND is_visible = 1 AND (owner_type = 'place' OR owner_type IS NULL)
     ORDER BY display_name ASC
 ");
 $stmt->execute([$place_id]);
 $placeObjects = $stmt->fetchAll();
 
-// Récupérer les positions des objets depuis place_objects
+// Récupérer les positions des objets depuis items
 foreach ($placeObjects as $object) {
     $tokenKey = 'object_' . $object['id'];
     $tokenPositions[$tokenKey] = [

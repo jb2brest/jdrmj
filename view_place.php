@@ -110,14 +110,14 @@ $stmt = $pdo->prepare("
     SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped,
            position_x, position_y, is_on_map, owner_type, owner_id,
            poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed
-    FROM place_objects 
+    FROM items 
     WHERE place_id = ? AND (owner_type = 'place' OR owner_type IS NULL)
     ORDER BY display_name ASC
 ");
 $stmt->execute([$place_id]);
 $placeObjects = $stmt->fetchAll();
 
-// Récupérer les positions des objets depuis place_objects (seulement les non attribués)
+// Récupérer les positions des objets depuis items (seulement les non attribués)
 foreach ($placeObjects as $object) {
     $tokenKey = 'object_' . $object['id'];
     $tokenPositions[$tokenKey] = [
@@ -134,7 +134,7 @@ if ($isOwnerDM) {
         SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped,
                position_x, position_y, is_on_map, owner_type, owner_id,
                poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed
-        FROM place_objects 
+        FROM items 
         WHERE place_id = ?
         ORDER BY display_name ASC
     ");
@@ -580,7 +580,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         
                         if ($target && $target['character_id']) {
                             // Ajouter l'objet à l'équipement du personnage
-                            $stmt = $pdo->prepare("INSERT INTO place_objects (place_id, display_name, object_type, type_precis, description, is_identified, is_visible, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed, magical_item_id, item_source, quantity, equipped_slot, notes, obtained_at, obtained_from) VALUES (NULL, ?, ?, ?, ?, 1, 0, 0, 0, 0, 0, 'player', ?, NULL, NULL, NULL, 0, 0, 0, NULL, 0, ?, 'Objet du lieu', 1, NULL, ?, NOW(), ?)");
+                            $stmt = $pdo->prepare("INSERT INTO items (place_id, display_name, object_type, type_precis, description, is_identified, is_visible, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed, magical_item_id, item_source, quantity, equipped_slot, notes, obtained_at, obtained_from) VALUES (NULL, ?, ?, ?, ?, 1, 0, 0, 0, 0, 0, 'player', ?, NULL, NULL, NULL, 0, 0, 0, NULL, 0, ?, 'Objet du lieu', 1, NULL, ?, NOW(), ?)");
                             $stmt->execute([
                                 $item_info['nom'],
                                 $item_info['type'],
@@ -704,7 +704,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         
                         if ($target && $target['character_id']) {
                             // Ajouter le poison à l'équipement du personnage
-                            $stmt = $pdo->prepare("INSERT INTO place_objects (place_id, display_name, object_type, type_precis, description, is_identified, is_visible, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed, magical_item_id, item_source, quantity, equipped_slot, notes, obtained_at, obtained_from) VALUES (NULL, ?, 'poison', ?, ?, ?, 1, 0, 0, 0, 0, 0, 'player', ?, ?, NULL, NULL, 0, 0, 0, NULL, 0, ?, 'Objet du lieu', 1, NULL, ?, NOW(), ?)");
+                            $stmt = $pdo->prepare("INSERT INTO items (place_id, display_name, object_type, type_precis, description, is_identified, is_visible, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed, magical_item_id, item_source, quantity, equipped_slot, notes, obtained_at, obtained_from) VALUES (NULL, ?, 'poison', ?, ?, ?, 1, 0, 0, 0, 0, 0, 'player', ?, ?, NULL, NULL, 0, 0, 0, NULL, 0, ?, 'Objet du lieu', 1, NULL, ?, NOW(), ?)");
                             $stmt->execute([
                                 $poison_info['nom'],
                                 $poison_info['nom'],
@@ -902,7 +902,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                 
                 // Insérer l'objet dans la base de données avec la nouvelle structure
                 $stmt = $pdo->prepare("
-                    INSERT INTO place_objects 
+                    INSERT INTO items 
                     (place_id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped, 
                      poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed) 
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -932,7 +932,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                 $stmt = $pdo->prepare("
                     SELECT id, name, description, object_type, is_visible, position_x, position_y, is_on_map, 
                            item_id, item_name, item_description, letter_content, is_sealed, gold_coins, silver_coins, copper_coins
-                    FROM place_objects 
+                    FROM items 
                     WHERE place_id = ? 
                     ORDER BY name ASC
                 ");
@@ -950,14 +950,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         
         if ($object_id > 0) {
             try {
-                $stmt = $pdo->prepare("DELETE FROM place_objects WHERE id = ? AND place_id = ?");
+                $stmt = $pdo->prepare("DELETE FROM items WHERE id = ? AND place_id = ?");
                 $stmt->execute([$object_id, $place_id]);
                 
                 if ($stmt->rowCount() > 0) {
                     $success_message = "Objet supprimé du lieu.";
                     
                     // Recharger les objets
-                    $stmt = $pdo->prepare("SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed FROM place_objects WHERE place_id = ? ORDER BY display_name ASC");
+                    $stmt = $pdo->prepare("SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed FROM items WHERE place_id = ? ORDER BY display_name ASC");
                     $stmt->execute([$place_id]);
                     $placeObjects = $stmt->fetchAll();
                 } else {
@@ -975,14 +975,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         
         if ($object_id > 0) {
             try {
-                $stmt = $pdo->prepare("UPDATE place_objects SET is_visible = NOT is_visible WHERE id = ? AND place_id = ?");
+                $stmt = $pdo->prepare("UPDATE items SET is_visible = NOT is_visible WHERE id = ? AND place_id = ?");
                 $stmt->execute([$object_id, $place_id]);
                 
                 if ($stmt->rowCount() > 0) {
                     $success_message = "Visibilité de l'objet modifiée.";
                     
                     // Recharger les objets
-                    $stmt = $pdo->prepare("SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed FROM place_objects WHERE place_id = ? ORDER BY display_name ASC");
+                    $stmt = $pdo->prepare("SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed FROM items WHERE place_id = ? ORDER BY display_name ASC");
                     $stmt->execute([$place_id]);
                     $placeObjects = $stmt->fetchAll();
                 } else {
@@ -1000,14 +1000,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
             
             if ($object_id > 0) {
                 try {
-                    $stmt = $pdo->prepare("UPDATE place_objects SET is_identified = NOT is_identified WHERE id = ? AND place_id = ?");
+                    $stmt = $pdo->prepare("UPDATE items SET is_identified = NOT is_identified WHERE id = ? AND place_id = ?");
                     $stmt->execute([$object_id, $place_id]);
                     
                     if ($stmt->rowCount() > 0) {
                         $success_message = "Identification de l'objet modifiée.";
                         
                         // Recharger les objets
-                        $stmt = $pdo->prepare("SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed FROM place_objects WHERE place_id = ? ORDER BY display_name ASC");
+                        $stmt = $pdo->prepare("SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed FROM items WHERE place_id = ? ORDER BY display_name ASC");
                         $stmt->execute([$place_id]);
                         $placeObjects = $stmt->fetchAll();
                     } else {
@@ -1061,7 +1061,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         
                         if (empty($error_message)) {
                             // Récupérer les informations de l'objet avant attribution
-                            $stmt = $pdo->prepare("SELECT * FROM place_objects WHERE id = ? AND place_id = ?");
+                            $stmt = $pdo->prepare("SELECT * FROM items WHERE id = ? AND place_id = ?");
                             $stmt->execute([$object_id, $place_id]);
                             $object = $stmt->fetch();
                             
@@ -1123,21 +1123,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                                     ]);
                                 }
                                 
-                                // Mettre à jour l'attribution dans place_objects
-                                $stmt = $pdo->prepare("UPDATE place_objects SET owner_type = ?, owner_id = ? WHERE id = ? AND place_id = ?");
+                                // Mettre à jour l'attribution dans items
+                                $stmt = $pdo->prepare("UPDATE items SET owner_type = ?, owner_id = ? WHERE id = ? AND place_id = ?");
                                 $stmt->execute([$owner_type, $owner_id, $object_id, $place_id]);
                                 
                                 if ($stmt->rowCount() > 0) {
                                     $success_message = "Objet attribué et ajouté à l'inventaire du propriétaire.";
                                     
                                     // Recharger les objets
-                                    $stmt = $pdo->prepare("SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed FROM place_objects WHERE place_id = ? AND (owner_type = 'place' OR owner_type IS NULL) ORDER BY display_name ASC");
+                                    $stmt = $pdo->prepare("SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed FROM items WHERE place_id = ? AND (owner_type = 'place' OR owner_type IS NULL) ORDER BY display_name ASC");
                                     $stmt->execute([$place_id]);
                                     $placeObjects = $stmt->fetchAll();
                                     
                                     // Recharger tous les objets pour le MJ
                                     if ($isOwnerDM) {
-                                        $stmt = $pdo->prepare("SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed FROM place_objects WHERE place_id = ? ORDER BY display_name ASC");
+                                        $stmt = $pdo->prepare("SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed FROM items WHERE place_id = ? ORDER BY display_name ASC");
                                         $stmt->execute([$place_id]);
                                         $allPlaceObjects = $stmt->fetchAll();
                                     }

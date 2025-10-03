@@ -56,9 +56,9 @@ try {
         throw new Exception('Le personnage n\'est dans aucun lieu');
     }
     
-    // Insérer l'objet dans place_objects
+    // Insérer l'objet dans items
     $stmt = $pdo->prepare("
-        INSERT INTO place_objects (
+        INSERT INTO items (
             place_id, 
             display_name, 
             object_type, 
