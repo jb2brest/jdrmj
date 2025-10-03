@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.6.13
+VERSION=2.6.14
 
 # Date de déploiement
 DEPLOY_DATE=2025-10-03
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-10-03
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=ebd2b9ced8e7e049f1791db0e979186b3fde6cca
+GIT_COMMIT=eecc9ef9c7706161fbda274fce3601313d36dc7d
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251003-182658
+BUILD_ID=20251003-184918
 
 # Notes de version
 RELEASE_NOTES="View_scene"
