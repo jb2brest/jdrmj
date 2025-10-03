@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.6.20
+VERSION=2.6.21
 
 # Date de déploiement
 DEPLOY_DATE=2025-10-03
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-10-03
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=1f01dcd738fc14318b69a79e2912a677e5801e5c
+GIT_COMMIT=99b848c344311359de1cab6e8d30e0f50d6039af
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251003-221040
+BUILD_ID=20251003-230111
 
 # Notes de version
-RELEASE_NOTES="view_monster_sheet.php"
+RELEASE_NOTES="View_NPC_equipment"
