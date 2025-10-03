@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.6.18
+VERSION=2.6.19
 
 # Date de déploiement
 DEPLOY_DATE=2025-10-03
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-10-03
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=30fd7aaffefdec78dcf142e52a2c79ac1ff4298a
+GIT_COMMIT=ec9022f1ca7a7a99819b2772ff08e7c32cb35393
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251003-212655
+BUILD_ID=20251003-215014
 
 # Notes de version
-RELEASE_NOTES="View_region"
+RELEASE_NOTES="View_NPC_equipment"
