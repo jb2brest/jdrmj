@@ -105,11 +105,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 if (empty($error_message)) {
                     try {
-                        $stmt = $pdo->prepare("INSERT INTO places (title, notes, map_url, region_id, country_id) VALUES (?, ?, ?, ?, ?)");
-                        $stmt->execute([$title, $notes, $map_url, $region_id, $region['country_id']]);
+                        $lieu = new Lieu([
+                            'title' => $title,
+                            'notes' => $notes,
+                            'map_url' => $map_url,
+                            'region_id' => $region_id,
+                            'country_id' => $region['country_id']
+                        ]);
+                        $lieu->save();
                         $success_message = "Lieu '$title' créé avec succès.";
-                    } catch (PDOException $e) {
-                        $error_message = "Erreur lors de la création du lieu: " . $e->getMessage();
+                    } catch (Exception $e) {
+                        $error_message = $e->getMessage();
                     }
                 }
             }
@@ -145,15 +151,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 if (empty($error_message)) {
                     try {
-                        $stmt = $pdo->prepare("UPDATE places SET title = ?, notes = ?, map_url = ? WHERE id = ? AND region_id = ?");
-                        $stmt->execute([$title, $notes, $map_url, $place_id, $region_id]);
-                        if ($stmt->rowCount() > 0) {
+                        $lieu = Lieu::findById($place_id);
+                        if ($lieu && $lieu->getRegionId() == $region_id) {
+                            $lieu->setTitle($title);
+                            $lieu->setNotes($notes);
+                            $lieu->setMapUrl($map_url);
+                            $lieu->save();
                             $success_message = "Lieu '$title' mis à jour avec succès.";
                         } else {
                             $error_message = "Lieu non trouvé.";
                         }
-                    } catch (PDOException $e) {
-                        $error_message = "Erreur lors de la mise à jour: " . $e->getMessage();
+                    } catch (Exception $e) {
+                        $error_message = $e->getMessage();
                     }
                 }
             }
@@ -163,26 +172,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $place_id = (int)($_POST['place_id'] ?? 0);
             
             try {
-                // Récupérer l'URL de l'image avant suppression
-                $stmt = $pdo->prepare("SELECT map_url FROM places WHERE id = ? AND region_id = ?");
-                $stmt->execute([$place_id, $region_id]);
-                $place = $stmt->fetch();
-                
-                // Supprimer le lieu
-                $stmt = $pdo->prepare("DELETE FROM places WHERE id = ? AND region_id = ?");
-                $stmt->execute([$place_id, $region_id]);
-                
-                if ($stmt->rowCount() > 0) {
-                    // Supprimer l'image associée si elle existe
-                    if (!empty($place['map_url']) && file_exists($place['map_url'])) {
-                        unlink($place['map_url']);
-                    }
+                $lieu = Lieu::findById($place_id);
+                if ($lieu && $lieu->getRegionId() == $region_id) {
+                    $lieu->delete();
                     $success_message = "Lieu supprimé avec succès.";
                 } else {
                     $error_message = "Lieu non trouvé.";
                 }
-            } catch (PDOException $e) {
-                $error_message = "Erreur lors de la suppression: " . $e->getMessage();
+            } catch (Exception $e) {
+                $error_message = $e->getMessage();
             }
             break;
     }

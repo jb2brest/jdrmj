@@ -188,36 +188,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $country_id = (int)($_POST['country_id'] ?? 0);
             
             try {
-                // Vérifier s'il y a des régions dans ce pays
+                // Récupérer le pays via la classe Pays
                 $pays = Pays::findById($country_id);
-                $region_count = $pays ? $pays->getRegionCount() : 0;
                 
-                if ($region_count > 0) {
-                    $error_message = "Impossible de supprimer ce pays car il contient $region_count régions. Supprimez d'abord les régions.";
+                if ($pays && $pays->getWorldId() == $world_id) {
+                    $pays->delete();
+                    $success_message = "Pays supprimé avec succès.";
                 } else {
-                    // Récupérer le pays via la classe Pays
-                    $pays = Pays::findById($country_id);
-                    
-                    if ($pays && $pays->getWorldId() == $world_id) {
-                        // Supprimer les images associées si elles existent
-                        if (!empty($pays->getMapUrl()) && file_exists($pays->getMapUrl())) {
-                            unlink($pays->getMapUrl());
-                        }
-                        if (!empty($pays->getCoatOfArmsUrl()) && file_exists($pays->getCoatOfArmsUrl())) {
-                            unlink($pays->getCoatOfArmsUrl());
-                        }
-                        
-                        if ($pays->delete()) {
-                            $success_message = "Pays supprimé avec succès.";
-                        } else {
-                            $error_message = "Erreur lors de la suppression du pays.";
-                        }
-                    } else {
-                        $error_message = "Pays non trouvé.";
-                    }
+                    $error_message = "Pays non trouvé.";
                 }
-            } catch (PDOException $e) {
-                $error_message = "Erreur lors de la suppression: " . $e->getMessage();
+            } catch (Exception $e) {
+                $error_message = $e->getMessage();
             }
             break;
     }
@@ -236,68 +217,11 @@ if (isset($_GET['edit_country']) && is_numeric($_GET['edit_country'])) {
     }
 }
 
-// Récupérer tous les PNJs du monde (via la hiérarchie pays → régions → lieux)
-$pdo = getPDO();
-$stmt = $pdo->prepare("
-    SELECT 
-        pn.id,
-        pn.name,
-        pn.description,
-        pn.profile_photo,
-        pn.is_visible,
-        pn.is_identified,
-        c.name AS character_name,
-        c.profile_photo AS character_profile_photo,
-        cl.name AS class_name,
-        r.name AS race_name,
-        pl.title AS place_name,
-        co.name AS country_name,
-        reg.name AS region_name,
-        'PNJ' AS type
-    FROM place_npcs pn
-    JOIN places pl ON pn.place_id = pl.id
-    LEFT JOIN countries co ON pl.country_id = co.id
-    LEFT JOIN regions reg ON pl.region_id = reg.id
-    LEFT JOIN characters c ON pn.npc_character_id = c.id
-    LEFT JOIN classes cl ON c.class_id = cl.id
-    LEFT JOIN races r ON c.race_id = r.id
-    WHERE co.world_id = ? AND pn.monster_id IS NULL
-    ORDER BY pn.name ASC
-");
-$stmt->execute([$world_id]);
-$world_npcs = $stmt->fetchAll();
+// Récupérer tous les PNJs du monde via la classe Monde
+$world_npcs = $monde->getNpcs();
 
-// Récupérer tous les monstres du monde (via la hiérarchie pays → régions → lieux)
-$stmt = $pdo->prepare("
-    SELECT 
-        pn.id,
-        pn.name,
-        pn.description,
-        pn.profile_photo,
-        pn.is_visible,
-        pn.is_identified,
-        pn.quantity,
-        pn.current_hit_points,
-        dm.name AS monster_name,
-        dm.type,
-        dm.size,
-        dm.challenge_rating,
-        dm.hit_points,
-        dm.armor_class,
-        pl.title AS place_name,
-        co.name AS country_name,
-        reg.name AS region_name,
-        'Monstre' AS type
-    FROM place_npcs pn
-    JOIN places pl ON pn.place_id = pl.id
-    LEFT JOIN countries co ON pl.country_id = co.id
-    LEFT JOIN regions reg ON pl.region_id = reg.id
-    JOIN dnd_monsters dm ON pn.monster_id = dm.id
-    WHERE co.world_id = ? AND pn.monster_id IS NOT NULL
-    ORDER BY pn.name ASC
-");
-$stmt->execute([$world_id]);
-$world_monsters = $stmt->fetchAll();
+// Récupérer tous les monstres du monde via la classe Monde
+$world_monsters = $monde->getMonsters();
 ?>
 
 <!DOCTYPE html>

@@ -106,15 +106,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 if (empty($error_message)) {
                     try {
-                        $stmt = $pdo->prepare("INSERT INTO regions (name, description, map_url, country_id) VALUES (?, ?, ?, ?)");
-                        $stmt->execute([$name, $description, $map_url, $country_id]);
+                        $region = new Region([
+                            'name' => $name,
+                            'description' => $description,
+                            'map_url' => $map_url,
+                            'country_id' => $country_id
+                        ]);
+                        $region->save();
                         $success_message = "Région '$name' créée avec succès.";
-                    } catch (PDOException $e) {
-                        if ($e->getCode() == 23000) {
-                            $error_message = "Une région avec ce nom existe déjà dans ce pays.";
-                        } else {
-                            $error_message = "Erreur lors de la création de la région: " . $e->getMessage();
-                        }
+                    } catch (Exception $e) {
+                        $error_message = $e->getMessage();
                     }
                 }
             }
@@ -151,19 +152,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 if (empty($error_message)) {
                     try {
-                        $stmt = $pdo->prepare("UPDATE regions SET name = ?, description = ?, map_url = ? WHERE id = ? AND country_id = ?");
-                        $stmt->execute([$name, $description, $map_url, $region_id, $country_id]);
-                        if ($stmt->rowCount() > 0) {
+                        $region = Region::findById($region_id);
+                        if ($region && $region->getCountryId() == $country_id) {
+                            $region->setName($name);
+                            $region->setDescription($description);
+                            $region->setMapUrl($map_url);
+                            $region->save();
                             $success_message = "Région '$name' mise à jour avec succès.";
                         } else {
                             $error_message = "Région non trouvée.";
                         }
-                    } catch (PDOException $e) {
-                        if ($e->getCode() == 23000) {
-                            $error_message = "Une région avec ce nom existe déjà dans ce pays.";
-                        } else {
-                            $error_message = "Erreur lors de la mise à jour: " . $e->getMessage();
-                        }
+                    } catch (Exception $e) {
+                        $error_message = $e->getMessage();
                     }
                 }
             }
@@ -173,35 +173,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $region_id = (int)($_POST['region_id'] ?? 0);
             
             try {
-                // Vérifier s'il y a des lieux dans cette région
-                $stmt = $pdo->prepare("SELECT COUNT(*) FROM places WHERE region_id = ?");
-                $stmt->execute([$region_id]);
-                $place_count = $stmt->fetchColumn();
-                
-                if ($place_count > 0) {
-                    $error_message = "Impossible de supprimer cette région car elle contient $place_count lieux. Supprimez d'abord les lieux.";
+                $region = Region::findById($region_id);
+                if ($region && $region->getCountryId() == $country_id) {
+                    $region->delete();
+                    $success_message = "Région supprimée avec succès.";
                 } else {
-                    // Récupérer l'URL de l'image avant suppression
-                    $stmt = $pdo->prepare("SELECT map_url FROM regions WHERE id = ? AND country_id = ?");
-                    $stmt->execute([$region_id, $country_id]);
-                    $region = $stmt->fetch();
-                    
-                    // Supprimer la région
-                    $stmt = $pdo->prepare("DELETE FROM regions WHERE id = ? AND country_id = ?");
-                    $stmt->execute([$region_id, $country_id]);
-                    
-                    if ($stmt->rowCount() > 0) {
-                        // Supprimer l'image associée si elle existe
-                        if (!empty($region['map_url']) && file_exists($region['map_url'])) {
-                            unlink($region['map_url']);
-                        }
-                        $success_message = "Région supprimée avec succès.";
-                    } else {
-                        $error_message = "Région non trouvée.";
-                    }
+                    $error_message = "Région non trouvée.";
                 }
-            } catch (PDOException $e) {
-                $error_message = "Erreur lors de la suppression: " . $e->getMessage();
+            } catch (Exception $e) {
+                $error_message = $e->getMessage();
             }
             break;
     }

@@ -401,6 +401,100 @@ class Monde
             throw new Exception("Erreur lors de la récupération des pays: " . $e->getMessage());
         }
     }
+    
+    /**
+     * Récupère tous les PNJs du monde (via la hiérarchie pays → régions → lieux)
+     * 
+     * @return array Tableau des PNJs avec leurs informations
+     */
+    public function getNpcs()
+    {
+        if ($this->id === null) {
+            return [];
+        }
+
+        try {
+            $pdo = $this->getPdo();
+            $stmt = $pdo->prepare("
+                SELECT 
+                    pn.id,
+                    pn.name,
+                    pn.description,
+                    pn.profile_photo,
+                    pn.is_visible,
+                    pn.is_identified,
+                    c.name AS character_name,
+                    c.profile_photo AS character_profile_photo,
+                    cl.name AS class_name,
+                    r.name AS race_name,
+                    pl.title AS place_name,
+                    co.name AS country_name,
+                    reg.name AS region_name,
+                    'PNJ' AS type
+                FROM place_npcs pn
+                JOIN places pl ON pn.place_id = pl.id
+                LEFT JOIN countries co ON pl.country_id = co.id
+                LEFT JOIN regions reg ON pl.region_id = reg.id
+                LEFT JOIN characters c ON pn.npc_character_id = c.id
+                LEFT JOIN classes cl ON c.class_id = cl.id
+                LEFT JOIN races r ON c.race_id = r.id
+                WHERE co.world_id = ? AND pn.monster_id IS NULL
+                ORDER BY pn.name ASC
+            ");
+            $stmt->execute([$this->id]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            throw new Exception("Erreur lors de la récupération des PNJs: " . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Récupère tous les monstres du monde (via la hiérarchie pays → régions → lieux)
+     * 
+     * @return array Tableau des monstres avec leurs informations
+     */
+    public function getMonsters()
+    {
+        if ($this->id === null) {
+            return [];
+        }
+
+        try {
+            $pdo = $this->getPdo();
+            $stmt = $pdo->prepare("
+                SELECT 
+                    pn.id,
+                    pn.name,
+                    pn.description,
+                    pn.profile_photo,
+                    pn.is_visible,
+                    pn.is_identified,
+                    pn.quantity,
+                    pn.current_hit_points,
+                    dm.name AS monster_name,
+                    dm.type,
+                    dm.size,
+                    dm.challenge_rating,
+                    dm.hit_points,
+                    dm.armor_class,
+                    pl.title AS place_name,
+                    co.name AS country_name,
+                    reg.name AS region_name,
+                    'Monstre' AS type
+                FROM place_npcs pn
+                JOIN places pl ON pn.place_id = pl.id
+                LEFT JOIN countries co ON pl.country_id = co.id
+                LEFT JOIN regions reg ON pl.region_id = reg.id
+                JOIN dnd_monsters dm ON pn.monster_id = dm.id
+                WHERE co.world_id = ? AND pn.monster_id IS NOT NULL
+                ORDER BY pn.name ASC
+            ");
+            $stmt->execute([$this->id]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            throw new Exception("Erreur lors de la récupération des monstres: " . $e->getMessage());
+        }
+    }
 
     /**
      * Convertit l'objet en tableau associatif
