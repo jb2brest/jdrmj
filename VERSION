@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.6.7
+VERSION=2.6.8
 
 # Date de déploiement
 DEPLOY_DATE=2025-10-03
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-10-03
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=1bb473a3678c1b30f7120218090b0b1af6f03b31
+GIT_COMMIT=c3024a6b57b4c05f6523d63cf8697e8555cc82c8
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251003-144445
+BUILD_ID=20251003-153152
 
 # Notes de version
-RELEASE_NOTES="View_scene_player"
+RELEASE_NOTES="View_scene"
