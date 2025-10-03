@@ -1,10 +1,11 @@
 <?php
 require_once 'config/database.php';
 require_once 'includes/functions.php';
+require_once 'classes/init.php';
 
 header('Content-Type: application/json');
 
-if (!isLoggedIn()) {
+if (!User::isLoggedIn()) {
     echo json_encode(['success' => false, 'message' => 'Non authentifié.']);
     exit;
 }
@@ -25,62 +26,52 @@ $character_id = (int)$input['character_id'];
 $spell_id = (int)$input['spell_id'];
 
 // Vérifier que le personnage appartient à l'utilisateur
-$stmt = $pdo->prepare("SELECT id, class_id FROM characters WHERE id = ? AND user_id = ?");
-$stmt->execute([$character_id, $_SESSION['user_id']]);
-$character = $stmt->fetch();
-
-if (!$character) {
+$character = Character::findById($character_id);
+if (!$character || $character->getUserId() != $_SESSION['user_id']) {
     echo json_encode(['success' => false, 'message' => 'Accès non autorisé au personnage.']);
     exit;
 }
 
 try {
-    // Récupérer le nom de la classe du personnage
-    $stmt = $pdo->prepare("SELECT name FROM classes WHERE id = ?");
-    $stmt->execute([$character['class_id']]);
-    $class = $stmt->fetch();
-    
+    // Récupérer la classe du personnage
+    $class = $character->getClass();
     if (!$class) {
         echo json_encode(['success' => false, 'message' => 'Classe du personnage introuvable.']);
         exit;
     }
     
-    // Vérifier que le sort est disponible pour cette classe
-    $stmt = $pdo->prepare("
-        SELECT id, name, level, classes
-        FROM spells
-        WHERE id = ? AND classes LIKE ?
-    ");
-    $stmt->execute([$spell_id, '%' . $class['name'] . '%']);
-    $spell = $stmt->fetch();
-    
+    // Récupérer le sort
+    $spell = Sort::findById($spell_id);
     if (!$spell) {
+        echo json_encode(['success' => false, 'message' => 'Sort introuvable.']);
+        exit;
+    }
+    
+    // Vérifier que le sort est disponible pour cette classe
+    if (strpos($spell->getClasses(), $class['name']) === false) {
         echo json_encode(['success' => false, 'message' => 'Ce sort n\'est pas disponible pour votre classe.']);
         exit;
     }
     
     // Vérifier que le personnage ne connaît pas déjà ce sort
-    $stmt = $pdo->prepare("SELECT character_id FROM character_spells WHERE character_id = ? AND spell_id = ?");
-    $stmt->execute([$character_id, $spell_id]);
-    if ($stmt->fetch()) {
-        echo json_encode(['success' => false, 'message' => 'Vous connaissez déjà ce sort.']);
-        exit;
+    $characterSpells = Sort::getCharacterSpells($character_id);
+    foreach ($characterSpells as $characterSpell) {
+        if ($characterSpell['id'] == $spell_id) {
+            echo json_encode(['success' => false, 'message' => 'Vous connaissez déjà ce sort.']);
+            exit;
+        }
     }
     
     // Déterminer si le sort doit être automatiquement préparé
-    $autoPrepared = 0; // Par défaut, non préparé
+    $autoPrepared = false; // Par défaut, non préparé
     
     // Pour l'Ensorceleur, tous les sorts appris sont automatiquement préparés
     if (strpos(strtolower($class['name']), 'ensorceleur') !== false) {
-        $autoPrepared = 1;
+        $autoPrepared = true;
     }
     
-    // Ajouter le sort au personnage
-    $stmt = $pdo->prepare("
-        INSERT INTO character_spells (character_id, spell_id, prepared) 
-        VALUES (?, ?, ?)
-    ");
-    $success = $stmt->execute([$character_id, $spell_id, $autoPrepared]);
+    // Ajouter le sort au personnage via la classe Sort
+    $success = Sort::addToCharacter($character_id, $spell_id, $autoPrepared, true);
     
     if ($success) {
         echo json_encode([
@@ -88,8 +79,8 @@ try {
             'message' => 'Sort appris avec succès !',
             'spell' => [
                 'id' => $spell_id,
-                'name' => $spell['name'],
-                'level' => $spell['level']
+                'name' => $spell->getName(),
+                'level' => $spell->getLevel()
             ]
         ]);
     } else {

@@ -2,6 +2,7 @@
 session_start();
 require_once 'config/database.php';
 require_once 'includes/functions.php';
+require_once 'classes/init.php';
 $page_title = "Fiche de Monstre";
 $current_page = "view_monster_sheet";
 
@@ -15,47 +16,70 @@ if (!isset($_SESSION['user_id'])) {
 $monster_npc_id = (int)$_GET['id'];
 $campaign_id = (int)$_GET['campaign_id'];
 
-// Récupérer les informations du monstre dans la lieu
+// Récupérer la campagne et vérifier les permissions
+$campaign = Campaign::findById($campaign_id);
+if (!$campaign) {
+    header('Location: index.php');
+    exit();
+}
+
+// Vérifier que l'utilisateur est le DM de la campagne
+if ($campaign->getDmId() != $_SESSION['user_id'] && !User::isAdmin()) {
+    header('Location: index.php');
+    exit();
+}
+
+// Récupérer le lieu où se trouve le monstre
 $stmt = $pdo->prepare("
-    SELECT sn.*, m.id as monster_db_id, m.name as monster_name, m.type, m.size, m.challenge_rating, 
-           m.hit_points as max_hit_points, m.armor_class, m.csv_id, c.dm_id, c.id as campaign_id, s.id as place_id,
-           m.strength, m.dexterity, m.constitution, m.intelligence, m.wisdom, m.charisma, m.competences, m.saving_throws, m.damage_immunities, m.damage_resistances, m.condition_immunities, m.senses, m.languages
+    SELECT s.id as place_id
     FROM place_npcs sn 
-    JOIN dnd_monsters m ON sn.monster_id = m.id 
     JOIN places s ON sn.place_id = s.id
-    JOIN campaigns c ON s.campaign_id = c.id
-    WHERE sn.id = ? AND s.campaign_id = ? AND sn.monster_id IS NOT NULL
+    WHERE sn.id = ? AND sn.monster_id IS NOT NULL
 ");
-$stmt->execute([$monster_npc_id, $campaign_id]);
-$monster = $stmt->fetch();
+$stmt->execute([$monster_npc_id]);
+$place_data = $stmt->fetch();
+
+if (!$place_data) {
+    header('Location: index.php');
+    exit();
+}
+
+// Récupérer le lieu via la classe Lieu
+$lieu = Lieu::findById($place_data['place_id']);
+if (!$lieu) {
+    header('Location: index.php');
+    exit();
+}
+
+// Récupérer les informations du monstre via la classe Lieu
+$monster = $lieu->getMonsterDetails($monster_npc_id);
 
 if (!$monster) {
     header('Location: index.php');
     exit();
 }
 
-// Récupérer les données de combat du monstre
+// Ajouter les informations de campagne
+$monster['campaign_id'] = $campaign_id;
+$monster['dm_id'] = $campaign->getDmId();
+$monster['place_id'] = $lieu->getId();
+
+// Récupérer les données de combat du monstre via la classe Monstre
 $monster_db_id = $monster['monster_db_id'];
+$monstre = Monstre::findById($monster_db_id);
 
-// Récupérer les actions
-$stmt = $pdo->prepare("SELECT name, description FROM monster_actions WHERE monster_id = ? ORDER BY name");
-$stmt->execute([$monster_db_id]);
-$monster_actions = $stmt->fetchAll();
+if (!$monstre) {
+    header('Location: index.php');
+    exit();
+}
 
-// Récupérer les actions légendaires
-$stmt = $pdo->prepare("SELECT name, description FROM monster_legendary_actions WHERE monster_id = ? ORDER BY name");
-$stmt->execute([$monster_db_id]);
-$monster_legendary_actions = $stmt->fetchAll();
+// Récupérer les actions via la classe Monstre
+$monster_actions = $monstre->getActions();
+$monster_legendary_actions = $monstre->getLegendaryActions();
+$monster_special_attacks = $monstre->getSpecialAttacks();
 
-// Récupérer les attaques spéciales
-$stmt = $pdo->prepare("SELECT name, description FROM monster_special_attacks WHERE monster_id = ? ORDER BY name");
-$stmt->execute([$monster_db_id]);
-$monster_special_attacks = $stmt->fetchAll();
-
-// Récupérer les sorts
-$stmt = $pdo->prepare("SELECT name, description FROM monster_spells WHERE monster_id = ? ORDER BY name");
-$stmt->execute([$monster_db_id]);
-$monster_spells = $stmt->fetchAll();
+// Récupérer les sorts via la classe Monstre
+$monster_spells = $monstre->getSpells();
 
 // Récupérer l'équipement magique du monstre (exclure les poisons)
 $stmt = $pdo->prepare("

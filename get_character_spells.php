@@ -1,8 +1,9 @@
 <?php
 require_once 'config/database.php';
 require_once 'includes/functions.php';
+require_once 'classes/init.php';
 
-requireLogin();
+User::requireLogin();
 
 header('Content-Type: application/json');
 
@@ -28,24 +29,21 @@ if (!$input || !isset($input['character_id'])) {
 $character_id = (int)$input['character_id'];
 
 // Vérifier que le personnage appartient à l'utilisateur
-$stmt = $pdo->prepare("SELECT id FROM characters WHERE id = ? AND user_id = ?");
-$stmt->execute([$character_id, $user_id]);
-$character = $stmt->fetch();
-
-if (!$character) {
+$character = Character::findById($character_id);
+if (!$character || $character->getUserId() != $user_id) {
     echo json_encode(['success' => false, 'message' => 'Personnage non trouvé ou non autorisé']);
     exit;
 }
 
 try {
-    // Récupérer les sorts du personnage
-    $spells = Character::getCharacterSpells($character_id);
+    // Récupérer les sorts du personnage via la classe Sort
+    $spells = Sort::getCharacterSpells($character_id);
     
     echo json_encode([
         'success' => true,
         'spells' => $spells
     ]);
-} catch (PDOException $e) {
+} catch (Exception $e) {
     echo json_encode(['success' => false, 'message' => 'Erreur de base de données']);
     error_log("Erreur get_character_spells: " . $e->getMessage());
 }

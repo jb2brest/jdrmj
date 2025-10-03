@@ -803,6 +803,34 @@ class Lieu
     }
     
     /**
+     * Récupérer les informations détaillées d'un monstre dans le lieu
+     */
+    public function getMonsterDetails($npcId)
+    {
+        if ($this->id === null) {
+            return null;
+        }
+
+        try {
+            $pdo = $this->getPdo();
+            $stmt = $pdo->prepare("
+                SELECT sn.*, m.id as monster_db_id, m.name as monster_name, m.type, m.size, m.challenge_rating, 
+                       m.hit_points as max_hit_points, m.armor_class, m.csv_id,
+                       m.strength, m.dexterity, m.constitution, m.intelligence, m.wisdom, m.charisma, 
+                       m.competences, m.saving_throws, m.damage_immunities, m.damage_resistances, 
+                       m.condition_immunities, m.senses, m.languages
+                FROM place_npcs sn 
+                JOIN dnd_monsters m ON sn.monster_id = m.id 
+                WHERE sn.id = ? AND sn.place_id = ? AND sn.monster_id IS NOT NULL
+            ");
+            $stmt->execute([$npcId, $this->id]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            throw new Exception("Erreur lors de la récupération des détails du monstre: " . $e->getMessage());
+        }
+    }
+
+    /**
      * Basculer la visibilité d'un monstre
      */
     public function toggleMonsterVisibility($npcId)

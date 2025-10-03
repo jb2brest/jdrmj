@@ -456,9 +456,9 @@ class Monstre
     }
     
     /**
-     * Obtenir les actions
+     * Obtenir les actions (propriété)
      */
-    public function getActions()
+    public function getActionsProperty()
     {
         return $this->actions ?: '';
     }
@@ -511,6 +511,96 @@ class Monstre
         return $this->languages ?: '';
     }
     
+    /**
+     * Récupère les actions du monstre
+     * 
+     * @return array Liste des actions
+     */
+    public function getActions()
+    {
+        if ($this->id === null) {
+            return [];
+        }
+
+        try {
+            $pdo = $this->getPdo();
+            $stmt = $pdo->prepare("SELECT name, description FROM monster_actions WHERE monster_id = ? ORDER BY name");
+            $stmt->execute([$this->id]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            throw new Exception("Erreur lors de la récupération des actions: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Récupère les actions légendaires du monstre
+     * 
+     * @return array Liste des actions légendaires
+     */
+    public function getLegendaryActions()
+    {
+        if ($this->id === null) {
+            return [];
+        }
+
+        try {
+            $pdo = $this->getPdo();
+            $stmt = $pdo->prepare("SELECT name, description FROM monster_legendary_actions WHERE monster_id = ? ORDER BY name");
+            $stmt->execute([$this->id]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            throw new Exception("Erreur lors de la récupération des actions légendaires: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Récupère les attaques spéciales du monstre
+     * 
+     * @return array Liste des attaques spéciales
+     */
+    public function getSpecialAttacks()
+    {
+        if ($this->id === null) {
+            return [];
+        }
+
+        try {
+            $pdo = $this->getPdo();
+            $stmt = $pdo->prepare("SELECT name, description FROM monster_special_attacks WHERE monster_id = ? ORDER BY name");
+            $stmt->execute([$this->id]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            throw new Exception("Erreur lors de la récupération des attaques spéciales: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Récupère les sorts du monstre
+     * 
+     * @return array Liste des sorts
+     */
+    public function getSpells()
+    {
+        if ($this->id === null) {
+            return [];
+        }
+
+        try {
+            $pdo = $this->getPdo();
+            $stmt = $pdo->prepare("
+                SELECT s.*, ms.description as monster_spell_description
+                FROM monster_spells ms
+                JOIN spells s ON ms.spell_id = s.id
+                WHERE ms.monster_id = ?
+                ORDER BY s.level, s.name
+            ");
+            $stmt->execute([$this->id]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            throw new Exception("Erreur lors de la récupération des sorts: " . $e->getMessage());
+        }
+    }
+
     /**
      * Convertir l'objet en tableau
      */
