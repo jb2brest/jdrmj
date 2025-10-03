@@ -51,3 +51,4 @@ foreach ($groupedChoix as $noChoix => $choixGroup) {
 echo "\n✅ Test terminé - Les noms réels des équipements sont maintenant affichés!\n";
 ?>
 
+

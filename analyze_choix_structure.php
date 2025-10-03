@@ -33,3 +33,4 @@ echo "1. no_choix = 0: Équipement par défaut (pas de choix)\n";
 echo "2. no_choix > 0: Grouper par no_choix et afficher les options\n";
 ?>
 
+

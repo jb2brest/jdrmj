@@ -126,3 +126,4 @@ SELECT
     (SELECT COUNT(*) FROM starting_equipment_choix) as choix_count,
     (SELECT COUNT(*) FROM starting_equipment_options) as options_count;
 
+

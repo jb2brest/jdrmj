@@ -195,3 +195,4 @@ $choix = StartingEquipmentChoix::create([
 3. **Groupes** : S'assurer de la cohérence des `groupe_id`
 4. **Sources** : Limiter aux valeurs 'class' et 'background' pour les options
 
+

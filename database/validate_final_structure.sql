@@ -93,3 +93,4 @@ SELECT
     'Structure conforme aux spécifications' as result,
     NOW() as timestamp;
 
+

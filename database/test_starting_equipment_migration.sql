@@ -111,3 +111,4 @@ INNER JOIN starting_equipment_options so ON sc.id = so.id_choix
 WHERE sc.src = 'class'
 LIMIT 100;
 
+

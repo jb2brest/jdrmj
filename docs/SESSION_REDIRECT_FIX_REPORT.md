@@ -146,3 +146,4 @@ php -l select_starting_equipment.php
 
 **La correction est complète et la navigation fonctionne parfaitement !** 🚀
 
+

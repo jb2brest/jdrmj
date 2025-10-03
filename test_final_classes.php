@@ -20,3 +20,4 @@ if (!empty($choix)) {
 echo "\n✅ Toutes les méthodes fonctionnent correctement!\n";
 ?>
 
+

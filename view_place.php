@@ -121,29 +121,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         $character_id = (int)($_POST['dm_character_id'] ?? 0);
         if ($character_id > 0) {
             $character = Character::findById($character_id);
-            $char = ($character && $character->user_id == $dm_id) ? ['name' => $character->name] : null;
-            if ($char) {
-                // IMPORTANT: Retirer ce personnage de tous les autres lieux de la campagne
-                // Un personnage ne peut pas se trouver dans deux lieux à la fois
-                $stmt = $pdo->prepare("
-                    DELETE FROM place_npcs 
-                    WHERE npc_character_id = ? AND place_id IN (
-                        SELECT p.id FROM places p
-                        INNER JOIN place_campaigns pc ON p.id = pc.place_id
-                        WHERE pc.campaign_id = ?
-                    )
-                ");
+            if ($character && $character->user_id == $dm_id) {
                 if (hasCampaignId($place)) {
-                    $stmt->execute([$character_id, $place['campaign_id']]);
+                    $result = $lieu->addDmCharacterAsNpc($character_id, $place['campaign_id']);
+                    if ($result['success']) {
+                        $success_message = $result['message'];
+                        // Recharger les PNJ
+                        $placeNpcs = $lieu->getAllNpcsDetailed();
+                    } else {
+                        $error_message = $result['message'];
+                    }
+                } else {
+                    $error_message = "Campagne non définie.";
                 }
-                
-                // Maintenant ajouter le personnage au nouveau lieu
-                $ins = $pdo->prepare("INSERT INTO place_npcs (place_id, name, npc_character_id) VALUES (?, ?, ?)");
-                $ins->execute([$place_id, $char['name'], $character_id]);
-                $success_message = "PNJ (personnage du MJ) ajouté au lieu (retiré automatiquement des autres lieux).";
-                
-                // Recharger les PNJ
-                $placeNpcs = $lieu->getAllNpcs();
             } else {
                 $error_message = "Personnage invalide (doit appartenir au MJ).";
             }
@@ -159,67 +149,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         
         // Vérifier que le joueur est membre de la campagne
         if (hasCampaignId($place)) {
-            $stmt = $pdo->prepare("SELECT 1 FROM campaign_members WHERE campaign_id = ? AND user_id = ?");
-            $stmt->execute([$place['campaign_id'], $player_id]);
-        } else {
-            $stmt = null;
-        }
-        if ($stmt && $stmt->fetch()) {
-            // Vérifier que le joueur n'est pas déjà dans le lieu
-            $stmt = $pdo->prepare("SELECT 1 FROM place_players WHERE place_id = ? AND player_id = ?");
-            $stmt->execute([$place_id, $player_id]);
-            if (!$stmt->fetch()) {
-                // IMPORTANT: Retirer le joueur de tous les autres lieux de la campagne
-                // Un personnage ne peut pas se trouver dans deux lieux à la fois
-                $stmt = $pdo->prepare("
-                    DELETE FROM place_players 
-                    WHERE player_id = ? AND place_id IN (
-                        SELECT p.id FROM places p
-                        INNER JOIN place_campaigns pc ON p.id = pc.place_id
-                        WHERE pc.campaign_id = ?
-                    )
-                ");
-                if (hasCampaignId($place)) {
-                    $stmt->execute([$player_id, $place['campaign_id']]);
+            $campaign = Campaign::findById($place['campaign_id']);
+            if ($campaign && $campaign->isMember($player_id)) {
+                $result = $lieu->addPlayer($player_id, $character_id, $place['campaign_id']);
+                if ($result['success']) {
+                    $success_message = $result['message'];
+                    // Recharger les joueurs
+                    $placePlayers = $lieu->getAllPlayersDetailed();
+                } else {
+                    $error_message = $result['message'];
                 }
-                
-                // Maintenant ajouter le joueur au nouveau lieu
-                $stmt = $pdo->prepare("INSERT INTO place_players (place_id, player_id, character_id) VALUES (?, ?, ?)");
-                $stmt->execute([$place_id, $player_id, $character_id]);
-                $success_message = "Joueur ajouté au lieu (retiré automatiquement des autres lieux).";
-                
-                // Recharger les joueurs
-                $placePlayers = $lieu->getAllPlayersDetailed();
             } else {
-                $error_message = "Ce joueur est déjà présent dans ce lieu.";
+                $error_message = "Ce joueur n'est pas membre de la campagne.";
             }
         } else {
-            $error_message = "Ce joueur n'est pas membre de la campagne.";
+            $error_message = "Campagne non définie.";
         }
     }
     
     // Exclure un joueur du lieu
     if (isset($_POST['action']) && $_POST['action'] === 'remove_player' && isset($_POST['player_id'])) {
         $player_id = (int)$_POST['player_id'];
-        $stmt = $pdo->prepare("DELETE FROM place_players WHERE place_id = ? AND player_id = ?");
-        $stmt->execute([$place_id, $player_id]);
-        $success_message = "Joueur retiré du lieu.";
-        
-        // Recharger les joueurs
-        $placePlayers = $lieu->getAllPlayersDetailed();
+        $result = $lieu->removePlayer($player_id);
+        if ($result['success']) {
+            $success_message = $result['message'];
+            // Recharger les joueurs
+            $placePlayers = $lieu->getAllPlayersDetailed();
+        } else {
+            $error_message = $result['message'];
+        }
     }
     
     // Exclure un PNJ du lieu
     if (isset($_POST['action']) && $_POST['action'] === 'remove_npc' && isset($_POST['npc_name'])) {
         $npc_name = $_POST['npc_name'];
-        $stmt = $pdo->prepare("DELETE FROM place_npcs WHERE place_id = ? AND name = ?");
-        $stmt->execute([$place_id, $npc_name]);
-        $success_message = "PNJ retiré du lieu.";
-        
-        // Recharger les PNJ
-        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, sn.is_visible, sn.is_identified, c.profile_photo AS character_profile_photo, c.hit_points_current, c.hit_points_max FROM place_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.place_id = ? AND sn.monster_id IS NULL ORDER BY sn.name ASC");
-        $stmt->execute([$place_id]);
-        $placeNpcs = $stmt->fetchAll();
+        $result = $lieu->removeNpc($npc_name);
+        if ($result['success']) {
+            $success_message = $result['message'];
+            // Recharger les PNJ
+            $placeNpcs = $lieu->getAllNpcsDetailed();
+        } else {
+            $error_message = $result['message'];
+        }
     }
     
     // Ajouter un monstre du bestiaire
@@ -228,27 +199,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         $quantity = (int)($_POST['quantity'] ?? 1);
         
         if ($monster_id > 0 && $quantity > 0) {
-            // Récupérer les informations du monstre
-            $stmt = $pdo->prepare("SELECT name FROM dnd_monsters WHERE id = ?");
-            $stmt->execute([$monster_id]);
-            $monster = $stmt->fetch();
-            
-            if ($monster) {
-                $monster_name = $monster['name'];
-                if ($quantity > 1) {
-                    $monster_name .= " (x{$quantity})";
-                }
-                
-                $stmt = $pdo->prepare("INSERT INTO place_npcs (place_id, name, monster_id, quantity, current_hit_points) VALUES (?, ?, ?, ?, ?)");
-                $stmt->execute([$place_id, $monster_name, $monster_id, $quantity, $monster['hit_points']]);
-                $success_message = "Monstre ajouté à la lieu.";
-                
+            $result = $lieu->addMonster($monster_id, $quantity);
+            if ($result['success']) {
+                $success_message = $result['message'];
                 // Recharger les monstres
-                $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, sn.current_hit_points, sn.is_visible, sn.is_identified, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class, m.csv_id FROM place_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.place_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
-                $stmt->execute([$place_id]);
-                $placeMonsters = $stmt->fetchAll();
+                $placeMonsters = $lieu->getVisibleMonsters();
             } else {
-                $error_message = "Monstre introuvable.";
+                $error_message = $result['message'];
             }
         } else {
             $error_message = "Veuillez sélectionner un monstre et spécifier une quantité valide.";
@@ -258,66 +215,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
     // Retirer un monstre du lieu
     if (isset($_POST['action']) && $_POST['action'] === 'remove_monster' && isset($_POST['npc_id'])) {
         $npc_id = (int)$_POST['npc_id'];
-        $stmt = $pdo->prepare("DELETE FROM place_npcs WHERE place_id = ? AND id = ? AND monster_id IS NOT NULL");
-        $stmt->execute([$place_id, $npc_id]);
-        $success_message = "Monstre retiré du lieu.";
-        
-        // Recharger les monstres
-        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, sn.current_hit_points, sn.is_visible, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM place_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.place_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
-        $stmt->execute([$place_id]);
-        $placeMonsters = $stmt->fetchAll();
+        $result = $lieu->removeMonster($npc_id);
+        if ($result['success']) {
+            $success_message = $result['message'];
+            // Recharger les monstres
+            $placeMonsters = $lieu->getVisibleMonsters();
+        } else {
+            $error_message = $result['message'];
+        }
     }
     
     // Basculer la visibilité d'un PNJ
     if (isset($_POST['action']) && $_POST['action'] === 'toggle_npc_visibility' && isset($_POST['npc_id'])) {
         $npc_id = (int)$_POST['npc_id'];
-        $stmt = $pdo->prepare("UPDATE place_npcs SET is_visible = NOT is_visible WHERE place_id = ? AND id = ? AND monster_id IS NULL");
-        $stmt->execute([$place_id, $npc_id]);
-        $success_message = "Visibilité du PNJ mise à jour.";
-        
-        // Recharger les PNJ
-        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, sn.is_visible, sn.is_identified, c.profile_photo AS character_profile_photo, c.hit_points_current, c.hit_points_max FROM place_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.place_id = ? AND sn.monster_id IS NULL ORDER BY sn.name ASC");
-        $stmt->execute([$place_id]);
-        $placeNpcs = $stmt->fetchAll();
+        $result = $lieu->toggleNpcVisibility($npc_id);
+        if ($result['success']) {
+            $success_message = $result['message'];
+            // Recharger les PNJ
+            $placeNpcs = $lieu->getAllNpcsDetailed();
+        } else {
+            $error_message = $result['message'];
+        }
     }
     
     // Basculer la visibilité d'un monstre
     if (isset($_POST['action']) && $_POST['action'] === 'toggle_monster_visibility' && isset($_POST['npc_id'])) {
         $npc_id = (int)$_POST['npc_id'];
-        $stmt = $pdo->prepare("UPDATE place_npcs SET is_visible = NOT is_visible WHERE place_id = ? AND id = ? AND monster_id IS NOT NULL");
-        $stmt->execute([$place_id, $npc_id]);
-        $success_message = "Visibilité du monstre mise à jour.";
-        
-        // Recharger les monstres
-        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, sn.current_hit_points, sn.is_visible, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class FROM place_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.place_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
-        $stmt->execute([$place_id]);
-        $placeMonsters = $stmt->fetchAll();
+        $result = $lieu->toggleMonsterVisibility($npc_id);
+        if ($result['success']) {
+            $success_message = $result['message'];
+            // Recharger les monstres
+            $placeMonsters = $lieu->getVisibleMonsters();
+        } else {
+            $error_message = $result['message'];
+        }
     }
     
     // Basculer l'identification d'un PNJ
     if (isset($_POST['action']) && $_POST['action'] === 'toggle_npc_identification' && isset($_POST['npc_id'])) {
         $npc_id = (int)$_POST['npc_id'];
-        $stmt = $pdo->prepare("UPDATE place_npcs SET is_identified = NOT is_identified WHERE place_id = ? AND id = ? AND monster_id IS NULL");
-        $stmt->execute([$place_id, $npc_id]);
-        $success_message = "Identification du PNJ mise à jour.";
-        
-        // Recharger les PNJ
-        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, sn.is_visible, sn.is_identified, c.profile_photo AS character_profile_photo, c.hit_points_current, c.hit_points_max FROM place_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.place_id = ? AND sn.monster_id IS NULL ORDER BY sn.name ASC");
-        $stmt->execute([$place_id]);
-        $placeNpcs = $stmt->fetchAll();
+        $result = $lieu->toggleNpcIdentification($npc_id);
+        if ($result['success']) {
+            $success_message = $result['message'];
+            // Recharger les PNJ
+            $placeNpcs = $lieu->getAllNpcsDetailed();
+        } else {
+            $error_message = $result['message'];
+        }
     }
     
     // Basculer l'identification d'un monstre
     if (isset($_POST['action']) && $_POST['action'] === 'toggle_monster_identification' && isset($_POST['npc_id'])) {
         $npc_id = (int)$_POST['npc_id'];
-        $stmt = $pdo->prepare("UPDATE place_npcs SET is_identified = NOT is_identified WHERE place_id = ? AND id = ? AND monster_id IS NOT NULL");
-        $stmt->execute([$place_id, $npc_id]);
-        $success_message = "Identification du monstre mise à jour.";
-        
-        // Recharger les monstres
-        $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, sn.current_hit_points, sn.is_visible, sn.is_identified, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class, m.csv_id FROM place_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.place_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
-        $stmt->execute([$place_id]);
-        $placeMonsters = $stmt->fetchAll();
+        $result = $lieu->toggleMonsterIdentification($npc_id);
+        if ($result['success']) {
+            $success_message = $result['message'];
+            // Recharger les monstres
+            $placeMonsters = $lieu->getVisibleMonsters();
+        } else {
+            $error_message = $result['message'];
+        }
     }
     
     // Mettre à jour le nom du lieu
@@ -347,9 +304,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                     $success_message = "Nom du lieu mis à jour avec succès.";
                     
                     // Recharger les données du lieu
-                    $stmt = $pdo->prepare("SELECT s.*, c.title AS campaign_title, c.id AS campaign_id, c.dm_id, u.username AS dm_username FROM places s JOIN place_campaigns pc ON s.id = pc.place_id JOIN campaigns c ON pc.campaign_id = c.id JOIN users u ON c.dm_id = u.id WHERE s.id = ?");
-                    $stmt->execute([$place_id]);
-                    $place = $stmt->fetch();
+                    $lieu = Lieu::findById($place_id);
+                    if ($lieu) {
+                        $place = $lieu->toArray();
+                        $campaigns = $lieu->getCampaigns();
+                        if (!empty($campaigns)) {
+                            $campaign = $campaigns[0];
+                            $place['campaign_id'] = $campaign['id'];
+                            $place['campaign_title'] = $campaign['title'];
+                            $place['dm_id'] = $campaign['dm_id'];
+                            
+                            $dm_user = User::findById(getPDO(), $campaign['dm_id']);
+                            $place['dm_username'] = $dm_user ? $dm_user->getUsername() : 'Inconnu';
+                        }
+                    }
                     
                     if (!$place) {
                         $error_message = "Erreur lors du rechargement des données du lieu.";
@@ -433,25 +401,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         }
         
         if (!isset($error_message)) {
-            $stmt = $pdo->prepare("UPDATE places SET map_url = ?, notes = ? WHERE id = ?");
-            $stmt->execute([$newMapUrl, $notes, $place_id]);
-            $success_message = "Plan du lieu mis à jour.";
-            
-            // Recharger les données du lieu
-            $place = getPlaceWithGeography($place_id);
-            if ($place) {
-                $campaigns = getCampaignsForPlace($place_id);
+            $result = $lieu->updateMapUrl($newMapUrl, $notes);
+            if ($result['success']) {
+                $success_message = $result['message'];
+                
+                // Recharger les données du lieu
+                $place = $lieu->toArray();
+                $campaigns = $lieu->getCampaigns();
                 if (!empty($campaigns)) {
                     $campaign = $campaigns[0];
                     $place['campaign_id'] = $campaign['id'];
                     $place['campaign_title'] = $campaign['title'];
                     $place['dm_id'] = $campaign['dm_id'];
                     
-                    $stmt = $pdo->prepare("SELECT username FROM users WHERE id = ?");
-                    $stmt->execute([$campaign['dm_id']]);
-                    $dm = $stmt->fetch();
-                    $place['dm_username'] = $dm ? $dm['username'] : 'Inconnu';
+                    $dm_user = User::findById(getPDO(), $campaign['dm_id']);
+                    $place['dm_username'] = $dm_user ? $dm_user->getUsername() : 'Inconnu';
                 }
+            } else {
+                $error_message = $result['message'];
             }
         }
     }
@@ -470,25 +437,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                 $country_id = isset($_POST['country_id']) && $_POST['country_id'] ? (int)$_POST['country_id'] : null;
                 $region_id = isset($_POST['region_id']) && $_POST['region_id'] ? (int)$_POST['region_id'] : null;
                 
-                $stmt = $pdo->prepare("UPDATE places SET title = ?, notes = ?, country_id = ?, region_id = ? WHERE id = ?");
-                $stmt->execute([$title, $notes, $country_id, $region_id, $place_id]);
-                $success_message = "Lieu mis à jour avec succès.";
-                
-                // Recharger les données du lieu
-                $place = getPlaceWithGeography($place_id);
-                if ($place) {
-                    $campaigns = getCampaignsForPlace($place_id);
+                $result = $lieu->updatePlace($title, $notes, $country_id, $region_id);
+                if ($result['success']) {
+                    $success_message = $result['message'];
+                    
+                    // Recharger les données du lieu
+                    $place = $lieu->toArray();
+                    $campaigns = $lieu->getCampaigns();
                     if (!empty($campaigns)) {
                         $campaign = $campaigns[0];
                         $place['campaign_id'] = $campaign['id'];
                         $place['campaign_title'] = $campaign['title'];
                         $place['dm_id'] = $campaign['dm_id'];
                         
-                        $stmt = $pdo->prepare("SELECT username FROM users WHERE id = ?");
-                        $stmt->execute([$campaign['dm_id']]);
-                        $dm = $stmt->fetch();
-                        $place['dm_username'] = $dm ? $dm['username'] : 'Inconnu';
+                        $dm_user = User::findById(getPDO(), $campaign['dm_id']);
+                        $place['dm_username'] = $dm_user ? $dm_user->getUsername() : 'Inconnu';
                     }
+                } else {
+                    $error_message = $result['message'];
                 }
             }
         }
@@ -508,9 +474,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
             $target_id = (int)$target_parts[1];
             
             // Récupérer les informations de l'objet magique depuis la base de données
-            $stmt = $pdo->prepare("SELECT nom, type, description, source FROM magical_items WHERE csv_id = ?");
-            $stmt->execute([$item_id]);
-            $item_info = $stmt->fetch();
+            $item_info = Lieu::getMagicalItemInfoByCsvId($item_id);
             
             if (!$item_info) {
                 $error_message = "Objet magique introuvable.";
@@ -521,9 +485,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                 switch ($target_type) {
                     case 'player':
                         // Récupérer les informations du personnage joueur
-                        $stmt = $pdo->prepare("SELECT u.username, ch.id AS character_id, ch.name AS character_name FROM place_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.place_id = ? AND sp.player_id = ?");
-                        $stmt->execute([$place_id, $target_id]);
-                        $target = $stmt->fetch();
+                        $target = $lieu->getPlayerInfo($target_id);
                         
                         if ($target && $target['character_id']) {
                             // Ajouter l'objet à l'équipement du personnage
@@ -547,9 +509,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         
                     case 'npc':
                         // Récupérer les informations du PNJ
-                        $stmt = $pdo->prepare("SELECT name FROM place_npcs WHERE id = ? AND place_id = ?");
-                        $stmt->execute([$target_id, $place_id]);
-                        $target = $stmt->fetch();
+                        $target = $lieu->getNpcInfo($target_id);
                         
                         if ($target) {
                             // Ajouter l'objet à l'équipement du PNJ
@@ -574,9 +534,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         
                     case 'monster':
                         // Récupérer les informations du monstre
-                        $stmt = $pdo->prepare("SELECT name FROM place_npcs WHERE id = ? AND place_id = ?");
-                        $stmt->execute([$target_id, $place_id]);
-                        $target = $stmt->fetch();
+                        $target = $lieu->getMonsterInfo($target_id);
                         
                         if ($target) {
                             // Ajouter l'objet à l'équipement du monstre
@@ -632,9 +590,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
             $target_id = (int)$target_parts[1];
             
             // Récupérer les informations du poison depuis la base de données
-            $stmt = $pdo->prepare("SELECT nom, type, description, source FROM poisons WHERE csv_id = ?");
-            $stmt->execute([$poison_id]);
-            $poison_info = $stmt->fetch();
+            $poison_info = Lieu::getPoisonInfoByCsvId($poison_id);
             
             if (!$poison_info) {
                 $error_message = "Poison introuvable.";
@@ -645,9 +601,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                 switch ($target_type) {
                     case 'player':
                         // Récupérer les informations du personnage joueur
-                        $stmt = $pdo->prepare("SELECT u.username, ch.id AS character_id, ch.name AS character_name FROM place_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.place_id = ? AND sp.player_id = ?");
-                        $stmt->execute([$place_id, $target_id]);
-                        $target = $stmt->fetch();
+                        $target = $lieu->getPlayerInfo($target_id);
                         
                         if ($target && $target['character_id']) {
                             // Ajouter le poison à l'équipement du personnage
@@ -671,9 +625,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         
                     case 'npc':
                         // Récupérer les informations du PNJ
-                        $stmt = $pdo->prepare("SELECT name FROM place_npcs WHERE id = ? AND place_id = ?");
-                        $stmt->execute([$target_id, $place_id]);
-                        $target = $stmt->fetch();
+                        $target = $lieu->getNpcInfo($target_id);
                         
                         if ($target) {
                             // Ajouter le poison à l'équipement du PNJ
@@ -698,9 +650,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         
                     case 'monster':
                         // Récupérer les informations du monstre
-                        $stmt = $pdo->prepare("SELECT name FROM place_npcs WHERE id = ? AND place_id = ?");
-                        $stmt->execute([$target_id, $place_id]);
-                        $target = $stmt->fetch();
+                        $target = $lieu->getMonsterInfo($target_id);
                         
                         if ($target) {
                             // Ajouter le poison à l'équipement du monstre
@@ -789,9 +739,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                 if (!empty($selected_item) && in_array($object_type, ['poison', 'magical_item', 'weapon', 'armor'])) {
                     switch ($object_type) {
                         case 'poison':
-                            $stmt = $pdo->prepare("SELECT id, nom, description FROM poisons WHERE id = ?");
-                            $stmt->execute([$selected_item]);
-                            $item = $stmt->fetch();
+                            $item = Lieu::getPoisonInfo($selected_item);
                             if ($item) {
                                 $item_id = $item['id'];
                                 $item_name = $item['nom'];
@@ -804,9 +752,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                             break;
                             
                         case 'magical_item':
-                            $stmt = $pdo->prepare("SELECT id, nom, description FROM magical_items WHERE id = ?");
-                            $stmt->execute([$selected_item]);
-                            $item = $stmt->fetch();
+                            $item = Lieu::getMagicalItemInfo($selected_item);
                             if ($item) {
                                 $item_id = $item['id'];
                                 $item_name = $item['nom'];
@@ -818,9 +764,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                             break;
                             
                         case 'weapon':
-                            $stmt = $pdo->prepare("SELECT id, name as nom, CONCAT('Dégâts: ', damage, ' | Poids: ', weight, ' | Prix: ', price, ' | Type: ', type) as description FROM weapons WHERE id = ?");
-                            $stmt->execute([$selected_item]);
-                            $item = $stmt->fetch();
+                            $item = Lieu::getWeaponInfo($selected_item);
                             if ($item) {
                                 $item_id = $item['id'];
                                 $item_name = $item['nom'];
@@ -832,9 +776,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                             break;
                             
                         case 'armor':
-                            $stmt = $pdo->prepare("SELECT id, name as nom, CONCAT('CA: ', ac_formula, ' | Poids: ', weight, ' | Prix: ', price, ' | Type: ', type) as description FROM armor WHERE id = ?");
-                            $stmt->execute([$selected_item]);
-                            $item = $stmt->fetch();
+                            $item = Lieu::getArmorInfo($selected_item);
                             if ($item) {
                                 $item_id = $item['id'];
                                 $item_name = $item['nom'];
@@ -904,9 +846,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                     $success_message = "Objet supprimé du lieu.";
                     
                     // Recharger les objets
-                    $stmt = $pdo->prepare("SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed FROM items WHERE place_id = ? ORDER BY display_name ASC");
-                    $stmt->execute([$place_id]);
-                    $placeObjects = $stmt->fetchAll();
+                    $placeObjects = $lieu->reloadAllObjects();
                 } else {
                     $error_message = "Objet non trouvé.";
                 }
@@ -929,9 +869,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                     $success_message = "Visibilité de l'objet modifiée.";
                     
                     // Recharger les objets
-                    $stmt = $pdo->prepare("SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed FROM items WHERE place_id = ? ORDER BY display_name ASC");
-                    $stmt->execute([$place_id]);
-                    $placeObjects = $stmt->fetchAll();
+                    $placeObjects = $lieu->reloadAllObjects();
                 } else {
                     $error_message = "Objet non trouvé.";
                 }
@@ -954,9 +892,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         $success_message = "Identification de l'objet modifiée.";
                         
                         // Recharger les objets
-                        $stmt = $pdo->prepare("SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed FROM items WHERE place_id = ? ORDER BY display_name ASC");
-                        $stmt->execute([$place_id]);
-                        $placeObjects = $stmt->fetchAll();
+                        $placeObjects = $lieu->reloadAllObjects();
                     } else {
                         $error_message = "Objet non trouvé.";
                     }
@@ -986,21 +922,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         } else {
                             // Vérifier que le propriétaire existe
                             if ($owner_type === 'player') {
-                                $stmt = $pdo->prepare("SELECT player_id FROM place_players WHERE place_id = ? AND player_id = ?");
-                                $stmt->execute([$place_id, $owner_id]);
-                                if (!$stmt->fetch()) {
+                                if (!$lieu->isPlayerPresent($owner_id)) {
                                     $error_message = "Joueur non trouvé dans ce lieu.";
                                 }
                             } elseif ($owner_type === 'npc') {
-                                $stmt = $pdo->prepare("SELECT id FROM place_npcs WHERE place_id = ? AND id = ?");
-                                $stmt->execute([$place_id, $owner_id]);
-                                if (!$stmt->fetch()) {
+                                if (!$lieu->npcExists($owner_id)) {
                                     $error_message = "PNJ non trouvé dans ce lieu.";
                                 }
                             } elseif ($owner_type === 'monster') {
-                                $stmt = $pdo->prepare("SELECT id FROM place_npcs WHERE place_id = ? AND id = ? AND monster_id IS NOT NULL");
-                                $stmt->execute([$place_id, $owner_id]);
-                                if (!$stmt->fetch()) {
+                                if (!$lieu->monsterExists($owner_id)) {
                                     $error_message = "Monstre non trouvé dans ce lieu.";
                                 }
                             }
@@ -1008,17 +938,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         
                         if (empty($error_message)) {
                             // Récupérer les informations de l'objet avant attribution
-                            $stmt = $pdo->prepare("SELECT * FROM items WHERE id = ? AND place_id = ?");
-                            $stmt->execute([$object_id, $place_id]);
-                            $object = $stmt->fetch();
+                            $object = $lieu->getObjectInfo($object_id);
                             
                             if ($object) {
                                 // Ajouter l'objet à l'inventaire du propriétaire
                                 if ($owner_type === 'player') {
                                     // Trouver le character_id du joueur
-                                    $stmt = $pdo->prepare("SELECT character_id FROM place_players WHERE place_id = ? AND player_id = ?");
-                                    $stmt->execute([$place_id, $owner_id]);
-                                    $player_data = $stmt->fetch();
+                                    $character_id = $lieu->getPlayerCharacterId($owner_id);
+                                    $player_data = $character_id ? ['character_id' => $character_id] : null;
                                     
                                     if ($player_data && $player_data['character_id']) {
                                         // Ajouter à l'inventaire du personnage
@@ -1078,15 +1005,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                                     $success_message = "Objet attribué et ajouté à l'inventaire du propriétaire.";
                                     
                                     // Recharger les objets
-                                    $stmt = $pdo->prepare("SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed FROM items WHERE place_id = ? AND (owner_type = 'place' OR owner_type IS NULL) ORDER BY display_name ASC");
-                                    $stmt->execute([$place_id]);
-                                    $placeObjects = $stmt->fetchAll();
+                                    $placeObjects = $lieu->reloadVisibleObjects();
                                     
                                     // Recharger tous les objets pour le MJ
                                     if ($isOwnerDM) {
-                                        $stmt = $pdo->prepare("SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed FROM items WHERE place_id = ? ORDER BY display_name ASC");
-                                        $stmt->execute([$place_id]);
-                                        $allPlaceObjects = $stmt->fetchAll();
+                                        $allPlaceObjects = $lieu->reloadAllObjects();
                                     }
                                 } else {
                                     $error_message = "Erreur lors de l'attribution.";
