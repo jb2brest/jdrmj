@@ -72,22 +72,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     error_log("DEBUG - background_weapon_choices: " . json_encode($background_weapon_choices));
     
     // Générer l'équipement final avec les noms de classe et background
-    $equipmentData = generateFinalEquipment($character['class_id'], $starting_equipment, $character['background_id'], $weapon_choices);
+    $equipmentData = Character::generateFinalEquipment($character['class_id'], $starting_equipment, $character['background_id'], $weapon_choices);
     $finalEquipment = $equipmentData['equipment'];
     $backgroundGold = $equipmentData['gold'];
     
     // Ajouter l'équipement de l'historique
     if (!empty($background_equipment)) {
-        $backgroundEquipmentData = generateFinalEquipment($character['class_id'], $background_equipment, $character['background_id'], $background_weapon_choices);
+        $backgroundEquipmentData = Character::generateFinalEquipment($character['class_id'], $background_equipment, $character['background_id'], $background_weapon_choices);
         $finalEquipment .= "\n" . $backgroundEquipmentData['equipment'];
         $backgroundGold += $backgroundEquipmentData['gold'];
     }
     
     // Ajouter l'équipement de départ choisi par le joueur
-    addStartingEquipmentToCharacter($character_id, $equipmentData);
+    Character::addStartingEquipmentToCharacter($character_id, $equipmentData);
     
     // Synchroniser l'équipement de base avec la base de données
-    syncBaseEquipmentToCharacterEquipment($character_id);
+    Character::syncBaseEquipmentToCharacterEquipment($character_id);
     
     // Mettre à jour l'argent du personnage
     if ($backgroundGold > 0) {

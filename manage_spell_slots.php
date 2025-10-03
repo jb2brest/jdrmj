@@ -37,14 +37,14 @@ if (!$character) {
 try {
     if ($action === 'use') {
         // Utiliser un emplacement de sort
-        if (useSpellSlot($character_id, $level)) {
+        if (Character::useSpellSlotStatic($character_id, $level)) {
             echo json_encode(['success' => true, 'message' => 'Emplacement de sort utilisé']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Impossible d\'utiliser l\'emplacement de sort']);
         }
     } elseif ($action === 'free') {
         // Libérer un emplacement de sort
-        if (freeSpellSlot($character_id, $level)) {
+        if (Character::freeSpellSlotStatic($character_id, $level)) {
             echo json_encode(['success' => true, 'message' => 'Emplacement de sort libéré']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Impossible de libérer l\'emplacement de sort']);

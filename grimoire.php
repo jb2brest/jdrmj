@@ -41,16 +41,16 @@ $class = $stmt->fetch();
 // Calculer les modificateurs (caractéristiques totales incluant les bonus raciaux)
 $wisdomModifier = floor(($character['wisdom'] + $character['wisdom_bonus'] - 10) / 2);
 $intelligenceModifier = floor(($character['intelligence'] + $character['intelligence_bonus'] - 10) / 2);
-$spell_capabilities = getClassSpellCapabilities($character['class_id'], $character['level'], $wisdomModifier, $character['max_spells_learned'], $intelligenceModifier);
+$spell_capabilities = Character::getClassSpellCapabilities($character['class_id'], $character['level'], $wisdomModifier, $character['max_spells_learned'], $intelligenceModifier);
 
 // Récupérer les sorts du personnage
-$character_spells = getCharacterSpells($character_id);
+$character_spells = Character::getCharacterSpells($character_id);
 
 // Récupérer les utilisations d'emplacements de sorts
-$spell_slots_usage = getSpellSlotsUsage($character_id);
+$spell_slots_usage = Character::getSpellSlotsUsageStatic($character_id);
 
 // Récupérer les sorts disponibles pour la classe
-$available_spells = getSpellsForClass($character['class_id']);
+$available_spells = Character::getSpellsForClass($character['class_id']);
 
 // Vérifier si la classe peut apprendre de nouveaux sorts (Magicien, Ensorceleur, etc.)
 $canLearnSpells = in_array($character['class_id'], [7, 5]); // 7 = Magicien, 5 = Ensorceleur
@@ -104,7 +104,7 @@ if (isset($_GET['debug'])) {
     echo "<!-- Character Name: " . $character['name'] . " -->\n";
     echo "<!-- Class ID: " . $character['class_id'] . " -->\n";
     echo "<!-- Level: " . $character['level'] . " -->\n";
-    echo "<!-- Can Cast Spells: " . (canCastSpells($character['class_id']) ? 'YES' : 'NO') . " -->\n";
+    echo "<!-- Can Cast Spells: " . (Character::canCastSpells($character['class_id']) ? 'YES' : 'NO') . " -->\n";
     echo "<!-- Available Spells Count: " . count($available_spells) . " -->\n";
     echo "<!-- Character Spells Count: " . count($character_spells) . " -->\n";
     echo "<!-- END DEBUG INFO -->\n";

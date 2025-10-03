@@ -59,11 +59,7 @@ if (!function_exists('updateCharacterLevelFromExperience')) {
  */
 if (!function_exists('getCharacterSpells')) {
     function getCharacterSpells($characterId) {
-        $character = Character::findById($characterId);
-        if ($character) {
-            return $character->getSpells();
-        }
-        return [];
+        return Character::getCharacterSpells($characterId);
     }
 }
 
@@ -72,11 +68,7 @@ if (!function_exists('getCharacterSpells')) {
  */
 if (!function_exists('addSpellToCharacter')) {
     function addSpellToCharacter($characterId, $spellId, $prepared = false) {
-        $character = Character::findById($characterId);
-        if ($character) {
-            return $character->addSpell($spellId, $prepared);
-        }
-        return false;
+        return Character::addSpellToCharacter($characterId, $spellId, $prepared);
     }
 }
 
@@ -85,11 +77,7 @@ if (!function_exists('addSpellToCharacter')) {
  */
 if (!function_exists('removeSpellFromCharacter')) {
     function removeSpellFromCharacter($characterId, $spellId) {
-        $character = Character::findById($characterId);
-        if ($character) {
-            return $character->removeSpell($spellId);
-        }
-        return false;
+        return Character::removeSpellFromCharacter($characterId, $spellId);
     }
 }
 
@@ -98,11 +86,7 @@ if (!function_exists('removeSpellFromCharacter')) {
  */
 if (!function_exists('updateSpellPrepared')) {
     function updateSpellPrepared($characterId, $spellId, $prepared) {
-        $character = Character::findById($characterId);
-        if ($character) {
-            return $character->addSpell($spellId, $prepared);
-        }
-        return false;
+        return Character::updateSpellPrepared($characterId, $spellId, $prepared);
     }
 }
 
@@ -111,11 +95,7 @@ if (!function_exists('updateSpellPrepared')) {
  */
 if (!function_exists('getSpellSlotsUsage')) {
     function getSpellSlotsUsage($characterId) {
-        $character = Character::findById($characterId);
-        if ($character) {
-            return $character->getSpellSlotsUsage();
-        }
-        return [];
+        return Character::getSpellSlotsUsageStatic($characterId);
     }
 }
 
@@ -124,10 +104,7 @@ if (!function_exists('getSpellSlotsUsage')) {
  */
 if (!function_exists('addStartingEquipmentToCharacter')) {
     function addStartingEquipmentToCharacter($characterId, $equipmentData) {
-        // Cette fonction nécessite une logique plus complexe
-        // Pour l'instant, on retourne true pour maintenir la compatibilité
-        // TODO: Implémenter la logique complète
-        return true;
+        return Character::addStartingEquipmentToCharacter($characterId, $equipmentData);
     }
 }
 

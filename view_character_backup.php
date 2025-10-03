@@ -74,7 +74,7 @@ if ($isBarbarian) {
     $maxRages = $evolution ? $evolution['rages'] : 0;
     
     // Récupérer le nombre de rages utilisées
-    $usedRages = getRageUsage($character_id);
+    $usedRages = Character::getRageUsageStatic($character_id);
     
     $rageData = [
         'max' => $maxRages,
@@ -244,15 +244,15 @@ $wisdomMod = $tempCharacter->getAbilityModifier('wisdom');
 $charismaMod = $tempCharacter->getAbilityModifier('charisma');
 
 // Synchroniser l'équipement de base vers items
-syncBaseEquipmentToCharacterEquipment($character_id);
+Character::syncBaseEquipmentToCharacterEquipment($character_id);
 
 // Récupérer l'équipement équipé du personnage
-$equippedItems = getCharacterEquippedItems($character_id);
+$equippedItems = Character::getCharacterEquippedItems($character_id);
 
 // Détecter les armes, armures et boucliers dans l'équipement
-$detectedWeapons = detectWeaponsInEquipment($character['equipment']);
-$detectedArmor = detectArmorInEquipment($character['equipment']);
-$detectedShields = detectShieldsInEquipment($character['equipment']);
+$detectedWeapons = Item::detectWeaponsInEquipment($character['equipment']);
+$detectedArmor = Item::detectArmorInEquipment($character['equipment']);
+$detectedShields = Item::detectShieldsInEquipment($character['equipment']);
 
 // Calculer la classe d'armure
 $equippedArmor = null;
@@ -278,7 +278,7 @@ if ($equippedItems['shield']) {
 
 // Ajouter le modificateur de Dextérité au tableau character pour la fonction
 $character['dexterity_modifier'] = $dexterityMod;
-$armorClass = calculateArmorClassExtended($character, $equippedArmor, $equippedShield);
+$armorClass = Character::calculateArmorClassExtended($character, $equippedArmor, $equippedShield);
 
 // Contrôle d'accès: propriétaire OU MJ de la campagne liée
 $canView = ($character['user_id'] == $_SESSION['user_id']);

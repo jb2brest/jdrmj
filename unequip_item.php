@@ -36,7 +36,7 @@ try {
     }
     
     // Déséquiper l'objet
-    $success = unequipItem($characterId, $itemName);
+    $success = Character::unequipItemStatic($characterId, $itemName);
     
     if ($success) {
         echo json_encode(['success' => true, 'message' => 'Objet déséquipé avec succès']);

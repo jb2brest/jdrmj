@@ -126,7 +126,8 @@ if ($isBarbarian) {
     $maxRages = $evolution ? $evolution['rages'] : 0;
     
     // Récupérer le nombre de rages utilisées
-    $usedRages = getRageUsage($character_id);
+    $rageUsage = Character::getRageUsageStatic($character_id);
+    $usedRages = is_array($rageUsage) ? $rageUsage['used'] : $rageUsage;
     
     $rageData = [
         'max' => $maxRages,
@@ -232,13 +233,13 @@ if ($isWarlock) {
 }
 
 // Récupérer les améliorations de caractéristiques
-$abilityImprovements = getCharacterAbilityImprovements($character_id);
+$abilityImprovements = Character::getCharacterAbilityImprovements($character_id);
 
 // Calculer les caractéristiques finales
-$finalAbilities = calculateFinalAbilities($character, $abilityImprovements);
+$finalAbilities = Character::calculateFinalAbilitiesStatic($character, $abilityImprovements);
 
 // Calculer les points d'amélioration restants
-$remainingPoints = getRemainingAbilityPoints($character['level'], $abilityImprovements);
+$remainingPoints = Character::getRemainingAbilityPoints($character['level'], $abilityImprovements);
 
 // Les langues du personnage sont déjà stockées dans le champ 'languages' 
 // et incluent toutes les langues (race + historique + choix)
@@ -262,7 +263,7 @@ $wisdomMod = $tempCharacter->getAbilityModifier('wisdom');
 $charismaMod = $tempCharacter->getAbilityModifier('charisma');
 
 // Synchroniser l'équipement de base vers items
-syncBaseEquipmentToCharacterEquipment($character_id);
+Character::syncBaseEquipmentToCharacterEquipment($character_id);
 
 // Récupérer l'équipement du personnage depuis character_equipment
 $stmt = $pdo->prepare("
@@ -277,7 +278,7 @@ $stmt->execute([$character_id]);
 $magicalEquipment = $stmt->fetchAll();
 
 // Récupérer l'équipement équipé du personnage
-$equippedItems = getCharacterEquippedItems($character_id);
+$equippedItems = Character::getCharacterEquippedItems($character_id);
 
 // Construire le texte d'équipement à partir de character_equipment
 $equipmentText = '';
@@ -289,9 +290,9 @@ foreach ($magicalEquipment as $item) {
 $equipmentText = rtrim($equipmentText, ', ');
 
 // Détecter les armes, armures et boucliers dans l'équipement
-$detectedWeapons = detectWeaponsInEquipment($equipmentText);
-$detectedArmor = detectArmorInEquipment($equipmentText);
-$detectedShields = detectShieldsInEquipment($equipmentText);
+$detectedWeapons = Item::detectWeaponsInEquipment($equipmentText);
+$detectedArmor = Item::detectArmorInEquipment($equipmentText);
+$detectedShields = Item::detectShieldsInEquipment($equipmentText);
 
 // Calculer la classe d'armure
 $equippedArmor = null;
@@ -299,7 +300,7 @@ $equippedShield = null;
 
 // Chercher l'armure équipée dans character_equipment
 foreach ($magicalEquipment as $item) {
-    if ($item['equipped'] && $item['item_type'] === 'armor') {
+    if ($item['equipped'] && ($item['item_type'] ?? '') === 'armor') {
         foreach ($detectedArmor as $armor) {
             if (stripos($item['item_name'], $armor['name']) !== false) {
                 $equippedArmor = $armor;
@@ -311,7 +312,7 @@ foreach ($magicalEquipment as $item) {
 
 // Chercher le bouclier équipé dans character_equipment
 foreach ($magicalEquipment as $item) {
-    if ($item['equipped'] && $item['item_type'] === 'shield') {
+    if ($item['equipped'] && ($item['item_type'] ?? '') === 'shield') {
         foreach ($detectedShields as $shield) {
             if (stripos($item['item_name'], $shield['name']) !== false) {
                 $equippedShield = $shield;
@@ -325,8 +326,8 @@ foreach ($magicalEquipment as $item) {
 $character['dexterity_modifier'] = $dexterityMod;
 
 // Calculer les attaques du personnage
-$characterAttacks = calculateCharacterAttacks($character_id, $character);
-$armorClass = calculateArmorClassExtended($character, $equippedArmor, $equippedShield);
+$characterAttacks = Character::calculateCharacterAttacks($character_id, $character);
+$armorClass = Character::calculateArmorClassExtended($character, $equippedArmor, $equippedShield);
 
 
 // Contrôle d'accès: propriétaire OU MJ de la campagne liée
@@ -1854,9 +1855,9 @@ $initiative = $dexterityMod;
                             
                             foreach ($allCharacterItems as $item): 
                                 $displayName = htmlspecialchars($item['item_name']);
-                                $typeLabel = ucfirst(str_replace('_', ' ', $item['item_type']));
+                                $typeLabel = ucfirst(str_replace('_', ' ', $item['item_type'] ?? 'unknown'));
                             ?>
-                            <tr data-type="<?php echo $item['item_type']; ?>" data-equipped="<?php echo $item['equipped'] ? 'equipped' : 'unequipped'; ?>">
+                            <tr data-type="<?php echo $item['item_type'] ?? ''; ?>" data-equipped="<?php echo $item['equipped'] ? 'equipped' : 'unequipped'; ?>">
                                 <td>
                                     <strong><?php echo $displayName; ?></strong>
                                     <?php if ($item['quantity'] > 1): ?>
@@ -1865,7 +1866,7 @@ $initiative = $dexterityMod;
                                 </td>
                                 <td>
                                     <span class="badge bg-<?php 
-                                        echo match($item['item_type']) {
+                                        echo match($item['item_type'] ?? '') {
                                             'weapon' => 'danger',
                                             'armor' => 'primary', 
                                             'shield' => 'info',
@@ -1909,7 +1910,7 @@ $initiative = $dexterityMod;
                                     <?php endif; ?>
                                 </td>
                                 <td style="min-width: 300px; white-space: nowrap; overflow: visible;">
-                                    <?php if ($item['item_type'] === 'weapon' || $item['item_type'] === 'armor' || $item['item_type'] === 'shield'): ?>
+                                    <?php if (($item['item_type'] ?? '') === 'weapon' || ($item['item_type'] ?? '') === 'armor' || ($item['item_type'] ?? '') === 'shield'): ?>
                                         <?php if ($item['equipped']): ?>
                                             <button class="btn btn-warning btn-sm" onclick="unequipItem(<?php echo $character_id; ?>, '<?php echo addslashes($item['item_name']); ?>')"
                                                     style="white-space: nowrap; min-width: 80px;">
@@ -1917,14 +1918,14 @@ $initiative = $dexterityMod;
                                             </button>
                                         <?php else: ?>
                                             <?php 
-                                            $slot = match($item['item_type']) {
+                                            $slot = match($item['item_type'] ?? '') {
                                                 'weapon' => 'main_hand',
                                                 'armor' => 'armor',
                                                 'shield' => 'off_hand',
                                                 default => 'main_hand'
                                             };
                                             ?>
-                                            <button class="btn btn-success btn-sm" onclick="equipItem(<?php echo $character_id; ?>, '<?php echo addslashes($item['item_name']); ?>', '<?php echo $item['item_type']; ?>', '<?php echo $slot; ?>')"
+                                            <button class="btn btn-success btn-sm" onclick="equipItem(<?php echo $character_id; ?>, '<?php echo addslashes($item['item_name']); ?>', '<?php echo $item['item_type'] ?? ''; ?>', '<?php echo $slot; ?>')"
                                                     style="white-space: nowrap; min-width: 80px;">
                                                 <i class="fas fa-hand-rock me-1"></i>Équiper
                                             </button>
@@ -1939,7 +1940,7 @@ $initiative = $dexterityMod;
                                                 data-bs-target="#transferModal" 
                                                 data-item-id="<?php echo $item['id']; ?>"
                                                 data-item-name="<?php echo htmlspecialchars($item['item_name']); ?>"
-                                                data-item-type="<?php echo htmlspecialchars($item['item_type']); ?>"
+                                                data-item-type="<?php echo htmlspecialchars($item['item_type'] ?? ''); ?>"
                                                 data-source="character_equipment"
                                                 style="white-space: nowrap; min-width: 80px;">
                                             <i class="fas fa-exchange-alt me-1"></i>Transférer

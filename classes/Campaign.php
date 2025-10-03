@@ -380,9 +380,12 @@ class Campaign
     public function getMembers()
     {
         $stmt = $this->pdo->prepare("
-            SELECT cm.*, u.username, u.email, u.role as user_role
+            SELECT cm.*, u.username, u.email, u.role as user_role,
+                   c.id as character_id, c.name as character_name, c.hit_points_max
             FROM campaign_members cm
             JOIN users u ON cm.user_id = u.id
+            LEFT JOIN characters c ON c.user_id = u.id
+            LEFT JOIN campaign_applications ca ON c.id = ca.character_id AND ca.campaign_id = cm.campaign_id AND ca.status = 'approved'
             WHERE cm.campaign_id = ?
             ORDER BY cm.role DESC, cm.joined_at ASC
         ");
@@ -475,6 +478,30 @@ class Campaign
             JOIN place_campaigns pc ON p.id = pc.place_id
             WHERE pc.campaign_id = ?
             ORDER BY p.title ASC
+        ");
+        $stmt->execute([$this->id]);
+        return $stmt->fetchAll();
+    }
+    
+    /**
+     * Obtient les lieux associés avec la hiérarchie géographique
+     * 
+     * @return array Liste des lieux avec hiérarchie géographique
+     */
+    public function getAssociatedPlacesWithGeography()
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT p.*, pc.created_at as associated_at,
+                   r.name as region_name, r.id as region_id,
+                   c.name as country_name, c.id as country_id,
+                   w.name as world_name, w.id as world_id
+            FROM places p
+            JOIN place_campaigns pc ON p.id = pc.place_id
+            LEFT JOIN regions r ON p.region_id = r.id
+            LEFT JOIN countries c ON r.country_id = c.id
+            LEFT JOIN worlds w ON c.world_id = w.id
+            WHERE pc.campaign_id = ?
+            ORDER BY w.name ASC, c.name ASC, r.name ASC, p.title ASC
         ");
         $stmt->execute([$this->id]);
         return $stmt->fetchAll();

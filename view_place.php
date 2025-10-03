@@ -73,10 +73,10 @@ if (!$canView) {
 }
 
 // Récupérer les joueurs présents dans cette lieu
-$placePlayers = $lieu ? $lieu->getAllPlayers() : [];
+$placePlayers = $lieu ? $lieu->getAllPlayersDetailed() : [];
 
 // Récupérer les PNJ de cette lieu
-$placeNpcs = $lieu ? $lieu->getVisibleNpcs() : [];
+$placeNpcs = $lieu ? $lieu->getAllNpcsDetailed() : [];
 
 // Récupérer les monstres de cette lieu
 $placeMonsters = $lieu ? $lieu->getVisibleMonsters() : [];
@@ -1536,7 +1536,7 @@ foreach ($allScenes as $s) {
                 <a href="view_character.php?id=<?php echo (int)$currentPlayer['character_id']; ?>&dm_campaign_id=<?php echo (int)$place['campaign_id']; ?>" class="btn btn-primary" target="_blank">
                     <i class="fas fa-file-alt me-1"></i>Ma feuille de personnage
                 </a>
-                <?php if ($currentPlayer['class_id'] && canCastSpells($currentPlayer['class_id'])): ?>
+                <?php if ($currentPlayer['class_id'] && Character::canCastSpells($currentPlayer['class_id'])): ?>
                     <a href="grimoire.php?id=<?php echo (int)$currentPlayer['character_id']; ?>" class="btn btn-info" target="_blank">
                         <i class="fas fa-book-open me-1"></i>Mon Grimoire
                     </a>
@@ -1920,14 +1920,14 @@ foreach ($allScenes as $s) {
                                                 // Vérifier si le joueur est déjà dans le lieu
                                                 $alreadyPresent = false;
                                                 foreach ($placePlayers as $player) {
-                                                    if ($player['player_id'] == $member['id']) {
+                                                    if ($player['player_id'] == $member['user_id']) {
                                                         $alreadyPresent = true;
                                                         break;
                                                     }
                                                 }
                                                 ?>
                                                 <?php if (!$alreadyPresent): ?>
-                                                    <option value="<?php echo (int)$member['id']; ?>" data-character-id="<?php echo (int)$member['character_id']; ?>">
+                                                    <option value="<?php echo (int)$member['user_id']; ?>" data-character-id="<?php echo (int)$member['character_id']; ?>">
                                                         <?php echo htmlspecialchars($member['username']); ?>
                                                         <?php if ($member['character_name']): ?>
                                                             (<?php echo htmlspecialchars($member['character_name']); ?>)

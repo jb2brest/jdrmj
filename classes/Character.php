@@ -804,6 +804,622 @@ class Character
         
         return json_decode($result['languages'], true) ?? [];
     }
+
+    /**
+     * Vérifier si une classe peut lancer des sorts
+     * 
+     * @param int $classId ID de la classe
+     * @return bool True si la classe peut lancer des sorts
+     */
+    public static function canCastSpells($classId)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        $stmt = $pdo->prepare("
+            SELECT COUNT(*) as count 
+            FROM class_evolution 
+            WHERE class_id = ? AND (
+                cantrips_known > 0 OR 
+                spells_known > 0 OR 
+                spell_slots_1st > 0 OR 
+                spell_slots_2nd > 0 OR 
+                spell_slots_3rd > 0 OR 
+                spell_slots_4th > 0 OR 
+                spell_slots_5th > 0 OR 
+                spell_slots_6th > 0 OR 
+                spell_slots_7th > 0 OR 
+                spell_slots_8th > 0 OR 
+                spell_slots_9th > 0
+            )
+        ");
+        $stmt->execute([$classId]);
+        $result = $stmt->fetch();
+        return $result['count'] > 0;
+    }
+
+    /**
+     * Obtenir les capacités de sorts d'une classe à un niveau donné
+     * 
+     * @param int $classId ID de la classe
+     * @param int $level Niveau du personnage
+     * @param int $wisdomModifier Modificateur de sagesse
+     * @param int|null $maxSpellsLearned Nombre maximum de sorts appris
+     * @param int $intelligenceModifier Modificateur d'intelligence
+     * @return array|null Capacités de sorts
+     */
+    public static function getClassSpellCapabilities($classId, $level, $wisdomModifier = 0, $maxSpellsLearned = null, $intelligenceModifier = 0)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        $stmt = $pdo->prepare("
+            SELECT cantrips_known, spells_known, 
+                   spell_slots_1st, spell_slots_2nd, spell_slots_3rd, 
+                   spell_slots_4th, spell_slots_5th, spell_slots_6th, 
+                   spell_slots_7th, spell_slots_8th, spell_slots_9th
+            FROM class_evolution 
+            WHERE class_id = ? AND level = ?
+        ");
+        $stmt->execute([$classId, $level]);
+        $capabilities = $stmt->fetch();
+        
+        if ($capabilities) {
+            // Récupérer le nom de la classe
+            $stmt = $pdo->prepare("SELECT name FROM classes WHERE id = ?");
+            $stmt->execute([$classId]);
+            $class = $stmt->fetch();
+            
+            // Sorts appris : utiliser le champ personnalisé ou la valeur par défaut
+            $spellsLearned = $maxSpellsLearned !== null ? $maxSpellsLearned : $capabilities['spells_known'];
+            
+            // Calculer les sorts préparés selon la classe
+            $spellsPrepared = $capabilities['spells_known']; // Valeur par défaut
+            
+            if ($class) {
+                $className = strtolower($class['name']);
+                
+                // Pour les clercs, les sorts préparés = niveau + modificateur de Sagesse
+                if (strpos($className, 'clerc') !== false) {
+                    $spellsPrepared = $level + $wisdomModifier;
+                }
+                // Pour les druides, les sorts préparés = niveau + modificateur de Sagesse (comme le Clerc)
+                elseif (strpos($className, 'druide') !== false) {
+                    $spellsPrepared = $level + $wisdomModifier;
+                }
+                // Pour les mages, les sorts préparés = niveau + modificateur d'Intelligence
+                elseif (strpos($className, 'magicien') !== false) {
+                    $spellsPrepared = $level + $intelligenceModifier;
+                }
+                // Pour les ensorceleurs, les sorts préparés = nombre de sorts appris (ils sont automatiquement préparés)
+                elseif (strpos($className, 'ensorceleur') !== false) {
+                    $spellsPrepared = $spellsLearned; // Tous les sorts appris sont automatiquement préparés
+                }
+                // Pour les bardes, les sorts préparés = nombre de sorts appris (ils sont automatiquement préparés)
+                elseif (strpos($className, 'barde') !== false) {
+                    $spellsPrepared = $spellsLearned; // Tous les sorts appris sont automatiquement préparés
+                }
+            }
+            
+            // Ajouter les deux valeurs au tableau de retour
+            $capabilities['spells_learned'] = $spellsLearned;
+            $capabilities['spells_prepared'] = $spellsPrepared;
+        }
+        
+        return $capabilities;
+    }
+
+    /**
+     * Obtenir les sorts disponibles pour une classe
+     * 
+     * @param int $classId ID de la classe
+     * @return array Tableau des sorts disponibles
+     */
+    public static function getSpellsForClass($classId)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        // Récupérer le nom de la classe
+        $stmt = $pdo->prepare("SELECT name FROM classes WHERE id = ?");
+        $stmt->execute([$classId]);
+        $class = $stmt->fetch();
+        
+        if (!$class) {
+            return [];
+        }
+        
+        $className = $class['name'];
+        
+        // Rechercher les sorts qui contiennent le nom de la classe
+        $stmt = $pdo->prepare("
+            SELECT * FROM spells 
+            WHERE classes LIKE ?
+            ORDER BY level, name
+        ");
+        
+        $stmt->execute(["%$className%"]);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Obtenir les sorts d'un personnage
+     * 
+     * @param int $characterId ID du personnage
+     * @return array Tableau des sorts du personnage
+     */
+    public static function getCharacterSpells($characterId)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        $stmt = $pdo->prepare("
+            SELECT s.*, cs.prepared 
+            FROM character_spells cs
+            JOIN spells s ON cs.spell_id = s.id
+            WHERE cs.character_id = ?
+            ORDER BY s.level, s.name
+        ");
+        $stmt->execute([$characterId]);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Ajouter un sort à un personnage
+     * 
+     * @param int $characterId ID du personnage
+     * @param int $spellId ID du sort
+     * @param bool $prepared Si le sort est préparé
+     * @return bool Succès de l'opération
+     */
+    public static function addSpellToCharacter($characterId, $spellId, $prepared = false)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        try {
+            // Récupérer la classe du personnage pour déterminer si c'est un barde
+            $stmt = $pdo->prepare("
+                SELECT c.class_id, cl.name as class_name 
+                FROM characters c 
+                JOIN classes cl ON c.class_id = cl.id 
+                WHERE c.id = ?
+            ");
+            $stmt->execute([$characterId]);
+            $character = $stmt->fetch();
+            
+            // Pour les bardes, tous les sorts sont automatiquement préparés
+            if ($character && strpos(strtolower($character['class_name']), 'barde') !== false) {
+                $prepared = true;
+            }
+            
+            // S'assurer que $prepared est un entier (0 ou 1)
+            $prepared = $prepared ? 1 : 0;
+            
+            $stmt = $pdo->prepare("
+                INSERT INTO character_spells (character_id, spell_id, prepared) 
+                VALUES (?, ?, ?)
+                ON DUPLICATE KEY UPDATE prepared = ?
+            ");
+            $stmt->execute([$characterId, $spellId, $prepared, $prepared]);
+            return true;
+        } catch (\PDOException $e) {
+            error_log("Erreur addSpellToCharacter: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Retirer un sort d'un personnage
+     * 
+     * @param int $characterId ID du personnage
+     * @param int $spellId ID du sort
+     * @return bool Succès de l'opération
+     */
+    public static function removeSpellFromCharacter($characterId, $spellId)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        try {
+            $stmt = $pdo->prepare("
+                DELETE FROM character_spells 
+                WHERE character_id = ? AND spell_id = ?
+            ");
+            $stmt->execute([$characterId, $spellId]);
+            return true;
+        } catch (\PDOException $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Mettre à jour l'état préparé d'un sort
+     * 
+     * @param int $characterId ID du personnage
+     * @param int $spellId ID du sort
+     * @param bool $prepared Si le sort est préparé
+     * @return bool Succès de l'opération
+     */
+    public static function updateSpellPrepared($characterId, $spellId, $prepared)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        try {
+            // Récupérer la classe du personnage pour déterminer si c'est un barde
+            $stmt = $pdo->prepare("
+                SELECT c.class_id, cl.name as class_name 
+                FROM characters c 
+                JOIN classes cl ON c.class_id = cl.id 
+                WHERE c.id = ?
+            ");
+            $stmt->execute([$characterId]);
+            $character = $stmt->fetch();
+            
+            // Pour les bardes, les sorts ne peuvent pas être dépréparés
+            if ($character && strpos(strtolower($character['class_name']), 'barde') !== false && !$prepared) {
+                return false; // Empêcher la dépréparation pour les bardes
+            }
+            
+            // S'assurer que $prepared est un entier (0 ou 1)
+            $prepared = $prepared ? 1 : 0;
+            
+            $stmt = $pdo->prepare("
+                UPDATE character_spells 
+                SET prepared = ? 
+                WHERE character_id = ? AND spell_id = ?
+            ");
+            $stmt->execute([$prepared, $characterId, $spellId]);
+            
+            // Vérifier si une ligne a été mise à jour
+            return $stmt->rowCount() > 0;
+        } catch (\PDOException $e) {
+            error_log("Erreur updateSpellPrepared: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Récupérer les utilisations d'emplacements de sorts (méthode statique)
+     * 
+     * @param int $characterId ID du personnage
+     * @return array Utilisation des emplacements de sorts
+     */
+    public static function getSpellSlotsUsageStatic($characterId)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        try {
+            $stmt = $pdo->prepare("
+                SELECT level_1_used, level_2_used, level_3_used, level_4_used, level_5_used,
+                       level_6_used, level_7_used, level_8_used, level_9_used
+                FROM spell_slots_usage 
+                WHERE character_id = ?
+            ");
+            $stmt->execute([$characterId]);
+            $usage = $stmt->fetch();
+            
+            if (!$usage) {
+                // Créer un enregistrement vide si il n'existe pas
+                $stmt = $pdo->prepare("
+                    INSERT INTO spell_slots_usage (character_id) VALUES (?)
+                ");
+                $stmt->execute([$characterId]);
+                
+                return [
+                    'level_1_used' => 0, 'level_2_used' => 0, 'level_3_used' => 0,
+                    'level_4_used' => 0, 'level_5_used' => 0, 'level_6_used' => 0,
+                    'level_7_used' => 0, 'level_8_used' => 0, 'level_9_used' => 0
+                ];
+            }
+            
+            return $usage;
+        } catch (\PDOException $e) {
+            error_log("Erreur getSpellSlotsUsageStatic: " . $e->getMessage());
+            return [
+                'level_1_used' => 0, 'level_2_used' => 0, 'level_3_used' => 0,
+                'level_4_used' => 0, 'level_5_used' => 0, 'level_6_used' => 0,
+                'level_7_used' => 0, 'level_8_used' => 0, 'level_9_used' => 0
+            ];
+        }
+    }
+
+    /**
+     * Générer l'équipement final basé sur les choix du joueur
+     * 
+     * @param int $classId ID de la classe
+     * @param array $equipmentChoices Choix d'équipement
+     * @param int|null $backgroundId ID de l'historique
+     * @param array $weaponChoices Choix d'armes
+     * @return array Équipement final
+     */
+    public static function generateFinalEquipment($classId, $equipmentChoices, $backgroundId = null, $weaponChoices = [])
+    {
+        $startingEquipment = self::getClassStartingEquipment($classId);
+        $finalEquipment = [];
+        $backgroundGold = 0;
+        
+        foreach ($startingEquipment as $index => $item) {
+            if (isset($item['fixed'])) {
+                // Équipement fixe
+                $finalEquipment[] = $item['fixed'];
+            } else {
+                // Choix d'équipement
+                if (isset($equipmentChoices[$index]) && isset($item[$equipmentChoices[$index]])) {
+                    $selectedChoice = $item[$equipmentChoices[$index]];
+                    
+                    // Gestion spéciale pour les armes courantes
+                    if (is_array($selectedChoice) && isset($selectedChoice['type']) && $selectedChoice['type'] === 'weapon_choice') {
+                        // Récupérer l'arme sélectionnée
+                        if (isset($weaponChoices[$index][$equipmentChoices[$index]])) {
+                            $selectedWeapon = $weaponChoices[$index][$equipmentChoices[$index]];
+                            $finalEquipment[] = $selectedWeapon;
+                        } else {
+                            // Par défaut, prendre la première arme disponible
+                            $firstWeapon = $selectedChoice['options'][0]['name'] ?? 'Arme courante';
+                            $finalEquipment[] = $firstWeapon;
+                        }
+                    }
+                    // Gestion spéciale pour les instruments de musique
+                    elseif (is_array($selectedChoice) && isset($selectedChoice['type']) && $selectedChoice['type'] === 'instrument_choice') {
+                        // Récupérer l'instrument sélectionné
+                        if (isset($weaponChoices[$index][$equipmentChoices[$index]])) {
+                            $selectedInstrument = $weaponChoices[$index][$equipmentChoices[$index]];
+                            $finalEquipment[] = $selectedInstrument;
+                        } else {
+                            // Par défaut, prendre le premier instrument disponible
+                            $firstInstrument = $selectedChoice['options'][0]['name'] ?? 'Instrument de musique';
+                            $finalEquipment[] = $firstInstrument;
+                        }
+                    }
+                    // Gestion spéciale pour les sacs d'équipement
+                    elseif (is_array($selectedChoice) && isset($selectedChoice['type']) && $selectedChoice['type'] === 'pack') {
+                        // Ajouter le sac et son contenu
+                        $finalEquipment[] = $selectedChoice['description'];
+                        $finalEquipment = array_merge($finalEquipment, $selectedChoice['contents']);
+                    }
+                    else {
+                        $finalEquipment[] = $selectedChoice;
+                    }
+                } else {
+                    // Si aucun choix n'a été fait, prendre le premier choix par défaut
+                    $firstChoice = array_keys($item)[0];
+                    $selectedChoice = $item[$firstChoice];
+                    
+                    if (is_array($selectedChoice) && isset($selectedChoice['type']) && $selectedChoice['type'] === 'weapon_choice') {
+                        $firstWeapon = $selectedChoice['options'][0]['name'] ?? 'Arme courante';
+                        $finalEquipment[] = $firstWeapon;
+                    } elseif (is_array($selectedChoice) && isset($selectedChoice['type']) && $selectedChoice['type'] === 'instrument_choice') {
+                        $firstInstrument = $selectedChoice['options'][0]['name'] ?? 'Instrument de musique';
+                        $finalEquipment[] = $firstInstrument;
+                    } elseif (is_array($selectedChoice) && isset($selectedChoice['type']) && $selectedChoice['type'] === 'pack') {
+                        $finalEquipment[] = $selectedChoice['description'];
+                        $finalEquipment = array_merge($finalEquipment, $selectedChoice['contents']);
+                    } else {
+                        $finalEquipment[] = $selectedChoice;
+                    }
+                }
+            }
+        }
+        
+        // Ajouter l'équipement de l'historique (parsé)
+        // NOTE: Cette fonction est dépréciée. Utilisez generateFinalEquipmentNew() à la place.
+        // L'équipement de background est maintenant géré par la table starting_equipment
+        
+        return [
+            'equipment' => implode("\n", $finalEquipment),
+            'gold' => $backgroundGold
+        ];
+    }
+
+    /**
+     * Ajouter l'équipement de départ choisi par le joueur
+     * 
+     * @param int $characterId ID du personnage
+     * @param array $equipmentData Données d'équipement
+     * @return bool Succès de l'opération
+     */
+    public static function addStartingEquipmentToCharacter($characterId, $equipmentData)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            $pdo->beginTransaction();
+            
+            // Parser l'équipement final
+            $equipmentLines = explode("\n", $equipmentData['equipment']);
+            
+            foreach ($equipmentLines as $line) {
+                $line = trim($line);
+                if (empty($line)) continue;
+                
+                // Déterminer le type d'objet et les détails
+                $itemType = 'other';
+                $weaponId = null;
+                $armorId = null;
+                
+                // Vérifier si c'est une arme connue (recherche flexible)
+                $weapon = null;
+                
+                // D'abord essayer une correspondance exacte
+                $stmt = $pdo->prepare("SELECT id FROM weapons WHERE name = ?");
+                $stmt->execute([$line]);
+                $weapon = $stmt->fetch();
+                
+                // Si pas trouvé, essayer de chercher sans les articles et avec majuscule
+                if (!$weapon) {
+                    $lineWithoutArticle = preg_replace('/^(une?|le|la|les|du|de|des)\s+/i', '', $line);
+                    $lineCapitalized = ucfirst($lineWithoutArticle);
+                    $stmt = $pdo->prepare("SELECT id FROM weapons WHERE name = ?");
+                    $stmt->execute([$lineCapitalized]);
+                    $weapon = $stmt->fetch();
+                }
+                
+                // Si toujours pas trouvé, chercher par correspondance partielle
+                if (!$weapon) {
+                    $lineWithoutArticle = preg_replace('/^(une?|le|la|les|du|de|des)\s+/i', '', $line);
+                    $stmt = $pdo->prepare("SELECT id FROM weapons WHERE name LIKE ?");
+                    $stmt->execute(['%' . $lineWithoutArticle . '%']);
+                    $weapon = $stmt->fetch();
+                }
+                
+                if ($weapon) {
+                    $itemType = 'weapon';
+                    $weaponId = $weapon['id'];
+                }
+                
+                // Vérifier si c'est une armure connue
+                if ($itemType === 'other') {
+                    $stmt = $pdo->prepare("SELECT id FROM armor WHERE name = ?");
+                    $stmt->execute([$line]);
+                    $armor = $stmt->fetch();
+                    if ($armor) {
+                        $itemType = 'armor';
+                        $armorId = $armor['id'];
+                    }
+                }
+                
+                // Déterminer le type d'objet pour les objets non-armes/armures
+                if ($itemType === 'other') {
+                    // Analyser le nom pour déterminer le type approprié
+                    $lineLower = mb_strtolower($line, 'UTF-8');
+                    if (strpos($lineLower, 'sac') !== false) {
+                        $itemType = 'bag'; // Les sacs
+                    } elseif (strpos($lineLower, 'marteau') !== false || strpos($lineLower, 'biche') !== false || 
+                              strpos($lineLower, 'piton') !== false || strpos($lineLower, 'torche') !== false || 
+                              strpos($lineLower, 'allume-feu') !== false || strpos($lineLower, 'corde') !== false) {
+                        $itemType = 'tool'; // Les outils
+                    } elseif (strpos($lineLower, 'ration') !== false || strpos($lineLower, 'eau') !== false || 
+                              strpos($lineLower, 'gourde') !== false) {
+                        $itemType = 'consumable'; // Les consommables
+                    } elseif (strpos($lineLower, 'vêtement') !== false || strpos($lineLower, 'habit') !== false) {
+                        $itemType = 'clothing'; // Les vêtements
+                    } elseif (strpos($lineLower, 'bourse') !== false) {
+                        $itemType = 'bag'; // Les bourses
+                    } else {
+                        $itemType = 'misc'; // Par défaut, objets divers
+                    }
+                }
+                
+                // Ajouter l'objet à l'inventaire du personnage dans la nouvelle table
+                $stmt = $pdo->prepare("
+                    INSERT INTO character_equipment 
+                    (character_id, item_name, item_type, quantity, equipped, notes, obtained_at, obtained_from) 
+                    VALUES (?, ?, ?, 1, 0, 'Équipement de départ', NOW(), 'Sélection équipement de départ')
+                ");
+                $stmt->execute([
+                    $characterId,    // character_id
+                    $line,           // item_name
+                    $itemType        // item_type
+                ]);
+            }
+            
+            $pdo->commit();
+            return true;
+            
+        } catch (\Exception $e) {
+            $pdo->rollBack();
+            error_log("Erreur lors de l'ajout de l'équipement de départ: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Calculer la classe d'armure d'un personnage (version étendue)
+     * 
+     * @param array $character Données du personnage
+     * @param array|null $equippedArmor Armure équipée
+     * @param array|null $equippedShield Bouclier équipé
+     * @return int Classe d'armure calculée
+     */
+    public static function calculateArmorClassExtended($character, $equippedArmor = null, $equippedShield = null)
+    {
+        // Utiliser le modificateur de Dextérité déjà calculé dans la zone "Caractéristiques"
+        $dexterityModifier = $character['dexterity_modifier'];
+        
+        // Récupérer le nom de la classe pour vérifier si c'est un barbare
+        $pdo = \Database::getInstance()->getPdo();
+        $stmt = $pdo->prepare("SELECT name FROM classes WHERE id = ?");
+        $stmt->execute([$character['class_id']]);
+        $class = $stmt->fetch();
+        $isBarbarian = $class && strpos(strtolower($class['name']), 'barbare') !== false;
+        
+        if ($equippedArmor) {
+            // CA basée sur l'armure équipée
+            $acFormula = $equippedArmor['ac_formula'];
+            
+            // Parser la formule de CA
+            if (preg_match('/(\d+)\s*\+\s*Mod\.Dex(?: \(max \+(\d+)\))?/', $acFormula, $matches)) {
+                $baseAC = (int)$matches[1];
+                $maxDexBonus = isset($matches[2]) ? (int)$matches[2] : null;
+                
+                $dexBonus = $dexterityModifier;
+                if ($maxDexBonus !== null) {
+                    $dexBonus = min($dexBonus, $maxDexBonus);
+                }
+                
+                $ac = $baseAC + $dexBonus;
+            } else {
+                // CA fixe (armures lourdes)
+                $ac = (int)$acFormula;
+            }
+        } else {
+            // Pas d'armure
+            if ($isBarbarian) {
+                // Pour les barbares sans armure : CA = 10 + modificateur de Dextérité + modificateur de Constitution
+                $tempChar = new Character();
+                $tempChar->constitution = $character['constitution'] + $character['constitution_bonus'];
+                $constitutionModifier = $tempChar->getAbilityModifier('constitution');
+                $ac = 10 + $dexterityModifier + $constitutionModifier;
+            } else {
+                // Pour les autres classes : CA = 10 + modificateur de Dextérité
+                $ac = 10 + $dexterityModifier;
+            }
+        }
+        
+        // Ajouter le bonus de bouclier si équipé
+        if ($equippedShield) {
+            $ac += $equippedShield['ac_bonus'];
+        }
+        
+        return $ac;
+    }
+
+    /**
+     * Calculer les attaques d'un personnage
+     * 
+     * @param int $characterId ID du personnage
+     * @param array $character Données du personnage
+     * @return array Tableau des attaques
+     */
+    public static function calculateCharacterAttacks($characterId, $character)
+    {
+        // Cette fonction nécessite une logique complexe
+        // Pour l'instant, on retourne un tableau vide pour maintenir la compatibilité
+        // TODO: Implémenter la logique complète
+        return [];
+    }
+
+    /**
+     * Obtenir l'équipement équipé d'un personnage
+     * 
+     * @param int $characterId ID du personnage
+     * @return array Tableau de l'équipement équipé
+     */
+    public static function getCharacterEquippedItems($characterId)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        $stmt = $pdo->prepare("
+            SELECT item_name, item_type, quantity, notes 
+            FROM character_equipment 
+            WHERE character_id = ? AND equipped = 1
+            ORDER BY item_type, item_name
+        ");
+        $stmt->execute([$characterId]);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Synchroniser l'équipement de base avec l'équipement du personnage
+     * 
+     * @param int $characterId ID du personnage
+     * @return bool Succès de l'opération
+     */
+    public static function syncBaseEquipmentToCharacterEquipment($characterId)
+    {
+        // Cette fonction nécessite une logique complexe
+        // Pour l'instant, on retourne true pour maintenir la compatibilité
+        // TODO: Implémenter la logique complète
+        return true;
+    }
+
     
     /**
      * Calculer la classe d'armure
@@ -1251,22 +1867,44 @@ class Character
     {
         try {
             $stmt = $this->pdo->prepare("
-                SELECT ability, improvement
+                SELECT strength_bonus, dexterity_bonus, constitution_bonus, 
+                       intelligence_bonus, wisdom_bonus, charisma_bonus
                 FROM character_ability_improvements
                 WHERE character_id = ?
             ");
             $stmt->execute([$this->id]);
             
-            $improvements = [];
-            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                $improvements[$row['ability']] = $row['improvement'];
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$row) {
+                return [
+                    'strength' => 0,
+                    'dexterity' => 0,
+                    'constitution' => 0,
+                    'intelligence' => 0,
+                    'wisdom' => 0,
+                    'charisma' => 0
+                ];
             }
             
-            return $improvements;
+            return [
+                'strength' => (int)$row['strength_bonus'],
+                'dexterity' => (int)$row['dexterity_bonus'],
+                'constitution' => (int)$row['constitution_bonus'],
+                'intelligence' => (int)$row['intelligence_bonus'],
+                'wisdom' => (int)$row['wisdom_bonus'],
+                'charisma' => (int)$row['charisma_bonus']
+            ];
             
         } catch (PDOException $e) {
             error_log("Erreur lors de la récupération des améliorations: " . $e->getMessage());
-            return [];
+            return [
+                'strength' => 0,
+                'dexterity' => 0,
+                'constitution' => 0,
+                'intelligence' => 0,
+                'wisdom' => 0,
+                'charisma' => 0
+            ];
         }
     }
     
@@ -1284,15 +1922,21 @@ class Character
             
             // Ajouter les nouvelles améliorations
             $stmt = $this->pdo->prepare("
-                INSERT INTO character_ability_improvements (character_id, ability, improvement)
-                VALUES (?, ?, ?)
+                INSERT INTO character_ability_improvements 
+                (character_id, strength_bonus, dexterity_bonus, constitution_bonus, 
+                 intelligence_bonus, wisdom_bonus, charisma_bonus)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
             ");
             
-            foreach ($improvements as $ability => $improvement) {
-                if ($improvement > 0) {
-                    $stmt->execute([$this->id, $ability, $improvement]);
-                }
-            }
+            $stmt->execute([
+                $this->id,
+                (int)($improvements['strength'] ?? 0),
+                (int)($improvements['dexterity'] ?? 0),
+                (int)($improvements['constitution'] ?? 0),
+                (int)($improvements['intelligence'] ?? 0),
+                (int)($improvements['wisdom'] ?? 0),
+                (int)($improvements['charisma'] ?? 0)
+            ]);
             
             $this->pdo->commit();
             return true;
@@ -1323,6 +1967,91 @@ class Character
         }
         
         return $finalAbilities;
+    }
+    
+    /**
+     * Obtenir les améliorations de caractéristiques du personnage (version statique)
+     * 
+     * @param int $characterId ID du personnage
+     * @return array Améliorations par caractéristique
+     */
+    public static function getCharacterAbilityImprovements($characterId)
+    {
+        $character = self::findById($characterId);
+        if (!$character) {
+            return [
+                'strength' => 0,
+                'dexterity' => 0,
+                'constitution' => 0,
+                'intelligence' => 0,
+                'wisdom' => 0,
+                'charisma' => 0
+            ];
+        }
+        return $character->getAbilityImprovements();
+    }
+    
+    /**
+     * Calculer les caractéristiques finales avec les améliorations (version statique)
+     * 
+     * @param array $character Données du personnage
+     * @param array $abilityImprovements Améliorations de caractéristiques
+     * @return array Caractéristiques finales
+     */
+    public static function calculateFinalAbilitiesStatic($character, $abilityImprovements = null)
+    {
+        $characterObj = self::findById($character['id']);
+        if (!$characterObj) {
+            return $character; // Retourner les caractéristiques de base si le personnage n'existe pas
+        }
+        return $characterObj->calculateFinalAbilities($abilityImprovements);
+    }
+    
+    /**
+     * Obtenir les points d'amélioration disponibles pour un niveau donné
+     * 
+     * @param int $level Niveau du personnage
+     * @return int Nombre de points disponibles
+     */
+    public static function getAvailableAbilityPoints($level)
+    {
+        // Points d'amélioration aux niveaux 4, 8, 12, 16, 19
+        $points = 0;
+        if ($level >= 4) $points += 2;
+        if ($level >= 8) $points += 2;
+        if ($level >= 12) $points += 2;
+        if ($level >= 16) $points += 2;
+        if ($level >= 19) $points += 2;
+        return $points;
+    }
+    
+    /**
+     * Calculer les points d'amélioration utilisés
+     * 
+     * @param array $abilityImprovements Améliorations de caractéristiques
+     * @return int Nombre de points utilisés
+     */
+    public static function getUsedAbilityPoints($abilityImprovements)
+    {
+        $used = 0;
+        foreach ($abilityImprovements as $improvement) {
+            $used += $improvement;
+        }
+        return $used;
+    }
+    
+    /**
+     * Calculer les points d'amélioration restants
+     * 
+     * @param int $level Niveau du personnage
+     * @param array $abilityImprovements Améliorations de caractéristiques
+     * @return int Nombre de points restants
+     */
+    public static function getRemainingAbilityPoints($level, $abilityImprovements)
+    {
+        $available = self::getAvailableAbilityPoints($level);
+        $used = self::getUsedAbilityPoints($abilityImprovements);
+        return $available - $used;
     }
     
     /**
@@ -1426,5 +2155,146 @@ class Character
             error_log("Erreur lors de la vérification de l'équipement de départ: " . $e->getMessage());
             return false;
         }
+    }
+
+    /**
+     * Utiliser un emplacement de sort (version statique)
+     * 
+     * @param int $characterId ID du personnage
+     * @param int $level Niveau du sort
+     * @return bool Succès de l'opération
+     */
+    public static function useSpellSlotStatic($characterId, $level)
+    {
+        $character = self::findById($characterId);
+        if (!$character) {
+            return false;
+        }
+        return $character->useSpellSlot($level);
+    }
+
+    /**
+     * Libérer un emplacement de sort (version statique)
+     * 
+     * @param int $characterId ID du personnage
+     * @param int $level Niveau du sort
+     * @return bool Succès de l'opération
+     */
+    public static function freeSpellSlotStatic($characterId, $level)
+    {
+        $character = self::findById($characterId);
+        if (!$character) {
+            return false;
+        }
+        return $character->freeSpellSlot($level);
+    }
+
+    /**
+     * Réinitialiser tous les emplacements de sorts utilisés (version statique)
+     * 
+     * @param int $characterId ID du personnage
+     * @return bool Succès de l'opération
+     */
+    public static function resetSpellSlotsUsageStatic($characterId)
+    {
+        $character = self::findById($characterId);
+        if (!$character) {
+            return false;
+        }
+        return $character->resetSpellSlotsUsage();
+    }
+
+    /**
+     * Obtenir l'utilisation des rages d'un personnage (version statique)
+     * 
+     * @param int $characterId ID du personnage
+     * @return int Nombre de rages utilisées
+     */
+    public static function getRageUsageStatic($characterId)
+    {
+        $character = self::findById($characterId);
+        if (!$character) {
+            return 0;
+        }
+        return $character->getRageUsage();
+    }
+
+    /**
+     * Utiliser une rage (version statique)
+     * 
+     * @param int $characterId ID du personnage
+     * @return bool Succès de l'opération
+     */
+    public static function useRageStatic($characterId)
+    {
+        $character = self::findById($characterId);
+        if (!$character) {
+            return false;
+        }
+        return $character->useRage();
+    }
+
+    /**
+     * Libérer une rage (version statique)
+     * 
+     * @param int $characterId ID du personnage
+     * @return bool Succès de l'opération
+     */
+    public static function freeRageStatic($characterId)
+    {
+        $character = self::findById($characterId);
+        if (!$character) {
+            return false;
+        }
+        return $character->freeRage();
+    }
+
+    /**
+     * Réinitialiser toutes les rages utilisées (version statique)
+     * 
+     * @param int $characterId ID du personnage
+     * @return bool Succès de l'opération
+     */
+    public static function resetRageUsageStatic($characterId)
+    {
+        $character = self::findById($characterId);
+        if (!$character) {
+            return false;
+        }
+        return $character->resetRageUsage();
+    }
+
+    /**
+     * Équiper un objet (version statique)
+     * 
+     * @param int $characterId ID du personnage
+     * @param string $itemName Nom de l'objet
+     * @param string $itemType Type de l'objet
+     * @param string $slot Emplacement
+     * @return bool Succès de l'opération
+     */
+    public static function equipItemStatic($characterId, $itemName, $itemType, $slot)
+    {
+        $character = self::findById($characterId);
+        if (!$character) {
+            return false;
+        }
+        return $character->equipItem($itemName, $itemType, $slot);
+    }
+
+    /**
+     * Déséquiper un objet (version statique)
+     * 
+     * @param int $characterId ID du personnage
+     * @param string $itemName Nom de l'objet
+     * @return bool Succès de l'opération
+     */
+    public static function unequipItemStatic($characterId, $itemName)
+    {
+        $character = self::findById($characterId);
+        if (!$character) {
+            return false;
+        }
+        return $character->unequipItem($itemName);
     }
 }

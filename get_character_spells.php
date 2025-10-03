@@ -39,7 +39,7 @@ if (!$character) {
 
 try {
     // Récupérer les sorts du personnage
-    $spells = getCharacterSpells($character_id);
+    $spells = Character::getCharacterSpells($character_id);
     
     echo json_encode([
         'success' => true,

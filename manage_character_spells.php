@@ -35,7 +35,7 @@ if (!$character) {
 }
 
 // Vérifier que la classe peut lancer des sorts
-if (!canCastSpells($character['class_id'])) {
+if (!Character::canCastSpells($character['class_id'])) {
     echo json_encode(['success' => false, 'message' => 'Cette classe ne peut pas lancer de sorts']);
     exit;
 }
@@ -44,7 +44,7 @@ try {
     switch ($action) {
         case 'add':
             $prepared = isset($input['prepared']) ? (bool)$input['prepared'] : false;
-            if (addSpellToCharacter($character_id, $spell_id, $prepared)) {
+            if (Character::addSpellToCharacter($character_id, $spell_id, $prepared)) {
                 echo json_encode(['success' => true, 'message' => 'Sort ajouté avec succès']);
             } else {
                 echo json_encode(['success' => false, 'message' => 'Erreur lors de l\'ajout du sort']);
@@ -52,7 +52,7 @@ try {
             break;
             
         case 'remove':
-            if (removeSpellFromCharacter($character_id, $spell_id)) {
+            if (Character::removeSpellFromCharacter($character_id, $spell_id)) {
                 echo json_encode(['success' => true, 'message' => 'Sort retiré avec succès']);
             } else {
                 echo json_encode(['success' => false, 'message' => 'Erreur lors de la suppression du sort']);
@@ -61,7 +61,7 @@ try {
             
         case 'toggle_prepared':
             $prepared = isset($input['prepared']) ? (bool)$input['prepared'] : false;
-            if (updateSpellPrepared($character_id, $spell_id, $prepared)) {
+            if (Character::updateSpellPrepared($character_id, $spell_id, $prepared)) {
                 echo json_encode(['success' => true, 'message' => 'État du sort mis à jour']);
             } else {
                 echo json_encode(['success' => false, 'message' => 'Erreur lors de la mise à jour']);
@@ -69,7 +69,7 @@ try {
             break;
             
         case 'unprepare':
-            if (updateSpellPrepared($character_id, $spell_id, false)) {
+            if (Character::updateSpellPrepared($character_id, $spell_id, false)) {
                 echo json_encode(['success' => true, 'message' => 'Sort dépréparé avec succès']);
             } else {
                 echo json_encode(['success' => false, 'message' => 'Erreur lors de la dépréparation']);

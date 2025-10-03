@@ -397,7 +397,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
     
     // Générer l'équipement final basé sur les choix
-    $equipmentData = generateFinalEquipment($class_id, $startingEquipment, $background_id);
+    $equipmentData = Character::generateFinalEquipment($class_id, $startingEquipment, $background_id);
     $finalEquipment = $equipmentData['equipment'];
     $backgroundGold = $equipmentData['gold'];
     
@@ -1670,7 +1670,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             </div>
 
                             <!-- Grimoire -->
-                            <?php if (canCastSpells($character['class_id'])): ?>
+                            <?php if (Character::canCastSpells($character['class_id'])): ?>
                             <div class="form-section">
                                 <h3><i class="fas fa-book-open me-2"></i>Grimoire</h3>
                                 <div class="row">
@@ -1687,8 +1687,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         // Calculer les modificateurs pour l'affichage
                                         $wisdomModifier = floor(($character['wisdom'] + $character['wisdom_bonus'] - 10) / 2);
                                         $intelligenceModifier = floor(($character['intelligence'] + $character['intelligence_bonus'] - 10) / 2);
-                                        $spell_capabilities = getClassSpellCapabilities($character['class_id'], $character['level'], $wisdomModifier, $character['max_spells_learned'], $intelligenceModifier);
-                                        $character_spells = getCharacterSpells($character_id);
+                                        $spell_capabilities = Character::getClassSpellCapabilities($character['class_id'], $character['level'], $wisdomModifier, $character['max_spells_learned'], $intelligenceModifier);
+                                        $character_spells = Character::getCharacterSpells($character_id);
                                         ?>
                                         
                                         <div class="row">

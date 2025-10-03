@@ -16,7 +16,7 @@ $classId = (int)$_GET['class_id'];
 $level = isset($_GET['level']) ? (int)$_GET['level'] : 1;
 
 try {
-    $capabilities = getClassSpellCapabilities($classId, $level);
+    $capabilities = Character::getClassSpellCapabilities($classId, $level);
     
     if (!$capabilities) {
         echo json_encode(['success' => false, 'message' => 'Capacités non trouvées']);

@@ -700,4 +700,135 @@ class Item
         $stmt->execute();
         return $stmt->fetchAll();
     }
+
+    /**
+     * Détecter les armes dans l'équipement d'un personnage
+     * 
+     * @param string $equipmentText Texte d'équipement à analyser
+     * @return array Tableau des armes détectées
+     */
+    public static function detectWeaponsInEquipment($equipmentText)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        $weapons = [];
+        $stmt = $pdo->query("SELECT name, hands, type, damage, properties FROM weapons");
+        $allWeapons = $stmt->fetchAll();
+        
+        foreach ($allWeapons as $weapon) {
+            // Rechercher l'arme dans le texte d'équipement (insensible à la casse)
+            $weaponName = mb_strtolower($weapon['name'], 'UTF-8');
+            $equipmentLower = mb_strtolower($equipmentText, 'UTF-8');
+            
+            // Vérifier différentes variations du nom
+            $patterns = [
+                $weaponName, // Nom exact
+                $weaponName . 's', // Pluriel simple
+                $weaponName . 'es', // Pluriel en -es
+                'une ' . $weaponName, // Avec article "une"
+                'un ' . $weaponName, // Avec article "un"
+                'deux ' . $weaponName . 's', // Avec nombre et pluriel
+                'trois ' . $weaponName . 's', // Avec nombre et pluriel
+                'quatre ' . $weaponName . 's', // Avec nombre et pluriel
+                'cinq ' . $weaponName . 's', // Avec nombre et pluriel
+            ];
+            
+            // Patterns spécifiques pour les pluriels français complexes
+            if (strpos($weaponName, 'épée') !== false) {
+                $patterns[] = 'deux épées courtes';
+                $patterns[] = 'trois épées courtes';
+                $patterns[] = 'quatre épées courtes';
+                $patterns[] = 'cinq épées courtes';
+            }
+            
+            $found = false;
+            foreach ($patterns as $pattern) {
+                if (stripos($equipmentText, $pattern) !== false) {
+                    $found = true;
+                    break;
+                }
+            }
+            
+            if ($found) {
+                $weapons[] = [
+                    'name' => $weapon['name'],
+                    'hands' => $weapon['hands'],
+                    'type' => $weapon['type'],
+                    'damage' => $weapon['damage'],
+                    'properties' => $weapon['properties']
+                ];
+            }
+        }
+        
+        return $weapons;
+    }
+
+    /**
+     * Détecter les armures dans l'équipement d'un personnage
+     * 
+     * @param string $equipmentText Texte d'équipement à analyser
+     * @return array Tableau des armures détectées
+     */
+    public static function detectArmorInEquipment($equipmentText)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        $armor = [];
+        $stmt = $pdo->query("SELECT name, ac_formula, type FROM armor WHERE type != 'Bouclier'");
+        $allArmor = $stmt->fetchAll();
+        
+        foreach ($allArmor as $armorItem) {
+            // Rechercher l'armure dans le texte d'équipement (insensible à la casse)
+            // Gérer les variations comme "armure d'écailles" vs "Écailles"
+            $armorName = mb_strtolower($armorItem['name'], 'UTF-8');
+            $equipmentLower = mb_strtolower($equipmentText, 'UTF-8');
+            
+            if (stripos($equipmentText, $armorItem['name']) !== false || 
+                stripos($equipmentText, "armure d'" . $armorName) !== false ||
+                stripos($equipmentText, "armure de " . $armorName) !== false ||
+                stripos($equipmentText, "armure d'" . $armorItem['name']) !== false ||
+                stripos($equipmentText, "armure de " . $armorItem['name']) !== false) {
+                $armor[] = [
+                    'name' => $armorItem['name'],
+                    'ac_formula' => $armorItem['ac_formula'],
+                    'type' => $armorItem['type']
+                ];
+            }
+        }
+        
+        return $armor;
+    }
+
+    /**
+     * Détecter les boucliers dans l'équipement d'un personnage
+     * 
+     * @param string $equipmentText Texte d'équipement à analyser
+     * @return array Tableau des boucliers détectés
+     */
+    public static function detectShieldsInEquipment($equipmentText)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        $shields = [];
+        $stmt = $pdo->query("SELECT name, ac_formula FROM armor WHERE type = 'Bouclier'");
+        $allShields = $stmt->fetchAll();
+        
+        foreach ($allShields as $shield) {
+            // Rechercher le bouclier dans le texte d'équipement (insensible à la casse)
+            if (stripos($equipmentText, $shield['name']) !== false) {
+                // Extraire le bonus de CA de la formule
+                $acBonus = 2; // Par défaut
+                if (preg_match('/(\d+)/', $shield['ac_formula'], $matches)) {
+                    $acBonus = (int)$matches[1];
+                }
+                
+                $shields[] = [
+                    'name' => $shield['name'],
+                    'ac_bonus' => $acBonus
+                ];
+            }
+        }
+        
+        return $shields;
+    }
 }

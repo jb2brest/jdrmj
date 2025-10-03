@@ -44,20 +44,23 @@ if (User::isAdmin()) {
     ");
     $stmt->execute([$campaign_id, $user_id]);
 }
-$campaign = $stmt->fetch();
+$campaign_data = $stmt->fetch();
 
 // Récupérer les informations du monde si la campagne en a un
 $world_name = '';
 $world_id = null;
-if ($campaign && !empty($campaign['world_id'])) {
-    $monde = Monde::findById($campaign['world_id']);
+if ($campaign_data && !empty($campaign_data['world_id'])) {
+    $monde = Monde::findById($campaign_data['world_id']);
     if ($monde) {
         $world_name = $monde->getName();
         $world_id = $monde->getId();
     }
 }
-$campaign['world_name'] = $world_name;
-$campaign['world_id'] = $world_id;
+$campaign_data['world_name'] = $world_name;
+$campaign_data['world_id'] = $world_id;
+
+// Créer un objet Campaign pour les appels aux méthodes
+$campaign = $campaign_data ? Campaign::findById($campaign_id) : null;
 
 // Obtenir l'instance PDO
 $pdo = getPDO();
@@ -71,7 +74,7 @@ if (!$campaign) {
 }
 
 // Définir si l'utilisateur est le MJ propriétaire
-$dm_id = (int)$campaign['dm_id'];
+$dm_id = (int)$campaign_data['dm_id'];
 $isOwnerDM = ($user_id == $dm_id);
 
 // Traitements POST: candidatures (tous les utilisateurs connectés)
@@ -95,15 +98,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     // Récupérer les informations du monde si la campagne en a un
                     $world_name = '';
                     $world_id = null;
-                    if (!empty($campaign['world_id'])) {
-                        $monde = Monde::findById($campaign['world_id']);
+                    if (!empty($campaign_data['world_id'])) {
+                        $monde = Monde::findById($campaign_data['world_id']);
                         if ($monde) {
                             $world_name = $monde->getName();
                             $world_id = $monde->getId();
                         }
                     }
-                    $campaign['world_name'] = $world_name;
-                    $campaign['world_id'] = $world_id;
+                    $campaign_data['world_name'] = $world_name;
+                    $campaign_data['world_id'] = $world_id;
                 }
             } else {
                 $error_message = $result['message'];
@@ -129,7 +132,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 
                 // Recharger les lieux de la campagne
-                $places = getPlacesWithGeography($campaign_id);
+                $campaign = Campaign::findById($campaign_id);
+                $places = $campaign ? $campaign->getAssociatedPlacesWithGeography() : [];
             } else {
                 $error_message = "Ce lieu ne peut pas être associé à cette campagne.";
             }
@@ -260,7 +264,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
                 
                 // Notification au joueur
                 $title = 'Candidature acceptée';
-                $message = 'Votre candidature à la campagne "' . $campaign['title'] . '" a été acceptée.';
+                $message = 'Votre candidature à la campagne "' . $campaign_data['title'] . '" a été acceptée.';
                 if ($place_id) {
                     $stmt = $pdo->prepare("SELECT title FROM places WHERE id = ?");
                     $stmt->execute([$place_id]);
@@ -299,7 +303,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
             $stmt->execute([$application_id]);
             // Notification au joueur
             $title = 'Candidature refusée';
-            $message = 'Votre candidature à la campagne "' . $campaign['title'] . '" a été refusée.';
+            $message = 'Votre candidature à la campagne "' . $campaign_data['title'] . '" a été refusée.';
             $stmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, related_id) VALUES (?, 'system', ?, ?, ?)");
             $stmt->execute([$player_id, $title, $message, $campaign_id]);
             $success_message = "Candidature refusée.";
@@ -327,7 +331,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
                 $stmt->execute([$campaign_id, $player_id]);
                 // Notifier le joueur
                 $title = 'Acceptation annulée';
-                $message = 'Votre acceptation dans la campagne "' . $campaign['title'] . '" a été annulée par le MJ. Votre candidature est de nouveau en attente.';
+                $message = 'Votre acceptation dans la campagne "' . $campaign_data['title'] . '" a été annulée par le MJ. Votre candidature est de nouveau en attente.';
                 $stmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, related_id) VALUES (?, 'system', ?, ?, ?)");
                 $stmt->execute([$player_id, $title, $message, $campaign_id]);
                 $pdo->commit();
@@ -355,7 +359,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
             $stmt->execute([$application_id]);
             // Notifier le joueur
             $title = 'Refus annulé';
-            $message = 'Votre refus dans la campagne "' . $campaign['title'] . '" a été annulé par le MJ. Votre candidature est de nouveau en attente.';
+            $message = 'Votre refus dans la campagne "' . $campaign_data['title'] . '" a été annulé par le MJ. Votre candidature est de nouveau en attente.';
             $stmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, related_id) VALUES (?, 'system', ?, ?, ?)");
             $stmt->execute([$player_id, $title, $message, $campaign_id]);
             $success_message = "Refus annulé. La candidature est remise en attente.";
@@ -381,7 +385,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
                 $stmt->execute([$campaign_id, $member_user_id]);
                 // Notifier le joueur
                 $title = 'Exclusion de la campagne';
-                $message = 'Vous avez été exclu de la campagne "' . $campaign['title'] . '" par le MJ.';
+                $message = 'Vous avez été exclu de la campagne "' . $campaign_data['title'] . '" par le MJ.';
                 $stmt = $pdo->prepare("INSERT INTO notifications (user_id, type, title, message, related_id) VALUES (?, 'system', ?, ?, ?)");
                 $stmt->execute([$member_user_id, $title, $message, $campaign_id]);
                 $success_message = "Joueur exclu de la campagne.";
@@ -612,7 +616,7 @@ if (User::isDMOrAdmin()) {
 
 // Récupérer les lieux disponibles dans le monde de la campagne (pour l'association)
 $available_places = [];
-if (User::isDMOrAdmin() && !empty($campaign['world_id'])) {
+if (User::isDMOrAdmin() && !empty($campaign_data['world_id'])) {
     $stmt = $pdo->prepare("
         SELECT p.id, p.title, p.notes, p.map_url, 
                c.name as country_name, r.name as region_name
@@ -624,7 +628,7 @@ if (User::isDMOrAdmin() && !empty($campaign['world_id'])) {
         )
         ORDER BY c.name, r.name, p.title
     ");
-    $stmt->execute([$campaign['world_id'], $campaign_id]);
+    $stmt->execute([$campaign_data['world_id'], $campaign_id]);
     $available_places = $stmt->fetchAll();
 }
 
@@ -700,7 +704,7 @@ $stmt->execute([$campaign_id]);
 $applications = $stmt->fetchAll();
 
 // Récupérer lieux avec hiérarchie géographique
-$places = getPlacesWithGeography($campaign_id);
+$places = $campaign->getAssociatedPlacesWithGeography();
 
 // Récupérer les événements du journal
 $stmt = $pdo->prepare("SELECT * FROM campaign_journal WHERE campaign_id = ? ORDER BY created_at DESC");
@@ -743,7 +747,7 @@ if (!empty($places)) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($campaign['title']); ?> - Campagne</title>
+    <title><?php echo htmlspecialchars($campaign_data['title']); ?> - Campagne</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -795,21 +799,21 @@ if (!empty($places)) {
     <div class="container mt-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
-                <h1 class="me-3"><i class="fas fa-book me-2"></i><?php echo htmlspecialchars($campaign['title']); ?></h1>
-                <p class="text-muted mb-0">Créée par <?php echo htmlspecialchars($campaign['dm_username']); ?></p>
+                <h1 class="me-3"><i class="fas fa-book me-2"></i><?php echo htmlspecialchars($campaign_data['title']); ?></h1>
+                <p class="text-muted mb-0">Créée par <?php echo htmlspecialchars($campaign_data['dm_username']); ?></p>
             </div>
-            <span class="badge bg-<?php echo $campaign['is_public'] ? 'brown' : 'secondary'; ?> fs-6"><?php echo $campaign['is_public'] ? 'Publique' : 'Privée'; ?></span>
+            <span class="badge bg-<?php echo $campaign_data['is_public'] ? 'brown' : 'secondary'; ?> fs-6"><?php echo $campaign_data['is_public'] ? 'Publique' : 'Privée'; ?></span>
         </div>
         <?php if (!empty($success_message)) echo displayMessage($success_message, 'success'); ?>
         <?php if (!empty($error_message)) echo displayMessage($error_message, 'error'); ?>
 
-        <?php if (!empty($campaign['description'])): ?>
+        <?php if (!empty($campaign_data['description'])): ?>
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Description</h5>
                 </div>
                 <div class="card-body">
-                    <p class="mb-0"><?php echo nl2br(htmlspecialchars($campaign['description'])); ?></p>
+                    <p class="mb-0"><?php echo nl2br(htmlspecialchars($campaign_data['description'])); ?></p>
                 </div>
             </div>
         <?php endif; ?>
@@ -854,11 +858,11 @@ if (!empty($places)) {
                                 <input type="text" class="form-control" name="username_or_email" placeholder="Nom d'utilisateur ou email">
                                 <button class="btn btn-outline-brown" type="submit"><i class="fas fa-user-plus me-2"></i>Ajouter</button>
                             </div>
-                            <div class="form-text">Ou partagez le code d'invitation : <code><?php echo htmlspecialchars($campaign['invite_code']); ?></code></div>
+                            <div class="form-text">Ou partagez le code d'invitation : <code><?php echo htmlspecialchars($campaign_data['invite_code']); ?></code></div>
                         </form>
                         <?php else: ?>
                         <div class="mt-3">
-                            <div class="form-text">Code d'invitation : <code><?php echo htmlspecialchars($campaign['invite_code']); ?></code></div>
+                            <div class="form-text">Code d'invitation : <code><?php echo htmlspecialchars($campaign_data['invite_code']); ?></code></div>
                         </div>
                         <?php endif; ?>
                         
@@ -987,7 +991,7 @@ if (!empty($places)) {
                                         <option value="">Aucun monde sélectionné</option>
                                         <?php foreach ($worlds as $world): ?>
                                             <option value="<?php echo (int)$world['id']; ?>" 
-                                                    <?php echo ($campaign['world_id'] == $world['id']) ? 'selected' : ''; ?>>
+                                                    <?php echo ($campaign_data['world_id'] == $world['id']) ? 'selected' : ''; ?>>
                                                 <?php echo htmlspecialchars($world['name']); ?>
                                             </option>
                                         <?php endforeach; ?>
@@ -1001,12 +1005,12 @@ if (!empty($places)) {
                                 </button>
                             </form>
                         <?php else: ?>
-                            <?php if (!empty($campaign['world_name'])): ?>
+                            <?php if (!empty($campaign_data['world_name'])): ?>
                                 <div class="d-flex align-items-center">
                                     <i class="fas fa-globe-americas me-2 text-brown"></i>
-                                    <span class="fw-bold"><?php echo htmlspecialchars($campaign['world_name']); ?></span>
+                                    <span class="fw-bold"><?php echo htmlspecialchars($campaign_data['world_name']); ?></span>
                                 </div>
-                                <p class="text-muted mt-2 mb-0">Cette campagne se déroule dans le monde "<?php echo htmlspecialchars($campaign['world_name']); ?>".</p>
+                                <p class="text-muted mt-2 mb-0">Cette campagne se déroule dans le monde "<?php echo htmlspecialchars($campaign_data['world_name']); ?>".</p>
                             <?php else: ?>
                                 <div class="text-muted">
                                     <i class="fas fa-info-circle me-2"></i>
@@ -1371,7 +1375,7 @@ if (!empty($places)) {
                     <div class="modal-body">
                         <input type="hidden" name="action" value="associate_place">
                         
-                        <?php if (empty($campaign['world_id'])): ?>
+                        <?php if (empty($campaign_data['world_id'])): ?>
                             <div class="alert alert-warning">
                                 <i class="fas fa-exclamation-triangle me-2"></i>
                                 <strong>Attention :</strong> Aucun monde n'est défini pour cette campagne. 
@@ -1380,12 +1384,12 @@ if (!empty($places)) {
                         <?php elseif (empty($available_places)): ?>
                             <div class="alert alert-info">
                                 <i class="fas fa-info-circle me-2"></i>
-                                <strong>Information :</strong> Aucun lieu disponible dans le monde "<?php echo htmlspecialchars($campaign['world_name']); ?>".
+                                <strong>Information :</strong> Aucun lieu disponible dans le monde "<?php echo htmlspecialchars($campaign_data['world_name']); ?>".
                                 Tous les lieux de ce monde sont déjà associés à des campagnes ou il n'y a pas encore de lieux créés.
                             </div>
                         <?php else: ?>
                             <div class="mb-3">
-                                <label class="form-label">Lieux disponibles dans le monde "<?php echo htmlspecialchars($campaign['world_name']); ?>"</label>
+                                <label class="form-label">Lieux disponibles dans le monde "<?php echo htmlspecialchars($campaign_data['world_name']); ?>"</label>
                                 <div class="form-text mb-3">Sélectionnez un lieu à associer à cette campagne :</div>
                                 
                                 <div class="row g-3">
@@ -1435,7 +1439,7 @@ if (!empty($places)) {
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <?php if (!empty($campaign['world_id']) && !empty($available_places)): ?>
+                        <?php if (!empty($campaign_data['world_id']) && !empty($available_places)): ?>
                             <button type="submit" class="btn btn-brown">
                                 <i class="fas fa-link me-2"></i>Associer le lieu
                             </button>
