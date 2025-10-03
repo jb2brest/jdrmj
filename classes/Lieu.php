@@ -413,6 +413,28 @@ class Lieu
     }
     
     /**
+     * Obtenir tous les joueurs présents dans ce lieu avec informations détaillées (pour view_place.php)
+     */
+    public function getAllPlayersDetailed()
+    {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT sp.player_id, u.username, ch.id AS character_id, ch.name AS character_name, ch.profile_photo, ch.class_id, ch.hit_points_current, ch.hit_points_max 
+                FROM place_players sp 
+                JOIN users u ON sp.player_id = u.id 
+                LEFT JOIN characters ch ON sp.character_id = ch.id 
+                WHERE sp.place_id = ? 
+                ORDER BY u.username ASC
+            ");
+            $stmt->execute([$this->id]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération des joueurs détaillés: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
      * Obtenir les PNJ présents dans ce lieu (seulement ceux visibles)
      */
     public function getVisibleNpcs()
@@ -429,6 +451,27 @@ class Lieu
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             error_log("Erreur lors de la récupération des PNJ: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Obtenir tous les PNJ présents dans ce lieu (pour view_place.php - sans filtres de visibilité)
+     */
+    public function getAllNpcs()
+    {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, sn.is_visible, sn.is_identified, c.profile_photo AS character_profile_photo 
+                FROM place_npcs sn 
+                LEFT JOIN characters c ON sn.npc_character_id = c.id 
+                WHERE sn.place_id = ? 
+                ORDER BY sn.name ASC
+            ");
+            $stmt->execute([$this->id]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération de tous les PNJ: " . $e->getMessage());
             return [];
         }
     }
@@ -473,6 +516,28 @@ class Lieu
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             error_log("Erreur lors de la récupération des objets: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Obtenir TOUS les objets présents dans ce lieu (y compris ceux attribués) - pour le MJ
+     */
+    public function getAllObjects()
+    {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped,
+                       position_x, position_y, is_on_map, owner_type, owner_id,
+                       poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed
+                FROM items 
+                WHERE place_id = ?
+                ORDER BY display_name ASC
+            ");
+            $stmt->execute([$this->id]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération de tous les objets: " . $e->getMessage());
             return [];
         }
     }

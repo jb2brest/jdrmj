@@ -91,6 +91,15 @@ try {
     // Création de la variable $pdo pour la compatibilité avec le code existant
     $pdo = $database->getPdo();
     
+    /**
+     * Fonction globale pour obtenir l'instance PDO via le singleton Database
+     * 
+     * @return PDO Instance PDO
+     */
+    function getPDO() {
+        return Database::getInstance()->getPdo();
+    }
+    
     // Log de l'environnement (uniquement en mode debug)
     if (defined('DEBUG') && DEBUG) {
         error_log("Connexion DB - Environnement: " . DB_ENV . " - Host: " . DB_HOST . " - DB: " . DB_NAME);

@@ -240,6 +240,30 @@ class Character
     }
     
     /**
+     * Trouver tous les personnages d'un utilisateur (version simplifiée - juste id et name)
+     */
+    public static function findSimpleByUserId($userId, PDO $pdo = null)
+    {
+        $pdo = $pdo ?: getPDO();
+        
+        try {
+            $stmt = $pdo->prepare("
+                SELECT id, name 
+                FROM characters 
+                WHERE user_id = ? 
+                ORDER BY created_at DESC
+            ");
+            $stmt->execute([$userId]);
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la recherche des personnages simplifiés: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
      * Mettre à jour le personnage
      */
     public function update(array $data)

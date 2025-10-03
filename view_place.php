@@ -15,23 +15,22 @@ if (!isset($_GET['id'])) {
 $place_id = (int)$_GET['id'];
 $isModal = isset($_GET['modal']);
 
-// Charger la lieu et sa campagne avec hiérarchie géographique
-$place = getPlaceWithGeography($place_id);
-if ($place) {
+// Charger le lieu et sa campagne avec hiérarchie géographique
+$lieu = Lieu::findById($place_id);
+if ($lieu) {
     // Récupérer les campagnes associées à ce lieu
-    $campaigns = getCampaignsForPlace($place_id);
+    $campaigns = $lieu->getCampaigns();
     if (!empty($campaigns)) {
         // Pour l'instant, on prend la première campagne (on pourrait améliorer cela plus tard)
         $campaign = $campaigns[0];
+        $place = $lieu->toArray();
         $place['campaign_id'] = $campaign['id'];
         $place['campaign_title'] = $campaign['title'];
         $place['dm_id'] = $campaign['dm_id'];
         
         // Récupérer le nom d'utilisateur du DM
-        $stmt = $pdo->prepare("SELECT username FROM users WHERE id = ?");
-        $stmt->execute([$campaign['dm_id']]);
-        $dm = $stmt->fetch();
-        $place['dm_username'] = $dm ? $dm['username'] : 'Inconnu';
+        $dm_user = User::findById(getPDO(), $campaign['dm_id']);
+        $place['dm_username'] = $dm_user ? $dm_user->getUsername() : 'Inconnu';
     } else {
         // Si aucun lieu n'est associé à une campagne, rediriger
         header('Location: index.php');
@@ -61,9 +60,8 @@ error_log("DEBUG view_place.php - isOwnerDM: " . ($isOwnerDM ? 'true' : 'false')
 // Autoriser les admins, les DM propriétaires et les membres de la campagne à voir le lieu
 $canView = isAdmin() || $isOwnerDM;
 if (!$canView && isset($place['campaign_id'])) {
-    $stmt = $pdo->prepare("SELECT 1 FROM campaign_members WHERE campaign_id = ? AND user_id = ? LIMIT 1");
-    $stmt->execute([$place['campaign_id'], $_SESSION['user_id']]);
-    $canView = (bool)$stmt->fetch();
+    $campaign = Campaign::findById($place['campaign_id']);
+    $canView = $campaign ? $campaign->isMember($_SESSION['user_id']) : false;
 }
 
 // Seuls les admins et les DM propriétaires peuvent éditer le lieu
@@ -75,47 +73,19 @@ if (!$canView) {
 }
 
 // Récupérer les joueurs présents dans cette lieu
-$stmt = $pdo->prepare("SELECT sp.player_id, u.username, ch.id AS character_id, ch.name AS character_name, ch.profile_photo, ch.class_id, ch.hit_points_current, ch.hit_points_max FROM place_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.place_id = ? ORDER BY u.username ASC");
-$stmt->execute([$place_id]);
-$placePlayers = $stmt->fetchAll();
+$placePlayers = $lieu ? $lieu->getAllPlayers() : [];
 
 // Récupérer les PNJ de cette lieu
-$stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, sn.is_visible, sn.is_identified, c.profile_photo AS character_profile_photo, c.hit_points_current, c.hit_points_max FROM place_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.place_id = ? AND sn.monster_id IS NULL ORDER BY sn.name ASC");
-$stmt->execute([$place_id]);
-$placeNpcs = $stmt->fetchAll();
+$placeNpcs = $lieu ? $lieu->getVisibleNpcs() : [];
 
 // Récupérer les monstres de cette lieu
-$stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, sn.current_hit_points, sn.is_visible, sn.is_identified, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class, m.csv_id FROM place_npcs sn JOIN dnd_monsters m ON sn.monster_id = m.id WHERE sn.place_id = ? AND sn.monster_id IS NOT NULL ORDER BY sn.name ASC");
-$stmt->execute([$place_id]);
-$placeMonsters = $stmt->fetchAll();
+$placeMonsters = $lieu ? $lieu->getVisibleMonsters() : [];
 
 // Récupérer les positions des pions
-$stmt = $pdo->prepare("
-    SELECT token_type, entity_id, position_x, position_y, is_on_map
-    FROM place_tokens 
-    WHERE place_id = ?
-");
-$stmt->execute([$place_id]);
-$tokenPositions = [];
-while ($row = $stmt->fetch()) {
-    $tokenPositions[$row['token_type'] . '_' . $row['entity_id']] = [
-        'x' => (int)$row['position_x'],
-        'y' => (int)$row['position_y'],
-        'is_on_map' => (bool)$row['is_on_map']
-    ];
-}
+$tokenPositions = $lieu ? $lieu->getTokenPositions() : [];
 
 // Récupérer les objets du lieu (seulement ceux non attribués pour l'affichage normal)
-$stmt = $pdo->prepare("
-    SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped,
-           position_x, position_y, is_on_map, owner_type, owner_id,
-           poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed
-    FROM items 
-    WHERE place_id = ? AND (owner_type = 'place' OR owner_type IS NULL)
-    ORDER BY display_name ASC
-");
-$stmt->execute([$place_id]);
-$placeObjects = $stmt->fetchAll();
+$placeObjects = $lieu ? $lieu->getVisibleObjects() : [];
 
 // Récupérer les positions des objets depuis items (seulement les non attribués)
 foreach ($placeObjects as $object) {
@@ -129,33 +99,17 @@ foreach ($placeObjects as $object) {
 
 // Récupérer TOUS les objets du lieu (y compris ceux attribués) pour le MJ
 $allPlaceObjects = [];
-if ($isOwnerDM) {
-    $stmt = $pdo->prepare("
-        SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped,
-               position_x, position_y, is_on_map, owner_type, owner_id,
-               poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed
-        FROM items 
-        WHERE place_id = ?
-        ORDER BY display_name ASC
-    ");
-    $stmt->execute([$place_id]);
-    $allPlaceObjects = $stmt->fetchAll();
+if ($isOwnerDM && $lieu) {
+    $allPlaceObjects = $lieu->getAllObjects();
 }
 
 // Récupérer les membres de la campagne pour le formulaire d'ajout de joueurs
-$stmt = $pdo->prepare("
-    SELECT u.id, u.username, c.id AS character_id, c.name AS character_name, c.profile_photo
-    FROM campaign_members cm
-    JOIN users u ON cm.user_id = u.id
-    LEFT JOIN characters c ON u.id = c.user_id
-    WHERE cm.campaign_id = ? AND cm.role IN ('player', 'dm')
-    ORDER BY u.username ASC
-");
+$campaignMembers = [];
 if (isset($place['campaign_id'])) {
-    $stmt->execute([$place['campaign_id']]);
-    $campaignMembers = $stmt->fetchAll();
-} else {
-    $campaignMembers = [];
+    $campaign = Campaign::findById($place['campaign_id']);
+    if ($campaign) {
+        $campaignMembers = $campaign->getMembers();
+    }
 }
 
 // Traitements POST pour ajouter des PNJ
@@ -166,9 +120,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
     if (isset($_POST['action']) && $_POST['action'] === 'add_dm_character_npc') {
         $character_id = (int)($_POST['dm_character_id'] ?? 0);
         if ($character_id > 0) {
-            $chk = $pdo->prepare("SELECT name FROM characters WHERE id = ? AND user_id = ?");
-            $chk->execute([$character_id, $dm_id]);
-            $char = $chk->fetch();
+            $character = Character::findById($character_id);
+            $char = ($character && $character->user_id == $dm_id) ? ['name' => $character->name] : null;
             if ($char) {
                 // IMPORTANT: Retirer ce personnage de tous les autres lieux de la campagne
                 // Un personnage ne peut pas se trouver dans deux lieux à la fois
@@ -190,9 +143,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                 $success_message = "PNJ (personnage du MJ) ajouté au lieu (retiré automatiquement des autres lieux).";
                 
                 // Recharger les PNJ
-                $stmt = $pdo->prepare("SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, sn.is_visible, sn.is_identified, c.profile_photo AS character_profile_photo FROM place_npcs sn LEFT JOIN characters c ON sn.npc_character_id = c.id WHERE sn.place_id = ? ORDER BY sn.name ASC");
-                $stmt->execute([$place_id]);
-                $placeNpcs = $stmt->fetchAll();
+                $placeNpcs = $lieu->getAllNpcs();
             } else {
                 $error_message = "Personnage invalide (doit appartenir au MJ).";
             }
@@ -238,9 +189,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                 $success_message = "Joueur ajouté au lieu (retiré automatiquement des autres lieux).";
                 
                 // Recharger les joueurs
-                $stmt = $pdo->prepare("SELECT sp.player_id, u.username, ch.id AS character_id, ch.name AS character_name, ch.profile_photo, ch.class_id, ch.hit_points_current, ch.hit_points_max FROM place_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.place_id = ? ORDER BY u.username ASC");
-                $stmt->execute([$place_id]);
-                $placePlayers = $stmt->fetchAll();
+                $placePlayers = $lieu->getAllPlayersDetailed();
             } else {
                 $error_message = "Ce joueur est déjà présent dans ce lieu.";
             }
@@ -257,9 +206,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         $success_message = "Joueur retiré du lieu.";
         
         // Recharger les joueurs
-        $stmt = $pdo->prepare("SELECT sp.player_id, u.username, ch.id AS character_id, ch.name AS character_name, ch.profile_photo, ch.class_id, ch.hit_points_current, ch.hit_points_max FROM place_players sp JOIN users u ON sp.player_id = u.id LEFT JOIN characters ch ON sp.character_id = ch.id WHERE sp.place_id = ? ORDER BY u.username ASC");
-        $stmt->execute([$place_id]);
-        $placePlayers = $stmt->fetchAll();
+        $placePlayers = $lieu->getAllPlayersDetailed();
     }
     
     // Exclure un PNJ du lieu
@@ -1159,9 +1106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
 // Récupérer la liste des personnages du MJ pour l'ajout en PNJ
 $dmCharacters = [];
 if ($isOwnerDM) {
-    $stmt = $pdo->prepare("SELECT id, name FROM characters WHERE user_id = ? ORDER BY created_at DESC");
-    $stmt->execute([$dm_id]);
-    $dmCharacters = $stmt->fetchAll();
+    $dmCharacters = Character::findSimpleByUserId($dm_id);
 }
 
 // Récupérer les autres lieux de la campagne pour navigation
