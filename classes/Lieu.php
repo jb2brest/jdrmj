@@ -1354,4 +1354,439 @@ class Lieu
             return false;
         }
     }
+
+    /**
+     * Récupérer tous les lieux d'une campagne
+     * 
+     * @param int $campaignId ID de la campagne
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return array Liste des IDs des lieux de la campagne
+     */
+    public static function getPlaceIdsByCampaign($campaignId, PDO $pdo = null)
+    {
+        $pdo = $pdo ?: getPDO();
+        
+        try {
+            $stmt = $pdo->prepare("
+                SELECT p.id FROM places p
+                INNER JOIN place_campaigns pc ON p.id = pc.place_id
+                WHERE pc.campaign_id = ?
+            ");
+            $stmt->execute([$campaignId]);
+            return $stmt->fetchAll(PDO::FETCH_COLUMN);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération des lieux de la campagne: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Ajouter un joueur à un lieu
+     * 
+     * @param int $placeId ID du lieu
+     * @param int $playerId ID du joueur
+     * @param int $characterId ID du personnage
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return bool Succès de l'opération
+     */
+    public static function addPlayerToPlace($placeId, $playerId, $characterId, PDO $pdo = null)
+    {
+        $pdo = $pdo ?: getPDO();
+        
+        try {
+            $stmt = $pdo->prepare("INSERT INTO place_players (place_id, player_id, character_id) VALUES (?, ?, ?)");
+            return $stmt->execute([$placeId, $playerId, $characterId]);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de l'ajout du joueur au lieu: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Récupérer la position d'un lieu dans une campagne
+     * 
+     * @param int $placeId ID du lieu
+     * @param int $campaignId ID de la campagne
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return int|null Position du lieu ou null si non trouvé
+     */
+    public static function getPositionInCampaign($placeId, $campaignId, PDO $pdo = null)
+    {
+        $pdo = $pdo ?: getPDO();
+        
+        try {
+            $stmt = $pdo->prepare("
+                SELECT p.position FROM places p
+                INNER JOIN place_campaigns pc ON p.id = pc.place_id
+                WHERE p.id = ? AND pc.campaign_id = ?
+            ");
+            $stmt->execute([$placeId, $campaignId]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            return $result ? (int)$result['position'] : null;
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération de la position du lieu: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Trouver un lieu adjacent par position dans une campagne
+     * 
+     * @param int $campaignId ID de la campagne
+     * @param int $position Position recherchée
+     * @param int $excludePlaceId ID du lieu à exclure de la recherche
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return Lieu|null Lieu trouvé ou null
+     */
+    public static function findByPositionInCampaign($campaignId, $position, $excludePlaceId = null, PDO $pdo = null)
+    {
+        $pdo = $pdo ?: getPDO();
+        
+        try {
+            $sql = "
+                SELECT p.* FROM places p
+                INNER JOIN place_campaigns pc ON p.id = pc.place_id
+                WHERE pc.campaign_id = ? AND p.position = ?
+            ";
+            $params = [$campaignId, $position];
+            
+            if ($excludePlaceId) {
+                $sql .= " AND p.id != ?";
+                $params[] = $excludePlaceId;
+            }
+            
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            $data = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($data) {
+                return new self($pdo, $data);
+            }
+            
+            return null;
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la recherche du lieu par position: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Mettre à jour la position du lieu
+     * 
+     * @param int $newPosition Nouvelle position
+     * @return bool Succès de la mise à jour
+     */
+    public function setPosition($newPosition)
+    {
+        try {
+            $stmt = $this->pdo->prepare("UPDATE places SET position = ? WHERE id = ?");
+            $result = $stmt->execute([$newPosition, $this->id]);
+            
+            if ($result) {
+                $this->position = $newPosition;
+                return true;
+            }
+            
+            return false;
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la mise à jour de la position: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Mettre à jour le lieu (sauvegarder les modifications)
+     * 
+     * @return bool Succès de la mise à jour
+     */
+    public function update()
+    {
+        return $this->save();
+    }
+
+    /**
+     * Transférer un joueur d'un lieu à un autre
+     * 
+     * @param int $fromPlaceId ID du lieu source
+     * @param int $toPlaceId ID du lieu destination
+     * @param int $playerId ID du joueur
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return bool Succès du transfert
+     */
+    public static function transferPlayer($fromPlaceId, $toPlaceId, $playerId, PDO $pdo = null)
+    {
+        $pdo = $pdo ?: getPDO();
+        
+        try {
+            $stmt = $pdo->prepare("UPDATE place_players SET place_id = ? WHERE place_id = ? AND player_id = ?");
+            return $stmt->execute([$toPlaceId, $fromPlaceId, $playerId]);
+        } catch (PDOException $e) {
+            error_log("Erreur lors du transfert du joueur: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Transférer un PNJ d'un lieu à un autre
+     * 
+     * @param int $fromPlaceId ID du lieu source
+     * @param int $toPlaceId ID du lieu destination
+     * @param int $npcId ID du PNJ
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return bool Succès du transfert
+     */
+    public static function transferNpc($fromPlaceId, $toPlaceId, $npcId, PDO $pdo = null)
+    {
+        $pdo = $pdo ?: getPDO();
+        
+        try {
+            $stmt = $pdo->prepare("UPDATE place_npcs SET place_id = ? WHERE place_id = ? AND id = ? AND monster_id IS NULL");
+            return $stmt->execute([$toPlaceId, $fromPlaceId, $npcId]);
+        } catch (PDOException $e) {
+            error_log("Erreur lors du transfert du PNJ: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Transférer un monstre d'un lieu à un autre
+     * 
+     * @param int $fromPlaceId ID du lieu source
+     * @param int $toPlaceId ID du lieu destination
+     * @param int $monsterId ID du monstre
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return bool Succès du transfert
+     */
+    public static function transferMonster($fromPlaceId, $toPlaceId, $monsterId, PDO $pdo = null)
+    {
+        $pdo = $pdo ?: getPDO();
+        
+        try {
+            $stmt = $pdo->prepare("UPDATE place_npcs SET place_id = ? WHERE place_id = ? AND id = ? AND monster_id IS NOT NULL");
+            return $stmt->execute([$toPlaceId, $fromPlaceId, $monsterId]);
+        } catch (PDOException $e) {
+            error_log("Erreur lors du transfert du monstre: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Transférer une entité d'un lieu à un autre
+     * 
+     * @param string $entityType Type d'entité ('player', 'npc', 'monster')
+     * @param int $fromPlaceId ID du lieu source
+     * @param int $toPlaceId ID du lieu destination
+     * @param int $entityId ID de l'entité
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return array Résultat du transfert ['success' => bool, 'message' => string]
+     */
+    public static function transferEntity($entityType, $fromPlaceId, $toPlaceId, $entityId, PDO $pdo = null)
+    {
+        $pdo = $pdo ?: getPDO();
+        
+        try {
+            $pdo->beginTransaction();
+            
+            $success = false;
+            $message = '';
+            
+            switch ($entityType) {
+                case 'player':
+                    $success = self::transferPlayer($fromPlaceId, $toPlaceId, $entityId, $pdo);
+                    $message = $success ? "Joueur transféré avec succès." : "Erreur lors du transfert du joueur.";
+                    break;
+                    
+                case 'npc':
+                    $success = self::transferNpc($fromPlaceId, $toPlaceId, $entityId, $pdo);
+                    $message = $success ? "PNJ transféré avec succès." : "Erreur lors du transfert du PNJ.";
+                    break;
+                    
+                case 'monster':
+                    $success = self::transferMonster($fromPlaceId, $toPlaceId, $entityId, $pdo);
+                    $message = $success ? "Monstre transféré avec succès." : "Erreur lors du transfert du monstre.";
+                    break;
+                    
+                default:
+                    $message = "Type d'entité non reconnu.";
+                    break;
+            }
+            
+            if ($success) {
+                $pdo->commit();
+            } else {
+                $pdo->rollBack();
+            }
+            
+            return ['success' => $success, 'message' => $message];
+            
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            error_log("Erreur lors du transfert d'entité: " . $e->getMessage());
+            return ['success' => false, 'message' => "Erreur lors du transfert : " . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Récupérer les lieux disponibles dans un monde qui ne sont pas encore associés à une campagne
+     * 
+     * @param int $worldId ID du monde
+     * @param int $campaignId ID de la campagne (pour exclure les lieux déjà associés)
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return array Liste des lieux disponibles avec informations géographiques
+     */
+    public static function getAvailablePlacesInWorld($worldId, $campaignId, PDO $pdo = null)
+    {
+        $pdo = $pdo ?: getPDO();
+        
+        try {
+            $stmt = $pdo->prepare("
+                SELECT p.id, p.title, p.notes, p.map_url, 
+                       c.name as country_name, r.name as region_name
+                FROM places p
+                LEFT JOIN countries c ON p.country_id = c.id
+                LEFT JOIN regions r ON p.region_id = r.id
+                WHERE c.world_id = ? AND p.id NOT IN (
+                    SELECT place_id FROM place_campaigns WHERE campaign_id = ?
+                )
+                ORDER BY c.name, r.name, p.title
+            ");
+            $stmt->execute([$worldId, $campaignId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération des lieux disponibles: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Récupérer tous les joueurs pour plusieurs lieux
+     * 
+     * @param array $placeIds IDs des lieux
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return array Tableau associatif [place_id => [joueurs]]
+     */
+    public static function getPlayersForPlaces($placeIds, PDO $pdo = null)
+    {
+        $pdo = $pdo ?: getPDO();
+        
+        if (empty($placeIds)) {
+            return [];
+        }
+        
+        try {
+            $in = implode(',', array_fill(0, count($placeIds), '?'));
+            $stmt = $pdo->prepare("
+                SELECT pp.place_id, pp.player_id, u.username, ch.id AS character_id, ch.name AS character_name 
+                FROM place_players pp 
+                JOIN users u ON pp.player_id = u.id 
+                LEFT JOIN characters ch ON pp.character_id = ch.id 
+                WHERE pp.place_id IN ($in) 
+                ORDER BY u.username ASC
+            ");
+            $stmt->execute($placeIds);
+            
+            $placePlayers = [];
+            foreach ($stmt->fetchAll() as $row) {
+                $placePlayers[$row['place_id']][] = $row;
+            }
+            
+            return $placePlayers;
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération des joueurs pour les lieux: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Récupérer tous les PNJ (non-monstres) pour plusieurs lieux
+     * 
+     * @param array $placeIds IDs des lieux
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return array Tableau associatif [place_id => [pnjs]]
+     */
+    public static function getNpcsForPlaces($placeIds, PDO $pdo = null)
+    {
+        $pdo = $pdo ?: getPDO();
+        
+        if (empty($placeIds)) {
+            return [];
+        }
+        
+        try {
+            $in = implode(',', array_fill(0, count($placeIds), '?'));
+            $stmt = $pdo->prepare("
+                SELECT pn.place_id, pn.id, pn.name, pn.description, pn.npc_character_id 
+                FROM place_npcs pn 
+                WHERE pn.place_id IN ($in) AND pn.monster_id IS NULL 
+                ORDER BY pn.name ASC
+            ");
+            $stmt->execute($placeIds);
+            
+            $placeNpcs = [];
+            foreach ($stmt->fetchAll() as $row) {
+                $placeNpcs[$row['place_id']][] = $row;
+            }
+            
+            return $placeNpcs;
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération des PNJ pour les lieux: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Récupérer tous les monstres pour plusieurs lieux
+     * 
+     * @param array $placeIds IDs des lieux
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return array Tableau associatif [place_id => [monstres]]
+     */
+    public static function getMonstersForPlaces($placeIds, PDO $pdo = null)
+    {
+        $pdo = $pdo ?: getPDO();
+        
+        if (empty($placeIds)) {
+            return [];
+        }
+        
+        try {
+            $in = implode(',', array_fill(0, count($placeIds), '?'));
+            $stmt = $pdo->prepare("
+                SELECT pn.place_id, pn.id, pn.name, pn.description, pn.monster_id, pn.quantity, pn.current_hit_points, 
+                       m.type, m.size, m.challenge_rating 
+                FROM place_npcs pn 
+                JOIN dnd_monsters m ON pn.monster_id = m.id 
+                WHERE pn.place_id IN ($in) AND pn.monster_id IS NOT NULL 
+                ORDER BY pn.name ASC
+            ");
+            $stmt->execute($placeIds);
+            
+            $placeMonsters = [];
+            foreach ($stmt->fetchAll() as $row) {
+                $placeMonsters[$row['place_id']][] = $row;
+            }
+            
+            return $placeMonsters;
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération des monstres pour les lieux: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Récupérer toutes les entités (joueurs, PNJ, monstres) pour plusieurs lieux
+     * 
+     * @param array $placeIds IDs des lieux
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return array Tableau avec ['players' => [...], 'npcs' => [...], 'monsters' => [...]]
+     */
+    public static function getAllEntitiesForPlaces($placeIds, PDO $pdo = null)
+    {
+        return [
+            'players' => self::getPlayersForPlaces($placeIds, $pdo),
+            'npcs' => self::getNpcsForPlaces($placeIds, $pdo),
+            'monsters' => self::getMonstersForPlaces($placeIds, $pdo)
+        ];
+    }
 }

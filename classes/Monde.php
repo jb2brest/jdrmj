@@ -319,6 +319,26 @@ class Monde
     }
 
     /**
+     * Récupère une liste simple des mondes d'un utilisateur (id et name seulement)
+     * 
+     * @param int $user_id ID de l'utilisateur
+     * @return array Tableau associatif avec id et name
+     */
+    public static function getSimpleListByUser(int $user_id)
+    {
+        try {
+            $pdo = Univers::getInstance()->getPdo();
+            $sql = "SELECT id, name FROM worlds WHERE created_by = ? ORDER BY name";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$user_id]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération de la liste des mondes: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
      * Vérifie si un nom de monde existe déjà pour un utilisateur
      * 
      * @param string $name Nom du monde

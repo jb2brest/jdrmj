@@ -284,6 +284,54 @@ class CandidatureCampagne
         }
     }
 
+    /**
+     * Annuler l'acceptation d'une candidature
+     * 
+     * @param int $dmId ID du DM
+     * @param int $campaignId ID de la campagne
+     * @param object $campaign Objet Campaign pour retirer le membre
+     * @param array $campaignData Données de la campagne pour la notification
+     * @return array Résultat de l'opération ['success' => bool, 'message' => string]
+     */
+    public function revokeAcceptance($dmId, $campaignId, $campaign, $campaignData)
+    {
+        // Vérifier que la candidature appartient au DM et est approuvée
+        if (!$this->belongsToDM($dmId) || $this->getCampaignId() != $campaignId || $this->getStatus() != self::STATUS_APPROVED) {
+            return ['success' => false, 'message' => 'Candidature approuvée introuvable.'];
+        }
+
+        $playerId = $this->getPlayerId();
+        
+        try {
+            $this->pdo->beginTransaction();
+            
+            // Revenir à pending
+            if (!$this->setPending()) {
+                throw new Exception("Erreur lors de la mise à jour du statut");
+            }
+            
+            // Retirer le membre de la campagne
+            if (!$campaign->removeMember($playerId)) {
+                throw new Exception("Erreur lors de la suppression du membre");
+            }
+            
+            // Notifier le joueur
+            $title = 'Acceptation annulée';
+            $message = 'Votre acceptation dans la campagne "' . $campaignData['title'] . '" a été annulée par le MJ. Votre candidature est de nouveau en attente.';
+            if (!Notification::create($playerId, 'system', $title, $message, $campaignId)) {
+                throw new Exception("Erreur lors de la création de la notification");
+            }
+            
+            $this->pdo->commit();
+            return ['success' => true, 'message' => 'Acceptation annulée. Candidature remise en attente et joueur retiré.'];
+            
+        } catch (Exception $e) {
+            $this->pdo->rollBack();
+            error_log("Erreur lors de l'annulation de l'acceptation: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Erreur lors de l\'annulation de l\'acceptation.'];
+        }
+    }
+
     // Getters
     public function getId() { return $this->id; }
     public function getCampaignId() { return $this->campaignId; }

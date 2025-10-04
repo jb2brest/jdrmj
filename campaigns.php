@@ -1,6 +1,7 @@
 <?php
 require_once 'config/database.php';
 require_once 'classes/init.php';
+require_once 'classes/CampaignEvent.php';
 require_once 'includes/functions.php';
 
 // Les joueurs peuvent voir les campagnes publiques, les DM/Admin peuvent voir toutes les campagnes
@@ -81,9 +82,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
             $stmt = $pdo->prepare("DELETE FROM campaign_applications WHERE campaign_id = ?");
             $stmt->execute([$campaign_id]);
             
-            // 3. Supprimer les entrées du journal de campagne
-            $stmt = $pdo->prepare("DELETE FROM campaign_journal WHERE campaign_id = ?");
-            $stmt->execute([$campaign_id]);
+            // 3. Supprimer les entrées du journal de campagne via la classe CampaignEvent
+            CampaignEvent::deleteByCampaignId($campaign_id);
             
             // 4. Dissocier les lieux de la campagne (ne pas les supprimer)
             $stmt = $pdo->prepare("DELETE FROM place_campaigns WHERE campaign_id = ?");

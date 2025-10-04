@@ -2,6 +2,7 @@
 require_once 'config/database.php';
 require_once 'classes/init.php';
 require_once 'classes/CandidatureCampagne.php';
+require_once 'classes/CampaignEvent.php';
 require_once 'includes/functions.php';
 
 /**
@@ -64,8 +65,6 @@ $campaign_data['world_id'] = $world_id;
 // Créer un objet Campaign pour les appels aux méthodes
 $campaign = $campaign_data ? Campaign::findById($campaign_id) : null;
 
-// Obtenir l'instance PDO
-$pdo = getPDO();
 
 // Charger les pays pour les filtres
 $countries = getCountries();
@@ -241,20 +240,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
                 if ($place_id) {
                     // Vérifier que le lieu appartient à cette campagne via la classe Lieu
                     if (Lieu::belongsToCampaign($place_id, $campaign_id)) {
-                        // Retirer le joueur de tous les autres lieux de la campagne
-                        $stmt = $pdo->prepare("
-                            DELETE FROM place_players 
-                            WHERE player_id = ? AND place_id IN (
-                                SELECT p.id FROM places p
-                                INNER JOIN place_campaigns pc ON p.id = pc.place_id
-                                WHERE pc.campaign_id = ?
-                            )
-                        ");
-                        $stmt->execute([$player_id, $campaign_id]);
+                        // Retirer le joueur de tous les autres lieux de la campagne via la classe Lieu
+                        $campaign_place_ids = Lieu::getPlaceIdsByCampaign($campaign_id);
+                        if (!empty($campaign_place_ids)) {
+                            $placeholders = str_repeat('?,', count($campaign_place_ids) - 1) . '?';
+                            $stmt = $pdo->prepare("
+                                DELETE FROM place_players 
+                                WHERE player_id = ? AND place_id IN ($placeholders)
+                            ");
+                            $params = array_merge([$player_id], $campaign_place_ids);
+                            $stmt->execute($params);
+                        }
                         
-                        // Ajouter le joueur au nouveau lieu
-                        $stmt = $pdo->prepare("INSERT INTO place_players (place_id, player_id, character_id) VALUES (?, ?, ?)");
-                        $stmt->execute([$place_id, $player_id, $character_id]);
+                        // Ajouter le joueur au nouveau lieu via la classe Lieu
+                        Lieu::addPlayerToPlace($place_id, $player_id, $character_id);
                     }
                 }
                 
@@ -305,28 +304,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
     // Annuler l'acceptation (revenir à 'pending' et retirer le joueur des membres)
     if (isset($_POST['action']) && $_POST['action'] === 'revoke_application' && isset($_POST['application_id'])) {
         $application_id = (int)$_POST['application_id'];
-        // Récupérer la candidature et vérifier qu'elle est approuvée pour cette campagne du MJ via la classe CandidatureCampagne
+        // Annuler l'acceptation via la classe CandidatureCampagne
         $candidature = CandidatureCampagne::findById($application_id);
-        if ($candidature && $candidature->belongsToDM($dm_id) && $candidature->getCampaignId() == $campaign_id && $candidature->getStatus() == CandidatureCampagne::STATUS_APPROVED) {
-            $player_id = $candidature->getPlayerId();
-            $pdo->beginTransaction();
-            try {
-                // Revenir à pending via la classe CandidatureCampagne
-                $candidature->setPending();
-                // Retirer le membre de la campagne s'il y est via la classe Campaign
-                $campaign->removeMember($player_id);
-                // Notifier le joueur
-                $title = 'Acceptation annulée';
-                $message = 'Votre acceptation dans la campagne "' . $campaign_data['title'] . '" a été annulée par le MJ. Votre candidature est de nouveau en attente.';
-                Notification::create($player_id, 'system', $title, $message, $campaign_id);
-                $pdo->commit();
-                $success_message = "Acceptation annulée. Candidature remise en attente et joueur retiré.";
-            } catch (Exception $e) {
-                $pdo->rollBack();
-                $error_message = "Erreur lors de l'annulation de l'acceptation.";
+        if ($candidature) {
+            $result = $candidature->revokeAcceptance($dm_id, $campaign_id, $campaign, $campaign_data);
+            if ($result['success']) {
+                $success_message = $result['message'];
+            } else {
+                $error_message = $result['message'];
             }
         } else {
-            $error_message = "Candidature approuvée introuvable.";
+            $error_message = "Candidature introuvable.";
         }
     }
 
@@ -377,9 +365,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
         $content = sanitizeInput($_POST['content'] ?? '');
         
         if ($title !== '' && $content !== '') {
-            $stmt = $pdo->prepare("INSERT INTO campaign_journal (campaign_id, title, content) VALUES (?, ?, ?)");
-            $stmt->execute([$campaign_id, $title, $content]);
-            $success_message = "Événement ajouté au journal.";
+            $event = CampaignEvent::create($campaign_id, $title, $content);
+            if ($event) {
+                $success_message = "Événement ajouté au journal.";
+            } else {
+                $error_message = "Erreur lors de l'ajout de l'événement.";
+            }
         } else {
             $error_message = "Le titre et le contenu sont obligatoires.";
         }
@@ -391,9 +382,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
         $content = sanitizeInput($_POST['content'] ?? '');
         
         if ($title !== '' && $content !== '') {
-            $stmt = $pdo->prepare("UPDATE campaign_journal SET title = ?, content = ? WHERE id = ? AND campaign_id = ?");
-            $stmt->execute([$title, $content, $entry_id, $campaign_id]);
-            $success_message = "Événement mis à jour.";
+            $event = CampaignEvent::findById($entry_id);
+            if ($event && $event->belongsToCampaign($campaign_id) && $event->belongsToDM($dm_id)) {
+                if ($event->update($title, $content)) {
+                    $success_message = "Événement mis à jour.";
+                } else {
+                    $error_message = "Erreur lors de la mise à jour de l'événement.";
+                }
+            } else {
+                $error_message = "Événement introuvable ou accès non autorisé.";
+            }
         } else {
             $error_message = "Le titre et le contenu sont obligatoires.";
         }
@@ -401,16 +399,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
     
     if (isset($_POST['action']) && $_POST['action'] === 'delete_journal_entry' && isset($_POST['entry_id']) && $isOwnerDM) {
         $entry_id = (int)$_POST['entry_id'];
-        $stmt = $pdo->prepare("DELETE FROM campaign_journal WHERE id = ? AND campaign_id = ?");
-        $stmt->execute([$entry_id, $campaign_id]);
-        $success_message = "Événement supprimé du journal.";
+        $event = CampaignEvent::findById($entry_id);
+        if ($event && $event->belongsToCampaign($campaign_id) && $event->belongsToDM($dm_id)) {
+            if ($event->delete()) {
+                $success_message = "Événement supprimé du journal.";
+            } else {
+                $error_message = "Erreur lors de la suppression de l'événement.";
+            }
+        } else {
+            $error_message = "Événement introuvable ou accès non autorisé.";
+        }
     }
     
     if (isset($_POST['action']) && $_POST['action'] === 'toggle_journal_visibility' && isset($_POST['entry_id']) && $isOwnerDM) {
         $entry_id = (int)$_POST['entry_id'];
-        $stmt = $pdo->prepare("UPDATE campaign_journal SET is_public = NOT is_public WHERE id = ? AND campaign_id = ?");
-        $stmt->execute([$entry_id, $campaign_id]);
-        $success_message = "Visibilité de l'événement mise à jour.";
+        $event = CampaignEvent::findById($entry_id);
+        if ($event && $event->belongsToCampaign($campaign_id) && $event->belongsToDM($dm_id)) {
+            if ($event->toggleVisibility()) {
+                $success_message = "Visibilité de l'événement mise à jour.";
+            } else {
+                $error_message = "Erreur lors de la mise à jour de la visibilité.";
+            }
+        } else {
+            $error_message = "Événement introuvable ou accès non autorisé.";
+        }
     }
 
     // Gestion des lieux
@@ -488,34 +500,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
         $place_id = (int)$_POST['place_id'];
         $direction = $_POST['direction'];
         
-        // Récupérer la position actuelle
-        $stmt = $pdo->prepare("
-            SELECT p.position FROM places p
-            INNER JOIN place_campaigns pc ON p.id = pc.place_id
-            WHERE p.id = ? AND pc.campaign_id = ?
-        ");
-        $stmt->execute([$place_id, $campaign_id]);
-        $scene = $stmt->fetch();
+        // Récupérer la position actuelle via la classe Lieu
+        $current_position = Lieu::getPositionInCampaign($place_id, $campaign_id);
         
-        if ($scene) {
-            $new_position = $scene['position'] + ($direction === 'up' ? -1 : 1);
+        if ($current_position !== null) {
+            $new_position = $current_position + ($direction === 'up' ? -1 : 1);
             $new_position = max(0, $new_position);
             
-            // Échanger avec la lieu adjacente
-            $stmt = $pdo->prepare("
-                SELECT p.id FROM places p
-                INNER JOIN place_campaigns pc ON p.id = pc.place_id
-                WHERE pc.campaign_id = ? AND p.position = ? AND p.id != ?
-            ");
-            $stmt->execute([$campaign_id, $new_position, $place_id]);
-            $adjacent_scene = $stmt->fetch();
+            // Trouver le lieu adjacent via la classe Lieu
+            $adjacentLieu = Lieu::findByPositionInCampaign($campaign_id, $new_position, $place_id);
             
-            if ($adjacent_scene) {
+            if ($adjacentLieu) {
                 // Échanger les positions via la classe Lieu
-                $adjacentLieu = Lieu::findById($adjacent_scene['id']);
                 $currentLieu = Lieu::findById($place_id);
-                if ($adjacentLieu && $currentLieu) {
-                    $adjacentLieu->setPosition($scene['position']);
+                if ($currentLieu) {
+                    $adjacentLieu->setPosition($current_position);
                     $currentLieu->setPosition($new_position);
                     $adjacentLieu->update();
                     $currentLieu->update();
@@ -534,28 +533,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
         if ($entity_type && $entity_id && $from_place_id && $to_place_id && $from_place_id !== $to_place_id) {
             // Vérifier que les lieux appartiennent à la campagne via la classe Lieu
             if (Lieu::allBelongToCampaign([$from_place_id, $to_place_id], $campaign_id)) {
-                $pdo->beginTransaction();
-                try {
-                    if ($entity_type === 'player') {
-                        // Transférer un joueur
-                        $stmt = $pdo->prepare("UPDATE place_players SET place_id = ? WHERE place_id = ? AND player_id = ?");
-                        $stmt->execute([$to_place_id, $from_place_id, $entity_id]);
-                        $success_message = "Joueur transféré avec succès.";
-                    } elseif ($entity_type === 'npc') {
-                        // Transférer un PNJ
-                        $stmt = $pdo->prepare("UPDATE place_npcs SET place_id = ? WHERE place_id = ? AND id = ? AND monster_id IS NULL");
-                        $stmt->execute([$to_place_id, $from_place_id, $entity_id]);
-                        $success_message = "PNJ transféré avec succès.";
-                    } elseif ($entity_type === 'monster') {
-                        // Transférer un monstre
-                        $stmt = $pdo->prepare("UPDATE place_npcs SET place_id = ? WHERE place_id = ? AND id = ? AND monster_id IS NOT NULL");
-                        $stmt->execute([$to_place_id, $from_place_id, $entity_id]);
-                        $success_message = "Monstre transféré avec succès.";
-                    }
-                    $pdo->commit();
-                } catch (Exception $e) {
-                    $pdo->rollBack();
-                    $error_message = "Erreur lors du transfert : " . $e->getMessage();
+                // Transférer l'entité via la classe Lieu
+                $result = Lieu::transferEntity($entity_type, $from_place_id, $to_place_id, $entity_id);
+                if ($result['success']) {
+                    $success_message = $result['message'];
+                } else {
+                    $error_message = $result['message'];
                 }
             } else {
                 $error_message = "Lieux invalides.";
@@ -569,37 +552,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
 // Récupérer membres via la classe Campaign
 $members = $campaign->getMembers();
 
-// Récupérer les mondes disponibles (pour le MJ/Admin)
+// Récupérer les mondes disponibles (pour le MJ/Admin) via la classe Monde
 $worlds = [];
 if (User::isDMOrAdmin()) {
-    $stmt = $pdo->prepare("SELECT id, name FROM worlds WHERE created_by = ? ORDER BY name");
-    $stmt->execute([$user_id]);
-    $worlds = $stmt->fetchAll();
+    $worlds = Monde::getSimpleListByUser($user_id);
 }
 
-// Récupérer les lieux disponibles dans le monde de la campagne (pour l'association)
+// Récupérer les lieux disponibles dans le monde de la campagne (pour l'association) via la classe Lieu
 $available_places = [];
 if (User::isDMOrAdmin() && !empty($campaign_data['world_id'])) {
-    $stmt = $pdo->prepare("
-        SELECT p.id, p.title, p.notes, p.map_url, 
-               c.name as country_name, r.name as region_name
-        FROM places p
-        LEFT JOIN countries c ON p.country_id = c.id
-        LEFT JOIN regions r ON p.region_id = r.id
-        WHERE c.world_id = ? AND p.id NOT IN (
-            SELECT place_id FROM place_campaigns WHERE campaign_id = ?
-        )
-        ORDER BY c.name, r.name, p.title
-    ");
-    $stmt->execute([$campaign_data['world_id'], $campaign_id]);
-    $available_places = $stmt->fetchAll();
+    $available_places = Lieu::getAvailablePlacesInWorld($campaign_data['world_id'], $campaign_id);
 }
 
 // Vérifier si l'utilisateur actuel est membre de la campagne
 $is_member = false;
 $user_role = null;
 foreach ($members as $member) {
-    if ($member['id'] == $user_id) {
+    if ($member['user_id'] == $user_id) {
         $is_member = true;
         $user_role = $member['role'];
         break;
@@ -620,15 +589,8 @@ if ($is_member && $user_role === 'player') {
         $is_accepted = in_array($char['id'], $accepted_characters);
         
         if ($is_accepted) {
-            // Vérifier si l'équipement de départ a été choisi
-            $stmt = $pdo->prepare("
-                SELECT COUNT(*) as count 
-                FROM character_equipment 
-                WHERE character_id = ? 
-                AND obtained_from = 'Équipement de départ'
-            ");
-            $stmt->execute([$char['id']]);
-            $equipment_count = $stmt->fetch()['count'];
+            // Vérifier si l'équipement de départ a été choisi via la classe Character
+            $equipment_count = Character::getStartingEquipmentCount($char['id']);
             
             $characters_equipment_status[$char['id']] = [
                 'name' => $char['name'],
@@ -644,7 +606,7 @@ $user_application = CandidatureCampagne::getByCampaignAndPlayer($campaign_id, $u
 // Vérifier si l'utilisateur est déjà membre
 $is_member = false;
 foreach ($members as $member) {
-    if ($member['id'] == $user_id) {
+    if ($member['user_id'] == $user_id) {
         $is_member = true;
         break;
     }
@@ -657,40 +619,20 @@ $applications = CandidatureCampagne::getByCampaignId($campaign_id);
 // Récupérer lieux avec hiérarchie géographique
 $places = $campaign->getAssociatedPlacesWithGeography();
 
-// Récupérer les événements du journal
-$stmt = $pdo->prepare("SELECT * FROM campaign_journal WHERE campaign_id = ? ORDER BY created_at DESC");
-$stmt->execute([$campaign_id]);
-$journalEntries = $stmt->fetchAll();
+// Récupérer les événements du journal via la classe CampaignEvent
+$journalEntries = CampaignEvent::getByCampaignId($campaign_id);
 
-// Récupérer les joueurs, PNJ et monstres pour chaque lieu
+// Récupérer les joueurs, PNJ et monstres pour chaque lieu via la classe Lieu
 $placePlayers = [];
 $placeNpcs = [];
 $placeMonsters = [];
 
 if (!empty($places)) {
     $placeIds = array_column($places, 'id');
-    $in = implode(',', array_fill(0, count($placeIds), '?'));
-    
-    // Récupérer les joueurs
-    $stmt = $pdo->prepare("SELECT pp.place_id, pp.player_id, u.username, ch.id AS character_id, ch.name AS character_name FROM place_players pp JOIN users u ON pp.player_id = u.id LEFT JOIN characters ch ON pp.character_id = ch.id WHERE pp.place_id IN ($in) ORDER BY u.username ASC");
-    $stmt->execute($placeIds);
-    foreach ($stmt->fetchAll() as $row) {
-        $placePlayers[$row['place_id']][] = $row;
-    }
-    
-    // Récupérer les PNJ (non-monstres)
-    $stmt = $pdo->prepare("SELECT pn.place_id, pn.id, pn.name, pn.description, pn.npc_character_id FROM place_npcs pn WHERE pn.place_id IN ($in) AND pn.monster_id IS NULL ORDER BY pn.name ASC");
-    $stmt->execute($placeIds);
-    foreach ($stmt->fetchAll() as $row) {
-        $placeNpcs[$row['place_id']][] = $row;
-    }
-    
-    // Récupérer les monstres
-    $stmt = $pdo->prepare("SELECT pn.place_id, pn.id, pn.name, pn.description, pn.monster_id, pn.quantity, pn.current_hit_points, m.type, m.size, m.challenge_rating FROM place_npcs pn JOIN dnd_monsters m ON pn.monster_id = m.id WHERE pn.place_id IN ($in) AND pn.monster_id IS NOT NULL ORDER BY pn.name ASC");
-    $stmt->execute($placeIds);
-    foreach ($stmt->fetchAll() as $row) {
-        $placeMonsters[$row['place_id']][] = $row;
-    }
+    $entities = Lieu::getAllEntitiesForPlaces($placeIds);
+    $placePlayers = $entities['players'];
+    $placeNpcs = $entities['npcs'];
+    $placeMonsters = $entities['monsters'];
 }
 ?>
 <!DOCTYPE html>
@@ -791,7 +733,7 @@ if (!empty($places)) {
                                             <?php if ($m['role'] !== 'dm' && User::isDMOrAdmin()): ?>
                                                 <form method="POST" onsubmit="return confirm('Exclure ce joueur de la campagne ?');">
                                                     <input type="hidden" name="action" value="remove_member">
-                                                    <input type="hidden" name="member_user_id" value="<?php echo (int)$m['id']; ?>">
+                                                    <input type="hidden" name="member_user_id" value="<?php echo (int)$m['user_id']; ?>">
                                                     <button class="btn btn-sm btn-outline-brown" title="Exclure">
                                                         <i class="fas fa-user-slash"></i>
                                                     </button>

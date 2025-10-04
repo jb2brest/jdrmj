@@ -2522,4 +2522,32 @@ class Character
             return [];
         }
     }
+
+    /**
+     * Vérifier si l'équipement de départ a été choisi pour un personnage
+     * 
+     * @param int $characterId ID du personnage
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return int Nombre d'objets d'équipement de départ
+     */
+    public static function getStartingEquipmentCount($characterId, PDO $pdo = null)
+    {
+        $pdo = $pdo ?: getPDO();
+        
+        try {
+            $stmt = $pdo->prepare("
+                SELECT COUNT(*) as count 
+                FROM character_equipment 
+                WHERE character_id = ? 
+                AND obtained_from = 'Équipement de départ'
+            ");
+            $stmt->execute([$characterId]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return (int)$result['count'];
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la vérification de l'équipement de départ: " . $e->getMessage());
+            return 0;
+        }
+    }
+
 }
