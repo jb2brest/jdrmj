@@ -1407,6 +1407,47 @@ class Character
     }
 
     /**
+     * Récupérer l'équipement équipé du personnage dans un format structuré
+     * 
+     * @param int $characterId ID du personnage
+     * @return array Tableau associatif avec les emplacements d'équipement
+     */
+    public static function getCharacterEquippedItemsStructured($characterId)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        $stmt = $pdo->prepare("
+            SELECT item_name, item_type, equipped_slot
+            FROM character_equipment 
+            WHERE character_id = ? AND equipped = 1
+        ");
+        $stmt->execute([$characterId]);
+        $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $equippedItems = [
+            'main_hand' => '',
+            'off_hand' => '',
+            'armor' => '',
+            'shield' => '',
+            'helmet' => '',
+            'gloves' => '',
+            'boots' => '',
+            'ring1' => '',
+            'ring2' => '',
+            'amulet' => '',
+            'cloak' => ''
+        ];
+        
+        foreach ($items as $item) {
+            $slot = $item['equipped_slot'] ?? '';
+            if (!empty($slot) && isset($equippedItems[$slot])) {
+                $equippedItems[$slot] = $item['item_name'];
+            }
+        }
+        
+        return $equippedItems;
+    }
+
+    /**
      * Synchroniser l'équipement de base avec l'équipement du personnage
      * 
      * @param int $characterId ID du personnage
@@ -2296,5 +2337,161 @@ class Character
             return false;
         }
         return $character->unequipItem($itemName);
+    }
+
+    /**
+     * Mettre à jour les points de vie actuels d'un personnage
+     * 
+     * @param int $characterId ID du personnage
+     * @param int $newHitPoints Nouveaux points de vie actuels
+     * @return bool Succès de l'opération
+     */
+    public static function updateHitPoints($characterId, $newHitPoints)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            $stmt = $pdo->prepare("UPDATE characters SET hit_points_current = ? WHERE id = ?");
+            return $stmt->execute([$newHitPoints, $characterId]);
+        } catch (\PDOException $e) {
+            error_log("Erreur lors de la mise à jour des points de vie: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Mettre à jour les points d'expérience d'un personnage
+     * 
+     * @param int $characterId ID du personnage
+     * @param int $newExperiencePoints Nouveaux points d'expérience
+     * @return bool Succès de l'opération
+     */
+    public static function updateExperiencePoints($characterId, $newExperiencePoints)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            $stmt = $pdo->prepare("UPDATE characters SET experience_points = ? WHERE id = ?");
+            return $stmt->execute([$newExperiencePoints, $characterId]);
+        } catch (\PDOException $e) {
+            error_log("Erreur lors de la mise à jour des points d'expérience: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Récupérer le nombre maximum de rages pour une classe et un niveau
+     * 
+     * @param int $classId ID de la classe
+     * @param int $level Niveau du personnage
+     * @return int Nombre maximum de rages
+     */
+    public static function getMaxRages($classId, $level)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            $stmt = $pdo->prepare("SELECT rages FROM class_evolution WHERE class_id = ? AND level = ?");
+            $stmt->execute([$classId, $level]);
+            $evolution = $stmt->fetch();
+            return $evolution ? (int)$evolution['rages'] : 0;
+        } catch (\PDOException $e) {
+            error_log("Erreur lors de la récupération du nombre maximum de rages: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Récupérer l'équipement magique complet d'un personnage
+     * 
+     * @param int $characterId ID du personnage
+     * @return array Liste de l'équipement magique
+     */
+    public static function getCharacterMagicalEquipment($characterId)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            $stmt = $pdo->prepare("
+                SELECT ce.*, mi.nom as magical_item_nom, mi.type as magical_item_type, mi.description as magical_item_description, mi.source as magical_item_source
+                FROM character_equipment ce
+                LEFT JOIN magical_items mi ON ce.magical_item_id = mi.csv_id
+                WHERE ce.character_id = ? 
+                AND (ce.magical_item_id IS NULL OR ce.magical_item_id NOT IN (SELECT csv_id FROM poisons))
+                ORDER BY ce.obtained_at DESC
+            ");
+            $stmt->execute([$characterId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (\PDOException $e) {
+            error_log("Erreur lors de la récupération de l'équipement magique: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Récupérer les informations d'un poison par son ID CSV
+     * 
+     * @param int $csvId ID CSV du poison
+     * @return array|null Informations du poison ou null si non trouvé
+     */
+    public static function getPoisonInfo($csvId)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            $stmt = $pdo->prepare("SELECT nom, type, description, source FROM poisons WHERE csv_id = ?");
+            $stmt->execute([$csvId]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (\PDOException $e) {
+            error_log("Erreur lors de la récupération des informations du poison: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Récupérer les informations d'un objet magique par son ID CSV
+     * 
+     * @param int $csvId ID CSV de l'objet magique
+     * @return array|null Informations de l'objet magique ou null si non trouvé
+     */
+    public static function getMagicalItemInfo($csvId)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            $stmt = $pdo->prepare("SELECT nom, type, description, source FROM magical_items WHERE csv_id = ?");
+            $stmt->execute([$csvId]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (\PDOException $e) {
+            error_log("Erreur lors de la récupération des informations de l'objet magique: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Récupérer tous les poisons d'un personnage depuis character_equipment
+     * 
+     * @param int $characterId ID du personnage
+     * @return array Liste des poisons du personnage
+     */
+    public static function getCharacterPoisons($characterId)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            $stmt = $pdo->prepare("
+                SELECT ce.*, p.nom as poison_nom, p.type as poison_type, p.description as poison_description, p.source as poison_source
+                FROM character_equipment ce
+                JOIN poisons p ON ce.magical_item_id = p.csv_id
+                WHERE ce.character_id = ? 
+                AND ce.magical_item_id IN (SELECT csv_id FROM poisons)
+                ORDER BY ce.obtained_at DESC
+            ");
+            $stmt->execute([$characterId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (\PDOException $e) {
+            error_log("Erreur lors de la récupération des poisons du personnage: " . $e->getMessage());
+            return [];
+        }
     }
 }

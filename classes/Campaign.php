@@ -779,4 +779,22 @@ class Campaign
             return ['success' => false, 'message' => 'Erreur lors de la mise à jour: ' . $e->getMessage()];
         }
     }
+
+    /**
+     * Vérifier si un utilisateur a candidaté à cette campagne
+     * 
+     * @param int $userId ID de l'utilisateur
+     * @return bool True si l'utilisateur a candidaté
+     */
+    public function hasUserApplied($userId)
+    {
+        try {
+            $stmt = $this->pdo->prepare("SELECT 1 FROM campaign_applications WHERE campaign_id = ? AND player_id = ? LIMIT 1");
+            $stmt->execute([$this->id, $userId]);
+            return (bool)$stmt->fetch();
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la vérification de la candidature: " . $e->getMessage());
+            return false;
+        }
+    }
 }

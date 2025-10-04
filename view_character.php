@@ -36,24 +36,43 @@ if (!$isOwner && !$isDM) {
 // Convertir l'objet Character en tableau pour la compatibilité avec le code HTML
 $character = $characterObject->toArray();
 
-// Récupération des détails supplémentaires (race, classe, background)
-$stmt = getPDO()->prepare("
-    SELECT r.name as race_name, r.description as race_description, 
-           r.strength_bonus, r.dexterity_bonus, r.constitution_bonus, 
-           r.intelligence_bonus, r.wisdom_bonus, r.charisma_bonus, r.traits,
-           r.languages as race_languages,
-           cl.name as class_name, cl.description as class_description, cl.hit_dice,
-           b.name as background_name, b.description as background_description, 
-           b.skill_proficiencies as background_skills, b.tool_proficiencies as background_tools,
-           b.languages as background_languages, b.feature as background_feature
-    FROM characters c 
-    JOIN races r ON c.race_id = r.id 
-    JOIN classes cl ON c.class_id = cl.id 
-    LEFT JOIN backgrounds b ON c.background_id = b.id
-    WHERE c.id = ?
-");
-$stmt->execute([$character_id]);
-$characterDetails = $stmt->fetch();
+
+// Récupérer les détails de la race via la classe Race
+$raceObject = Race::findById($character['race_id']);
+$raceDetails = $raceObject ? $raceObject->toArray() : [];
+
+// Récupérer les détails de la classe via la classe Classe
+$classObject = Classe::findById($character['class_id']);
+$classDetails = $classObject ? $classObject->toArray() : [];
+
+// Récupérer les détails du background
+$backgroundDetails = null;
+if ($character['background_id']) {
+    $backgroundDetails = Character::getBackgroundById($character['background_id']);
+}
+
+// Construire le tableau characterDetails pour la compatibilité
+$characterDetails = [
+    'race_name' => $raceDetails['name'] ?? '',
+    'race_description' => $raceDetails['description'] ?? '',
+    'strength_bonus' => $raceDetails['strength_bonus'] ?? 0,
+    'dexterity_bonus' => $raceDetails['dexterity_bonus'] ?? 0,
+    'constitution_bonus' => $raceDetails['constitution_bonus'] ?? 0,
+    'intelligence_bonus' => $raceDetails['intelligence_bonus'] ?? 0,
+    'wisdom_bonus' => $raceDetails['wisdom_bonus'] ?? 0,
+    'charisma_bonus' => $raceDetails['charisma_bonus'] ?? 0,
+    'traits' => $raceDetails['traits'] ?? '',
+    'race_languages' => $raceDetails['languages'] ?? '',
+    'class_name' => $classDetails['name'] ?? '',
+    'class_description' => $classDetails['description'] ?? '',
+    'hit_dice' => $classDetails['hit_dice'] ?? '',
+    'background_name' => $backgroundDetails['name'] ?? '',
+    'background_description' => $backgroundDetails['description'] ?? '',
+    'background_skills' => $backgroundDetails['skill_proficiencies'] ?? '',
+    'background_tools' => $backgroundDetails['tool_proficiencies'] ?? '',
+    'background_languages' => $backgroundDetails['languages'] ?? '',
+    'background_feature' => $backgroundDetails['feature'] ?? ''
+];
 
 if (!$characterDetails) {
     header('Location: characters.php');
@@ -105,25 +124,22 @@ $allTools = array_unique(array_merge($allTools, $filteredBackgroundTools));
 $allSkills = array_unique(array_merge($allSkills, $backgroundSkills));
 
 // Récupérer les données de rage pour les barbares
-$isBarbarian = strpos(strtolower($character['class_name']), 'barbare') !== false;
-$isBard = strpos(strtolower($character['class_name']), 'barde') !== false;
-$isCleric = strpos(strtolower($character['class_name']), 'clerc') !== false;
-$isDruid = strpos(strtolower($character['class_name']), 'druide') !== false;
-$isSorcerer = strpos(strtolower($character['class_name']), 'ensorceleur') !== false;
-$isFighter = strpos(strtolower($character['class_name']), 'guerrier') !== false;
-$isWizard = strpos(strtolower($character['class_name']), 'magicien') !== false;
-$isMonk = strpos(strtolower($character['class_name']), 'moine') !== false;
-$isWarlock = strpos(strtolower($character['class_name']), 'occultiste') !== false;
-$isPaladin = strpos(strtolower($character['class_name']), 'paladin') !== false;
-$isRanger = strpos(strtolower($character['class_name']), 'rôdeur') !== false;
-$isRogue = strpos(strtolower($character['class_name']), 'roublard') !== false;
+$isBarbarian = strpos(strtolower($characterDetails['class_name']), 'barbare') !== false;
+$isBard = strpos(strtolower($characterDetails['class_name']), 'barde') !== false;
+$isCleric = strpos(strtolower($characterDetails['class_name']), 'clerc') !== false;
+$isDruid = strpos(strtolower($characterDetails['class_name']), 'druide') !== false;
+$isSorcerer = strpos(strtolower($characterDetails['class_name']), 'ensorceleur') !== false;
+$isFighter = strpos(strtolower($characterDetails['class_name']), 'guerrier') !== false;
+$isWizard = strpos(strtolower($characterDetails['class_name']), 'magicien') !== false;
+$isMonk = strpos(strtolower($characterDetails['class_name']), 'moine') !== false;
+$isWarlock = strpos(strtolower($characterDetails['class_name']), 'occultiste') !== false;
+$isPaladin = strpos(strtolower($characterDetails['class_name']), 'paladin') !== false;
+$isRanger = strpos(strtolower($characterDetails['class_name']), 'rôdeur') !== false;
+$isRogue = strpos(strtolower($characterDetails['class_name']), 'roublard') !== false;
 $rageData = null;
 if ($isBarbarian) {
     // Récupérer le nombre maximum de rages pour ce niveau
-    $stmt = $pdo->prepare("SELECT rages FROM class_evolution WHERE class_id = ? AND level = ?");
-    $stmt->execute([$character['class_id'], $character['level']]);
-    $evolution = $stmt->fetch();
-    $maxRages = $evolution ? $evolution['rages'] : 0;
+    $maxRages = Character::getMaxRages($character['class_id'], $character['level']);
     
     // Récupérer le nombre de rages utilisées
     $rageUsage = Character::getRageUsageStatic($character_id);
@@ -248,12 +264,12 @@ $allLanguages = $characterLanguages;
 // Calcul des modificateurs (nécessaire pour le calcul de la CA)
 // Utiliser les valeurs totales incluant les bonus raciaux
 $tempCharacter = new Character();
-$tempCharacter->strength = $character['strength'] + $character['strength_bonus'];
-$tempCharacter->dexterity = $character['dexterity'] + $character['dexterity_bonus'];
-$tempCharacter->constitution = $character['constitution'] + $character['constitution_bonus'];
-$tempCharacter->intelligence = $character['intelligence'] + $character['intelligence_bonus'];
-$tempCharacter->wisdom = $character['wisdom'] + $character['wisdom_bonus'];
-$tempCharacter->charisma = $character['charisma'] + $character['charisma_bonus'];
+$tempCharacter->strength = $character['strength'] + $characterDetails['strength_bonus'];
+$tempCharacter->dexterity = $character['dexterity'] + $characterDetails['dexterity_bonus'];
+$tempCharacter->constitution = $character['constitution'] + $characterDetails['constitution_bonus'];
+$tempCharacter->intelligence = $character['intelligence'] + $characterDetails['intelligence_bonus'];
+$tempCharacter->wisdom = $character['wisdom'] + $characterDetails['wisdom_bonus'];
+$tempCharacter->charisma = $character['charisma'] + $characterDetails['charisma_bonus'];
 
 $strengthMod = $tempCharacter->getAbilityModifier('strength');
 $dexterityMod = $tempCharacter->getAbilityModifier('dexterity');
@@ -266,19 +282,10 @@ $charismaMod = $tempCharacter->getAbilityModifier('charisma');
 Character::syncBaseEquipmentToCharacterEquipment($character_id);
 
 // Récupérer l'équipement du personnage depuis character_equipment
-$stmt = $pdo->prepare("
-    SELECT ce.*, mi.nom as magical_item_nom, mi.type as magical_item_type, mi.description as magical_item_description, mi.source as magical_item_source
-    FROM character_equipment ce
-    LEFT JOIN magical_items mi ON ce.magical_item_id = mi.csv_id
-    WHERE ce.character_id = ? 
-    AND (ce.magical_item_id IS NULL OR ce.magical_item_id NOT IN (SELECT csv_id FROM poisons))
-    ORDER BY ce.obtained_at DESC
-");
-$stmt->execute([$character_id]);
-$magicalEquipment = $stmt->fetchAll();
+$magicalEquipment = Character::getCharacterMagicalEquipment($character_id);
 
 // Récupérer l'équipement équipé du personnage
-$equippedItems = Character::getCharacterEquippedItems($character_id);
+$equippedItems = Character::getCharacterEquippedItemsStructured($character_id);
 
 // Construire le texte d'équipement à partir de character_equipment
 $equipmentText = '';
@@ -335,29 +342,24 @@ $canView = ($character['user_id'] == $_SESSION['user_id']);
 
 if (!$canView && User::isDMOrAdmin() && $dm_campaign_id) {
     // Vérifier que la campagne appartient au MJ connecté ou que l'utilisateur est admin
+    $campaign = Campaign::findById($dm_campaign_id);
     $ownsCampaign = false;
+    
     if (User::isAdmin()) {
         $ownsCampaign = true; // Les admins peuvent voir toutes les feuilles
-    } else {
-        $stmt = $pdo->prepare("SELECT id FROM campaigns WHERE id = ? AND dm_id = ?");
-        $stmt->execute([$dm_campaign_id, $_SESSION['user_id']]);
-        $ownsCampaign = (bool)$stmt->fetch();
+    } else if ($campaign) {
+        $ownsCampaign = $campaign->canModify($_SESSION['user_id'], User::getRole());
     }
 
     if ($ownsCampaign) {
         // Vérifier que le joueur propriétaire du personnage est membre ou a candidaté à cette campagne
         $owner_user_id = (int)$character['user_id'];
-        $isMember = false;
+        $isMember = $campaign->isMember($owner_user_id);
+        
         $hasApplied = false;
-
-        $stmt = $pdo->prepare("SELECT 1 FROM campaign_members WHERE campaign_id = ? AND user_id = ? LIMIT 1");
-        $stmt->execute([$dm_campaign_id, $owner_user_id]);
-        $isMember = (bool)$stmt->fetch();
-
         if (!$isMember) {
-            $stmt = $pdo->prepare("SELECT 1 FROM campaign_applications WHERE campaign_id = ? AND player_id = ? LIMIT 1");
-            $stmt->execute([$dm_campaign_id, $owner_user_id]);
-            $hasApplied = (bool)$stmt->fetch();
+            // Vérifier s'il y a une candidature
+            $hasApplied = $campaign->hasUserApplied($owner_user_id);
         }
 
         $canView = ($isMember || $hasApplied);
@@ -375,24 +377,18 @@ if (!$canModifyHP && User::isDMOrAdmin() && $dm_campaign_id) {
     // Vérifier que la campagne appartient au MJ connecté ou que l'utilisateur est admin
     if (User::isAdmin()) {
         $canModifyHP = true; // Les admins peuvent modifier toutes les feuilles
-    } else {
-        $stmt = $pdo->prepare("SELECT id FROM campaigns WHERE id = ? AND dm_id = ?");
-        $stmt->execute([$dm_campaign_id, $_SESSION['user_id']]);
-        $canModifyHP = (bool)$stmt->fetch();
+    } else if ($campaign) {
+        $canModifyHP = $campaign->canModify($_SESSION['user_id'], User::getRole());
     }
     
     // Si c'est un MJ et qu'il a accès à la campagne, il peut modifier les PV
     if ($canModifyHP) {
         // Vérifier que le propriétaire du personnage est membre de la campagne
-        $stmt = $pdo->prepare("SELECT 1 FROM campaign_members WHERE campaign_id = ? AND user_id = ? LIMIT 1");
-        $stmt->execute([$dm_campaign_id, $character['user_id']]);
-        $isMember = (bool)$stmt->fetch();
+        $isMember = $campaign->isMember($character['user_id']);
         
         if (!$isMember) {
             // Vérifier si le propriétaire a candidaté à la campagne
-            $stmt = $pdo->prepare("SELECT 1 FROM campaign_applications WHERE campaign_id = ? AND user_id = ? LIMIT 1");
-            $stmt->execute([$dm_campaign_id, $character['user_id']]);
-            $hasApplied = (bool)$stmt->fetch();
+            $hasApplied = $campaign->hasUserApplied($character['user_id']);
             
             $canModifyHP = $hasApplied;
         }
@@ -418,8 +414,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['hp_ac
             }
             
             // Mettre à jour les points de vie actuels
-            $stmt = $pdo->prepare("UPDATE characters SET hit_points_current = ? WHERE id = ?");
-            $stmt->execute([$new_hp, $character_id]);
+            Character::updateHitPoints($character_id, $new_hp);
             
             $success_message = "Points de vie mis à jour : {$new_hp}/{$max_hp}";
             break;
@@ -428,8 +423,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['hp_ac
             $damage = (int)$_POST['damage'];
             if ($damage > 0) {
                 $new_hp = max(0, $character['hit_points_current'] - $damage);
-                $stmt = $pdo->prepare("UPDATE characters SET hit_points_current = ? WHERE id = ?");
-                $stmt->execute([$new_hp, $character_id]);
+                Character::updateHitPoints($character_id, $new_hp);
                 
                 $success_message = "Dégâts infligés : {$damage} PV. Points de vie restants : {$new_hp}";
             }
@@ -439,39 +433,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['hp_ac
             $healing = (int)$_POST['healing'];
             if ($healing > 0) {
                 $new_hp = min($character['hit_points_max'], $character['hit_points_current'] + $healing);
-                $stmt = $pdo->prepare("UPDATE characters SET hit_points_current = ? WHERE id = ?");
-                $stmt->execute([$new_hp, $character_id]);
+                Character::updateHitPoints($character_id, $new_hp);
                 
                 $success_message = "Soins appliqués : {$healing} PV. Points de vie actuels : {$new_hp}";
             }
             break;
             
         case 'reset_hp':
-            $stmt = $pdo->prepare("UPDATE characters SET hit_points_current = ? WHERE id = ?");
-            $stmt->execute([$character['hit_points_max'], $character_id]);
+            Character::updateHitPoints($character_id, $character['hit_points_max']);
             
             $success_message = "Points de vie réinitialisés au maximum : {$character['hit_points_max']}";
             break;
     }
     
     // Recharger les données du personnage
-    $stmt = $pdo->prepare("
-        SELECT c.*, r.name as race_name, r.description as race_description, 
-               r.strength_bonus, r.dexterity_bonus, r.constitution_bonus, 
-               r.intelligence_bonus, r.wisdom_bonus, r.charisma_bonus, r.traits,
-               r.languages as race_languages,
-               cl.name as class_name, cl.description as class_description, cl.hit_dice,
-               b.name as background_name, b.description as background_description, 
-               b.skill_proficiencies as background_skills, b.tool_proficiencies as background_tools,
-               b.languages as background_languages, b.feature as background_feature
-        FROM characters c 
-        JOIN races r ON c.race_id = r.id 
-        JOIN classes cl ON c.class_id = cl.id 
-        LEFT JOIN backgrounds b ON c.background_id = b.id
-        WHERE c.id = ?
-    ");
-    $stmt->execute([$character_id]);
-    $character = $stmt->fetch();
+    // Récupérer les détails du personnage via la classe Character
+    $characterObj = Character::findById($character_id);
+    if (!$characterObj) {
+        header('Location: characters.php?error=character_not_found');
+        exit;
+    }
+
+    // Convertir l'objet en tableau pour la compatibilité
+    $character = $characterObj->toArray();
 }
 
 // Traitement des actions POST pour la gestion des points d'expérience
@@ -481,8 +465,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['xp_ac
             $xp_amount = (int)$_POST['xp_amount'];
             if ($xp_amount > 0) {
                 $new_xp = $character['experience_points'] + $xp_amount;
-                $stmt = $pdo->prepare("UPDATE characters SET experience_points = ? WHERE id = ?");
-                $stmt->execute([$new_xp, $character_id]);
+                Character::updateExperiencePoints($character_id, $new_xp);
                 
                 $success_message = "Points d'expérience ajoutés : +{$xp_amount} XP. Total : " . number_format($new_xp) . " XP";
             }
@@ -492,8 +475,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['xp_ac
             $xp_amount = (int)$_POST['xp_amount'];
             if ($xp_amount > 0) {
                 $new_xp = max(0, $character['experience_points'] - $xp_amount);
-                $stmt = $pdo->prepare("UPDATE characters SET experience_points = ? WHERE id = ?");
-                $stmt->execute([$new_xp, $character_id]);
+                Character::updateExperiencePoints($character_id, $new_xp);
                 
                 $success_message = "Points d'expérience retirés : -{$xp_amount} XP. Total : " . number_format($new_xp) . " XP";
             }
@@ -502,8 +484,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['xp_ac
         case 'set':
             $xp_amount = (int)$_POST['xp_amount'];
             if ($xp_amount >= 0) {
-                $stmt = $pdo->prepare("UPDATE characters SET experience_points = ? WHERE id = ?");
-                $stmt->execute([$xp_amount, $character_id]);
+                Character::updateExperiencePoints($character_id, $xp_amount);
                 
                 $success_message = "Points d'expérience définis à : " . number_format($xp_amount) . " XP";
             }
@@ -512,23 +493,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['xp_ac
     
     // Recharger les données du personnage après modification des XP
     if (isset($success_message)) {
-        $stmt = $pdo->prepare("
-            SELECT c.*, r.name as race_name, r.description as race_description, 
-                   r.strength_bonus, r.dexterity_bonus, r.constitution_bonus, 
-                   r.intelligence_bonus, r.wisdom_bonus, r.charisma_bonus, r.traits,
-                   r.languages as race_languages,
-                   cl.name as class_name, cl.description as class_description, cl.hit_dice,
-                   b.name as background_name, b.description as background_description, 
-                   b.skill_proficiencies as background_skills, b.tool_proficiencies as background_tools,
-                   b.languages as background_languages, b.feature as background_feature
-            FROM characters c 
-            JOIN races r ON c.race_id = r.id 
-            JOIN classes cl ON c.class_id = cl.id 
-            LEFT JOIN backgrounds b ON c.background_id = b.id
-            WHERE c.id = ?
-        ");
-        $stmt->execute([$character_id]);
-        $character = $stmt->fetch();
+        $characterObj = Character::findById($character_id);
+        if ($characterObj) {
+            $character = $characterObj->toArray();
+        }
     }
 }
 
@@ -543,20 +511,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
     $item = null;
     if ($source === 'npc_equipment') {
         // Récupérer depuis npc_equipment via le personnage associé
-        $stmt = $pdo->prepare("
-            SELECT ne.*, sn.name as npc_name, sn.place_id, s.title as scene_title
-            FROM npc_equipment ne
-            JOIN place_npcs sn ON ne.npc_id = sn.id AND ne.scene_id = sn.place_id
-            JOIN places s ON sn.place_id = s.id
-            WHERE ne.id = ? AND sn.npc_character_id = ?
-        ");
-        $stmt->execute([$item_id, $character_id]);
-        $item = $stmt->fetch();
+        // Récupérer l'équipement du PNJ via la classe PNJ
+        $item = PNJ::getNpcEquipmentWithDetails($item_id, $character_id);
     } else {
-        // Récupérer depuis items
-        $stmt = $pdo->prepare("SELECT * FROM items WHERE id = ? AND owner_type = 'player' AND owner_id = ?");
-        $stmt->execute([$item_id, $character_id]);
-        $item = $stmt->fetch();
+        // Récupérer depuis items via la classe Item
+        $itemObj = Item::findByIdAndOwner($item_id, 'player', $character_id);
+        $item = $itemObj ? $itemObj->toArray() : null;
     }
     
     if (!$item) {
@@ -573,51 +533,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
         switch ($target_type) {
             case 'character':
                 // Transférer vers un autre personnage
-                $stmt = $pdo->prepare("SELECT name FROM characters WHERE id = ?");
-                $stmt->execute([$target_id]);
-                $target_char = $stmt->fetch();
+                $target_char_obj = Character::findById($target_id);
+                $target_char = $target_char_obj ? ['name' => $target_char_obj->name] : null;
                 
                 if ($target_char) {
-                    // Insérer dans items du nouveau propriétaire
-                    $stmt = $pdo->prepare("INSERT INTO items (place_id, display_name, object_type, type_precis, description, is_identified, is_visible, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed, magical_item_id, item_source, quantity, equipped_slot, notes, obtained_at, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                    $stmt->execute([
-                        null, // place_id
-                        $item['display_name'],
-                        $item['object_type'],
-                        $item['type_precis'],
-                        $item['description'],
-                        $item['is_identified'],
-                        0, // is_visible (les objets d'équipement ne sont pas visibles sur la carte)
-                        0, // is_equipped (toujours non équipé lors du transfert)
-                        0, // position_x
-                        0, // position_y
-                        0, // is_on_map
-                        'player', // owner_type
-                        $target_id, // owner_id
-                        $item['poison_id'] ?: null,
-                        $item['weapon_id'] ?: null,
-                        $item['armor_id'] ?: null,
-                        (int)($item['gold_coins'] ?: 0),
-                        (int)($item['silver_coins'] ?: 0),
-                        (int)($item['copper_coins'] ?: 0),
-                        $item['letter_content'],
-                        $item['is_sealed'] ?: 0,
-                        $item['magical_item_id'],
-                        $item['item_source'],
-                        (int)($item['quantity'] ?: 1),
-                        $item['equipped_slot'],
-                        $notes ?: $item['notes'],
-                        $item['obtained_at'],
-                        'Transfert depuis ' . $character['name']
-                    ]);
+                    // Insérer dans items du nouveau propriétaire via la classe Item
+                    $itemData = [
+                        'place_id' => null,
+                        'display_name' => $item['display_name'],
+                        'object_type' => $item['object_type'],
+                        'type_precis' => $item['type_precis'],
+                        'description' => $item['description'],
+                        'is_identified' => $item['is_identified'],
+                        'is_visible' => false, // Les objets d'équipement ne sont pas visibles sur la carte
+                        'is_equipped' => false, // Toujours non équipé lors du transfert
+                        'position_x' => 0,
+                        'position_y' => 0,
+                        'is_on_map' => false,
+                        'owner_type' => 'player',
+                        'owner_id' => $target_id,
+                        'poison_id' => $item['poison_id'] ?: null,
+                        'weapon_id' => $item['weapon_id'] ?: null,
+                        'armor_id' => $item['armor_id'] ?: null,
+                        'gold_coins' => (int)($item['gold_coins'] ?: 0),
+                        'silver_coins' => (int)($item['silver_coins'] ?: 0),
+                        'copper_coins' => (int)($item['copper_coins'] ?: 0),
+                        'letter_content' => $item['letter_content'],
+                        'is_sealed' => $item['is_sealed'] ?: false,
+                        'magical_item_id' => $item['magical_item_id'],
+                        'item_source' => $item['item_source'],
+                        'quantity' => (int)($item['quantity'] ?: 1),
+                        'equipped_slot' => $item['equipped_slot'],
+                        'notes' => $notes ?: $item['notes'],
+                        'obtained_at' => $item['obtained_at'],
+                        'obtained_from' => 'Transfert depuis ' . $character['name']
+                    ];
+                    
+                    Item::createExtended($itemData);
                     
                     // Supprimer de l'ancien propriétaire selon la source
                     if ($source === 'npc_equipment') {
-                        $stmt = $pdo->prepare("DELETE FROM npc_equipment WHERE id = ?");
+                        PNJ::removeEquipmentFromNpc($item_id);
                     } else {
-                        $stmt = $pdo->prepare("DELETE FROM items WHERE id = ?");
+                        Item::deleteById($item_id);
                     }
-                    $stmt->execute([$item_id]);
                     
                     $transfer_success = true;
                     $target_name = $target_char['name'];
@@ -626,34 +585,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                 
             case 'monster':
                 // Transférer vers un monstre
-                $stmt = $pdo->prepare("SELECT sn.name, sn.place_id FROM place_npcs sn WHERE sn.id = ?");
-                $stmt->execute([$target_id]);
-                $target_monster = $stmt->fetch();
+                $target_monster = PNJ::getNpcInfoInPlace($target_id);
                 
                 if ($target_monster) {
-                    // Insérer dans monster_equipment
-                    $stmt = $pdo->prepare("INSERT INTO monster_equipment (monster_id, place_id, magical_item_id, item_name, item_type, item_description, item_source, quantity, equipped, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                    $stmt->execute([
-                        $target_id,
-                        $target_monster['place_id'],
-                        $item['magical_item_id'],
-                        $item['display_name'],
-                        $item['object_type'],
-                        $item['description'],
-                        $item['item_source'],
-                        $item['quantity'],
-                        0, // Toujours non équipé lors du transfert (0 = false)
-                        $notes ?: $item['notes'],
-                        'Transfert depuis ' . $character['name']
-                    ]);
+                    // Insérer dans monster_equipment via la classe Monstre
+                    $equipmentData = [
+                        'magical_item_id' => $item['magical_item_id'],
+                        'item_name' => $item['display_name'],
+                        'item_type' => $item['object_type'],
+                        'item_description' => $item['description'],
+                        'item_source' => $item['item_source'],
+                        'quantity' => $item['quantity'],
+                        'equipped' => false, // Toujours non équipé lors du transfert
+                        'notes' => $notes ?: $item['notes'],
+                        'obtained_from' => 'Transfert depuis ' . $character['name']
+                    ];
+                    
+                    Monstre::addMonsterEquipment($target_id, $target_monster['place_id'], $equipmentData);
                     
                     // Supprimer de l'ancien propriétaire selon la source
                     if ($source === 'npc_equipment') {
-                        $stmt = $pdo->prepare("DELETE FROM npc_equipment WHERE id = ?");
+                        PNJ::removeEquipmentFromNpc($item_id);
                     } else {
-                        $stmt = $pdo->prepare("DELETE FROM items WHERE id = ?");
+                        Item::deleteById($item_id);
                     }
-                    $stmt->execute([$item_id]);
                     
                     $transfer_success = true;
                     $target_name = $target_monster['name'];
@@ -662,34 +617,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                 
             case 'npc':
                 // Transférer vers un PNJ
-                $stmt = $pdo->prepare("SELECT sn.name, sn.place_id FROM place_npcs sn WHERE sn.id = ?");
-                $stmt->execute([$target_id]);
-                $target_npc = $stmt->fetch();
+                $target_npc = PNJ::getNpcInfoInPlace($target_id);
                 
                 if ($target_npc) {
-                    // Insérer dans npc_equipment
-                    $stmt = $pdo->prepare("INSERT INTO npc_equipment (npc_id, place_id, magical_item_id, item_name, item_type, item_description, item_source, quantity, equipped, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                    $stmt->execute([
-                        $target_id,
-                        $target_npc['place_id'],
-                        $item['magical_item_id'],
-                        $item['display_name'],
-                        $item['object_type'],
-                        $item['description'],
-                        $item['item_source'],
-                        $item['quantity'],
-                        0, // Toujours non équipé lors du transfert (0 = false)
-                        $notes ?: $item['notes'],
-                        'Transfert depuis ' . $character['name']
-                    ]);
+                    // Insérer dans npc_equipment via la classe PNJ
+                    $equipmentData = [
+                        'magical_item_id' => $item['magical_item_id'],
+                        'item_name' => $item['display_name'],
+                        'item_type' => $item['object_type'],
+                        'item_description' => $item['description'],
+                        'item_source' => $item['item_source'],
+                        'quantity' => $item['quantity'],
+                        'equipped' => 0, // Toujours non équipé lors du transfert
+                        'notes' => $notes ?: $item['notes'],
+                        'obtained_from' => 'Transfert depuis ' . $character['name']
+                    ];
+                    
+                    PNJ::addEquipmentToNpc($target_id, $target_npc['place_id'], $equipmentData);
                     
                     // Supprimer de l'ancien propriétaire selon la source
                     if ($source === 'npc_equipment') {
-                        $stmt = $pdo->prepare("DELETE FROM npc_equipment WHERE id = ?");
+                        PNJ::removeEquipmentFromNpc($item_id);
                     } else {
-                        $stmt = $pdo->prepare("DELETE FROM items WHERE id = ?");
+                        Item::deleteById($item_id);
                     }
-                    $stmt->execute([$item_id]);
                     
                     $transfer_success = true;
                     $target_name = $target_npc['name'];
@@ -705,44 +656,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
     }
     
     // Recharger les données du personnage
-    $stmt = $pdo->prepare("
-        SELECT c.*, r.name as race_name, r.description as race_description, r.strength_bonus, r.dexterity_bonus, r.constitution_bonus, 
-               r.intelligence_bonus, r.wisdom_bonus, r.charisma_bonus, r.traits,
-               cl.name as class_name, cl.description as class_description, cl.hit_dice
-        FROM characters c 
-        JOIN races r ON c.race_id = r.id 
-        JOIN classes cl ON c.class_id = cl.id 
-        WHERE c.id = ?
-    ");
-    $stmt->execute([$character_id]);
-    $character = $stmt->fetch();
+    $characterObj = Character::findById($character_id);
+    if ($characterObj) {
+        $character = $characterObj->toArray();
+    }
 }
 
 // $magicalEquipment est déjà défini plus haut
 
-// Récupérer les poisons du personnage depuis character_equipment
-$stmt = $pdo->prepare("
-    SELECT ce.*, p.nom as poison_nom, p.type as poison_type, p.description as poison_description, p.source as poison_source
-    FROM character_equipment ce
-    JOIN poisons p ON ce.magical_item_id = p.csv_id
-    WHERE ce.character_id = ? 
-    AND ce.magical_item_id IN (SELECT csv_id FROM poisons)
-    ORDER BY ce.obtained_at DESC
-");
-$stmt->execute([$character_id]);
-$characterPoisons = $stmt->fetchAll();
+// Récupérer les poisons du personnage via la classe Character
+$characterPoisons = Character::getCharacterPoisons($character_id);
 
-// Récupérer l'équipement attribué aux PNJ associés à ce personnage
-$stmt = $pdo->prepare("
-    SELECT ne.*, sn.name as npc_name, sn.place_id, s.title as scene_title
-    FROM npc_equipment ne
-    JOIN place_npcs sn ON ne.npc_id = sn.id AND ne.scene_id = sn.place_id
-    JOIN places s ON sn.place_id = s.id
-    WHERE sn.npc_character_id = ?
-    ORDER BY ne.obtained_at DESC
-");
-$stmt->execute([$character_id]);
-$npcEquipment = $stmt->fetchAll();
+// Récupérer l'équipement attribué aux PNJ associés à ce personnage via la classe PNJ
+$npcEquipment = PNJ::getNpcEquipmentByCharacter($character_id);
 
 // Séparer les objets magiques et poisons des PNJ
 $npcMagicalEquipment = [];
@@ -750,9 +676,7 @@ $npcPoisons = [];
 
 foreach ($npcEquipment as $item) {
     // Vérifier d'abord si c'est un poison
-    $stmt = $pdo->prepare("SELECT nom, type, description, source FROM poisons WHERE csv_id = ?");
-    $stmt->execute([$item['magical_item_id']]);
-    $poison_info = $stmt->fetch();
+    $poison_info = Character::getPoisonInfo($item['magical_item_id']);
     
     if ($poison_info) {
         // C'est un poison
@@ -763,9 +687,7 @@ foreach ($npcEquipment as $item) {
         $npcPoisons[] = $item;
     } else {
         // Vérifier si c'est un objet magique
-        $stmt = $pdo->prepare("SELECT nom, type, description, source FROM magical_items WHERE csv_id = ?");
-        $stmt->execute([$item['magical_item_id']]);
-        $magical_info = $stmt->fetch();
+        $magical_info = Character::getMagicalItemInfo($item['magical_item_id']);
         
         if ($magical_info) {
             // C'est un objet magique
@@ -1124,12 +1046,12 @@ $initiative = $dexterityMod;
                         <div>
                             <h2><?php echo htmlspecialchars($character['name']); ?></h2>
                             <p class="text-muted">
-                                <?php echo htmlspecialchars($character['race_name']); ?> 
-                                <?php echo htmlspecialchars($character['class_name']); ?> 
+                                <?php echo htmlspecialchars($characterDetails['race_name']); ?> 
+                                <?php echo htmlspecialchars($characterDetails['class_name']); ?> 
                                 niveau <?php echo $character['level']; ?>
                             </p>
-                            <?php if ($character['background_name']): ?>
-                                <p><strong>Historique:</strong> <?php echo htmlspecialchars($character['background_name']); ?></p>
+                            <?php if ($characterDetails['background_name']): ?>
+                                <p><strong>Historique:</strong> <?php echo htmlspecialchars($characterDetails['background_name']); ?></p>
                             <?php endif; ?>
                             <?php if ($character['alignment']): ?>
                                 <p><strong>Alignement:</strong> <?php echo htmlspecialchars($character['alignment']); ?></p>
@@ -1205,22 +1127,22 @@ $initiative = $dexterityMod;
                             <!-- Bonus raciaux -->
                             <tr>
                                 <td><strong>Bonus raciaux</strong></td>
-                                <td><span class="text-success"><?php echo ($character['strength_bonus'] > 0 ? '+' : '') . $character['strength_bonus']; ?></span></td>
-                                <td><span class="text-success"><?php echo ($character['dexterity_bonus'] > 0 ? '+' : '') . $character['dexterity_bonus']; ?></span></td>
-                                <td><span class="text-success"><?php echo ($character['constitution_bonus'] > 0 ? '+' : '') . $character['constitution_bonus']; ?></span></td>
-                                <td><span class="text-success"><?php echo ($character['intelligence_bonus'] > 0 ? '+' : '') . $character['intelligence_bonus']; ?></span></td>
-                                <td><span class="text-success"><?php echo ($character['wisdom_bonus'] > 0 ? '+' : '') . $character['wisdom_bonus']; ?></span></td>
-                                <td><span class="text-success"><?php echo ($character['charisma_bonus'] > 0 ? '+' : '') . $character['charisma_bonus']; ?></span></td>
+                                <td><span class="text-success"><?php echo ($characterDetails['strength_bonus'] > 0 ? '+' : '') . $characterDetails['strength_bonus']; ?></span></td>
+                                <td><span class="text-success"><?php echo ($characterDetails['dexterity_bonus'] > 0 ? '+' : '') . $characterDetails['dexterity_bonus']; ?></span></td>
+                                <td><span class="text-success"><?php echo ($characterDetails['constitution_bonus'] > 0 ? '+' : '') . $characterDetails['constitution_bonus']; ?></span></td>
+                                <td><span class="text-success"><?php echo ($characterDetails['intelligence_bonus'] > 0 ? '+' : '') . $characterDetails['intelligence_bonus']; ?></span></td>
+                                <td><span class="text-success"><?php echo ($characterDetails['wisdom_bonus'] > 0 ? '+' : '') . $characterDetails['wisdom_bonus']; ?></span></td>
+                                <td><span class="text-success"><?php echo ($characterDetails['charisma_bonus'] > 0 ? '+' : '') . $characterDetails['charisma_bonus']; ?></span></td>
                             </tr>
                             <!-- Bonus de niveau -->
                             <tr>
                                 <td><strong>Bonus de niveau (<?php echo $remainingPoints; ?> pts restants)</strong></td>
-                                <td><span class="text-warning"><?php echo ($abilityImprovements['strength_bonus'] > 0 ? '+' : '') . $abilityImprovements['strength_bonus']; ?></span></td>
-                                <td><span class="text-warning"><?php echo ($abilityImprovements['dexterity_bonus'] > 0 ? '+' : '') . $abilityImprovements['dexterity_bonus']; ?></span></td>
-                                <td><span class="text-warning"><?php echo ($abilityImprovements['constitution_bonus'] > 0 ? '+' : '') . $abilityImprovements['constitution_bonus']; ?></span></td>
-                                <td><span class="text-warning"><?php echo ($abilityImprovements['intelligence_bonus'] > 0 ? '+' : '') . $abilityImprovements['intelligence_bonus']; ?></span></td>
-                                <td><span class="text-warning"><?php echo ($abilityImprovements['wisdom_bonus'] > 0 ? '+' : '') . $abilityImprovements['wisdom_bonus']; ?></span></td>
-                                <td><span class="text-warning"><?php echo ($abilityImprovements['charisma_bonus'] > 0 ? '+' : '') . $abilityImprovements['charisma_bonus']; ?></span></td>
+                                <td><span class="text-warning"><?php echo ($abilityImprovements['strength'] > 0 ? '+' : '') . $abilityImprovements['strength']; ?></span></td>
+                                <td><span class="text-warning"><?php echo ($abilityImprovements['dexterity'] > 0 ? '+' : '') . $abilityImprovements['dexterity']; ?></span></td>
+                                <td><span class="text-warning"><?php echo ($abilityImprovements['constitution'] > 0 ? '+' : '') . $abilityImprovements['constitution']; ?></span></td>
+                                <td><span class="text-warning"><?php echo ($abilityImprovements['intelligence'] > 0 ? '+' : '') . $abilityImprovements['intelligence']; ?></span></td>
+                                <td><span class="text-warning"><?php echo ($abilityImprovements['wisdom'] > 0 ? '+' : '') . $abilityImprovements['wisdom']; ?></span></td>
+                                <td><span class="text-warning"><?php echo ($abilityImprovements['charisma'] > 0 ? '+' : '') . $abilityImprovements['charisma']; ?></span></td>
                             </tr>
                             <!-- Bonus d'équipements -->
                             <tr>
@@ -1609,31 +1531,31 @@ $initiative = $dexterityMod;
             <div class="row">
                 <div class="col-md-6">
                     <div class="info-section">
-                        <h3><i class="fas fa-dragon me-2"></i>Race: <?php echo htmlspecialchars($character['race_name']); ?></h3>
-                        <p><?php echo htmlspecialchars($character['race_description']); ?></p>
+                        <h3><i class="fas fa-dragon me-2"></i>Race: <?php echo htmlspecialchars($characterDetails['race_name']); ?></h3>
+                        <p><?php echo htmlspecialchars($characterDetails['race_description']); ?></p>
                         <p><strong>Bonus de caractéristiques:</strong> 
-                            Force: +<?php echo $character['strength_bonus']; ?> | 
-                            Dextérité: +<?php echo $character['dexterity_bonus']; ?> | 
-                            Constitution: +<?php echo $character['constitution_bonus']; ?> | 
-                            Intelligence: +<?php echo $character['intelligence_bonus']; ?> | 
-                            Sagesse: +<?php echo $character['wisdom_bonus']; ?> | 
-                            Charisme: +<?php echo $character['charisma_bonus']; ?>
+                            Force: +<?php echo $characterDetails['strength_bonus']; ?> | 
+                            Dextérité: +<?php echo $characterDetails['dexterity_bonus']; ?> | 
+                            Constitution: +<?php echo $characterDetails['constitution_bonus']; ?> | 
+                            Intelligence: +<?php echo $characterDetails['intelligence_bonus']; ?> | 
+                            Sagesse: +<?php echo $characterDetails['wisdom_bonus']; ?> | 
+                            Charisme: +<?php echo $characterDetails['charisma_bonus']; ?>
                         </p>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="info-section">
-                        <h3><i class="fas fa-shield-alt me-2"></i>Classe: <?php echo htmlspecialchars($character['class_name']); ?></h3>
-                        <p><?php echo htmlspecialchars($character['class_description']); ?></p>
-                        <p><strong>Dé de vie:</strong> &nbsp;<?php echo $character['hit_dice']; ?></p>
+                        <h3><i class="fas fa-shield-alt me-2"></i>Classe: <?php echo htmlspecialchars($characterDetails['class_name']); ?></h3>
+                        <p><?php echo htmlspecialchars($characterDetails['class_description']); ?></p>
+                        <p><strong>Dé de vie:</strong> &nbsp;<?php echo $characterDetails['hit_dice']; ?></p>
                     </div>
                 </div>
             </div>
 
             <!-- Historique -->
-            <?php if ($character['background_name']): ?>
+            <?php if ($characterDetails['background_name']): ?>
             <div class="info-section">
-                <h3><i class="fas fa-book me-2"></i>Historique: <?php echo htmlspecialchars($character['background_name']); ?></h3>
+                <h3><i class="fas fa-book me-2"></i>Historique: <?php echo htmlspecialchars($characterDetails['background_name']); ?></h3>
             </div>
             <?php endif; ?>
 

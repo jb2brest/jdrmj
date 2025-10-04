@@ -831,4 +831,116 @@ class Item
         
         return $shields;
     }
+
+    /**
+     * Trouver un objet par son ID et son propriétaire
+     * 
+     * @param int $id ID de l'objet
+     * @param string $ownerType Type de propriétaire
+     * @param int $ownerId ID du propriétaire
+     * @param PDO $pdo Instance PDO (optionnel)
+     * @return Item|null L'objet trouvé ou null
+     */
+    public static function findByIdAndOwner(int $id, string $ownerType, int $ownerId, PDO $pdo = null)
+    {
+        try {
+            $pdo = $pdo ?: getPDO();
+            
+            $stmt = $pdo->prepare("SELECT * FROM items WHERE id = ? AND owner_type = ? AND owner_id = ?");
+            $stmt->execute([$id, $ownerType, $ownerId]);
+            $data = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($data) {
+                return new self($pdo, $data);
+            }
+            
+            return null;
+            
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la recherche de l'objet par ID et propriétaire: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Supprimer un objet par son ID (version statique)
+     * 
+     * @param int $id ID de l'objet
+     * @param PDO $pdo Instance PDO (optionnel)
+     * @return bool True si succès, false sinon
+     */
+    public static function deleteById(int $id, PDO $pdo = null)
+    {
+        try {
+            $pdo = $pdo ?: getPDO();
+            $stmt = $pdo->prepare("DELETE FROM items WHERE id = ?");
+            return $stmt->execute([$id]);
+            
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la suppression de l'objet: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Créer un objet avec toutes les données étendues (pour les transferts)
+     * 
+     * @param array $data Données complètes de l'objet
+     * @param PDO $pdo Instance PDO (optionnel)
+     * @return Item|false L'objet créé ou false en cas d'erreur
+     */
+    public static function createExtended(array $data, PDO $pdo = null)
+    {
+        try {
+            $pdo = $pdo ?: getPDO();
+            
+            $stmt = $pdo->prepare("
+                INSERT INTO items (
+                    place_id, display_name, object_type, type_precis, description,
+                    is_identified, is_visible, is_equipped, position_x, position_y, is_on_map,
+                    owner_type, owner_id, poison_id, weapon_id, armor_id,
+                    gold_coins, silver_coins, copper_coins, letter_content, is_sealed,
+                    magical_item_id, item_source, quantity, equipped_slot, notes, obtained_at, obtained_from
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            
+            $stmt->execute([
+                $data['place_id'] ?? null,
+                $data['display_name'],
+                $data['object_type'],
+                $data['type_precis'] ?? null,
+                $data['description'] ?? null,
+                $data['is_identified'] ?? false,
+                $data['is_visible'] ?? true,
+                $data['is_equipped'] ?? false,
+                $data['position_x'] ?? 0,
+                $data['position_y'] ?? 0,
+                $data['is_on_map'] ?? false,
+                $data['owner_type'] ?? 'place',
+                $data['owner_id'] ?? null,
+                $data['poison_id'] ?? null,
+                $data['weapon_id'] ?? null,
+                $data['armor_id'] ?? null,
+                $data['gold_coins'] ?? 0,
+                $data['silver_coins'] ?? 0,
+                $data['copper_coins'] ?? 0,
+                $data['letter_content'] ?? null,
+                $data['is_sealed'] ?? false,
+                $data['magical_item_id'] ?? null,
+                $data['item_source'] ?? null,
+                $data['quantity'] ?? 1,
+                $data['equipped_slot'] ?? null,
+                $data['notes'] ?? null,
+                $data['obtained_at'] ?? date('Y-m-d H:i:s'),
+                $data['obtained_from'] ?? null
+            ]);
+            
+            $objectId = $pdo->lastInsertId();
+            return self::findById($objectId, $pdo);
+            
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la création de l'objet étendu: " . $e->getMessage());
+            return false;
+        }
+    }
 }

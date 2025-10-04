@@ -511,4 +511,111 @@ class PNJ extends Character
             throw new Exception("Erreur lors de l'ajout de l'équipement: " . $e->getMessage());
         }
     }
+
+    /**
+     * Récupérer les informations d'un équipement de PNJ avec les détails du PNJ et de la scène
+     * 
+     * @param int $equipmentId ID de l'équipement
+     * @param int $characterId ID du personnage (pour vérification)
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return array|null Données de l'équipement ou null si non trouvé
+     * @throws Exception En cas d'erreur
+     */
+    public static function getNpcEquipmentWithDetails($equipmentId, $characterId, $pdo = null)
+    {
+        try {
+            $pdo = $pdo ?: \Database::getInstance()->getPdo();
+            $stmt = $pdo->prepare("
+                SELECT ne.*, sn.name as npc_name, sn.place_id, s.title as scene_title
+                FROM npc_equipment ne
+                JOIN place_npcs sn ON ne.npc_id = sn.id AND ne.scene_id = sn.place_id
+                JOIN places s ON sn.place_id = s.id
+                WHERE ne.id = ? AND sn.npc_character_id = ?
+            ");
+            $stmt->execute([$equipmentId, $characterId]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            throw new Exception("Erreur lors de la récupération de l'équipement du PNJ: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Ajouter un équipement à un PNJ (version statique pour les transferts)
+     * 
+     * @param int $npcId ID du PNJ
+     * @param int $placeId ID du lieu
+     * @param array $equipmentData Données de l'équipement
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return bool Succès de l'ajout
+     * @throws Exception En cas d'erreur
+     */
+    public static function addEquipmentToNpc($npcId, $placeId, $equipmentData, $pdo = null)
+    {
+        try {
+            $pdo = $pdo ?: \Database::getInstance()->getPdo();
+            $stmt = $pdo->prepare("INSERT INTO npc_equipment (npc_id, place_id, magical_item_id, item_name, item_type, item_description, item_source, quantity, equipped, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([
+                $npcId,
+                $placeId,
+                $equipmentData['magical_item_id'],
+                $equipmentData['item_name'],
+                $equipmentData['item_type'],
+                $equipmentData['item_description'],
+                $equipmentData['item_source'],
+                $equipmentData['quantity'],
+                $equipmentData['equipped'] ?? 0,
+                $equipmentData['notes'],
+                $equipmentData['obtained_from']
+            ]);
+            return true;
+        } catch (PDOException $e) {
+            throw new Exception("Erreur lors de l'ajout de l'équipement au PNJ: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Supprimer un équipement d'un PNJ (version statique)
+     * 
+     * @param int $equipmentId ID de l'équipement
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return bool Succès de la suppression
+     * @throws Exception En cas d'erreur
+     */
+    public static function removeEquipmentFromNpc($equipmentId, $pdo = null)
+    {
+        try {
+            $pdo = $pdo ?: \Database::getInstance()->getPdo();
+            $stmt = $pdo->prepare("DELETE FROM npc_equipment WHERE id = ?");
+            return $stmt->execute([$equipmentId]);
+        } catch (PDOException $e) {
+            throw new Exception("Erreur lors de la suppression de l'équipement du PNJ: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Récupérer l'équipement des PNJ associés à un personnage
+     * 
+     * @param int $characterId ID du personnage
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return array Liste de l'équipement des PNJ associés
+     * @throws Exception En cas d'erreur
+     */
+    public static function getNpcEquipmentByCharacter($characterId, $pdo = null)
+    {
+        try {
+            $pdo = $pdo ?: \Database::getInstance()->getPdo();
+            $stmt = $pdo->prepare("
+                SELECT ne.*, sn.name as npc_name, sn.place_id, s.title as scene_title
+                FROM npc_equipment ne
+                JOIN place_npcs sn ON ne.npc_id = sn.id AND ne.scene_id = sn.place_id
+                JOIN places s ON sn.place_id = s.id
+                WHERE sn.npc_character_id = ?
+                ORDER BY ne.obtained_at DESC
+            ");
+            $stmt->execute([$characterId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            throw new Exception("Erreur lors de la récupération de l'équipement des PNJ associés: " . $e->getMessage());
+        }
+    }
 }
