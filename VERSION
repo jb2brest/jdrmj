@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.6.22
+VERSION=2.6.23
 
 # Date de déploiement
 DEPLOY_DATE=2025-10-04
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-10-04
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=e05836949244c00a3c6fa9f6521a98b54ee2b67f
+GIT_COMMIT=3d17105aabb46da8cb95109f596d8bc945f8ed25
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251004-095931
+BUILD_ID=20251004-103747
 
 # Notes de version
-RELEASE_NOTES="view_country.php"
+RELEASE_NOTES="view_character.php"
