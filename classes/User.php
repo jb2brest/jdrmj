@@ -677,4 +677,25 @@ class User
     {
         return self::getCampaigns($this->id, $this->pdo);
     }
+
+    /**
+     * Rechercher un utilisateur par nom d'utilisateur ou email
+     * 
+     * @param string $usernameOrEmail Nom d'utilisateur ou email
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return array|null Données de l'utilisateur ou null si non trouvé
+     */
+    public static function findByUsernameOrEmail($usernameOrEmail, PDO $pdo = null)
+    {
+        $pdo = $pdo ?: getPDO();
+        
+        try {
+            $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ? OR email = ?");
+            $stmt->execute([$usernameOrEmail, $usernameOrEmail]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la recherche de l'utilisateur: " . $e->getMessage());
+            return null;
+        }
+    }
 }

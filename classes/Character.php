@@ -2494,4 +2494,32 @@ class Character
             return [];
         }
     }
+
+    /**
+     * Récupérer les personnages d'un utilisateur
+     * 
+     * @param int $userId ID de l'utilisateur
+     * @param bool $equippedOnly Si true, ne retourne que les personnages équipés
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return array Liste des personnages
+     */
+    public static function getCharactersByUser($userId, $equippedOnly = false, PDO $pdo = null)
+    {
+        $pdo = $pdo ?: getPDO();
+        
+        try {
+            $sql = "SELECT id, name FROM characters WHERE user_id = ?";
+            if ($equippedOnly) {
+                $sql .= " AND is_equipped = 1";
+            }
+            $sql .= " ORDER BY name ASC";
+            
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$userId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération des personnages de l'utilisateur: " . $e->getMessage());
+            return [];
+        }
+    }
 }

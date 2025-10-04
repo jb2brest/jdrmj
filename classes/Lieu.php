@@ -1259,4 +1259,99 @@ class Lieu
             'world_id' => $this->world_id
         ];
     }
+
+    /**
+     * Vérifier si un lieu appartient à une campagne
+     * 
+     * @param int $placeId ID du lieu
+     * @param int $campaignId ID de la campagne
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return bool True si le lieu appartient à la campagne
+     */
+    public static function belongsToCampaign($placeId, $campaignId, PDO $pdo = null)
+    {
+        $pdo = $pdo ?: getPDO();
+        
+        try {
+            $stmt = $pdo->prepare("
+                SELECT 1 FROM places p
+                INNER JOIN place_campaigns pc ON p.id = pc.place_id
+                WHERE p.id = ? AND pc.campaign_id = ?
+                LIMIT 1
+            ");
+            $stmt->execute([$placeId, $campaignId]);
+            return (bool)$stmt->fetch();
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la vérification de l'appartenance du lieu à la campagne: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Créer un nouveau lieu
+     * 
+     * @param string $title Titre du lieu
+     * @param string $mapUrl URL de la carte (optionnel)
+     * @param string $notes Notes du lieu (optionnel)
+     * @param int $position Position du lieu (par défaut 0)
+     * @param int $countryId ID du pays (optionnel)
+     * @param int $regionId ID de la région (optionnel)
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return int|null ID du lieu créé ou null si échec
+     */
+    public static function create($title, $mapUrl = '', $notes = '', $position = 0, $countryId = null, $regionId = null, PDO $pdo = null)
+    {
+        $pdo = $pdo ?: getPDO();
+        
+        try {
+            $stmt = $pdo->prepare("
+                INSERT INTO places (title, map_url, notes, position, country_id, region_id) 
+                VALUES (?, ?, ?, ?, ?, ?)
+            ");
+            $success = $stmt->execute([$title, $mapUrl, $notes, $position, $countryId, $regionId]);
+            
+            if ($success) {
+                return $pdo->lastInsertId();
+            }
+            
+            return null;
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la création du lieu: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Vérifier que plusieurs lieux appartiennent à une campagne
+     * 
+     * @param array $placeIds IDs des lieux
+     * @param int $campaignId ID de la campagne
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return bool True si tous les lieux appartiennent à la campagne
+     */
+    public static function allBelongToCampaign($placeIds, $campaignId, PDO $pdo = null)
+    {
+        $pdo = $pdo ?: getPDO();
+        
+        if (empty($placeIds)) {
+            return false;
+        }
+        
+        try {
+            $placeholders = str_repeat('?,', count($placeIds) - 1) . '?';
+            $stmt = $pdo->prepare("
+                SELECT COUNT(*) as count FROM places p
+                INNER JOIN place_campaigns pc ON p.id = pc.place_id
+                WHERE p.id IN ($placeholders) AND pc.campaign_id = ?
+            ");
+            $params = array_merge($placeIds, [$campaignId]);
+            $stmt->execute($params);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            return $result['count'] == count($placeIds);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la vérification de l'appartenance des lieux à la campagne: " . $e->getMessage());
+            return false;
+        }
+    }
 }

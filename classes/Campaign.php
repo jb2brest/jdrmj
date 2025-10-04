@@ -18,6 +18,7 @@ class Campaign
     private $worldId;
     private $createdAt;
     private $updatedAt;
+    private $dmUsername;
     private $pdo;
 
     /**
@@ -52,6 +53,7 @@ class Campaign
         $this->worldId = $data['world_id'] ?? null;
         $this->createdAt = $data['created_at'] ?? null;
         $this->updatedAt = $data['updated_at'] ?? null;
+        $this->dmUsername = $data['dm_username'] ?? null;
     }
 
     // =====================================================
@@ -661,7 +663,8 @@ class Campaign
             'is_public' => $this->isPublic,
             'invite_code' => $this->inviteCode,
             'created_at' => $this->createdAt,
-            'updated_at' => $this->updatedAt
+            'updated_at' => $this->updatedAt,
+            'dm_username' => $this->dmUsername ?? null
         ];
     }
 
@@ -795,6 +798,181 @@ class Campaign
         } catch (PDOException $e) {
             error_log("Erreur lors de la vérification de la candidature: " . $e->getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Récupérer une campagne par ID avec vérification des permissions selon le rôle
+     * 
+     * @param int $campaignId ID de la campagne
+     * @param int $userId ID de l'utilisateur
+     * @param string $userRole Rôle de l'utilisateur
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return Campaign|null Instance de Campaign ou null si non trouvée/accès refusé
+     */
+    public static function findByIdWithPermissions($campaignId, $userId, $userRole = 'player', PDO $pdo = null)
+    {
+        $pdo = $pdo ?: getPDO();
+        
+        try {
+            if ($userRole === 'admin') {
+                // Les admins peuvent voir toutes les campagnes
+                $stmt = $pdo->prepare("SELECT c.*, u.username AS dm_username FROM campaigns c JOIN users u ON c.dm_id = u.id WHERE c.id = ?");
+                $stmt->execute([$campaignId]);
+            } elseif ($userRole === 'dm') {
+                // Les DM peuvent voir leurs campagnes + les campagnes publiques
+                $stmt = $pdo->prepare("SELECT c.*, u.username AS dm_username FROM campaigns c JOIN users u ON c.dm_id = u.id WHERE c.id = ? AND (c.dm_id = ? OR c.is_public = 1)");
+                $stmt->execute([$campaignId, $userId]);
+            } else {
+                // Les joueurs peuvent voir les campagnes publiques ET les campagnes où ils sont membres
+                $stmt = $pdo->prepare("
+                    SELECT c.*, u.username AS dm_username FROM campaigns c 
+                    JOIN users u ON c.dm_id = u.id
+                    WHERE c.id = ? AND (
+                        c.is_public = 1 
+                        OR EXISTS (
+                            SELECT 1 FROM campaign_members cm 
+                            WHERE cm.campaign_id = c.id AND cm.user_id = ?
+                        )
+                    )
+                ");
+                $stmt->execute([$campaignId, $userId]);
+            }
+            
+            $campaignData = $stmt->fetch();
+            
+            if ($campaignData) {
+                return new self($pdo, $campaignData);
+            }
+            
+            return null;
+            
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération de la campagne: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Ajouter une candidature à la campagne
+     * 
+     * @param int $playerId ID du joueur
+     * @param int $characterId ID du personnage
+     * @param string $message Message de candidature
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return bool Succès de l'opération
+     */
+    public function addApplication($playerId, $characterId, $message = '', PDO $pdo = null)
+    {
+        $pdo = $pdo ?: $this->pdo;
+        
+        try {
+            $stmt = $pdo->prepare("INSERT INTO campaign_applications (campaign_id, player_id, character_id, message, status) VALUES (?, ?, ?, ?, 'pending')");
+            return $stmt->execute([$this->id, $playerId, $characterId, $message]);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de l'ajout de la candidature: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Mettre à jour le statut d'une candidature
+     * 
+     * @param int $applicationId ID de la candidature
+     * @param string $status Nouveau statut
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return bool Succès de l'opération
+     */
+    public function updateApplicationStatus($applicationId, $status, PDO $pdo = null)
+    {
+        $pdo = $pdo ?: $this->pdo;
+        
+        try {
+            $stmt = $pdo->prepare("UPDATE campaign_applications SET status = ? WHERE id = ? AND campaign_id = ?");
+            return $stmt->execute([$status, $applicationId, $this->id]);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la mise à jour du statut de la candidature: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Récupérer toutes les candidatures de la campagne
+     * 
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return array Liste des candidatures
+     */
+    public function getApplications(PDO $pdo = null)
+    {
+        $pdo = $pdo ?: $this->pdo;
+        
+        try {
+            $stmt = $pdo->prepare("
+                SELECT ca.id, ca.player_id, ca.character_id, ca.message, ca.status, ca.created_at, 
+                       u.username, ch.name AS character_name 
+                FROM campaign_applications ca 
+                JOIN users u ON ca.player_id = u.id 
+                LEFT JOIN characters ch ON ca.character_id = ch.id 
+                WHERE ca.campaign_id = ? 
+                ORDER BY ca.created_at DESC
+            ");
+            $stmt->execute([$this->id]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération des candidatures: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Vérifier si un utilisateur a déjà postulé à la campagne
+     * 
+     * @param int $playerId ID du joueur
+     * @param string $status Statut de la candidature à vérifier (par défaut 'pending')
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return array|null Candidature existante ou null
+     */
+    public function getUserApplication($playerId, $status = 'pending', PDO $pdo = null)
+    {
+        $pdo = $pdo ?: $this->pdo;
+        
+        try {
+            $stmt = $pdo->prepare("
+                SELECT id, status, created_at 
+                FROM campaign_applications 
+                WHERE campaign_id = ? AND player_id = ? AND status = ? 
+                ORDER BY created_at DESC LIMIT 1
+            ");
+            $stmt->execute([$this->id, $playerId, $status]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la vérification de la candidature: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Récupérer les personnages acceptés dans la campagne pour un joueur
+     * 
+     * @param int $playerId ID du joueur
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return array Liste des personnages acceptés
+     */
+    public function getAcceptedCharacters($playerId, PDO $pdo = null)
+    {
+        $pdo = $pdo ?: $this->pdo;
+        
+        try {
+            $stmt = $pdo->prepare("
+                SELECT character_id 
+                FROM campaign_applications 
+                WHERE campaign_id = ? AND player_id = ? AND status = 'approved'
+            ");
+            $stmt->execute([$this->id, $playerId]);
+            return $stmt->fetchAll(PDO::FETCH_COLUMN);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération des personnages acceptés: " . $e->getMessage());
+            return [];
         }
     }
 }
