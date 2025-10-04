@@ -173,11 +173,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($is_member) {
             $error_message = "Vous êtes déjà membre de cette campagne.";
         } else {
-            // Vérifier si l'utilisateur n'a pas déjà postulé via la classe CandidatureCampagne
-            $existing_application = CandidatureCampagne::hasPlayerApplied($campaign_id, $user_id, CandidatureCampagne::STATUS_PENDING);
+            // Vérifier si la candidature peut être créée via la classe CandidatureCampagne
+            $canCreate = CandidatureCampagne::canCreate($campaign_id, $user_id);
             
-            if ($existing_application) {
-                $error_message = "Vous avez déjà postulé à cette campagne.";
+            if (!$canCreate['can_create']) {
+                $error_message = $canCreate['reason'];
             } else {
                 // Créer la candidature via la classe CandidatureCampagne
                 $candidature = CandidatureCampagne::create($campaign_id, $user_id, $character_id, $message);
@@ -220,66 +220,79 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
         // Vérifier que la candidature correspond à cette campagne du MJ via la classe CandidatureCampagne
         $candidature = CandidatureCampagne::findById($application_id);
         if ($candidature && $candidature->belongsToDM($dm_id) && $candidature->getCampaignId() == $campaign_id) {
-            $player_id = $candidature->getPlayerId();
-            $app_character_id = $candidature->getCharacterId();
-            
-            // Utiliser le personnage de la candidature si aucun n'est spécifié
-            if (!$character_id && $app_character_id) {
-                $character_id = $app_character_id;
-            }
-            
-            $pdo->beginTransaction();
-            try {
-                // Mettre à jour le statut via la classe CandidatureCampagne
-                $candidature->approve();
+            // Vérifier si la candidature peut être modifiée via la classe CandidatureCampagne
+            if (!$candidature->canBeModified()) {
+                $error_message = "Cette candidature ne peut plus être modifiée (statut: " . $candidature->getStatusLabel() . ").";
+            } else {
+                $player_id = $candidature->getPlayerId();
+                $app_character_id = $candidature->getCharacterId();
                 
-                // Ajouter comme membre si pas déjà présent via la classe Campaign
-                $campaign->addMember($player_id, 'player');
+                // Utiliser le personnage de la candidature si aucun n'est spécifié
+                if (!$character_id && $app_character_id) {
+                    $character_id = $app_character_id;
+                }
                 
-                // Si un lieu est spécifié, assigner le joueur au lieu
-                if ($place_id) {
-                    // Vérifier que le lieu appartient à cette campagne via la classe Lieu
-                    if (Lieu::belongsToCampaign($place_id, $campaign_id)) {
-                        // Retirer le joueur de tous les autres lieux de la campagne via la classe Lieu
-                        $campaign_place_ids = Lieu::getPlaceIdsByCampaign($campaign_id);
-                        if (!empty($campaign_place_ids)) {
-                            $placeholders = str_repeat('?,', count($campaign_place_ids) - 1) . '?';
-                            $stmt = $pdo->prepare("
-                                DELETE FROM place_players 
-                                WHERE player_id = ? AND place_id IN ($placeholders)
-                            ");
-                            $params = array_merge([$player_id], $campaign_place_ids);
-                            $stmt->execute($params);
+                $pdo->beginTransaction();
+                try {
+                    // Mettre à jour le statut via la classe CandidatureCampagne
+                    if (!$candidature->approve()) {
+                        throw new Exception("Erreur lors de l'approbation de la candidature");
+                    }
+                    
+                    // Ajouter comme membre si pas déjà présent via la classe Campaign
+                    if (!$campaign->addMember($player_id, 'player')) {
+                        throw new Exception("Erreur lors de l'ajout du membre à la campagne");
+                    }
+                    
+                    // Si un lieu est spécifié, assigner le joueur au lieu
+                    if ($place_id) {
+                        // Vérifier que le lieu appartient à cette campagne via la classe Lieu
+                        if (Lieu::belongsToCampaign($place_id, $campaign_id)) {
+                            // Retirer le joueur de tous les autres lieux de la campagne via la classe Lieu
+                            $campaign_place_ids = Lieu::getPlaceIdsByCampaign($campaign_id);
+                            if (!empty($campaign_place_ids)) {
+                                $placeholders = str_repeat('?,', count($campaign_place_ids) - 1) . '?';
+                                $stmt = $pdo->prepare("
+                                    DELETE FROM place_players 
+                                    WHERE player_id = ? AND place_id IN ($placeholders)
+                                ");
+                                $params = array_merge([$player_id], $campaign_place_ids);
+                                $stmt->execute($params);
+                            }
+                            
+                            // Ajouter le joueur au nouveau lieu via la classe Lieu
+                            if (!Lieu::addPlayerToPlace($place_id, $player_id, $character_id)) {
+                                throw new Exception("Erreur lors de l'assignation du joueur au lieu");
+                            }
                         }
-                        
-                        // Ajouter le joueur au nouveau lieu via la classe Lieu
-                        Lieu::addPlayerToPlace($place_id, $player_id, $character_id);
                     }
-                }
-                
-                // Notification au joueur
-                $title = 'Candidature acceptée';
-                $message = 'Votre candidature à la campagne "' . $campaign_data['title'] . '" a été acceptée.';
-                if ($place_id) {
-                    $placeObj = Lieu::findById($place_id);
-                    $place = $placeObj ? ['title' => $placeObj->getTitle()] : null;
-                    if ($place) {
-                        $message .= ' Vous avez été assigné au lieu "' . $place['title'] . '".';
+                    
+                    // Notification au joueur avec informations de la candidature
+                    $title = 'Candidature acceptée';
+                    $message = 'Votre candidature à la campagne "' . $campaign_data['title'] . '" a été acceptée.';
+                    if ($place_id) {
+                        $placeObj = Lieu::findById($place_id);
+                        $place = $placeObj ? ['title' => $placeObj->getTitle()] : null;
+                        if ($place) {
+                            $message .= ' Vous avez été assigné au lieu "' . $place['title'] . '".';
+                        }
                     }
+                    if (!Notification::create($player_id, 'system', $title, $message, $campaign_id)) {
+                        throw new Exception("Erreur lors de la création de la notification");
+                    }
+                    
+                    $pdo->commit();
+                    $success_message = "Candidature approuvée et joueur ajouté à la campagne.";
+                    if ($place_id) {
+                        $success_message .= " Le joueur a été assigné au lieu sélectionné.";
+                    }
+                } catch (Exception $e) {
+                    $pdo->rollBack();
+                    $error_message = "Erreur lors de l'approbation: " . $e->getMessage();
                 }
-                Notification::create($player_id, 'system', $title, $message, $campaign_id);
-                
-                $pdo->commit();
-                $success_message = "Candidature approuvée et joueur ajouté à la campagne.";
-                if ($place_id) {
-                    $success_message .= " Le joueur a été assigné au lieu sélectionné.";
-                }
-            } catch (Exception $e) {
-                $pdo->rollBack();
-                $error_message = "Erreur lors de l'approbation.";
             }
         } else {
-            $error_message = "Candidature introuvable.";
+            $error_message = "Candidature introuvable ou accès non autorisé.";
         }
     }
 
@@ -289,15 +302,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
         // Récupérer la candidature et vérifier droits MJ via la classe CandidatureCampagne
         $candidature = CandidatureCampagne::findById($application_id);
         if ($candidature && $candidature->belongsToDM($dm_id) && $candidature->getCampaignId() == $campaign_id) {
-            $player_id = $candidature->getPlayerId();
-            $candidature->decline();
-            // Notification au joueur
-            $title = 'Candidature refusée';
-            $message = 'Votre candidature à la campagne "' . $campaign_data['title'] . '" a été refusée.';
-            Notification::create($player_id, 'system', $title, $message, $campaign_id);
-            $success_message = "Candidature refusée.";
+            // Vérifier si la candidature peut être modifiée via la classe CandidatureCampagne
+            if (!$candidature->canBeModified()) {
+                $error_message = "Cette candidature ne peut plus être modifiée (statut: " . $candidature->getStatusLabel() . ").";
+            } else {
+                $player_id = $candidature->getPlayerId();
+                
+                try {
+                    // Refuser la candidature via la classe CandidatureCampagne
+                    if (!$candidature->decline()) {
+                        throw new Exception("Erreur lors du refus de la candidature");
+                    }
+                    
+                    // Notification au joueur avec informations de la candidature
+                    $title = 'Candidature refusée';
+                    $message = 'Votre candidature à la campagne "' . $campaign_data['title'] . '" a été refusée.';
+                    if (!Notification::create($player_id, 'system', $title, $message, $campaign_id)) {
+                        throw new Exception("Erreur lors de la création de la notification");
+                    }
+                    
+                    $success_message = "Candidature refusée.";
+                } catch (Exception $e) {
+                    $error_message = "Erreur lors du refus: " . $e->getMessage();
+                }
+            }
         } else {
-            $error_message = "Candidature introuvable.";
+            $error_message = "Candidature introuvable ou accès non autorisé.";
         }
     }
 
@@ -306,15 +336,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
         $application_id = (int)$_POST['application_id'];
         // Annuler l'acceptation via la classe CandidatureCampagne
         $candidature = CandidatureCampagne::findById($application_id);
-        if ($candidature) {
-            $result = $candidature->revokeAcceptance($dm_id, $campaign_id, $campaign, $campaign_data);
-            if ($result['success']) {
-                $success_message = $result['message'];
+        if ($candidature && $candidature->belongsToDM($dm_id) && $candidature->getCampaignId() == $campaign_id) {
+            // Vérifier si la candidature peut être annulée via la classe CandidatureCampagne
+            if (!$candidature->canBeRevoked()) {
+                $error_message = "Cette candidature ne peut pas être annulée (statut: " . $candidature->getStatusLabel() . ").";
             } else {
-                $error_message = $result['message'];
+                $result = $candidature->revokeAcceptance($dm_id, $campaign_id, $campaign, $campaign_data);
+                if ($result['success']) {
+                    $success_message = $result['message'];
+                } else {
+                    $error_message = $result['message'];
+                }
             }
         } else {
-            $error_message = "Candidature introuvable.";
+            $error_message = "Candidature introuvable ou accès non autorisé.";
         }
     }
 
@@ -323,17 +358,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
         $application_id = (int)$_POST['application_id'];
         // Vérifier que la candidature est refusée pour cette campagne du MJ via la classe CandidatureCampagne
         $candidature = CandidatureCampagne::findById($application_id);
-        if ($candidature && $candidature->belongsToDM($dm_id) && $candidature->getCampaignId() == $campaign_id && $candidature->getStatus() == CandidatureCampagne::STATUS_DECLINED) {
-            $player_id = $candidature->getPlayerId();
-            // Remettre la candidature en attente via la classe CandidatureCampagne
-            $candidature->setPending();
-            // Notifier le joueur
-            $title = 'Refus annulé';
-            $message = 'Votre refus dans la campagne "' . $campaign_data['title'] . '" a été annulé par le MJ. Votre candidature est de nouveau en attente.';
-            Notification::create($player_id, 'system', $title, $message, $campaign_id);
-            $success_message = "Refus annulé. La candidature est remise en attente.";
+        if ($candidature && $candidature->belongsToDM($dm_id) && $candidature->getCampaignId() == $campaign_id) {
+            // Vérifier que la candidature est bien refusée
+            if ($candidature->getStatus() != CandidatureCampagne::STATUS_DECLINED) {
+                $error_message = "Cette candidature n'est pas refusée (statut: " . $candidature->getStatusLabel() . ").";
+            } else {
+                $player_id = $candidature->getPlayerId();
+                
+                try {
+                    // Remettre la candidature en attente via la classe CandidatureCampagne
+                    if (!$candidature->setPending()) {
+                        throw new Exception("Erreur lors de la remise en attente de la candidature");
+                    }
+                    
+                    // Notifier le joueur
+                    $title = 'Refus annulé';
+                    $message = 'Votre refus dans la campagne "' . $campaign_data['title'] . '" a été annulé par le MJ. Votre candidature est de nouveau en attente.';
+                    if (!Notification::create($player_id, 'system', $title, $message, $campaign_id)) {
+                        throw new Exception("Erreur lors de la création de la notification");
+                    }
+                    
+                    $success_message = "Refus annulé. La candidature est remise en attente.";
+                } catch (Exception $e) {
+                    $error_message = "Erreur lors de l'annulation du refus: " . $e->getMessage();
+                }
+            }
         } else {
-            $error_message = "Candidature refusée introuvable.";
+            $error_message = "Candidature introuvable ou accès non autorisé.";
         }
     }
 
@@ -615,6 +666,9 @@ foreach ($members as $member) {
 
 // Récupérer candidatures via la classe CandidatureCampagne
 $applications = CandidatureCampagne::getByCampaignId($campaign_id);
+
+// Récupérer les statistiques des candidatures via la classe CandidatureCampagne
+$application_stats = CandidatureCampagne::getStatistics($campaign_id);
 
 // Récupérer lieux avec hiérarchie géographique
 $places = $campaign->getAssociatedPlacesWithGeography();
