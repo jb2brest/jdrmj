@@ -149,3 +149,4 @@ La migration vers le nouveau schéma a été **un succès complet**. Toutes les 
 **Recommandation :** Procéder au déploiement en production après validation des tests d'intégration.
 
 
+

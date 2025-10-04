@@ -471,6 +471,7 @@ class Monde
                     pn.is_identified,
                     pn.quantity,
                     pn.current_hit_points,
+                    pn.monster_id,
                     dm.name AS monster_name,
                     dm.type,
                     dm.size,

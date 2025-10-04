@@ -196,3 +196,4 @@ $choix = StartingEquipmentChoix::create([
 4. **Sources** : Limiter aux valeurs 'class' et 'background' pour les options
 
 
+

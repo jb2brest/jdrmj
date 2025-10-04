@@ -229,3 +229,4 @@ Choix 1:
 **L'affichage des noms d'équipement est maintenant complet et fonctionnel !** 🚀
 
 
+

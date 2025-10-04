@@ -27,8 +27,6 @@ if (!$pays || $pays->getMonde()->getCreatedBy() != $user_id) {
 $success_message = '';
 $error_message = '';
 
-// Obtenir l'instance PDO
-$pdo = getPDO();
 
 // Fonction helper pour tronquer le texte
 function truncateText($text, $length = 100) {
@@ -129,11 +127,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (empty($name)) {
                 $error_message = "Le nom de la région est requis.";
             } else {
-                // Récupérer l'URL actuelle
-                $stmt = $pdo->prepare("SELECT map_url FROM regions WHERE id = ? AND country_id = ?");
-                $stmt->execute([$region_id, $country_id]);
-                $current_region = $stmt->fetch();
-                $map_url = $current_region['map_url'] ?? '';
+                // Récupérer l'URL actuelle via la classe Region
+                $current_region = Region::findById($region_id);
+                $map_url = $current_region ? $current_region->getMapUrl() : '';
                 
                 // Gérer l'upload de la nouvelle carte si un fichier est fourni
                 if (isset($_FILES['map_image']) && $_FILES['map_image']['error'] === UPLOAD_ERR_OK) {
@@ -190,63 +186,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Récupérer les régions du pays via la classe Pays
 $regions = $pays->getRegions();
 
-// Récupérer tous les PNJs du pays (via la hiérarchie pays → régions → lieux)
-$stmt = $pdo->prepare("
-    SELECT 
-        pn.id,
-        pn.name,
-        pn.description,
-        pn.profile_photo,
-        pn.is_visible,
-        pn.is_identified,
-        c.name AS character_name,
-        c.profile_photo AS character_profile_photo,
-        cl.name AS class_name,
-        r.name AS race_name,
-        pl.title AS place_name,
-        reg.name AS region_name,
-        'PNJ' AS type
-    FROM place_npcs pn
-    JOIN places pl ON pn.place_id = pl.id
-    LEFT JOIN regions reg ON pl.region_id = reg.id
-    LEFT JOIN characters c ON pn.npc_character_id = c.id
-    LEFT JOIN classes cl ON c.class_id = cl.id
-    LEFT JOIN races r ON c.race_id = r.id
-    WHERE pl.country_id = ? AND pn.monster_id IS NULL
-    ORDER BY pn.name ASC
-");
-$stmt->execute([$country_id]);
-$country_npcs = $stmt->fetchAll();
+// Récupérer tous les PNJs et monstres du monde via la classe Monde
+$monde = $pays->getMonde();
+$all_npcs = $monde->getNpcs();
+$all_monsters = $monde->getMonsters();
 
-// Récupérer tous les monstres du pays (via la hiérarchie pays → régions → lieux)
-$stmt = $pdo->prepare("
-    SELECT 
-        pn.id,
-        pn.name,
-        pn.description,
-        pn.profile_photo,
-        pn.is_visible,
-        pn.is_identified,
-        pn.quantity,
-        pn.current_hit_points,
-        dm.name AS monster_name,
-        dm.type,
-        dm.size,
-        dm.challenge_rating,
-        dm.hit_points,
-        dm.armor_class,
-        pl.title AS place_name,
-        reg.name AS region_name,
-        'Monstre' AS type
-    FROM place_npcs pn
-    JOIN places pl ON pn.place_id = pl.id
-    LEFT JOIN regions reg ON pl.region_id = reg.id
-    JOIN dnd_monsters dm ON pn.monster_id = dm.id
-    WHERE pl.country_id = ? AND pn.monster_id IS NOT NULL
-    ORDER BY pn.name ASC
-");
-$stmt->execute([$country_id]);
-$country_monsters = $stmt->fetchAll();
+// Filtrer les PNJs et monstres pour ne garder que ceux du pays actuel
+// Utiliser le champ country_name qui est déjà inclus dans les résultats de la classe Monde
+$country_npcs = array_filter($all_npcs, function($npc) use ($pays) {
+    return $npc['country_name'] === $pays->getName();
+});
+
+$country_monsters = array_filter($all_monsters, function($monster) use ($pays) {
+    return $monster['country_name'] === $pays->getName();
+});
 ?>
 
 <!DOCTYPE html>
