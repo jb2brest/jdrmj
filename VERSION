@@ -2,19 +2,19 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.6.21
+VERSION=2.6.22
 
 # Date de déploiement
-DEPLOY_DATE=2025-10-03
+DEPLOY_DATE=2025-10-04
 
 # Environnement
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=99b848c344311359de1cab6e8d30e0f50d6039af
+GIT_COMMIT=e05836949244c00a3c6fa9f6521a98b54ee2b67f
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251003-230111
+BUILD_ID=20251004-095931
 
 # Notes de version
-RELEASE_NOTES="View_NPC_equipment"
+RELEASE_NOTES="view_country.php"
