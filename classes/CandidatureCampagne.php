@@ -343,6 +343,99 @@ class CandidatureCampagne
     }
 
     /**
+     * Approuver la candidature avec assignation de lieu et ajout comme membre
+     * 
+     * @param object $campaign Objet Campaign
+     * @param array $campaignData Données de la campagne
+     * @param int|null $placeId ID du lieu (optionnel)
+     * @param int|null $characterId ID du personnage (optionnel)
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return array Résultat de l'opération ['success' => bool, 'message' => string]
+     */
+    public function approveWithPlaceAssignment($campaign, $campaignData, $placeId = null, $characterId = null, PDO $pdo = null)
+    {
+        $pdo = $pdo ?: $this->getPdo();
+        
+        // Vérifier si la candidature peut être modifiée
+        if (!$this->canBeModified()) {
+            return ['success' => false, 'message' => "Cette candidature ne peut plus être modifiée (statut: " . $this->getStatusLabel() . ")."];
+        }
+        
+        $playerId = $this->getPlayerId();
+        $appCharacterId = $this->getCharacterId();
+        
+        // Utiliser le personnage de la candidature si aucun n'est spécifié
+        if (!$characterId && $appCharacterId) {
+            $characterId = $appCharacterId;
+        }
+        
+        try {
+            $pdo->beginTransaction();
+            
+            // Mettre à jour le statut
+            if (!$this->approve()) {
+                throw new Exception("Erreur lors de l'approbation de la candidature");
+            }
+            
+            // Ajouter comme membre si pas déjà présent
+            if (!$campaign->addMember($playerId, 'player')) {
+                throw new Exception("Erreur lors de l'ajout du membre à la campagne");
+            }
+            
+            // Si un lieu est spécifié, assigner le joueur au lieu
+            if ($placeId) {
+                // Vérifier que le lieu appartient à cette campagne
+                if (Lieu::belongsToCampaign($placeId, $this->getCampaignId())) {
+                    // Retirer le joueur de tous les autres lieux de la campagne
+                    $campaignPlaceIds = Lieu::getPlaceIdsByCampaign($this->getCampaignId());
+                    if (!empty($campaignPlaceIds)) {
+                        $placeholders = str_repeat('?,', count($campaignPlaceIds) - 1) . '?';
+                        $stmt = $pdo->prepare("
+                            DELETE FROM place_players 
+                            WHERE player_id = ? AND place_id IN ($placeholders)
+                        ");
+                        $params = array_merge([$playerId], $campaignPlaceIds);
+                        $stmt->execute($params);
+                    }
+                    
+                    // Ajouter le joueur au nouveau lieu
+                    if (!Lieu::addPlayerToPlace($placeId, $playerId, $characterId)) {
+                        throw new Exception("Erreur lors de l'assignation du joueur au lieu");
+                    }
+                }
+            }
+            
+            // Notification au joueur
+            $title = 'Candidature acceptée';
+            $message = 'Votre candidature à la campagne "' . $campaignData['title'] . '" a été acceptée.';
+            if ($placeId) {
+                $placeObj = Lieu::findById($placeId);
+                $place = $placeObj ? ['title' => $placeObj->getTitle()] : null;
+                if ($place) {
+                    $message .= ' Vous avez été assigné au lieu "' . $place['title'] . '".';
+                }
+            }
+            if (!Notification::create($playerId, 'system', $title, $message, $this->getCampaignId())) {
+                throw new Exception("Erreur lors de la création de la notification");
+            }
+            
+            $pdo->commit();
+            
+            $successMessage = "Candidature approuvée et joueur ajouté à la campagne.";
+            if ($placeId) {
+                $successMessage .= " Le joueur a été assigné au lieu sélectionné.";
+            }
+            
+            return ['success' => true, 'message' => $successMessage];
+            
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            error_log("Erreur lors de l'approbation avec assignation: " . $e->getMessage());
+            return ['success' => false, 'message' => "Erreur lors de l'approbation: " . $e->getMessage()];
+        }
+    }
+
+    /**
      * Refuser la candidature
      * 
      * @return bool Succès de l'opération
@@ -671,6 +764,7 @@ class CandidatureCampagne
     public function getCreatedAt() { return $this->createdAt; }
     public function getUsername() { return $this->username; }
     public function getCharacterName() { return $this->character_name; }
+    private function getPdo() { return $this->pdo; }
 
     /**
      * Convertir l'objet en tableau

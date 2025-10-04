@@ -220,76 +220,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
         // Vérifier que la candidature correspond à cette campagne du MJ via la classe CandidatureCampagne
         $candidature = CandidatureCampagne::findById($application_id);
         if ($candidature && $candidature->belongsToDM($dm_id) && $candidature->getCampaignId() == $campaign_id) {
-            // Vérifier si la candidature peut être modifiée via la classe CandidatureCampagne
-            if (!$candidature->canBeModified()) {
-                $error_message = "Cette candidature ne peut plus être modifiée (statut: " . $candidature->getStatusLabel() . ").";
+            // Approuver la candidature avec assignation de lieu via la classe CandidatureCampagne
+            $result = $candidature->approveWithPlaceAssignment($campaign, $campaign_data, $place_id, $character_id);
+            if ($result['success']) {
+                $success_message = $result['message'];
             } else {
-                $player_id = $candidature->getPlayerId();
-                $app_character_id = $candidature->getCharacterId();
-                
-                // Utiliser le personnage de la candidature si aucun n'est spécifié
-                if (!$character_id && $app_character_id) {
-                    $character_id = $app_character_id;
-                }
-                
-                $pdo->beginTransaction();
-                try {
-                    // Mettre à jour le statut via la classe CandidatureCampagne
-                    if (!$candidature->approve()) {
-                        throw new Exception("Erreur lors de l'approbation de la candidature");
-                    }
-                    
-                    // Ajouter comme membre si pas déjà présent via la classe Campaign
-                    if (!$campaign->addMember($player_id, 'player')) {
-                        throw new Exception("Erreur lors de l'ajout du membre à la campagne");
-                    }
-                    
-                    // Si un lieu est spécifié, assigner le joueur au lieu
-                    if ($place_id) {
-                        // Vérifier que le lieu appartient à cette campagne via la classe Lieu
-                        if (Lieu::belongsToCampaign($place_id, $campaign_id)) {
-                            // Retirer le joueur de tous les autres lieux de la campagne via la classe Lieu
-                            $campaign_place_ids = Lieu::getPlaceIdsByCampaign($campaign_id);
-                            if (!empty($campaign_place_ids)) {
-                                $placeholders = str_repeat('?,', count($campaign_place_ids) - 1) . '?';
-                                $stmt = $pdo->prepare("
-                                    DELETE FROM place_players 
-                                    WHERE player_id = ? AND place_id IN ($placeholders)
-                                ");
-                                $params = array_merge([$player_id], $campaign_place_ids);
-                                $stmt->execute($params);
-                            }
-                            
-                            // Ajouter le joueur au nouveau lieu via la classe Lieu
-                            if (!Lieu::addPlayerToPlace($place_id, $player_id, $character_id)) {
-                                throw new Exception("Erreur lors de l'assignation du joueur au lieu");
-                            }
-                        }
-                    }
-                    
-                    // Notification au joueur avec informations de la candidature
-                    $title = 'Candidature acceptée';
-                    $message = 'Votre candidature à la campagne "' . $campaign_data['title'] . '" a été acceptée.';
-                    if ($place_id) {
-                        $placeObj = Lieu::findById($place_id);
-                        $place = $placeObj ? ['title' => $placeObj->getTitle()] : null;
-                        if ($place) {
-                            $message .= ' Vous avez été assigné au lieu "' . $place['title'] . '".';
-                        }
-                    }
-                    if (!Notification::create($player_id, 'system', $title, $message, $campaign_id)) {
-                        throw new Exception("Erreur lors de la création de la notification");
-                    }
-                    
-                    $pdo->commit();
-                    $success_message = "Candidature approuvée et joueur ajouté à la campagne.";
-                    if ($place_id) {
-                        $success_message .= " Le joueur a été assigné au lieu sélectionné.";
-                    }
-                } catch (Exception $e) {
-                    $pdo->rollBack();
-                    $error_message = "Erreur lors de l'approbation: " . $e->getMessage();
-                }
+                $error_message = $result['message'];
             }
         } else {
             $error_message = "Candidature introuvable ou accès non autorisé.";
