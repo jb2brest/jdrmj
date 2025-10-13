@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.9.0
+VERSION=2.9.1
 
 # Date de déploiement
 DEPLOY_DATE=2025-10-13
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-10-13
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=8b08e7c323b86beb012ef84f0f163d28f656e203
+GIT_COMMIT=e1ba6955a2975cd27c02d2c009c63bd9f2ba8e2a
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251013-203228
+BUILD_ID=20251013-214501
 
 # Notes de version
-RELEASE_NOTES="Reprise sur nouveau PC"
+RELEASE_NOTES="Affichage de la voie"
