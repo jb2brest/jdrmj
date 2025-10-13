@@ -281,8 +281,8 @@ $charismaMod = $tempCharacter->getAbilityModifier('charisma');
 // Synchroniser l'équipement de base vers items
 Character::syncBaseEquipmentToCharacterEquipment($character_id);
 
-// Récupérer l'équipement du personnage depuis character_equipment
-$magicalEquipment = Character::getCharacterMagicalEquipment($character_id);
+// Récupérer l'équipement du personnage depuis la table items
+$magicalEquipment = Character::getCharacterItems($character_id);
 
 // Récupérer l'équipement équipé du personnage
 $equippedItems = Character::getCharacterEquippedItemsStructured($character_id);
@@ -1690,7 +1690,7 @@ $initiative = $dexterityMod;
                             // Fonction pour vérifier si un objet existe déjà
                             function itemExists($items, $name, $type) {
                                 foreach ($items as $item) {
-                                    if ($item['display_name'] === $name && $item['object_type'] === $type) {
+                                    if (($item['item_name'] ?? '') === $name && ($item['item_type'] ?? '') === $type) {
                                         return true;
                                     }
                                 }
@@ -1711,10 +1711,10 @@ $initiative = $dexterityMod;
                                         
                                         $allCharacterItems[] = [
                                             'id' => 'base_' . $weapon['name'],
-                                            'display_name' => $weapon['name'],
-                                            'object_type' => 'weapon',
+                                            'item_name' => $weapon['name'],
+                                            'item_type' => 'weapon',
                                             'type_precis' => $weapon['name'],
-                                            'is_equipped' => $isEquipped,
+                                            'equipped' => $isEquipped,
                                             'equipped_slot' => $isEquipped ? 'main_hand' : null,
                                             'item_source' => 'Équipement de base',
                                             'quantity' => 1,
@@ -1735,10 +1735,10 @@ $initiative = $dexterityMod;
                                         
                                         $allCharacterItems[] = [
                                             'id' => 'base_' . $armor['name'],
-                                            'display_name' => $armor['name'],
-                                            'object_type' => 'armor',
+                                            'item_name' => $armor['name'],
+                                            'item_type' => 'armor',
                                             'type_precis' => $armor['name'],
-                                            'is_equipped' => $isEquipped,
+                                            'equipped' => $isEquipped,
                                             'equipped_slot' => $isEquipped ? 'armor' : null,
                                             'item_source' => 'Équipement de base',
                                             'quantity' => 1,
@@ -1759,10 +1759,10 @@ $initiative = $dexterityMod;
                                         
                                         $allCharacterItems[] = [
                                             'id' => 'base_' . $shield['name'],
-                                            'display_name' => $shield['name'],
-                                            'object_type' => 'shield',
+                                            'item_name' => $shield['name'],
+                                            'item_type' => 'shield',
                                             'type_precis' => $shield['name'],
-                                            'is_equipped' => $isEquipped,
+                                            'equipped' => $isEquipped,
                                             'equipped_slot' => $isEquipped ? 'off_hand' : null,
                                             'item_source' => 'Équipement de base',
                                             'quantity' => 1,
@@ -1776,10 +1776,13 @@ $initiative = $dexterityMod;
                             }
                             
                             foreach ($allCharacterItems as $item): 
-                                $displayName = htmlspecialchars($item['item_name']);
-                                $typeLabel = ucfirst(str_replace('_', ' ', $item['item_type'] ?? 'unknown'));
+                                // Utiliser les champs standardisés
+                                $itemName = $item['item_name'] ?? 'Objet inconnu';
+                                $itemType = $item['item_type'] ?? 'unknown';
+                                $displayName = htmlspecialchars($itemName);
+                                $typeLabel = ucfirst(str_replace('_', ' ', $itemType));
                             ?>
-                            <tr data-type="<?php echo $item['item_type'] ?? ''; ?>" data-equipped="<?php echo $item['equipped'] ? 'equipped' : 'unequipped'; ?>">
+                            <tr data-type="<?php echo $itemType; ?>" data-equipped="<?php echo $item['equipped'] ? 'equipped' : 'unequipped'; ?>">
                                 <td>
                                     <strong><?php echo $displayName; ?></strong>
                                     <?php if ($item['quantity'] > 1): ?>
@@ -1788,7 +1791,7 @@ $initiative = $dexterityMod;
                                 </td>
                                 <td>
                                     <span class="badge bg-<?php 
-                                        echo match($item['item_type'] ?? '') {
+                                        echo match($itemType) {
                                             'weapon' => 'danger',
                                             'armor' => 'primary', 
                                             'shield' => 'info',
@@ -1832,22 +1835,22 @@ $initiative = $dexterityMod;
                                     <?php endif; ?>
                                 </td>
                                 <td style="min-width: 300px; white-space: nowrap; overflow: visible;">
-                                    <?php if (($item['item_type'] ?? '') === 'weapon' || ($item['item_type'] ?? '') === 'armor' || ($item['item_type'] ?? '') === 'shield'): ?>
+                                    <?php if ($itemType === 'weapon' || $itemType === 'armor' || $itemType === 'shield'): ?>
                                         <?php if ($item['equipped']): ?>
-                                            <button class="btn btn-warning btn-sm" onclick="unequipItem(<?php echo $character_id; ?>, '<?php echo addslashes($item['item_name']); ?>')"
+                                            <button class="btn btn-warning btn-sm" onclick="unequipItem(<?php echo $character_id; ?>, '<?php echo addslashes($itemName); ?>')"
                                                     style="white-space: nowrap; min-width: 80px;">
                                                 <i class="fas fa-hand-paper me-1"></i>Déséquiper
                                             </button>
                                         <?php else: ?>
                                             <?php 
-                                            $slot = match($item['item_type'] ?? '') {
+                                            $slot = match($itemType) {
                                                 'weapon' => 'main_hand',
                                                 'armor' => 'armor',
                                                 'shield' => 'off_hand',
                                                 default => 'main_hand'
                                             };
                                             ?>
-                                            <button class="btn btn-success btn-sm" onclick="equipItem(<?php echo $character_id; ?>, '<?php echo addslashes($item['item_name']); ?>', '<?php echo $item['item_type'] ?? ''; ?>', '<?php echo $slot; ?>')"
+                                            <button class="btn btn-success btn-sm" onclick="equipItem(<?php echo $character_id; ?>, '<?php echo addslashes($itemName); ?>', '<?php echo $itemType; ?>', '<?php echo $slot; ?>')"
                                                     style="white-space: nowrap; min-width: 80px;">
                                                 <i class="fas fa-hand-rock me-1"></i>Équiper
                                             </button>
@@ -1861,8 +1864,8 @@ $initiative = $dexterityMod;
                                                 data-bs-toggle="modal" 
                                                 data-bs-target="#transferModal" 
                                                 data-item-id="<?php echo $item['id']; ?>"
-                                                data-item-name="<?php echo htmlspecialchars($item['item_name']); ?>"
-                                                data-item-type="<?php echo htmlspecialchars($item['item_type'] ?? ''); ?>"
+                                                data-item-name="<?php echo htmlspecialchars($itemName); ?>"
+                                                data-item-type="<?php echo htmlspecialchars($itemType); ?>"
                                                 data-source="character_equipment"
                                                 style="white-space: nowrap; min-width: 80px;">
                                             <i class="fas fa-exchange-alt me-1"></i>Transférer

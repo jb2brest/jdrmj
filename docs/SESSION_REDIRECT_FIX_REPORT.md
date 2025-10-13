@@ -148,3 +148,4 @@ php -l select_starting_equipment.php
 
 
 
+

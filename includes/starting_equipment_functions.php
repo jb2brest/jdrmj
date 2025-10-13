@@ -227,7 +227,7 @@ function generateFinalEquipmentNew($classId, $backgroundId, $raceId, $equipmentC
     
     // Utiliser l'ancien système car la table starting_equipment n'existe pas
     // Récupérer l'équipement de classe
-    $classEquipment = getClassStartingEquipment($classId);
+    $classEquipment = getClassStartingEquipmentNew($classId);
     
     // L'équipement de background est maintenant géré par la table starting_equipment
     
@@ -392,13 +392,13 @@ function detectEquipmentType($itemName) {
         if ($result) {
             switch ($result['type']) {
                 case 'outils':
-                    return 'tool';
+                    return 'outil';  // Mapper vers l'ENUM autorisé
                 case 'sac':
-                    return 'bag';
+                    return 'bourse'; // Mapper vers l'ENUM autorisé
                 case 'nourriture':
-                    return 'consumable';
+                    return 'outil';  // Mapper vers l'ENUM autorisé
                 default:
-                    return 'misc';
+                    return 'outil';  // Mapper vers l'ENUM autorisé
             }
         }
         
@@ -429,25 +429,25 @@ function detectEquipmentType($itemName) {
     }
     
     if (strpos($itemNameLower, 'sac') !== false) {
-        return 'bag';
+        return 'bourse';  // Mapper vers l'ENUM autorisé
     }
     
     if (strpos($itemNameLower, 'ration') !== false || 
         strpos($itemNameLower, 'pain') !== false || 
         strpos($itemNameLower, 'fromage') !== false ||
         strpos($itemNameLower, 'viande') !== false) {
-        return 'consumable';
+        return 'outil';  // Mapper vers l'ENUM autorisé
     }
     
     if (strpos($itemNameLower, 'outil') !== false || 
         strpos($itemNameLower, 'corde') !== false || 
         strpos($itemNameLower, 'torche') !== false ||
         strpos($itemNameLower, 'gamelle') !== false) {
-        return 'tool';
+        return 'outil';  // Mapper vers l'ENUM autorisé
     }
     
     // Par défaut
-    return 'misc';
+    return 'outil';  // Mapper vers l'ENUM autorisé
 }
 
 /**
@@ -469,13 +469,19 @@ function addStartingEquipmentToCharacterNew($characterId, $equipmentData) {
             // Déterminer le type d'équipement
             $equipmentType = detectEquipmentType($line);
             
-            // Insérer dans character_equipment
+            // Insérer dans la table items
             $stmt = $pdo->prepare("
-                INSERT INTO character_equipment 
-                (character_id, item_name, item_type, item_source, obtained_from, quantity, equipped) 
-                VALUES (?, ?, ?, 'Équipement de départ', 'Équipement de départ', 1, 0)
+                INSERT INTO items 
+                (place_id, display_name, object_type, type_precis, description, 
+                 is_identified, is_visible, is_equipped, position_x, position_y, 
+                 is_on_map, owner_type, owner_id, item_source, quantity, 
+                 equipped_slot, notes, obtained_at, obtained_from) 
+                VALUES (NULL, ?, ?, ?, NULL, 
+                        1, 0, 0, 0, 0, 
+                        0, 'player', ?, 'Équipement de départ', 1, 
+                        NULL, 'Équipement de départ', NOW(), 'Équipement de départ')
             ");
-            $stmt->execute([$characterId, $line, $equipmentType]);
+            $stmt->execute([$line, $equipmentType, $equipmentType, $characterId]);
         }
         
         // Mettre à jour l'argent du personnage
@@ -502,8 +508,8 @@ function hasStartingEquipment($characterId) {
     try {
         $stmt = $pdo->prepare("
             SELECT COUNT(*) as count 
-            FROM character_equipment 
-            WHERE character_id = ? AND obtained_from = 'Équipement de départ'
+            FROM items 
+            WHERE owner_type = 'player' AND owner_id = ? AND obtained_from = 'Équipement de départ'
         ");
         $stmt->execute([$characterId]);
         $result = $stmt->fetch();

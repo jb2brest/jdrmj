@@ -197,3 +197,4 @@ $choix = StartingEquipmentChoix::create([
 
 
 
+

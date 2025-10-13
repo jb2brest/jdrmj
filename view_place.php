@@ -50,12 +50,17 @@ function hasCampaignId($place) {
 }
 
 $dm_id = (int)$place['dm_id'];
-$isOwnerDM = (User::isDMOrAdmin() && $_SESSION['user_id'] === $dm_id);
+// Un DM peut gérer un lieu s'il est le DM de la campagne associée, ou s'il n'y a pas de campagne associée (lieu libre)
+$isOwnerDM = User::isDMOrAdmin() && ($dm_id === 0 || $_SESSION['user_id'] === $dm_id);
 
 // DEBUG: Logs pour déboguer les permissions
+error_log("DEBUG view_place.php - Place ID: " . $place_id);
 error_log("DEBUG view_place.php - User ID: " . ($_SESSION['user_id'] ?? 'NOT_SET'));
 error_log("DEBUG view_place.php - DM ID: " . $dm_id);
+error_log("DEBUG view_place.php - Campaign ID: " . ($place['campaign_id'] ?? 'NULL'));
 error_log("DEBUG view_place.php - isDM(): " . (User::isDM() ? 'true' : 'false'));
+error_log("DEBUG view_place.php - isAdmin(): " . (User::isAdmin() ? 'true' : 'false'));
+error_log("DEBUG view_place.php - isDMOrAdmin(): " . (User::isDMOrAdmin() ? 'true' : 'false'));
 error_log("DEBUG view_place.php - isOwnerDM: " . ($isOwnerDM ? 'true' : 'false'));
 
 // Autoriser les admins, les DM propriétaires et les membres de la campagne à voir le lieu

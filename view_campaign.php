@@ -51,19 +51,15 @@ $campaign_data = $campaign->toArray();
 
 // Récupérer les informations du monde si la campagne en a un
 $world_name = '';
-$world_id = null;
 if ($campaign_data && !empty($campaign_data['world_id'])) {
     $monde = Monde::findById($campaign_data['world_id']);
     if ($monde) {
         $world_name = $monde->getName();
-        $world_id = $monde->getId();
     }
 }
 $campaign_data['world_name'] = $world_name;
-$campaign_data['world_id'] = $world_id;
 
-// Créer un objet Campaign pour les appels aux méthodes
-$campaign = $campaign_data ? Campaign::findById($campaign_id) : null;
+// $campaign est déjà un objet Campaign depuis findByIdWithPermissions()
 
 
 // Charger les pays pour les filtres
@@ -94,20 +90,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $campaign = Campaign::findById($campaign_id);
                 if ($campaign) {
                     $campaign_data = $campaign->toArray();
-                    $campaign = $campaign_data;
                     
                     // Récupérer les informations du monde si la campagne en a un
                     $world_name = '';
-                    $world_id = null;
                     if (!empty($campaign_data['world_id'])) {
                         $monde = Monde::findById($campaign_data['world_id']);
                         if ($monde) {
                             $world_name = $monde->getName();
-                            $world_id = $monde->getId();
                         }
                     }
                     $campaign_data['world_name'] = $world_name;
-                    $campaign_data['world_id'] = $world_id;
                 }
             } else {
                 $error_message = $result['message'];
@@ -589,15 +581,6 @@ if ($is_member && $user_role === 'player') {
 
 // Vérifier si l'utilisateur a déjà postulé via la classe CandidatureCampagne
 $user_application = CandidatureCampagne::getByCampaignAndPlayer($campaign_id, $user_id);
-
-// Vérifier si l'utilisateur est déjà membre
-$is_member = false;
-foreach ($members as $member) {
-    if ($member['user_id'] == $user_id) {
-        $is_member = true;
-        break;
-    }
-}
 
 
 // Récupérer candidatures via la classe CandidatureCampagne

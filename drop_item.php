@@ -38,11 +38,11 @@ try {
     
     // Récupérer les informations de l'objet à déposer
     $stmt = $pdo->prepare("
-        SELECT ce.*, c.name as character_name, pp.place_id
-        FROM character_equipment ce
-        JOIN characters c ON ce.character_id = c.id
+        SELECT i.*, c.name as character_name, pp.place_id
+        FROM items i
+        JOIN characters c ON i.owner_id = c.id
         LEFT JOIN place_players pp ON c.id = pp.character_id
-        WHERE ce.id = ? AND c.user_id = ?
+        WHERE i.id = ? AND i.owner_type = 'player' AND c.user_id = ?
     ");
     $stmt->execute([$item_id, $user_id]);
     $item = $stmt->fetch();
@@ -87,8 +87,8 @@ try {
         $item['place_id'] // owner_id (ID du lieu)
     ]);
     
-    // Supprimer l'objet de l'équipement du personnage
-    $stmt = $pdo->prepare("DELETE FROM character_equipment WHERE id = ?");
+    // Supprimer l'objet de l'inventaire du personnage
+    $stmt = $pdo->prepare("DELETE FROM items WHERE id = ? AND owner_type = 'player'");
     $stmt->execute([$item_id]);
     
     $pdo->commit();

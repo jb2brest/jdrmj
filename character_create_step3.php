@@ -1,6 +1,7 @@
 <?php
 require_once 'config/database.php';
 require_once 'includes/functions.php';
+require_once 'includes/character_compatibility.php';
 $page_title = "Création de Personnage - Étape 3";
 $current_page = "create_character";
 
@@ -94,23 +95,8 @@ if ($selectedRaceId) {
             border-color: #0d6efd;
             background-color: #e7f3ff;
         }
-        .step-indicator {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px 0;
-            margin-bottom: 30px;
-        }
-        .step-progress {
-            height: 4px;
-            background-color: rgba(255,255,255,0.3);
-            border-radius: 2px;
-            overflow: hidden;
-        }
         .step-progress-bar {
-            height: 100%;
-            background-color: white;
             width: 33.33%; /* 3/9 * 100 */
-            transition: width 0.3s ease;
         }
         .background-features {
             font-size: 0.9em;
@@ -206,9 +192,6 @@ if ($selectedRaceId) {
                                                     <?php endif; ?>
                                                     <?php if ($background['languages']): ?>
                                                         <small><i class="fas fa-language me-1"></i>Langues : <?php echo htmlspecialchars($background['languages']); ?></small><br>
-                                                    <?php endif; ?>
-                                                    <?php if ($background['equipment']): ?>
-                                                        <small><i class="fas fa-backpack me-1"></i>Équipement de départ</small><br>
                                                     <?php endif; ?>
                                                     <?php if ($background['money_gold']): ?>
                                                         <small><i class="fas fa-coins me-1"></i><?php echo $background['money_gold']; ?> po</small>

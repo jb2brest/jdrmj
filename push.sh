@@ -448,9 +448,9 @@ prepare_files() {
     mkdir -p "$temp_dir"
     
     # Sauvegarder les uploads existants sur le serveur de test
-    if [ "$SERVER" = "test" ] && [ -d "/var/www/html/jdrmj_test/uploads" ]; then
+    if [ "$SERVER" = "test" ] && [ -d "/var/www/html/jdrmj/uploads" ]; then
         log_info "Sauvegarde des uploads existants..."
-        cp -r /var/www/html/jdrmj_test/uploads "$temp_dir/uploads_backup" 2>/dev/null || true
+        cp -r /var/www/html/jdrmj/uploads "$temp_dir/uploads_backup" 2>/dev/null || true
     fi
     
     # Copier les fichiers nécessaires
@@ -590,7 +590,7 @@ deploy_to_server() {
     case $SERVER in
         "test")
             # Serveur de test local
-            DEPLOY_PATH="/var/www/html/jdrmj_test"
+            DEPLOY_PATH="/var/www/html/jdrmj"
             log_info "Livraison sur le serveur de test local: $DEPLOY_PATH"
             
             # Créer le répertoire de destination s'il n'existe pas
@@ -746,7 +746,7 @@ main() {
     # Afficher l'URL selon le serveur
     case $SERVER in
         "test")
-            log_info "URL: http://localhost/jdrmj_test"
+            log_info "URL: http://localhost/jdrmj"
             ;;
         "staging")
             log_info "URL: http://localhost/jdrmj_staging"

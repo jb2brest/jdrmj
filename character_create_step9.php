@@ -2,6 +2,7 @@
 session_start();
 require_once 'config/database.php';
 require_once 'includes/functions.php';
+require_once 'includes/character_compatibility.php';
 require_once 'includes/capabilities_functions.php';
 require_once 'includes/starting_equipment_functions.php';
 
@@ -28,6 +29,34 @@ if (!$sessionData || $sessionData['step'] < 8) {
 }
 
 $data = $sessionData['data'];
+
+// Récupérer les données sélectionnées
+$selectedClassId = $sessionData['data']['class_id'] ?? null;
+$selectedRaceId = $sessionData['data']['race_id'] ?? null;
+$selectedBackgroundId = $sessionData['data']['background_id'] ?? null;
+
+// Récupérer les informations des choix précédents
+$selectedClass = null;
+$selectedRace = null;
+$selectedBackground = null;
+
+if ($selectedClassId) {
+    $stmt = $pdo->prepare("SELECT * FROM classes WHERE id = ?");
+    $stmt->execute([$selectedClassId]);
+    $selectedClass = $stmt->fetch();
+}
+
+if ($selectedRaceId) {
+    $stmt = $pdo->prepare("SELECT * FROM races WHERE id = ?");
+    $stmt->execute([$selectedRaceId]);
+    $selectedRace = $stmt->fetch();
+}
+
+if ($selectedBackgroundId) {
+    $stmt = $pdo->prepare("SELECT * FROM backgrounds WHERE id = ?");
+    $stmt->execute([$selectedBackgroundId]);
+    $selectedBackground = $stmt->fetch();
+}
 
 // Traitement du formulaire
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -148,6 +177,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $error_message = "Erreur lors de la sauvegarde des données.";
     }
+} elseif (isset($_POST['action']) && $_POST['action'] === 'go_back') {
+    header("Location: character_create_step8.php?session_id=$session_id");
+    exit();
 }
 
 // Récupérer les informations de la race, classe et historique
@@ -451,33 +483,137 @@ if (isset($_GET['debug'])) {
     echo "</pre>";
 }
 
-include 'includes/layout.php';
 ?>
 
-<div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-10">
-            <!-- En-tête de l'étape -->
-            <div class="text-center mb-4">
-                <h2><i class="fas fa-shopping-bag me-2"></i>Étape 9 : Équipement de Départ</h2>
-                <p class="text-muted">Choisissez l'équipement de départ de votre personnage</p>
-                
-                <!-- Progression -->
-                <div class="progress mb-3" style="height: 8px;">
-                    <div class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Création de Personnage - Étape 9</title>
+    <link rel="icon" type="image/png" href="images/logo.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="css/custom-theme.css" rel="stylesheet">
+    <style>
+        .step-progress-bar {
+            width: 100%; /* 9/9 * 100 */
+        }
+        .summary-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 1px solid #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <?php include 'includes/navbar.php'; ?>
+
+    <!-- Indicateur d'étape -->
+    <div class="step-indicator">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-user-plus me-3"></i>Création de Personnage</h1>
+                    <p class="mb-0">Étape 9 sur 9 - Équipement de départ</p>
                 </div>
-                <small class="text-muted">Étape 9 sur 9 - Finalisation</small>
+                <div class="col-md-4">
+                    <div class="step-progress">
+                        <div class="step-progress-bar"></div>
+                    </div>
+                    <small class="mt-2 d-block">Étape 9/9</small>
+                </div>
             </div>
+        </div>
+    </div>
 
-            <?php if (isset($error_message)): ?>
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    <?php echo htmlspecialchars($error_message); ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <div class="container">
+        <?php if (isset($error_message)): ?>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <?php echo htmlspecialchars($error_message); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+
+        <!-- Récapitulatif des étapes précédentes -->
+        <div class="row mb-4">
+            <div class="col-md-2">
+                <?php if ($selectedClass): ?>
+                    <div class="card summary-card">
+                        <div class="card-body py-2">
+                            <small class="text-muted">
+                                <i class="fas fa-shield-alt me-1"></i>
+                                <strong>Classe :</strong> <?php echo htmlspecialchars($selectedClass['name']); ?>
+                            </small>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </div>
+            <div class="col-md-2">
+                <?php if ($selectedRace): ?>
+                    <div class="card summary-card">
+                        <div class="card-body py-2">
+                            <small class="text-muted">
+                                <i class="fas fa-users me-1"></i>
+                                <strong>Race :</strong> <?php echo htmlspecialchars($selectedRace['name']); ?>
+                            </small>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </div>
+            <div class="col-md-2">
+                <?php if ($selectedBackground): ?>
+                    <div class="card summary-card">
+                        <div class="card-body py-2">
+                            <small class="text-muted">
+                                <i class="fas fa-scroll me-1"></i>
+                                <strong>Historique :</strong> <?php echo htmlspecialchars($selectedBackground['name']); ?>
+                            </small>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </div>
+            <div class="col-md-2">
+                <div class="card summary-card">
+                    <div class="card-body py-2">
+                        <small class="text-muted">
+                            <i class="fas fa-dice-d20 me-1"></i>
+                            <strong>Caractéristiques :</strong> Définies
+                        </small>
+                    </div>
                 </div>
-            <?php endif; ?>
-
-            <form method="POST" id="step9Form">
+            </div>
+            <div class="col-md-2">
+                <div class="card summary-card">
+                    <div class="card-body py-2">
+                        <small class="text-muted">
+                            <i class="fas fa-star me-1"></i>
+                            <strong>Spécialisation :</strong> Choisie
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card summary-card">
+                    <div class="card-body py-2">
+                        <small class="text-muted">
+                            <i class="fas fa-brain me-1"></i>
+                            <strong>Compétences :</strong> Sélectionnées
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-shopping-bag me-2"></i>Équipement de Départ</h3>
+                        <p class="mb-0 text-muted">Choisissez l'équipement de départ de votre personnage</p>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" id="step9Form">
                 <div class="row">
                     <!-- Équipement de classe -->
                     <div class="col-md-6">
@@ -776,22 +912,56 @@ include 'includes/layout.php';
                     </div>
                 </div>
                 <?php endif; ?>
+            </div>
+        </div>
+    </div>
 
-                <!-- Boutons de navigation -->
-                <div class="d-flex justify-content-between mt-4">
-                    <a href="character_create_step8.php?session_id=<?php echo htmlspecialchars($session_id); ?>" 
-                       class="btn btn-outline-secondary">
-                        <i class="fas fa-arrow-left me-2"></i>Étape précédente
-                    </a>
-                    
-                    <button type="submit" class="btn btn-success btn-lg" id="createCharacterBtn">
+    <!-- Message si aucun équipement -->
+    <?php if (empty($classChoices) && empty($backgroundChoices)): ?>
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Aucun équipement de départ :</strong> Votre classe et votre historique ne vous accordent pas d'équipement de départ spécifique. Vous pouvez continuer avec l'équipement de base.
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <!-- Contenu de fallback si aucun équipement -->
+    <?php if (empty($classChoices) && empty($backgroundChoices)): ?>
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Aucun équipement de départ :</strong> Votre classe et votre historique ne vous accordent pas d'équipement de départ spécifique. Vous pouvez continuer avec l'équipement de base.
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Boutons de navigation (toujours visibles) -->
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <div class="text-center mt-4">
+                    <button type="submit" name="action" value="go_back" class="btn btn-outline-secondary me-3" form="step9Form">
+                        <i class="fas fa-arrow-left me-2"></i>Retour
+                    </button>
+                    <button type="submit" class="btn btn-success btn-lg" id="createCharacterBtn" form="step9Form">
                         <i class="fas fa-user-plus me-2"></i>Créer le personnage
                     </button>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
-</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -920,4 +1090,8 @@ document.addEventListener('DOMContentLoaded', function() {
     border-color: #146c43;
 }
 </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
 

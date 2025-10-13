@@ -1,6 +1,7 @@
 <?php
 require_once 'config/database.php';
 require_once 'includes/functions.php';
+require_once 'includes/character_compatibility.php';
 $page_title = "Création de Personnage - Étape 6";
 $current_page = "create_character";
 
@@ -27,7 +28,6 @@ $message = '';
 $selectedClassId = $sessionData['data']['class_id'] ?? null;
 $selectedRaceId = $sessionData['data']['race_id'] ?? null;
 $selectedBackgroundId = $sessionData['data']['background_id'] ?? null;
-
 // Récupérer les informations des choix précédents
 $selectedClass = null;
 $selectedRace = null;
@@ -223,23 +223,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="css/custom-theme.css" rel="stylesheet">
     <style>
-        .step-indicator {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px 0;
-            margin-bottom: 30px;
-        }
-        .step-progress {
-            height: 4px;
-            background-color: rgba(255,255,255,0.3);
-            border-radius: 2px;
-            overflow: hidden;
-        }
         .step-progress-bar {
-            height: 100%;
-            background-color: white;
             width: 66.67%; /* 6/9 * 100 */
-            transition: width 0.3s ease;
         }
         .summary-card {
             background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);

@@ -53,3 +53,4 @@ echo "\n✅ Test terminé - Les noms réels des équipements sont maintenant aff
 
 
 
+

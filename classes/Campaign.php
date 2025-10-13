@@ -384,12 +384,9 @@ class Campaign
     public function getMembers()
     {
         $stmt = $this->pdo->prepare("
-            SELECT cm.*, u.username, u.email, u.role as user_role,
-                   c.id as character_id, c.name as character_name, c.hit_points_max
+            SELECT DISTINCT cm.*, u.username, u.email, u.role as user_role
             FROM campaign_members cm
             JOIN users u ON cm.user_id = u.id
-            LEFT JOIN characters c ON c.user_id = u.id
-            LEFT JOIN campaign_applications ca ON c.id = ca.character_id AND ca.campaign_id = cm.campaign_id AND ca.status = 'approved'
             WHERE cm.campaign_id = ?
             ORDER BY cm.role DESC, cm.joined_at ASC
         ");
@@ -662,6 +659,7 @@ class Campaign
             'game_system' => $this->gameSystem,
             'is_public' => $this->isPublic,
             'invite_code' => $this->inviteCode,
+            'world_id' => $this->worldId,
             'created_at' => $this->createdAt,
             'updated_at' => $this->updatedAt,
             'dm_username' => $this->dmUsername ?? null
@@ -768,7 +766,7 @@ class Campaign
     {
         try {
             $stmt = $this->pdo->prepare("UPDATE campaigns SET world_id = ? WHERE id = ? AND dm_id = ?");
-            $result = $stmt->execute([$worldId, $this->id, $this->dm_id]);
+            $result = $stmt->execute([$worldId, $this->id, $this->dmId]);
             
             if ($result && $stmt->rowCount() > 0) {
                 $this->worldId = $worldId;

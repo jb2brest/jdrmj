@@ -321,7 +321,7 @@ class Sort
         try {
             $pdo = $pdo ?: \Database::getInstance()->getPdo();
             $stmt = $pdo->prepare("
-                SELECT s.*, cs.prepared, cs.known
+                SELECT s.*, cs.prepared
                 FROM character_spells cs
                 JOIN spells s ON cs.spell_id = s.id
                 WHERE cs.character_id = ?
@@ -348,12 +348,13 @@ class Sort
     {
         try {
             $pdo = $pdo ?: \Database::getInstance()->getPdo();
+            $preparedInt = $prepared ? 1 : 0;
             $stmt = $pdo->prepare("
-                INSERT INTO character_spells (character_id, spell_id, prepared, known)
-                VALUES (?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE prepared = ?, known = ?
+                INSERT INTO character_spells (character_id, spell_id, prepared)
+                VALUES (?, ?, ?)
+                ON DUPLICATE KEY UPDATE prepared = ?
             ");
-            return $stmt->execute([$characterId, $spellId, $prepared, $known, $prepared, $known]);
+            return $stmt->execute([$characterId, $spellId, $preparedInt, $preparedInt]);
         } catch (PDOException $e) {
             throw new Exception("Erreur lors de l'ajout du sort au personnage: " . $e->getMessage());
         }

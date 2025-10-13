@@ -1288,16 +1288,23 @@ class Character
                     }
                 }
                 
-                // Ajouter l'objet à l'inventaire du personnage dans la nouvelle table
+                // Ajouter l'objet à l'inventaire du personnage dans la table items
                 $stmt = $pdo->prepare("
-                    INSERT INTO character_equipment 
-                    (character_id, item_name, item_type, quantity, equipped, notes, obtained_at, obtained_from) 
-                    VALUES (?, ?, ?, 1, 0, 'Équipement de départ', NOW(), 'Sélection équipement de départ')
+                    INSERT INTO items 
+                    (place_id, display_name, object_type, type_precis, description, 
+                     is_identified, is_visible, is_equipped, position_x, position_y, 
+                     is_on_map, owner_type, owner_id, item_source, quantity, 
+                     equipped_slot, notes, obtained_at, obtained_from) 
+                    VALUES (NULL, ?, ?, ?, NULL, 
+                            1, 0, 0, 0, 0, 
+                            0, 'player', ?, 'Équipement de départ', 1, 
+                            NULL, 'Équipement de départ', NOW(), 'Sélection équipement de départ')
                 ");
                 $stmt->execute([
-                    $characterId,    // character_id
-                    $line,           // item_name
-                    $itemType        // item_type
+                    $line,           // display_name
+                    $itemType,       // object_type
+                    $itemType,       // type_precis
+                    $characterId     // owner_id
                 ]);
             }
             
@@ -1397,10 +1404,10 @@ class Character
     {
         $pdo = \Database::getInstance()->getPdo();
         $stmt = $pdo->prepare("
-            SELECT item_name, item_type, quantity, notes 
-            FROM character_equipment 
-            WHERE character_id = ? AND equipped = 1
-            ORDER BY item_type, item_name
+            SELECT display_name as item_name, object_type as item_type, quantity, notes 
+            FROM items 
+            WHERE owner_type = 'player' AND owner_id = ? AND is_equipped = 1
+            ORDER BY object_type, display_name
         ");
         $stmt->execute([$characterId]);
         return $stmt->fetchAll();
@@ -1416,9 +1423,9 @@ class Character
     {
         $pdo = \Database::getInstance()->getPdo();
         $stmt = $pdo->prepare("
-            SELECT item_name, item_type, equipped_slot
-            FROM character_equipment 
-            WHERE character_id = ? AND equipped = 1
+            SELECT display_name as item_name, object_type as item_type, equipped_slot
+            FROM items 
+            WHERE owner_type = 'player' AND owner_id = ? AND is_equipped = 1
         ");
         $stmt->execute([$characterId]);
         $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -1721,19 +1728,17 @@ class Character
         try {
             // Déséquiper l'objet actuellement dans ce slot
             $stmt = $this->pdo->prepare("
-                UPDATE character_equipment 
-                SET equipped = 0 
-                WHERE character_id = ? AND slot = ?
+                UPDATE items 
+                SET is_equipped = 0, equipped_slot = NULL 
+                WHERE owner_type = 'player' AND owner_id = ? AND equipped_slot = ?
             ");
             $stmt->execute([$this->id, $slot]);
             
             // Équiper le nouvel objet
             $stmt = $this->pdo->prepare("
-                UPDATE character_equipment 
-                SET equipped = 1, slot = ?
-                WHERE character_id = ? AND equipment_id = (
-                    SELECT id FROM equipment WHERE name = ? AND type = ?
-                )
+                UPDATE items 
+                SET is_equipped = 1, equipped_slot = ?
+                WHERE owner_type = 'player' AND owner_id = ? AND display_name = ? AND object_type = ?
             ");
             
             return $stmt->execute([$slot, $this->id, $itemName, $itemType]);
@@ -1751,11 +1756,9 @@ class Character
     {
         try {
             $stmt = $this->pdo->prepare("
-                UPDATE character_equipment 
-                SET equipped = 0 
-                WHERE character_id = ? AND equipment_id = (
-                    SELECT id FROM equipment WHERE name = ?
-                )
+                UPDATE items 
+                SET is_equipped = 0, equipped_slot = NULL 
+                WHERE owner_type = 'player' AND owner_id = ? AND display_name = ?
             ");
             
             return $stmt->execute([$this->id, $itemName]);
@@ -2413,17 +2416,65 @@ class Character
         
         try {
             $stmt = $pdo->prepare("
-                SELECT ce.*, mi.nom as magical_item_nom, mi.type as magical_item_type, mi.description as magical_item_description, mi.source as magical_item_source
-                FROM character_equipment ce
-                LEFT JOIN magical_items mi ON ce.magical_item_id = mi.csv_id
-                WHERE ce.character_id = ? 
-                AND (ce.magical_item_id IS NULL OR ce.magical_item_id NOT IN (SELECT csv_id FROM poisons))
-                ORDER BY ce.obtained_at DESC
+                SELECT 
+                    i.*,
+                    mi.nom as magical_item_nom, 
+                    mi.type as magical_item_type, 
+                    mi.description as magical_item_description, 
+                    mi.source as magical_item_source,
+                    i.display_name as item_name,
+                    i.object_type as item_type
+                FROM items i
+                LEFT JOIN magical_items mi ON i.magical_item_id = mi.csv_id
+                WHERE i.owner_type = 'player' AND i.owner_id = ? 
+                AND (i.magical_item_id IS NULL OR i.magical_item_id NOT IN (SELECT csv_id FROM poisons))
+                ORDER BY i.obtained_at DESC
             ");
             $stmt->execute([$characterId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (\PDOException $e) {
             error_log("Erreur lors de la récupération de l'équipement magique: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Récupérer l'équipement d'un personnage depuis la table items
+     * 
+     * @param int $characterId ID du personnage
+     * @return array Liste de l'équipement
+     */
+    public static function getCharacterItems($characterId)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            $stmt = $pdo->prepare("
+                SELECT 
+                    id,
+                    display_name as item_name,
+                    object_type as item_type,
+                    type_precis,
+                    description as item_description,
+                    is_equipped as equipped,
+                    item_source,
+                    quantity,
+                    equipped_slot,
+                    notes,
+                    obtained_at,
+                    obtained_from,
+                    magical_item_id,
+                    weapon_id,
+                    armor_id,
+                    poison_id
+                FROM items 
+                WHERE owner_type = 'player' AND owner_id = ?
+                ORDER BY obtained_at DESC
+            ");
+            $stmt->execute([$characterId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (\PDOException $e) {
+            error_log("Erreur lors de la récupération des objets du personnage: " . $e->getMessage());
             return [];
         }
     }
@@ -2469,7 +2520,7 @@ class Character
     }
 
     /**
-     * Récupérer tous les poisons d'un personnage depuis character_equipment
+     * Récupérer tous les poisons d'un personnage depuis la table items
      * 
      * @param int $characterId ID du personnage
      * @return array Liste des poisons du personnage
@@ -2480,12 +2531,12 @@ class Character
         
         try {
             $stmt = $pdo->prepare("
-                SELECT ce.*, p.nom as poison_nom, p.type as poison_type, p.description as poison_description, p.source as poison_source
-                FROM character_equipment ce
-                JOIN poisons p ON ce.magical_item_id = p.csv_id
-                WHERE ce.character_id = ? 
-                AND ce.magical_item_id IN (SELECT csv_id FROM poisons)
-                ORDER BY ce.obtained_at DESC
+                SELECT i.*, p.nom as poison_nom, p.type as poison_type, p.description as poison_description, p.source as poison_source
+                FROM items i
+                JOIN poisons p ON i.poison_id = p.csv_id
+                WHERE i.owner_type = 'player' AND i.owner_id = ? 
+                AND i.poison_id IS NOT NULL
+                ORDER BY i.obtained_at DESC
             ");
             $stmt->execute([$characterId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -2537,8 +2588,8 @@ class Character
         try {
             $stmt = $pdo->prepare("
                 SELECT COUNT(*) as count 
-                FROM character_equipment 
-                WHERE character_id = ? 
+                FROM items 
+                WHERE owner_type = 'player' AND owner_id = ? 
                 AND obtained_from = 'Équipement de départ'
             ");
             $stmt->execute([$characterId]);
@@ -2548,6 +2599,64 @@ class Character
             error_log("Erreur lors de la vérification de l'équipement de départ: " . $e->getMessage());
             return 0;
         }
+    }
+
+    /**
+     * Getters de base pour les propriétés essentielles
+     */
+    public function getId()
+    {
+        return $this->id;
+    }
+    
+    public function getUserId()
+    {
+        return $this->user_id;
+    }
+    
+    public function getName()
+    {
+        return $this->name;
+    }
+    
+    public function getLevel()
+    {
+        return $this->level;
+    }
+    
+    public function getClassId()
+    {
+        return $this->class_id;
+    }
+    
+    public function getRaceId()
+    {
+        return $this->race_id;
+    }
+    
+    public function getBackgroundId()
+    {
+        return $this->background_id;
+    }
+    
+    public function getExperiencePoints()
+    {
+        return $this->experience_points;
+    }
+    
+    public function getHitPointsMax()
+    {
+        return $this->hit_points_max;
+    }
+    
+    public function getHitPointsCurrent()
+    {
+        return $this->hit_points_current;
+    }
+    
+    public function getIsEquipped()
+    {
+        return $this->is_equipped ?? false;
     }
 
 }

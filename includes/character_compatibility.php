@@ -625,10 +625,23 @@ if (!function_exists('createCharacterCreationSession')) {
  */
 if (!function_exists('getCharacterCreationData')) {
     function getCharacterCreationData($userId, $sessionId) {
-        // Cette fonction nécessite une logique spécifique
-        // Pour l'instant, on retourne null pour maintenir la compatibilité
-        // TODO: Implémenter la logique complète
-        return null;
+        // Récupérer les données depuis les sessions PHP
+        if (isset($_SESSION['character_creation_data'][$sessionId])) {
+            $data = $_SESSION['character_creation_data'][$sessionId];
+            
+            // Vérifier que les données appartiennent à l'utilisateur
+            if ($data['user_id'] == $userId) {
+                return $data;
+            }
+        }
+        
+        // Si aucune donnée trouvée, retourner une structure de base
+        return [
+            'user_id' => $userId,
+            'session_id' => $sessionId,
+            'step' => 1,
+            'data' => []
+        ];
     }
 }
 
@@ -637,9 +650,38 @@ if (!function_exists('getCharacterCreationData')) {
  */
 if (!function_exists('saveCharacterCreationStep')) {
     function saveCharacterCreationStep($userId, $sessionId, $step, $data) {
-        // Cette fonction nécessite une logique spécifique
-        // Pour l'instant, on retourne true pour maintenir la compatibilité
-        // TODO: Implémenter la logique complète
+        // Utiliser les sessions PHP pour stocker temporairement les données
+        if (!isset($_SESSION['character_creation_data'])) {
+            $_SESSION['character_creation_data'] = [];
+        }
+        
+        if (!isset($_SESSION['character_creation_data'][$sessionId])) {
+            $_SESSION['character_creation_data'][$sessionId] = [
+                'user_id' => $userId,
+                'session_id' => $sessionId,
+                'step' => $step,
+                'data' => []
+            ];
+        }
+        
+        // Mettre à jour les données
+        $_SESSION['character_creation_data'][$sessionId]['data'] = array_merge(
+            $_SESSION['character_creation_data'][$sessionId]['data'],
+            $data
+        );
+        $_SESSION['character_creation_data'][$sessionId]['step'] = $step;
+        
+        return true;
+    }
+}
+
+/**
+ * Sauvegarder les données de création de personnage (compatibilité)
+ */
+if (!function_exists('saveCharacterCreationData')) {
+    function saveCharacterCreationData($userId, $sessionId, $data) {
+        // Pour l'instant, on retourne true pour permettre la création
+        // TODO: Implémenter la logique complète avec stockage en base
         return true;
     }
 }
@@ -649,10 +691,114 @@ if (!function_exists('saveCharacterCreationStep')) {
  */
 if (!function_exists('finalizeCharacterCreation')) {
     function finalizeCharacterCreation($userId, $sessionId) {
-        // Cette fonction nécessite une logique spécifique
-        // Pour l'instant, on retourne un ID de personnage généré pour maintenir la compatibilité
-        // TODO: Implémenter la logique complète
-        return rand(1, 1000);
+        $pdo = getPDO();
+        
+        try {
+            // Récupérer les données de la session
+            $sessionData = getCharacterCreationData($userId, $sessionId);
+            if (!$sessionData || empty($sessionData['data'])) {
+                error_log("Erreur finalizeCharacterCreation: Aucune donnée de session trouvée");
+                return false;
+            }
+            
+            $data = $sessionData['data'];
+            
+            // Vérifier que les données essentielles sont présentes
+            if (empty($data['name']) || empty($data['class_id']) || empty($data['race_id'])) {
+                error_log("Erreur finalizeCharacterCreation: Données essentielles manquantes");
+                return false;
+            }
+            
+            // Calculer les points de vie initiaux (classe de base + constitution)
+            $constitution = $data['constitution'] ?? 10;
+            $classId = $data['class_id'];
+            
+            // Récupérer les dés de vie de la classe
+            $stmt = $pdo->prepare("SELECT hit_dice FROM classes WHERE id = ?");
+            $stmt->execute([$classId]);
+            $classData = $stmt->fetch(PDO::FETCH_ASSOC);
+            $hitDice = $classData ? $classData['hit_dice'] : '1d8';
+            
+            // Calculer les PV max (dé de vie max + modificateur de constitution)
+            $constitutionModifier = floor(($constitution - 10) / 2);
+            $maxHitPoints = 0;
+            
+            // Parser le dé de vie (ex: "1d8" -> 8)
+            if (preg_match('/(\d+)d(\d+)/', $hitDice, $matches)) {
+                $diceCount = (int)$matches[1];
+                $diceSize = (int)$matches[2];
+                $maxHitPoints = ($diceCount * $diceSize) + $constitutionModifier;
+            } else {
+                $maxHitPoints = 8 + $constitutionModifier; // Valeur par défaut
+            }
+            
+            // S'assurer que les PV ne sont pas négatifs
+            $maxHitPoints = max(1, $maxHitPoints);
+            
+            // Insérer le personnage dans la base de données
+            $stmt = $pdo->prepare("
+                INSERT INTO characters (
+                    user_id, name, race_id, class_id, level, experience_points,
+                    strength, dexterity, constitution, intelligence, wisdom, charisma,
+                    armor_class, initiative, speed, hit_points_max, hit_points_current,
+                    proficiency_bonus, money_gold, background, alignment,
+                    personality_traits, ideals, bonds, flaws,
+                    created_at, updated_at
+                ) VALUES (
+                    ?, ?, ?, ?, 1, 0,
+                    ?, ?, ?, ?, ?, ?,
+                    10, 0, 30, ?, ?,
+                    2, 0, ?, ?,
+                    ?, ?, ?, ?,
+                    NOW(), NOW()
+                )
+            ");
+            
+            $result = $stmt->execute([
+                $userId,
+                $data['name'],
+                $data['race_id'],
+                $data['class_id'],
+                $data['strength'] ?? 10,
+                $data['dexterity'] ?? 10,
+                $data['constitution'] ?? 10,
+                $data['intelligence'] ?? 10,
+                $data['wisdom'] ?? 10,
+                $data['charisma'] ?? 10,
+                $maxHitPoints,
+                $maxHitPoints, // PV actuels = PV max au début
+                $data['background'] ?? null,
+                $data['alignment'] ?? null,
+                $data['personality_traits'] ?? null,
+                $data['ideals'] ?? null,
+                $data['bonds'] ?? null,
+                $data['flaws'] ?? null
+            ]);
+            
+            if ($result) {
+                $characterId = $pdo->lastInsertId();
+                error_log("Personnage créé avec succès - ID: $characterId");
+                return $characterId;
+            } else {
+                error_log("Erreur lors de l'insertion du personnage");
+                return false;
+            }
+            
+        } catch (PDOException $e) {
+            error_log("Erreur finalizeCharacterCreation: " . $e->getMessage());
+            return false;
+        }
+    }
+}
+
+/**
+ * Nettoyer une session de création de personnage (compatibilité)
+ */
+if (!function_exists('cleanupCharacterCreationSession')) {
+    function cleanupCharacterCreationSession($userId, $sessionId) {
+        // Pour l'instant, on retourne true pour permettre la création
+        // TODO: Implémenter la logique complète avec nettoyage en base
+        return true;
     }
 }
 

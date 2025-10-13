@@ -85,37 +85,37 @@ try {
         // Vérifier les règles d'équipement
         // TOUJOURS libérer tous les slots de main avant d'équiper une nouvelle arme
         $stmt = $pdo->prepare("
-            UPDATE character_equipment 
-            SET equipped = 0, equipped_slot = NULL 
-            WHERE character_id = ? AND item_type = 'weapon' AND equipped = 1
+            UPDATE items 
+            SET is_equipped = 0, equipped_slot = NULL 
+            WHERE owner_type = 'player' AND owner_id = ? AND object_type = 'weapon' AND is_equipped = 1
         ");
         $stmt->execute([$characterId]);
     } elseif ($itemType === 'shield') {
         // Bouclier : libérer le slot off_hand
         $stmt = $pdo->prepare("
-            UPDATE character_equipment 
-            SET equipped = 0, equipped_slot = NULL 
-            WHERE character_id = ? AND equipped_slot = 'off_hand'
+            UPDATE items 
+            SET is_equipped = 0, equipped_slot = NULL 
+            WHERE owner_type = 'player' AND owner_id = ? AND equipped_slot = 'off_hand'
         ");
         $stmt->execute([$characterId]);
     } elseif ($itemType === 'armor') {
         // Armure : libérer le slot armor
         $stmt = $pdo->prepare("
-            UPDATE character_equipment 
-            SET equipped = 0, equipped_slot = NULL 
-            WHERE character_id = ? AND equipped_slot = 'armor'
+            UPDATE items 
+            SET is_equipped = 0, equipped_slot = NULL 
+            WHERE owner_type = 'player' AND owner_id = ? AND equipped_slot = 'armor'
         ");
         $stmt->execute([$characterId]);
     }
     
-    // Équiper l'objet dans la nouvelle table
+    // Équiper l'objet dans la table items
     // Cas spécial : "deux hachettes" = équiper dans les deux mains
     if (strtolower($itemName) === 'deux hachettes') {
         // Équiper dans les deux slots (stocké comme "main_hand,off_hand")
         $stmt = $pdo->prepare("
-            UPDATE character_equipment 
-            SET equipped = 1, equipped_slot = 'main_hand,off_hand' 
-            WHERE character_id = ? AND item_name = ? AND item_type = ?
+            UPDATE items 
+            SET is_equipped = 1, equipped_slot = 'main_hand,off_hand' 
+            WHERE owner_type = 'player' AND owner_id = ? AND display_name = ? AND object_type = ?
         ");
         $success = $stmt->execute([$characterId, $itemName, $itemType]);
         
@@ -128,9 +128,9 @@ try {
     } else {
         // Équipement normal
         $stmt = $pdo->prepare("
-            UPDATE character_equipment 
-            SET equipped = 1, equipped_slot = ? 
-            WHERE character_id = ? AND item_name = ? AND item_type = ?
+            UPDATE items 
+            SET is_equipped = 1, equipped_slot = ? 
+            WHERE owner_type = 'player' AND owner_id = ? AND display_name = ? AND object_type = ?
         ");
         $success = $stmt->execute([$slot, $characterId, $itemName, $itemType]);
         

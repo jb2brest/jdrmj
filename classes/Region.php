@@ -51,6 +51,23 @@ class Region
         return Univers::getInstance()->getPdo();
     }
 
+    /**
+     * Vérifier si la colonne coat_of_arms_url existe dans la table regions
+     * 
+     * @param PDO $pdo Instance PDO
+     * @return bool True si la colonne existe
+     */
+    private function hasCoatOfArmsColumn(PDO $pdo)
+    {
+        try {
+            $stmt = $pdo->query("SHOW COLUMNS FROM regions LIKE 'coat_of_arms_url'");
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            // En cas d'erreur, supposer que la colonne n'existe pas
+            return false;
+        }
+    }
+
     // ========================================
     // GETTERS
     // ========================================
@@ -205,19 +222,34 @@ class Region
         try {
             $pdo = $this->getPdo();
             
+            // Vérifier si la colonne coat_of_arms_url existe
+            $hasCoatOfArmsColumn = $this->hasCoatOfArmsColumn($pdo);
+            
             if ($this->id === null) {
                 // Création d'une nouvelle région
-                $sql = "INSERT INTO regions (country_id, name, description, map_url, coat_of_arms_url) VALUES (?, ?, ?, ?, ?)";
-                $stmt = $pdo->prepare($sql);
-                $stmt->execute([$this->country_id, $this->name, $this->description, $this->map_url, $this->coat_of_arms_url]);
+                if ($hasCoatOfArmsColumn) {
+                    $sql = "INSERT INTO regions (country_id, name, description, map_url, coat_of_arms_url) VALUES (?, ?, ?, ?, ?)";
+                    $stmt = $pdo->prepare($sql);
+                    $stmt->execute([$this->country_id, $this->name, $this->description, $this->map_url, $this->coat_of_arms_url]);
+                } else {
+                    $sql = "INSERT INTO regions (country_id, name, description, map_url) VALUES (?, ?, ?, ?)";
+                    $stmt = $pdo->prepare($sql);
+                    $stmt->execute([$this->country_id, $this->name, $this->description, $this->map_url]);
+                }
                 
                 $this->id = $pdo->lastInsertId();
                 return true;
             } else {
                 // Mise à jour d'une région existante
-                $sql = "UPDATE regions SET country_id = ?, name = ?, description = ?, map_url = ?, coat_of_arms_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
-                $stmt = $pdo->prepare($sql);
-                $result = $stmt->execute([$this->country_id, $this->name, $this->description, $this->map_url, $this->coat_of_arms_url, $this->id]);
+                if ($hasCoatOfArmsColumn) {
+                    $sql = "UPDATE regions SET country_id = ?, name = ?, description = ?, map_url = ?, coat_of_arms_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+                    $stmt = $pdo->prepare($sql);
+                    $result = $stmt->execute([$this->country_id, $this->name, $this->description, $this->map_url, $this->coat_of_arms_url, $this->id]);
+                } else {
+                    $sql = "UPDATE regions SET country_id = ?, name = ?, description = ?, map_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?";
+                    $stmt = $pdo->prepare($sql);
+                    $result = $stmt->execute([$this->country_id, $this->name, $this->description, $this->map_url, $this->id]);
+                }
                 
                 return $result;
             }
