@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_FILES['profile_photo']) && $_FILES['profile_photo']['error'] === UPLOAD_ERR_OK) {
         $upload_dir = 'uploads/profiles/';
         if (!is_dir($upload_dir)) {
-            mkdir($upload_dir, 0755, true);
+            mkdir($upload_dir, 0777, true);
         }
         
         $file_extension = strtolower(pathinfo($_FILES['profile_photo']['name'], PATHINFO_EXTENSION));

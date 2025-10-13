@@ -176,76 +176,62 @@ foreach ($allCapabilities as $capability) {
 
 // Les capacités raciales sont maintenant récupérées depuis le nouveau système
 
-// Récupérer la voie primitive du barbare
+// Récupérer l'archetype choisi via la classe Character
+$characterArchetype = $characterObject->getArchetype();
+
+// Définir les variables d'archetype pour la compatibilité avec le code HTML existant
 $barbarianPath = null;
-if ($isBarbarian) {
-    $barbarianPath = getCharacterBarbarianPath($character_id);
-}
-
-// Récupérer le serment sacré du paladin
 $paladinOath = null;
-if ($isPaladin) {
-    $paladinOath = getCharacterPaladinOath($character_id);
-}
-
-// Récupérer l'archétype de rôdeur
 $rangerArchetype = null;
-if ($isRanger) {
-    $rangerArchetype = getCharacterRangerArchetype($character_id);
-}
-
-// Récupérer l'archétype de roublard
 $rogueArchetype = null;
-if ($isRogue) {
-    $rogueArchetype = getCharacterRogueArchetype($character_id);
-}
-
-// Récupérer le collège bardique du barde
 $bardCollege = null;
-if ($isBard) {
-    $bardCollege = getCharacterBardCollege($character_id);
-}
-
-// Récupérer le domaine divin du clerc
 $clericDomain = null;
-if ($isCleric) {
-    $clericDomain = getCharacterClericDomain($character_id);
-}
-
-// Récupérer le cercle druidique du druide
 $druidCircle = null;
-if ($isDruid) {
-    $druidCircle = getCharacterDruidCircle($character_id);
-}
-
-// Récupérer l'origine magique de l'ensorceleur
 $sorcererOrigin = null;
-if ($isSorcerer) {
-    $sorcererOrigin = getCharacterSorcererOrigin($character_id);
-}
-
-// Récupérer l'archétype martial du guerrier
 $fighterArchetype = null;
-if ($isFighter) {
-    $fighterArchetype = getCharacterFighterArchetype($character_id);
-}
-
-// Récupérer la tradition arcanique du magicien
 $wizardTradition = null;
-if ($isWizard) {
-    $wizardTradition = getCharacterWizardTradition($character_id);
-}
-
-// Récupérer la tradition monastique du moine
 $monkTradition = null;
-if ($isMonk) {
-    $monkTradition = getCharacterMonkTradition($character_id);
-}
-
-// Récupérer la faveur de pacte de l'occultiste
 $warlockPact = null;
-if ($isWarlock) {
-    $warlockPact = getCharacterWarlockPact($character_id);
+
+if ($characterArchetype) {
+    switch ($characterArchetype['class_name']) {
+        case 'Barbare':
+            $barbarianPath = $characterArchetype;
+            break;
+        case 'Paladin':
+            $paladinOath = $characterArchetype;
+            break;
+        case 'Rôdeur':
+            $rangerArchetype = $characterArchetype;
+            break;
+        case 'Roublard':
+            $rogueArchetype = $characterArchetype;
+            break;
+        case 'Barde':
+            $bardCollege = $characterArchetype;
+            break;
+        case 'Clerc':
+            $clericDomain = $characterArchetype;
+            break;
+        case 'Druide':
+            $druidCircle = $characterArchetype;
+            break;
+        case 'Ensorceleur':
+            $sorcererOrigin = $characterArchetype;
+            break;
+        case 'Guerrier':
+            $fighterArchetype = $characterArchetype;
+            break;
+        case 'Magicien':
+            $wizardTradition = $characterArchetype;
+            break;
+        case 'Moine':
+            $monkTradition = $characterArchetype;
+            break;
+        case 'Occultiste':
+            $warlockPact = $characterArchetype;
+            break;
+    }
 }
 
 // Récupérer les améliorations de caractéristiques
@@ -1056,6 +1042,10 @@ $initiative = $dexterityMod;
                             <?php if ($character['alignment']): ?>
                                 <p><strong>Alignement:</strong> <?php echo htmlspecialchars($character['alignment']); ?></p>
                             <?php endif; ?>
+                            
+                            <?php if ($characterArchetype): ?>
+                                <p><strong><?php echo htmlspecialchars($characterArchetype['archetype_type']); ?>:</strong> <?php echo htmlspecialchars($characterArchetype['name']); ?></p>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -1421,11 +1411,133 @@ $initiative = $dexterityMod;
                         // Ajouter les capacités spécialisées (voie primitive, etc.)
                         if ($barbarianPath) {
                             $displayCapabilities[] = [
-                                'name' => $barbarianPath['path_name'],
-                                'description' => $barbarianPath['path_description'],
+                                'name' => $barbarianPath['name'],
+                                'description' => $barbarianPath['description'],
                                 'type' => 'Voie primitive',
                                 'icon' => 'fas fa-route',
                                 'color' => 'warning',
+                                'source_type' => 'Spécial'
+                            ];
+                        }
+                        
+                        // Ajouter les autres archetypes
+                        if ($paladinOath) {
+                            $displayCapabilities[] = [
+                                'name' => $paladinOath['name'],
+                                'description' => $paladinOath['description'],
+                                'type' => 'Serment sacré',
+                                'icon' => 'fas fa-shield-alt',
+                                'color' => 'primary',
+                                'source_type' => 'Spécial'
+                            ];
+                        }
+                        
+                        if ($rangerArchetype) {
+                            $displayCapabilities[] = [
+                                'name' => $rangerArchetype['name'],
+                                'description' => $rangerArchetype['description'],
+                                'type' => 'Archétype de rôdeur',
+                                'icon' => 'fas fa-bow-arrow',
+                                'color' => 'success',
+                                'source_type' => 'Spécial'
+                            ];
+                        }
+                        
+                        if ($rogueArchetype) {
+                            $displayCapabilities[] = [
+                                'name' => $rogueArchetype['name'],
+                                'description' => $rogueArchetype['description'],
+                                'type' => 'Archétype de roublard',
+                                'icon' => 'fas fa-user-ninja',
+                                'color' => 'dark',
+                                'source_type' => 'Spécial'
+                            ];
+                        }
+                        
+                        if ($bardCollege) {
+                            $displayCapabilities[] = [
+                                'name' => $bardCollege['name'],
+                                'description' => $bardCollege['description'],
+                                'type' => 'Collège bardique',
+                                'icon' => 'fas fa-music',
+                                'color' => 'info',
+                                'source_type' => 'Spécial'
+                            ];
+                        }
+                        
+                        if ($clericDomain) {
+                            $displayCapabilities[] = [
+                                'name' => $clericDomain['name'],
+                                'description' => $clericDomain['description'],
+                                'type' => 'Domaine divin',
+                                'icon' => 'fas fa-cross',
+                                'color' => 'light',
+                                'source_type' => 'Spécial'
+                            ];
+                        }
+                        
+                        if ($druidCircle) {
+                            $displayCapabilities[] = [
+                                'name' => $druidCircle['name'],
+                                'description' => $druidCircle['description'],
+                                'type' => 'Cercle druidique',
+                                'icon' => 'fas fa-leaf',
+                                'color' => 'success',
+                                'source_type' => 'Spécial'
+                            ];
+                        }
+                        
+                        if ($sorcererOrigin) {
+                            $displayCapabilities[] = [
+                                'name' => $sorcererOrigin['name'],
+                                'description' => $sorcererOrigin['description'],
+                                'type' => 'Origine magique',
+                                'icon' => 'fas fa-bolt',
+                                'color' => 'warning',
+                                'source_type' => 'Spécial'
+                            ];
+                        }
+                        
+                        if ($fighterArchetype) {
+                            $displayCapabilities[] = [
+                                'name' => $fighterArchetype['name'],
+                                'description' => $fighterArchetype['description'],
+                                'type' => 'Archétype martial',
+                                'icon' => 'fas fa-sword',
+                                'color' => 'danger',
+                                'source_type' => 'Spécial'
+                            ];
+                        }
+                        
+                        if ($wizardTradition) {
+                            $displayCapabilities[] = [
+                                'name' => $wizardTradition['name'],
+                                'description' => $wizardTradition['description'],
+                                'type' => 'Tradition arcanique',
+                                'icon' => 'fas fa-hat-wizard',
+                                'color' => 'primary',
+                                'source_type' => 'Spécial'
+                            ];
+                        }
+                        
+                        if ($monkTradition) {
+                            $displayCapabilities[] = [
+                                'name' => $monkTradition['name'],
+                                'description' => $monkTradition['description'],
+                                'type' => 'Tradition monastique',
+                                'icon' => 'fas fa-fist-raised',
+                                'color' => 'secondary',
+                                'source_type' => 'Spécial'
+                            ];
+                        }
+                        
+                        if ($warlockPact) {
+                            $displayCapabilities[] = [
+                                'name' => $warlockPact['name'],
+                                'description' => $warlockPact['description'],
+                                'type' => 'Faveur de pacte',
+                                'icon' => 'fas fa-handshake',
+                                'color' => 'dark',
                                 'source_type' => 'Spécial'
                             ];
                         }

@@ -738,14 +738,14 @@ if (!function_exists('finalizeCharacterCreation')) {
             // Insérer le personnage dans la base de données
             $stmt = $pdo->prepare("
                 INSERT INTO characters (
-                    user_id, name, race_id, class_id, level, experience_points,
+                    user_id, name, race_id, class_id, class_archetype_id, level, experience_points,
                     strength, dexterity, constitution, intelligence, wisdom, charisma,
                     armor_class, initiative, speed, hit_points_max, hit_points_current,
                     proficiency_bonus, money_gold, background, alignment,
                     personality_traits, ideals, bonds, flaws,
                     created_at, updated_at
                 ) VALUES (
-                    ?, ?, ?, ?, 1, 0,
+                    ?, ?, ?, ?, ?, 1, 0,
                     ?, ?, ?, ?, ?, ?,
                     10, 0, 30, ?, ?,
                     2, 0, ?, ?,
@@ -759,6 +759,7 @@ if (!function_exists('finalizeCharacterCreation')) {
                 $data['name'],
                 $data['race_id'],
                 $data['class_id'],
+                $data['class_option_id'] ?? null, // Archetype choisi
                 $data['strength'] ?? 10,
                 $data['dexterity'] ?? 10,
                 $data['constitution'] ?? 10,

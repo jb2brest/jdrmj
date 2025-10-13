@@ -21,6 +21,7 @@ class Character
     public $name;
     public $race_id;
     public $class_id;
+    public $class_archetype_id;
     public $background_id;
     public $level;
     public $experience_points;
@@ -1361,8 +1362,20 @@ class Character
             // Pas d'armure
             if ($isBarbarian) {
                 // Pour les barbares sans armure : CA = 10 + modificateur de Dextérité + modificateur de Constitution
+                // Récupérer le bonus racial de constitution
+                $constitutionBonus = 0;
+                if (isset($character['race_id'])) {
+                    $pdo = getPDO();
+                    $stmt = $pdo->prepare("SELECT constitution_bonus FROM races WHERE id = ?");
+                    $stmt->execute([$character['race_id']]);
+                    $raceData = $stmt->fetch();
+                    if ($raceData) {
+                        $constitutionBonus = (int)$raceData['constitution_bonus'];
+                    }
+                }
+                
                 $tempChar = new Character();
-                $tempChar->constitution = $character['constitution'] + $character['constitution_bonus'];
+                $tempChar->constitution = $character['constitution'] + $constitutionBonus;
                 $constitutionModifier = $tempChar->getAbilityModifier('constitution');
                 $ac = 10 + $dexterityModifier + $constitutionModifier;
             } else {
@@ -2657,6 +2670,64 @@ class Character
     public function getIsEquipped()
     {
         return $this->is_equipped ?? false;
+    }
+
+    /**
+     * Obtenir l'archetype du personnage
+     * @return array|null L'archetype avec ses détails ou null si aucun
+     */
+    public function getArchetype()
+    {
+        try {
+            if (!$this->class_archetype_id) {
+                return null;
+            }
+
+            $stmt = $this->pdo->prepare("
+                SELECT ca.*, c.name as class_name 
+                FROM class_archetypes ca 
+                JOIN classes c ON ca.class_id = c.id 
+                WHERE ca.id = ?
+            ");
+            $stmt->execute([$this->class_archetype_id]);
+            
+            $archetype = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($archetype) {
+                // Ajouter le type d'archetype selon la classe
+                $archetype['archetype_type'] = $this->getArchetypeType($archetype['class_name']);
+            }
+            
+            return $archetype;
+            
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération de l'archetype: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Obtenir le type d'archetype selon la classe
+     * @param string $className Nom de la classe
+     * @return string Type d'archetype
+     */
+    private function getArchetypeType($className)
+    {
+        switch ($className) {
+            case 'Barbare': return 'Voie primitive';
+            case 'Paladin': return 'Serment sacré';
+            case 'Rôdeur': return 'Archétype de rôdeur';
+            case 'Roublard': return 'Archétype de roublard';
+            case 'Barde': return 'Collège bardique';
+            case 'Clerc': return 'Domaine divin';
+            case 'Druide': return 'Cercle druidique';
+            case 'Ensorceleur': return 'Origine magique';
+            case 'Guerrier': return 'Archétype martial';
+            case 'Magicien': return 'Tradition arcanique';
+            case 'Moine': return 'Tradition monastique';
+            case 'Occultiste': return 'Faveur de pacte';
+            default: return 'Spécialisation';
+        }
     }
 
 }

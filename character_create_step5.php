@@ -55,60 +55,30 @@ if ($selectedBackgroundId) {
 // Récupérer les options disponibles selon la classe
 $classOptions = [];
 $optionType = '';
-$optionTable = '';
 
 if ($selectedClass) {
-    switch ($selectedClass['name']) {
-        case 'Barbare':
-            $optionType = 'Voie';
-            $optionTable = 'barbarian_paths';
-            break;
-        case 'Barde':
-            $optionType = 'Collège';
-            $optionTable = 'bard_colleges';
-            break;
-        case 'Clerc':
-            $optionType = 'Domaine';
-            $optionTable = 'cleric_domains';
-            break;
-        case 'Druide':
-            $optionType = 'Cercle';
-            $optionTable = 'druid_circles';
-            break;
-        case 'Guerrier':
-            $optionType = 'Archétype';
-            $optionTable = 'fighter_archetypes';
-            break;
-        case 'Magicien':
-            $optionType = 'Tradition';
-            $optionTable = 'wizard_traditions';
-            break;
-        case 'Moine':
-            $optionType = 'Tradition';
-            $optionTable = 'monk_traditions';
-            break;
-        case 'Paladin':
-            $optionType = 'Serment';
-            $optionTable = 'paladin_oaths';
-            break;
-        case 'Rôdeur':
-            $optionType = 'Archétype';
-            $optionTable = 'ranger_archetypes';
-            break;
-        case 'Roublard':
-            $optionType = 'Archétype';
-            $optionTable = 'rogue_archetypes';
-            break;
-        default:
-            // Pour les autres classes (Ensorceleur, Occultiste), pas d'options spéciales
-            $optionType = '';
-            $optionTable = '';
-            break;
-    }
+    // Définir le type d'option selon la classe
+    $optionTypes = [
+        'Barbare' => 'Voie',
+        'Barde' => 'Collège',
+        'Clerc' => 'Domaine',
+        'Druide' => 'Cercle',
+        'Guerrier' => 'Archétype',
+        'Magicien' => 'Tradition',
+        'Moine' => 'Tradition',
+        'Paladin' => 'Serment',
+        'Rôdeur' => 'Archétype',
+        'Roublard' => 'Archétype',
+        'Ensorceleur' => 'Origine',
+        'Occultiste' => 'Pacte'
+    ];
     
-    if ($optionTable) {
-        $stmt = $pdo->prepare("SELECT * FROM $optionTable ORDER BY name");
-        $stmt->execute();
+    $optionType = $optionTypes[$selectedClass['name']] ?? '';
+    
+    // Récupérer les archetypes pour cette classe depuis la table unifiée
+    if ($optionType) {
+        $stmt = $pdo->prepare("SELECT * FROM class_archetypes WHERE class_id = ? ORDER BY name");
+        $stmt->execute([$selectedClassId]);
         $classOptions = $stmt->fetchAll();
     }
 }
@@ -124,7 +94,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
             if (!empty($classOptions)) {
                 $dataToSave['class_option_id'] = $option_id;
                 $dataToSave['class_option_type'] = $optionType;
-                $dataToSave['class_option_table'] = $optionTable;
             }
             
             if (saveCharacterCreationStep($user_id, $session_id, 6, $dataToSave)) {

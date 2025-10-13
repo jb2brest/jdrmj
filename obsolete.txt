@@ -1,0 +1,78 @@
+# Tables Obsolètes - Base de Données JDRMJ
+# Généré le : 2025-10-13
+# ATTENTION: Ne pas supprimer sans vérification manuelle et sauvegarde
+
+## Tables d'Archetypes/Spécialisations (Obsolètes)
+# Ces tables semblent être des vestiges d'un ancien système d'archetypes
+# Contiennent des données mais ne sont pas utilisées dans le code actuel
+
+barbarian_paths
+bard_colleges
+cleric_domains
+druid_circles
+fighter_archetypes
+monk_traditions
+paladin_oaths
+ranger_archetypes
+rogue_archetypes
+sorcerer_origins
+warlock_pacts
+wizard_traditions
+
+## Tables de Liaison Personnage-Archetypes (Obsolètes)
+# Tables de liaison pour les archetypes ci-dessus
+# Une seule contient des données (character_fighter_archetype: 1 enregistrement)
+
+character_barbarian_path
+character_bard_college
+character_cleric_domain
+character_druid_circle
+character_fighter_archetype
+character_monk_tradition
+character_paladin_oaths
+character_ranger_archetypes
+character_rogue_archetypes
+character_sorcerer_origin
+character_warlock_pact
+character_wizard_tradition
+
+## Tables de Système (À Vérifier)
+# Tables système qui pourraient être obsolètes selon l'analyse
+
+place_objects_backup
+character_creation_sessions
+campaign_journal
+capabilities
+capability_types
+rage_usage
+
+## Instructions de Suppression Sécurisée
+
+1. SAUVEGARDE COMPLÈTE de la base de données avant toute suppression
+2. Vérifier manuellement chaque table pour s'assurer qu'elle n'est pas utilisée
+3. Tester l'application après chaque suppression
+4. Supprimer par petits groupes pour minimiser les risques
+
+## Tables à NE JAMAIS Supprimer
+
+users
+characters
+campaigns
+campaign_members
+worlds
+countries
+regions
+places
+spells
+character_spells
+items
+dice_rolls
+races
+classes
+backgrounds
+languages
+weapons
+armor
+Object
+magical_items
+poisons
