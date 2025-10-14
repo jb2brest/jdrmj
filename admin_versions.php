@@ -107,11 +107,157 @@ function getSystemInfo() {
     }
 }
 
+// Fonction pour charger les rapports de tests JSON
+function getTestReports() {
+    $reportsDir = __DIR__ . '/tests/reports';
+    $individualDir = $reportsDir . '/individual';
+    $aggregatedDir = $reportsDir . '/aggregated';
+    
+    $testData = [
+        'individual_reports' => [],
+        'aggregated_reports' => [],
+        'summary' => [
+            'total_individual' => 0,
+            'total_aggregated' => 0,
+            'latest_individual' => null,
+            'latest_aggregated' => null
+        ]
+    ];
+    
+    // Charger les rapports individuels
+    if (is_dir($individualDir)) {
+        $individualFiles = glob($individualDir . '/*.json');
+        $testData['summary']['total_individual'] = count($individualFiles);
+        
+        foreach ($individualFiles as $file) {
+            $content = file_get_contents($file);
+            $data = json_decode($content, true);
+            if ($data) {
+                $testData['individual_reports'][] = [
+                    'filename' => basename($file),
+                    'data' => $data,
+                    'modified' => filemtime($file)
+                ];
+            }
+        }
+        
+        // Trier par date de modification (plus récent en premier)
+        usort($testData['individual_reports'], function($a, $b) {
+            return $b['modified'] - $a['modified'];
+        });
+        
+        if (!empty($testData['individual_reports'])) {
+            $testData['summary']['latest_individual'] = $testData['individual_reports'][0];
+        }
+    }
+    
+    // Charger les rapports agrégés
+    if (is_dir($aggregatedDir)) {
+        $aggregatedFiles = glob($aggregatedDir . '/*.json');
+        $testData['summary']['total_aggregated'] = count($aggregatedFiles);
+        
+        foreach ($aggregatedFiles as $file) {
+            $content = file_get_contents($file);
+            $data = json_decode($content, true);
+            if ($data) {
+                $testData['aggregated_reports'][] = [
+                    'filename' => basename($file),
+                    'data' => $data,
+                    'modified' => filemtime($file)
+                ];
+            }
+        }
+        
+        // Trier par date de modification (plus récent en premier)
+        usort($testData['aggregated_reports'], function($a, $b) {
+            return $b['modified'] - $a['modified'];
+        });
+        
+        if (!empty($testData['aggregated_reports'])) {
+            $testData['summary']['latest_aggregated'] = $testData['aggregated_reports'][0];
+        }
+    }
+    
+    return $testData;
+}
+
+// Fonction pour calculer les statistiques des tests
+function calculateTestStatistics($testData) {
+    $stats = [
+        'total_tests' => 0,
+        'passed_tests' => 0,
+        'failed_tests' => 0,
+        'error_tests' => 0,
+        'success_rate' => 0,
+        'categories' => [],
+        'recent_tests' => []
+    ];
+    
+    // Analyser les rapports individuels
+    foreach ($testData['individual_reports'] as $report) {
+        $data = $report['data'];
+        $stats['total_tests']++;
+        
+        if ($data['result']['success']) {
+            $stats['passed_tests']++;
+        } else {
+            if ($data['result']['status'] === 'FAILED') {
+                $stats['failed_tests']++;
+            } else {
+                $stats['error_tests']++;
+            }
+        }
+        
+        // Compter par catégorie
+        $category = $data['test_info']['category'] ?? 'Autres';
+        if (!isset($stats['categories'][$category])) {
+            $stats['categories'][$category] = [
+                'total' => 0,
+                'passed' => 0,
+                'failed' => 0,
+                'error' => 0
+            ];
+        }
+        
+        $stats['categories'][$category]['total']++;
+        if ($data['result']['success']) {
+            $stats['categories'][$category]['passed']++;
+        } else {
+            if ($data['result']['status'] === 'FAILED') {
+                $stats['categories'][$category]['failed']++;
+            } else {
+                $stats['categories'][$category]['error']++;
+            }
+        }
+        
+        // Garder les 10 tests les plus récents
+        if (count($stats['recent_tests']) < 10) {
+            $stats['recent_tests'][] = [
+                'name' => $data['test_info']['name'],
+                'status' => $data['result']['status'],
+                'category' => $category,
+                'duration' => $data['test_info']['duration_seconds'],
+                'date' => $data['test_info']['date'] ?? '',
+                'time' => $data['test_info']['time'] ?? ''
+            ];
+        }
+    }
+    
+    // Calculer le taux de réussite
+    if ($stats['total_tests'] > 0) {
+        $stats['success_rate'] = round(($stats['passed_tests'] / $stats['total_tests']) * 100, 2);
+    }
+    
+    return $stats;
+}
+
 // Récupération des données
 $appVersion = getApplicationVersion();
 $dbVersions = getDatabaseVersions();
 $migrations = getMigrationHistory();
 $systemInfo = getSystemInfo();
+$testData = getTestReports();
+$testStats = calculateTestStatistics($testData);
 
 $page_title = "Versions du Système";
 $current_page = "admin";
@@ -145,6 +291,98 @@ $current_page = "admin";
         .migration-error {
             color: #dc3545;
         }
+        
+        /* Styles pour les onglets */
+        .nav-tabs .nav-link {
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: #6c757d;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-tabs .nav-link:hover {
+            border-color: #dee2e6;
+            color: #495057;
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: #0d6efd;
+            border-bottom-color: #0d6efd;
+            background-color: transparent;
+        }
+        
+        .tab-content {
+            border: 1px solid #dee2e6;
+            border-top: none;
+            border-radius: 0 0 0.375rem 0.375rem;
+            padding: 1.5rem;
+            background-color: #fff;
+        }
+        
+        .tab-pane {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .tab-icon {
+            margin-right: 0.5rem;
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+        }
+        
+        .stats-card .card-body {
+            padding: 1.5rem;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        /* Styles spécifiques pour l'onglet Tests */
+        .test-status-passed {
+            color: #28a745;
+        }
+        
+        .test-status-failed {
+            color: #dc3545;
+        }
+        
+        .test-status-error {
+            color: #ffc107;
+        }
+        
+        .category-card {
+            transition: transform 0.2s ease;
+        }
+        
+        .category-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .test-badge {
+            font-size: 0.8em;
+        }
     </style>
 </head>
 <body>
@@ -160,263 +398,640 @@ $current_page = "admin";
             </div>
         </div>
 
-        <!-- Informations Système -->
-        <div class="row mb-4">
+        <!-- Onglets de navigation -->
+        <div class="row">
             <div class="col-12">
-                <div class="card system-info">
-                    <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="fas fa-server"></i> Informations Système
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-3">
-                                <strong>PHP Version:</strong><br>
-                                <span class="badge bg-light text-dark"><?= $systemInfo['php_version'] ?></span>
-                            </div>
-                            <div class="col-md-3">
-                                <strong>MySQL Version:</strong><br>
-                                <span class="badge bg-light text-dark"><?= $systemInfo['mysql_version'] ?></span>
-                            </div>
-                            <div class="col-md-3">
-                                <strong>Heure Serveur:</strong><br>
-                                <span class="badge bg-light text-dark"><?= $systemInfo['server_time'] ?></span>
-                            </div>
-                            <div class="col-md-3">
-                                <strong>Timezone:</strong><br>
-                                <span class="badge bg-light text-dark"><?= $systemInfo['timezone'] ?></span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Version de l'Application -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card version-card">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">
-                            <i class="fas fa-code"></i> Version de l'Application
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-2">
-                                <strong>Version:</strong><br>
-                                <span class="badge bg-primary version-badge"><?= $appVersion['VERSION'] ?></span>
-                            </div>
-                            <div class="col-md-2">
-                                <strong>Build ID:</strong><br>
-                                <span class="badge bg-secondary version-badge"><?= $appVersion['BUILD_ID'] ?></span>
-                            </div>
-                            <div class="col-md-2">
-                                <strong>Environnement:</strong><br>
-                                <span class="badge bg-<?= $appVersion['ENVIRONMENT'] === 'production' ? 'success' : 'warning' ?> version-badge">
-                                    <?= strtoupper($appVersion['ENVIRONMENT']) ?>
+                <ul class="nav nav-tabs" id="versionTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="system-tab" data-bs-toggle="tab" data-bs-target="#system" type="button" role="tab" aria-controls="system" aria-selected="true">
+                            <i class="fas fa-server tab-icon"></i>Système
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="application-tab" data-bs-toggle="tab" data-bs-target="#application" type="button" role="tab" aria-controls="application" aria-selected="false">
+                            <i class="fas fa-code tab-icon"></i>Application
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="database-tab" data-bs-toggle="tab" data-bs-target="#database" type="button" role="tab" aria-controls="database" aria-selected="false">
+                            <i class="fas fa-database tab-icon"></i>Base de Données
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="migrations-tab" data-bs-toggle="tab" data-bs-target="#migrations" type="button" role="tab" aria-controls="migrations" aria-selected="false">
+                            <i class="fas fa-history tab-icon"></i>Migrations
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tests-tab" data-bs-toggle="tab" data-bs-target="#tests" type="button" role="tab" aria-controls="tests" aria-selected="false">
+                            <i class="fas fa-vial tab-icon"></i>Tests
+                            <?php if ($testStats['total_tests'] > 0): ?>
+                                <span class="badge bg-<?= $testStats['success_rate'] >= 80 ? 'success' : ($testStats['success_rate'] >= 60 ? 'warning' : 'danger') ?> ms-1">
+                                    <?= $testStats['success_rate'] ?>%
                                 </span>
+                            <?php endif; ?>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="actions-tab" data-bs-toggle="tab" data-bs-target="#actions" type="button" role="tab" aria-controls="actions" aria-selected="false">
+                            <i class="fas fa-tools tab-icon"></i>Actions
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Contenu des onglets -->
+        <div class="tab-content" id="versionTabsContent">
+            <!-- Onglet Système -->
+            <div class="tab-pane fade show active" id="system" role="tabpanel" aria-labelledby="system-tab">
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card stats-card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-server"></i> Informations Système
+                                </h5>
                             </div>
-                            <div class="col-md-2">
-                                <strong>Date de déploiement:</strong><br>
-                                <small><?= $appVersion['DEPLOY_DATE'] ?></small>
-                            </div>
-                            <div class="col-md-2">
-                                <strong>Commit Git:</strong><br>
-                                <small><code><?= substr($appVersion['GIT_COMMIT'], 0, 8) ?></code></small>
-                            </div>
-                            <div class="col-md-2">
-                                <strong>Statut:</strong><br>
-                                <span class="badge bg-success">Déployé</span>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3 stat-item">
+                                        <div class="stat-value"><?= $systemInfo['php_version'] ?></div>
+                                        <div class="stat-label">PHP Version</div>
+                                    </div>
+                                    <div class="col-md-3 stat-item">
+                                        <div class="stat-value"><?= $systemInfo['mysql_version'] ?></div>
+                                        <div class="stat-label">MySQL Version</div>
+                                    </div>
+                                    <div class="col-md-3 stat-item">
+                                        <div class="stat-value"><?= $systemInfo['server_time'] ?></div>
+                                        <div class="stat-label">Heure Serveur</div>
+                                    </div>
+                                    <div class="col-md-3 stat-item">
+                                        <div class="stat-value"><?= $systemInfo['timezone'] ?></div>
+                                        <div class="stat-label">Timezone</div>
+                                    </div>
+                                </div>
+                                <hr style="border-color: rgba(255,255,255,0.3);">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <strong>Limite mémoire:</strong> <?= $systemInfo['memory_limit'] ?>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Temps d'exécution max:</strong> <?= $systemInfo['max_execution_time'] ?>s
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <?php if (!empty($appVersion['RELEASE_NOTES'])): ?>
-                        <div class="row mt-3">
-                            <div class="col-12">
-                                <strong>Notes de version:</strong><br>
-                                <em><?= htmlspecialchars($appVersion['RELEASE_NOTES']) ?></em>
-                            </div>
-                        </div>
-                        <?php endif; ?>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Versions de la Base de Données -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card version-card">
-                    <div class="card-header bg-success text-white">
-                        <h5 class="mb-0">
-                            <i class="fas fa-database"></i> Versions de la Base de Données
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <?php if (empty($dbVersions)): ?>
-                            <div class="alert alert-warning">
-                                <i class="fas fa-exclamation-triangle"></i>
-                                Aucune version de base de données trouvée. Le système de versioning n'est peut-être pas encore initialisé.
-                            </div>
-                        <?php else: ?>
-                            <div class="table-responsive">
-                                <table class="table table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>Type</th>
-                                            <th>Version</th>
-                                            <th>Build ID</th>
-                                            <th>Environnement</th>
-                                            <th>Déployé le</th>
-                                            <th>Par</th>
-                                            <th>Statut</th>
-                                            <th>Notes</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($dbVersions as $version): ?>
-                                        <tr>
-                                            <td>
-                                                <span class="badge bg-<?= $version['version_type'] === 'database' ? 'success' : 'primary' ?>">
-                                                    <?= ucfirst($version['version_type']) ?>
-                                                </span>
-                                            </td>
-                                            <td><strong><?= $version['version_number'] ?></strong></td>
-                                            <td><code><?= $version['build_id'] ?></code></td>
-                                            <td>
-                                                <span class="badge bg-<?= $version['environment'] === 'production' ? 'success' : 'warning' ?>">
-                                                    <?= strtoupper($version['environment']) ?>
-                                                </span>
-                                            </td>
-                                            <td><?= date('d/m/Y H:i', strtotime($version['deploy_date'])) ?></td>
-                                            <td><?= $version['deploy_user'] ?></td>
-                                            <td>
-                                                <?php if ($version['is_current']): ?>
-                                                    <span class="badge bg-success">Actuel</span>
-                                                <?php else: ?>
-                                                    <span class="badge bg-secondary">Ancien</span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td>
-                                                <small><?= htmlspecialchars($version['release_notes']) ?></small>
-                                            </td>
-                                        </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Historique des Migrations -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card version-card">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0">
-                            <i class="fas fa-history"></i> Historique des Migrations
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <?php if (empty($migrations)): ?>
-                            <div class="alert alert-info">
-                                <i class="fas fa-info-circle"></i>
-                                Aucune migration trouvée dans l'historique.
-                            </div>
-                        <?php else: ?>
-                            <div class="table-responsive">
-                                <table class="table table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>Migration</th>
-                                            <th>De</th>
-                                            <th>Vers</th>
-                                            <th>Exécutée le</th>
-                                            <th>Par</th>
-                                            <th>Temps</th>
-                                            <th>Statut</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php foreach ($migrations as $migration): ?>
-                                        <tr>
-                                            <td><code><?= $migration['migration_name'] ?></code></td>
-                                            <td><?= $migration['version_from'] ?: 'N/A' ?></td>
-                                            <td><strong><?= $migration['version_to'] ?></strong></td>
-                                            <td><?= date('d/m/Y H:i:s', strtotime($migration['executed_at'])) ?></td>
-                                            <td><?= $migration['executed_by'] ?></td>
-                                            <td>
-                                                <?php if ($migration['execution_time_ms']): ?>
-                                                    <?= $migration['execution_time_ms'] ?>ms
-                                                <?php else: ?>
-                                                    N/A
-                                                <?php endif; ?>
-                                            </td>
-                                            <td>
-                                                <?php if ($migration['success']): ?>
-                                                    <span class="badge bg-success migration-success">
-                                                        <i class="fas fa-check"></i> Succès
-                                                    </span>
-                                                <?php else: ?>
-                                                    <span class="badge bg-danger migration-error">
-                                                        <i class="fas fa-times"></i> Erreur
-                                                    </span>
-                                                <?php endif; ?>
-                                            </td>
-                                        </tr>
-                                        <?php if (!$migration['success'] && !empty($migration['error_message'])): ?>
-                                        <tr>
-                                            <td colspan="7">
-                                                <div class="alert alert-danger mb-0">
-                                                    <strong>Erreur:</strong> <?= htmlspecialchars($migration['error_message']) ?>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        <?php endif; ?>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Actions Admin -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0">
-                            <i class="fas fa-tools"></i> Actions Administrateur
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-3">
-                                <a href="index.php" class="btn btn-primary">
-                                    <i class="fas fa-home"></i> Retour à l'accueil
-                                </a>
-                            </div>
-                            <div class="col-md-3">
-                                <button class="btn btn-info" onclick="location.reload()">
-                                    <i class="fas fa-sync-alt"></i> Actualiser
+            <!-- Onglet Application -->
+            <div class="tab-pane fade" id="application" role="tabpanel" aria-labelledby="application-tab">
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card version-card">
+                            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-code"></i> Version de l'Application
+                                </h5>
+                                <button class="btn btn-light btn-sm" onclick="copyVersionInfo()" title="Copier les informations de version">
+                                    <i class="fas fa-copy"></i> Copier
                                 </button>
                             </div>
-                            <div class="col-md-3">
-                                <a href="admin_starting_equipment.php" class="btn btn-success">
-                                    <i class="fas fa-shopping-bag"></i> Équipements de Départ
-                                </a>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-2">
+                                        <strong>Version:</strong><br>
+                                        <span class="badge bg-primary version-badge"><?= $appVersion['VERSION'] ?></span>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <strong>Build ID:</strong><br>
+                                        <span class="badge bg-secondary version-badge"><?= $appVersion['BUILD_ID'] ?></span>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <strong>Environnement:</strong><br>
+                                        <span class="badge bg-<?= $appVersion['ENVIRONMENT'] === 'production' ? 'success' : 'warning' ?> version-badge">
+                                            <?= strtoupper($appVersion['ENVIRONMENT']) ?>
+                                        </span>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <strong>Date de déploiement:</strong><br>
+                                        <small><?= $appVersion['DEPLOY_DATE'] ?></small>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <strong>Commit Git:</strong><br>
+                                        <small><code><?= substr($appVersion['GIT_COMMIT'], 0, 8) ?></code></small>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <strong>Statut:</strong><br>
+                                        <span class="badge bg-success">Déployé</span>
+                                    </div>
+                                </div>
+                                <?php if (!empty($appVersion['RELEASE_NOTES'])): ?>
+                                <div class="row mt-3">
+                                    <div class="col-12">
+                                        <strong>Notes de version:</strong><br>
+                                        <em><?= htmlspecialchars($appVersion['RELEASE_NOTES']) ?></em>
+                                    </div>
+                                </div>
+                                <?php endif; ?>
                             </div>
-                            <div class="col-md-3">
-                                <a href="profile.php" class="btn btn-secondary">
-                                    <i class="fas fa-user-cog"></i> Profil Admin
-                                </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Onglet Base de Données -->
+            <div class="tab-pane fade" id="database" role="tabpanel" aria-labelledby="database-tab">
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card version-card">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-database"></i> Versions de la Base de Données
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <?php if (empty($dbVersions)): ?>
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        Aucune version de base de données trouvée. Le système de versioning n'est peut-être pas encore initialisé.
+                                    </div>
+                                <?php else: ?>
+                                    <div class="table-responsive">
+                                        <table class="table table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>Type</th>
+                                                    <th>Version</th>
+                                                    <th>Build ID</th>
+                                                    <th>Environnement</th>
+                                                    <th>Déployé le</th>
+                                                    <th>Par</th>
+                                                    <th>Statut</th>
+                                                    <th>Notes</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach ($dbVersions as $version): ?>
+                                                <tr>
+                                                    <td>
+                                                        <span class="badge bg-<?= $version['version_type'] === 'database' ? 'success' : 'primary' ?>">
+                                                            <?= ucfirst($version['version_type']) ?>
+                                                        </span>
+                                                    </td>
+                                                    <td><strong><?= $version['version_number'] ?></strong></td>
+                                                    <td><code><?= $version['build_id'] ?></code></td>
+                                                    <td>
+                                                        <span class="badge bg-<?= $version['environment'] === 'production' ? 'success' : 'warning' ?>">
+                                                            <?= strtoupper($version['environment']) ?>
+                                                        </span>
+                                                    </td>
+                                                    <td><?= date('d/m/Y H:i', strtotime($version['deploy_date'])) ?></td>
+                                                    <td><?= $version['deploy_user'] ?></td>
+                                                    <td>
+                                                        <?php if ($version['is_current']): ?>
+                                                            <span class="badge bg-success">Actuel</span>
+                                                        <?php else: ?>
+                                                            <span class="badge bg-secondary">Ancien</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td>
+                                                        <small><?= htmlspecialchars($version['release_notes']) ?></small>
+                                                    </td>
+                                                </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Onglet Migrations -->
+            <div class="tab-pane fade" id="migrations" role="tabpanel" aria-labelledby="migrations-tab">
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card version-card">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-history"></i> Historique des Migrations
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <?php if (empty($migrations)): ?>
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle"></i>
+                                        Aucune migration trouvée dans l'historique.
+                                    </div>
+                                <?php else: ?>
+                                    <div class="table-responsive">
+                                        <table class="table table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>Migration</th>
+                                                    <th>De</th>
+                                                    <th>Vers</th>
+                                                    <th>Exécutée le</th>
+                                                    <th>Par</th>
+                                                    <th>Temps</th>
+                                                    <th>Statut</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach ($migrations as $migration): ?>
+                                                <tr>
+                                                    <td><code><?= $migration['migration_name'] ?></code></td>
+                                                    <td><?= $migration['version_from'] ?: 'N/A' ?></td>
+                                                    <td><strong><?= $migration['version_to'] ?></strong></td>
+                                                    <td><?= date('d/m/Y H:i:s', strtotime($migration['executed_at'])) ?></td>
+                                                    <td><?= $migration['executed_by'] ?></td>
+                                                    <td>
+                                                        <?php if ($migration['execution_time_ms']): ?>
+                                                            <?= $migration['execution_time_ms'] ?>ms
+                                                        <?php else: ?>
+                                                            N/A
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td>
+                                                        <?php if ($migration['success']): ?>
+                                                            <span class="badge bg-success migration-success">
+                                                                <i class="fas fa-check"></i> Succès
+                                                            </span>
+                                                        <?php else: ?>
+                                                            <span class="badge bg-danger migration-error">
+                                                                <i class="fas fa-times"></i> Erreur
+                                                            </span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                </tr>
+                                                <?php if (!$migration['success'] && !empty($migration['error_message'])): ?>
+                                                <tr>
+                                                    <td colspan="7">
+                                                        <div class="alert alert-danger mb-0">
+                                                            <strong>Erreur:</strong> <?= htmlspecialchars($migration['error_message']) ?>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <?php endif; ?>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Onglet Tests -->
+            <div class="tab-pane fade" id="tests" role="tabpanel" aria-labelledby="tests-tab">
+                <!-- Statistiques générales -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card stats-card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-chart-bar"></i> Statistiques des Tests
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3 stat-item">
+                                        <div class="stat-value"><?= $testStats['total_tests'] ?></div>
+                                        <div class="stat-label">Total Tests</div>
+                                    </div>
+                                    <div class="col-md-3 stat-item">
+                                        <div class="stat-value text-success"><?= $testStats['passed_tests'] ?></div>
+                                        <div class="stat-label">Réussis</div>
+                                    </div>
+                                    <div class="col-md-3 stat-item">
+                                        <div class="stat-value text-danger"><?= $testStats['failed_tests'] ?></div>
+                                        <div class="stat-label">Échoués</div>
+                                    </div>
+                                    <div class="col-md-3 stat-item">
+                                        <div class="stat-value text-<?= $testStats['success_rate'] >= 80 ? 'success' : ($testStats['success_rate'] >= 60 ? 'warning' : 'danger') ?>">
+                                            <?= $testStats['success_rate'] ?>%
+                                        </div>
+                                        <div class="stat-label">Taux de Réussite</div>
+                                    </div>
+                                </div>
+                                <hr style="border-color: rgba(255,255,255,0.3);">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <strong>Rapports individuels:</strong> <?= $testData['summary']['total_individual'] ?>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Rapports agrégés:</strong> <?= $testData['summary']['total_aggregated'] ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tests récents -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card version-card">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-clock"></i> Tests Récents
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <?php if (empty($testStats['recent_tests'])): ?>
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle"></i>
+                                        Aucun test récent trouvé.
+                                    </div>
+                                <?php else: ?>
+                                    <div class="table-responsive">
+                                        <table class="table table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>Test</th>
+                                                    <th>Catégorie</th>
+                                                    <th>Statut</th>
+                                                    <th>Durée</th>
+                                                    <th>Date</th>
+                                                    <th>Heure</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach ($testStats['recent_tests'] as $test): ?>
+                                                <tr>
+                                                    <td><code><?= htmlspecialchars($test['name']) ?></code></td>
+                                                    <td>
+                                                        <span class="badge bg-secondary"><?= htmlspecialchars($test['category']) ?></span>
+                                                    </td>
+                                                    <td>
+                                                        <?php if ($test['status'] === 'PASSED'): ?>
+                                                            <span class="badge bg-success">
+                                                                <i class="fas fa-check"></i> Réussi
+                                                            </span>
+                                                        <?php elseif ($test['status'] === 'FAILED'): ?>
+                                                            <span class="badge bg-danger">
+                                                                <i class="fas fa-times"></i> Échoué
+                                                            </span>
+                                                        <?php else: ?>
+                                                            <span class="badge bg-warning">
+                                                                <i class="fas fa-exclamation-triangle"></i> Erreur
+                                                            </span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td><?= $test['duration'] ?>s</td>
+                                                    <td><?= $test['date'] ?></td>
+                                                    <td><?= $test['time'] ?></td>
+                                                </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistiques par catégorie -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card version-card">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-layer-group"></i> Statistiques par Catégorie
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <?php if (empty($testStats['categories'])): ?>
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        Aucune catégorie de test trouvée.
+                                    </div>
+                                <?php else: ?>
+                                    <div class="row">
+                                        <?php foreach ($testStats['categories'] as $category => $stats): ?>
+                                        <div class="col-md-6 col-lg-4 mb-3">
+                                            <div class="card border-0 shadow-sm category-card">
+                                                <div class="card-body">
+                                                    <h6 class="card-title">
+                                                        <i class="fas fa-folder text-primary"></i>
+                                                        <?= htmlspecialchars($category) ?>
+                                                    </h6>
+                                                    <div class="row text-center">
+                                                        <div class="col-4">
+                                                            <div class="text-success">
+                                                                <strong><?= $stats['passed'] ?></strong>
+                                                                <br><small>Réussis</small>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-4">
+                                                            <div class="text-danger">
+                                                                <strong><?= $stats['failed'] ?></strong>
+                                                                <br><small>Échoués</small>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-4">
+                                                            <div class="text-warning">
+                                                                <strong><?= $stats['error'] ?></strong>
+                                                                <br><small>Erreurs</small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <hr>
+                                                    <div class="text-center">
+                                                        <small class="text-muted">
+                                                            Total: <strong><?= $stats['total'] ?></strong> |
+                                                            Taux: <strong><?= $stats['total'] > 0 ? round(($stats['passed'] / $stats['total']) * 100, 1) : 0 ?>%</strong>
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rapports agrégés récents -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card version-card">
+                            <div class="card-header bg-warning text-dark">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-file-alt"></i> Rapports Agrégés Récents
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <?php if (empty($testData['aggregated_reports'])): ?>
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle"></i>
+                                        Aucun rapport agrégé trouvé.
+                                    </div>
+                                <?php else: ?>
+                                    <div class="table-responsive">
+                                        <table class="table table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>Fichier</th>
+                                                    <th>Type</th>
+                                                    <th>Tests</th>
+                                                    <th>Réussis</th>
+                                                    <th>Échoués</th>
+                                                    <th>Taux</th>
+                                                    <th>Date</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach (array_slice($testData['aggregated_reports'], 0, 10) as $report): ?>
+                                                <?php $data = $report['data']; ?>
+                                                <tr>
+                                                    <td><code><?= htmlspecialchars($report['filename']) ?></code></td>
+                                                    <td>
+                                                        <?php if (isset($data['session_info'])): ?>
+                                                            <span class="badge bg-primary">Session</span>
+                                                        <?php elseif (isset($data['summary_info'])): ?>
+                                                            <span class="badge bg-info">Résumé</span>
+                                                        <?php else: ?>
+                                                            <span class="badge bg-secondary">Autre</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                    <td>
+                                                        <?php 
+                                                        $total = 0;
+                                                        if (isset($data['summary']['total_tests'])) {
+                                                            $total = $data['summary']['total_tests'];
+                                                        } elseif (isset($data['statistics']['total_tests'])) {
+                                                            $total = $data['statistics']['total_tests'];
+                                                        }
+                                                        echo $total;
+                                                        ?>
+                                                    </td>
+                                                    <td>
+                                                        <?php 
+                                                        $passed = 0;
+                                                        if (isset($data['summary']['passed_tests'])) {
+                                                            $passed = $data['summary']['passed_tests'];
+                                                        } elseif (isset($data['statistics']['passed_tests'])) {
+                                                            $passed = $data['statistics']['passed_tests'];
+                                                        }
+                                                        echo $passed;
+                                                        ?>
+                                                    </td>
+                                                    <td>
+                                                        <?php 
+                                                        $failed = 0;
+                                                        if (isset($data['summary']['failed_tests'])) {
+                                                            $failed = $data['summary']['failed_tests'];
+                                                        } elseif (isset($data['statistics']['failed_tests'])) {
+                                                            $failed = $data['statistics']['failed_tests'];
+                                                        }
+                                                        echo $failed;
+                                                        ?>
+                                                    </td>
+                                                    <td>
+                                                        <?php 
+                                                        $rate = 0;
+                                                        if (isset($data['summary']['success_rate'])) {
+                                                            $rate = $data['summary']['success_rate'];
+                                                        } elseif (isset($data['statistics']['success_rate'])) {
+                                                            $rate = $data['statistics']['success_rate'];
+                                                        }
+                                                        ?>
+                                                        <span class="badge bg-<?= $rate >= 80 ? 'success' : ($rate >= 60 ? 'warning' : 'danger') ?>">
+                                                            <?= $rate ?>%
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <?php 
+                                                        $date = '';
+                                                        if (isset($data['session_info']['date'])) {
+                                                            $date = $data['session_info']['date'];
+                                                        } elseif (isset($data['summary_info']['date'])) {
+                                                            $date = $data['summary_info']['date'];
+                                                        }
+                                                        echo $date;
+                                                        ?>
+                                                    </td>
+                                                </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Onglet Actions -->
+            <div class="tab-pane fade" id="actions" role="tabpanel" aria-labelledby="actions-tab">
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header bg-warning text-dark">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-tools"></i> Actions Administrateur
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3 mb-3">
+                                        <a href="index.php" class="btn btn-primary w-100">
+                                            <i class="fas fa-home"></i> Retour à l'accueil
+                                        </a>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <button class="btn btn-info w-100" onclick="location.reload()">
+                                            <i class="fas fa-sync-alt"></i> Actualiser
+                                        </button>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <a href="admin_starting_equipment.php" class="btn btn-success w-100">
+                                            <i class="fas fa-shopping-bag"></i> Équipements de Départ
+                                        </a>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <a href="profile.php" class="btn btn-secondary w-100">
+                                            <i class="fas fa-user-cog"></i> Profil Admin
+                                        </a>
+                                    </div>
+                                </div>
+                                
+                                <hr>
+                                
+                                <div class="row">
+                                    <div class="col-12">
+                                        <h6><i class="fas fa-info-circle"></i> Informations sur les onglets</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <ul class="list-unstyled">
+                                                    <li><i class="fas fa-server text-primary"></i> <strong>Système:</strong> Informations sur PHP, MySQL, serveur</li>
+                                                    <li><i class="fas fa-code text-primary"></i> <strong>Application:</strong> Version actuelle et détails de déploiement</li>
+                                                    <li><i class="fas fa-database text-success"></i> <strong>Base de Données:</strong> Historique des versions de la DB</li>
+                                                </ul>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <ul class="list-unstyled">
+                                                    <li><i class="fas fa-history text-info"></i> <strong>Migrations:</strong> Historique des migrations exécutées</li>
+                                                    <li><i class="fas fa-vial text-warning"></i> <strong>Tests:</strong> Résultats des tests JSON avec statistiques</li>
+                                                    <li><i class="fas fa-tools text-secondary"></i> <strong>Actions:</strong> Actions administrateur et navigation</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -426,5 +1041,109 @@ $current_page = "admin";
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Amélioration de l'expérience utilisateur avec les onglets
+        document.addEventListener('DOMContentLoaded', function() {
+            // Sauvegarder l'onglet actif dans le localStorage
+            const tabButtons = document.querySelectorAll('#versionTabs button[data-bs-toggle="tab"]');
+            const tabContent = document.getElementById('versionTabsContent');
+            
+            // Restaurer l'onglet actif depuis le localStorage
+            const activeTab = localStorage.getItem('activeVersionTab');
+            if (activeTab) {
+                const tabToActivate = document.querySelector(`#${activeTab}-tab`);
+                if (tabToActivate) {
+                    const tab = new bootstrap.Tab(tabToActivate);
+                    tab.show();
+                }
+            }
+            
+            // Écouter les changements d'onglets
+            tabButtons.forEach(button => {
+                button.addEventListener('shown.bs.tab', function(event) {
+                    const targetId = event.target.getAttribute('data-bs-target').substring(1);
+                    localStorage.setItem('activeVersionTab', targetId);
+                    
+                    // Animation d'entrée pour le contenu
+                    const activePane = document.querySelector(`#${targetId}`);
+                    if (activePane) {
+                        activePane.style.opacity = '0';
+                        activePane.style.transform = 'translateY(10px)';
+                        
+                        setTimeout(() => {
+                            activePane.style.transition = 'all 0.3s ease';
+                            activePane.style.opacity = '1';
+                            activePane.style.transform = 'translateY(0)';
+                        }, 50);
+                    }
+                });
+            });
+            
+            // Auto-refresh des données système toutes les 30 secondes
+            setInterval(function() {
+                // Mettre à jour l'heure serveur dans l'onglet système
+                const serverTimeElement = document.querySelector('.stat-value');
+                if (serverTimeElement && serverTimeElement.textContent.includes(':')) {
+                    const now = new Date();
+                    const timeString = now.toLocaleString('fr-FR', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    });
+                    serverTimeElement.textContent = timeString;
+                }
+            }, 1000);
+            
+            // Ajouter des tooltips aux badges
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+        
+        // Fonction pour copier les informations de version
+        function copyVersionInfo() {
+            const versionInfo = {
+                application: '<?= $appVersion['VERSION'] ?>',
+                build: '<?= $appVersion['BUILD_ID'] ?>',
+                environment: '<?= $appVersion['ENVIRONMENT'] ?>',
+                deployDate: '<?= $appVersion['DEPLOY_DATE'] ?>',
+                gitCommit: '<?= substr($appVersion['GIT_COMMIT'], 0, 8) ?>',
+                php: '<?= $systemInfo['php_version'] ?>',
+                mysql: '<?= $systemInfo['mysql_version'] ?>'
+            };
+            
+            const text = `Version: ${versionInfo.application}\nBuild: ${versionInfo.build}\nEnvironment: ${versionInfo.environment}\nDeploy Date: ${versionInfo.deployDate}\nGit Commit: ${versionInfo.gitCommit}\nPHP: ${versionInfo.php}\nMySQL: ${versionInfo.mysql}`;
+            
+            navigator.clipboard.writeText(text).then(function() {
+                // Afficher une notification de succès
+                const toast = document.createElement('div');
+                toast.className = 'toast align-items-center text-white bg-success border-0 position-fixed top-0 end-0 m-3';
+                toast.style.zIndex = '9999';
+                toast.innerHTML = `
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <i class="fas fa-check-circle me-2"></i>Informations de version copiées !
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                `;
+                document.body.appendChild(toast);
+                
+                const bsToast = new bootstrap.Toast(toast);
+                bsToast.show();
+                
+                // Supprimer l'élément après 3 secondes
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 3000);
+            });
+        }
+    </script>
 </body>
 </html>

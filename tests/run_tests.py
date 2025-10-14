@@ -8,11 +8,19 @@ import subprocess
 import argparse
 from pathlib import Path
 
+# Importer le système de rapports JSON
+try:
+    from json_test_reporter import JSONTestReporter
+    JSON_REPORT_AVAILABLE = True
+except ImportError:
+    JSON_REPORT_AVAILABLE = False
+    print("⚠️ Système de rapports JSON non disponible")
+
 def install_dependencies():
     """Installe les dépendances Python nécessaires"""
     print("🔧 Installation des dépendances...")
     try:
-        subprocess.run([str(Path(__file__).parent.parent / "testenv" / "bin" / "python"), "-m", "pip", "install", "-r", "requirements.txt"], 
+        subprocess.run(["python3", "-m", "pip", "install", "-r", "requirements.txt"], 
                       check=True, cwd=Path(__file__).parent)
         print("✅ Dépendances installées avec succès")
     except subprocess.CalledProcessError as e:
@@ -20,28 +28,36 @@ def install_dependencies():
         return False
     return True
 
-def run_tests(test_type="all", headless=False, parallel=False, verbose=False):
+def run_tests(test_type="all", headless=False, parallel=False, verbose=False, generate_json=True):
     """Lance les tests selon les paramètres spécifiés"""
     print(f"🚀 Lancement des tests ({test_type})...")
     
     # Configuration de base
-    cmd = [str(Path(__file__).parent.parent / "testenv" / "bin" / "python"), "-m", "pytest"]
+    cmd = ["python3", "-m", "pytest"]
     
     # Type de tests
+    test_path = ""
     if test_type == "smoke":
         cmd.extend(["-m", "smoke"])
+        test_path = "tests/"
     elif test_type == "authentication":
         cmd.extend(["tests/functional/test_authentication.py"])
+        test_path = "tests/functional/test_authentication.py"
     elif test_type == "character":
         cmd.extend(["tests/functional/test_character_management.py"])
+        test_path = "tests/functional/test_character_management.py"
     elif test_type == "campaign":
         cmd.extend(["tests/functional/test_campaign_management.py"])
+        test_path = "tests/functional/test_campaign_management.py"
     elif test_type == "bestiary":
         cmd.extend(["tests/functional/test_bestiary.py"])
+        test_path = "tests/functional/test_bestiary.py"
     elif test_type == "functional":
         cmd.extend(["tests/functional/"])
+        test_path = "tests/functional/"
     elif test_type == "all":
         cmd.extend(["tests/"])
+        test_path = "tests/"
     else:
         print(f"❌ Type de test inconnu: {test_type}")
         return False
@@ -60,7 +76,16 @@ def run_tests(test_type="all", headless=False, parallel=False, verbose=False):
     os.environ["TEST_BASE_URL"] = os.getenv("TEST_BASE_URL", "http://localhost/jdrmj")
     
     try:
+        # Activer les rapports JSON si demandé
+        if generate_json and JSON_REPORT_AVAILABLE:
+            print("📊 Rapports JSON activés - chaque test générera son propre rapport")
+            print("📅 Date/heure et versions logiciel incluses dans les rapports")
+            # Ajouter le plugin pytest pour les rapports JSON
+            cmd.extend(["-p", "pytest_json_reporter"])
+        
+        # Exécuter les tests
         result = subprocess.run(cmd, cwd=Path(__file__).parent.parent)
+        
         return result.returncode == 0
     except KeyboardInterrupt:
         print("\n⏹️ Tests interrompus par l'utilisateur")
@@ -91,6 +116,8 @@ def main():
     parser.add_argument("--url", "-u", 
                        default="http://localhost/jdrmj",
                        help="URL de base de l'application à tester")
+    parser.add_argument("--no-json", action="store_true",
+                       help="Ne pas générer de rapports JSON")
     
     args = parser.parse_args()
     
@@ -115,15 +142,16 @@ def main():
         test_type=args.type,
         headless=args.headless,
         parallel=args.parallel,
-        verbose=args.verbose
+        verbose=args.verbose,
+        generate_json=not args.no_json
     )
     
     if success:
         print("\n✅ Tous les tests sont passés avec succès!")
-        print("📊 Rapport disponible dans: tests/reports/report.html")
+        print("📊 Rapports JSON disponibles dans: tests/reports/individual/")
     else:
         print("\n❌ Certains tests ont échoué")
-        print("📊 Consultez le rapport pour plus de détails: tests/reports/report.html")
+        print("📊 Consultez les rapports JSON pour plus de détails: tests/reports/individual/")
     
     return 0 if success else 1
 

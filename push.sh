@@ -409,6 +409,7 @@ chmod 644 *.css
 chmod 644 *.js
 chmod 644 *.md
 chmod 644 *.txt
+chmod 644 *.json
 chmod 755 config/
 chmod 644 config/*.php
 chmod 755 includes/
@@ -421,6 +422,9 @@ chmod 755 database/
 chmod 644 database/*.sql
 chmod 755 classes/
 chmod 644 classes/*.php
+chmod 755 tests/
+chmod 755 tests/reports/
+chmod 644 tests/reports/*.json
 
 quit
 EOF
@@ -436,6 +440,60 @@ EOF
     
     # Nettoyer le script temporaire
     rm -f "$lftp_script"
+}
+
+# Fonction pour synchroniser les rapports JSON
+sync_test_reports() {
+    local deploy_path=$1
+    
+    log_info "Synchronisation des rapports de tests JSON..."
+    
+    # Répertoires source et destination
+    local source_dir="/home/jean/Documents/jdrmj/tests/reports"
+    local dest_dir="$deploy_path/tests/reports"
+    
+    # Créer les répertoires de destination s'ils n'existent pas
+    mkdir -p "$dest_dir/individual"
+    mkdir -p "$dest_dir/aggregated"
+    
+    # Copier les rapports individuels
+    if [ -d "$source_dir/individual" ]; then
+        log_info "Copie des rapports individuels..."
+        cp "$source_dir/individual"/*.json "$dest_dir/individual/" 2>/dev/null || log_warning "Aucun rapport individuel trouvé"
+        
+        # Compter les fichiers copiés
+        local individual_count=$(find "$dest_dir/individual" -name "*.json" 2>/dev/null | wc -l)
+        log_success "Rapports individuels copiés: $individual_count fichiers"
+    else
+        log_warning "Répertoire source des rapports individuels non trouvé"
+    fi
+    
+    # Copier les rapports agrégés
+    if [ -d "$source_dir/aggregated" ]; then
+        log_info "Copie des rapports agrégés..."
+        cp "$source_dir/aggregated"/*.json "$dest_dir/aggregated/" 2>/dev/null || log_warning "Aucun rapport agrégé trouvé"
+        
+        # Compter les fichiers copiés
+        local aggregated_count=$(find "$dest_dir/aggregated" -name "*.json" 2>/dev/null | wc -l)
+        log_success "Rapports agrégés copiés: $aggregated_count fichiers"
+    else
+        log_warning "Répertoire source des rapports agrégés non trouvé"
+    fi
+    
+    # Configurer les permissions
+    log_info "Configuration des permissions pour les rapports JSON..."
+    chmod -R 755 "$dest_dir"
+    find "$dest_dir" -name "*.json" -exec chmod 644 {} \; 2>/dev/null || true
+    
+    # Vérifier la synchronisation
+    local total_individual=$(find "$dest_dir/individual" -name "*.json" 2>/dev/null | wc -l)
+    local total_aggregated=$(find "$dest_dir/aggregated" -name "*.json" 2>/dev/null | wc -l)
+    
+    if [ $total_individual -gt 0 ] || [ $total_aggregated -gt 0 ]; then
+        log_success "Synchronisation des rapports JSON réussie: $total_individual individuels, $total_aggregated agrégés"
+    else
+        log_warning "Aucun rapport JSON trouvé - l'onglet Tests sera vide"
+    fi
 }
 
 # Fonction pour préparer les fichiers
@@ -455,6 +513,7 @@ prepare_files() {
     
     # Copier les fichiers nécessaires
     log_info "Copie des fichiers de l'application..."
+    log_info "Inclusion des rapports JSON de tests..."
     
     # Copier tous les fichiers et répertoires nécessaires
     rsync -av \
@@ -471,6 +530,7 @@ prepare_files() {
         --include="*.sql" \
         --include="*.md" \
         --include="*.txt" \
+        --include="*.json" \
         --include="VERSION" \
         --include="config/" \
         --include="config/**" \
@@ -486,6 +546,8 @@ prepare_files() {
         --include="classes/**" \
         --include="uploads/" \
         --include="uploads/**" \
+        --include="tests/reports/" \
+        --include="tests/reports/**" \
         --exclude="*" \
         . "$temp_dir/" >/dev/null 2>&1
     
@@ -502,8 +564,18 @@ prepare_files() {
         fi
     fi
     
-    # Exclure les fichiers de développement
-    rm -rf "$temp_dir/tests"
+    # Exclure les fichiers de développement (mais garder les rapports JSON)
+    rm -rf "$temp_dir/tests/functional"
+    rm -rf "$temp_dir/tests/fixtures"
+    rm -rf "$temp_dir/tests/conftest.py"
+    rm -rf "$temp_dir/tests/run_*.py"
+    rm -rf "$temp_dir/tests/test_*.py"
+    rm -rf "$temp_dir/tests/demo_*.py"
+    rm -rf "$temp_dir/tests/json_test_reporter.py"
+    rm -rf "$temp_dir/tests/pytest_json_reporter.py"
+    rm -rf "$temp_dir/tests/version_detector.py"
+    rm -rf "$temp_dir/tests/README_*.md"
+    rm -rf "$temp_dir/tests/*.sh"
     rm -rf "$temp_dir/testenv"
     rm -rf "$temp_dir/monenv"
     rm -rf "$temp_dir/__pycache__"
@@ -511,6 +583,9 @@ prepare_files() {
     rm -rf "$temp_dir/.gitignore"
     rm -rf "$temp_dir/publish.sh"
     rm -rf "$temp_dir/push.sh"
+    
+    # Synchroniser les rapports JSON depuis le répertoire de développement
+    sync_test_reports "$temp_dir"
     
     log_success "Fichiers préparés dans $temp_dir"
 }
@@ -609,10 +684,23 @@ deploy_to_server() {
             # Déployer les classes
             deploy_classes "$DEPLOY_PATH"
             
+            # Synchroniser les rapports JSON depuis le répertoire de développement
+            log_info "Synchronisation des rapports JSON sur le serveur de test..."
+            sync_test_reports "$DEPLOY_PATH"
+            
             # Ajuster les permissions
-    sudo chown -R www-data:www-data "$DEPLOY_PATH"
-    sudo chmod -R 755 "$DEPLOY_PATH"
-    sudo chmod -R 777 "$DEPLOY_PATH/uploads" 2>/dev/null || true
+            sudo chown -R www-data:www-data "$DEPLOY_PATH"
+            sudo chmod -R 755 "$DEPLOY_PATH"
+            sudo chmod -R 777 "$DEPLOY_PATH/uploads" 2>/dev/null || true
+            
+            # Configurer les permissions pour les rapports JSON
+            if [ -d "$DEPLOY_PATH/tests/reports" ]; then
+                log_info "Configuration des permissions pour les rapports JSON..."
+                sudo chown -R www-data:www-data "$DEPLOY_PATH/tests/reports"
+                sudo chmod -R 755 "$DEPLOY_PATH/tests/reports"
+                sudo chmod -R 644 "$DEPLOY_PATH/tests/reports"/*.json 2>/dev/null || true
+                log_success "Permissions des rapports JSON configurées"
+            fi
             
             log_success "Livraison terminée sur le serveur de test"
             ;;
@@ -628,9 +716,22 @@ deploy_to_server() {
             # Déployer les classes
             deploy_classes "$DEPLOY_PATH"
             
+            # Synchroniser les rapports JSON depuis le répertoire de développement
+            log_info "Synchronisation des rapports JSON sur le serveur de staging..."
+            sync_test_reports "$DEPLOY_PATH"
+            
             sudo chown -R www-data:www-data "$DEPLOY_PATH"
             sudo chmod -R 755 "$DEPLOY_PATH"
             sudo chmod -R 777 "$DEPLOY_PATH/uploads" 2>/dev/null || true
+            
+            # Configurer les permissions pour les rapports JSON
+            if [ -d "$DEPLOY_PATH/tests/reports" ]; then
+                log_info "Configuration des permissions pour les rapports JSON..."
+                sudo chown -R www-data:www-data "$DEPLOY_PATH/tests/reports"
+                sudo chmod -R 755 "$DEPLOY_PATH/tests/reports"
+                sudo chmod -R 644 "$DEPLOY_PATH/tests/reports"/*.json 2>/dev/null || true
+                log_success "Permissions des rapports JSON configurées"
+            fi
             
             log_success "Livraison terminée sur le serveur de staging"
             ;;

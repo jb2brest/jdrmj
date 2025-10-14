@@ -189,8 +189,9 @@ warlock_pacts
 wizard_traditions
 Il faudrait fusionner ces tables en utilisant la classe requise pour permettre de les récupérer. 
 
-http://localhost/jdrmj/view_character.php?id=60 => il manque la possibilité de changer la photo  de pr
-
+dans http://localhost/jdrmj/admin_versions.php
+il faut créer des onglets pour chaque zone en H5
+Il faut ajouter un nouvel onglet avec les résultat des tests chargés depuis les fichiers json
 
 ############################# Dés ################################
 Je voudrais que tu me génères une image contenant un set de dés :

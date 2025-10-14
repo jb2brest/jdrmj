@@ -14,18 +14,28 @@ def test_users():
             'username': 'test_dm',
             'email': 'dm@test.com',
             'password': 'TestPassword123!',
+            'role': 'dm',
             'is_dm': True
         },
         'player_user': {
             'username': 'test_player',
             'email': 'player@test.com',
             'password': 'TestPassword123!',
+            'role': 'player',
             'is_dm': False
+        },
+        'admin_user': {
+            'username': 'test_admin',
+            'email': 'admin@test.com',
+            'password': 'TestPassword123!',
+            'role': 'admin',
+            'is_dm': True
         },
         'random_user': {
             'username': fake.user_name(),
             'email': fake.email(),
             'password': 'TestPassword123!',
+            'role': 'player',
             'is_dm': False
         }
     }

@@ -6,15 +6,23 @@ import os
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 import time
+
+# Import optionnel de webdriver_manager
+try:
+    from webdriver_manager.chrome import ChromeDriverManager
+    WEBDRIVER_MANAGER_AVAILABLE = True
+except ImportError:
+    WEBDRIVER_MANAGER_AVAILABLE = False
+    print("⚠️ webdriver_manager non disponible - ChromeDriver doit être installé manuellement")
+
 # from pytest_html import html  # Non disponible dans cette version
 
 # Configuration de l'URL de base de l'application
-BASE_URL = os.getenv('TEST_BASE_URL', 'http://localhost/jdrmj_test')
+BASE_URL = os.getenv('TEST_BASE_URL', 'http://localhost/jdrmj')
 
 @pytest.fixture(scope="session")
 def browser_config():
@@ -42,7 +50,17 @@ def driver(browser_config):
     chrome_options.add_argument('--disable-web-security')
     chrome_options.add_argument('--allow-running-insecure-content')
     
-    service = Service("/usr/local/bin/chromedriver")
+    # Utiliser webdriver_manager si disponible, sinon chemin fixe
+    if WEBDRIVER_MANAGER_AVAILABLE:
+        try:
+            service = Service(ChromeDriverManager().install())
+        except Exception as e:
+            print(f"⚠️ Erreur avec webdriver_manager: {e}")
+            print("🔄 Utilisation du chemin fixe pour ChromeDriver")
+            service = Service("/usr/bin/chromedriver")
+    else:
+        service = Service("/usr/bin/chromedriver")
+    
     driver = webdriver.Chrome(service=service, options=chrome_options)
     driver.implicitly_wait(browser_config['implicit_wait'])
     driver.set_window_size(*browser_config['window_size'])
