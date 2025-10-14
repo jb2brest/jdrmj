@@ -648,6 +648,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
     }
 }
 
+// Traitement de l'upload de photo de profil
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['action']) && $_POST['action'] === 'upload_photo') {
+    if (isset($_FILES['profile_photo']) && $_FILES['profile_photo']['error'] === UPLOAD_ERR_OK) {
+        $upload_dir = 'uploads/profiles/';
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0777, true);
+        }
+        
+        $file_extension = strtolower(pathinfo($_FILES['profile_photo']['name'], PATHINFO_EXTENSION));
+        $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif'];
+        
+        if (in_array($file_extension, $allowed_extensions)) {
+            $file_size = $_FILES['profile_photo']['size'];
+            if ($file_size <= 10 * 1024 * 1024) { // 10MB max
+                $new_filename = 'profile_' . $character_id . '_' . time() . '_' . uniqid() . '.' . $file_extension;
+                $upload_path = $upload_dir . $new_filename;
+                
+                if (move_uploaded_file($_FILES['profile_photo']['tmp_name'], $upload_path)) {
+                    // Supprimer l'ancienne photo si elle existe
+                    if (!empty($character['profile_photo']) && file_exists($character['profile_photo'])) {
+                        unlink($character['profile_photo']);
+                    }
+                    
+                    // Mettre à jour la base de données
+                    $db = Database::getInstance();
+                    $stmt = $db->prepare("UPDATE characters SET profile_photo = ? WHERE id = ?");
+                    if ($stmt->execute([$upload_path, $character_id])) {
+                        $success_message = "Photo de profil mise à jour avec succès.";
+                        // Recharger les données du personnage
+                        $characterObj = Character::findById($character_id);
+                        if ($characterObj) {
+                            $character = $characterObj->toArray();
+                        }
+                    } else {
+                        $error_message = "Erreur lors de la mise à jour de la base de données.";
+                    }
+                } else {
+                    $error_message = "Erreur lors de l'upload de la photo.";
+                }
+            } else {
+                $error_message = "La photo est trop volumineuse (max 10MB).";
+            }
+        } else {
+            $error_message = "Format de fichier non supporté. Utilisez JPG, PNG ou GIF.";
+        }
+    } else {
+        $error_message = "Aucun fichier sélectionné ou erreur lors de l'upload.";
+    }
+}
+
 // $magicalEquipment est déjà défini plus haut
 
 // Récupérer les poisons du personnage via la classe Character
@@ -1020,13 +1070,19 @@ $initiative = $dexterityMod;
             <div class="row mb-4">
                 <div class="col-md-6">
                     <div class="d-flex align-items-start">
-                        <div class="me-3">
+                        <div class="me-3 position-relative">
                             <?php if (!empty($character['profile_photo'])): ?>
                                 <img src="<?php echo htmlspecialchars($character['profile_photo']); ?>" alt="Photo de <?php echo htmlspecialchars($character['name']); ?>" class="rounded" style="width: 100px; height: 100px; object-fit: cover;">
                             <?php else: ?>
                                 <div class="bg-secondary rounded d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
                                     <i class="fas fa-user text-white" style="font-size: 2.5rem;"></i>
                                 </div>
+                            <?php endif; ?>
+                            
+                            <?php if ($canModifyHP): ?>
+                                <button type="button" class="btn btn-sm btn-outline-primary position-absolute" style="bottom: -5px; right: -5px;" data-bs-toggle="modal" data-bs-target="#photoModal" title="Changer la photo">
+                                    <i class="fas fa-camera"></i>
+                                </button>
                             <?php endif; ?>
                         </div>
                         <div>
@@ -2288,6 +2344,49 @@ $initiative = $dexterityMod;
         </div>
     </div>
 
+    <!-- Modal pour Upload de Photo de Profil -->
+    <?php if ($canModifyHP): ?>
+    <div class="modal fade" id="photoModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-camera me-2"></i>
+                        Changer la Photo de Profil
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="photoForm" method="POST" enctype="multipart/form-data">
+                        <input type="hidden" name="action" value="upload_photo">
+                        
+                        <div class="mb-3">
+                            <label for="profile_photo" class="form-label">Sélectionner une nouvelle photo :</label>
+                            <input type="file" class="form-control" name="profile_photo" id="profile_photo" accept="image/*" required>
+                            <div class="form-text">
+                                Formats acceptés : JPG, PNG, GIF (max 10MB)
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Conseil :</strong> Pour un meilleur rendu, utilisez une image carrée ou rectangulaire.
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-primary" onclick="uploadPhoto()">
+                        <i class="fas fa-upload me-1"></i>Uploader
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function quickDamage(amount) {
@@ -2391,6 +2490,35 @@ $initiative = $dexterityMod;
             const targetName = document.getElementById('transferTarget').selectedOptions[0].text;
             
             if (confirm(`Confirmer le transfert de "${itemName}" vers "${targetName}" ?`)) {
+                form.submit();
+            }
+        }
+
+        // Fonction pour l'upload de photo
+        function uploadPhoto() {
+            const form = document.getElementById('photoForm');
+            const fileInput = document.getElementById('profile_photo');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Veuillez sélectionner un fichier image.');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            
+            if (file.size > maxSize) {
+                alert('Le fichier est trop volumineux. Taille maximale : 10MB.');
+                return;
+            }
+            
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+            if (!allowedTypes.includes(file.type)) {
+                alert('Format de fichier non supporté. Utilisez JPG, PNG ou GIF.');
+                return;
+            }
+            
+            if (confirm('Confirmer l\'upload de cette photo de profil ?')) {
                 form.submit();
             }
         }
