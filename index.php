@@ -22,6 +22,17 @@ $show_hero = true;
 <body>
     <?php include 'includes/navbar.php'; ?>
 
+    <!-- Message de confirmation de suppression de compte -->
+    <?php if (isset($_GET['deleted']) && $_GET['deleted'] == '1'): ?>
+        <div class="container mt-4">
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle me-2"></i>
+                <strong>Compte supprimé avec succès</strong> - Votre compte et toutes vos données ont été définitivement supprimés.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <!-- Features Section -->
     <section class="py-5">
         <div class="container">

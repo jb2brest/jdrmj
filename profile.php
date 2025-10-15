@@ -314,6 +314,10 @@ $current_page = "profile";
                                     <span class="badge bg-danger ms-1"><?php echo $unread_notifications; ?></span>
                                 <?php endif; ?>
                             </a>
+                            <hr class="my-3">
+                            <a href="delete_account.php" class="btn btn-outline-danger btn-sm">
+                                <i class="fas fa-trash-alt me-2"></i>Supprimer mon compte
+                            </a>
                         </div>
                     </div>
                 </div>

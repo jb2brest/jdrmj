@@ -314,6 +314,24 @@ class User
     }
 
     /**
+     * Obtient le hash du mot de passe de l'utilisateur
+     * 
+     * @return string|null Hash du mot de passe ou null
+     */
+    public function getPasswordHash()
+    {
+        if (!$this->id) {
+            return null;
+        }
+        
+        $stmt = $this->pdo->prepare("SELECT password_hash FROM users WHERE id = ?");
+        $stmt->execute([$this->id]);
+        $result = $stmt->fetch();
+        
+        return $result ? $result['password_hash'] : null;
+    }
+
+    /**
      * Crée un nouvel utilisateur
      * 
      * @param array $data Données de l'utilisateur

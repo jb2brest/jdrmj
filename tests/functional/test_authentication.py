@@ -170,6 +170,125 @@ class TestAuthentication:
             # Vérifier si on est toujours sur la page de connexion
             assert "login.php" in driver.current_url, "Expected to stay on login page with invalid password"
     
+    def test_user_account_deletion(self, driver, wait, app_url):
+        """Test de suppression de compte utilisateur"""
+        # Créer un utilisateur de test temporaire
+        test_user_data = {
+            'username': f'test_delete_user_{int(time.time())}',
+            'email': f'test_delete_{int(time.time())}@example.com',
+            'password': 'TestPassword123!'
+        }
+        
+        # S'inscrire
+        self.test_user_registration(driver, wait, app_url, test_user_data)
+        
+        # Se connecter
+        self.test_user_login(driver, wait, app_url, test_user_data)
+        
+        # Vérifier que l'utilisateur est connecté (menu dropdown présent)
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".dropdown-toggle")))
+        
+        # Aller à la page de suppression de compte
+        driver.get(f"{app_url}/delete_account.php")
+        
+        # Vérifier que la page se charge correctement (pas de redirection vers login)
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "h4")))
+        assert "Supprimer mon compte" in driver.page_source
+        assert "login.php" not in driver.current_url
+        
+        # Remplir le formulaire de suppression
+        password_field = wait.until(EC.presence_of_element_located((By.NAME, "password")))
+        confirm_field = driver.find_element(By.NAME, "confirm_delete")
+        
+        password_field.send_keys(test_user_data['password'])
+        confirm_field.send_keys("DELETE")
+        
+        # Attendre que le bouton soit activé
+        delete_button = wait.until(EC.element_to_be_clickable((By.ID, "deleteButton")))
+        
+        # Cliquer sur supprimer (avec confirmation JavaScript)
+        driver.execute_script("arguments[0].click();", delete_button)
+        
+        # Accepter la confirmation JavaScript
+        driver.switch_to.alert.accept()
+        
+        # Vérifier la redirection vers la page d'accueil avec message de suppression
+        wait.until(lambda driver: "index.php" in driver.current_url)
+        assert "deleted=1" in driver.current_url or "supprimé" in driver.page_source.lower()
+        
+        # Vérifier que l'utilisateur est déconnecté
+        assert not driver.find_elements(By.CSS_SELECTOR, ".dropdown-toggle")
+    
+    def test_user_account_deletion_invalid_password(self, driver, wait, app_url, test_user):
+        """Test de suppression de compte avec mot de passe invalide"""
+        # Se connecter d'abord
+        self.test_user_login(driver, wait, app_url, test_user)
+        
+        # Vérifier que l'utilisateur est connecté (menu dropdown présent)
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".dropdown-toggle")))
+        
+        # Aller à la page de suppression de compte
+        driver.get(f"{app_url}/delete_account.php")
+        
+        # Vérifier que la page se charge correctement (pas de redirection vers login)
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "h4")))
+        assert "Supprimer mon compte" in driver.page_source
+        assert "login.php" not in driver.current_url
+        
+        # Remplir le formulaire avec un mauvais mot de passe
+        password_field = wait.until(EC.presence_of_element_located((By.NAME, "password")))
+        confirm_field = driver.find_element(By.NAME, "confirm_delete")
+        
+        password_field.send_keys("wrong_password")
+        confirm_field.send_keys("DELETE")
+        
+        # Cliquer sur supprimer
+        delete_button = wait.until(EC.element_to_be_clickable((By.ID, "deleteButton")))
+        driver.execute_script("arguments[0].click();", delete_button)
+        
+        # Accepter la confirmation JavaScript
+        driver.switch_to.alert.accept()
+        
+        # Vérifier qu'un message d'erreur apparaît
+        error_element = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".alert-danger")))
+        assert "incorrect" in error_element.text.lower() or "erreur" in error_element.text.lower()
+        
+        # Vérifier qu'on est toujours sur la page de suppression
+        assert "delete_account.php" in driver.current_url
+    
+    def test_user_account_deletion_invalid_confirmation(self, driver, wait, app_url, test_user):
+        """Test de suppression de compte avec confirmation invalide"""
+        # Se connecter d'abord
+        self.test_user_login(driver, wait, app_url, test_user)
+        
+        # Vérifier que l'utilisateur est connecté (menu dropdown présent)
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".dropdown-toggle")))
+        
+        # Aller à la page de suppression de compte
+        driver.get(f"{app_url}/delete_account.php")
+        
+        # Vérifier que la page se charge correctement (pas de redirection vers login)
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "h4")))
+        assert "Supprimer mon compte" in driver.page_source
+        assert "login.php" not in driver.current_url
+        
+        # Remplir le formulaire avec une mauvaise confirmation
+        password_field = wait.until(EC.presence_of_element_located((By.NAME, "password")))
+        confirm_field = driver.find_element(By.NAME, "confirm_delete")
+        
+        password_field.send_keys(test_user['password'])
+        confirm_field.send_keys("WRONG")
+        
+        # Vérifier que le bouton reste désactivé
+        delete_button = driver.find_element(By.ID, "deleteButton")
+        assert delete_button.get_attribute("disabled") is not None
+        
+        # Essayer de cliquer quand même (ne devrait pas fonctionner)
+        driver.execute_script("arguments[0].click();", delete_button)
+        
+        # Vérifier qu'on est toujours sur la page de suppression
+        assert "delete_account.php" in driver.current_url
+    
     @pytest.mark.smoke
     def test_invalid_login_credentials(self, driver, wait, app_url):
         """Test de connexion avec des identifiants invalides"""
