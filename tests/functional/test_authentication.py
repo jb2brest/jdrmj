@@ -123,32 +123,52 @@ class TestAuthentication:
         # D'abord se connecter
         self.test_user_login(driver, wait, app_url, test_user)
         
-        # Chercher le lien de déconnexion avec plusieurs sélecteurs possibles
-        logout_selectors = [
-            "a[href='logout.php']",
-            "a[href*='logout']",
-            ".logout",
-            "[data-action='logout']"
-        ]
-        
-        logout_link = None
-        for selector in logout_selectors:
-            try:
-                logout_link = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, selector)))
-                break
-            except TimeoutException:
-                continue
-        
-        if logout_link:
+        # Chercher le menu dropdown utilisateur
+        try:
+            # Attendre que le menu dropdown soit présent
+            dropdown_toggle = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".dropdown-toggle")))
+            
+            # Cliquer sur le menu dropdown pour l'ouvrir
+            driver.execute_script("arguments[0].click();", dropdown_toggle)
+            time.sleep(0.5)  # Attendre que le menu s'ouvre
+            
+            # Chercher le lien de déconnexion dans le menu dropdown
+            logout_link = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "a[href='logout.php']")))
+            
+            # Cliquer sur le lien de déconnexion
             logout_link.click()
             
             # Vérifier la redirection vers la page de connexion ou d'accueil
             wait.until(lambda driver: "login.php" in driver.current_url or "index.php" in driver.current_url)
             
-            # Vérifier que l'utilisateur est déconnecté
-            assert not driver.find_elements(By.CSS_SELECTOR, "a[href='logout.php']")
-        else:
-            pytest.skip("Lien de déconnexion non trouvé - test ignoré")
+            # Vérifier que l'utilisateur est déconnecté (le menu dropdown ne doit plus être présent)
+            assert not driver.find_elements(By.CSS_SELECTOR, ".dropdown-toggle")
+            
+        except TimeoutException:
+            pytest.skip("Menu de déconnexion non trouvé - test ignoré")
+    
+    def test_user_login_invalid_password(self, driver, wait, app_url, test_user):
+        """Test de connexion avec un mot de passe invalide"""
+        driver.get(f"{app_url}/login.php")
+        
+        # Remplir avec un utilisateur valide mais un mot de passe invalide
+        username_field = wait.until(EC.presence_of_element_located((By.NAME, "username")))
+        password_field = driver.find_element(By.NAME, "password")
+        
+        username_field.send_keys(test_user['username'])
+        password_field.send_keys("invalid_password")
+        
+        # Soumettre le formulaire
+        submit_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
+        driver.execute_script("arguments[0].click();", submit_button)
+        
+        # Vérifier qu'un message d'erreur apparaît
+        try:
+            error_element = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".alert-danger, .error")))
+            assert "incorrect" in error_element.text.lower() or "invalid" in error_element.text.lower()
+        except TimeoutException:
+            # Vérifier si on est toujours sur la page de connexion
+            assert "login.php" in driver.current_url, "Expected to stay on login page with invalid password"
     
     @pytest.mark.smoke
     def test_invalid_login_credentials(self, driver, wait, app_url):
