@@ -4,11 +4,11 @@
     "file": "/home/jean/Documents/jdrmj/tests/functional/test_authentication.py",
     "category": "Authentification",
     "priority": "Basse",
-    "timestamp": "2025-10-15T19:48:07.326665",
+    "timestamp": "2025-10-15T19:53:38.320397",
     "date": "2025-10-15",
-    "time": "19:48:07",
+    "time": "19:53:38",
     "timezone": "",
-    "duration_seconds": 4.929
+    "duration_seconds": 3.203
   },
   "result": {
     "status": "PASSED",
@@ -18,13 +18,13 @@
     "stack_trace": ""
   },
   "execution": {
-    "start_time": "2025-10-15T19:48:02.397310",
-    "end_time": "2025-10-15T19:48:07.326626",
+    "start_time": "2025-10-15T19:53:35.117222",
+    "end_time": "2025-10-15T19:53:38.320358",
     "start_date": "2025-10-15",
-    "start_time_formatted": "19:48:02",
+    "start_time_formatted": "19:53:35",
     "end_date": "2025-10-15",
-    "end_time_formatted": "19:48:07",
-    "duration_formatted": "4.93s"
+    "end_time_formatted": "19:53:38",
+    "duration_formatted": "3.20s"
   },
   "environment": {
     "python_version": "3.12.3 (main, Aug 14 2025, 17:47:21) [GCC 13.3.0]",
@@ -32,9 +32,9 @@
     "working_directory": "/home/jean/Documents/jdrmj"
   },
   "version_info": {
-    "detection_timestamp": "2025-10-15T19:48:07.326677",
+    "detection_timestamp": "2025-10-15T19:53:38.320409",
     "application": {
-      "version": "2.10.0"
+      "version": "2.10.1"
     },
     "system": {
       "os_name": "Ubuntu 24.04.3 LTS",
@@ -49,9 +49,9 @@
     },
     "git": {
       "git_version": "2.43.0",
-      "commit_hash": "87686f8c",
+      "commit_hash": "73cedc88",
       "branch": "Classes",
-      "last_commit_date": "2025-10-14 22:48:28 +0200"
+      "last_commit_date": "2025-10-15 19:52:45 +0200"
     },
     "database": {
       "mysql": "10.11.13"

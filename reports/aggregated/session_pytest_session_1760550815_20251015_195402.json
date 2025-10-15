@@ -1,38 +1,49 @@
 {
-  "test_info": {
-    "name": "test_password_confirmation_validation",
-    "file": "/home/jean/Documents/jdrmj/tests/functional/test_authentication.py",
-    "category": "Authentification",
-    "priority": "Basse",
-    "timestamp": "2025-10-15T19:54:02.533366",
+  "session_info": {
+    "name": "pytest_session_1760550815",
+    "timestamp": "2025-10-15T19:54:02.924338",
     "date": "2025-10-15",
     "time": "19:54:02",
     "timezone": "",
-    "duration_seconds": 2.572
-  },
-  "result": {
-    "status": "PASSED",
-    "success": true,
-    "error_message": "",
-    "error_line": "",
-    "stack_trace": ""
-  },
-  "execution": {
-    "start_time": "2025-10-15T19:53:59.961720",
-    "end_time": "2025-10-15T19:54:02.533337",
+    "start_time": "2025-10-15T19:53:35.094795",
+    "end_time": "2025-10-15T19:54:02.762958",
     "start_date": "2025-10-15",
-    "start_time_formatted": "19:53:59",
+    "start_time_formatted": "19:53:35",
     "end_date": "2025-10-15",
     "end_time_formatted": "19:54:02",
-    "duration_formatted": "2.57s"
+    "duration_seconds": 27.668,
+    "duration_formatted": "27.67s"
   },
+  "summary": {
+    "total_tests": 6,
+    "passed_tests": 6,
+    "failed_tests": 0,
+    "error_tests": 0,
+    "success_rate": 100.0
+  },
+  "categories": {
+    "Authentification": {
+      "total": 6,
+      "passed": 6,
+      "failed": 0,
+      "error": 0
+    }
+  },
+  "individual_reports": [
+    "test_user_registration.json",
+    "test_user_login.json",
+    "test_user_logout.json",
+    "test_invalid_login_credentials.json",
+    "test_registration_validation.json",
+    "test_password_confirmation_validation.json"
+  ],
   "environment": {
     "python_version": "3.12.3 (main, Aug 14 2025, 17:47:21) [GCC 13.3.0]",
     "platform": "linux",
     "working_directory": "/home/jean/Documents/jdrmj"
   },
   "version_info": {
-    "detection_timestamp": "2025-10-15T19:54:02.533376",
+    "detection_timestamp": "2025-10-15T19:54:02.764043",
     "application": {
       "version": "2.10.1"
     },
@@ -60,6 +71,5 @@
       "php": "8.3.6",
       "apache": "2.4.58"
     }
-  },
-  "additional_data": {}
+  }
 }

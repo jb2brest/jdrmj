@@ -41,23 +41,23 @@ def run_tests(test_type="all", headless=False, parallel=False, verbose=False, ge
         cmd.extend(["-m", "smoke"])
         test_path = "tests/"
     elif test_type == "authentication":
-        cmd.extend(["tests/functional/test_authentication.py"])
-        test_path = "tests/functional/test_authentication.py"
+        cmd.extend(["functional/test_authentication.py"])
+        test_path = "functional/test_authentication.py"
     elif test_type == "character":
-        cmd.extend(["tests/functional/test_character_management.py"])
-        test_path = "tests/functional/test_character_management.py"
+        cmd.extend(["functional/test_character_management.py"])
+        test_path = "functional/test_character_management.py"
     elif test_type == "campaign":
-        cmd.extend(["tests/functional/test_campaign_management.py"])
-        test_path = "tests/functional/test_campaign_management.py"
+        cmd.extend(["functional/test_campaign_management.py"])
+        test_path = "functional/test_campaign_management.py"
     elif test_type == "bestiary":
-        cmd.extend(["tests/functional/test_bestiary.py"])
-        test_path = "tests/functional/test_bestiary.py"
+        cmd.extend(["functional/test_bestiary.py"])
+        test_path = "functional/test_bestiary.py"
     elif test_type == "functional":
-        cmd.extend(["tests/functional/"])
-        test_path = "tests/functional/"
+        cmd.extend(["functional/"])
+        test_path = "functional/"
     elif test_type == "all":
-        cmd.extend(["tests/"])
-        test_path = "tests/"
+        cmd.extend(["."])
+        test_path = "."
     else:
         print(f"❌ Type de test inconnu: {test_type}")
         return False
@@ -88,9 +88,9 @@ def run_tests(test_type="all", headless=False, parallel=False, verbose=False, ge
         
         # Exécuter les tests
         if generate_json and JSON_REPORT_AVAILABLE:
-            result = subprocess.run(cmd, cwd=Path(__file__).parent.parent, env=env)
+            result = subprocess.run(cmd, cwd=Path(__file__).parent, env=env)
         else:
-            result = subprocess.run(cmd, cwd=Path(__file__).parent.parent)
+            result = subprocess.run(cmd, cwd=Path(__file__).parent)
         
         return result.returncode == 0
     except KeyboardInterrupt:

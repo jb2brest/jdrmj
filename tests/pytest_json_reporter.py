@@ -23,8 +23,7 @@ class JSONReporterPlugin:
     
     def __init__(self):
         self.reporter = None
-        self.test_reports = []
-        self.session_start_time = None
+        self._skipped_tests = set()  # Pour tracker les tests ignorés déjà traités
         
         if JSON_REPORTER_AVAILABLE:
             # Récupérer l'URL de base depuis les variables d'environnement
@@ -33,27 +32,11 @@ class JSONReporterPlugin:
     
     def pytest_sessionstart(self, session):
         """Début de session de tests"""
-        self.session_start_time = time.time()
-        print("🎲 Début de session de tests avec rapports JSON")
+        print("🎲 Début de session de tests avec rapports JSON individuels")
     
     def pytest_sessionfinish(self, session, exitstatus):
         """Fin de session de tests"""
-        if not self.reporter or not self.session_start_time:
-            return
-        
-        session_end_time = time.time()
-        
-        # Créer un rapport de session
-        session_name = f"pytest_session_{int(self.session_start_time)}"
-        session_report = self.reporter.create_test_session_report(
-            session_name=session_name,
-            test_reports=self.test_reports,
-            start_time=self.session_start_time,
-            end_time=session_end_time
-        )
-        
-        if session_report:
-            print(f"📊 Rapport de session créé: {session_report}")
+        print("📊 Session de tests terminée - rapports individuels générés")
     
     def pytest_runtest_setup(self, item):
         """Avant l'exécution d'un test"""
@@ -62,7 +45,14 @@ class JSONReporterPlugin:
     
     def pytest_runtest_teardown(self, item, nextitem):
         """Après l'exécution d'un test"""
+        print(f"DEBUG: teardown appelé pour {item.name}")
         if not self.reporter or not hasattr(item, 'start_time'):
+            return
+        
+        # Vérifier si le test a été ignoré - si oui, ne pas créer de rapport ici
+        # car il a déjà été créé dans pytest_runtest_logreport
+        test_nodeid = f"{item.fspath}::{item.cls.__name__}::{item.name}" if hasattr(item, 'cls') and item.cls else f"{item.fspath}::{item.name}"
+        if test_nodeid in self._skipped_tests:
             return
         
         end_time = time.time()
@@ -76,17 +66,18 @@ class JSONReporterPlugin:
         error_message = ""
         error_line = ""
         
-        # Vérifier si le test a échoué
-        if hasattr(item, 'rep_call') and item.rep_call.failed:
-            status = "FAILED"
-            if hasattr(item.rep_call, 'longrepr'):
-                error_message = str(item.rep_call.longrepr)
-                # Extraire le numéro de ligne si possible
-                if "line" in error_message:
-                    import re
-                    line_match = re.search(r'line (\d+)', error_message)
-                    if line_match:
-                        error_line = line_match.group(1)
+        # Vérifier le statut du test
+        if hasattr(item, 'rep_call'):
+            if item.rep_call.failed:
+                status = "FAILED"
+                if hasattr(item.rep_call, 'longrepr'):
+                    error_message = str(item.rep_call.longrepr)
+                    # Extraire le numéro de ligne si possible
+                    if "line" in error_message:
+                        import re
+                        line_match = re.search(r'line (\d+)', error_message)
+                        if line_match:
+                            error_line = line_match.group(1)
         
         # Créer le rapport JSON pour ce test
         report_path = self.reporter.create_test_report(
@@ -99,15 +90,56 @@ class JSONReporterPlugin:
             error_line=error_line
         )
         
-        if report_path:
-            self.test_reports.append(report_path)
+        # Rapport individuel créé - pas besoin de le stocker pour une session
     
     def pytest_runtest_logreport(self, report):
         """Log des résultats de test"""
+        # Debug: afficher tous les rapports (désactivé pour les tests)
+        # print(f"DEBUG: logreport - when={report.when}, outcome={report.outcome}, skipped={report.skipped}")
+        
         if report.when == 'call':
             # Stocker le rapport pour l'utiliser dans teardown
             if hasattr(report, 'item'):
                 report.item.rep_call = report
+                
+        # Traiter les tests ignorés (peuvent être ignorés à n'importe quel moment)
+        if report.skipped and self.reporter:
+            self._create_test_report_from_logreport(report)
+            # Marquer ce test comme traité pour éviter qu'il soit traité dans teardown
+            self._skipped_tests.add(report.nodeid)
+        
+        # Éviter que la phase teardown crée un rapport pour les tests ignorés
+        if report.when == 'teardown' and report.nodeid in self._skipped_tests:
+            return
+    
+    def _create_test_report_from_logreport(self, report):
+        """Créer un rapport JSON à partir d'un logreport pytest"""
+        # Extraire le nom du test depuis nodeid
+        test_name = report.nodeid.split("::")[-1] if "::" in report.nodeid else report.nodeid
+        test_file = str(report.fspath) if hasattr(report, 'fspath') else ""
+        
+        # Déterminer le statut
+        status = "SKIPPED"
+        error_message = ""
+        if hasattr(report, 'longrepr') and report.longrepr:
+            error_message = str(report.longrepr)
+        
+        # Utiliser les timestamps du rapport si disponibles
+        start_time = getattr(report, 'start', time.time() - 1)
+        end_time = getattr(report, 'stop', time.time())
+        
+        # Créer le rapport JSON
+        report_path = self.reporter.create_test_report(
+            test_name=test_name,
+            test_file=test_file,
+            status=status,
+            start_time=start_time,
+            end_time=end_time,
+            error_message=error_message,
+            error_line=""
+        )
+        
+        # Rapport individuel créé - pas besoin de le stocker pour une session
 
 # Instance globale du plugin
 json_reporter_plugin = JSONReporterPlugin()

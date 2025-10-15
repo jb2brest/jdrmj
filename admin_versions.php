@@ -111,16 +111,12 @@ function getSystemInfo() {
 function getTestReports() {
     $reportsDir = __DIR__ . '/tests/reports';
     $individualDir = $reportsDir . '/individual';
-    $aggregatedDir = $reportsDir . '/aggregated';
     
     $testData = [
         'individual_reports' => [],
-        'aggregated_reports' => [],
         'summary' => [
             'total_individual' => 0,
-            'total_aggregated' => 0,
-            'latest_individual' => null,
-            'latest_aggregated' => null
+            'latest_individual' => null
         ]
     ];
     
@@ -151,32 +147,7 @@ function getTestReports() {
         }
     }
     
-    // Charger les rapports agrégés
-    if (is_dir($aggregatedDir)) {
-        $aggregatedFiles = glob($aggregatedDir . '/*.json');
-        $testData['summary']['total_aggregated'] = count($aggregatedFiles);
-        
-        foreach ($aggregatedFiles as $file) {
-            $content = file_get_contents($file);
-            $data = json_decode($content, true);
-            if ($data) {
-                $testData['aggregated_reports'][] = [
-                    'filename' => basename($file),
-                    'data' => $data,
-                    'modified' => filemtime($file)
-                ];
-            }
-        }
-        
-        // Trier par date de modification (plus récent en premier)
-        usort($testData['aggregated_reports'], function($a, $b) {
-            return $b['modified'] - $a['modified'];
-        });
-        
-        if (!empty($testData['aggregated_reports'])) {
-            $testData['summary']['latest_aggregated'] = $testData['aggregated_reports'][0];
-        }
-    }
+    // Les rapports de session ont été supprimés - seuls les rapports individuels sont conservés
     
     return $testData;
 }
@@ -188,9 +159,10 @@ function calculateTestStatistics($testData) {
         'passed_tests' => 0,
         'failed_tests' => 0,
         'error_tests' => 0,
+        'skipped_tests' => 0,
         'success_rate' => 0,
         'categories' => [],
-        'recent_tests' => []
+        'tests_by_category' => []
     ];
     
     // Analyser les rapports individuels
@@ -203,20 +175,24 @@ function calculateTestStatistics($testData) {
         } else {
             if ($data['result']['status'] === 'FAILED') {
                 $stats['failed_tests']++;
+            } elseif ($data['result']['status'] === 'SKIPPED') {
+                $stats['skipped_tests']++;
             } else {
                 $stats['error_tests']++;
             }
         }
         
-        // Compter par catégorie
+        // Organiser par catégorie
         $category = $data['test_info']['category'] ?? 'Autres';
         if (!isset($stats['categories'][$category])) {
             $stats['categories'][$category] = [
                 'total' => 0,
                 'passed' => 0,
                 'failed' => 0,
-                'error' => 0
+                'error' => 0,
+                'skipped' => 0
             ];
+            $stats['tests_by_category'][$category] = [];
         }
         
         $stats['categories'][$category]['total']++;
@@ -225,22 +201,30 @@ function calculateTestStatistics($testData) {
         } else {
             if ($data['result']['status'] === 'FAILED') {
                 $stats['categories'][$category]['failed']++;
+            } elseif ($data['result']['status'] === 'SKIPPED') {
+                $stats['categories'][$category]['skipped']++;
             } else {
                 $stats['categories'][$category]['error']++;
             }
         }
         
-        // Garder les 10 tests les plus récents
-        if (count($stats['recent_tests']) < 10) {
-            $stats['recent_tests'][] = [
-                'name' => $data['test_info']['name'],
-                'status' => $data['result']['status'],
-                'category' => $category,
-                'duration' => $data['test_info']['duration_seconds'],
-                'date' => $data['test_info']['date'] ?? '',
-                'time' => $data['test_info']['time'] ?? ''
-            ];
-        }
+        // Ajouter le test à sa catégorie
+        $stats['tests_by_category'][$category][] = [
+            'name' => $data['test_info']['name'],
+            'status' => $data['result']['status'],
+            'success' => $data['result']['success'],
+            'duration' => $data['test_info']['duration_seconds'],
+            'date' => $data['test_info']['date'] ?? '',
+            'time' => $data['test_info']['time'] ?? '',
+            'timestamp' => $data['test_info']['timestamp'] ?? ''
+        ];
+    }
+    
+    // Trier les tests dans chaque catégorie par timestamp (plus récent en premier)
+    foreach ($stats['tests_by_category'] as $category => $tests) {
+        usort($stats['tests_by_category'][$category], function($a, $b) {
+            return strcmp($b['timestamp'], $a['timestamp']);
+        });
     }
     
     // Calculer le taux de réussite
@@ -703,277 +687,122 @@ $current_page = "admin";
                             </div>
                             <div class="card-body">
                                 <div class="row">
-                                    <div class="col-md-3 stat-item">
+                                    <div class="col-md-2 stat-item">
                                         <div class="stat-value"><?= $testStats['total_tests'] ?></div>
                                         <div class="stat-label">Total Tests</div>
                                     </div>
-                                    <div class="col-md-3 stat-item">
+                                    <div class="col-md-2 stat-item">
                                         <div class="stat-value text-success"><?= $testStats['passed_tests'] ?></div>
                                         <div class="stat-label">Réussis</div>
                                     </div>
-                                    <div class="col-md-3 stat-item">
+                                    <div class="col-md-2 stat-item">
                                         <div class="stat-value text-danger"><?= $testStats['failed_tests'] ?></div>
                                         <div class="stat-label">Échoués</div>
                                     </div>
-                                    <div class="col-md-3 stat-item">
+                                    <div class="col-md-2 stat-item">
+                                        <div class="stat-value text-warning"><?= $testStats['skipped_tests'] ?></div>
+                                        <div class="stat-label">Ignorés</div>
+                                    </div>
+                                    <div class="col-md-2 stat-item">
+                                        <div class="stat-value text-info"><?= $testStats['error_tests'] ?></div>
+                                        <div class="stat-label">Erreurs</div>
+                                    </div>
+                                    <div class="col-md-2 stat-item">
                                         <div class="stat-value text-<?= $testStats['success_rate'] >= 80 ? 'success' : ($testStats['success_rate'] >= 60 ? 'warning' : 'danger') ?>">
                                             <?= $testStats['success_rate'] ?>%
                                         </div>
                                         <div class="stat-label">Taux de Réussite</div>
                                     </div>
                                 </div>
-                                <hr style="border-color: rgba(255,255,255,0.3);">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <strong>Rapports individuels:</strong> <?= $testData['summary']['total_individual'] ?>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <strong>Rapports agrégés:</strong> <?= $testData['summary']['total_aggregated'] ?>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Tests récents -->
-                <div class="row mb-4">
+                <!-- Tests par catégorie -->
+                <div class="row">
                     <div class="col-12">
                         <div class="card version-card">
-                            <div class="card-header bg-info text-white">
+                            <div class="card-header bg-primary text-white">
                                 <h5 class="mb-0">
-                                    <i class="fas fa-clock"></i> Tests Récents
+                                    <i class="fas fa-list"></i> Tests par Catégorie
                                 </h5>
                             </div>
                             <div class="card-body">
-                                <?php if (empty($testStats['recent_tests'])): ?>
+                                <?php if (empty($testStats['tests_by_category'])): ?>
                                     <div class="alert alert-info">
                                         <i class="fas fa-info-circle"></i>
-                                        Aucun test récent trouvé.
+                                        Aucun test trouvé.
                                     </div>
                                 <?php else: ?>
-                                    <div class="table-responsive">
-                                        <table class="table table-striped">
-                                            <thead>
-                                                <tr>
-                                                    <th>Test</th>
-                                                    <th>Catégorie</th>
-                                                    <th>Statut</th>
-                                                    <th>Durée</th>
-                                                    <th>Date</th>
-                                                    <th>Heure</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <?php foreach ($testStats['recent_tests'] as $test): ?>
-                                                <tr>
-                                                    <td><code><?= htmlspecialchars($test['name']) ?></code></td>
-                                                    <td>
-                                                        <span class="badge bg-secondary"><?= htmlspecialchars($test['category']) ?></span>
-                                                    </td>
-                                                    <td>
-                                                        <?php if ($test['status'] === 'PASSED'): ?>
-                                                            <span class="badge bg-success">
-                                                                <i class="fas fa-check"></i> Réussi
-                                                            </span>
-                                                        <?php elseif ($test['status'] === 'FAILED'): ?>
-                                                            <span class="badge bg-danger">
-                                                                <i class="fas fa-times"></i> Échoué
-                                                            </span>
-                                                        <?php else: ?>
-                                                            <span class="badge bg-warning">
-                                                                <i class="fas fa-exclamation-triangle"></i> Erreur
-                                                            </span>
-                                                        <?php endif; ?>
-                                                    </td>
-                                                    <td><?= $test['duration'] ?>s</td>
-                                                    <td><?= $test['date'] ?></td>
-                                                    <td><?= $test['time'] ?></td>
-                                                </tr>
-                                                <?php endforeach; ?>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Statistiques par catégorie -->
-                <div class="row mb-4">
-                    <div class="col-12">
-                        <div class="card version-card">
-                            <div class="card-header bg-success text-white">
-                                <h5 class="mb-0">
-                                    <i class="fas fa-layer-group"></i> Statistiques par Catégorie
-                                </h5>
-                            </div>
-                            <div class="card-body">
-                                <?php if (empty($testStats['categories'])): ?>
-                                    <div class="alert alert-warning">
-                                        <i class="fas fa-exclamation-triangle"></i>
-                                        Aucune catégorie de test trouvée.
-                                    </div>
-                                <?php else: ?>
-                                    <div class="row">
-                                        <?php foreach ($testStats['categories'] as $category => $stats): ?>
-                                        <div class="col-md-6 col-lg-4 mb-3">
-                                            <div class="card border-0 shadow-sm category-card">
-                                                <div class="card-body">
-                                                    <h6 class="card-title">
-                                                        <i class="fas fa-folder text-primary"></i>
-                                                        <?= htmlspecialchars($category) ?>
-                                                    </h6>
-                                                    <div class="row text-center">
-                                                        <div class="col-4">
-                                                            <div class="text-success">
-                                                                <strong><?= $stats['passed'] ?></strong>
-                                                                <br><small>Réussis</small>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-4">
-                                                            <div class="text-danger">
-                                                                <strong><?= $stats['failed'] ?></strong>
-                                                                <br><small>Échoués</small>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-4">
-                                                            <div class="text-warning">
-                                                                <strong><?= $stats['error'] ?></strong>
-                                                                <br><small>Erreurs</small>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <hr>
-                                                    <div class="text-center">
-                                                        <small class="text-muted">
-                                                            Total: <strong><?= $stats['total'] ?></strong> |
-                                                            Taux: <strong><?= $stats['total'] > 0 ? round(($stats['passed'] / $stats['total']) * 100, 1) : 0 ?>%</strong>
-                                                        </small>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                    <?php foreach ($testStats['tests_by_category'] as $category => $tests): ?>
+                                    <div class="mb-4">
+                                        <h6 class="text-primary mb-3">
+                                            <i class="fas fa-folder"></i> <?= htmlspecialchars($category) ?>
+                                            <span class="badge bg-secondary ms-2"><?= count($tests) ?> tests</span>
+                                            <span class="badge bg-<?= $testStats['categories'][$category]['passed'] == $testStats['categories'][$category]['total'] ? 'success' : ($testStats['categories'][$category]['passed'] > 0 ? 'warning' : 'danger') ?> ms-1">
+                                                <?= $testStats['categories'][$category]['total'] > 0 ? round(($testStats['categories'][$category]['passed'] / $testStats['categories'][$category]['total']) * 100, 1) : 0 ?>% réussite
+                                            </span>
+                                        </h6>
+                                        
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-striped">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th style="width: 40%;">Nom du Test</th>
+                                                        <th style="width: 15%;">Statut</th>
+                                                        <th style="width: 10%;">Durée</th>
+                                                        <th style="width: 15%;">Date</th>
+                                                        <th style="width: 20%;">Heure</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php foreach ($tests as $test): ?>
+                                                    <tr>
+                                                        <td>
+                                                            <code class="text-dark"><?= htmlspecialchars($test['name']) ?></code>
+                                                        </td>
+                                                        <td>
+                                                            <?php if ($test['status'] === 'PASSED'): ?>
+                                                                <span class="badge bg-success">
+                                                                    <i class="fas fa-check"></i> Réussi
+                                                                </span>
+                                                            <?php elseif ($test['status'] === 'FAILED'): ?>
+                                                                <span class="badge bg-danger">
+                                                                    <i class="fas fa-times"></i> Échoué
+                                                                </span>
+                                                            <?php elseif ($test['status'] === 'SKIPPED'): ?>
+                                                                <span class="badge bg-warning">
+                                                                    <i class="fas fa-forward"></i> Ignoré
+                                                                </span>
+                                                            <?php else: ?>
+                                                                <span class="badge bg-info">
+                                                                    <i class="fas fa-exclamation-triangle"></i> Erreur
+                                                                </span>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                        <td>
+                                                            <span class="text-muted"><?= number_format($test['duration'], 2) ?>s</span>
+                                                        </td>
+                                                        <td>
+                                                            <span class="text-muted"><?= $test['date'] ?></span>
+                                                        </td>
+                                                        <td>
+                                                            <span class="text-muted"><?= $test['time'] ?></span>
+                                                        </td>
+                                                    </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                            </table>
                                         </div>
-                                        <?php endforeach; ?>
                                     </div>
+                                    <?php endforeach; ?>
                                 <?php endif; ?>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Rapports agrégés récents -->
-                <div class="row mb-4">
-                    <div class="col-12">
-                        <div class="card version-card">
-                            <div class="card-header bg-warning text-dark">
-                                <h5 class="mb-0">
-                                    <i class="fas fa-file-alt"></i> Rapports Agrégés Récents
-                                </h5>
-                            </div>
-                            <div class="card-body">
-                                <?php if (empty($testData['aggregated_reports'])): ?>
-                                    <div class="alert alert-info">
-                                        <i class="fas fa-info-circle"></i>
-                                        Aucun rapport agrégé trouvé.
-                                    </div>
-                                <?php else: ?>
-                                    <div class="table-responsive">
-                                        <table class="table table-striped">
-                                            <thead>
-                                                <tr>
-                                                    <th>Fichier</th>
-                                                    <th>Type</th>
-                                                    <th>Tests</th>
-                                                    <th>Réussis</th>
-                                                    <th>Échoués</th>
-                                                    <th>Taux</th>
-                                                    <th>Date</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <?php foreach (array_slice($testData['aggregated_reports'], 0, 10) as $report): ?>
-                                                <?php $data = $report['data']; ?>
-                                                <tr>
-                                                    <td><code><?= htmlspecialchars($report['filename']) ?></code></td>
-                                                    <td>
-                                                        <?php if (isset($data['session_info'])): ?>
-                                                            <span class="badge bg-primary">Session</span>
-                                                        <?php elseif (isset($data['summary_info'])): ?>
-                                                            <span class="badge bg-info">Résumé</span>
-                                                        <?php else: ?>
-                                                            <span class="badge bg-secondary">Autre</span>
-                                                        <?php endif; ?>
-                                                    </td>
-                                                    <td>
-                                                        <?php 
-                                                        $total = 0;
-                                                        if (isset($data['summary']['total_tests'])) {
-                                                            $total = $data['summary']['total_tests'];
-                                                        } elseif (isset($data['statistics']['total_tests'])) {
-                                                            $total = $data['statistics']['total_tests'];
-                                                        }
-                                                        echo $total;
-                                                        ?>
-                                                    </td>
-                                                    <td>
-                                                        <?php 
-                                                        $passed = 0;
-                                                        if (isset($data['summary']['passed_tests'])) {
-                                                            $passed = $data['summary']['passed_tests'];
-                                                        } elseif (isset($data['statistics']['passed_tests'])) {
-                                                            $passed = $data['statistics']['passed_tests'];
-                                                        }
-                                                        echo $passed;
-                                                        ?>
-                                                    </td>
-                                                    <td>
-                                                        <?php 
-                                                        $failed = 0;
-                                                        if (isset($data['summary']['failed_tests'])) {
-                                                            $failed = $data['summary']['failed_tests'];
-                                                        } elseif (isset($data['statistics']['failed_tests'])) {
-                                                            $failed = $data['statistics']['failed_tests'];
-                                                        }
-                                                        echo $failed;
-                                                        ?>
-                                                    </td>
-                                                    <td>
-                                                        <?php 
-                                                        $rate = 0;
-                                                        if (isset($data['summary']['success_rate'])) {
-                                                            $rate = $data['summary']['success_rate'];
-                                                        } elseif (isset($data['statistics']['success_rate'])) {
-                                                            $rate = $data['statistics']['success_rate'];
-                                                        }
-                                                        ?>
-                                                        <span class="badge bg-<?= $rate >= 80 ? 'success' : ($rate >= 60 ? 'warning' : 'danger') ?>">
-                                                            <?= $rate ?>%
-                                                        </span>
-                                                    </td>
-                                                    <td>
-                                                        <?php 
-                                                        $date = '';
-                                                        if (isset($data['session_info']['date'])) {
-                                                            $date = $data['session_info']['date'];
-                                                        } elseif (isset($data['summary_info']['date'])) {
-                                                            $date = $data['summary_info']['date'];
-                                                        }
-                                                        echo $date;
-                                                        ?>
-                                                    </td>
-                                                </tr>
-                                                <?php endforeach; ?>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             <!-- Onglet Actions -->
             <div class="tab-pane fade" id="actions" role="tabpanel" aria-labelledby="actions-tab">

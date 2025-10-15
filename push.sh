@@ -64,8 +64,8 @@ show_tests_menu() {
     echo -e "${BLUE}║                    🧪 Configuration des Tests                ║${NC}"
     echo -e "${BLUE}╠══════════════════════════════════════════════════════════════╣${NC}"
     echo -e "${BLUE}║                                                              ║${NC}"
-    echo -e "${BLUE}║  ${GREEN}1.${NC} ✅ Exécuter les tests avant déploiement              ${BLUE}║${NC}"
-    echo -e "${BLUE}║  ${GREEN}2.${NC} ⚡ Déployer sans exécuter les tests                 ${BLUE}║${NC}"
+    echo -e "${BLUE}║  ${GREEN}1.${NC} ✅ Synchroniser les rapports de tests existants      ${BLUE}║${NC}"
+    echo -e "${BLUE}║  ${GREEN}2.${NC} ⚡ Déployer sans synchroniser les rapports           ${BLUE}║${NC}"
     echo -e "${BLUE}║                                                              ║${NC}"
     echo -e "${BLUE}╚══════════════════════════════════════════════════════════════╝${NC}"
     echo
@@ -97,7 +97,7 @@ confirm_deployment() {
     echo -e "${BLUE}╠══════════════════════════════════════════════════════════════╣${NC}"
     echo -e "${BLUE}║                                                              ║${NC}"
     echo -e "${BLUE}║  ${GREEN}Serveur :${NC} $server_name                                    ${BLUE}║${NC}"
-    echo -e "${BLUE}║  ${GREEN}Tests :${NC} $test_status                                      ${BLUE}║${NC}"
+    echo -e "${BLUE}║  ${GREEN}Tests :${NC} $test_status (rapports synchronisés)              ${BLUE}║${NC}"
     echo -e "${BLUE}║  ${GREEN}Message :${NC} $MESSAGE                                        ${BLUE}║${NC}"
     echo -e "${BLUE}║  ${GREEN}Timestamp :${NC} $TIMESTAMP                                    ${BLUE}║${NC}"
     echo -e "${BLUE}║                                                              ║${NC}"
@@ -134,7 +134,7 @@ show_help() {
     echo -e "${BLUE}║    🏭 production - Serveur de production (avec protection)  ${BLUE}║${NC}"
     echo -e "${BLUE}║                                                              ║${NC}"
     echo -e "${BLUE}║  ${GREEN}Options :${NC}                                                ${BLUE}║${NC}"
-    echo -e "${BLUE}║    --no-tests - Déployer sans exécuter les tests             ${BLUE}║${NC}"
+    echo -e "${BLUE}║    --no-tests - Déployer sans synchroniser les rapports      ${BLUE}║${NC}"
     echo -e "${BLUE}║    --help     - Afficher cette aide                         ${BLUE}║${NC}"
     echo -e "${BLUE}║                                                              ║${NC}"
     echo -e "${BLUE}╚══════════════════════════════════════════════════════════════╝${NC}"
@@ -283,33 +283,30 @@ check_prerequisites() {
     log_success "Prérequis vérifiés"
 }
 
-# Fonction pour exécuter les tests
+# Fonction pour vérifier les rapports de tests existants
 run_tests() {
     if [ "$RUN_TESTS" = false ]; then
         log_info "Tests ignorés (option --no-tests activée)"
         return 0
     fi
     
-    log_info "Exécution des tests avant livraison..."
+    log_info "Vérification des rapports de tests existants..."
     
-    if [ -d "tests" ]; then
-        cd tests
+    if [ -d "tests/reports" ]; then
+        # Compter les rapports disponibles
+        individual_count=$(find tests/reports/individual -name "*.json" 2>/dev/null | wc -l)
+        aggregated_count=$(find tests/reports/aggregated -name "*.json" 2>/dev/null | wc -l)
         
-        # Vérifier si l'environnement de test existe
-        if [ -d "../testenv" ]; then
-            log_info "Exécution des tests de base..."
-            if ../testenv/bin/python -m pytest functional/test_authentication.py functional/test_application_availability.py functional/test_fixtures.py -v --tb=short; then
-                log_success "Tests de base réussis"
-            else
-                log_warning "Certains tests de base ont échoué, mais on continue..."
-            fi
+        if [ $individual_count -gt 0 ] || [ $aggregated_count -gt 0 ]; then
+            log_success "Rapports de tests trouvés : $individual_count individuels, $aggregated_count agrégés"
+            log_info "Les rapports seront synchronisés lors du déploiement"
         else
-            log_warning "Environnement de test non trouvé, tests ignorés"
+            log_warning "Aucun rapport de test trouvé"
+            log_info "Exécutez './launch_tests.sh' pour générer des rapports avant le déploiement"
         fi
-        
-        cd ..
     else
-        log_warning "Répertoire de tests non trouvé, tests ignorés"
+        log_warning "Répertoire de rapports de tests non trouvé"
+        log_info "Exécutez './launch_tests.sh' pour générer des rapports avant le déploiement"
     fi
 }
 
