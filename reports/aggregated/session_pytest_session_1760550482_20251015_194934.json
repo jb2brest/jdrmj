@@ -1,0 +1,75 @@
+{
+  "session_info": {
+    "name": "pytest_session_1760550482",
+    "timestamp": "2025-10-15T19:49:34.813982",
+    "date": "2025-10-15",
+    "time": "19:49:34",
+    "timezone": "",
+    "start_time": "2025-10-15T19:48:02.387664",
+    "end_time": "2025-10-15T19:49:34.653701",
+    "start_date": "2025-10-15",
+    "start_time_formatted": "19:48:02",
+    "end_date": "2025-10-15",
+    "end_time_formatted": "19:49:34",
+    "duration_seconds": 92.266,
+    "duration_formatted": "1m 32.27s"
+  },
+  "summary": {
+    "total_tests": 6,
+    "passed_tests": 6,
+    "failed_tests": 0,
+    "error_tests": 0,
+    "success_rate": 100.0
+  },
+  "categories": {
+    "Authentification": {
+      "total": 6,
+      "passed": 6,
+      "failed": 0,
+      "error": 0
+    }
+  },
+  "individual_reports": [
+    "test_user_registration.json",
+    "test_user_login.json",
+    "test_user_logout.json",
+    "test_invalid_login_credentials.json",
+    "test_registration_validation.json",
+    "test_password_confirmation_validation.json"
+  ],
+  "environment": {
+    "python_version": "3.12.3 (main, Aug 14 2025, 17:47:21) [GCC 13.3.0]",
+    "platform": "linux",
+    "working_directory": "/home/jean/Documents/jdrmj"
+  },
+  "version_info": {
+    "detection_timestamp": "2025-10-15T19:49:34.654853",
+    "application": {
+      "version": "2.10.0"
+    },
+    "system": {
+      "os_name": "Ubuntu 24.04.3 LTS",
+      "os_version": "24.04.3 LTS (Noble Numbat)",
+      "architecture": "x86_64",
+      "python_version": "3.12.3 (main, Aug 14 2025, 17:47:21) [GCC 13.3.0]"
+    },
+    "web_server": {
+      "server_status": "online",
+      "http_status": 200,
+      "server_header": "Apache/2.4.58 (Ubuntu)"
+    },
+    "git": {
+      "git_version": "2.43.0",
+      "commit_hash": "87686f8c",
+      "branch": "Classes",
+      "last_commit_date": "2025-10-14 22:48:28 +0200"
+    },
+    "database": {
+      "mysql": "10.11.13"
+    },
+    "web_server_software": {
+      "php": "8.3.6",
+      "apache": "2.4.58"
+    }
+  }
+}

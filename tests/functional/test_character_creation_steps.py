@@ -555,7 +555,7 @@ class TestCharacterCreationSteps:
             submit_btn.click()
             
             # Vérifier qu'un message d'erreur apparaît ou que le formulaire n'est pas soumis
-            time.sleep(1)  # Attendre la validation
+            time.sleep(0.5)  # Attendre la validation
             current_url = driver.current_url
             assert "character_create_step4.php" in current_url, "Le formulaire ne devrait pas être soumis avec des caractéristiques invalides"
             

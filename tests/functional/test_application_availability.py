@@ -74,7 +74,7 @@ class TestApplicationAvailability:
         
         # Attendre que la page se charge complètement
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-        time.sleep(2)  # Attendre les scripts
+        time.sleep(0.5)  # Attendre les scripts
         
         # Vérifier les logs de la console (si disponibles)
         logs = driver.get_log('browser')

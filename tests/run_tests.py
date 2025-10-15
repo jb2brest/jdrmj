@@ -74,6 +74,7 @@ def run_tests(test_type="all", headless=False, parallel=False, verbose=False, ge
     
     # Variables d'environnement
     os.environ["TEST_BASE_URL"] = os.getenv("TEST_BASE_URL", "http://localhost/jdrmj")
+    env = os.environ.copy()
     
     try:
         # Activer les rapports JSON si demandé
@@ -81,10 +82,15 @@ def run_tests(test_type="all", headless=False, parallel=False, verbose=False, ge
             print("📊 Rapports JSON activés - chaque test générera son propre rapport")
             print("📅 Date/heure et versions logiciel incluses dans les rapports")
             # Ajouter le plugin pytest pour les rapports JSON
+            # Utiliser PYTHONPATH pour que pytest puisse trouver le plugin
+            env['PYTHONPATH'] = str(Path(__file__).parent) + ':' + env.get('PYTHONPATH', '')
             cmd.extend(["-p", "pytest_json_reporter"])
         
         # Exécuter les tests
-        result = subprocess.run(cmd, cwd=Path(__file__).parent.parent)
+        if generate_json and JSON_REPORT_AVAILABLE:
+            result = subprocess.run(cmd, cwd=Path(__file__).parent.parent, env=env)
+        else:
+            result = subprocess.run(cmd, cwd=Path(__file__).parent.parent)
         
         return result.returncode == 0
     except KeyboardInterrupt:

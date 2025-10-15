@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 'role' => $role
             ];
             
-            $newUser = User::create($pdo, $userData);
+            $newUser = User::create($userData);
             
             if ($newUser) {
                 $message = displayMessage("Inscription réussie ! Vous pouvez maintenant vous connecter.", "success");

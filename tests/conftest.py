@@ -30,7 +30,7 @@ def browser_config():
     return {
         'headless': os.getenv('HEADLESS', 'false').lower() == 'true',
         'window_size': (1920, 1080),
-        'implicit_wait': 10
+        'implicit_wait': 2
     }
 
 @pytest.fixture(scope="function")
@@ -49,6 +49,11 @@ def driver(browser_config):
     chrome_options.add_argument('--disable-logging')
     chrome_options.add_argument('--disable-web-security')
     chrome_options.add_argument('--allow-running-insecure-content')
+    chrome_options.add_argument('--ignore-certificate-errors')
+    chrome_options.add_argument('--ignore-ssl-errors')
+    chrome_options.add_argument('--ignore-certificate-errors-spki-list')
+    chrome_options.add_argument('--disable-features=VizDisplayCompositor')
+    chrome_options.add_argument('--remote-debugging-port=9222')
     
     # Utiliser webdriver_manager si disponible, sinon chemin fixe
     if WEBDRIVER_MANAGER_AVAILABLE:
@@ -72,7 +77,7 @@ def driver(browser_config):
 @pytest.fixture(scope="function")
 def wait(driver):
     """WebDriverWait pour les attentes explicites"""
-    return WebDriverWait(driver, 15)  # Augmenté à 15 secondes
+    return WebDriverWait(driver, 2)  # Timeout réduit à 2 secondes
 
 @pytest.fixture(scope="function")
 def app_url():

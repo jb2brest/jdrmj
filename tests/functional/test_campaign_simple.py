@@ -118,7 +118,7 @@ class TestCampaignSimple:
                     first_link.click()
                     
                     # Attendre la navigation
-                    time.sleep(2)
+                    time.sleep(0.5)
                     
                     # Vérifier qu'on a navigué
                     new_url = driver.current_url

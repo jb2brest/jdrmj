@@ -245,7 +245,7 @@ class TestDMUserWebInterface:
         # Tester l'accès à la page des campagnes
         try:
             driver.get(f"{app_url}/campaigns.php")
-            time.sleep(2)
+            time.sleep(0.5)
             
             # Vérifier qu'on n'est pas redirigé vers une page d'erreur
             if "403" not in driver.page_source and "accès refusé" not in driver.page_source.lower():
@@ -264,7 +264,7 @@ class TestDMUserWebInterface:
         # Tester l'accès au bestiaire
         try:
             driver.get(f"{app_url}/bestiary.php")
-            time.sleep(2)
+            time.sleep(0.5)
             
             # Vérifier qu'on n'est pas redirigé vers une page d'erreur
             if "403" not in driver.page_source and "accès refusé" not in driver.page_source.lower():

@@ -209,7 +209,7 @@ class TestDMUserManagement:
         for page_url in admin_pages:
             try:
                 driver.get(page_url)
-                time.sleep(2)  # Attendre le chargement
+                time.sleep(0.5)  # Attendre le chargement
                 
                 # Chercher des éléments de gestion d'utilisateurs
                 user_management_indicators = [
@@ -263,7 +263,7 @@ class TestDMUserManagement:
                         driver.execute_script("arguments[0].click();", delete_button)
                         
                         # Attendre une confirmation ou une alerte
-                        time.sleep(1)
+                        time.sleep(0.5)
                         
                         # Confirmer si une alerte apparaît
                         try:
@@ -279,11 +279,11 @@ class TestDMUserManagement:
                 pytest.skip(f"Utilisateur MJ '{dm_user['username']}' non trouvé dans la liste - test ignoré")
             
             # Vérifier que l'utilisateur a été supprimé
-            time.sleep(2)  # Attendre la suppression
+            time.sleep(0.5)  # Attendre la suppression
             
             # Recharger la page pour vérifier
             driver.refresh()
-            time.sleep(2)
+            time.sleep(0.5)
             
             # Vérifier que l'utilisateur n'apparaît plus
             page_source = driver.page_source
@@ -325,7 +325,7 @@ class TestDMUserManagement:
         for feature_url in mj_features:
             try:
                 driver.get(feature_url)
-                time.sleep(2)
+                time.sleep(0.5)
                 
                 # Vérifier qu'on n'est pas redirigé vers une page d'erreur
                 if "403" not in driver.page_source and "accès refusé" not in driver.page_source.lower():

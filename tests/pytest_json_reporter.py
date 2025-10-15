@@ -44,7 +44,7 @@ class JSONReporterPlugin:
         session_end_time = time.time()
         
         # Créer un rapport de session
-        session_name = f"pytest_session_{int(session_start_time)}"
+        session_name = f"pytest_session_{int(self.session_start_time)}"
         session_report = self.reporter.create_test_session_report(
             session_name=session_name,
             test_reports=self.test_reports,

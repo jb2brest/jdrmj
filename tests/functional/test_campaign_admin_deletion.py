@@ -69,7 +69,7 @@ class TestCampaignAdminDeletion:
             driver.execute_script("arguments[0].click();", delete_button)
             
             # Attendre la confirmation JavaScript
-            time.sleep(1)
+            time.sleep(0.5)
             
             # Vérifier qu'une alerte de confirmation apparaît
             try:

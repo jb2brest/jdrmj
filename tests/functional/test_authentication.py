@@ -18,6 +18,12 @@ class TestAuthentication:
         # Vérifier que la page de registration est chargée
         assert "Inscription" in driver.title or "Register" in driver.title
         
+        # Ajouter un timestamp unique à l'utilisateur de test pour éviter les conflits
+        import time
+        timestamp = str(int(time.time()))
+        test_user['username'] = f"test_user_{timestamp}"
+        test_user['email'] = f"test_{timestamp}@example.com"
+        
         # Remplir le formulaire d'inscription
         username_field = wait.until(EC.presence_of_element_located((By.NAME, "username")))
         email_field = driver.find_element(By.NAME, "email")
@@ -33,16 +39,30 @@ class TestAuthentication:
         submit_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
         driver.execute_script("arguments[0].click();", submit_button)
         
+        # Attendre un peu pour que la page se charge
+        time.sleep(0.5)
+        
         # Vérifier la redirection ou le message de succès
         try:
             # Attendre soit une redirection, soit un message de succès
             wait.until(lambda driver: "index.php" in driver.current_url or 
                       "succès" in driver.page_source.lower() or 
-                      "success" in driver.page_source.lower())
+                      "success" in driver.page_source.lower() or
+                      "réussie" in driver.page_source.lower() or
+                      "inscription réussie" in driver.page_source.lower())
             assert True
         except TimeoutException:
             # Vérifier s'il y a des erreurs de validation
             error_elements = driver.find_elements(By.CSS_SELECTOR, ".alert-danger, .error, .invalid-feedback")
+            success_elements = driver.find_elements(By.CSS_SELECTOR, ".alert-success")
+            
+            if success_elements:
+                # Vérifier si c'est un message de succès
+                success_texts = [elem.text for elem in success_elements]
+                if any("réussie" in text.lower() or "succès" in text.lower() or "success" in text.lower() for text in success_texts):
+                    assert True  # Test réussi
+                    return
+            
             if error_elements:
                 error_texts = [elem.text for elem in error_elements]
                 # Si l'utilisateur existe déjà, c'est normal, on passe le test
@@ -51,7 +71,10 @@ class TestAuthentication:
                 else:
                     pytest.fail(f"Erreurs d'inscription: {error_texts}")
             else:
-                pytest.fail("Inscription échouée sans message d'erreur visible")
+                # Afficher plus d'informations pour le débogage
+                current_url = driver.current_url
+                page_source_snippet = driver.page_source[:1000]  # Premiers 1000 caractères
+                pytest.fail(f"Inscription échouée sans message d'erreur visible. URL: {current_url}, Page source: {page_source_snippet}")
     
     def test_user_login(self, driver, wait, app_url, test_user):
         """Test de connexion d'un utilisateur"""
@@ -160,7 +183,7 @@ class TestAuthentication:
         driver.execute_script("arguments[0].click();", submit_button)
         
         # Attendre un peu pour que la validation se déclenche
-        time.sleep(1)
+        time.sleep(0.5)
         
         # Vérifier que des messages de validation apparaissent ou que le formulaire n'est pas soumis
         validation_errors = driver.find_elements(By.CSS_SELECTOR, ".invalid-feedback, .error, [required]")
