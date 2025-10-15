@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.10.2
+VERSION=2.10.3
 
 # Date de déploiement
 DEPLOY_DATE=2025-10-15
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-10-15
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=73cedc880cfe2197cb091b2ca4cdde23e1ebd8fc
+GIT_COMMIT=9b1efe5604b7db5de5df27487439d0531f85e83a
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251015-211052
+BUILD_ID=20251015-220544
 
 # Notes de version
-RELEASE_NOTES="Test Authentification 2"
+RELEASE_NOTES="Test Authentification 3"
