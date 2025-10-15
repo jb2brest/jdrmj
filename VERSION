@@ -2,19 +2,19 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.10.0
+VERSION=2.10.1
 
 # Date de déploiement
-DEPLOY_DATE=2025-10-14
+DEPLOY_DATE=2025-10-15
 
 # Environnement
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=f1923cb68b96e92ca1a88dce0b3eb6a2f0a8e9b5
+GIT_COMMIT=87686f8c076f06fc445d66e97bd155bc7f337919
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251014-224826
+BUILD_ID=20251015-195243
 
 # Notes de version
-RELEASE_NOTES="Test 1"
+RELEASE_NOTES="Test Authentification 1"
