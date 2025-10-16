@@ -2,19 +2,19 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.10.5
+VERSION=2.10.6
 
 # Date de déploiement
-DEPLOY_DATE=2025-10-15
+DEPLOY_DATE=2025-10-16
 
 # Environnement
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=9e5339c840d3a3711d1def9497dd7f99fb490199
+GIT_COMMIT=7753f27a72d90e9325305ee6c5bbebed1c6381c3
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251015-225504
+BUILD_ID=20251016-205740
 
 # Notes de version
-RELEASE_NOTES="Test Authentification 5"
+RELEASE_NOTES="Test Authentification 6"
