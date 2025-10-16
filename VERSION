@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.10.6
+VERSION=2.11.0
 
 # Date de déploiement
 DEPLOY_DATE=2025-10-16
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-10-16
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=7753f27a72d90e9325305ee6c5bbebed1c6381c3
+GIT_COMMIT=17d7ef7a466f8e3f36d28c694437f6274a4ed41a
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251016-205740
+BUILD_ID=20251016-220937
 
 # Notes de version
-RELEASE_NOTES="Test Authentification 6"
+RELEASE_NOTES="Test Barbare"
