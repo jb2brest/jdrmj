@@ -2014,13 +2014,25 @@ class Character
             $abilityImprovements = $this->getAbilityImprovements();
         }
         
+        // Récupérer les bonus raciaux
+        $race = Race::findById($this->race_id);
+        $racialBonuses = [
+            'strength' => $race ? ($race->strength_bonus ?? 0) : 0,
+            'dexterity' => $race ? ($race->dexterity_bonus ?? 0) : 0,
+            'constitution' => $race ? ($race->constitution_bonus ?? 0) : 0,
+            'intelligence' => $race ? ($race->intelligence_bonus ?? 0) : 0,
+            'wisdom' => $race ? ($race->wisdom_bonus ?? 0) : 0,
+            'charisma' => $race ? ($race->charisma_bonus ?? 0) : 0,
+        ];
+        
         $abilities = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
         $finalAbilities = [];
         
         foreach ($abilities as $ability) {
             $base = $this->$ability;
             $improvement = $abilityImprovements[$ability] ?? 0;
-            $finalAbilities[$ability] = $base + $improvement;
+            $racialBonus = $racialBonuses[$ability] ?? 0;
+            $finalAbilities[$ability] = $base + $improvement + $racialBonus;
         }
         
         return $finalAbilities;

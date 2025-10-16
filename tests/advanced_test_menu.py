@@ -37,7 +37,8 @@ class AdvancedTestMenu:
                     "test_character_creation_steps.py",
                     "test_character_creation_step1_simple.py",
                     "test_character_creation_debug.py",
-                    "test_character_management.py"
+                    "test_character_management.py",
+                    "test_barbarian_class.py"
                 ],
                 "description": "Tests de création et gestion des personnages"
             },

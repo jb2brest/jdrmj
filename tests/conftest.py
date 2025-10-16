@@ -220,6 +220,27 @@ def test_character():
     }
 
 @pytest.fixture(scope="function")
+def test_barbarian():
+    """Personnage barbare de test"""
+    return {
+        'name': 'Test Barbarian',
+        'race': 'Humain',
+        'class': 'Barbare',
+        'level': 1,
+        'background': 'Soldat',
+        'archetype': 'Voie de la magie sauvage',
+        'hit_points': 12,
+        'armor_class': 10,
+        'speed': 30,
+        'strength': 15,
+        'dexterity': 14,
+        'constitution': 13,
+        'intelligence': 8,
+        'wisdom': 12,
+        'charisma': 10
+    }
+
+@pytest.fixture(scope="function")
 def test_campaigns():
     """Campagnes de test"""
     return {
@@ -317,11 +338,15 @@ def pytest_runtest_makereport(item, call):
     if call.when == "call" and call.excinfo is not None:
         driver = item.funcargs.get('driver')
         if driver:
-            screenshot_path = f"tests/reports/screenshot_{item.name}_{call.when}.png"
-            driver.save_screenshot(screenshot_path)
-            # Ajouter le screenshot au rapport
-            if hasattr(item, 'user_properties'):
-                item.user_properties.append(("screenshot", screenshot_path))
+            try:
+                screenshot_path = f"tests/reports/screenshot_{item.name}_{call.when}.png"
+                driver.save_screenshot(screenshot_path)
+                # Ajouter le screenshot au rapport
+                if hasattr(item, 'user_properties'):
+                    item.user_properties.append(("screenshot", screenshot_path))
+            except Exception as e:
+                # Ignorer les erreurs de screenshot (session fermée, etc.)
+                print(f"⚠️ Impossible de capturer l'écran: {e}")
 
 @pytest.hookimpl(trylast=True)
 def pytest_sessionfinish(session, exitstatus):
