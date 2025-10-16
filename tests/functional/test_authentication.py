@@ -78,6 +78,12 @@ class TestAuthentication:
     
     def test_user_login(self, driver, wait, app_url, test_user):
         """Test de connexion d'un utilisateur"""
+        # D'abord créer l'utilisateur via l'inscription
+        print(f"🔧 Création de l'utilisateur de test: {test_user['username']}")
+        self.test_user_registration(driver, wait, app_url, test_user)
+        
+        # Maintenant tester la connexion
+        print(f"🔐 Test de connexion pour: {test_user['username']}")
         driver.get(f"{app_url}/login.php")
         
         # Vérifier que la page de connexion est chargée
@@ -98,8 +104,12 @@ class TestAuthentication:
         try:
             wait.until(lambda driver: "index.php" in driver.current_url or "characters.php" in driver.current_url)
             # Vérifier que l'utilisateur est connecté (présence d'éléments de navigation)
-            assert driver.find_element(By.CSS_SELECTOR, "a[href='logout.php']") or \
-                   driver.find_element(By.CSS_SELECTOR, "a[href='characters.php']")
+            logout_link = driver.find_elements(By.CSS_SELECTOR, "a[href='logout.php']")
+            characters_link = driver.find_elements(By.CSS_SELECTOR, "a[href='characters.php']")
+            
+            assert len(logout_link) > 0 or len(characters_link) > 0, "Aucun lien de navigation trouvé après connexion"
+            print("✅ Connexion réussie")
+            
         except TimeoutException:
             # Vérifier s'il y a des erreurs de connexion
             error_elements = driver.find_elements(By.CSS_SELECTOR, ".alert-danger, .error, .alert")
@@ -107,20 +117,16 @@ class TestAuthentication:
             
             if error_elements:
                 error_texts = [elem.text for elem in error_elements]
-                # Si l'utilisateur n'existe pas, c'est normal pour ce test
-                if any("incorrect" in text.lower() or "invalid" in text.lower() or "n'existe pas" in text.lower() for text in error_texts):
-                    pytest.skip("Utilisateur de test n'existe pas - test ignoré")
-                else:
-                    pytest.fail(f"Erreurs de connexion: {error_texts}")
+                pytest.fail(f"Erreurs de connexion après inscription: {error_texts}")
             elif "login.php" in current_url:
-                # On est toujours sur la page de connexion, probablement que l'utilisateur n'existe pas
-                pytest.skip("Utilisateur de test n'existe pas - test ignoré")
+                pytest.fail("Connexion échouée - toujours sur la page de connexion")
             else:
                 pytest.fail(f"Connexion échouée sans message d'erreur visible. URL actuelle: {current_url}")
     
     def test_user_logout(self, driver, wait, app_url, test_user):
         """Test de déconnexion d'un utilisateur"""
-        # D'abord se connecter
+        # D'abord créer l'utilisateur et se connecter
+        print(f"🔧 Création et connexion de l'utilisateur: {test_user['username']}")
         self.test_user_login(driver, wait, app_url, test_user)
         
         # Chercher le menu dropdown utilisateur
@@ -182,8 +188,21 @@ class TestAuthentication:
         # S'inscrire
         self.test_user_registration(driver, wait, app_url, test_user_data)
         
-        # Se connecter
-        self.test_user_login(driver, wait, app_url, test_user_data)
+        # Se connecter (le test_user_login crée déjà l'utilisateur)
+        print(f"🔐 Connexion pour suppression de compte: {test_user_data['username']}")
+        driver.get(f"{app_url}/login.php")
+        
+        username_field = wait.until(EC.presence_of_element_located((By.NAME, "username")))
+        password_field = driver.find_element(By.NAME, "password")
+        
+        username_field.send_keys(test_user_data['username'])
+        password_field.send_keys(test_user_data['password'])
+        
+        submit_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
+        driver.execute_script("arguments[0].click();", submit_button)
+        
+        # Attendre la connexion
+        wait.until(lambda driver: "index.php" in driver.current_url or "characters.php" in driver.current_url)
         
         # Vérifier que l'utilisateur est connecté (menu dropdown présent)
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".dropdown-toggle")))
@@ -221,7 +240,8 @@ class TestAuthentication:
     
     def test_user_account_deletion_invalid_password(self, driver, wait, app_url, test_user):
         """Test de suppression de compte avec mot de passe invalide"""
-        # Se connecter d'abord
+        # Créer l'utilisateur et se connecter d'abord
+        print(f"🔧 Création et connexion pour test de suppression: {test_user['username']}")
         self.test_user_login(driver, wait, app_url, test_user)
         
         # Vérifier que l'utilisateur est connecté (menu dropdown présent)
@@ -258,7 +278,8 @@ class TestAuthentication:
     
     def test_user_account_deletion_invalid_confirmation(self, driver, wait, app_url, test_user):
         """Test de suppression de compte avec confirmation invalide"""
-        # Se connecter d'abord
+        # Créer l'utilisateur et se connecter d'abord
+        print(f"🔧 Création et connexion pour test de confirmation: {test_user['username']}")
         self.test_user_login(driver, wait, app_url, test_user)
         
         # Vérifier que l'utilisateur est connecté (menu dropdown présent)

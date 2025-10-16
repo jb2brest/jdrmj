@@ -3,13 +3,17 @@ Configuration globale pour les tests Selenium
 """
 import pytest
 import os
+import time
+import pymysql
+import subprocess
+import json
+from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-import time
 
 # Import optionnel de webdriver_manager
 try:
@@ -23,6 +27,81 @@ except ImportError:
 
 # Configuration de l'URL de base de l'application
 BASE_URL = os.getenv('TEST_BASE_URL', 'http://localhost/jdrmj')
+
+# Liste globale pour tracker les utilisateurs de test créés
+created_test_users = []
+
+def get_database_config():
+    """Récupère la configuration de la base de données de test"""
+    try:
+        # Essayer d'importer la configuration PHP
+        result = subprocess.run([
+            'php', '-r', 
+            'include "config/database.test.php"; $config = include "config/database.test.php"; echo json_encode($config);'
+        ], capture_output=True, text=True, cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        
+        if result.returncode == 0:
+            config = json.loads(result.stdout)
+            return config
+    except Exception as e:
+        print(f"Erreur lors de la lecture de la config PHP: {e}")
+    
+    # Configuration par défaut si la lecture PHP échoue
+    return {
+        'host': 'localhost',
+        'dbname': 'u839591438_jdrmj',
+        'username': 'u839591438_jdrmj',
+        'password': 'M8jbsYJUj6FE$;C',
+        'charset': 'utf8mb4'
+    }
+
+def cleanup_test_user_from_db(user_data):
+    """Nettoie un utilisateur de test spécifique de la base de données"""
+    if not user_data or not user_data.get('username'):
+        return
+    
+    try:
+        config = get_database_config()
+        connection = pymysql.connect(
+            host=config['host'],
+            user=config['username'],
+            password=config['password'],
+            database=config['dbname'],
+            charset=config.get('charset', 'utf8mb4'),
+            autocommit=False
+        )
+        
+        cursor = connection.cursor()
+        
+        # Trouver l'utilisateur par username ou email
+        cursor.execute("SELECT id FROM users WHERE username = %s OR email = %s", 
+                      (user_data['username'], user_data.get('email', '')))
+        result = cursor.fetchone()
+        
+        if result:
+            user_id = result[0]
+            
+            # Supprimer les données liées
+            cursor.execute("DELETE FROM characters WHERE user_id = %s", (user_id,))
+            cursor.execute("DELETE FROM campaigns WHERE dm_id = %s", (user_id,))
+            cursor.execute("DELETE FROM campaign_sessions WHERE dm_id = %s", (user_id,))
+            cursor.execute("DELETE FROM dice_rolls WHERE user_id = %s", (user_id,))
+            cursor.execute("DELETE FROM scene_tokens WHERE user_id = %s", (user_id,))
+            cursor.execute("DELETE FROM place_objects WHERE user_id = %s", (user_id,))
+            cursor.execute("DELETE FROM monsters WHERE created_by = %s", (user_id,))
+            cursor.execute("DELETE FROM magical_items WHERE created_by = %s", (user_id,))
+            cursor.execute("DELETE FROM poisons WHERE created_by = %s", (user_id,))
+            
+            # Supprimer l'utilisateur
+            cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
+            
+            connection.commit()
+            print(f"✅ Utilisateur de test {user_data['username']} nettoyé de la base de données")
+        
+        connection.close()
+        
+    except Exception as e:
+        print(f"⚠️ Erreur lors du nettoyage de l'utilisateur {user_data.get('username', 'inconnu')}: {e}")
 
 @pytest.fixture(scope="session")
 def browser_config():
@@ -86,24 +165,48 @@ def app_url():
 
 @pytest.fixture(scope="function")
 def test_user():
-    """Utilisateur de test par défaut"""
-    return {
-        'username': 'test_user',
-        'email': 'test@example.com',
+    """Utilisateur de test par défaut avec nettoyage automatique"""
+    # Générer un nom d'utilisateur unique avec timestamp
+    timestamp = str(int(time.time()))
+    user_data = {
+        'username': f'test_user_{timestamp}',
+        'email': f'test_{timestamp}@example.com',
         'password': 'TestPassword123!',
         'is_dm': True
     }
+    
+    # Ajouter à la liste des utilisateurs créés
+    created_test_users.append(user_data)
+    
+    yield user_data
+    
+    # Nettoyage automatique après le test
+    cleanup_test_user_from_db(user_data)
+    if user_data in created_test_users:
+        created_test_users.remove(user_data)
 
 @pytest.fixture(scope="function")
 def test_admin():
-    """Utilisateur admin de test"""
-    return {
-        'username': 'test_admin',
-        'email': 'admin@test.com',
+    """Utilisateur admin de test avec nettoyage automatique"""
+    # Générer un nom d'utilisateur unique avec timestamp
+    timestamp = str(int(time.time()))
+    user_data = {
+        'username': f'test_admin_{timestamp}',
+        'email': f'admin_{timestamp}@test.com',
         'password': 'TestPassword123!',
         'is_dm': True,
         'role': 'admin'
     }
+    
+    # Ajouter à la liste des utilisateurs créés
+    created_test_users.append(user_data)
+    
+    yield user_data
+    
+    # Nettoyage automatique après le test
+    cleanup_test_user_from_db(user_data)
+    if user_data in created_test_users:
+        created_test_users.remove(user_data)
 
 @pytest.fixture(scope="function")
 def test_character():
@@ -219,3 +322,20 @@ def pytest_runtest_makereport(item, call):
             # Ajouter le screenshot au rapport
             if hasattr(item, 'user_properties'):
                 item.user_properties.append(("screenshot", screenshot_path))
+
+@pytest.hookimpl(trylast=True)
+def pytest_sessionfinish(session, exitstatus):
+    """Nettoyage final de tous les utilisateurs de test créés"""
+    print(f"\n🧹 Nettoyage final: {len(created_test_users)} utilisateur(s) de test à nettoyer")
+    
+    for user_data in created_test_users.copy():
+        cleanup_test_user_from_db(user_data)
+    
+    created_test_users.clear()
+    print("✅ Nettoyage final terminé")
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_runtest_teardown(item, nextitem):
+    """Nettoyage après chaque test"""
+    # Le nettoyage individuel est géré par les fixtures
+    pass

@@ -124,7 +124,7 @@ class AdvancedTestMenu:
             print(f"      {category_info['description']}")
             print()
         
-        print(f"   {len(self.test_categories) + 1}. 🔄 Retour au menu principal")
+        print(f"   0. 🔄 Retour au menu principal")
         print()
     
     def print_individual_test_menu(self):
@@ -266,7 +266,7 @@ class AdvancedTestMenu:
         print("Options de sélection :")
         print("1. 📄 Lancer un fichier de test complet")
         print("2. 🎯 Lancer un test spécifique dans un fichier")
-        print("0. 🔄 Retour")
+        print("0. 🔄 Retour au menu principal")
         print()
         
         choice = self.get_user_choice(2)
@@ -291,12 +291,12 @@ class AdvancedTestMenu:
         for i, file_path in enumerate(test_files, 1):
             print(f"{i}. {file_path.name}")
         
-        print(f"{len(test_files) + 1}. 🔄 Retour")
+        print(f"0. 🔄 Retour au menu précédent")
         print()
         
-        choice = self.get_user_choice(len(test_files) + 1)
+        choice = self.get_user_choice(len(test_files))
         
-        if choice == len(test_files) + 1:
+        if choice == 0:
             return
         
         selected_file = test_files[choice - 1]
@@ -318,12 +318,12 @@ class AdvancedTestMenu:
         for i, file_path in enumerate(test_files, 1):
             print(f"{i}. {file_path.name}")
         
-        print(f"{len(test_files) + 1}. 🔄 Retour")
+        print(f"0. 🔄 Retour au menu précédent")
         print()
         
-        file_choice = self.get_user_choice(len(test_files) + 1)
+        file_choice = self.get_user_choice(len(test_files))
         
-        if file_choice == len(test_files) + 1:
+        if file_choice == 0:
             return
         
         selected_file = test_files[file_choice - 1]
@@ -340,12 +340,12 @@ class AdvancedTestMenu:
         for i, test_name in enumerate(test_names, 1):
             print(f"{i}. {test_name}")
         
-        print(f"{len(test_names) + 1}. 🔄 Retour")
+        print(f"0. 🔄 Retour au menu précédent")
         print()
         
-        test_choice = self.get_user_choice(len(test_names) + 1)
+        test_choice = self.get_user_choice(len(test_names))
         
-        if test_choice == len(test_names) + 1:
+        if test_choice == 0:
             return
         
         selected_test = test_names[test_choice - 1]
@@ -384,7 +384,7 @@ class AdvancedTestMenu:
         print("1. 📄 Lister les rapports existants")
         print("2. 📊 Afficher les statistiques")
         print("3. 🗑️  Nettoyer les anciens rapports")
-        print("0. 🔄 Retour")
+        print("0. 🔄 Retour au menu principal")
         print()
         
         choice = self.get_user_choice(3)
@@ -583,9 +583,9 @@ class AdvancedTestMenu:
             self.print_header()
             self.print_category_menu()
             
-            choice = self.get_user_choice(len(self.test_categories) + 1)
+            choice = self.get_user_choice(len(self.test_categories))
             
-            if choice == len(self.test_categories) + 1:
+            if choice == 0:
                 break
             
             category_key = list(self.test_categories.keys())[choice - 1]
