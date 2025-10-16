@@ -218,20 +218,14 @@ function getEquipmentPackDetails($packId) {
 }
 
 /**
- * Génère l'équipement final basé sur les choix du joueur (nouvelle version)
+ * Génère l'équipement final basé sur les choix du joueur (nouvelle version corrigée)
  */
 function generateFinalEquipmentNew($classId, $backgroundId, $raceId, $equipmentChoices) {
     $pdo = getPDO();
     $finalEquipment = [];
     $backgroundGold = 0;
     
-    // Utiliser l'ancien système car la table starting_equipment n'existe pas
-    // Récupérer l'équipement de classe
-    $classEquipment = getClassStartingEquipmentNew($classId);
-    
-    // L'équipement de background est maintenant géré par la table starting_equipment
-    
-    // Récupérer l'argent de départ du background depuis la colonne money_gold
+    // Récupérer l'argent de départ du background
     $stmt = $pdo->prepare("SELECT money_gold FROM backgrounds WHERE id = ?");
     $stmt->execute([$backgroundId]);
     $result = $stmt->fetch();
@@ -239,110 +233,103 @@ function generateFinalEquipmentNew($classId, $backgroundId, $raceId, $equipmentC
         $backgroundGold = $result['money_gold'];
     }
     
-    // Récupérer l'équipement de race (s'il existe)
-    $raceEquipment = '';
-    // Note: Les races n'ont généralement pas d'équipement de départ dans D&D 5e
+    // Récupérer l'équipement de classe depuis la table starting_equipment
+    $classEquipment = getClassStartingEquipmentNew($classId);
     
-    // Traiter l'équipement de classe
-    foreach ($classEquipment as $index => $item) {
-        if (isset($item['fixed'])) {
-            // Équipement fixe
-            $finalEquipment[] = $item['fixed'];
-        } else {
-            // Choix d'équipement
-            if (isset($equipmentChoices['class'][$index]) && isset($item[$equipmentChoices['class'][$index]])) {
-                $selectedChoice = $item[$equipmentChoices['class'][$index]];
-                
-                // Gestion spéciale pour les armes courantes
-                if (is_array($selectedChoice) && isset($selectedChoice['type']) && $selectedChoice['type'] === 'weapon_choice') {
-                    // Récupérer l'arme sélectionnée
-                    if (isset($equipmentChoices['selected_weapons'][$index][$equipmentChoices['class'][$index]])) {
-                        $selectedWeapon = $equipmentChoices['selected_weapons'][$index][$equipmentChoices['class'][$index]];
-                        $finalEquipment[] = $selectedWeapon;
-                    } else {
-                        // Par défaut, prendre la première arme disponible
-                        $firstWeapon = $selectedChoice['options'][0]['name'] ?? 'Arme courante';
-                        $finalEquipment[] = $firstWeapon;
+    if (!empty($classEquipment)) {
+        // Structurer l'équipement par choix
+        $classChoices = structureStartingEquipmentByChoices($classEquipment);
+        
+        foreach ($classChoices as $choiceIndex => $choiceGroup) {
+            if ($choiceGroup['type_choix'] === 'obligatoire') {
+                // Équipement obligatoire - ajouter tous les items
+                foreach ($choiceGroup['options'] as $option) {
+                    $itemId = $option['id'];
+                    $finalEquipment[] = $itemId; // Utiliser l'ID pour addStartingEquipmentToCharacterNew
+                }
+            } elseif ($choiceGroup['type_choix'] === 'à_choisir') {
+                // Choix d'équipement - traiter selon les choix du joueur
+                if (isset($equipmentChoices['class'][$choiceIndex])) {
+                    $selectedOptionIndex = $equipmentChoices['class'][$choiceIndex];
+                    if (isset($choiceGroup['options'][$selectedOptionIndex])) {
+                        $selectedOption = $choiceGroup['options'][$selectedOptionIndex];
+                        $itemId = $selectedOption['id'];
+                        $finalEquipment[] = $itemId; // Utiliser l'ID pour addStartingEquipmentToCharacterNew
                     }
-                }
-                // Gestion spéciale pour les sacs d'équipement
-                elseif (is_array($selectedChoice) && isset($selectedChoice['type']) && $selectedChoice['type'] === 'pack') {
-                    // Ajouter le sac et son contenu
-                    $finalEquipment[] = $selectedChoice['description'];
-                    $finalEquipment = array_merge($finalEquipment, $selectedChoice['contents']);
-                }
-                else {
-                    $finalEquipment[] = $selectedChoice;
-                }
-            } else {
-                // Si aucun choix n'a été fait, prendre le premier choix par défaut
-                $firstChoice = array_keys($item)[0];
-                $selectedChoice = $item[$firstChoice];
-                
-                if (is_array($selectedChoice) && isset($selectedChoice['type']) && $selectedChoice['type'] === 'weapon_choice') {
-                    $firstWeapon = $selectedChoice['options'][0]['name'] ?? 'Arme courante';
-                    $finalEquipment[] = $firstWeapon;
-                } elseif (is_array($selectedChoice) && isset($selectedChoice['type']) && $selectedChoice['type'] === 'pack') {
-                    $finalEquipment[] = $selectedChoice['description'];
-                    $finalEquipment = array_merge($finalEquipment, $selectedChoice['contents']);
                 } else {
-                    $finalEquipment[] = $selectedChoice;
+                    // Si aucun choix n'a été fait, prendre la première option par défaut
+                    if (!empty($choiceGroup['options'])) {
+                        $firstOption = $choiceGroup['options'][0];
+                        $itemId = $firstOption['id'];
+                        $finalEquipment[] = $itemId; // Utiliser l'ID pour addStartingEquipmentToCharacterNew
+                    }
                 }
             }
         }
     }
     
-    // Ajouter l'équipement de l'historique depuis la table starting_equipment
-    $backgroundEquipmentDetailed = getBackgroundStartingEquipment($backgroundId);
-    if (!empty($backgroundEquipmentDetailed)) {
-        $backgroundChoices = structureStartingEquipmentByChoices($backgroundEquipmentDetailed);
+    // Récupérer l'équipement de l'historique depuis la table starting_equipment
+    $backgroundEquipment = getBackgroundStartingEquipment($backgroundId);
+    if (!empty($backgroundEquipment)) {
+        $backgroundChoices = structureStartingEquipmentByChoices($backgroundEquipment);
+        
         foreach ($backgroundChoices as $choiceIndex => $choiceGroup) {
-            if (isset($choiceGroup['fixed'])) {
-                // Équipement fixe - ajouter directement
-                $finalEquipment[] = $choiceGroup['fixed'];
-            } elseif (isset($choiceGroup['options'])) {
+            if ($choiceGroup['type_choix'] === 'obligatoire') {
+                // Équipement obligatoire - ajouter tous les items
+                foreach ($choiceGroup['options'] as $option) {
+                    $itemId = $option['id'];
+                    $finalEquipment[] = $itemId; // Utiliser l'ID pour addStartingEquipmentToCharacterNew
+                }
+            } elseif ($choiceGroup['type_choix'] === 'à_choisir') {
                 // Choix d'équipement - traiter selon les choix du joueur
                 if (isset($equipmentChoices['background'][$choiceIndex])) {
                     $selectedOptionIndex = $equipmentChoices['background'][$choiceIndex];
                     if (isset($choiceGroup['options'][$selectedOptionIndex])) {
-                        $selectedChoice = $choiceGroup['options'][$selectedOptionIndex];
-                        if (isset($selectedChoice['merged_items'])) {
-                            // Équipement fusionné - ajouter tous les items
-                            foreach ($selectedChoice['merged_items'] as $item) {
-                                $itemDetails = getEquipmentDetails($item['type'], $item['type_id']);
-                                if ($itemDetails) {
-                                    $itemName = $itemDetails['name'] ?? $itemDetails['nom'];
-                                    if ($item['nb'] > 1) {
-                                        $itemName = $item['nb'] . ' ' . $itemName;
-                                    }
-                                    $finalEquipment[] = $itemName;
-                                }
-                            }
-                        } else {
-                            // Item simple
-                            $itemDetails = getEquipmentDetails($selectedChoice['type'], $selectedChoice['type_id']);
-                            if ($itemDetails) {
-                                $itemName = $itemDetails['name'] ?? $itemDetails['nom'];
-                                if ($selectedChoice['nb'] > 1) {
-                                    $itemName = $selectedChoice['nb'] . ' ' . $itemName;
-                                }
-                                $finalEquipment[] = $itemName;
-                            }
-                        }
+                        $selectedOption = $choiceGroup['options'][$selectedOptionIndex];
+                        $itemId = $selectedOption['id'];
+                        $finalEquipment[] = $itemId; // Utiliser l'ID pour addStartingEquipmentToCharacterNew
+                    }
+                } else {
+                    // Si aucun choix n'a été fait, prendre la première option par défaut
+                    if (!empty($choiceGroup['options'])) {
+                        $firstOption = $choiceGroup['options'][0];
+                        $itemId = $firstOption['id'];
+                        $finalEquipment[] = $itemId; // Utiliser l'ID pour addStartingEquipmentToCharacterNew
                     }
                 }
             }
         }
-    } else {
-        // Pas de données dans starting_equipment - aucun équipement de background
-        // La colonne equipment a été supprimée de la table backgrounds
     }
     
-    // Ajouter les instruments sélectionnés
-    if (isset($equipmentChoices['selected_instruments'])) {
-        foreach ($equipmentChoices['selected_instruments'] as $instrument) {
-            if (!empty($instrument)) {
-                $finalEquipment[] = $instrument;
+    // Récupérer l'équipement de race (s'il existe)
+    $raceEquipment = getRaceStartingEquipment($raceId);
+    if (!empty($raceEquipment)) {
+        $raceChoices = structureStartingEquipmentByChoices($raceEquipment);
+        
+        foreach ($raceChoices as $choiceIndex => $choiceGroup) {
+            if ($choiceGroup['type_choix'] === 'obligatoire') {
+                // Équipement obligatoire - ajouter tous les items
+                foreach ($choiceGroup['options'] as $option) {
+                    $itemId = $option['id'];
+                    $finalEquipment[] = $itemId; // Utiliser l'ID pour addStartingEquipmentToCharacterNew
+                }
+            } elseif ($choiceGroup['type_choix'] === 'à_choisir') {
+                // Choix d'équipement - traiter selon les choix du joueur
+                if (isset($equipmentChoices['race'][$choiceIndex])) {
+                    $selectedOptionIndex = $equipmentChoices['race'][$choiceIndex];
+                    if (isset($choiceGroup['options'][$selectedOptionIndex])) {
+                        $selectedOption = $choiceGroup['options'][$selectedOptionIndex];
+                        $itemId = $selectedOption['id'];
+                        $finalEquipment[] = $itemId; // Utiliser l'ID pour addStartingEquipmentToCharacterNew
+                    }
+                } else {
+                    // Si aucun choix n'a été fait, prendre la première option par défaut
+                    if (!empty($choiceGroup['options'])) {
+                        $firstOption = $choiceGroup['options'][0];
+                        $itemId = $firstOption['id'];
+                        $finalEquipment[] = $itemId; // Utiliser l'ID pour addStartingEquipmentToCharacterNew
+                    }
+                }
             }
         }
     }
@@ -466,8 +453,91 @@ function addStartingEquipmentToCharacterNew($characterId, $equipmentData) {
             $line = trim($line);
             if (empty($line)) continue;
             
-            // Déterminer le type d'équipement
-            $equipmentType = detectEquipmentType($line);
+            // Si la ligne est un ID numérique, récupérer le vrai nom et le type depuis starting_equipment
+            $displayName = $line;
+            $itemType = 'other'; // Default type
+            $weaponId = null;
+            $armorId = null;
+            $quantity = 1; // Default quantity
+
+            if (is_numeric($line)) {
+                $stmt = $pdo->prepare("SELECT * FROM starting_equipment WHERE id = ?");
+                $stmt->execute([$line]);
+                $starting_equipment = $stmt->fetch();
+                
+                if ($starting_equipment) {
+                    // Récupérer la quantité spécifiée
+                    $quantity = $starting_equipment['nb'] ?? 1;
+                    
+                    // Determine display name
+                    switch ($starting_equipment['type']) {
+                        case 'weapon':
+                            if ($starting_equipment['type_id']) {
+                                $stmt2 = $pdo->prepare("SELECT name FROM weapons WHERE id = ?");
+                                $stmt2->execute([$starting_equipment['type_id']]);
+                                $displayName = $stmt2->fetchColumn() ?: 'Arme';
+                                $weaponId = $starting_equipment['type_id'];
+                            } else {
+                                $displayName = 'Arme';
+                                $weaponId = null;
+                            }
+                            $itemType = 'weapon';
+                            break;
+                            
+                        case 'armor':
+                            if ($starting_equipment['type_id']) {
+                                $stmt2 = $pdo->prepare("SELECT name FROM armor WHERE id = ?");
+                                $stmt2->execute([$starting_equipment['type_id']]);
+                                $displayName = $stmt2->fetchColumn() ?: 'Armure';
+                                $armorId = $starting_equipment['type_id'];
+                            } else {
+                                $displayName = 'Armure';
+                                $armorId = null;
+                            }
+                            $itemType = 'armor';
+                            break;
+                            
+                        case 'sac':
+                            if ($starting_equipment['type_id']) {
+                                $stmt2 = $pdo->prepare("SELECT nom FROM Object WHERE id = ?");
+                                $stmt2->execute([$starting_equipment['type_id']]);
+                                $displayName = $stmt2->fetchColumn() ?: 'Sac';
+                            } else {
+                                $displayName = 'Sac';
+                            }
+                            $itemType = 'bourse'; // Use 'bourse' for bags as per ENUM
+                            break;
+                        case 'outils':
+                            if ($starting_equipment['type_id']) {
+                                $stmt2 = $pdo->prepare("SELECT nom FROM Object WHERE id = ?");
+                                $stmt2->execute([$starting_equipment['type_id']]);
+                                $displayName = $stmt2->fetchColumn() ?: 'Outils';
+                            } else {
+                                $displayName = 'Outils';
+                            }
+                            $itemType = 'outil';
+                            break;
+                        case 'nourriture':
+                            if ($starting_equipment['type_id']) {
+                                $stmt2 = $pdo->prepare("SELECT nom FROM Object WHERE id = ?");
+                                $stmt2->execute([$starting_equipment['type_id']]);
+                                $displayName = $stmt2->fetchColumn() ?: 'Nourriture';
+                            } else {
+                                $displayName = 'Nourriture';
+                            }
+                            $itemType = 'bourse'; // Use 'bourse' for food as per ENUM
+                            break;
+                        default:
+                            $displayName = ucfirst($starting_equipment['type']);
+                            $itemType = 'outil'; // Default to 'outil' for unknown types in ENUM
+                            break;
+                    }
+                }
+            } else {
+                // Existing logic for non-numeric lines (direct names)
+                // Déterminer le type d'équipement
+                $itemType = detectEquipmentType($line);
+            }
             
             // Insérer dans la table items
             $stmt = $pdo->prepare("
@@ -475,13 +545,13 @@ function addStartingEquipmentToCharacterNew($characterId, $equipmentData) {
                 (place_id, display_name, object_type, type_precis, description, 
                  is_identified, is_visible, is_equipped, position_x, position_y, 
                  is_on_map, owner_type, owner_id, item_source, quantity, 
-                 equipped_slot, notes, obtained_at, obtained_from) 
+                 equipped_slot, notes, obtained_at, obtained_from, weapon_id, armor_id) 
                 VALUES (NULL, ?, ?, ?, NULL, 
                         1, 0, 0, 0, 0, 
-                        0, 'player', ?, 'Équipement de départ', 1, 
-                        NULL, 'Équipement de départ', NOW(), 'Équipement de départ')
+                        0, 'player', ?, 'Équipement de départ', ?, 
+                        NULL, 'Équipement de départ', NOW(), 'Équipement de départ', ?, ?)
             ");
-            $stmt->execute([$line, $equipmentType, $equipmentType, $characterId]);
+            $stmt->execute([$displayName, $itemType, $itemType, $characterId, $quantity, $weaponId, $armorId]);
         }
         
         // Mettre à jour l'argent du personnage

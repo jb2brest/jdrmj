@@ -1221,49 +1221,104 @@ class Character
                 $line = trim($line);
                 if (empty($line)) continue;
                 
+                // Si la ligne est un ID numérique, récupérer le vrai nom depuis starting_equipment
+                $displayName = $line;
+                if (is_numeric($line)) {
+                    $stmt = $pdo->prepare("SELECT * FROM starting_equipment WHERE id = ?");
+                    $stmt->execute([$line]);
+                    $starting_equipment = $stmt->fetch();
+                    
+                    if ($starting_equipment) {
+                        // Récupérer le nom selon le type
+                        switch ($starting_equipment['type']) {
+                            case 'weapon':
+                                $stmt2 = $pdo->prepare("SELECT name FROM weapons WHERE id = ?");
+                                $stmt2->execute([$starting_equipment['type_id']]);
+                                $displayName = $stmt2->fetchColumn() ?: ucfirst($starting_equipment['type']);
+                                break;
+                                
+                            case 'armor':
+                                $stmt2 = $pdo->prepare("SELECT name FROM armor WHERE id = ?");
+                                $stmt2->execute([$starting_equipment['type_id']]);
+                                $displayName = $stmt2->fetchColumn() ?: ucfirst($starting_equipment['type']);
+                                break;
+                                
+                            default:
+                                $displayName = ucfirst($starting_equipment['type']);
+                                break;
+                        }
+                    }
+                }
+                
                 // Déterminer le type d'objet et les détails
                 $itemType = 'other';
                 $weaponId = null;
                 $armorId = null;
                 
-                // Vérifier si c'est une arme connue (recherche flexible)
-                $weapon = null;
-                
-                // D'abord essayer une correspondance exacte
-                $stmt = $pdo->prepare("SELECT id FROM weapons WHERE name = ?");
-                $stmt->execute([$line]);
-                $weapon = $stmt->fetch();
-                
-                // Si pas trouvé, essayer de chercher sans les articles et avec majuscule
-                if (!$weapon) {
-                    $lineWithoutArticle = preg_replace('/^(une?|le|la|les|du|de|des)\s+/i', '', $line);
-                    $lineCapitalized = ucfirst($lineWithoutArticle);
+                // Si on a récupéré le type depuis starting_equipment, l'utiliser
+                if (is_numeric($line) && isset($starting_equipment)) {
+                    switch ($starting_equipment['type']) {
+                        case 'weapon':
+                            $itemType = 'weapon';
+                            $weaponId = $starting_equipment['type_id'];
+                            break;
+                        case 'armor':
+                            $itemType = 'armor';
+                            $armorId = $starting_equipment['type_id'];
+                            break;
+                        case 'sac':
+                            $itemType = 'bourse';
+                            break;
+                        case 'outils':
+                            $itemType = 'outil';
+                            break;
+                        case 'nourriture':
+                            $itemType = 'bourse';
+                            break;
+                        default:
+                            $itemType = 'outil';
+                            break;
+                    }
+                } else {
+                    // Vérifier si c'est une arme connue (recherche flexible)
+                    $weapon = null;
+                    
+                    // D'abord essayer une correspondance exacte
                     $stmt = $pdo->prepare("SELECT id FROM weapons WHERE name = ?");
-                    $stmt->execute([$lineCapitalized]);
+                    $stmt->execute([$displayName]);
                     $weapon = $stmt->fetch();
-                }
-                
-                // Si toujours pas trouvé, chercher par correspondance partielle
-                if (!$weapon) {
-                    $lineWithoutArticle = preg_replace('/^(une?|le|la|les|du|de|des)\s+/i', '', $line);
-                    $stmt = $pdo->prepare("SELECT id FROM weapons WHERE name LIKE ?");
-                    $stmt->execute(['%' . $lineWithoutArticle . '%']);
-                    $weapon = $stmt->fetch();
-                }
-                
-                if ($weapon) {
-                    $itemType = 'weapon';
-                    $weaponId = $weapon['id'];
-                }
-                
-                // Vérifier si c'est une armure connue
-                if ($itemType === 'other') {
-                    $stmt = $pdo->prepare("SELECT id FROM armor WHERE name = ?");
-                    $stmt->execute([$line]);
-                    $armor = $stmt->fetch();
-                    if ($armor) {
-                        $itemType = 'armor';
-                        $armorId = $armor['id'];
+                    
+                    // Si pas trouvé, essayer de chercher sans les articles et avec majuscule
+                    if (!$weapon) {
+                        $lineWithoutArticle = preg_replace('/^(une?|le|la|les|du|de|des)\s+/i', '', $displayName);
+                        $lineCapitalized = ucfirst($lineWithoutArticle);
+                        $stmt = $pdo->prepare("SELECT id FROM weapons WHERE name = ?");
+                        $stmt->execute([$lineCapitalized]);
+                        $weapon = $stmt->fetch();
+                    }
+                    
+                    // Si toujours pas trouvé, chercher par correspondance partielle
+                    if (!$weapon) {
+                        $lineWithoutArticle = preg_replace('/^(une?|le|la|les|du|de|des)\s+/i', '', $displayName);
+                        $stmt = $pdo->prepare("SELECT id FROM weapons WHERE name LIKE ?");
+                        $stmt->execute(['%' . $lineWithoutArticle . '%']);
+                        $weapon = $stmt->fetch();
+                    }
+                    
+                    if ($weapon) {
+                        $itemType = 'weapon';
+                        $weaponId = $weapon['id'];
+                    }
+                    
+                    // Vérifier si c'est une armure connue
+                    if ($itemType === 'other') {
+                        $stmt = $pdo->prepare("SELECT id FROM armor WHERE name = ?");
+                        $stmt->execute([$displayName]);
+                        $armor = $stmt->fetch();
+                        if ($armor) {
+                            $itemType = 'armor';
+                            $armorId = $armor['id'];
+                        }
                     }
                 }
                 
@@ -1302,7 +1357,7 @@ class Character
                             NULL, 'Équipement de départ', NOW(), 'Sélection équipement de départ')
                 ");
                 $stmt->execute([
-                    $line,           // display_name
+                    $displayName,    // display_name
                     $itemType,       // object_type
                     $itemType,       // type_precis
                     $characterId     // owner_id
@@ -1401,10 +1456,70 @@ class Character
      */
     public static function calculateCharacterAttacks($characterId, $character)
     {
-        // Cette fonction nécessite une logique complexe
-        // Pour l'instant, on retourne un tableau vide pour maintenir la compatibilité
-        // TODO: Implémenter la logique complète
-        return [];
+        $pdo = \Database::getInstance()->getPdo();
+        $attacks = [];
+        
+        // Récupérer les armes équipées
+        $stmt = $pdo->prepare("
+            SELECT display_name as item_name, object_type, equipped_slot, weapon_id
+            FROM items 
+            WHERE owner_type = 'player' AND owner_id = ? AND is_equipped = 1 AND object_type = 'weapon'
+        ");
+        $stmt->execute([$characterId]);
+        $equippedWeapons = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        foreach ($equippedWeapons as $weapon) {
+            // Récupérer les détails de l'arme depuis la table weapons
+            if ($weapon['weapon_id']) {
+                $stmt = $pdo->prepare("SELECT * FROM weapons WHERE id = ?");
+                $stmt->execute([$weapon['weapon_id']]);
+                $weaponDetails = $stmt->fetch();
+            } else {
+                // Si pas d'ID d'arme, essayer de trouver par nom
+                $stmt = $pdo->prepare("SELECT * FROM weapons WHERE name = ?");
+                $stmt->execute([$weapon['item_name']]);
+                $weaponDetails = $stmt->fetch();
+            }
+            
+            if ($weaponDetails) {
+                // Calculer le bonus d'attaque
+                $attackBonus = 0;
+                
+                // Bonus de caractéristique (Force pour armes de mêlée, Dextérité pour armes à distance)
+                if (strpos($weaponDetails['properties'], 'finesse') !== false) {
+                    // Arme de finesse : utiliser Force ou Dextérité (le plus élevé)
+                    $attackBonus += max($character['strength_modifier'] ?? 0, $character['dexterity_modifier'] ?? 0);
+                } elseif (strpos($weaponDetails['properties'], 'distance') !== false || 
+                         strpos($weaponDetails['properties'], 'lancer') !== false) {
+                    // Arme à distance : Dextérité
+                    $attackBonus += $character['dexterity_modifier'] ?? 0;
+                } else {
+                    // Arme de mêlée : Force
+                    $attackBonus += $character['strength_modifier'] ?? 0;
+                }
+                
+                // Bonus de maîtrise
+                $attackBonus += $character['proficiency_bonus'] ?? 0;
+                
+                // Déterminer le type d'attaque
+                $attackType = 'main_hand';
+                if (strpos($weaponDetails['properties'], 'deux mains') !== false) {
+                    $attackType = 'two_handed';
+                } elseif ($weapon['equipped_slot'] === 'off_hand') {
+                    $attackType = 'off_hand';
+                }
+                
+                $attacks[] = [
+                    'name' => $weaponDetails['name'],
+                    'damage' => $weaponDetails['damage'],
+                    'attack_bonus' => $attackBonus,
+                    'type' => $attackType,
+                    'properties' => $weaponDetails['properties']
+                ];
+            }
+        }
+        
+        return $attacks;
     }
 
     /**

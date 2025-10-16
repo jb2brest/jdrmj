@@ -315,8 +315,13 @@ foreach ($magicalEquipment as $item) {
     }
 }
 
-// Ajouter le modificateur de Dextérité au tableau character pour la fonction
+// Ajouter les modificateurs de caractéristiques au tableau character pour la fonction
+$character['strength_modifier'] = $strengthMod;
 $character['dexterity_modifier'] = $dexterityMod;
+$character['constitution_modifier'] = $constitutionMod;
+$character['intelligence_modifier'] = $intelligenceMod;
+$character['wisdom_modifier'] = $wisdomMod;
+$character['charisma_modifier'] = $charismaMod;
 
 // Calculer les attaques du personnage
 $characterAttacks = Character::calculateCharacterAttacks($character_id, $character);
