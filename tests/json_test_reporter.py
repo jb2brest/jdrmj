@@ -250,6 +250,52 @@ class JSONTestReporter:
             return 'Integration'
         elif 'smoke' in file_path:
             return 'Tests_Fumee'
+        elif 'classes/' in file_path:
+            # Détecter les tests de classes
+            if 'barbare' in file_path or 'barbarian' in file_path:
+                return 'Classe - Barbare'
+            elif 'barde' in file_path or 'bard' in file_path:
+                return 'Classe - Barde'
+            elif 'clerc' in file_path or 'cleric' in file_path:
+                return 'Classe - Clerc'
+            elif 'guerrier' in file_path or 'fighter' in file_path:
+                return 'Classe - Guerrier'
+            elif 'magicien' in file_path or 'wizard' in file_path:
+                return 'Classe - Magicien'
+            elif 'moine' in file_path or 'monk' in file_path:
+                return 'Classe - Moine'
+            elif 'occultiste' in file_path or 'warlock' in file_path:
+                return 'Classe - Occultiste'
+            elif 'rodeur' in file_path or 'ranger' in file_path:
+                return 'Classe - Rôdeur'
+            elif 'paladin' in file_path:
+                return 'Classe - Paladin'
+            elif 'roublard' in file_path or 'rogue' in file_path:
+                return 'Classe - Roublard'
+            elif 'mage' in file_path:
+                return 'Classe - Mage'
+            elif 'voleur' in file_path or 'rogue' in file_path:
+                return 'Classe - Voleur'
+            elif 'pretre' in file_path or 'cleric' in file_path:
+                return 'Classe - Prêtre'
+            elif 'ranger' in file_path:
+                return 'Classe - Ranger'
+            elif 'paladin' in file_path:
+                return 'Classe - Paladin'
+            elif 'druide' in file_path or 'druid' in file_path:
+                return 'Classe - Druide'
+            elif 'moine' in file_path or 'monk' in file_path:
+                return 'Classe - Moine'
+            elif 'sorcier' in file_path or 'sorcerer' in file_path:
+                return 'Classe - Sorcier'
+            elif 'warlock' in file_path:
+                return 'Classe - Warlock'
+            else:
+                return 'Classe - Autres'
+        elif 'races/' in file_path:
+            return 'Races'
+        elif 'histoires/' in file_path:
+            return 'Historiques'
         else:
             return 'Autres'
     

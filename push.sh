@@ -512,41 +512,85 @@ prepare_files() {
     log_info "Copie des fichiers de l'application..."
     log_info "Inclusion des rapports JSON de tests..."
     
+    if [ "$SERVER" = "staging" ]; then
+        log_info "Mode staging: inclusion des fichiers de tests nécessaires (launch_tests.sh, etc.)"
+    fi
+    
     # Copier tous les fichiers et répertoires nécessaires
-    rsync -av \
-        --include="*.php" \
-        --include="*.htaccess" \
-        --include="*.ini" \
-        --include="*.env" \
-        --include="*.css" \
-        --include="*.js" \
-        --include="*.jpg" \
-        --include="*.png" \
-        --include="*.gif" \
-        --include="*.svg" \
-        --include="*.sql" \
-        --include="*.md" \
-        --include="*.txt" \
-        --include="*.json" \
-        --include="VERSION" \
-        --include="config/" \
-        --include="config/**" \
-        --include="includes/" \
-        --include="includes/**" \
-        --include="css/" \
-        --include="css/**" \
-        --include="images/" \
-        --include="images/**" \
-        --include="database/" \
-        --include="database/**" \
-        --include="classes/" \
-        --include="classes/**" \
-        --include="uploads/" \
-        --include="uploads/**" \
-        --include="tests/reports/" \
-        --include="tests/reports/**" \
-        --exclude="*" \
-        . "$temp_dir/" >/dev/null 2>&1
+    if [ "$SERVER" = "staging" ]; then
+        # Pour le staging, inclure les fichiers de tests nécessaires
+        rsync -av \
+            --include="*.php" \
+            --include="*.htaccess" \
+            --include="*.ini" \
+            --include="*.env" \
+            --include="*.css" \
+            --include="*.js" \
+            --include="*.jpg" \
+            --include="*.png" \
+            --include="*.gif" \
+            --include="*.svg" \
+            --include="*.sql" \
+            --include="*.md" \
+            --include="*.txt" \
+            --include="*.json" \
+            --include="VERSION" \
+            --include="config/" \
+            --include="config/**" \
+            --include="includes/" \
+            --include="includes/**" \
+            --include="css/" \
+            --include="css/**" \
+            --include="images/" \
+            --include="images/**" \
+            --include="database/" \
+            --include="database/**" \
+            --include="classes/" \
+            --include="classes/**" \
+            --include="uploads/" \
+            --include="uploads/**" \
+            --include="tests/" \
+            --include="tests/**" \
+            --include="launch_tests.sh" \
+            --exclude="*" \
+            . "$temp_dir/" >/dev/null 2>&1
+    else
+        # Pour les autres serveurs, copie standard
+        rsync -av \
+            --include="*.php" \
+            --include="*.htaccess" \
+            --include="*.ini" \
+            --include="*.env" \
+            --include="*.css" \
+            --include="*.js" \
+            --include="*.jpg" \
+            --include="*.png" \
+            --include="*.gif" \
+            --include="*.svg" \
+            --include="*.sql" \
+            --include="*.md" \
+            --include="*.txt" \
+            --include="*.json" \
+            --include="VERSION" \
+            --include="config/" \
+            --include="config/**" \
+            --include="includes/" \
+            --include="includes/**" \
+            --include="css/" \
+            --include="css/**" \
+            --include="images/" \
+            --include="images/**" \
+            --include="database/" \
+            --include="database/**" \
+            --include="classes/" \
+            --include="classes/**" \
+            --include="uploads/" \
+            --include="uploads/**" \
+            --include="tests/reports/" \
+            --include="tests/reports/**" \
+            --exclude="*" \
+            . "$temp_dir/" >/dev/null 2>&1
+    fi
     
     # Restaurer les uploads sauvegardés si le répertoire local est vide
     if [ -d "$temp_dir/uploads_backup" ]; then
@@ -562,24 +606,54 @@ prepare_files() {
     fi
     
     # Exclure les fichiers de développement (mais garder les rapports JSON)
-    rm -rf "$temp_dir/tests/functional"
-    rm -rf "$temp_dir/tests/fixtures"
-    rm -rf "$temp_dir/tests/conftest.py"
-    rm -rf "$temp_dir/tests/run_*.py"
-    rm -rf "$temp_dir/tests/test_*.py"
-    rm -rf "$temp_dir/tests/demo_*.py"
-    rm -rf "$temp_dir/tests/json_test_reporter.py"
-    rm -rf "$temp_dir/tests/pytest_json_reporter.py"
-    rm -rf "$temp_dir/tests/version_detector.py"
-    rm -rf "$temp_dir/tests/README_*.md"
-    rm -rf "$temp_dir/tests/*.sh"
-    rm -rf "$temp_dir/testenv"
-    rm -rf "$temp_dir/monenv"
-    rm -rf "$temp_dir/__pycache__"
-    rm -rf "$temp_dir/.git"
-    rm -rf "$temp_dir/.gitignore"
-    rm -rf "$temp_dir/publish.sh"
-    rm -rf "$temp_dir/push.sh"
+    # Pour le serveur de staging, garder les fichiers nécessaires aux tests
+    if [ "$SERVER" = "staging" ]; then
+        log_info "Mode staging: conservation des fichiers de tests nécessaires"
+        # Garder les fichiers essentiels pour les tests sur staging
+        # Garder les tests fonctionnels pour le staging
+        # rm -rf "$temp_dir/tests/functional"  # Gardé pour staging
+        rm -rf "$temp_dir/tests/fixtures"
+        # rm -rf "$temp_dir/tests/conftest.py"  # Gardé pour staging
+        rm -rf "$temp_dir/tests/run_*.py"
+        # rm -rf "$temp_dir/tests/test_*.py"  # Gardé pour staging
+        rm -rf "$temp_dir/tests/demo_*.py"
+        # Garder les fichiers de rapport et de configuration des tests
+        # rm -rf "$temp_dir/tests/json_test_reporter.py"  # Gardé pour staging
+        # rm -rf "$temp_dir/tests/pytest_json_reporter.py"  # Gardé pour staging
+        # rm -rf "$temp_dir/tests/version_detector.py"  # Gardé pour staging
+        rm -rf "$temp_dir/tests/README_*.md"
+        # Garder launch_tests.sh pour staging
+        # rm -rf "$temp_dir/tests/*.sh"  # Gardé pour staging
+        # Ne pas supprimer launch_tests.sh à la racine
+        # rm -rf "$temp_dir/launch_tests.sh"  # Gardé pour staging
+        rm -rf "$temp_dir/testenv"
+        rm -rf "$temp_dir/monenv"
+        rm -rf "$temp_dir/__pycache__"
+        rm -rf "$temp_dir/.git"
+        rm -rf "$temp_dir/.gitignore"
+        rm -rf "$temp_dir/publish.sh"
+        rm -rf "$temp_dir/push.sh"
+    else
+        # Pour les autres serveurs (test, production), supprimer tous les fichiers de tests
+        rm -rf "$temp_dir/tests/functional"
+        rm -rf "$temp_dir/tests/fixtures"
+        rm -rf "$temp_dir/tests/conftest.py"
+        rm -rf "$temp_dir/tests/run_*.py"
+        rm -rf "$temp_dir/tests/test_*.py"
+        rm -rf "$temp_dir/tests/demo_*.py"
+        rm -rf "$temp_dir/tests/json_test_reporter.py"
+        rm -rf "$temp_dir/tests/pytest_json_reporter.py"
+        rm -rf "$temp_dir/tests/version_detector.py"
+        rm -rf "$temp_dir/tests/README_*.md"
+        rm -rf "$temp_dir/tests/*.sh"
+        rm -rf "$temp_dir/testenv"
+        rm -rf "$temp_dir/monenv"
+        rm -rf "$temp_dir/__pycache__"
+        rm -rf "$temp_dir/.git"
+        rm -rf "$temp_dir/.gitignore"
+        rm -rf "$temp_dir/publish.sh"
+        rm -rf "$temp_dir/push.sh"
+    fi
     
     # Synchroniser les rapports JSON depuis le répertoire de développement
     sync_test_reports "$temp_dir"
@@ -728,6 +802,21 @@ deploy_to_server() {
                 sudo chmod -R 755 "$DEPLOY_PATH/tests/reports"
                 sudo chmod -R 644 "$DEPLOY_PATH/tests/reports"/*.json 2>/dev/null || true
                 log_success "Permissions des rapports JSON configurées"
+            fi
+            
+            # Configurer les permissions pour les fichiers de tests sur staging
+            log_info "Configuration des permissions pour les fichiers de tests..."
+            if [ -f "$DEPLOY_PATH/launch_tests.sh" ]; then
+                sudo chmod +x "$DEPLOY_PATH/launch_tests.sh"
+                log_success "Permissions d'exécution configurées pour launch_tests.sh"
+            fi
+            
+            if [ -d "$DEPLOY_PATH/tests" ]; then
+                sudo chown -R www-data:www-data "$DEPLOY_PATH/tests"
+                sudo chmod -R 755 "$DEPLOY_PATH/tests"
+                sudo chmod -R 644 "$DEPLOY_PATH/tests"/*.py 2>/dev/null || true
+                sudo chmod -R 644 "$DEPLOY_PATH/tests"/*.ini 2>/dev/null || true
+                log_success "Permissions des fichiers de tests configurées"
             fi
             
             log_success "Livraison terminée sur le serveur de staging"

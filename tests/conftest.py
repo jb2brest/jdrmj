@@ -60,6 +60,12 @@ def cleanup_test_user_from_db(user_data):
     if not user_data or not user_data.get('username'):
         return
     
+    # Vérifier si on doit conserver les données de test
+    keep_test_data = os.getenv('KEEP_TEST_DATA', 'false').lower() == 'true'
+    if keep_test_data:
+        print(f"💾 Conservation des données de test activée - Utilisateur {user_data['username']} conservé")
+        return
+    
     try:
         config = get_database_config()
         connection = pymysql.connect(
@@ -81,10 +87,74 @@ def cleanup_test_user_from_db(user_data):
         if result:
             user_id = result[0]
             
-            # Supprimer les données liées
-            cursor.execute("DELETE FROM characters WHERE user_id = %s", (user_id,))
+            # Supprimer les données liées dans l'ordre hiérarchique
+            # 1. Lieux (places)
+            cursor.execute("DELETE FROM places WHERE country_id IN (SELECT id FROM countries WHERE world_id IN (SELECT id FROM worlds WHERE created_by = %s))", (user_id,))
+            cursor.execute("DELETE FROM places WHERE region_id IN (SELECT id FROM regions WHERE country_id IN (SELECT id FROM countries WHERE world_id IN (SELECT id FROM worlds WHERE created_by = %s)))", (user_id,))
+            
+            # 2. Régions
+            cursor.execute("DELETE FROM regions WHERE country_id IN (SELECT id FROM countries WHERE world_id IN (SELECT id FROM worlds WHERE created_by = %s))", (user_id,))
+            
+            # 3. Pays
+            cursor.execute("DELETE FROM countries WHERE world_id IN (SELECT id FROM worlds WHERE created_by = %s)", (user_id,))
+            
+            # 4. Mondes
+            cursor.execute("DELETE FROM worlds WHERE created_by = %s", (user_id,))
+            
+            # 5. Données de campagne (dans l'ordre hiérarchique)
+            # 5.1. Notifications liées aux campagnes
+            try:
+                cursor.execute("DELETE FROM notifications WHERE campaign_id IN (SELECT id FROM campaigns WHERE dm_id = %s)", (user_id,))
+            except Exception:
+                pass  # La table notifications n'existe peut-être pas
+            
+            # 5.2. Applications de campagne
+            try:
+                cursor.execute("DELETE FROM campaign_applications WHERE campaign_id IN (SELECT id FROM campaigns WHERE dm_id = %s)", (user_id,))
+            except Exception:
+                pass  # La table campaign_applications n'existe peut-être pas
+            
+            # 5.3. Événements de campagne
+            try:
+                cursor.execute("DELETE FROM campaign_events WHERE campaign_id IN (SELECT id FROM campaigns WHERE dm_id = %s)", (user_id,))
+            except Exception:
+                pass  # La table campaign_events n'existe peut-être pas
+            
+            # 5.4. Associations de lieux avec les campagnes
+            try:
+                cursor.execute("DELETE FROM place_campaigns WHERE campaign_id IN (SELECT id FROM campaigns WHERE dm_id = %s)", (user_id,))
+            except Exception:
+                pass  # La table place_campaigns n'existe peut-être pas
+            
+            # 5.5. Joueurs dans les lieux des campagnes
+            try:
+                cursor.execute("DELETE pp FROM place_players pp INNER JOIN place_campaigns pc ON pp.place_id = pc.place_id WHERE pc.campaign_id IN (SELECT id FROM campaigns WHERE dm_id = %s)", (user_id,))
+            except Exception:
+                pass  # La table place_players n'existe peut-être pas
+            
+            # 5.6. PNJ dans les lieux des campagnes
+            try:
+                cursor.execute("DELETE pn FROM place_npcs pn INNER JOIN place_campaigns pc ON pn.place_id = pc.place_id WHERE pc.campaign_id IN (SELECT id FROM campaigns WHERE dm_id = %s)", (user_id,))
+            except Exception:
+                pass  # La table place_npcs n'existe peut-être pas
+            
+            # 5.7. Monstres dans les lieux des campagnes
+            try:
+                cursor.execute("DELETE pm FROM place_monsters pm INNER JOIN place_campaigns pc ON pm.place_id = pc.place_id WHERE pc.campaign_id IN (SELECT id FROM campaigns WHERE dm_id = %s)", (user_id,))
+            except Exception:
+                pass  # La table place_monsters n'existe peut-être pas
+            
+            # 5.8. Membres des campagnes
+            cursor.execute("DELETE FROM campaign_members WHERE campaign_id IN (SELECT id FROM campaigns WHERE dm_id = %s)", (user_id,))
+            
+            # 5.9. Sessions de campagne
+            cursor.execute("DELETE FROM campaign_sessions WHERE campaign_id IN (SELECT id FROM campaigns WHERE dm_id = %s)", (user_id,))
+            
+            # 5.10. Campagnes
             cursor.execute("DELETE FROM campaigns WHERE dm_id = %s", (user_id,))
-            cursor.execute("DELETE FROM campaign_sessions WHERE dm_id = %s", (user_id,))
+            
+            # 6. Autres données liées
+            cursor.execute("DELETE FROM characters WHERE user_id = %s", (user_id,))
             cursor.execute("DELETE FROM dice_rolls WHERE user_id = %s", (user_id,))
             cursor.execute("DELETE FROM scene_tokens WHERE user_id = %s", (user_id,))
             cursor.execute("DELETE FROM place_objects WHERE user_id = %s", (user_id,))
@@ -92,11 +162,11 @@ def cleanup_test_user_from_db(user_data):
             cursor.execute("DELETE FROM magical_items WHERE created_by = %s", (user_id,))
             cursor.execute("DELETE FROM poisons WHERE created_by = %s", (user_id,))
             
-            # Supprimer l'utilisateur
+            # 6. Supprimer l'utilisateur
             cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
             
             connection.commit()
-            print(f"✅ Utilisateur de test {user_data['username']} nettoyé de la base de données")
+            print(f"✅ Utilisateur de test {user_data['username']} et toutes ses données nettoyés de la base de données")
         
         connection.close()
         
@@ -238,6 +308,237 @@ def test_barbarian():
         'intelligence': 8,
         'wisdom': 12,
         'charisma': 10
+    }
+
+@pytest.fixture(scope="function")
+def test_bard():
+    """Personnage barde de test"""
+    return {
+        'name': 'Test Bard',
+        'race': 'Elfe',
+        'class': 'Barde',
+        'level': 1,
+        'background': 'Artiste',
+        'archetype': 'Collège de la Gloire',
+        'hit_points': 8,
+        'armor_class': 12,
+        'speed': 30,
+        'strength': 8,
+        'dexterity': 14,
+        'constitution': 13,
+        'intelligence': 12,
+        'wisdom': 10,
+        'charisma': 15
+    }
+
+@pytest.fixture(scope="function")
+def test_cleric():
+    """Personnage clerc de test"""
+    return {
+        'name': 'Test Cleric',
+        'race': 'Humain',
+        'class': 'Clerc',
+        'level': 1,
+        'background': 'Acolyte',
+        'archetype': 'Domaine de la Vie',
+        'hit_points': 8,
+        'armor_class': 16,
+        'speed': 30,
+        'strength': 10,
+        'dexterity': 8,
+        'constitution': 13,
+        'intelligence': 12,
+        'wisdom': 15,
+        'charisma': 14
+    }
+
+@pytest.fixture(scope="function")
+def test_druid():
+    """Personnage druide de test"""
+    return {
+        'name': 'Test Druid',
+        'race': 'Elfe',
+        'class': 'Druide',
+        'level': 1,
+        'background': 'Ermite',
+        'archetype': 'Cercle de la Lune',
+        'hit_points': 8,
+        'armor_class': 14,
+        'speed': 30,
+        'strength': 10,
+        'dexterity': 12,
+        'constitution': 13,
+        'intelligence': 14,
+        'wisdom': 15,
+        'charisma': 8
+    }
+
+@pytest.fixture(scope="function")
+def test_sorcerer():
+    """Personnage ensorceleur de test"""
+    return {
+        'name': 'Test Sorcerer',
+        'race': 'Elfe',
+        'class': 'Ensorceleur',
+        'level': 1,
+        'background': 'Hermite',
+        'archetype': 'Origine Draconique',
+        'hit_points': 6,
+        'armor_class': 12,
+        'speed': 30,
+        'strength': 8,
+        'dexterity': 14,
+        'constitution': 13,
+        'intelligence': 12,
+        'wisdom': 10,
+        'charisma': 15
+    }
+
+@pytest.fixture(scope="function")
+def test_fighter():
+    """Personnage guerrier de test"""
+    return {
+        'name': 'Test Fighter',
+        'race': 'Humain',
+        'class': 'Guerrier',
+        'level': 1,
+        'background': 'Soldat',
+        'archetype': 'Spécialisation martiale',
+        'hit_points': 10,
+        'armor_class': 16,
+        'speed': 30,
+        'strength': 15,
+        'dexterity': 13,
+        'constitution': 14,
+        'intelligence': 12,
+        'wisdom': 10,
+        'charisma': 8
+    }
+
+@pytest.fixture(scope="function")
+def test_wizard():
+    """Personnage magicien de test"""
+    return {
+        'name': 'Test Wizard',
+        'race': 'Elfe',
+        'class': 'Magicien',
+        'level': 1,
+        'background': 'Sage',
+        'archetype': 'École d\'Évocation',
+        'hit_points': 6,
+        'armor_class': 12,
+        'speed': 30,
+        'strength': 8,
+        'dexterity': 14,
+        'constitution': 13,
+        'intelligence': 15,
+        'wisdom': 12,
+        'charisma': 10
+    }
+
+@pytest.fixture(scope="function")
+def test_monk():
+    """Personnage moine de test"""
+    return {
+        'name': 'Test Monk',
+        'race': 'Humain',
+        'class': 'Moine',
+        'level': 1,
+        'background': 'Ermite',
+        'archetype': 'Tradition de l\'Ombre',
+        'hit_points': 8,
+        'armor_class': 15,
+        'speed': 30,
+        'strength': 10,
+        'dexterity': 15,
+        'constitution': 13,
+        'intelligence': 12,
+        'wisdom': 14,
+        'charisma': 8
+    }
+
+@pytest.fixture(scope="function")
+def test_warlock():
+    """Personnage occultiste de test"""
+    return {
+        'name': 'Test Warlock',
+        'race': 'Tieffelin',
+        'class': 'Occultiste',
+        'level': 1,
+        'background': 'Ermite',
+        'archetype': 'Patron de la Chaîne',
+        'hit_points': 8,
+        'armor_class': 12,
+        'speed': 30,
+        'strength': 8,
+        'dexterity': 14,
+        'constitution': 13,
+        'intelligence': 12,
+        'wisdom': 10,
+        'charisma': 15
+    }
+
+@pytest.fixture(scope="function")
+def test_ranger():
+    """Personnage rôdeur de test"""
+    return {
+        'name': 'Test Ranger',
+        'race': 'Elfe',
+        'class': 'Rôdeur',
+        'level': 1,
+        'background': 'Ermite',
+        'archetype': 'Chasseur',
+        'hit_points': 10,
+        'armor_class': 14,
+        'speed': 30,
+        'strength': 10,
+        'dexterity': 15,
+        'constitution': 13,
+        'intelligence': 12,
+        'wisdom': 14,
+        'charisma': 8
+    }
+
+@pytest.fixture(scope="function")
+def test_paladin():
+    """Personnage paladin de test"""
+    return {
+        'name': 'Test Paladin',
+        'race': 'Humain',
+        'class': 'Paladin',
+        'level': 1,
+        'background': 'Acolyte',
+        'archetype': 'Serment de Dévotion',
+        'hit_points': 10,
+        'armor_class': 18,
+        'speed': 30,
+        'strength': 15,
+        'dexterity': 8,
+        'constitution': 13,
+        'intelligence': 12,
+        'wisdom': 10,
+        'charisma': 14
+    }
+
+@pytest.fixture(scope="function")
+def test_rogue():
+    """Personnage roublard de test"""
+    return {
+        'name': 'Test Rogue',
+        'race': 'Halfelin',
+        'class': 'Roublard',
+        'level': 1,
+        'background': 'Criminel',
+        'archetype': 'Voleur',
+        'hit_points': 8,
+        'armor_class': 14,
+        'speed': 25,
+        'strength': 8,
+        'dexterity': 15,
+        'constitution': 13,
+        'intelligence': 12,
+        'wisdom': 10,
+        'charisma': 14
     }
 
 @pytest.fixture(scope="function")

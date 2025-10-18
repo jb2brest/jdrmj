@@ -218,8 +218,9 @@ Dans chaque case est dessinée un dé 8 faces avec une valeur différente.
 Les cases contiendront alors les valeurs de 1 à 8.
 Le dés est marbré gris très clair et bleu. Les chiffres sont écrit en doré.
 
+Dans un univers DnD, dessine une image carrée de nain des montagnes clerc de niveau 1 sans texte
 
-
+Dans http://localhost/jdrmj/admin_versions.php => les tests de classe sont rangés dans la catégorie autres. Il faut les mettres dans une catégorie Classe et une sous categorie par classe
 
 
 <svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">

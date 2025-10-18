@@ -24,6 +24,10 @@ class AdvancedTestMenu:
         self.parent_dir = self.base_dir.parent
         self.functional_dir = self.base_dir / "functional"
         
+        # Récupérer l'environnement depuis les variables d'environnement
+        self.test_environment = os.environ.get('TEST_ENVIRONMENT', 'local')
+        self.headless_mode = os.environ.get('HEADLESS', 'false').lower() == 'true'
+        
         # Définir les catégories de tests
         self.test_categories = {
             "authentification": {
@@ -37,10 +41,76 @@ class AdvancedTestMenu:
                     "test_character_creation_steps.py",
                     "test_character_creation_step1_simple.py",
                     "test_character_creation_debug.py",
-                    "test_character_management.py",
-                    "test_barbarian_class.py"
+                    "test_character_management.py"
                 ],
                 "description": "Tests de création et gestion des personnages"
+            },
+            "classes": {
+                "name": "⚔️ Tests des Classes de Personnage",
+                "files": [],
+                "description": "Tests spécifiques à chaque classe de personnage",
+                "subcategories": {
+                    "barbare": {
+                        "name": "🪓 Classe Barbare",
+                        "files": ["classes/barbare/test_barbarian_class.py"],
+                        "description": "Tests de la classe Barbare et ses capacités"
+                    },
+                    "barde": {
+                        "name": "🎭 Classe Barde", 
+                        "files": ["classes/barde/test_bard_class.py"],
+                        "description": "Tests de la classe Barde et ses capacités"
+                    },
+                    "clerc": {
+                        "name": "⛪ Classe Clerc",
+                        "files": ["classes/clerc/test_cleric_class.py"],
+                        "description": "Tests de la classe Clerc et ses capacités"
+                    },
+                    "druide": {
+                        "name": "🌿 Classe Druide",
+                        "files": ["classes/druide/test_druid_class.py"],
+                        "description": "Tests de la classe Druide et ses capacités"
+                    },
+                    "ensorceleur": {
+                        "name": "⚡ Classe Ensorceleur",
+                        "files": ["classes/ensorceleur/test_sorcerer_class.py"],
+                        "description": "Tests de la classe Ensorceleur et ses capacités"
+                    },
+                    "guerrier": {
+                        "name": "⚔️ Classe Guerrier",
+                        "files": ["classes/guerrier/test_fighter_class.py"],
+                        "description": "Tests de la classe Guerrier et ses capacités"
+                    },
+                    "magicien": {
+                        "name": "🔮 Classe Magicien",
+                        "files": ["classes/magicien/test_wizard_class.py"],
+                        "description": "Tests de la classe Magicien et ses capacités"
+                    },
+                    "moine": {
+                        "name": "🥋 Classe Moine",
+                        "files": ["classes/moine/test_monk_class.py"],
+                        "description": "Tests de la classe Moine et ses capacités"
+                    },
+                    "occultiste": {
+                        "name": "🔮 Classe Occultiste",
+                        "files": ["classes/occultiste/test_warlock_class.py"],
+                        "description": "Tests de la classe Occultiste et ses capacités"
+                    },
+                    "rodeur": {
+                        "name": "🏹 Classe Rôdeur",
+                        "files": ["classes/rodeur/test_ranger_class.py"],
+                        "description": "Tests de la classe Rôdeur et ses capacités"
+                    },
+                    "paladin": {
+                        "name": "⚔️ Classe Paladin",
+                        "files": ["classes/paladin/test_paladin_class.py"],
+                        "description": "Tests de la classe Paladin et ses capacités"
+                    },
+                    "roublard": {
+                        "name": "🗡️ Classe Roublard",
+                        "files": ["classes/roublard/test_rogue_class.py"],
+                        "description": "Tests de la classe Roublard et ses capacités"
+                    }
+                }
             },
             "campagnes": {
                 "name": "🏰 Gestion des Campagnes",
@@ -50,7 +120,24 @@ class AdvancedTestMenu:
                     "test_campaign_admin_deletion.py",
                     "test_campaign_debug.py"
                 ],
-                "description": "Tests de gestion des campagnes"
+                "description": "Tests de gestion des campagnes (anciens)",
+                "subcategories": {
+                    "creation": {
+                        "name": "🏗️ Création de Campagnes",
+                        "files": ["test_campaign_creation.py"],
+                        "description": "Tests de création et gestion des campagnes"
+                    },
+                    "sessions": {
+                        "name": "📅 Sessions de Campagne",
+                        "files": ["test_campaign_sessions.py"],
+                        "description": "Tests de gestion des sessions de campagne"
+                    },
+                    "membres": {
+                        "name": "👥 Membres de Campagne",
+                        "files": ["test_campaign_members.py"],
+                        "description": "Tests de gestion des membres de campagne"
+                    }
+                }
             },
             "bestiaire": {
                 "name": "🐉 Bestiaire et Monstres",
@@ -80,6 +167,36 @@ class AdvancedTestMenu:
                 "name": "🧪 Tests de Fixtures",
                 "files": ["test_fixtures.py"],
                 "description": "Tests des données de test"
+            },
+            "races": {
+                "name": "🧬 Tests des Races",
+                "files": ["races/test_races.py"],
+                "description": "Tests de sélection et caractéristiques des races"
+            },
+            "histoires": {
+                "name": "📚 Tests des Historiques",
+                "files": ["histoires/test_histoires.py"],
+                "description": "Tests de sélection et caractéristiques des historiques"
+            },
+            "mondes": {
+                "name": "🌍 Tests des Mondes",
+                "files": ["test_world_creation.py"],
+                "description": "Tests de création et gestion des mondes"
+            },
+            "pays": {
+                "name": "🏰 Tests des Pays",
+                "files": ["test_country_creation.py"],
+                "description": "Tests de création et gestion des pays"
+            },
+            "regions": {
+                "name": "🗺️ Tests des Régions",
+                "files": ["test_region_creation.py"],
+                "description": "Tests de création et gestion des régions"
+            },
+            "lieux": {
+                "name": "📍 Tests des Lieux",
+                "files": ["test_place_creation.py"],
+                "description": "Tests de création et gestion des lieux"
             }
         }
         
@@ -107,6 +224,15 @@ class AdvancedTestMenu:
         print()
         print("0. 🚪 Quitter")
         print()
+        
+        # Afficher les informations d'environnement
+        if self.test_environment != 'local' or self.headless_mode:
+            print("🔧 CONFIGURATION ACTUELLE :")
+            if self.test_environment != 'local':
+                print(f"   🌍 Environnement: {self.test_environment}")
+            if self.headless_mode:
+                print("   🔧 Mode headless: activé")
+            print()
     
     def print_category_menu(self):
         """Affiche le menu des catégories"""
@@ -114,16 +240,31 @@ class AdvancedTestMenu:
         print()
         
         for i, (category_key, category_info) in enumerate(self.test_categories.items(), 1):
-            # Compter les fichiers disponibles
-            available_files = []
-            for file in category_info["files"]:
-                if (self.functional_dir / file).exists():
-                    available_files.append(file)
-            
-            status = f"({len(available_files)}/{len(category_info['files'])} fichiers)" if available_files else "(aucun fichier)"
-            print(f"   {i}. {category_info['name']} {status}")
-            print(f"      {category_info['description']}")
-            print()
+            # Vérifier si c'est une catégorie avec sous-catégories
+            if "subcategories" in category_info:
+                # Compter les sous-catégories disponibles
+                available_subcategories = []
+                for sub_key, sub_info in category_info["subcategories"].items():
+                    for file in sub_info["files"]:
+                        if (self.functional_dir / file).exists():
+                            available_subcategories.append(sub_key)
+                            break
+                
+                status = f"({len(available_subcategories)}/{len(category_info['subcategories'])} sous-catégories)"
+                print(f"   {i}. {category_info['name']} {status}")
+                print(f"      {category_info['description']}")
+                print()
+            else:
+                # Compter les fichiers disponibles
+                available_files = []
+                for file in category_info["files"]:
+                    if (self.functional_dir / file).exists():
+                        available_files.append(file)
+                
+                status = f"({len(available_files)}/{len(category_info['files'])} fichiers)" if available_files else "(aucun fichier)"
+                print(f"   {i}. {category_info['name']} {status}")
+                print(f"      {category_info['description']}")
+                print()
         
         print(f"   0. 🔄 Retour au menu principal")
         print()
@@ -143,24 +284,47 @@ class AdvancedTestMenu:
         
         # Afficher les fichiers par catégorie
         for category_key, category_info in self.test_categories.items():
-            category_files = []
-            for file in category_info["files"]:
-                file_path = self.functional_dir / file
-                if file_path.exists():
-                    category_files.append(file_path)
-            
-            if category_files:
+            # Vérifier si c'est une catégorie avec sous-catégories
+            if "subcategories" in category_info:
                 print(f"📁 {category_info['name']}:")
-                for file_path in category_files:
-                    # Extraire les noms de tests du fichier
-                    test_names = self.extract_test_names(file_path)
-                    if test_names:
-                        print(f"   📄 {file_path.name}:")
-                        for test_name in test_names:
-                            print(f"      • {test_name}")
-                    else:
-                        print(f"   📄 {file_path.name}")
+                for sub_key, sub_info in category_info["subcategories"].items():
+                    subcategory_files = []
+                    for file in sub_info["files"]:
+                        file_path = self.functional_dir / file
+                        if file_path.exists():
+                            subcategory_files.append(file_path)
+                    
+                    if subcategory_files:
+                        print(f"   📂 {sub_info['name']}:")
+                        for file_path in subcategory_files:
+                            # Extraire les noms de tests du fichier
+                            test_names = self.extract_test_names(file_path)
+                            if test_names:
+                                print(f"      📄 {file_path.name}:")
+                                for test_name in test_names:
+                                    print(f"         • {test_name}")
+                            else:
+                                print(f"      📄 {file_path.name}")
                 print()
+            else:
+                category_files = []
+                for file in category_info["files"]:
+                    file_path = self.functional_dir / file
+                    if file_path.exists():
+                        category_files.append(file_path)
+                
+                if category_files:
+                    print(f"📁 {category_info['name']}:")
+                    for file_path in category_files:
+                        # Extraire les noms de tests du fichier
+                        test_names = self.extract_test_names(file_path)
+                        if test_names:
+                            print(f"   📄 {file_path.name}:")
+                            for test_name in test_names:
+                                print(f"      • {test_name}")
+                        else:
+                            print(f"   📄 {file_path.name}")
+                    print()
         
         return test_files
     
@@ -232,6 +396,12 @@ class AdvancedTestMenu:
             return
         
         category_info = self.test_categories[category_key]
+        
+        # Vérifier si c'est une catégorie avec sous-catégories
+        if "subcategories" in category_info:
+            self.show_subcategory_menu(category_key, category_info)
+            return
+        
         available_files = []
         
         # Vérifier quels fichiers sont disponibles
@@ -247,9 +417,72 @@ class AdvancedTestMenu:
         
         # Construire la commande pytest
         test_files_str = " ".join([f"functional/{file}" for file in available_files])
-        cmd = f"cd tests && PYTHONPATH=/home/jean/Documents/jdrmj/tests python3 -m pytest {test_files_str} -v -p pytest_json_reporter"
+        
+        # Ajouter les variables d'environnement
+        env_vars = []
+        if self.headless_mode:
+            env_vars.append("HEADLESS=true")
+        if self.test_environment != 'local':
+            env_vars.append(f"TEST_ENVIRONMENT={self.test_environment}")
+        
+        env_prefix = " ".join(env_vars) + " " if env_vars else ""
+        cmd = f"cd tests && {env_prefix}PYTHONPATH=/home/jean/Documents/jdrmj/tests python3 -m pytest {test_files_str} -v -p pytest_json_reporter"
         
         self.run_command(cmd, f"Tests de la catégorie: {category_info['name']}")
+    
+    def show_subcategory_menu(self, category_key, category_info):
+        """Affiche le menu des sous-catégories"""
+        while True:
+            self.clear_screen()
+            self.print_header()
+            
+            print(f"⚔️  SOUS-CATÉGORIES - {category_info['name'].upper()}")
+            print("=" * 60)
+            print()
+            print(f"📋 {category_info['description']}")
+            print()
+            
+            subcategories = category_info["subcategories"]
+            for i, (sub_key, sub_info) in enumerate(subcategories.items(), 1):
+                # Vérifier quels fichiers sont disponibles
+                available_files = []
+                for file in sub_info["files"]:
+                    if (self.functional_dir / file).exists():
+                        available_files.append(file)
+                
+                status = f"({len(available_files)}/{len(sub_info['files'])} fichiers)" if available_files else "(aucun fichier)"
+                print(f"   {i}. {sub_info['name']} {status}")
+                print(f"      {sub_info['description']}")
+                print()
+            
+            print(f"   0. 🔄 Retour au menu des catégories")
+            print()
+            
+            choice = self.get_user_choice(len(subcategories))
+            
+            if choice == 0:
+                break
+            
+            sub_key = list(subcategories.keys())[choice - 1]
+            sub_info = subcategories[sub_key]
+            
+            # Vérifier quels fichiers sont disponibles
+            available_files = []
+            for file in sub_info["files"]:
+                file_path = self.functional_dir / file
+                if file_path.exists():
+                    available_files.append(file)
+            
+            if not available_files:
+                print(f"❌ Aucun fichier de test trouvé pour {sub_info['name']}")
+                input("\n⏸️ Appuyez sur Entrée pour continuer...")
+                continue
+            
+            # Construire la commande pytest
+            test_files_str = " ".join([f"functional/{file}" for file in available_files])
+            cmd = f"cd tests && PYTHONPATH=/home/jean/Documents/jdrmj/tests python3 -m pytest {test_files_str} -v -p pytest_json_reporter"
+            
+            self.run_command(cmd, f"Tests de {sub_info['name']}")
     
     def run_specific_test(self):
         """Lance un test spécifique"""
@@ -350,7 +583,16 @@ class AdvancedTestMenu:
             return
         
         selected_test = test_names[test_choice - 1]
-        cmd = f"cd tests && PYTHONPATH=/home/jean/Documents/jdrmj/tests python3 -m pytest functional/{selected_file.name}::{selected_test} -v -p pytest_json_reporter"
+        
+        # Ajouter les variables d'environnement
+        env_vars = []
+        if self.headless_mode:
+            env_vars.append("HEADLESS=true")
+        if self.test_environment != 'local':
+            env_vars.append(f"TEST_ENVIRONMENT={self.test_environment}")
+        
+        env_prefix = " ".join(env_vars) + " " if env_vars else ""
+        cmd = f"cd tests && {env_prefix}PYTHONPATH=/home/jean/Documents/jdrmj/tests python3 -m pytest functional/{selected_file.name}::{selected_test} -v -p pytest_json_reporter"
         
         self.run_command(cmd, f"Test: {selected_test}")
     
@@ -368,7 +610,15 @@ class AdvancedTestMenu:
             input("\n⏸️ Appuyez sur Entrée pour continuer...")
             return
         
-        cmd = "cd tests && PYTHONPATH=/home/jean/Documents/jdrmj/tests python3 -m pytest functional/ -v -p pytest_json_reporter"
+        # Ajouter les variables d'environnement
+        env_vars = []
+        if self.headless_mode:
+            env_vars.append("HEADLESS=true")
+        if self.test_environment != 'local':
+            env_vars.append(f"TEST_ENVIRONMENT={self.test_environment}")
+        
+        env_prefix = " ".join(env_vars) + " " if env_vars else ""
+        cmd = f"cd tests && {env_prefix}PYTHONPATH=/home/jean/Documents/jdrmj/tests python3 -m pytest functional/ -v -p pytest_json_reporter"
         self.run_command(cmd, "Tous les tests")
     
     def manage_json_reports(self):

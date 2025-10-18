@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script de lancement du menu avancé des tests depuis le répertoire racine
+# Script pour lancer les tests de gestion des campagnes
 
 # Variables par défaut
 HEADLESS_MODE=false
@@ -8,8 +8,8 @@ KEEP_TEST_DATA=false
 
 # Fonction d'aide
 show_help() {
-    echo "🎲 JDR 4 MJ - Menu Avancé des Tests"
-    echo "===================================="
+    echo "🏰 Tests de Gestion des Campagnes"
+    echo "=================================="
     echo ""
     echo "Usage: $0 [OPTIONS]"
     echo ""
@@ -22,10 +22,8 @@ show_help() {
     echo "Exemples:"
     echo "  $0                # Lancement normal avec interface graphique"
     echo "  $0 -h             # Lancement en mode headless (sans interface)"
-    echo "  $0 -e local       # Lancement avec environnement local"
-    echo "  $0 -e staging -h  # Lancement en mode headless avec environnement staging"
-    echo "  $0 --env production # Lancement avec environnement production"
     echo "  $0 -k             # Conserver les données de test après exécution"
+    echo "  $0 -e staging -h  # Lancement en mode headless avec environnement staging"
     echo ""
 }
 
@@ -61,8 +59,8 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-echo "🎲 JDR 4 MJ - Menu Avancé des Tests"
-echo "===================================="
+echo "🏰 Tests de Gestion des Campagnes"
+echo "=================================="
 if [ "$HEADLESS_MODE" = true ]; then
     echo "🔧 Mode headless activé"
 fi
@@ -84,7 +82,7 @@ fi
 # Vérifier que Python est installé
 if ! command -v python3 &> /dev/null; then
     echo "❌ Python 3 n'est pas installé"
-    echo "   Installez Python 3 pour utiliser le menu des tests"
+    echo "   Installez Python 3 pour utiliser les tests"
     exit 1
 fi
 
@@ -104,16 +102,63 @@ if [ "$KEEP_TEST_DATA" = true ]; then
     echo "💾 Variable d'environnement KEEP_TEST_DATA=true définie"
 fi
 
-# Changer vers le répertoire des tests et lancer le menu avancé
+# Changer vers le répertoire des tests
 cd tests
 
-# Vérifier si le menu avancé existe
-if [ -f "advanced_test_menu.py" ]; then
-    echo "🚀 Lancement du menu avancé des tests..."
-    echo ""
-    python3 advanced_test_menu.py
-else
-    echo "⚠️  Menu avancé non trouvé, utilisation du menu classique..."
-    echo ""
-    ./launch_menu.sh
+echo "🧹 Nettoyage préliminaire des données de test existantes..."
+python3 cleanup_campaign_test_data.py
+
+echo ""
+echo "🚀 Lancement des tests de gestion des campagnes..."
+echo ""
+
+# Construire la commande pytest
+test_files="functional/test_campaign_creation.py functional/test_campaign_sessions.py functional/test_campaign_members.py"
+
+# Ajouter les variables d'environnement
+env_vars=""
+if [ "$HEADLESS_MODE" = true ]; then
+    env_vars="$env_vars HEADLESS=true"
 fi
+if [ -n "$ENVIRONMENT" ]; then
+    env_vars="$env_vars TEST_ENVIRONMENT=$ENVIRONMENT"
+fi
+if [ "$KEEP_TEST_DATA" = true ]; then
+    env_vars="$env_vars KEEP_TEST_DATA=true"
+fi
+
+# Exécuter les tests
+if [ -n "$env_vars" ]; then
+    cmd="$env_vars PYTHONPATH=/home/jean/Documents/jdrmj/tests python3 -m pytest $test_files -v -p pytest_json_reporter"
+else
+    cmd="PYTHONPATH=/home/jean/Documents/jdrmj/tests python3 -m pytest $test_files -v -p pytest_json_reporter"
+fi
+
+echo "📋 Commande exécutée: $cmd"
+echo ""
+
+# Exécuter la commande
+eval $cmd
+test_result=$?
+
+echo ""
+echo "📊 Résultats des tests:"
+if [ $test_result -eq 0 ]; then
+    echo "✅ Tous les tests sont passés avec succès!"
+else
+    echo "❌ Certains tests ont échoué (code de sortie: $test_result)"
+fi
+
+# Nettoyage final si demandé
+if [ "$KEEP_TEST_DATA" = false ]; then
+    echo ""
+    echo "🧹 Nettoyage final des données de test..."
+    python3 cleanup_campaign_test_data.py
+else
+    echo ""
+    echo "💾 Conservation des données de test activée - Aucun nettoyage effectué"
+fi
+
+echo ""
+echo "🏁 Tests terminés!"
+exit $test_result
