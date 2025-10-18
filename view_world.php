@@ -222,6 +222,10 @@ $world_npcs = $monde->getNpcs();
 
 // Récupérer tous les monstres du monde via la classe Monde
 $world_monsters = $monde->getMonsters();
+
+// Récupérer les données pour la cartographie inter-pays
+$world_accesses = $monde->getInterCountryAccesses();
+$external_countries = $monde->getExternalCountries();
 ?>
 
 <!DOCTYPE html>
@@ -325,6 +329,11 @@ $world_monsters = $monde->getMonsters();
                                     <button class="btn btn-outline-primary" onclick="editWorld()">
                                         <i class="fas fa-edit me-1"></i>Modifier le monde
                                     </button>
+                                    <?php if (!empty($countries)): ?>
+                                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#worldCartographyModal">
+                                            <i class="fas fa-map me-2"></i>Cartographie
+                                        </button>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                             <?php if (!empty($monde->getMapUrl())): ?>
@@ -992,5 +1001,374 @@ $world_monsters = $monde->getMonsters();
             </div>
         </div>
     </div>
+
+    <!-- Modal Cartographie Inter-pays -->
+    <div class="modal fade" id="worldCartographyModal" tabindex="-1" aria-labelledby="worldCartographyModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="worldCartographyModalLabel">
+                        <i class="fas fa-map me-2"></i>Cartographie Inter-pays - <?php echo htmlspecialchars($monde->getName()); ?>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="position-relative" style="height: 600px; border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden;">
+                                <div id="worldCartographyCanvas" style="width: 100%; height: 100%; position: relative; cursor: grab;"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <h6><i class="fas fa-info-circle me-2"></i>Légende</h6>
+                                <div class="small">
+                                    <div class="mb-2">
+                                        <span class="badge bg-primary me-2">●</span>
+                                        <strong>Pays de ce monde</strong>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="badge bg-secondary me-2">●</span>
+                                        <strong>Pays d'un autre monde</strong>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="badge bg-success me-2">━━━</span>
+                                        <strong>Accès ouvert</strong>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="badge bg-warning me-2">━━━</span>
+                                        <strong>Accès fermé</strong>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="badge bg-danger me-2">━━━</span>
+                                        <strong>Accès piégé</strong>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="badge bg-secondary me-2">┅┅┅</span>
+                                        <strong>Accès caché</strong>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-info small">
+                                <i class="fas fa-mouse-pointer me-2"></i>
+                                <strong>Interaction :</strong> Vous pouvez déplacer les pays en les faisant glisser pour une meilleure visibilité.
+                            </div>
+                            
+                            <?php if (!empty($world_accesses)): ?>
+                                <div class="mb-3">
+                                    <h6><i class="fas fa-route me-2"></i>Accès Inter-pays</h6>
+                                    <div class="small" style="max-height: 200px; overflow-y: auto;">
+                                        <?php foreach ($world_accesses as $access): ?>
+                                            <div class="mb-2 p-2 border rounded">
+                                                <div class="fw-bold"><?php echo htmlspecialchars($access->name); ?></div>
+                                                <div class="text-muted">
+                                                    <?php echo htmlspecialchars($access->from_place_name); ?> 
+                                                    (<?php echo htmlspecialchars($access->from_country_name); ?>)
+                                                    <i class="fas fa-arrow-right mx-1"></i>
+                                                    <?php echo htmlspecialchars($access->to_place_name); ?>
+                                                    (<?php echo htmlspecialchars($access->to_country_name); ?>)
+                                                </div>
+                                                <div class="small">
+                                                    <?php if (!$access->is_visible): ?>
+                                                        <span class="badge bg-secondary">Caché</span>
+                                                    <?php elseif ($access->is_trapped): ?>
+                                                        <span class="badge bg-danger">Piégé</span>
+                                                    <?php elseif ($access->is_open): ?>
+                                                        <span class="badge bg-success">Ouvert</span>
+                                                    <?php else: ?>
+                                                        <span class="badge bg-warning">Fermé</span>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="generateWorldCartography()">
+                        <i class="fas fa-sync-alt me-2"></i>Réorganiser
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Fermer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // === CARTographie INTER-PAYS ===
+        const worldCartographyData = {
+            countries: <?php echo json_encode(array_map(function($country) { return $country->toArray(); }, $countries)) ?>,
+            externalCountries: <?php echo json_encode($external_countries) ?>,
+            accesses: <?php echo json_encode($world_accesses) ?>,
+            currentWorldId: <?php echo $world_id ?>
+        };
+
+        let worldPlacePositions = {};
+        let worldIsDragging = false;
+        let worldDraggedElement = null;
+        let worldDragOffset = { x: 0, y: 0 };
+        let worldCartographyInitialized = false;
+
+        function generateWorldCartography() {
+            console.log('generateWorldCartography() called');
+            const canvas = document.getElementById('worldCartographyCanvas');
+            if (!canvas) {
+                console.log('Canvas not found!');
+                return;
+            }
+            
+            // Éviter les appels multiples
+            if (worldCartographyInitialized) {
+                console.log('World cartography already initialized, skipping...');
+                return;
+            }
+            worldCartographyInitialized = true;
+            
+            console.log('Canvas dimensions:', canvas.offsetWidth, 'x', canvas.offsetHeight);
+            
+            // Nettoyer le canvas
+            canvas.innerHTML = '';
+            
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+            const margin = 50;
+            const availableWidth = width - (margin * 2);
+            const availableHeight = height - (margin * 2);
+            
+            // Réinitialiser les positions
+            worldPlacePositions = {};
+            console.log('Place positions reset');
+            
+            // Récupérer tous les pays (pour la cartographie de monde)
+            const allPlaces = [];
+            
+            // Ajouter les pays du monde
+            worldCartographyData.countries.forEach(country => {
+                allPlaces.push({
+                    id: 'country_' + country.id,
+                    title: country.name,
+                    isCountry: true,
+                    countryId: country.id
+                });
+            });
+            
+            // Ajouter les pays externes (si des accès vont vers d'autres mondes)
+            worldCartographyData.externalCountries.forEach(country => {
+                // Vérifier si ce pays externe n'est pas déjà ajouté
+                const existingCountry = allPlaces.find(p => p.countryId === country.id);
+                if (!existingCountry) {
+                    allPlaces.push({
+                        id: 'country_' + country.id,
+                        title: country.name,
+                        isCountry: true,
+                        countryId: country.id,
+                        worldName: country.world_name
+                    });
+                }
+            });
+            
+            if (allPlaces.length === 0) {
+                console.log('No countries to position');
+                return;
+            }
+            
+            console.log('Countries to position:', allPlaces.length);
+            
+            // Calculer les positions des pays en cercle
+            allPlaces.forEach((place, index) => {
+                console.log('Positioning country:', place.title, 'at index', index);
+                const angle = (index * 2 * Math.PI) / Math.max(allPlaces.length, 1);
+                const x = margin + (availableWidth / 2) + (Math.cos(angle) * (availableWidth / 3));
+                const y = margin + (availableHeight / 2) + (Math.sin(angle) * (availableHeight / 3));
+                
+                const initialPos = { x, y };
+                const adjustedPos = adjustWorldPosition(initialPos, worldPlacePositions);
+                
+                worldPlacePositions[place.id] = { 
+                    x: adjustedPos.x, 
+                    y: adjustedPos.y, 
+                    place, 
+                    isExternal: place.worldName !== undefined, // Pays externe s'il a un worldName
+                    isDragging: false
+                };
+            });
+            
+            // Dessiner les connexions
+            redrawWorldConnections();
+            
+            // Dessiner les pays
+            console.log('Final place positions:', Object.keys(worldPlacePositions));
+            Object.values(worldPlacePositions).forEach(({ x, y, place, isExternal }) => {
+                const placeElement = document.createElement('div');
+                placeElement.style.position = 'absolute';
+                placeElement.style.left = (x - 15) + 'px';
+                placeElement.style.top = (y - 15) + 'px';
+                placeElement.style.width = '30px';
+                placeElement.style.height = '30px';
+                placeElement.style.backgroundColor = isExternal ? '#6c757d' : '#007bff';
+                placeElement.style.border = '2px solid #fff';
+                placeElement.style.borderRadius = '50%';
+                placeElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+                placeElement.style.cursor = 'move';
+                placeElement.style.zIndex = '10';
+                placeElement.title = place.title + (isExternal ? ' (Autre monde)' : '') + ' - Cliquer et glisser pour déplacer';
+                placeElement.dataset.placeId = place.id;
+                
+                // Ajouter le nom du pays
+                const label = document.createElement('div');
+                label.style.position = 'absolute';
+                label.style.left = '35px';
+                label.style.top = '5px';
+                label.style.fontSize = '12px';
+                label.style.fontWeight = 'bold';
+                label.style.color = '#333';
+                label.style.backgroundColor = 'rgba(255,255,255,0.9)';
+                label.style.padding = '2px 6px';
+                label.style.borderRadius = '4px';
+                label.style.whiteSpace = 'nowrap';
+                label.style.pointerEvents = 'none';
+                label.style.zIndex = '11';
+                label.textContent = place.title;
+                
+                // Ajouter le nom du monde pour les pays externes
+                if (isExternal && place.worldName) {
+                    const worldLabel = document.createElement('div');
+                    worldLabel.style.position = 'absolute';
+                    worldLabel.style.left = '35px';
+                    worldLabel.style.top = '20px';
+                    worldLabel.style.fontSize = '10px';
+                    worldLabel.style.color = '#666';
+                    worldLabel.style.backgroundColor = 'rgba(255,255,255,0.9)';
+                    worldLabel.style.padding = '1px 4px';
+                    worldLabel.style.borderRadius = '3px';
+                    worldLabel.style.whiteSpace = 'nowrap';
+                    worldLabel.style.pointerEvents = 'none';
+                    worldLabel.style.zIndex = '11';
+                    worldLabel.textContent = '(' + place.worldName + ')';
+                    placeElement.appendChild(worldLabel);
+                }
+                
+                placeElement.appendChild(label);
+                canvas.appendChild(placeElement);
+            });
+        }
+
+        function redrawWorldConnections() {
+            const canvas = document.getElementById('worldCartographyCanvas');
+            if (!canvas) return;
+            
+            // Supprimer les anciennes connexions
+            const existingConnections = canvas.querySelectorAll('.connection-line');
+            existingConnections.forEach(conn => conn.remove());
+            
+            // Dessiner les accès entre pays
+            console.log('Drawing connections for', worldCartographyData.accesses.length, 'accesses');
+            worldCartographyData.accesses.forEach(access => {
+                console.log('Processing access:', access.name, 'from country', access.from_country_name, 'to country', access.to_country_name);
+                
+                // Trouver les positions des pays connectés
+                let fromPos = null;
+                let toPos = null;
+                
+                // Chercher par country_id (logique pour la cartographie de monde)
+                Object.values(worldPlacePositions).forEach(({ place, x, y }) => {
+                    if (place.title === access.from_country_name) {
+                        fromPos = { x, y };
+                    }
+                    if (place.title === access.to_country_name) {
+                        toPos = { x, y };
+                    }
+                });
+                
+                console.log('From position (country):', fromPos ? 'FOUND' : 'NOT FOUND', access.from_country_name);
+                console.log('To position (country):', toPos ? 'FOUND' : 'NOT FOUND', access.to_country_name);
+                
+                console.log('Final positions - From:', fromPos, 'To:', toPos);
+                
+                if (fromPos && toPos) {
+                    console.log('Drawing connection for access:', access.name);
+                    // Créer une ligne SVG
+                    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    svg.style.position = 'absolute';
+                    svg.style.top = '0';
+                    svg.style.left = '0';
+                    svg.style.width = '100%';
+                    svg.style.height = '100%';
+                    svg.style.pointerEvents = 'none';
+                    svg.style.zIndex = '5';
+                    svg.classList.add('connection-line');
+                    
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', fromPos.x);
+                    line.setAttribute('y1', fromPos.y);
+                    line.setAttribute('x2', toPos.x);
+                    line.setAttribute('y2', toPos.y);
+                    
+                    // Style selon le statut
+                    if (!access.is_visible) {
+                        line.setAttribute('stroke-dasharray', '5,5');
+                        line.setAttribute('stroke', '#6c757d');
+                    } else if (access.is_trapped) {
+                        line.setAttribute('stroke', '#dc3545');
+                    } else if (access.is_open) {
+                        line.setAttribute('stroke', '#28a745');
+                    } else {
+                        line.setAttribute('stroke', '#ffc107');
+                    }
+                    
+                    line.setAttribute('stroke-width', '3');
+                    svg.appendChild(line);
+                    canvas.appendChild(svg);
+                } else {
+                    console.log('Cannot draw connection - missing positions');
+                }
+            });
+        }
+
+        function adjustWorldPosition(newPos, existingPositions, minDistance = 80) {
+            let adjustedPos = { ...newPos };
+            let attempts = 0;
+            const maxAttempts = 50;
+            
+            while (attempts < maxAttempts) {
+                let hasCollision = false;
+                for (const [id, pos] of Object.entries(existingPositions)) {
+                    if (detectWorldCollision(adjustedPos, pos, minDistance)) {
+                        hasCollision = true;
+                        break;
+                    }
+                }
+                if (!hasCollision) {
+                    break;
+                }
+                const angle = Math.random() * 2 * Math.PI;
+                adjustedPos.x += Math.cos(angle) * minDistance * 0.5;
+                adjustedPos.y += Math.sin(angle) * minDistance * 0.5;
+                attempts++;
+            }
+            return adjustedPos;
+        }
+
+        function detectWorldCollision(pos1, pos2, minDistance = 80) {
+            const dx = pos1.x - pos2.x;
+            const dy = pos1.y - pos2.y;
+            return Math.sqrt(dx * dx + dy * dy) < minDistance;
+        }
+
+        // Initialiser la cartographie quand le modal s'ouvre
+        document.getElementById('worldCartographyModal').addEventListener('shown.bs.modal', function () {
+            setTimeout(() => {
+                generateWorldCartography();
+            }, 100);
+        });
+    </script>
 </body>
 </html>

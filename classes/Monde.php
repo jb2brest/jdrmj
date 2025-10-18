@@ -39,13 +39,13 @@ class Monde
     // ========================================
 
     /**
-     * Obtient l'instance PDO depuis l'Univers
+     * Obtient l'instance PDO
      * 
      * @return PDO Instance PDO
      */
     private function getPdo()
     {
-        return Univers::getInstance()->getPdo();
+        return getPDO();
     }
 
     // ========================================
@@ -251,7 +251,7 @@ class Monde
     public static function findById(int $id)
     {
         try {
-            $pdo = Univers::getInstance()->getPdo();
+            $pdo = getPDO();
             $sql = "SELECT * FROM worlds WHERE id = ?";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$id]);
@@ -286,7 +286,7 @@ class Monde
     public static function findByUser(int $user_id)
     {
         try {
-            $pdo = Univers::getInstance()->getPdo();
+            $pdo = getPDO();
             $sql = "SELECT w.*, 
                     (SELECT COUNT(*) FROM countries WHERE world_id = w.id) as country_count
                     FROM worlds w 
@@ -327,7 +327,7 @@ class Monde
     public static function getSimpleListByUser(int $user_id)
     {
         try {
-            $pdo = Univers::getInstance()->getPdo();
+            $pdo = getPDO();
             $sql = "SELECT id, name FROM worlds WHERE created_by = ? ORDER BY name";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$user_id]);
@@ -349,7 +349,7 @@ class Monde
     public static function nameExists(string $name, int $user_id, int $exclude_id = null)
     {
         try {
-            $pdo = Univers::getInstance()->getPdo();
+            $pdo = getPDO();
             $sql = "SELECT COUNT(*) FROM worlds WHERE name = ? AND created_by = ?";
             $params = [$name, $user_id];
 
@@ -536,6 +536,107 @@ class Monde
     }
 
     /**
+     * Récupère tous les accès inter-pays du monde
+     * 
+     * @return array Tableau des accès inter-pays avec informations détaillées
+     * @throws Exception En cas d'erreur de base de données
+     */
+    public function getInterCountryAccesses()
+    {
+        if ($this->id === null) {
+            return [];
+        }
+        
+        try {
+            $pdo = $this->getPdo();
+            $sql = "
+                SELECT 
+                    a.*,
+                    fp.title as from_place_name,
+                    fp.region_id as from_region_id,
+                    fr.name as from_region_name,
+                    fc.name as from_country_name,
+                    tp.title as to_place_name,
+                    tp.region_id as to_region_id,
+                    tr.name as to_region_name,
+                    tc.name as to_country_name
+                FROM accesses a
+                JOIN places fp ON a.from_place_id = fp.id
+                JOIN places tp ON a.to_place_id = tp.id
+                LEFT JOIN regions fr ON fp.region_id = fr.id
+                LEFT JOIN regions tr ON tp.region_id = tr.id
+                LEFT JOIN countries fc ON fr.country_id = fc.id
+                LEFT JOIN countries tc ON tr.country_id = tc.id
+                WHERE fc.world_id = ? AND tc.world_id = ?
+                  AND fc.id != tc.id
+                ORDER BY a.from_place_id, a.name
+            ";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$this->id, $this->id]);
+            $accesses = $stmt->fetchAll(PDO::FETCH_OBJ);
+            return $accesses;
+        } catch (PDOException $e) {
+            throw new Exception("Erreur lors de la récupération des accès inter-pays: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Récupère tous les pays externes qui ont des accès avec des pays de ce monde
+     * mais qui ne sont pas dans ce monde.
+     * 
+     * @return array Tableau des pays externes avec informations détaillées
+     * @throws Exception En cas d'erreur de base de données
+     */
+    public function getExternalCountries()
+    {
+        if ($this->id === null) {
+            return [];
+        }
+        
+        try {
+            $pdo = $this->getPdo();
+            $sql = "
+                SELECT DISTINCT
+                    c.*,
+                    w.name as world_name
+                FROM countries c
+                JOIN worlds w ON c.world_id = w.id
+                WHERE w.id != ?
+                  AND c.id IN (
+                      SELECT DISTINCT tc.id
+                      FROM accesses a
+                      JOIN places fp ON a.from_place_id = fp.id
+                      JOIN regions fr ON fp.region_id = fr.id
+                      JOIN countries fc ON fr.country_id = fc.id
+                      JOIN places tp ON a.to_place_id = tp.id
+                      JOIN regions tr ON tp.region_id = tr.id
+                      JOIN countries tc ON tr.country_id = tc.id
+                      WHERE fc.world_id = ?
+                      
+                      UNION
+                      
+                      SELECT DISTINCT fc.id
+                      FROM accesses a
+                      JOIN places fp ON a.from_place_id = fp.id
+                      JOIN regions fr ON fp.region_id = fr.id
+                      JOIN countries fc ON fr.country_id = fc.id
+                      JOIN places tp ON a.to_place_id = tp.id
+                      JOIN regions tr ON tp.region_id = tr.id
+                      JOIN countries tc ON tr.country_id = tc.id
+                      WHERE tc.world_id = ?
+                  )
+                ORDER BY w.name, c.name
+            ";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$this->id, $this->id, $this->id]);
+            $externalCountries = $stmt->fetchAll(PDO::FETCH_OBJ);
+            return $externalCountries;
+        } catch (PDOException $e) {
+            throw new Exception("Erreur lors de la récupération des pays externes: " . $e->getMessage());
+        }
+    }
+
+    /**
      * Représentation textuelle de l'objet
      * 
      * @return string Nom du monde
@@ -559,7 +660,7 @@ class Monde
     public static function localizeCharacter(int $user_id, ?int $campaign_id = null)
     {
         try {
-            $pdo = Univers::getInstance()->getPdo();
+            $pdo = getPDO();
             
             if ($campaign_id) {
                 // Si un campaign_id est spécifié, chercher dans cette campagne

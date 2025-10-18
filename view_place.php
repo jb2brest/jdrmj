@@ -156,11 +156,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
 }
 
 // Récupérer tous les lieux pour le sélecteur "vers quel lieu"
-$stmt = $pdo->query("SELECT id, title FROM places ORDER BY title");
+$stmt = $pdo->query("SELECT id, title, region_id FROM places ORDER BY title");
 $all_places = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $other_places = array_filter($all_places, function($place) use ($place_id) {
     return $place['id'] != $place_id;
 });
+
+// Récupérer les pays et régions pour les sélecteurs
+$stmt = $pdo->query("SELECT id, name FROM countries ORDER BY name");
+$countries = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$stmt = $pdo->query("SELECT id, name, country_id FROM regions ORDER BY name");
+$regions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Récupérer le pays et la région du lieu actuel
+$current_region = null;
+$current_country = null;
+if ($place['region_id']) {
+    $stmt = $pdo->prepare("SELECT r.*, c.name as country_name FROM regions r LEFT JOIN countries c ON r.country_id = c.id WHERE r.id = ?");
+    $stmt->execute([$place['region_id']]);
+    $current_region = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($current_region && $current_region['country_id']) {
+        $stmt = $pdo->prepare("SELECT * FROM countries WHERE id = ?");
+        $stmt->execute([$current_region['country_id']]);
+        $current_country = $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+}
 
 // Récupérer les accès du lieu
 $placeAccesses = Access::getFromPlace($place_id);
@@ -4078,7 +4099,10 @@ foreach ($allScenes as $s) {
         loadDiceHistory();
         
         // Mettre à jour l'historique des jets automatiquement toutes les 3 secondes
-        diceHistoryInterval = setInterval(loadDiceHistory, 3000);
+        // Seulement si une campagne est associée au lieu
+        if (currentCampaignId && currentCampaignId !== 0) {
+            diceHistoryInterval = setInterval(loadDiceHistory, 3000);
+        }
         
         // Ajouter les événements aux boutons de dés
         diceButtons.forEach(button => {
@@ -4267,6 +4291,18 @@ foreach ($allScenes as $s) {
 
     // Fonction pour charger l'historique des jets de dés
     function loadDiceHistory() {
+        // Vérifier si une campagne est associée au lieu
+        if (!currentCampaignId || currentCampaignId === 0) {
+            console.log('Aucune campagne associée à ce lieu - historique des dés non disponible');
+            document.getElementById('dice-history').innerHTML = `
+                <div class="text-muted text-center py-3">
+                    <i class="fas fa-info-circle fa-lg mb-2"></i>
+                    <p class="mb-0 small">Aucune campagne associée à ce lieu</p>
+                </div>
+            `;
+            return;
+        }
+        
         // Le MJ voit tous les jets (y compris les masqués), les joueurs ne voient que les jets visibles
         const showHidden = <?php echo $isOwnerDM ? 'true' : 'false'; ?>;
         const url = `get_dice_rolls_history.php?campaign_id=${currentCampaignId}&show_hidden=${showHidden}`;
@@ -4391,6 +4427,13 @@ foreach ($allScenes as $s) {
 
     // Fonction pour sauvegarder un jet de dés
     function saveDiceRoll(results, total, maxResult, minResult) {
+        // Vérifier si une campagne est associée au lieu
+        if (!currentCampaignId || currentCampaignId === 0) {
+            console.error('Impossible de sauvegarder le jet de dés : aucune campagne associée à ce lieu');
+            alert('Impossible de sauvegarder le jet de dés : aucune campagne associée à ce lieu');
+            return;
+        }
+        
         const diceType = `D${selectedDiceSides}`;
         const quantity = parseInt(document.getElementById('dice-quantity').value);
         const isHidden = document.getElementById('hide-dice-roll').checked;
@@ -4816,12 +4859,33 @@ foreach ($allScenes as $s) {
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
+                                <label for="createAccessCountry" class="form-label">Pays de destination</label>
+                                <select class="form-select" id="createAccessCountry" name="to_country_id">
+                                    <option value="">Sélectionner un pays</option>
+                                    <?php foreach ($countries as $country): ?>
+                                        <option value="<?= $country['id'] ?>" <?= ($current_country && $current_country['id'] == $country['id']) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($country['name']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                               <div class="col-md-6">
+                                   <div class="mb-3">
+                                       <label for="createAccessRegion" class="form-label">Région de destination</label>
+                                       <select class="form-select" id="createAccessRegion" name="to_region_id">
+                                           <option value="">Sélectionner une région</option>
+                                       </select>
+                                   </div>
+                               </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
                                 <label for="createAccessToPlace" class="form-label">Vers quel lieu *</label>
                                 <select class="form-select" id="createAccessToPlace" name="to_place_id" required>
                                     <option value="">Sélectionner un lieu</option>
-                                    <?php foreach ($other_places as $place): ?>
-                                        <option value="<?= $place['id'] ?>"><?= htmlspecialchars($place['title']) ?></option>
-                                    <?php endforeach; ?>
                                 </select>
                             </div>
                         </div>
@@ -5093,6 +5157,140 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('deleteAccessName').textContent = accessName;
         });
     }
+    
+    // Fonction pour initialiser le filtrage en cascade dynamique
+    function initializeCascadeFiltering() {
+        const countrySelect = document.getElementById('createAccessCountry');
+        const regionSelect = document.getElementById('createAccessRegion');
+        const placeSelect = document.getElementById('createAccessToPlace');
+        
+        console.log('🔍 Debug filtrage en cascade dynamique:', {
+            countrySelect: !!countrySelect,
+            regionSelect: !!regionSelect,
+            placeSelect: !!placeSelect
+        });
+        
+        if (!countrySelect || !regionSelect || !placeSelect) {
+            console.error('❌ Éléments manquants pour le filtrage en cascade');
+            return;
+        }
+        
+        // Fonction pour charger les régions d'un pays via AJAX
+        function loadRegionsByCountry(countryId) {
+            console.log('🔄 Chargement des régions pour le pays:', countryId);
+            
+            if (!countryId) {
+                // Réinitialiser les régions
+                regionSelect.innerHTML = '<option value="">Sélectionner une région</option>';
+                loadPlacesByRegion(''); // Réinitialiser les lieux aussi
+                return;
+            }
+            
+            fetch(`get_regions_by_country.php?country_id=${countryId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('✅ Régions chargées:', data.regions.length);
+                        
+                        // Vider et remplir le select des régions
+                        regionSelect.innerHTML = '<option value="">Sélectionner une région</option>';
+                        data.regions.forEach(region => {
+                            const option = document.createElement('option');
+                            option.value = region.id;
+                            option.textContent = region.name;
+                            regionSelect.appendChild(option);
+                        });
+                        
+                        // Réinitialiser la sélection de région et lieu
+                        regionSelect.value = '';
+                        placeSelect.value = '';
+                        
+                        console.log('🔄 Régions mises à jour, sélections réinitialisées');
+                    } else {
+                        console.error('❌ Erreur lors du chargement des régions:', data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ Erreur AJAX lors du chargement des régions:', error);
+                });
+        }
+        
+        // Fonction pour charger les lieux d'une région via AJAX
+        function loadPlacesByRegion(regionId) {
+            console.log('🔄 Chargement des lieux pour la région:', regionId);
+            
+            if (!regionId) {
+                // Réinitialiser les lieux
+                placeSelect.innerHTML = '<option value="">Sélectionner un lieu</option>';
+                return;
+            }
+            
+            const excludePlaceId = <?php echo $place_id; ?>;
+            fetch(`get_places_by_region.php?region_id=${regionId}&exclude_place_id=${excludePlaceId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('✅ Lieux chargés:', data.places.length);
+                        
+                        // Vider et remplir le select des lieux
+                        placeSelect.innerHTML = '<option value="">Sélectionner un lieu</option>';
+                        data.places.forEach(place => {
+                            const option = document.createElement('option');
+                            option.value = place.id;
+                            option.textContent = place.title;
+                            placeSelect.appendChild(option);
+                        });
+                        
+                        // Réinitialiser la sélection de lieu
+                        placeSelect.value = '';
+                        
+                        console.log('🔄 Lieux mis à jour, sélection réinitialisée');
+                    } else {
+                        console.error('❌ Erreur lors du chargement des lieux:', data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ Erreur AJAX lors du chargement des lieux:', error);
+                });
+        }
+        
+        // Événement sur le changement de pays
+        countrySelect.addEventListener('change', function() {
+            const selectedCountryId = this.value;
+            console.log('🌍 Pays sélectionné:', selectedCountryId);
+            
+            // Charger les régions du pays sélectionné
+            loadRegionsByCountry(selectedCountryId);
+        });
+        
+        // Événement sur le changement de région
+        regionSelect.addEventListener('change', function() {
+            const selectedRegionId = this.value;
+            console.log('🏘️ Région sélectionnée:', selectedRegionId);
+            
+            // Charger les lieux de la région sélectionnée
+            loadPlacesByRegion(selectedRegionId);
+        });
+        
+        // Initialiser le filtrage
+        console.log('🚀 Initialisation du filtrage en cascade dynamique');
+        console.log('✅ Filtrage initialisé - prêt pour les sélections');
+    }
+    
+    // Initialiser le filtrage quand le modal s'ouvre (seulement si l'utilisateur peut éditer)
+    <?php if ($canEdit): ?>
+    const createAccessModal = document.getElementById('createAccessModal');
+    if (createAccessModal) {
+        createAccessModal.addEventListener('shown.bs.modal', function () {
+            console.log('📋 Modal "Ajouter un Accès" ouvert - initialisation du filtrage');
+            initializeCascadeFiltering();
+        });
+    } else {
+        console.log('⚠️ Modal "Ajouter un Accès" non trouvé - utilisateur sans permissions d\'édition');
+    }
+    <?php else: ?>
+    console.log('⚠️ JavaScript de filtrage en cascade désactivé - utilisateur sans permissions d\'édition');
+    <?php endif; ?>
 });
 </script>
 <?php endif; ?>

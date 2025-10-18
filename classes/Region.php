@@ -42,13 +42,13 @@ class Region
     // ========================================
 
     /**
-     * Obtient l'instance PDO depuis l'Univers
+     * Obtient l'instance PDO
      * 
      * @return PDO Instance PDO
      */
     private function getPdo()
     {
-        return Univers::getInstance()->getPdo();
+        return getPDO();
     }
 
     /**
@@ -325,7 +325,7 @@ class Region
     public static function findById(int $id)
     {
         try {
-            $pdo = Univers::getInstance()->getPdo();
+            $pdo = getPDO();
             $sql = "SELECT * FROM regions WHERE id = ?";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$id]);
@@ -349,7 +349,7 @@ class Region
     public static function findByCountry(int $country_id)
     {
         try {
-            $pdo = Univers::getInstance()->getPdo();
+            $pdo = getPDO();
             $sql = "SELECT r.*, 
                     (SELECT COUNT(*) FROM places WHERE region_id = r.id) as place_count
                     FROM regions r 
@@ -378,7 +378,7 @@ class Region
     public static function findByUser(int $user_id)
     {
         try {
-            $pdo = Univers::getInstance()->getPdo();
+            $pdo = getPDO();
             $sql = "SELECT r.*, 
                     c.name as country_name,
                     w.name as world_name,
@@ -413,7 +413,7 @@ class Region
     public static function nameExistsInCountry(string $name, int $country_id, int $exclude_id = null)
     {
         try {
-            $pdo = Univers::getInstance()->getPdo();
+            $pdo = getPDO();
             $sql = "SELECT COUNT(*) FROM regions WHERE name = ? AND country_id = ?";
             $params = [$name, $country_id];
 

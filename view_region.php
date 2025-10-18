@@ -20,8 +20,15 @@ $user_id = $_SESSION['user_id'];
 // Récupérer la région via la classe Region
 $region = Region::findById($region_id);
 
-if (!$region || $region->getMonde()->getCreatedBy() != $user_id) {
+if (!$region) {
     header('Location: manage_worlds.php?error=region_not_found');
+    exit();
+}
+
+// Vérifier que l'utilisateur a le droit d'accéder à cette région
+$monde = $region->getMonde(); // Returns associative array
+if (!$monde || $monde['created_by'] != $user_id) { // Access as array
+    header('Location: manage_worlds.php?error=access_denied');
     exit();
 }
 
