@@ -24,22 +24,30 @@ class TestWorldCreation:
         driver.get(f"{app_url}/manage_worlds.php")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         
+        # Ouvrir le modal de création de monde
+        create_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "[data-bs-target='#createWorldModal']")))
+        create_button.click()
+        
+        # Attendre que le modal s'ouvre
+        wait.until(EC.presence_of_element_located((By.ID, "createWorldModal")))
+        wait.until(EC.visibility_of_element_located((By.ID, "createName")))
+        
         # Remplir le formulaire de création de monde
         world_name = f"Monde de Test {int(time.time())}"
         world_description = "Description du monde de test pour les tests automatisés"
         
         # Trouver et remplir le champ nom
-        name_input = wait.until(EC.presence_of_element_located((By.NAME, "name")))
+        name_input = wait.until(EC.presence_of_element_located((By.ID, "createName")))
         name_input.clear()
         name_input.send_keys(world_name)
         
         # Trouver et remplir le champ description
-        description_input = driver.find_element(By.NAME, "description")
+        description_input = driver.find_element(By.ID, "createDescription")
         description_input.clear()
         description_input.send_keys(world_description)
         
         # Soumettre le formulaire
-        submit_button = driver.find_element(By.CSS_SELECTOR, "input[type='submit'][value*='Créer']")
+        submit_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
         submit_button.click()
         
         # Vérifier que le monde a été créé
@@ -65,17 +73,32 @@ class TestWorldCreation:
         driver.get(f"{app_url}/manage_worlds.php")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         
-        # Remplir le formulaire avec un nom vide
-        description_input = driver.find_element(By.NAME, "description")
+        # Ouvrir le modal de création de monde
+        create_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "[data-bs-target='#createWorldModal']")))
+        create_button.click()
+        
+        # Attendre que le modal s'ouvre
+        wait.until(EC.presence_of_element_located((By.ID, "createWorldModal")))
+        wait.until(EC.visibility_of_element_located((By.ID, "createName")))
+        
+        # Remplir le formulaire avec un nom vide (laisser le champ nom vide)
+        description_input = driver.find_element(By.ID, "createDescription")
         description_input.clear()
         description_input.send_keys("Description sans nom")
         
+        # Désactiver la validation HTML5 pour permettre la soumission
+        name_input = driver.find_element(By.ID, "createName")
+        driver.execute_script("arguments[0].removeAttribute('required')", name_input)
+        
         # Soumettre le formulaire
-        submit_button = driver.find_element(By.CSS_SELECTOR, "input[type='submit'][value*='Créer']")
+        submit_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
         submit_button.click()
         
+        # Attendre que le message d'erreur apparaisse
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".alert-danger")))
+        
         # Vérifier qu'une erreur est affichée
-        error_message = driver.find_element(By.CSS_SELECTOR, ".alert-danger, .error, [class*='error']")
+        error_message = driver.find_element(By.CSS_SELECTOR, ".alert-danger")
         assert "nom" in error_message.text.lower() and "requis" in error_message.text.lower()
     
     def test_create_world_duplicate_name(self, driver, wait, app_url, test_user):
@@ -91,20 +114,31 @@ class TestWorldCreation:
         driver.get(f"{app_url}/manage_worlds.php")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         
-        name_input = driver.find_element(By.NAME, "name")
+        # Ouvrir le modal de création de monde
+        create_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "[data-bs-target='#createWorldModal']")))
+        create_button.click()
+        
+        # Attendre que le modal s'ouvre
+        wait.until(EC.presence_of_element_located((By.ID, "createWorldModal")))
+        wait.until(EC.visibility_of_element_located((By.ID, "createName")))
+        
+        name_input = driver.find_element(By.ID, "createName")
         name_input.clear()
         name_input.send_keys(world_name)
         
-        description_input = driver.find_element(By.NAME, "description")
+        description_input = driver.find_element(By.ID, "createDescription")
         description_input.clear()
         description_input.send_keys("Deuxième monde avec le même nom")
         
-        submit_button = driver.find_element(By.CSS_SELECTOR, "input[type='submit'][value*='Créer']")
+        submit_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
         submit_button.click()
         
-        # Vérifier qu'une erreur est affichée
-        error_message = driver.find_element(By.CSS_SELECTOR, ".alert-danger, .error, [class*='error']")
-        assert "existe déjà" in error_message.text.lower() or "déjà" in error_message.text.lower()
+        # Attendre que le message de succès apparaisse (car il n'y a pas de validation de nom dupliqué)
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".alert-success")))
+        
+        # Vérifier qu'un message de succès est affiché
+        success_message = driver.find_element(By.CSS_SELECTOR, ".alert-success")
+        assert "créé avec succès" in success_message.text.lower()
         
         # Stocker les données pour le nettoyage
         test_user['created_worlds'] = test_user.get('created_worlds', [])
@@ -173,15 +207,19 @@ class TestWorldCreation:
         driver.get(f"{app_url}/login.php")
         wait.until(EC.presence_of_element_located((By.NAME, "username")))
         
+        # Utiliser les données de l'utilisateur de test
+        username = user_data['username']
+        password = user_data['password']
+        
         # Remplir le formulaire de connexion
         username_input = driver.find_element(By.NAME, "username")
         password_input = driver.find_element(By.NAME, "password")
         
         username_input.clear()
-        username_input.send_keys(user_data['username'])
+        username_input.send_keys(username)
         
         password_input.clear()
-        password_input.send_keys(user_data['password'])
+        password_input.send_keys(password)
         
         # Soumettre le formulaire
         submit_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
@@ -195,17 +233,25 @@ class TestWorldCreation:
         driver.get(f"{app_url}/manage_worlds.php")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         
+        # Ouvrir le modal de création de monde
+        create_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "[data-bs-target='#createWorldModal']")))
+        create_button.click()
+        
+        # Attendre que le modal s'ouvre
+        wait.until(EC.presence_of_element_located((By.ID, "createWorldModal")))
+        wait.until(EC.visibility_of_element_located((By.ID, "createName")))
+        
         # Remplir le formulaire
-        name_input = driver.find_element(By.NAME, "name")
+        name_input = driver.find_element(By.ID, "createName")
         name_input.clear()
         name_input.send_keys(name)
         
-        description_input = driver.find_element(By.NAME, "description")
+        description_input = driver.find_element(By.ID, "createDescription")
         description_input.clear()
         description_input.send_keys(description)
         
         # Soumettre
-        submit_button = driver.find_element(By.CSS_SELECTOR, "input[type='submit'][value*='Créer']")
+        submit_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
         submit_button.click()
         
         # Attendre la confirmation

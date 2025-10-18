@@ -274,6 +274,67 @@ def get_functional_description(test_name):
         "finalization": "Finalisation du test"
     }
 
+def create_test_user_in_db(user_data):
+    """Crée un utilisateur de test dans la base de données"""
+    if not user_data or not user_data.get('username'):
+        return None
+    
+    try:
+        # Créer un script PHP temporaire pour créer l'utilisateur
+        import tempfile
+        import os
+        
+        php_script = f"""
+<?php
+require_once 'config/database.php';
+
+$username = '{user_data['username']}';
+$email = '{user_data.get('email', f"{user_data['username']}@test.com")}';
+$password = '{user_data['password']}';
+$is_dm = {1 if user_data.get('is_dm') else 0};
+$role = '{user_data.get('role', 'player')}';
+
+try {{
+    $pdo = getPDO();
+    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+    
+    $stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, is_dm, role, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
+    $stmt->execute([$username, $email, $hashed_password, $is_dm, $role]);
+    
+    $user_id = $pdo->lastInsertId();
+    echo $user_id;
+}} catch (Exception $e) {{
+    echo "ERROR: " . $e->getMessage();
+}}
+?>
+"""
+        
+        # Écrire le script temporaire
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.php', delete=False) as f:
+            f.write(php_script)
+            temp_script = f.name
+        
+        # Exécuter le script PHP
+        import subprocess
+        result = subprocess.run(['php', temp_script], 
+                              capture_output=True, text=True, 
+                              cwd='/home/jean/Documents/jdrmj')
+        
+        # Nettoyer le fichier temporaire
+        os.unlink(temp_script)
+        
+        if result.returncode == 0 and not result.stdout.startswith('ERROR'):
+            user_id = int(result.stdout.strip())
+            print(f"✅ Utilisateur de test créé: {user_data['username']} (ID: {user_id})")
+            return user_id
+        else:
+            print(f"❌ Erreur lors de la création de l'utilisateur de test: {result.stdout}")
+            return None
+        
+    except Exception as e:
+        print(f"❌ Erreur lors de la création de l'utilisateur de test: {e}")
+        return None
+
 def cleanup_test_user_from_db(user_data):
     """Nettoie un utilisateur de test spécifique de la base de données"""
     if not user_data or not user_data.get('username'):
@@ -461,8 +522,14 @@ def test_user():
         'username': f'test_user_{timestamp}',
         'email': f'test_{timestamp}@example.com',
         'password': 'TestPassword123!',
-        'is_dm': True
+        'is_dm': True,
+        'role': 'dm'
     }
+    
+    # Créer l'utilisateur en base de données
+    user_id = create_test_user_in_db(user_data)
+    if user_id:
+        user_data['id'] = user_id
     
     # Ajouter à la liste des utilisateurs créés
     created_test_users.append(user_data)
@@ -486,6 +553,11 @@ def test_admin():
         'is_dm': True,
         'role': 'admin'
     }
+    
+    # Créer l'utilisateur en base de données
+    user_id = create_test_user_in_db(user_data)
+    if user_id:
+        user_data['id'] = user_id
     
     # Ajouter à la liste des utilisateurs créés
     created_test_users.append(user_data)
