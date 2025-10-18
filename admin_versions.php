@@ -367,6 +367,80 @@ $current_page = "admin";
         .test-badge {
             font-size: 0.8em;
         }
+        
+        /* Styles pour la timeline des étapes de tests */
+        .timeline {
+            position: relative;
+        }
+        
+        .timeline-item {
+            position: relative;
+        }
+        
+        .timeline-marker {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+        
+        .timeline-content {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            border-left: 4px solid #dee2e6;
+        }
+        
+        .timeline-item:not(:last-child) .timeline-content::after {
+            content: '';
+            position: absolute;
+            left: 19px;
+            top: 40px;
+            width: 2px;
+            height: calc(100% + 20px);
+            background: #dee2e6;
+            z-index: -1;
+        }
+        
+        .test-name-link:hover {
+            color: #0d6efd !important;
+            text-decoration: underline !important;
+        }
+        
+        /* Styles pour les marqueurs de timeline */
+        .timeline-marker.bg-primary {
+            background-color: #0d6efd !important;
+        }
+        
+        .timeline-marker.bg-success {
+            background-color: #198754 !important;
+        }
+        
+        .timeline-marker.bg-info {
+            background-color: #0dcaf0 !important;
+        }
+        
+        .timeline-marker.bg-danger {
+            background-color: #dc3545 !important;
+        }
+        
+        .timeline-marker.bg-warning {
+            background-color: #ffc107 !important;
+            color: #000 !important;
+        }
+        
+        .timeline-marker.bg-secondary {
+            background-color: #6c757d !important;
+        }
+        
+        .timeline-marker.bg-muted {
+            background-color: #6c757d !important;
+        }
     </style>
 </head>
 <body>
@@ -760,7 +834,12 @@ $current_page = "admin";
                                                     <?php foreach ($tests as $test): ?>
                                                     <tr>
                                                         <td>
-                                                            <code class="text-dark"><?= htmlspecialchars($test['name']) ?></code>
+                                                            <code class="text-dark test-name-link" 
+                                                                  style="cursor: pointer; text-decoration: underline;" 
+                                                                  onclick="showTestDetails('<?= htmlspecialchars($test['name']) ?>', '<?= htmlspecialchars($test['timestamp']) ?>')"
+                                                                  title="Cliquer pour voir les détails du test">
+                                                                <?= htmlspecialchars($test['name']) ?>
+                                                            </code>
                                                         </td>
                                                         <td>
                                                             <?php if ($test['status'] === 'PASSED'): ?>
@@ -869,6 +948,36 @@ $current_page = "admin";
         </div>
     </div>
 
+    <!-- Modal pour afficher les détails des tests -->
+    <div class="modal fade" id="testDetailsModal" tabindex="-1" aria-labelledby="testDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="testDetailsModalLabel">
+                        <i class="fas fa-vial"></i> Détails du Test
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="testDetailsContent">
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Chargement...</span>
+                            </div>
+                            <p class="mt-2">Chargement des détails du test...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                    <button type="button" class="btn btn-primary" onclick="exportTestDetails()">
+                        <i class="fas fa-download"></i> Exporter
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Amélioration de l'expérience utilisateur avec les onglets
@@ -933,6 +1042,285 @@ $current_page = "admin";
             });
         });
         
+        // Fonction pour afficher les détails d'un test
+        function showTestDetails(testName, timestamp) {
+            const modal = new bootstrap.Modal(document.getElementById('testDetailsModal'));
+            const modalTitle = document.getElementById('testDetailsModalLabel');
+            const modalContent = document.getElementById('testDetailsContent');
+            
+            // Mettre à jour le titre de la modal
+            modalTitle.innerHTML = `<i class="fas fa-vial"></i> Détails du Test: ${testName}`;
+            
+            // Afficher la modal
+            modal.show();
+            
+            // Charger les détails du test via AJAX
+            loadTestDetails(testName, timestamp, modalContent);
+        }
+        
+        // Fonction pour charger les détails d'un test
+        function loadTestDetails(testName, timestamp, contentElement) {
+            // Afficher le spinner de chargement
+            contentElement.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Chargement...</span>
+                    </div>
+                    <p class="mt-2">Chargement des détails du test...</p>
+                </div>
+            `;
+            
+            // Simuler le chargement des données (en réalité, ce serait un appel AJAX)
+            setTimeout(() => {
+                // Pour l'instant, on va chercher les données dans les rapports JSON existants
+                fetchTestReportData(testName, timestamp, contentElement);
+            }, 500);
+        }
+        
+        // Fonction pour récupérer les données du rapport de test
+        function fetchTestReportData(testName, timestamp, contentElement) {
+            // Construire le nom du fichier de rapport
+            const safeTestName = testName.replace(/[<>:"/\\|?*]/g, '_');
+            const reportUrl = `tests/reports/individual/${safeTestName}.json`;
+            
+            fetch(reportUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Rapport de test non trouvé');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    displayTestDetails(data, contentElement);
+                })
+                .catch(error => {
+                    console.error('Erreur lors du chargement du rapport:', error);
+                    contentElement.innerHTML = `
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>Rapport non disponible</strong><br>
+                            Le rapport détaillé pour ce test n'est pas encore disponible.
+                            <br><br>
+                            <small class="text-muted">Erreur: ${error.message}</small>
+                        </div>
+                    `;
+                });
+        }
+        
+        // Fonction pour afficher les détails du test
+        function displayTestDetails(testData, contentElement) {
+            const testInfo = testData.test_info || {};
+            const result = testData.result || {};
+            const execution = testData.execution || {};
+            const testSteps = testData.test_steps || [];
+            const versionInfo = testData.version_info || {};
+            
+            let html = `
+                <div class="row">
+                    <!-- Informations générales -->
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0"><i class="fas fa-info-circle"></i> Informations Générales</h6>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td><strong>Nom:</strong></td>
+                                        <td><code>${testInfo.name || 'N/A'}</code></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Fichier:</strong></td>
+                                        <td><small>${testInfo.file || 'N/A'}</small></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Catégorie:</strong></td>
+                                        <td><span class="badge bg-secondary">${testInfo.category || 'N/A'}</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Priorité:</strong></td>
+                                        <td><span class="badge bg-info">${testInfo.priority || 'N/A'}</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Statut:</strong></td>
+                                        <td>
+                                            ${result.status === 'PASSED' ? 
+                                                '<span class="badge bg-success"><i class="fas fa-check"></i> Réussi</span>' :
+                                                result.status === 'FAILED' ?
+                                                '<span class="badge bg-danger"><i class="fas fa-times"></i> Échoué</span>' :
+                                                '<span class="badge bg-warning"><i class="fas fa-exclamation-triangle"></i> Erreur</span>'
+                                            }
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Durée:</strong></td>
+                                        <td>${testInfo.duration_seconds ? testInfo.duration_seconds.toFixed(2) + 's' : 'N/A'}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Informations d'exécution -->
+                    <div class="col-md-6">
+                        <div class="card mb-3">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0"><i class="fas fa-clock"></i> Exécution</h6>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td><strong>Début:</strong></td>
+                                        <td><small>${execution.start_time_formatted || 'N/A'}</small></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Fin:</strong></td>
+                                        <td><small>${execution.end_time_formatted || 'N/A'}</small></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Date:</strong></td>
+                                        <td><small>${testInfo.date || 'N/A'}</small></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Timestamp:</strong></td>
+                                        <td><small>${testInfo.timestamp || 'N/A'}</small></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Ajouter les erreurs si présentes
+            if (result.error_message) {
+                html += `
+                    <div class="alert alert-danger">
+                        <h6><i class="fas fa-exclamation-triangle"></i> Erreur</h6>
+                        <p class="mb-0">${result.error_message}</p>
+                        ${result.stack_trace ? `<pre class="mt-2"><code>${result.stack_trace}</code></pre>` : ''}
+                    </div>
+                `;
+            }
+            
+            // Ajouter les étapes du test si disponibles
+            if (testSteps && testSteps.length > 0) {
+                html += `
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0"><i class="fas fa-list-ol"></i> Étapes du Test (${testSteps.length})</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="timeline">
+                `;
+                
+                testSteps.forEach((step, index) => {
+                    const stepType = step.type || 'action';
+                    const stepIcon = getStepIcon(stepType);
+                    const stepColor = getStepColor(stepType);
+                    
+                    html += `
+                        <div class="timeline-item mb-3">
+                            <div class="d-flex">
+                                <div class="timeline-marker ${stepColor} me-3">
+                                    <i class="${stepIcon}"></i>
+                                </div>
+                                <div class="timeline-content flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <h6 class="mb-1">${step.name || 'Étape ' + (index + 1)}</h6>
+                                        <small class="text-muted">${step.duration_seconds ? step.duration_seconds.toFixed(2) + 's' : ''}</small>
+                                    </div>
+                                    <p class="mb-1">${step.description || ''}</p>
+                                    <small class="text-muted">${step.datetime || ''}</small>
+                                    ${step.details && Object.keys(step.details).length > 0 ? 
+                                        `<div class="mt-2"><small><strong>Détails:</strong> ${JSON.stringify(step.details, null, 2)}</small></div>` : ''
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += `
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        Aucune étape détaillée disponible pour ce test.
+                    </div>
+                `;
+            }
+            
+            contentElement.innerHTML = html;
+        }
+        
+        // Fonction pour obtenir l'icône d'une étape
+        function getStepIcon(stepType) {
+            const icons = {
+                'action': 'fas fa-play',
+                'assertion': 'fas fa-check',
+                'info': 'fas fa-info-circle',
+                'error': 'fas fa-times',
+                'warning': 'fas fa-exclamation-triangle',
+                'screenshot': 'fas fa-camera'
+            };
+            return icons[stepType] || 'fas fa-circle';
+        }
+        
+        // Fonction pour obtenir la couleur d'une étape
+        function getStepColor(stepType) {
+            const colors = {
+                'action': 'bg-primary',
+                'assertion': 'bg-success',
+                'info': 'bg-info',
+                'error': 'bg-danger',
+                'warning': 'bg-warning',
+                'screenshot': 'bg-secondary'
+            };
+            return colors[stepType] || 'bg-muted';
+        }
+        
+        // Fonction pour exporter les détails du test
+        function exportTestDetails() {
+            const testName = document.getElementById('testDetailsModalLabel').textContent.replace('Détails du Test: ', '');
+            const testData = document.getElementById('testDetailsContent').innerHTML;
+            
+            // Créer un fichier de rapport HTML
+            const htmlContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Rapport de Test - ${testName}</title>
+                    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+                    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+                </head>
+                <body>
+                    <div class="container mt-4">
+                        <h1><i class="fas fa-vial"></i> Rapport de Test: ${testName}</h1>
+                        <p class="text-muted">Généré le ${new Date().toLocaleString('fr-FR')}</p>
+                        <hr>
+                        ${testData}
+                    </div>
+                </body>
+                </html>
+            `;
+            
+            // Télécharger le fichier
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `rapport_test_${testName.replace(/[^a-zA-Z0-9]/g, '_')}.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
         // Fonction pour copier les informations de version
         function copyVersionInfo() {
             const versionInfo = {

@@ -61,7 +61,7 @@ class TestCampaignMembers:
         invite_code_input.send_keys(invite_code)
         
         # Soumettre le formulaire
-        submit_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit'], input[type='submit']")
+        submit_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit'], button[type='submit']")
         submit_button.click()
         
         # Vérifier que l'utilisateur a rejoint la campagne
@@ -100,7 +100,7 @@ class TestCampaignMembers:
         invite_code_input.send_keys("INVALID_CODE_123")
         
         # Soumettre le formulaire
-        submit_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit'], input[type='submit']")
+        submit_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit'], button[type='submit']")
         submit_button.click()
         
         # Vérifier qu'une erreur est affichée
@@ -212,7 +212,7 @@ class TestCampaignMembers:
         remove_button.click()
         
         # Confirmer la suppression
-        confirm_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit'][value*='confirm'], input[type='submit'][value*='confirm']")
+        confirm_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit'][value*='confirm'], button[type='submit'][value*='confirm']")
         confirm_button.click()
         
         # Vérifier que le membre a été supprimé
@@ -321,7 +321,7 @@ class TestCampaignMembers:
         password_input.send_keys(user_data['password'])
         
         # Soumettre le formulaire
-        submit_button = driver.find_element(By.CSS_SELECTOR, "input[type='submit']")
+        submit_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
         submit_button.click()
         
         # Attendre la redirection
@@ -351,7 +351,7 @@ class TestCampaignMembers:
         confirm_password_input.send_keys(user_data['password'])
         
         # Soumettre le formulaire
-        submit_button = driver.find_element(By.CSS_SELECTOR, "input[type='submit']")
+        submit_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
         submit_button.click()
         
         # Attendre la redirection
@@ -400,7 +400,7 @@ class TestCampaignMembers:
         invite_code_input.send_keys(invite_code)
         
         # Soumettre le formulaire
-        submit_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit'], input[type='submit']")
+        submit_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit'], button[type='submit']")
         submit_button.click()
         
         # Attendre la confirmation

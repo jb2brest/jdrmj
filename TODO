@@ -220,7 +220,14 @@ Le dés est marbré gris très clair et bleu. Les chiffres sont écrit en doré.
 
 Dans un univers DnD, dessine une image carrée de nain des montagnes clerc de niveau 1 sans texte
 
-Dans http://localhost/jdrmj/admin_versions.php => les tests de classe sont rangés dans la catégorie autres. Il faut les mettres dans une catégorie Classe et une sous categorie par classe
+On va ajouter la possibiliter d'ajouter des "accès" qui permettent de passer d'un lieu à un autre. 
+Ces accès peuvent être : 
+- Visible des joueurs ou pas.
+- Ouvert ou pas.
+- piégé ou pas. 
+
+Un accès s'ajoute depuis la page de création d'un lieu.
+
 
 
 <svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">

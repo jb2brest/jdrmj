@@ -333,7 +333,7 @@ class TestRegionCreation:
         password_input.send_keys(user_data['password'])
         
         # Soumettre le formulaire
-        submit_button = driver.find_element(By.CSS_SELECTOR, "input[type='submit']")
+        submit_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
         submit_button.click()
         
         # Attendre la redirection

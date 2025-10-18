@@ -42,13 +42,13 @@ class Pays
     // ========================================
 
     /**
-     * Obtient l'instance PDO depuis l'Univers
+     * Obtient l'instance PDO
      * 
      * @return PDO Instance PDO
      */
     private function getPdo()
     {
-        return Univers::getInstance()->getPdo();
+        return getPDO();
     }
 
     // ========================================
@@ -293,7 +293,7 @@ class Pays
     public static function findById(int $id)
     {
         try {
-            $pdo = Univers::getInstance()->getPdo();
+            $pdo = getPDO();
             $sql = "SELECT * FROM countries WHERE id = ?";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$id]);
@@ -328,7 +328,7 @@ class Pays
     public static function findByWorld(int $world_id)
     {
         try {
-            $pdo = Univers::getInstance()->getPdo();
+            $pdo = getPDO();
             $sql = "SELECT c.*, 
                     (SELECT COUNT(*) FROM regions WHERE country_id = c.id) as region_count
                     FROM countries c 
@@ -357,7 +357,7 @@ class Pays
     public static function findByUser(int $user_id)
     {
         try {
-            $pdo = Univers::getInstance()->getPdo();
+            $pdo = getPDO();
             $sql = "SELECT c.*, 
                     w.name as world_name,
                     (SELECT COUNT(*) FROM regions WHERE country_id = c.id) as region_count
@@ -401,7 +401,7 @@ class Pays
     public static function nameExistsInWorld(string $name, int $world_id, int $exclude_id = null)
     {
         try {
-            $pdo = Univers::getInstance()->getPdo();
+            $pdo = getPDO();
             $sql = "SELECT COUNT(*) FROM countries WHERE name = ? AND world_id = ?";
             $params = [$name, $world_id];
 
@@ -425,7 +425,7 @@ class Pays
     /**
      * Récupère le monde auquel appartient ce pays
      * 
-     * @return Monde|null Instance de Monde ou null si non trouvé
+     * @return array|null Données du monde ou null si non trouvé
      */
     public function getMonde()
     {
@@ -434,7 +434,11 @@ class Pays
         }
 
         try {
-            return Monde::findById($this->world_id);
+            $pdo = $this->getPdo();
+            $sql = "SELECT * FROM worlds WHERE id = ?";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$this->world_id]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             throw new Exception("Erreur lors de la récupération du monde: " . $e->getMessage());
         }
@@ -480,13 +484,8 @@ class Pays
             $stmt->execute([$this->id]);
             $regionsData = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
-            // Convertir les tableaux en objets Region
-            $regions = [];
-            foreach ($regionsData as $regionData) {
-                $regions[] = new Region($regionData);
-            }
-            
-            return $regions;
+            // Retourner les données brutes pour éviter les dépendances
+            return $regionsData;
         } catch (PDOException $e) {
             throw new Exception("Erreur lors de la récupération des régions: " . $e->getMessage());
         }
@@ -512,6 +511,116 @@ class Pays
             return $result ?: null;
         } catch (PDOException $e) {
             throw new Exception("Erreur lors de la récupération du nom du monde: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Récupère les accès interrégionaux pour ce pays
+     * 
+     * Cette méthode retourne la liste des accès entre deux lieux de deux régions différentes,
+     * dont au moins une des régions est à l'intérieur du pays concerné.
+     * 
+     * @return array Tableau des accès interrégionaux avec informations détaillées
+     * @throws Exception En cas d'erreur de base de données
+     */
+    public function getInterRegionAccesses()
+    {
+        if ($this->id === null) {
+            return [];
+        }
+
+        try {
+            $pdo = $this->getPdo();
+            
+            // Récupérer les accès entre lieux de régions différentes
+            // où au moins une des régions appartient à ce pays
+            $sql = "
+                SELECT 
+                    a.*,
+                    fp.title as from_place_name,
+                    fp.region_id as from_region_id,
+                    fr.name as from_region_name,
+                    fc.name as from_country_name,
+                    tp.title as to_place_name,
+                    tp.region_id as to_region_id,
+                    tr.name as to_region_name,
+                    tc.name as to_country_name
+                FROM accesses a
+                JOIN places fp ON a.from_place_id = fp.id
+                JOIN places tp ON a.to_place_id = tp.id
+                LEFT JOIN regions fr ON fp.region_id = fr.id
+                LEFT JOIN regions tr ON tp.region_id = tr.id
+                LEFT JOIN countries fc ON fr.country_id = fc.id
+                LEFT JOIN countries tc ON tr.country_id = tc.id
+                WHERE (fr.country_id = ? OR tr.country_id = ?)
+                  AND fp.region_id != tp.region_id
+                ORDER BY a.from_place_id, a.name
+            ";
+            
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$this->id, $this->id]);
+            $accesses = $stmt->fetchAll(PDO::FETCH_OBJ);
+            
+            return $accesses;
+        } catch (PDOException $e) {
+            throw new Exception("Erreur lors de la récupération des accès interrégionaux: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Récupère les lieux externes connectés à ce pays
+     * 
+     * Cette méthode retourne les lieux qui sont dans d'autres pays/régions
+     * mais qui ont des accès avec des lieux de ce pays.
+     * 
+     * @return array Tableau des lieux externes avec informations détaillées
+     * @throws Exception En cas d'erreur de base de données
+     */
+    public function getExternalPlaces()
+    {
+        if ($this->id === null) {
+            return [];
+        }
+
+        try {
+            $pdo = $this->getPdo();
+            
+            // Récupérer les lieux externes (dans d'autres pays/régions)
+            // qui ont des accès avec des lieux de ce pays
+            $sql = "
+                SELECT DISTINCT
+                    p.*,
+                    r.name as region_name,
+                    c.name as country_name
+                FROM places p
+                JOIN regions r ON p.region_id = r.id
+                JOIN countries c ON r.country_id = c.id
+                WHERE c.id != ?
+                  AND p.id IN (
+                      SELECT DISTINCT a.to_place_id
+                      FROM accesses a
+                      JOIN places fp ON a.from_place_id = fp.id
+                      JOIN regions fr ON fp.region_id = fr.id
+                      WHERE fr.country_id = ?
+                      
+                      UNION
+                      
+                      SELECT DISTINCT a.from_place_id
+                      FROM accesses a
+                      JOIN places tp ON a.to_place_id = tp.id
+                      JOIN regions tr ON tp.region_id = tr.id
+                      WHERE tr.country_id = ?
+                  )
+                ORDER BY c.name, r.name, p.title
+            ";
+            
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$this->id, $this->id, $this->id]);
+            $externalPlaces = $stmt->fetchAll(PDO::FETCH_OBJ);
+            
+            return $externalPlaces;
+        } catch (PDOException $e) {
+            throw new Exception("Erreur lors de la récupération des lieux externes: " . $e->getMessage());
         }
     }
 

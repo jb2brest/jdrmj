@@ -1,6 +1,7 @@
 <?php
 
 require_once 'includes/functions.php';
+require_once 'classes/Access.php';
 $page_title = "Scène de Jeu";
 $current_page = "view_place";
 
@@ -81,6 +82,89 @@ if (!$canView) {
     exit();
 }
 
+// Traitement des actions sur les accès
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
+    $action = $_POST['action'] ?? '';
+    $access_id = (int)($_POST['access_id'] ?? 0);
+
+    switch ($action) {
+        case 'create_access':
+        case 'update_access':
+            $name = sanitizeInput($_POST['name'] ?? '');
+            $description = sanitizeInput($_POST['description'] ?? '');
+            $to_place_id = (int)($_POST['to_place_id'] ?? 0);
+            $is_visible = isset($_POST['is_visible']) ? 1 : 0;
+            $is_open = isset($_POST['is_open']) ? 1 : 0;
+            $is_trapped = isset($_POST['is_trapped']) ? 1 : 0;
+            $trap_description = sanitizeInput($_POST['trap_description'] ?? '');
+            $trap_difficulty = (int)($_POST['trap_difficulty'] ?? 0);
+            $trap_damage = sanitizeInput($_POST['trap_damage'] ?? '');
+            $position_x = (int)($_POST['position_x'] ?? 0);
+            $position_y = (int)($_POST['position_y'] ?? 0);
+            $is_on_map = isset($_POST['is_on_map']) ? 1 : 0;
+
+            if (empty($name) || $to_place_id === 0) {
+                $_SESSION['error_message'] = "Le nom de l'accès et le lieu de destination sont requis.";
+            } elseif (Access::existsBetween($place_id, $to_place_id, $name)) {
+                $_SESSION['error_message'] = "Un accès avec ce nom existe déjà vers ce lieu de destination.";
+            } else {
+                $access = ($action === 'update_access' && $access_id) ? Access::findById($access_id) : new Access();
+                if (!$access || ($action === 'update_access' && $access->from_place_id !== $place_id)) {
+                    $_SESSION['error_message'] = "Accès introuvable ou vous n'avez pas la permission de le modifier.";
+                    break;
+                }
+
+                $access->from_place_id = $place_id;
+                $access->to_place_id = $to_place_id;
+                $access->name = $name;
+                $access->description = $description;
+                $access->is_visible = $is_visible;
+                $access->is_open = $is_open;
+                $access->is_trapped = $is_trapped;
+                $access->trap_description = $trap_description;
+                $access->trap_difficulty = $trap_difficulty;
+                $access->trap_damage = $trap_damage;
+                $access->position_x = $position_x;
+                $access->position_y = $position_y;
+                $access->is_on_map = $is_on_map;
+
+                if ($access->save()) {
+                    $_SESSION['success_message'] = "Accès " . ($action === 'create_access' ? "créé" : "mis à jour") . " avec succès.";
+                } else {
+                    $_SESSION['error_message'] = "Erreur lors de la sauvegarde de l'accès.";
+                }
+            }
+            break;
+
+        case 'delete_access':
+            $access = Access::findById($access_id);
+            if ($access && $access->from_place_id === $place_id) {
+                if ($access->delete()) {
+                    $_SESSION['success_message'] = "Accès supprimé avec succès.";
+                } else {
+                    $_SESSION['error_message'] = "Erreur lors de la suppression de l'accès.";
+                }
+            } else {
+                $_SESSION['error_message'] = "Accès introuvable ou vous n'avez pas la permission de le supprimer.";
+            }
+            break;
+    }
+    
+    // Rediriger pour éviter la resoumission du formulaire
+    header('Location: view_place.php?id=' . $place_id);
+    exit();
+}
+
+// Récupérer tous les lieux pour le sélecteur "vers quel lieu"
+$stmt = $pdo->query("SELECT id, title FROM places ORDER BY title");
+$all_places = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$other_places = array_filter($all_places, function($place) use ($place_id) {
+    return $place['id'] != $place_id;
+});
+
+// Récupérer les accès du lieu
+$placeAccesses = Access::getFromPlace($place_id);
+
 // Récupérer les joueurs présents dans cette lieu
 $placePlayers = $lieu ? $lieu->getAllPlayersDetailed() : [];
 
@@ -110,6 +194,13 @@ foreach ($placeObjects as $object) {
 $allPlaceObjects = [];
 if ($isOwnerDM && $lieu) {
     $allPlaceObjects = $lieu->getAllObjects();
+}
+
+// Récupérer les accès du lieu
+$placeAccesses = [];
+if ($lieu) {
+    require_once 'classes/Access.php';
+    $placeAccesses = Access::getFromPlace($place_id);
 }
 
 // Récupérer les membres de la campagne pour le formulaire d'ajout de joueurs
@@ -1620,6 +1711,11 @@ foreach ($allScenes as $s) {
                 <button class="btn btn-sm btn-outline-primary ms-2" type="button" data-bs-toggle="modal" data-bs-target="#magicalItemSearchModal">
                     <i class="fas fa-gem me-1"></i>Objet Magique
                 </button>
+                <?php if ($canEdit): ?>
+                    <a href="manage_place_accesses.php?place_id=<?= $place_id ?>" class="btn btn-sm btn-outline-success ms-2">
+                        <i class="fas fa-door-open me-1"></i>Gérer les accès
+                    </a>
+                <?php endif; ?>
             </p>
         </div>
         <div class="d-flex align-items-center gap-2">
@@ -2571,6 +2667,116 @@ foreach ($allScenes as $s) {
                                 </li>
                             <?php endforeach; ?>
                         </ul>
+                    <?php endif; ?>
+                </div>
+            </div>
+            
+            <!-- Section Accès du lieu -->
+            <div class="card mt-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-door-open me-2"></i>Accès disponibles</span>
+                    <?php if ($canEdit): ?>
+                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#createAccessModal">
+                            <i class="fas fa-plus me-1"></i>Ajouter un Accès
+                        </button>
+                    <?php endif; ?>
+                </div>
+                <div class="card-body">
+                    <?php if (empty($placeAccesses)): ?>
+                        <div class="text-center py-3">
+                            <i class="fas fa-door-closed fa-2x text-muted mb-2"></i>
+                            <p class="text-muted mb-0">Aucun accès configuré pour ce lieu</p>
+                            <?php if ($canEdit): ?>
+                                <button class="btn btn-sm btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#createAccessModal">
+                                    <i class="fas fa-plus me-1"></i>Créer le premier accès
+                                </button>
+                            <?php endif; ?>
+                        </div>
+                    <?php else: ?>
+                        <div class="row">
+                            <?php foreach ($placeAccesses as $access): ?>
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <h6 class="card-title mb-0">
+                                                    <i class="<?= $access->getStatusIcon() ?> me-1 <?= $access->getStatusClass() ?>"></i>
+                                                    <?= htmlspecialchars($access->name) ?>
+                                                </h6>
+                                                <span class="badge <?= $access->is_visible ? 'bg-success' : 'bg-secondary' ?>">
+                                                    <i class="fas fa-eye me-1"></i><?= $access->is_visible ? 'Visible' : 'Caché' ?>
+                                                </span>
+                                            </div>
+                                            
+                                            <p class="card-text text-muted small mb-2">
+                                                <strong>Vers:</strong> <?= htmlspecialchars($access->to_place_name) ?>
+                                            </p>
+                                            
+                                            <?php if ($access->description): ?>
+                                                <p class="card-text small"><?= htmlspecialchars($access->description) ?></p>
+                                            <?php endif; ?>
+                                            
+                                            <div class="d-flex flex-wrap gap-1">
+                                                <span class="badge <?= $access->is_open ? 'bg-success' : 'bg-warning' ?>">
+                                                    <i class="fas fa-<?= $access->is_open ? 'unlock' : 'lock' ?> me-1"></i><?= $access->is_open ? 'Ouvert' : 'Fermé' ?>
+                                                </span>
+                                                <?php if ($access->is_trapped): ?>
+                                                    <span class="badge bg-danger">
+                                                        <i class="fas fa-exclamation-triangle me-1"></i>Piégé
+                                                    </span>
+                                                <?php endif; ?>
+                                            </div>
+                                            
+                                            <?php if ($access->is_trapped && $access->trap_description): ?>
+                                                <div class="mt-2">
+                                                    <small class="text-danger">
+                                                        <i class="fas fa-bomb me-1"></i>
+                                                        <strong>Piège:</strong> <?= htmlspecialchars($access->trap_description) ?>
+                                                        <?php if ($access->trap_difficulty): ?>
+                                                            (DD <?= $access->trap_difficulty ?>)
+                                                        <?php endif; ?>
+                                                        <?php if ($access->trap_damage): ?>
+                                                            - <?= htmlspecialchars($access->trap_damage) ?>
+                                                        <?php endif; ?>
+                                                    </small>
+                                                </div>
+                                            <?php endif; ?>
+                                            
+                                            <?php if ($canEdit): ?>
+                                                <div class="mt-3 d-flex gap-2">
+                                                    <a href="view_place.php?id=<?= $access->to_place_id ?>" class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-external-link-alt me-1"></i>Aller vers ce lieu
+                                                    </a>
+                                                    <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#editAccessModal"
+                                                            data-access-id="<?= $access->id ?>"
+                                                            data-access-name="<?= htmlspecialchars($access->name) ?>"
+                                                            data-access-description="<?= htmlspecialchars($access->description) ?>"
+                                                            data-access-to-place-id="<?= $access->to_place_id ?>"
+                                                            data-access-is-visible="<?= $access->is_visible ?>"
+                                                            data-access-is-open="<?= $access->is_open ?>"
+                                                            data-access-is-trapped="<?= $access->is_trapped ?>"
+                                                            data-access-trap-description="<?= htmlspecialchars($access->trap_description) ?>"
+                                                            data-access-trap-difficulty="<?= $access->trap_difficulty ?>"
+                                                            data-access-trap-damage="<?= htmlspecialchars($access->trap_damage) ?>"
+                                                            data-access-position-x="<?= $access->position_x ?>"
+                                                            data-access-position-y="<?= $access->position_y ?>"
+                                                            data-access-is-on-map="<?= $access->is_on_map ?>"
+                                                            title="Modifier l'accès">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteAccessModal"
+                                                            data-access-id="<?= $access->id ?>"
+                                                            data-access-name="<?= htmlspecialchars($access->name) ?>"
+                                                            title="Supprimer l'accès">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
                     <?php endif; ?>
                 </div>
             </div>
@@ -4583,6 +4789,312 @@ foreach ($allScenes as $s) {
         </div>
     </div>
 </div>
+<?php endif; ?>
+
+<!-- Modals pour la gestion des accès -->
+<?php if ($canEdit): ?>
+<!-- Modal Créer Accès -->
+<div class="modal fade" id="createAccessModal" tabindex="-1" aria-labelledby="createAccessModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createAccessModalLabel">
+                    <i class="fas fa-plus me-2"></i>Ajouter un Accès
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="create_access">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="createAccessName" class="form-label">Nom de l'accès *</label>
+                                <input type="text" class="form-control" id="createAccessName" name="name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="createAccessToPlace" class="form-label">Vers quel lieu *</label>
+                                <select class="form-select" id="createAccessToPlace" name="to_place_id" required>
+                                    <option value="">Sélectionner un lieu</option>
+                                    <?php foreach ($other_places as $place): ?>
+                                        <option value="<?= $place['id'] ?>"><?= htmlspecialchars($place['title']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="createAccessDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="createAccessDescription" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="createAccessIsVisible" name="is_visible" checked>
+                                <label class="form-check-label" for="createAccessIsVisible">
+                                    Visible des joueurs
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="createAccessIsOpen" name="is_open" checked>
+                                <label class="form-check-label" for="createAccessIsOpen">
+                                    Ouvert
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="createAccessIsTrapped" name="is_trapped">
+                                <label class="form-check-label" for="createAccessIsTrapped">
+                                    Piégé
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="trapDetails" style="display: none;">
+                        <hr>
+                        <h6>Détails du piège</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="createAccessTrapDescription" class="form-label">Description du piège</label>
+                                    <input type="text" class="form-control" id="createAccessTrapDescription" name="trap_description">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="createAccessTrapDifficulty" class="form-label">Difficulté (DD)</label>
+                                    <input type="number" class="form-control" id="createAccessTrapDifficulty" name="trap_difficulty" min="1" max="30">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="createAccessTrapDamage" class="form-label">Dégâts</label>
+                                    <input type="text" class="form-control" id="createAccessTrapDamage" name="trap_damage" placeholder="ex: 2d6">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Créer l'accès
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Éditer Accès -->
+<div class="modal fade" id="editAccessModal" tabindex="-1" aria-labelledby="editAccessModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editAccessModalLabel">
+                    <i class="fas fa-edit me-2"></i>Modifier l'Accès
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="update_access">
+                    <input type="hidden" name="access_id" id="editAccessId">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editAccessName" class="form-label">Nom de l'accès *</label>
+                                <input type="text" class="form-control" id="editAccessName" name="name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editAccessToPlace" class="form-label">Vers quel lieu *</label>
+                                <select class="form-select" id="editAccessToPlace" name="to_place_id" required>
+                                    <option value="">Sélectionner un lieu</option>
+                                    <?php foreach ($other_places as $place): ?>
+                                        <option value="<?= $place['id'] ?>"><?= htmlspecialchars($place['title']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="editAccessDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="editAccessDescription" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="editAccessIsVisible" name="is_visible">
+                                <label class="form-check-label" for="editAccessIsVisible">
+                                    Visible des joueurs
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="editAccessIsOpen" name="is_open">
+                                <label class="form-check-label" for="editAccessIsOpen">
+                                    Ouvert
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="editAccessIsTrapped" name="is_trapped">
+                                <label class="form-check-label" for="editAccessIsTrapped">
+                                    Piégé
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="editTrapDetails" style="display: none;">
+                        <hr>
+                        <h6>Détails du piège</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editAccessTrapDescription" class="form-label">Description du piège</label>
+                                    <input type="text" class="form-control" id="editAccessTrapDescription" name="trap_description">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="editAccessTrapDifficulty" class="form-label">Difficulté (DD)</label>
+                                    <input type="number" class="form-control" id="editAccessTrapDifficulty" name="trap_difficulty" min="1" max="30">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="editAccessTrapDamage" class="form-label">Dégâts</label>
+                                    <input type="text" class="form-control" id="editAccessTrapDamage" name="trap_damage" placeholder="ex: 2d6">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Enregistrer les modifications
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Supprimer Accès -->
+<div class="modal fade" id="deleteAccessModal" tabindex="-1" aria-labelledby="deleteAccessModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteAccessModalLabel">
+                    <i class="fas fa-trash me-2"></i>Supprimer l'Accès
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="delete_access">
+                    <input type="hidden" name="access_id" id="deleteAccessId">
+                    
+                    <p>Êtes-vous sûr de vouloir supprimer l'accès <strong id="deleteAccessName"></strong> ?</p>
+                    <p class="text-muted">Cette action est irréversible.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i>Supprimer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Gestion des modals d'accès
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestion du checkbox "Piégé" pour afficher/masquer les détails
+    const createTrappedCheckbox = document.getElementById('createAccessIsTrapped');
+    const createTrapDetails = document.getElementById('trapDetails');
+    
+    if (createTrappedCheckbox && createTrapDetails) {
+        createTrappedCheckbox.addEventListener('change', function() {
+            createTrapDetails.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+    
+    const editTrappedCheckbox = document.getElementById('editAccessIsTrapped');
+    const editTrapDetails = document.getElementById('editTrapDetails');
+    
+    if (editTrappedCheckbox && editTrapDetails) {
+        editTrappedCheckbox.addEventListener('change', function() {
+            editTrapDetails.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+    
+    // Gestion du modal d'édition
+    const editModal = document.getElementById('editAccessModal');
+    if (editModal) {
+        editModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const accessId = button.getAttribute('data-access-id');
+            const accessName = button.getAttribute('data-access-name');
+            const accessDescription = button.getAttribute('data-access-description');
+            const accessToPlaceId = button.getAttribute('data-access-to-place-id');
+            const accessIsVisible = button.getAttribute('data-access-is-visible') === '1';
+            const accessIsOpen = button.getAttribute('data-access-is-open') === '1';
+            const accessIsTrapped = button.getAttribute('data-access-is-trapped') === '1';
+            const accessTrapDescription = button.getAttribute('data-access-trap-description');
+            const accessTrapDifficulty = button.getAttribute('data-access-trap-difficulty');
+            const accessTrapDamage = button.getAttribute('data-access-trap-damage');
+            
+            document.getElementById('editAccessId').value = accessId;
+            document.getElementById('editAccessName').value = accessName;
+            document.getElementById('editAccessDescription').value = accessDescription;
+            document.getElementById('editAccessToPlace').value = accessToPlaceId;
+            document.getElementById('editAccessIsVisible').checked = accessIsVisible;
+            document.getElementById('editAccessIsOpen').checked = accessIsOpen;
+            document.getElementById('editAccessIsTrapped').checked = accessIsTrapped;
+            document.getElementById('editAccessTrapDescription').value = accessTrapDescription;
+            document.getElementById('editAccessTrapDifficulty').value = accessTrapDifficulty;
+            document.getElementById('editAccessTrapDamage').value = accessTrapDamage;
+            
+            // Afficher/masquer les détails du piège
+            editTrapDetails.style.display = accessIsTrapped ? 'block' : 'none';
+        });
+    }
+    
+    // Gestion du modal de suppression
+    const deleteModal = document.getElementById('deleteAccessModal');
+    if (deleteModal) {
+        deleteModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const accessId = button.getAttribute('data-access-id');
+            const accessName = button.getAttribute('data-access-name');
+            
+            document.getElementById('deleteAccessId').value = accessId;
+            document.getElementById('deleteAccessName').textContent = accessName;
+        });
+    }
+});
+</script>
 <?php endif; ?>
 
 </body>

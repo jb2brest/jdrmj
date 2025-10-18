@@ -22,11 +22,20 @@ class AdvancedTestMenu:
     def __init__(self):
         self.base_dir = Path(__file__).parent
         self.parent_dir = self.base_dir.parent
-        self.functional_dir = self.base_dir / "functional"
         
         # Récupérer l'environnement depuis les variables d'environnement
         self.test_environment = os.environ.get('TEST_ENVIRONMENT', 'local')
         self.headless_mode = os.environ.get('HEADLESS', 'false').lower() == 'true'
+        
+        # Déterminer le répertoire des tests selon l'environnement
+        if self.test_environment == 'staging':
+            self.tests_dir = Path("/var/www/html/jdrmj_staging/tests")
+        elif self.test_environment == 'production':
+            self.tests_dir = Path("/var/www/html/jdrmj/tests")
+        else:  # local
+            self.tests_dir = self.base_dir
+        
+        self.functional_dir = self.tests_dir / "functional"
         
         # Définir les catégories de tests
         self.test_categories = {
@@ -178,25 +187,17 @@ class AdvancedTestMenu:
                 "files": ["histoires/test_histoires.py"],
                 "description": "Tests de sélection et caractéristiques des historiques"
             },
-            "mondes": {
-                "name": "🌍 Tests des Mondes",
-                "files": ["test_world_creation.py"],
-                "description": "Tests de création et gestion des mondes"
-            },
-            "pays": {
-                "name": "🏰 Tests des Pays",
-                "files": ["test_country_creation.py"],
-                "description": "Tests de création et gestion des pays"
-            },
-            "regions": {
-                "name": "🗺️ Tests des Régions",
-                "files": ["test_region_creation.py"],
-                "description": "Tests de création et gestion des régions"
-            },
-            "lieux": {
-                "name": "📍 Tests des Lieux",
-                "files": ["test_place_creation.py"],
-                "description": "Tests de création et gestion des lieux"
+            "univers": {
+                "name": "🌍 Univers et Géographie",
+                "files": [
+                    "test_world_creation.py",
+                    "test_country_creation.py", 
+                    "test_region_creation.py",
+                    "test_place_creation.py",
+                    "test_access_system.py",
+                    "test_access_system_fixed.py"
+                ],
+                "description": "Tests de création et gestion de l'univers (mondes, pays, régions, lieux et accès)"
             }
         }
         
@@ -377,7 +378,9 @@ class AdvancedTestMenu:
         print("-" * 60)
         
         try:
-            result = subprocess.run(cmd, shell=True, cwd=self.parent_dir)
+            # Utiliser le bon répertoire de travail selon l'environnement
+            working_dir = self.tests_dir if self.test_environment != 'local' else self.parent_dir
+            result = subprocess.run(cmd, shell=True, cwd=working_dir)
             if result.returncode == 0:
                 print(f"\n✅ {description} terminé avec succès !")
             else:
@@ -425,8 +428,17 @@ class AdvancedTestMenu:
         if self.test_environment != 'local':
             env_vars.append(f"TEST_ENVIRONMENT={self.test_environment}")
         
+        # Déterminer le PYTHONPATH selon l'environnement
+        if self.test_environment == 'staging':
+            pythonpath = "/var/www/html/jdrmj_staging/tests"
+        elif self.test_environment == 'production':
+            pythonpath = "/var/www/html/jdrmj/tests"
+        else:  # local
+            pythonpath = "/home/jean/Documents/jdrmj/tests"
+        
+        env_vars.append(f"PYTHONPATH={pythonpath}")
         env_prefix = " ".join(env_vars) + " " if env_vars else ""
-        cmd = f"cd tests && {env_prefix}PYTHONPATH=/home/jean/Documents/jdrmj/tests python3 -m pytest {test_files_str} -v -p pytest_json_reporter"
+        cmd = f"{env_prefix}python3 -m pytest {test_files_str} -v -p pytest_json_reporter"
         
         self.run_command(cmd, f"Tests de la catégorie: {category_info['name']}")
     
@@ -480,7 +492,16 @@ class AdvancedTestMenu:
             
             # Construire la commande pytest
             test_files_str = " ".join([f"functional/{file}" for file in available_files])
-            cmd = f"cd tests && PYTHONPATH=/home/jean/Documents/jdrmj/tests python3 -m pytest {test_files_str} -v -p pytest_json_reporter"
+            
+            # Déterminer le PYTHONPATH selon l'environnement
+            if self.test_environment == 'staging':
+                pythonpath = "/var/www/html/jdrmj_staging/tests"
+            elif self.test_environment == 'production':
+                pythonpath = "/var/www/html/jdrmj/tests"
+            else:  # local
+                pythonpath = "/home/jean/Documents/jdrmj/tests"
+            
+            cmd = f"PYTHONPATH={pythonpath} python3 -m pytest {test_files_str} -v -p pytest_json_reporter"
             
             self.run_command(cmd, f"Tests de {sub_info['name']}")
     
@@ -534,7 +555,16 @@ class AdvancedTestMenu:
             return
         
         selected_file = test_files[choice - 1]
-        cmd = f"cd tests && PYTHONPATH=/home/jean/Documents/jdrmj/tests python3 -m pytest functional/{selected_file.name} -v -p pytest_json_reporter"
+        
+        # Déterminer le PYTHONPATH selon l'environnement
+        if self.test_environment == 'staging':
+            pythonpath = "/var/www/html/jdrmj_staging/tests"
+        elif self.test_environment == 'production':
+            pythonpath = "/var/www/html/jdrmj/tests"
+        else:  # local
+            pythonpath = "/home/jean/Documents/jdrmj/tests"
+        
+        cmd = f"PYTHONPATH={pythonpath} python3 -m pytest functional/{selected_file.name} -v -p pytest_json_reporter"
         
         self.run_command(cmd, f"Test du fichier: {selected_file.name}")
     
@@ -591,8 +621,17 @@ class AdvancedTestMenu:
         if self.test_environment != 'local':
             env_vars.append(f"TEST_ENVIRONMENT={self.test_environment}")
         
+        # Déterminer le PYTHONPATH selon l'environnement
+        if self.test_environment == 'staging':
+            pythonpath = "/var/www/html/jdrmj_staging/tests"
+        elif self.test_environment == 'production':
+            pythonpath = "/var/www/html/jdrmj/tests"
+        else:  # local
+            pythonpath = "/home/jean/Documents/jdrmj/tests"
+        
+        env_vars.append(f"PYTHONPATH={pythonpath}")
         env_prefix = " ".join(env_vars) + " " if env_vars else ""
-        cmd = f"cd tests && {env_prefix}PYTHONPATH=/home/jean/Documents/jdrmj/tests python3 -m pytest functional/{selected_file.name}::{selected_test} -v -p pytest_json_reporter"
+        cmd = f"{env_prefix}python3 -m pytest functional/{selected_file.name}::{selected_test} -v -p pytest_json_reporter"
         
         self.run_command(cmd, f"Test: {selected_test}")
     
@@ -617,8 +656,17 @@ class AdvancedTestMenu:
         if self.test_environment != 'local':
             env_vars.append(f"TEST_ENVIRONMENT={self.test_environment}")
         
+        # Déterminer le PYTHONPATH selon l'environnement
+        if self.test_environment == 'staging':
+            pythonpath = "/var/www/html/jdrmj_staging/tests"
+        elif self.test_environment == 'production':
+            pythonpath = "/var/www/html/jdrmj/tests"
+        else:  # local
+            pythonpath = "/home/jean/Documents/jdrmj/tests"
+        
+        env_vars.append(f"PYTHONPATH={pythonpath}")
         env_prefix = " ".join(env_vars) + " " if env_vars else ""
-        cmd = f"cd tests && {env_prefix}PYTHONPATH=/home/jean/Documents/jdrmj/tests python3 -m pytest functional/ -v -p pytest_json_reporter"
+        cmd = f"{env_prefix}python3 -m pytest functional/ -v -p pytest_json_reporter"
         self.run_command(cmd, "Tous les tests")
     
     def manage_json_reports(self):

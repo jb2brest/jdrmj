@@ -54,7 +54,8 @@ class JSONTestReporter:
                           error_line: str = "",
                           category: str = "",
                           priority: str = "",
-                          additional_data: Dict[str, Any] = None) -> str:
+                          additional_data: Dict[str, Any] = None,
+                          test_steps: List[Dict[str, Any]] = None) -> str:
         """Crée un rapport JSON pour un test individuel"""
         
         duration = end_time - start_time
@@ -104,7 +105,8 @@ class JSONTestReporter:
                 "working_directory": str(Path.cwd())
             },
             "version_info": version_info,
-            "additional_data": additional_data or {}
+            "additional_data": additional_data or {},
+            "test_steps": test_steps or []
         }
         
         # Nom du fichier de rapport
