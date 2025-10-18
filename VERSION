@@ -2,19 +2,19 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.12.0
+VERSION=2.13.0
 
 # Date de déploiement
-DEPLOY_DATE=2025-10-16
+DEPLOY_DATE=2025-10-18
 
 # Environnement
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=25e92aa2fabb384badeba594521de9b91948489e
+GIT_COMMIT=1a6bb96edb9806d5bbe3aa122955b009c586d77a
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251016-232855
+BUILD_ID=20251018-102810
 
 # Notes de version
-RELEASE_NOTES="Test Barbare 2"
+RELEASE_NOTES="Tests "
