@@ -881,7 +881,7 @@ $current_page = "admin";
                         </div>
                     </div>
                 </div>
-
+            </div>
 
             <!-- Onglet Actions -->
             <div class="tab-pane fade" id="actions" role="tabpanel" aria-labelledby="actions-tab">
@@ -894,24 +894,65 @@ $current_page = "admin";
                                 </h5>
                             </div>
                             <div class="card-body">
-                                <div class="row">
+                                <!-- Section Sauvegarde et Chargement -->
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <h6 class="text-primary mb-3">
+                                            <i class="fas fa-database"></i> Sauvegarde et Chargement des Données
+                                        </h6>
+                                    </div>
                                     <div class="col-md-3 mb-3">
-                                        <a href="index.php" class="btn btn-primary w-100">
+                                        <a href="admin_save_data.php" class="btn btn-primary w-100">
+                                            <i class="fas fa-download"></i> Save Data
+                                        </a>
+                                        <small class="text-muted d-block mt-1">Exporte la base de données (sans users) et les fichiers uploadés</small>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <a href="admin_save_users.php" class="btn btn-success w-100">
+                                            <i class="fas fa-users"></i> Save Users
+                                        </a>
+                                        <small class="text-muted d-block mt-1">Exporte uniquement la table des utilisateurs</small>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <a href="admin_load_data.php" class="btn btn-warning w-100">
+                                            <i class="fas fa-upload"></i> Load Data
+                                        </a>
+                                        <small class="text-muted d-block mt-1">Importe un fichier généré avec Save Data</small>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <a href="admin_load_users.php" class="btn btn-info w-100">
+                                            <i class="fas fa-user-plus"></i> Load Users
+                                        </a>
+                                        <small class="text-muted d-block mt-1">Importe un fichier généré avec Save Users</small>
+                                    </div>
+                                </div>
+                                
+                                <hr>
+                                
+                                <!-- Section Navigation -->
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <h6 class="text-secondary mb-3">
+                                            <i class="fas fa-navigation"></i> Navigation
+                                        </h6>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <a href="index.php" class="btn btn-outline-primary w-100">
                                             <i class="fas fa-home"></i> Retour à l'accueil
                                         </a>
                                     </div>
                                     <div class="col-md-3 mb-3">
-                                        <button class="btn btn-info w-100" onclick="location.reload()">
+                                        <button class="btn btn-outline-info w-100" onclick="location.reload()">
                                             <i class="fas fa-sync-alt"></i> Actualiser
                                         </button>
                                     </div>
                                     <div class="col-md-3 mb-3">
-                                        <a href="admin_starting_equipment.php" class="btn btn-success w-100">
+                                        <a href="admin_starting_equipment.php" class="btn btn-outline-success w-100">
                                             <i class="fas fa-shopping-bag"></i> Équipements de Départ
                                         </a>
                                     </div>
                                     <div class="col-md-3 mb-3">
-                                        <a href="profile.php" class="btn btn-secondary w-100">
+                                        <a href="profile.php" class="btn btn-outline-secondary w-100">
                                             <i class="fas fa-user-cog"></i> Profil Admin
                                         </a>
                                     </div>

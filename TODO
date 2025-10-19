@@ -190,8 +190,32 @@ wizard_traditions
 Il faudrait fusionner ces tables en utilisant la classe requise pour permettre de les récupérer. 
 
 dans http://localhost/jdrmj/admin_versions.php
-il faut créer des onglets pour chaque zone en H5
-Il faut ajouter un nouvel onglet avec les résultat des tests chargés depuis les fichiers json
+onglets actions, il faut ajouter trois boutons
+- Save Data : exporte tous les fichiers uploadés et toute la base de données sauf la table des users dans un fichier zip
+- Save user : exporte les users dans un fichier zip. 
+- Load Data : permet d'importer un fichier générer avec "Save data"
+- Load user : permet d'importer un fichier générer avec "Save user"
+
+
+Dans characters.php, un MJ (ou un admin), il faut ajouter la possibilité de créer un PNJ de façon automatique via un bouton "Creation Automatique" 
+Le MJ sélectionne la race, la classe et le niveau du personnage. 
+Pour les charactéristiques sont sélectionnées en fonction des recommandations du jeu DnD.
+Le reste est sélectionné de façon aléatoire. 
+
+Barbare : FOR 15 DEX 13 CON 14 SAG 12 INT 8 CHA 10
+Barde : FOR 8 DEX 14 CON 13 SAG 10 INT 12 CHA 15
+Clerc : FOR 13 DEX 12 CON 14 SAG 15 INT 8 CHA 10
+Druide : FOR 8 DEX 13 CON 14 SAG 15 INT 12 CHA 10
+Guerrier : FOR 15 DEX 13 CON 14 SAG 10 INT 12 CHA 8
+Moine : FOR 12 DEX 15 CON 13 SAG 14 INT 10 CHA 8
+Paladin : FOR 15 DEX 12 CON 13 SAG 10 INT 8 CHA 14
+Magicien : FOR 8 DEX 13 CON 14 SAG 12 INT 15 CHA 10
+Ensorceleur : FOR 8 DEX 13 CON 14 SAG 10 INT 12 CHA 15
+occultiste : FOR 15 DEX 12 CON 13 SAG 10 INT 8 CHA 14
+Roublard : FOR 15 DEX 12 CON 13 SAG 10 INT 8 CHA 14
+Rodeur : FOR 15 DEX 12 CON 13 SAG 10 INT 8 CHA 14
+
+ 
 
 ############################# Dés ################################
 Je voudrais que tu me génères une image contenant un set de dés :
@@ -227,6 +251,11 @@ Ces accès peuvent être :
 - piégé ou pas. 
 
 Un accès s'ajoute depuis la page de création d'un lieu.
+
+
+Dans un univers médiéval fantastique. Dessine moi le plan d'une entrée dans une foret de cyprès 
+En vue de dessus. 
+En noir et blanc. Avec un cadrillage. Sans texte.
 
 
 

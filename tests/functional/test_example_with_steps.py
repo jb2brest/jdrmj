@@ -219,3 +219,4 @@ class TestExampleWithSteps:
 if __name__ == "__main__":
     # Exécution directe du test pour démonstration
     pytest.main([__file__, "-v", "--tb=short"])
+

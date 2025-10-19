@@ -206,6 +206,77 @@ $racialBonuses = [
     'wisdom' => isset($selectedRace['wisdom_bonus']) ? (int)$selectedRace['wisdom_bonus'] : 0,
     'charisma' => isset($selectedRace['charisma_bonus']) ? (int)$selectedRace['charisma_bonus'] : 0
 ];
+
+// Fonction pour obtenir les préconisations D&D pour une classe
+function getDnDRecommendations($className) {
+    $recommendations = [
+        'Barbare' => [
+            'primary' => ['Force', 'Constitution'],
+            'secondary' => ['Dextérité', 'Sagesse'],
+            'description' => 'La Force pour les attaques, la Constitution pour la rage et la survie.'
+        ],
+        'Barde' => [
+            'primary' => ['Charisme', 'Dextérité'],
+            'secondary' => ['Constitution', 'Intelligence'],
+            'description' => 'Le Charisme alimente les sorts et les performances, la Dextérité améliore l\'armure.'
+        ],
+        'Clerc' => [
+            'primary' => ['Sagesse', 'Constitution'],
+            'secondary' => ['Force', 'Dextérité'],
+            'description' => 'La Sagesse alimente les sorts divins, la Constitution assure la survie au combat.'
+        ],
+        'Druide' => [
+            'primary' => ['Sagesse', 'Constitution'],
+            'secondary' => ['Dextérité', 'Intelligence'],
+            'description' => 'La Sagesse alimente les sorts, la Constitution assure la survie en forme animale.'
+        ],
+        'Guerrier' => [
+            'primary' => ['Force', 'Constitution'],
+            'secondary' => ['Dextérité', 'Intelligence'],
+            'description' => 'Les guerriers comptent sur la Force pour les attaques et la Constitution pour survivre au combat.'
+        ],
+        'Moine' => [
+            'primary' => ['Dextérité', 'Sagesse'],
+            'secondary' => ['Force', 'Constitution'],
+            'description' => 'La Dextérité améliore l\'armure et les attaques, la Sagesse alimente les capacités ki.'
+        ],
+        'Paladin' => [
+            'primary' => ['Force', 'Charisme'],
+            'secondary' => ['Dextérité', 'Constitution'],
+            'description' => 'La Force pour les attaques, le Charisme alimente les sorts et les capacités divines.'
+        ],
+        'Magicien' => [
+            'primary' => ['Intelligence', 'Constitution'],
+            'secondary' => ['Dextérité', 'Sagesse'],
+            'description' => 'L\'Intelligence détermine la puissance des sorts, la Constitution aide à maintenir la concentration.'
+        ],
+        'Ensorceleur' => [
+            'primary' => ['Charisme', 'Constitution'],
+            'secondary' => ['Dextérité', 'Intelligence'],
+            'description' => 'Le Charisme alimente les sorts, la Constitution aide à maintenir la concentration.'
+        ],
+        'Occultiste' => [
+            'primary' => ['Charisme', 'Constitution'],
+            'secondary' => ['Dextérité', 'Intelligence'],
+            'description' => 'Le Charisme alimente les sorts, la Constitution aide à maintenir la concentration.'
+        ],
+        'Voleur' => [
+            'primary' => ['Dextérité', 'Intelligence'],
+            'secondary' => ['Constitution', 'Charisme'],
+            'description' => 'La Dextérité améliore les attaques furtives, l\'Intelligence aide aux compétences.'
+        ],
+        'Rôdeur' => [
+            'primary' => ['Dextérité', 'Sagesse'],
+            'secondary' => ['Constitution', 'Intelligence'],
+            'description' => 'La Dextérité pour les attaques à distance, la Sagesse pour les sorts et la perception.'
+        ]
+    ];
+    
+    return $recommendations[$className] ?? $recommendations['Guerrier'];
+}
+
+// Obtenir les préconisations pour la classe sélectionnée
+$dndRecommendations = $selectedClass ? getDnDRecommendations($selectedClass['name']) : null;
 ?>
 
 <!DOCTYPE html>
@@ -375,6 +446,40 @@ $racialBonuses = [
                                     </div>
                                 </div>
                             </div>
+                            
+                            <!-- Préconisations D&D -->
+                            <?php if ($dndRecommendations): ?>
+                            <div class="alert alert-info mb-4">
+                                <h6><i class="fas fa-lightbulb me-2"></i>Préconisations D&D pour <?php echo htmlspecialchars($selectedClass['name']); ?></h6>
+                                <p class="mb-2"><?php echo $dndRecommendations['description']; ?></p>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <strong>Caractéristiques prioritaires :</strong>
+                                        <ul class="mb-0">
+                                            <?php foreach ($dndRecommendations['primary'] as $stat): ?>
+                                                <li><i class="fas fa-star text-warning me-1"></i><?php echo $stat; ?></li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Caractéristiques secondaires :</strong>
+                                        <ul class="mb-0">
+                                            <?php foreach ($dndRecommendations['secondary'] as $stat): ?>
+                                                <li><i class="fas fa-star-half-alt text-info me-1"></i><?php echo $stat; ?></li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Bouton pour appliquer les préconisations -->
+                            <div class="text-center mb-4">
+                                <button type="button" class="btn btn-outline-primary" onclick="applyDnDRecommendations()">
+                                    <i class="fas fa-magic me-2"></i>Appliquer les préconisations D&D
+                                </button>
+                                <small class="text-muted d-block mt-2">Ce bouton appliquera automatiquement les valeurs recommandées pour votre classe</small>
+                            </div>
+                            <?php endif; ?>
                             
                             <!-- Caractéristiques -->
                             <div class="row mb-4">
@@ -587,6 +692,68 @@ $racialBonuses = [
                 updateDerivedStats();
             }, 100);
         });
+        
+        // Fonction pour appliquer les préconisations D&D
+        function applyDnDRecommendations() {
+            const className = '<?php echo $selectedClass ? addslashes($selectedClass['name']) : ''; ?>';
+            
+            // Valeurs recommandées selon la classe (point buy system)
+            const recommendations = {
+                'Barbare': { strength: 15, dexterity: 13, constitution: 14, wisdom: 12, intelligence: 8, charisma: 10 },
+                'Barde': { strength: 8, dexterity: 14, constitution: 13, wisdom: 10, intelligence: 12, charisma: 15 },
+                'Clerc': { strength: 13, dexterity: 12, constitution: 14, wisdom: 15, intelligence: 8, charisma: 10 },
+                'Druide': { strength: 8, dexterity: 13, constitution: 14, wisdom: 15, intelligence: 12, charisma: 10 },
+                'Guerrier': { strength: 15, dexterity: 13, constitution: 14, wisdom: 10, intelligence: 12, charisma: 8 },
+                'Moine': { strength: 12, dexterity: 15, constitution: 13, wisdom: 14, intelligence: 10, charisma: 8 },
+                'Paladin': { strength: 15, dexterity: 12, constitution: 13, wisdom: 10, intelligence: 8, charisma: 14 },
+                'Magicien': { strength: 8, dexterity: 13, constitution: 14, wisdom: 12, intelligence: 15, charisma: 10 },
+                'Ensorceleur': { strength: 8, dexterity: 13, constitution: 14, wisdom: 10, intelligence: 12, charisma: 15 },
+                'Occultiste': { strength: 8, dexterity: 13, constitution: 14, wisdom: 10, intelligence: 12, charisma: 15 },
+                'Voleur': { strength: 8, dexterity: 15, constitution: 13, wisdom: 10, intelligence: 14, charisma: 12 },
+                'Rôdeur': { strength: 8, dexterity: 15, constitution: 13, wisdom: 14, intelligence: 12, charisma: 10 }
+            };
+            
+            const classRecommendations = recommendations[className];
+            if (!classRecommendations) {
+                alert('Aucune préconisation trouvée pour cette classe.');
+                return;
+            }
+            
+            // Appliquer les valeurs recommandées
+            Object.keys(classRecommendations).forEach(stat => {
+                const input = document.querySelector(`input[name="${stat}"]`);
+                if (input) {
+                    input.value = classRecommendations[stat];
+                }
+            });
+            
+            // Mettre à jour les statistiques dérivées
+            setTimeout(function() {
+                const event = new Event('input');
+                document.querySelectorAll('.stat-input').forEach(input => {
+                    input.dispatchEvent(event);
+                });
+            }, 100);
+            
+            // Afficher un message de confirmation
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show mt-3';
+            alertDiv.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>
+                Préconisations D&D appliquées pour ${className} !
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            const form = document.getElementById('characteristicsForm');
+            form.insertBefore(alertDiv, form.firstChild);
+            
+            // Supprimer automatiquement l'alerte après 3 secondes
+            setTimeout(function() {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 3000);
+        }
     </script>
 </body>
 </html>

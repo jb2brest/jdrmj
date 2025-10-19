@@ -194,3 +194,4 @@ cmd = f"python3 -m pytest functional/classes/barbare/test_barbarian_class.py::Te
 ```
 
 Le système découvre automatiquement tous les fichiers de test et extrait dynamiquement les noms des fonctions de test pour créer un menu interactif complet.
+

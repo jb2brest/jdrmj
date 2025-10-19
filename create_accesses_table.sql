@@ -45,3 +45,4 @@ CREATE TABLE IF NOT EXISTS accesses (
     -- Contrainte pour éviter les doublons
     UNIQUE KEY unique_access (from_place_id, to_place_id, name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Accès entre lieux';
+

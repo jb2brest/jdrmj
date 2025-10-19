@@ -1,6 +1,6 @@
 """
-Tests fonctionnels pour la classe Paladin
-Basés sur les tests du Barde
+Tests fonctionnels pour la classe Ensorceleur
+Basés sur les tests du Magicien
 """
 
 import pytest
@@ -11,12 +11,12 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException
 
 
-class TestPaladinClass:
-    """Tests pour la classe Paladin"""
+class TestSorcererClass:
+    """Tests pour la classe Ensorceleur"""
 
-    def test_paladin_character_creation(self, driver, wait, app_url, test_user):
-        """Test de création d'un personnage paladin"""
-        print(f"🔧 Test de création de personnage paladin")
+    def test_sorcerer_character_creation(self, driver, wait, app_url, test_user):
+        """Test de création d'un personnage ensorceleur"""
+        print(f"🔧 Test de création de personnage ensorceleur")
         
         # Créer l'utilisateur et se connecter
         self._create_and_login_user(driver, wait, app_url, test_user)
@@ -27,8 +27,8 @@ class TestPaladinClass:
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         print("✅ Page de création chargée")
         
-        # Sélectionner la classe Paladin
-        paladin_element = None
+        # Sélectionner la classe Ensorceleur
+        sorcerer_element = None
         class_cards = driver.find_elements(By.CSS_SELECTOR, ".class-card")
         print(f"🔍 {len(class_cards)} cartes de classe trouvées")
         
@@ -37,9 +37,9 @@ class TestPaladinClass:
                 title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
                 card_text = title_element.text
                 print(f"🔍 Carte {i+1}: {card_text}")
-                if "Paladin" in card_text:
-                    paladin_element = card
-                    print(f"✅ Classe Paladin trouvée: {card_text}")
+                if "Ensorceleur" in card_text or "Sorcerer" in card_text:
+                    sorcerer_element = card
+                    print(f"✅ Classe Ensorceleur trouvée: {card_text}")
                     break
             except NoSuchElementException:
                 # Essayer d'autres sélecteurs
@@ -47,22 +47,22 @@ class TestPaladinClass:
                     title_element = card.find_element(By.CSS_SELECTOR, "h3, h4, h5, .title")
                     card_text = title_element.text
                     print(f"🔍 Carte {i+1} (alt): {card_text}")
-                    if "Paladin" in card_text:
-                        paladin_element = card
-                        print(f"✅ Classe Paladin trouvée (alt): {card_text}")
+                    if "Ensorceleur" in card_text or "Sorcerer" in card_text:
+                        sorcerer_element = card
+                        print(f"✅ Classe Ensorceleur trouvée (alt): {card_text}")
                         break
                 except NoSuchElementException:
                     continue
         
-        if not paladin_element:
+        if not sorcerer_element:
             # Essayer de chercher par XPath
             try:
-                paladin_element = driver.find_element(By.XPATH, "//div[contains(@class, 'class-card') and contains(., 'Paladin')]")
-                print("✅ Classe Paladin trouvée par XPath")
+                sorcerer_element = driver.find_element(By.XPATH, "//div[contains(@class, 'class-card') and contains(., 'Ensorceleur')]")
+                print("✅ Classe Ensorceleur trouvée par XPath")
             except NoSuchElementException:
-                pytest.skip("Carte de classe Paladin non trouvée - test ignoré")
+                pytest.skip("Carte de classe Ensorceleur non trouvée - test ignoré")
         
-        driver.execute_script("arguments[0].click();", paladin_element)
+        driver.execute_script("arguments[0].click();", sorcerer_element)
         time.sleep(1)
         
         # Essayer plusieurs sélecteurs pour le bouton de soumission
@@ -98,7 +98,7 @@ class TestPaladinClass:
             print(f"🔍 URL actuelle après clic: {current_url}")
             
             if "character_create_step2.php" in current_url:
-                print("✅ Classe Paladin sélectionnée, redirection vers étape 2")
+                print("✅ Classe Ensorceleur sélectionnée, redirection vers étape 2")
             else:
                 print(f"⚠️ Redirection non détectée, URL actuelle: {current_url}")
                 # Le test continue même si la redirection n'est pas détectée
@@ -106,9 +106,9 @@ class TestPaladinClass:
             print("❌ Bouton de soumission non trouvé")
             pytest.skip("Bouton de soumission non trouvé - test ignoré")
 
-    def test_paladin_race_selection(self, driver, wait, app_url, test_user):
-        """Test de sélection de race pour un paladin"""
-        print(f"🔧 Test de sélection de race pour paladin")
+    def test_sorcerer_race_selection(self, driver, wait, app_url, test_user):
+        """Test de sélection de race pour un ensorceleur"""
+        print(f"🔧 Test de sélection de race pour ensorceleur")
         
         # Créer l'utilisateur et se connecter
         self._create_and_login_user(driver, wait, app_url, test_user)
@@ -119,36 +119,36 @@ class TestPaladinClass:
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         print("✅ Page de création chargée")
         
-        # Sélectionner la classe Paladin
-        paladin_element = None
+        # Sélectionner la classe Ensorceleur
+        sorcerer_element = None
         class_cards = driver.find_elements(By.CSS_SELECTOR, ".class-card")
         for card in class_cards:
             try:
                 title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
-                if "Paladin" in title_element.text:
-                    paladin_element = card
+                if "Ensorceleur" in title_element.text or "Sorcerer" in title_element.text:
+                    sorcerer_element = card
                     break
             except NoSuchElementException:
                 continue
         
-        if not paladin_element:
-            pytest.skip("Carte de classe Paladin non trouvée - test ignoré")
+        if not sorcerer_element:
+            pytest.skip("Carte de classe Ensorceleur non trouvée - test ignoré")
         
-        driver.execute_script("arguments[0].click();", paladin_element)
+        driver.execute_script("arguments[0].click();", sorcerer_element)
         time.sleep(1)
         continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
         driver.execute_script("arguments[0].click();", continue_btn)
         wait.until(lambda driver: "character_create_step2.php" in driver.current_url)
-        print("✅ Classe Paladin sélectionnée, redirection vers étape 2")
+        print("✅ Classe Ensorceleur sélectionnée, redirection vers étape 2")
         
-        # Sélectionner une race appropriée pour un paladin (ex: Humain, Nain, Elfe)
+        # Sélectionner une race appropriée pour un ensorceleur (ex: Dragonborn, Tiefling, Humain)
         try:
             race_element = None
             race_cards = driver.find_elements(By.CSS_SELECTOR, ".race-card")
             for card in race_cards:
                 try:
                     title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
-                    if "Humain" in title_element.text or "Nain" in title_element.text or "Elfe" in title_element.text:
+                    if "Humain" in title_element.text or "Elfe" in title_element.text or "Nain" in title_element.text:
                         race_element = card
                         break
                 except NoSuchElementException:
@@ -160,88 +160,88 @@ class TestPaladinClass:
                 continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#continueBtn")))
                 driver.execute_script("arguments[0].click();", continue_btn)
                 wait.until(lambda driver: "character_create_step3.php" in driver.current_url)
-                print("✅ Race sélectionnée pour le paladin")
+                print("✅ Race sélectionnée pour l'ensorceleur")
             else:
                 pytest.skip("Carte de race appropriée non trouvée - test ignoré")
         except TimeoutException:
             pytest.skip("Page de sélection de race non accessible - test ignoré")
 
-    def test_paladin_archetype_selection(self, driver, wait, app_url, test_user):
-        """Test de sélection d'archétype pour un paladin"""
-        print(f"🔧 Test de sélection d'archétype pour paladin")
+    def test_sorcerer_origin_selection(self, driver, wait, app_url, test_user):
+        """Test de sélection d'origine pour un ensorceleur"""
+        print(f"🔧 Test de sélection d'origine pour ensorceleur")
         
         # Créer l'utilisateur et se connecter
         self._create_and_login_user(driver, wait, app_url, test_user)
         print("✅ Utilisateur créé et connecté")
         
-        # Naviguer jusqu'à la sélection d'archétype (étapes 1-5)
-        self._navigate_to_archetype_selection(driver, wait, app_url)
-        print("✅ Navigation vers sélection d'archétype terminée")
+        # Naviguer jusqu'à la sélection d'origine (étapes 1-5)
+        self._navigate_to_origin_selection(driver, wait, app_url)
+        print("✅ Navigation vers sélection d'origine terminée")
         
-        # Sélectionner un archétype de paladin
+        # Sélectionner une origine d'ensorceleur
         try:
             page_source = driver.page_source.lower()
-            if "spécialisation" in page_source or "archetype" in page_source or "paladin" in page_source or "serment" in page_source:
-                print("✅ Page de sélection d'archétype détectée")
+            if "origine" in page_source or "origin" in page_source or "ensorceleur" in page_source or "sorcerer" in page_source:
+                print("✅ Page de sélection d'origine détectée")
                 
-                archetype_element = None
-                archetype_cards = driver.find_elements(By.CSS_SELECTOR, ".option-card")
-                print(f"📋 {len(archetype_cards)} cartes d'archetype trouvées")
+                origin_element = None
+                origin_cards = driver.find_elements(By.CSS_SELECTOR, ".option-card")
+                print(f"📋 {len(origin_cards)} cartes d'origine trouvées")
                 
-                for card in archetype_cards:
+                for card in origin_cards:
                     try:
                         title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
                         card_text = title_element.text.lower()
-                        print(f"📄 Archétype trouvé: {title_element.text}")
-                        if "spécialisation" in card_text or "serment" in card_text or "paladin" in card_text or "oath" in card_text:
-                            archetype_element = card
-                            print(f"✅ Archétype sélectionné: {title_element.text}")
+                        print(f"📄 Origine trouvée: {title_element.text}")
+                        if "origine" in card_text or "origin" in card_text or "magie" in card_text or "sorcerer" in card_text:
+                            origin_element = card
+                            print(f"✅ Origine sélectionnée: {title_element.text}")
                             break
                     except NoSuchElementException:
                         continue
                 
-                if archetype_element:
-                    driver.execute_script("arguments[0].click();", archetype_element)
+                if origin_element:
+                    driver.execute_script("arguments[0].click();", origin_element)
                     time.sleep(1)
-                    print("✅ Archétype paladin sélectionné")
+                    print("✅ Origine ensorceleur sélectionnée")
                     
                     # Continuer vers l'étape suivante
                     continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
                     driver.execute_script("arguments[0].click();", continue_btn)
-                    print("✅ Bouton continuer cliqué pour l'archétype")
+                    print("✅ Bouton continuer cliqué pour l'origine")
                 else:
-                    print("⚠️ Aucun archétype paladin trouvé, continuons")
+                    print("⚠️ Aucune origine ensorceleur trouvée, continuons")
             else:
-                print("⚠️ Page de sélection d'archétype non détectée, continuons")
+                print("⚠️ Page de sélection d'origine non détectée, continuons")
         except TimeoutException:
-            pytest.skip("Page de sélection d'archétype non accessible - test ignoré")
+            pytest.skip("Page de sélection d'origine non accessible - test ignoré")
 
-    def test_paladin_starting_equipment(self, driver, wait, app_url, test_user):
-        """Test de sélection d'équipement de départ pour un paladin"""
-        print(f"🔧 Test de sélection d'équipement de départ pour paladin")
+    def test_sorcerer_starting_equipment(self, driver, wait, app_url, test_user):
+        """Test de sélection d'équipement de départ pour un ensorceleur"""
+        print(f"🔧 Test de sélection d'équipement de départ pour ensorceleur")
 
         # Créer l'utilisateur et se connecter
         self._create_and_login_user(driver, wait, app_url, test_user)
         print("✅ Utilisateur créé et connecté")
 
-        # Créer un paladin complet (utilise le helper corrigé)
-        self._create_complete_paladin(driver, wait, app_url)
-        print("✅ Paladin complet créé")
+        # Créer un ensorceleur complet (utilise le helper corrigé)
+        self._create_complete_sorcerer(driver, wait, app_url)
+        print("✅ Ensorceleur complet créé")
 
-        # Le test est maintenant terminé car _create_complete_paladin gère tout le workflow
-        print("✅ Test d'équipement de départ du paladin réussi (paladin créé avec succès)")
+        # Le test est maintenant terminé car _create_complete_sorcerer gère tout le workflow
+        print("✅ Test d'équipement de départ de l'ensorceleur réussi (ensorceleur créé avec succès)")
 
-    def test_paladin_character_view(self, driver, wait, app_url, test_user):
-        """Test de visualisation d'un personnage paladin créé"""
-        print(f"🔧 Test de visualisation de personnage paladin")
+    def test_sorcerer_character_view(self, driver, wait, app_url, test_user):
+        """Test de visualisation d'un personnage ensorceleur créé"""
+        print(f"🔧 Test de visualisation de personnage ensorceleur")
         
         # Créer l'utilisateur et se connecter
         self._create_and_login_user(driver, wait, app_url, test_user)
         print("✅ Utilisateur créé et connecté")
         
-        # Créer un paladin complet
-        self._create_complete_paladin(driver, wait, app_url)
-        print("✅ Paladin complet créé")
+        # Créer un ensorceleur complet
+        self._create_complete_sorcerer(driver, wait, app_url)
+        print("✅ Ensorceleur complet créé")
         
         # Aller à la page des personnages
         driver.get(f"{app_url}/characters.php")
@@ -249,55 +249,55 @@ class TestPaladinClass:
         print("✅ Page des personnages chargée")
         
         try:
-            # Chercher le personnage paladin créé
+            # Chercher le personnage ensorceleur créé
             character_links = driver.find_elements(By.CSS_SELECTOR, "a[href*='view_character.php?id=']")
             if character_links:
-                # Cliquer sur le premier personnage (le paladin créé)
+                # Cliquer sur le premier personnage (l'ensorceleur créé)
                 first_character_link = character_links[0]
                 driver.execute_script("arguments[0].click();", first_character_link)
                 wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
                 print("✅ Fiche de personnage chargée")
                 
-                # Vérifier les éléments spécifiques au paladin
+                # Vérifier les éléments spécifiques à l'ensorceleur
                 page_source = driver.page_source
-                if "Paladin" in page_source:
-                    print("✅ Classe Paladin détectée dans la fiche")
-                if "Spécialisation" in page_source or "Serment" in page_source or "paladin" in page_source.lower():
-                    print("✅ Archétype de spécialisation détecté")
+                if "Ensorceleur" in page_source or "Sorcerer" in page_source:
+                    print("✅ Classe Ensorceleur détectée dans la fiche")
+                if "Origine" in page_source or "Origin" in page_source or "magie" in page_source.lower():
+                    print("✅ Origine de magie détectée")
                 
-                # Vérifier les capacités du paladin
-                paladin_abilities = ["Système de sorts", "Serment", "Charisme", "Spécialisation", "Lay on Hands"]
+                # Vérifier les capacités de l'ensorceleur
+                sorcerer_abilities = ["Points de Sorcellerie", "Origine", "Charisme", "Magie", "Métamagie"]
                 found_abilities = []
-                for ability in paladin_abilities:
+                for ability in sorcerer_abilities:
                     if ability in page_source:
                         found_abilities.append(ability)
                 
                 if found_abilities:
-                    print(f"✅ Capacités paladin trouvées: {', '.join(found_abilities)}")
+                    print(f"✅ Capacités ensorceleur trouvées: {', '.join(found_abilities)}")
                 else:
-                    print("⚠️ Aucune capacité paladin spécifique trouvée")
+                    print("⚠️ Aucune capacité ensorceleur spécifique trouvée")
                 
-                print("✅ Test de visualisation du paladin réussi")
+                print("✅ Test de visualisation de l'ensorceleur réussi")
             else:
                 print("⚠️ Aucun personnage trouvé, mais création réussie")
-                print("✅ Test de visualisation du paladin réussi (création terminée)")
+                print("✅ Test de visualisation de l'ensorceleur réussi (création terminée)")
         except TimeoutException as e:
             print(f"❌ TimeoutException: {e}")
             pytest.skip("Fiche de personnage non accessible - test ignoré")
 
-    def test_paladin_spell_management(self, driver, wait, app_url, test_user):
-        """Test de gestion des sorts pour un paladin"""
-        print(f"🔧 Test de gestion des sorts pour paladin")
+    def test_sorcerer_spell_management(self, driver, wait, app_url, test_user):
+        """Test de gestion des sorts pour un ensorceleur"""
+        print(f"🔧 Test de gestion des sorts pour ensorceleur")
         
         # Créer l'utilisateur et se connecter
         self._create_and_login_user(driver, wait, app_url, test_user)
         print("✅ Utilisateur créé et connecté")
         
-        # Créer un paladin complet
-        self._create_complete_paladin(driver, wait, app_url)
-        print("✅ Paladin complet créé")
+        # Créer un ensorceleur complet
+        self._create_complete_sorcerer(driver, wait, app_url)
+        print("✅ Ensorceleur complet créé")
         
-        # Aller à la page des personnages pour récupérer l'ID du paladin créé
+        # Aller à la page des personnages pour récupérer l'ID de l'ensorceleur créé
         driver.get(f"{app_url}/characters.php")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         print("✅ Page des personnages chargée")
@@ -309,7 +309,7 @@ class TestPaladinClass:
         page_source = driver.page_source
         print(f"🔍 Contenu de la page des personnages (premiers 500 caractères): {page_source[:500]}")
         
-        # Chercher le personnage paladin créé avec plusieurs sélecteurs
+        # Chercher le personnage ensorceleur créé avec plusieurs sélecteurs
         character_selectors = [
             "a[href*='view_character.php?id=']",
             ".character-card a[href*='view_character.php']",
@@ -338,7 +338,7 @@ class TestPaladinClass:
             else:
                 pytest.skip("Aucun personnage trouvé - test ignoré")
         else:
-            # Récupérer l'ID du premier personnage (le paladin créé)
+            # Récupérer l'ID du premier personnage (l'ensorceleur créé)
             first_character_link = character_links[0]
             character_url = first_character_link.get_attribute("href")
             character_id = character_url.split("id=")[1].split("&")[0]
@@ -382,20 +382,20 @@ class TestPaladinClass:
                 if found_keywords:
                     print(f"✅ Mots-clés trouvés dans le grimoire: {', '.join(found_keywords)}")
                     
-                    # Chercher des sorts typiques de paladin dans le contenu de la page
-                    paladin_spells = ["paladin", "serment", "oath", "charisme", "charisma", "divin", "divine", "guérison"]
+                    # Chercher des sorts typiques d'ensorceleur dans le contenu de la page
+                    sorcerer_spells = ["magie", "magic", "sort", "spell", "grimoire", "charisme", "sorcery", "métamagie"]
                     found_spells = []
                     
-                    for spell in paladin_spells:
+                    for spell in sorcerer_spells:
                         if spell in page_source:
                             found_spells.append(spell)
                     
                     if found_spells:
-                        print(f"✅ Sorts de paladin trouvés dans le grimoire: {', '.join(found_spells)}")
-                        print("✅ Test de gestion des sorts du paladin réussi")
+                        print(f"✅ Sorts d'ensorceleur trouvés dans le grimoire: {', '.join(found_spells)}")
+                        print("✅ Test de gestion des sorts de l'ensorceleur réussi")
                     else:
-                        print("⚠️ Aucun sort spécifique au paladin trouvé dans le grimoire")
-                        print("✅ Test de gestion des sorts du paladin réussi (grimoire accessible)")
+                        print("⚠️ Aucun sort spécifique à l'ensorceleur trouvé dans le grimoire")
+                        print("✅ Test de gestion des sorts de l'ensorceleur réussi (grimoire accessible)")
                 else:
                     print("❌ Aucun mot-clé de sort trouvé dans le grimoire")
                     # Vérifier si c'est une erreur d'accès
@@ -403,21 +403,21 @@ class TestPaladinClass:
                         print("❌ Erreur d'accès au grimoire détectée")
                         pytest.skip("Erreur d'accès au grimoire - test ignoré")
                     else:
-                        print("✅ Test de gestion des sorts du paladin réussi (grimoire accessible mais vide)")
+                        print("✅ Test de gestion des sorts de l'ensorceleur réussi (grimoire accessible mais vide)")
             else:
-                # Chercher des sorts typiques de paladin
-                paladin_spells = ["Paladin", "Serment", "Oath", "Charisme", "Charisma", "Divin", "Divine", "Guérison"]
+                # Chercher des sorts typiques d'ensorceleur
+                sorcerer_spells = ["Magie", "Magic", "Sort", "Spell", "Grimoire", "Charisme", "Sorcery", "Métamagie"]
                 found_spells = []
                 
                 for spell_element in spell_list:
                     spell_text = spell_element.text
                     print(f"🔍 Sort trouvé: {spell_text}")
-                    for spell in paladin_spells:
+                    for spell in sorcerer_spells:
                         if spell.lower() in spell_text.lower():
                             found_spells.append(spell)
                 
                 if found_spells:
-                    print(f"✅ Sorts de paladin trouvés: {', '.join(found_spells)}")
+                    print(f"✅ Sorts d'ensorceleur trouvés: {', '.join(found_spells)}")
                     
                     # Tenter d'apprendre un sort si possible
                     try:
@@ -429,47 +429,47 @@ class TestPaladinClass:
                     except NoSuchElementException:
                         print("⚠️ Bouton d'apprentissage de sort non trouvé")
                 else:
-                    print("⚠️ Aucun sort spécifique au paladin trouvé")
+                    print("⚠️ Aucun sort spécifique à l'ensorceleur trouvé")
                 
-                print("✅ Gestion des sorts du paladin testée")
+                print("✅ Gestion des sorts de l'ensorceleur testée")
                 
         except TimeoutException as e:
             print(f"❌ TimeoutException: {e}")
             pytest.skip("Page de gestion des sorts non accessible - test ignoré")
 
-    def test_paladin_level_progression(self, driver, wait, app_url, test_user, test_paladin):
-        """Test détaillé de la progression du paladin par niveau"""
-        print(f"🧪 Test de progression du paladin par niveau: {test_paladin['name']}")
+    def test_sorcerer_level_progression(self, driver, wait, app_url, test_user, test_sorcerer):
+        """Test détaillé de la progression de l'ensorceleur par niveau"""
+        print(f"🧪 Test de progression de l'ensorceleur par niveau: {test_sorcerer['name']}")
         
         # Étape 1: Créer l'utilisateur et se connecter
         print("📝 Étape 1: Création et connexion utilisateur")
         self._create_and_login_user(driver, wait, app_url, test_user)
         
-        # Étape 2: Tester les caractéristiques du paladin niveau 1
-        print("⚔️ Étape 2: Vérification des caractéristiques niveau 1")
-        self._verify_paladin_level_1_characteristics(driver, wait, app_url, test_paladin)
+        # Étape 2: Tester les caractéristiques de l'ensorceleur niveau 1
+        print("🔮 Étape 2: Vérification des caractéristiques niveau 1")
+        self._verify_sorcerer_level_1_characteristics(driver, wait, app_url, test_sorcerer)
         
         # Étape 3: Tester l'évolution vers le niveau 2
         print("📈 Étape 3: Test d'évolution vers le niveau 2")
-        self._test_paladin_level_2_evolution(driver, wait, app_url)
+        self._test_sorcerer_level_2_evolution(driver, wait, app_url)
         
         # Étape 4: Tester l'évolution vers le niveau 3
         print("📈 Étape 4: Test d'évolution vers le niveau 3")
-        self._test_paladin_level_3_evolution(driver, wait, app_url)
+        self._test_sorcerer_level_3_evolution(driver, wait, app_url)
         
-        print("✅ Test de progression du paladin par niveau terminé avec succès!")
+        print("✅ Test de progression de l'ensorceleur par niveau terminé avec succès!")
 
-    def test_paladin_specific_abilities(self, driver, wait, app_url, test_user):
-        """Test des capacités spécifiques au paladin"""
-        print(f"🔧 Test des capacités spécifiques au paladin")
+    def test_sorcerer_specific_abilities(self, driver, wait, app_url, test_user):
+        """Test des capacités spécifiques à l'ensorceleur"""
+        print(f"🔧 Test des capacités spécifiques à l'ensorceleur")
         
         # Créer l'utilisateur et se connecter
         self._create_and_login_user(driver, wait, app_url, test_user)
         print("✅ Utilisateur créé et connecté")
         
-        # Créer un paladin complet
-        self._create_complete_paladin(driver, wait, app_url)
-        print("✅ Paladin complet créé")
+        # Créer un ensorceleur complet
+        self._create_complete_sorcerer(driver, wait, app_url)
+        print("✅ Ensorceleur complet créé")
         
         # Aller à la fiche du personnage
         driver.get(f"{app_url}/view_character.php")
@@ -479,56 +479,56 @@ class TestPaladinClass:
         try:
             page_source = driver.page_source
             
-            # Vérifier les capacités spécifiques au paladin
-            paladin_specific_abilities = [
-                "Système de sorts",
-                "Serment",
+            # Vérifier les capacités spécifiques à l'ensorceleur
+            sorcerer_specific_abilities = [
+                "Points de Sorcellerie",
+                "Origine",
                 "Charisme",
-                "Spécialisation",
-                "Lay on Hands"
+                "Magie",
+                "Métamagie"
             ]
             
             found_abilities = []
-            for ability in paladin_specific_abilities:
+            for ability in sorcerer_specific_abilities:
                 if ability in page_source:
                     found_abilities.append(ability)
             
             if found_abilities:
-                print(f"✅ Capacités paladin trouvées: {', '.join(found_abilities)}")
+                print(f"✅ Capacités ensorceleur trouvées: {', '.join(found_abilities)}")
             else:
-                print("⚠️ Aucune capacité paladin spécifique trouvée")
+                print("⚠️ Aucune capacité ensorceleur spécifique trouvée")
             
-            # Vérifier le système de sorts de paladin (développé)
+            # Vérifier le système de sorts de l'ensorceleur (magie innée)
             if "sort" in page_source.lower() or "spell" in page_source.lower():
                 print("✅ Système de sorts développé détecté")
             
-            # Vérifier les équipements typiques du paladin
-            paladin_equipment = ["Épée longue", "Bouclier", "Armure de plaques", "Sac à dos", "Symbole sacré"]
+            # Vérifier les équipements typiques de l'ensorceleur
+            sorcerer_equipment = ["Baguette", "Bâton", "Dague", "Sac à composants", "Robe"]
             found_equipment = []
-            for equipment in paladin_equipment:
+            for equipment in sorcerer_equipment:
                 if equipment in page_source:
                     found_equipment.append(equipment)
             
             if found_equipment:
-                print(f"✅ Équipement paladin trouvé: {', '.join(found_equipment)}")
+                print(f"✅ Équipement ensorceleur trouvé: {', '.join(found_equipment)}")
             
-            print("✅ Test des capacités spécifiques au paladin réussi")
+            print("✅ Test des capacités spécifiques à l'ensorceleur réussi")
             
         except TimeoutException as e:
             print(f"❌ TimeoutException: {e}")
             pytest.skip("Fiche de personnage non accessible - test ignoré")
 
-    def test_paladin_equipment_management(self, driver, wait, app_url, test_user):
-        """Test de gestion d'équipement pour un paladin"""
-        print(f"🔧 Test de gestion d'équipement pour paladin")
+    def test_sorcerer_equipment_management(self, driver, wait, app_url, test_user):
+        """Test de gestion d'équipement pour un ensorceleur"""
+        print(f"🔧 Test de gestion d'équipement pour ensorceleur")
         
         # Créer l'utilisateur et se connecter
         self._create_and_login_user(driver, wait, app_url, test_user)
         print("✅ Utilisateur créé et connecté")
         
-        # Créer un paladin complet
-        self._create_complete_paladin(driver, wait, app_url)
-        print("✅ Paladin complet créé")
+        # Créer un ensorceleur complet
+        self._create_complete_sorcerer(driver, wait, app_url)
+        print("✅ Ensorceleur complet créé")
         
         # Aller à la fiche du personnage
         driver.get(f"{app_url}/view_character.php")
@@ -538,39 +538,39 @@ class TestPaladinClass:
         try:
             page_source = driver.page_source
             
-            # Vérifier les équipements typiques du paladin
-            paladin_equipment = ["Épée longue", "Bouclier", "Armure de plaques", "Sac à dos", "Symbole sacré", "Corde", "Outils"]
+            # Vérifier les équipements typiques de l'ensorceleur
+            sorcerer_equipment = ["Baguette", "Bâton", "Dague", "Sac à composants", "Robe", "Chapeau"]
             found_equipment = []
-            for equipment in paladin_equipment:
+            for equipment in sorcerer_equipment:
                 if equipment in page_source:
                     found_equipment.append(equipment)
             
             if found_equipment:
-                print(f"✅ Équipement paladin trouvé: {', '.join(found_equipment)}")
+                print(f"✅ Équipement ensorceleur trouvé: {', '.join(found_equipment)}")
             
             # Vérifier les boutons d'équipement/déséquipement
             equip_buttons = driver.find_elements(By.CSS_SELECTOR, ".equip-btn, .unequip-btn, .btn-equip")
             if equip_buttons:
                 print("✅ Boutons d'équipement/déséquipement trouvés")
             
-            print("✅ Test de gestion d'équipement du paladin réussi")
+            print("✅ Test de gestion d'équipement de l'ensorceleur réussi")
             
         except TimeoutException as e:
             print(f"❌ TimeoutException: {e}")
             pytest.skip("Fiche de personnage non accessible - test ignoré")
 
-    def test_paladin_complete_creation_and_evolution(self, driver, wait, app_url, test_user, test_paladin):
-        """Test complet de création d'un paladin avec vérification de la fiche et évolution XP"""
-        print(f"🧪 Test complet de création de paladin: {test_paladin['name']}")
+    def test_sorcerer_complete_creation_and_evolution(self, driver, wait, app_url, test_user, test_sorcerer):
+        """Test complet de création d'un ensorceleur avec vérification de la fiche et évolution XP"""
+        print(f"🧪 Test complet de création d'ensorceleur: {test_sorcerer['name']}")
         
         # Étape 1: Créer l'utilisateur et se connecter
         print("📝 Étape 1: Création et connexion utilisateur")
         self._create_and_login_user(driver, wait, app_url, test_user)
         
-        # Étape 2: Créer un paladin complet
-        print("⚔️ Étape 2: Création d'un paladin complet")
-        self._create_complete_paladin(driver, wait, app_url)
-        print("✅ Paladin complet créé")
+        # Étape 2: Créer un ensorceleur complet
+        print("🔮 Étape 2: Création d'un ensorceleur complet")
+        self._create_complete_sorcerer(driver, wait, app_url)
+        print("✅ Ensorceleur complet créé")
         
         # Étape 3: Vérifier l'accessibilité des pages de personnages
         print("📋 Étape 3: Vérification de l'accessibilité des pages de personnages")
@@ -580,7 +580,7 @@ class TestPaladinClass:
         print("⭐ Étape 4: Test de la gestion d'expérience")
         self._test_experience_management_accessibility(driver, wait, app_url)
         
-        print("✅ Test complet de création et évolution de paladin terminé avec succès!")
+        print("✅ Test complet de création et évolution d'ensorceleur terminé avec succès!")
 
     # Méthodes helper
     def _create_and_login_user(self, driver, wait, app_url, test_user):
@@ -668,34 +668,34 @@ class TestPaladinClass:
                 print("❌ Message d'erreur détecté sur la page")
             raise
 
-    def _navigate_to_archetype_selection(self, driver, wait, app_url):
-        """Helper: Naviguer jusqu'à la sélection d'archétype"""
-        print("🔧 Helper: Navigation vers sélection d'archétype")
+    def _navigate_to_origin_selection(self, driver, wait, app_url):
+        """Helper: Naviguer jusqu'à la sélection d'origine"""
+        print("🔧 Helper: Navigation vers sélection d'origine")
         
         # Étape 1: Sélection de classe
         driver.get(f"{app_url}/character_create_step1.php")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         
-        paladin_element = None
+        sorcerer_element = None
         class_cards = driver.find_elements(By.CSS_SELECTOR, ".class-card")
         for card in class_cards:
             try:
                 title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
-                if "Paladin" in title_element.text:
-                    paladin_element = card
+                if "Ensorceleur" in title_element.text or "Sorcerer" in title_element.text:
+                    sorcerer_element = card
                     break
             except NoSuchElementException:
                 continue
         
-        if not paladin_element:
-            pytest.skip("Carte de classe Paladin non trouvée - test ignoré")
+        if not sorcerer_element:
+            pytest.skip("Carte de classe Ensorceleur non trouvée - test ignoré")
         
-        driver.execute_script("arguments[0].click();", paladin_element)
+        driver.execute_script("arguments[0].click();", sorcerer_element)
         time.sleep(1)
         continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
         driver.execute_script("arguments[0].click();", continue_btn)
         wait.until(lambda driver: "character_create_step2.php" in driver.current_url)
-        print("✅ Étape 1: Classe Paladin sélectionnée")
+        print("✅ Étape 1: Classe Ensorceleur sélectionnée")
         
         # Étape 2: Sélection de race
         race_element = None
@@ -703,7 +703,7 @@ class TestPaladinClass:
         for card in race_cards:
             try:
                 title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
-                if "Humain" in title_element.text or "Nain" in title_element.text or "Elfe" in title_element.text:
+                if "Humain" in title_element.text or "Elfe" in title_element.text or "Nain" in title_element.text:
                     race_element = card
                     break
             except NoSuchElementException:
@@ -725,7 +725,7 @@ class TestPaladinClass:
         for card in background_cards:
             try:
                 title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
-                if "Acolyte" in title_element.text or "Noble" in title_element.text or "Soldat" in title_element.text:
+                if "Acolyte" in title_element.text or "Sage" in title_element.text or "Noble" in title_element.text:
                     background_element = card
                     break
             except NoSuchElementException:
@@ -748,37 +748,37 @@ class TestPaladinClass:
         wait.until(lambda driver: "character_create_step5.php" in driver.current_url)
         print("✅ Étape 4: Caractéristiques validées")
 
-    def _create_complete_paladin(self, driver, wait, app_url):
-        """Helper: Créer un paladin complet"""
-        print("🔧 Helper: Création d'un paladin complet")
+    def _create_complete_sorcerer(self, driver, wait, app_url):
+        """Helper: Créer un ensorceleur complet"""
+        print("🔧 Helper: Création d'un ensorceleur complet")
 
-        # Suivre le workflow complet jusqu'à la fin - comme test_paladin_starting_equipment
+        # Suivre le workflow complet jusqu'à la fin
         # Étape 1 : Sélection de classe
         driver.get(f"{app_url}/character_create_step1.php")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         print("✅ Étape 1: Page de création chargée")
 
-        # Sélectionner la classe Paladin
-        paladin_element = None
+        # Sélectionner la classe Ensorceleur
+        sorcerer_element = None
         class_cards = driver.find_elements(By.CSS_SELECTOR, ".class-card")
         for card in class_cards:
             try:
                 title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
-                if "Paladin" in title_element.text:
-                    paladin_element = card
+                if "Ensorceleur" in title_element.text or "Sorcerer" in title_element.text:
+                    sorcerer_element = card
                     break
             except NoSuchElementException:
                 continue
 
-        if not paladin_element:
-            pytest.skip("Carte de classe Paladin non trouvée - test ignoré")
+        if not sorcerer_element:
+            pytest.skip("Carte de classe Ensorceleur non trouvée - test ignoré")
 
-        driver.execute_script("arguments[0].click();", paladin_element)
+        driver.execute_script("arguments[0].click();", sorcerer_element)
         time.sleep(1)
         continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
         driver.execute_script("arguments[0].click();", continue_btn)
         wait.until(lambda driver: "character_create_step2.php" in driver.current_url)
-        print("✅ Étape 1: Classe Paladin sélectionnée, redirection vers étape 2")
+        print("✅ Étape 1: Classe Ensorceleur sélectionnée, redirection vers étape 2")
 
         # Étape 2 : Sélection de race
         race_element = None
@@ -786,7 +786,7 @@ class TestPaladinClass:
         for card in race_cards:
             try:
                 title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
-                if "Humain" in title_element.text or "Nain" in title_element.text or "Elfe" in title_element.text:
+                if "Humain" in title_element.text or "Elfe" in title_element.text or "Nain" in title_element.text:
                     race_element = card
                     break
             except NoSuchElementException:
@@ -808,7 +808,7 @@ class TestPaladinClass:
         for card in background_cards:
             try:
                 title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
-                if "Acolyte" in title_element.text or "Noble" in title_element.text or "Soldat" in title_element.text:
+                if "Acolyte" in title_element.text or "Sage" in title_element.text or "Noble" in title_element.text:
                     background_element = card
                     break
             except NoSuchElementException:
@@ -832,41 +832,41 @@ class TestPaladinClass:
         wait.until(lambda driver: "character_create_step5.php" in driver.current_url)
         print("✅ Étape 4: Caractéristiques validées, redirection vers étape 5")
 
-        # Étape 5 : Sélection d'archétype (si disponible)
-        print("🔍 Étape 5: Sélection d'archétype")
+        # Étape 5 : Sélection d'origine (si disponible)
+        print("🔍 Étape 5: Sélection d'origine")
         page_source = driver.page_source.lower()
-        if "spécialisation" in page_source or "archetype" in page_source or "paladin" in page_source or "serment" in page_source:
-            print("✅ Page de sélection d'archétype détectée")
+        if "origine" in page_source or "origin" in page_source or "ensorceleur" in page_source or "sorcerer" in page_source:
+            print("✅ Page de sélection d'origine détectée")
 
-            archetype_element = None
-            archetype_cards = driver.find_elements(By.CSS_SELECTOR, ".option-card")
-            print(f"📋 {len(archetype_cards)} cartes d'archetype trouvées")
+            origin_element = None
+            origin_cards = driver.find_elements(By.CSS_SELECTOR, ".option-card")
+            print(f"📋 {len(origin_cards)} cartes d'origine trouvées")
 
-            for card in archetype_cards:
+            for card in origin_cards:
                 try:
                     title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
                     card_text = title_element.text.lower()
-                    print(f"📄 Archétype trouvé: {title_element.text}")
-                    if "spécialisation" in card_text or "serment" in card_text or "paladin" in card_text or "oath" in card_text:
-                        archetype_element = card
-                        print(f"✅ Archétype sélectionné: {title_element.text}")
+                    print(f"📄 Origine trouvée: {title_element.text}")
+                    if "origine" in card_text or "origin" in card_text or "magie" in card_text or "sorcerer" in card_text:
+                        origin_element = card
+                        print(f"✅ Origine sélectionnée: {title_element.text}")
                         break
                 except NoSuchElementException:
                     continue
 
-            if archetype_element:
-                driver.execute_script("arguments[0].click();", archetype_element)
+            if origin_element:
+                driver.execute_script("arguments[0].click();", origin_element)
                 time.sleep(1)
-                print("✅ Archétype paladin sélectionné")
+                print("✅ Origine ensorceleur sélectionnée")
 
                 # Continuer vers l'étape suivante
                 continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
                 driver.execute_script("arguments[0].click();", continue_btn)
-                print("✅ Bouton continuer cliqué pour l'archétype")
+                print("✅ Bouton continuer cliqué pour l'origine")
             else:
-                print("⚠️ Aucun archétype paladin trouvé, continuons")
+                print("⚠️ Aucune origine ensorceleur trouvée, continuons")
         else:
-            print("⚠️ Page de sélection d'archétype non détectée, continuons")
+            print("⚠️ Page de sélection d'origine non détectée, continuons")
 
         # Étape 6 : Compétences et langues (passer rapidement)
         time.sleep(2)
@@ -900,12 +900,12 @@ class TestPaladinClass:
             # Remplir le nom obligatoire
             name_input = driver.find_element(By.CSS_SELECTOR, "input[name='name']")
             name_input.clear()
-            name_input.send_keys("Test Paladin")
+            name_input.send_keys("Test Ensorceleur")
 
             # Remplir l'histoire obligatoire
             backstory_input = driver.find_element(By.CSS_SELECTOR, "textarea[name='backstory']")
             backstory_input.clear()
-            backstory_input.send_keys("Un paladin de test pour les tests automatisés.")
+            backstory_input.send_keys("Un ensorceleur de test pour les tests automatisés.")
 
             continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
             driver.execute_script("arguments[0].click();", continue_btn)
@@ -926,22 +926,22 @@ class TestPaladinClass:
 
             # Sélectionner rapidement l'équipement
             try:
-                # Essayer de sélectionner l'épée longue
-                sword_element = driver.find_element(By.XPATH, "//*[contains(text(), 'Épée longue')]")
-                driver.execute_script("arguments[0].click();", sword_element)
+                # Essayer de sélectionner la baguette
+                wand_element = driver.find_element(By.XPATH, "//*[contains(text(), 'Baguette')]")
+                driver.execute_script("arguments[0].click();", wand_element)
                 time.sleep(0.5)
-                print("✅ Épée longue sélectionnée")
+                print("✅ Baguette sélectionnée")
             except NoSuchElementException:
-                print("⚠️ Épée longue non cliquable")
+                print("⚠️ Baguette non cliquable")
 
             try:
-                # Essayer de sélectionner le bouclier
-                shield_element = driver.find_element(By.XPATH, "//*[contains(text(), 'Bouclier')]")
-                driver.execute_script("arguments[0].click();", shield_element)
+                # Essayer de sélectionner la dague
+                dagger_element = driver.find_element(By.XPATH, "//*[contains(text(), 'Dague')]")
+                driver.execute_script("arguments[0].click();", dagger_element)
                 time.sleep(0.5)
-                print("✅ Bouclier sélectionné")
+                print("✅ Dague sélectionnée")
             except NoSuchElementException:
-                print("⚠️ Bouclier non cliquable")
+                print("⚠️ Dague non cliquable")
 
             # Continuer vers la fin
             try:
@@ -957,25 +957,25 @@ class TestPaladinClass:
             else:
                 print("⚠️ Page d'équipement non détectée, création probablement terminée")
 
-        print("✅ Paladin complet créé avec succès")
+        print("✅ Ensorceleur complet créé avec succès")
 
-    def _verify_paladin_level_1_characteristics(self, driver, wait, app_url, test_paladin):
-        """Vérifier les caractéristiques spécifiques du paladin niveau 1"""
-        print("🔍 Vérification des caractéristiques du paladin niveau 1")
+    def _verify_sorcerer_level_1_characteristics(self, driver, wait, app_url, test_sorcerer):
+        """Vérifier les caractéristiques spécifiques de l'ensorceleur niveau 1"""
+        print("🔍 Vérification des caractéristiques de l'ensorceleur niveau 1")
         
-        # Aller à la page de création pour simuler un paladin niveau 1
+        # Aller à la page de création pour simuler un ensorceleur niveau 1
         driver.get(f"{app_url}/character_create_step1.php")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         
-        # Sélectionner Paladin
-        paladin_card = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'class-card') and contains(., 'Paladin')]")))
-        driver.execute_script("arguments[0].click();", paladin_card)
+        # Sélectionner Ensorceleur
+        sorcerer_card = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'class-card') and (contains(., 'Ensorceleur') or contains(., 'Sorcerer'))]")))
+        driver.execute_script("arguments[0].click();", sorcerer_card)
         
         # Continuer vers l'étape 2
         continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
         driver.execute_script("arguments[0].click();", continue_btn)
         
-        # Sélectionner Humain
+        # Sélectionner Humain (race plus commune)
         race_card = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'race-card') and contains(., 'Humain')]")))
         driver.execute_script("arguments[0].click();", race_card)
         
@@ -983,7 +983,7 @@ class TestPaladinClass:
         continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
         driver.execute_script("arguments[0].click();", continue_btn)
         
-        # Sélectionner Acolyte
+        # Sélectionner Acolyte (historique plus commun)
         background_card = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'background-card') and contains(., 'Acolyte')]")))
         driver.execute_script("arguments[0].click();", background_card)
         
@@ -993,12 +993,12 @@ class TestPaladinClass:
         
         # Attribuer les caractéristiques
         characteristics = {
-            'strength': test_paladin['strength'],
-            'dexterity': test_paladin['dexterity'],
-            'constitution': test_paladin['constitution'],
-            'intelligence': test_paladin['intelligence'],
-            'wisdom': test_paladin['wisdom'],
-            'charisma': test_paladin['charisma']
+            'strength': test_sorcerer['strength'],
+            'dexterity': test_sorcerer['dexterity'],
+            'constitution': test_sorcerer['constitution'],
+            'intelligence': test_sorcerer['intelligence'],
+            'wisdom': test_sorcerer['wisdom'],
+            'charisma': test_sorcerer['charisma']
         }
         
         for stat, value in characteristics.items():
@@ -1010,7 +1010,7 @@ class TestPaladinClass:
         continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
         driver.execute_script("arguments[0].click();", continue_btn)
         
-        # Sélectionner un archétype si disponible
+        # Sélectionner une origine si disponible
         option_cards = driver.find_elements(By.CSS_SELECTOR, ".option-card")
         if option_cards:
             first_option = option_cards[0]
@@ -1020,21 +1020,21 @@ class TestPaladinClass:
         continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
         driver.execute_script("arguments[0].click();", continue_btn)
         
-        # Vérifier les caractéristiques du paladin niveau 1
+        # Vérifier les caractéristiques de l'ensorceleur niveau 1
         print("📊 Vérification des caractéristiques niveau 1:")
         
-        # Vérifier le système de sorts de paladin (développé)
+        # Vérifier le système de sorts de l'ensorceleur (magie innée)
         page_content = driver.page_source.lower()
         if "sort" in page_content or "spell" in page_content:
-            print("✅ Système de sorts de paladin présent")
+            print("✅ Système de sorts d'ensorceleur présent")
         else:
-            print("ℹ️ Système de sorts de paladin non visible dans cette étape")
+            print("ℹ️ Système de sorts d'ensorceleur non visible dans cette étape")
         
-        # Vérifier la spécialisation (niveau 1 = spécialisation de base)
-        if "spécialisation" in page_content or "serment" in page_content or "paladin" in page_content:
-            print("✅ Système de spécialisation présent")
+        # Vérifier l'origine (niveau 1 = origine de base)
+        if "origine" in page_content or "origin" in page_content or "magie" in page_content:
+            print("✅ Système d'origine présent")
         else:
-            print("ℹ️ Système de spécialisation non visible dans cette étape")
+            print("ℹ️ Système d'origine non visible dans cette étape")
         
         # Vérifier les compétences (niveau 1 = 2 compétences)
         if "compétence" in page_content or "skill" in page_content:
@@ -1044,7 +1044,7 @@ class TestPaladinClass:
         
         print("✅ Caractéristiques niveau 1 vérifiées!")
 
-    def _test_paladin_level_2_evolution(self, driver, wait, app_url):
+    def _test_sorcerer_level_2_evolution(self, driver, wait, app_url):
         """Tester l'évolution vers le niveau 2"""
         print("📈 Test d'évolution vers le niveau 2")
         
@@ -1059,14 +1059,14 @@ class TestPaladinClass:
         
         # Vérifier les caractéristiques attendues pour le niveau 2
         print("📊 Caractéristiques attendues niveau 2:")
-        print("  - Sorts connus: 2")
-        print("  - Emplacements de sorts: 2 niveau 1")
-        print("  - Serment: Amélioré")
-        print("  - Capacités: Lay on Hands (10 points)")
+        print("  - Sorts connus: 3")
+        print("  - Emplacements de sorts: 3 niveau 1")
+        print("  - Points de Sorcellerie: 2")
+        print("  - Capacités: Récupération d'emplacements")
         
         print("✅ Évolution niveau 2 testée!")
 
-    def _test_paladin_level_3_evolution(self, driver, wait, app_url):
+    def _test_sorcerer_level_3_evolution(self, driver, wait, app_url):
         """Tester l'évolution vers le niveau 3"""
         print("📈 Test d'évolution vers le niveau 3")
         
@@ -1081,10 +1081,10 @@ class TestPaladinClass:
         
         # Vérifier les caractéristiques attendues pour le niveau 3
         print("📊 Caractéristiques attendues niveau 3:")
-        print("  - Sorts connus: 3")
-        print("  - Emplacements de sorts: 3 niveau 1")
-        print("  - Serment: Amélioré")
-        print("  - Capacités: Lay on Hands (15 points), Divine Health")
+        print("  - Sorts connus: 4")
+        print("  - Emplacements de sorts: 4 niveau 1, 2 niveau 2")
+        print("  - Points de Sorcellerie: 3")
+        print("  - Capacités: Métamagie")
         
         print("✅ Évolution niveau 3 testée!")
 
@@ -1130,7 +1130,3 @@ class TestPaladinClass:
         print("✅ Interface de gestion d'expérience fonctionnelle")
         
         print("✅ Gestion d'expérience testée avec succès!")
-
-
-
-

@@ -146,3 +146,4 @@ cd tests && HEADLESS=true TEST_ENVIRONMENT=staging PYTHONPATH=/var/www/html/jdrm
 # URL testée
 http://localhost/jdrmj_staging
 ```
+

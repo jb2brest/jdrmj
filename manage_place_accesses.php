@@ -517,3 +517,4 @@ $available_places = Access::getAvailablePlaces($place_id);
     </script>
 </body>
 </html>
+

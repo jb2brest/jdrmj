@@ -206,3 +206,4 @@ Le test `test_access_system_fixed.py` vérifie :
 ## Conclusion
 
 Le système d'accès entre lieux est maintenant entièrement fonctionnel et permet aux maîtres de jeu de créer des connexions riches et interactives entre les différents lieux de leurs campagnes. L'interface est intuitive et les fonctionnalités couvrent les besoins principaux tout en restant extensibles pour de futures améliorations.
+

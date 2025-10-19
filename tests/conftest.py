@@ -728,6 +728,27 @@ def test_wizard():
     }
 
 @pytest.fixture(scope="function")
+def test_sorcerer():
+    """Personnage ensorceleur de test"""
+    return {
+        'name': 'Test Sorcerer',
+        'race': 'Humain',
+        'class': 'Ensorceleur',
+        'level': 1,
+        'background': 'Acolyte',
+        'origin': 'Origine Magique',
+        'hit_points': 6,
+        'armor_class': 12,
+        'speed': 30,
+        'strength': 8,
+        'dexterity': 14,
+        'constitution': 13,
+        'intelligence': 12,
+        'wisdom': 10,
+        'charisma': 15
+    }
+
+@pytest.fixture(scope="function")
 def test_monk():
     """Personnage moine de test"""
     return {

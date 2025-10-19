@@ -102,9 +102,16 @@ $current_page = "characters";
             <h1>
                 <i class="fas fa-users me-2"></i>Mes Personnages
             </h1>
-            <a href="character_create_step1.php" class="btn btn-dnd">
-                <i class="fas fa-plus me-2"></i>Créer un Personnage
-            </a>
+            <div class="btn-group" role="group">
+                <a href="character_create_step1.php" class="btn btn-dnd">
+                    <i class="fas fa-plus me-2"></i>Créer un Personnage
+                </a>
+                <?php if (User::isDMOrAdmin()): ?>
+                    <a href="create_npc_automatic.php" class="btn btn-outline-primary">
+                        <i class="fas fa-robot me-2"></i>Création Automatique
+                    </a>
+                <?php endif; ?>
+            </div>
         </div>
 
         <!-- Messages d'alerte -->
@@ -122,9 +129,16 @@ $current_page = "characters";
                 <i class="fas fa-user-friends"></i>
                 <h3>Aucun personnage créé</h3>
                 <p class="lead">Vous n'avez pas encore créé de personnage. Commencez votre aventure !</p>
-                <a href="character_create_step1.php" class="btn btn-dnd btn-lg">
-                    <i class="fas fa-plus me-2"></i>Créer votre premier personnage
-                </a>
+                <div class="btn-group" role="group">
+                    <a href="character_create_step1.php" class="btn btn-dnd btn-lg">
+                        <i class="fas fa-plus me-2"></i>Créer votre premier personnage
+                    </a>
+                    <?php if (User::isDMOrAdmin()): ?>
+                        <a href="create_npc_automatic.php" class="btn btn-outline-primary btn-lg">
+                            <i class="fas fa-robot me-2"></i>Création Automatique
+                        </a>
+                    <?php endif; ?>
+                </div>
             </div>
         <?php else: ?>
             <div class="row g-4">

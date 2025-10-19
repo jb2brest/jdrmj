@@ -78,3 +78,4 @@ echo "<h2>🎯 Correction terminée !</h2>";
 echo "<p>Le problème de sélecteur de bouton de connexion est <strong>complètement résolu</strong>.</p>";
 echo "<p>Tous les tests de création (mondes, pays, régions, lieux, campagnes) peuvent maintenant se connecter correctement.</p>";
 ?>
+

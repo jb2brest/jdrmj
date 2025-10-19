@@ -165,3 +165,4 @@ Chaque test a maintenant 4 étapes avec des descriptions claires :
 - ✅ 86 rapports mis à jour avec succès
 
 **Les descriptions des étapes de tests sont maintenant fonctionnelles et décrivent ce que fait réellement le test du point de vue utilisateur !**
+

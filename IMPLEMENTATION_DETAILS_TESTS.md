@@ -200,3 +200,4 @@ def test_example(driver):
 - L'interface web est opérationnelle
 - La documentation est complète
 - Un exemple de démonstration est disponible
+

@@ -261,3 +261,4 @@ python3 test_steps_demo.py
 ```
 
 Puis consulter `http://localhost/jdrmj_staging/admin_versions.php` et cliquer sur l'onglet "Tests" pour voir les détails du test de démonstration.
+

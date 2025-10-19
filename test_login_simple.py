@@ -81,3 +81,4 @@ def test_simple_login(driver, wait, app_url):
             print("✅ Aucun message d'erreur")
     except:
         print("⚠️ Impossible de vérifier les messages d'erreur")
+

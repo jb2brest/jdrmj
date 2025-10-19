@@ -261,3 +261,4 @@ def get_test_steps() -> List[Dict[str, Any]]:
 def export_test_steps() -> Dict[str, Any]:
     """Exporte les étapes au format dictionnaire"""
     return _global_capturer.export_to_dict()
+
