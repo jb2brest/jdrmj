@@ -13,19 +13,48 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $monster_npc_id = (int)$_GET['id'];
-$campaign_id = (int)$_GET['campaign_id'];
+$campaign_id = isset($_GET['campaign_id']) ? (int)$_GET['campaign_id'] : null;
 
-// Récupérer la campagne et vérifier les permissions
-$campaign = Campaign::findById($campaign_id);
-if (!$campaign) {
-    header('Location: index.php');
-    exit();
+// Si pas de campaign_id, essayer de trouver une campagne par défaut
+if (!$campaign_id) {
+    // Récupérer une campagne de l'utilisateur connecté
+    try {
+        $pdo = getPdo();
+        $stmt = $pdo->prepare("SELECT id FROM campaigns WHERE dm_id = ? LIMIT 1");
+        $stmt->execute([$_SESSION['user_id']]);
+        $result = $stmt->fetch();
+        if ($result) {
+            $campaign_id = $result['id'];
+        }
+    } catch (Exception $e) {
+        // Ignorer l'erreur
+    }
 }
 
-// Vérifier que l'utilisateur est le DM de la campagne
-if ($campaign->getDmId() != $_SESSION['user_id'] && !User::isAdmin()) {
-    header('Location: index.php');
-    exit();
+// Si toujours pas de campaign_id, utiliser 0 (campagne par défaut)
+if (!$campaign_id) {
+    $campaign_id = 0;
+}
+
+// Récupérer la campagne et vérifier les permissions (si campaign_id > 0)
+if ($campaign_id > 0) {
+    $campaign = Campaign::findById($campaign_id);
+    if (!$campaign) {
+        header('Location: index.php');
+        exit();
+    }
+
+    // Vérifier que l'utilisateur est le DM de la campagne
+    if ($campaign->getDmId() != $_SESSION['user_id'] && !User::isAdmin()) {
+        header('Location: index.php');
+        exit();
+    }
+} else {
+    // Mode sans campagne - vérifier que l'utilisateur est DM ou Admin
+    if (!User::isDMOrAdmin()) {
+        header('Location: index.php');
+        exit();
+    }
 }
 
 // Récupérer les informations du monstre dans le lieu via la classe Monstre
@@ -496,9 +525,15 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
                     </p>
                 </div>
                 <div class="col-md-4 text-end">
-                    <a href="view_campaign.php?id=<?php echo (int)$campaign_id; ?>" class="btn btn-light">
-                        <i class="fas fa-arrow-left me-2"></i>Retour à la Campagne
-                    </a>
+                    <?php if ($campaign_id > 0): ?>
+                        <a href="view_campaign.php?id=<?php echo (int)$campaign_id; ?>" class="btn btn-light">
+                            <i class="fas fa-arrow-left me-2"></i>Retour à la Campagne
+                        </a>
+                    <?php else: ?>
+                        <a href="manage_worlds.php" class="btn btn-light">
+                            <i class="fas fa-arrow-left me-2"></i>Retour aux Mondes
+                        </a>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

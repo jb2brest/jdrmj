@@ -428,19 +428,49 @@ def cleanup_test_user_from_db(user_data):
             cursor.execute("DELETE FROM campaign_members WHERE campaign_id IN (SELECT id FROM campaigns WHERE dm_id = %s)", (user_id,))
             
             # 5.9. Sessions de campagne
-            cursor.execute("DELETE FROM campaign_sessions WHERE campaign_id IN (SELECT id FROM campaigns WHERE dm_id = %s)", (user_id,))
+            try:
+                cursor.execute("DELETE FROM campaign_sessions WHERE campaign_id IN (SELECT id FROM campaigns WHERE dm_id = %s)", (user_id,))
+            except Exception:
+                pass  # La table campaign_sessions n'existe peut-être pas
             
-            # 5.10. Campagnes
+            # 5.10. Campagnes (celles créées par l'utilisateur ET celles stockées dans created_campaigns)
             cursor.execute("DELETE FROM campaigns WHERE dm_id = %s", (user_id,))
+            
+            # Nettoyer aussi les campagnes stockées dans created_campaigns
+            if user_data.get('created_campaigns'):
+                for campaign in user_data['created_campaigns']:
+                    if campaign.get('title'):
+                        cursor.execute("DELETE FROM campaigns WHERE title = %s", (campaign['title'],))
             
             # 6. Autres données liées
             cursor.execute("DELETE FROM characters WHERE user_id = %s", (user_id,))
             cursor.execute("DELETE FROM dice_rolls WHERE user_id = %s", (user_id,))
-            cursor.execute("DELETE FROM scene_tokens WHERE user_id = %s", (user_id,))
-            cursor.execute("DELETE FROM place_objects WHERE user_id = %s", (user_id,))
-            cursor.execute("DELETE FROM monsters WHERE created_by = %s", (user_id,))
-            cursor.execute("DELETE FROM magical_items WHERE created_by = %s", (user_id,))
-            cursor.execute("DELETE FROM poisons WHERE created_by = %s", (user_id,))
+            
+            # Tables optionnelles
+            try:
+                cursor.execute("DELETE FROM scene_tokens WHERE user_id = %s", (user_id,))
+            except Exception:
+                pass  # La table scene_tokens n'existe peut-être pas
+            
+            try:
+                cursor.execute("DELETE FROM place_objects WHERE user_id = %s", (user_id,))
+            except Exception:
+                pass  # La table place_objects n'existe peut-être pas
+            
+            try:
+                cursor.execute("DELETE FROM monsters WHERE created_by = %s", (user_id,))
+            except Exception:
+                pass  # La table monsters n'existe peut-être pas
+            
+            try:
+                cursor.execute("DELETE FROM magical_items WHERE created_by = %s", (user_id,))
+            except Exception:
+                pass  # La table magical_items n'existe peut-être pas
+            
+            try:
+                cursor.execute("DELETE FROM poisons WHERE created_by = %s", (user_id,))
+            except Exception:
+                pass  # La table poisons n'existe peut-être pas
             
             # 6. Supprimer l'utilisateur
             cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
@@ -452,6 +482,86 @@ def cleanup_test_user_from_db(user_data):
         
     except Exception as e:
         print(f"⚠️ Erreur lors du nettoyage de l'utilisateur {user_data.get('username', 'inconnu')}: {e}")
+
+def cleanup_test_campaigns_from_db(campaigns_data):
+    """Nettoie les campagnes de test spécifiques de la base de données"""
+    if not campaigns_data:
+        return
+    
+    # Vérifier si on doit conserver les données de test
+    keep_test_data = os.getenv('KEEP_TEST_DATA', 'false').lower() == 'true'
+    if keep_test_data:
+        print(f"💾 Conservation des données de test activée - {len(campaigns_data)} campagne(s) conservée(s)")
+        return
+    
+    try:
+        config = get_database_config()
+        connection = pymysql.connect(
+            host=config['host'],
+            user=config['username'],
+            password=config['password'],
+            database=config['dbname'],
+            charset=config.get('charset', 'utf8mb4'),
+            autocommit=False
+        )
+        
+        cursor = connection.cursor()
+        
+        for campaign in campaigns_data:
+            if not campaign.get('title'):
+                continue
+                
+            # Trouver la campagne par titre
+            cursor.execute("SELECT id FROM campaigns WHERE title = %s", (campaign['title'],))
+            result = cursor.fetchone()
+            
+            if result:
+                campaign_id = result[0]
+                
+                # Supprimer les données liées dans l'ordre hiérarchique
+                # 1. Notifications liées à la campagne
+                try:
+                    cursor.execute("DELETE FROM notifications WHERE related_id = %s", (campaign_id,))
+                except Exception:
+                    pass
+                
+                # 2. Applications de campagne
+                try:
+                    cursor.execute("DELETE FROM campaign_applications WHERE campaign_id = %s", (campaign_id,))
+                except Exception:
+                    pass
+                
+                # 3. Événements de campagne
+                try:
+                    cursor.execute("DELETE FROM campaign_journal WHERE campaign_id = %s", (campaign_id,))
+                except Exception:
+                    pass
+                
+                # 4. Membres des campagnes
+                cursor.execute("DELETE FROM campaign_members WHERE campaign_id = %s", (campaign_id,))
+                
+                # 5. Sessions de campagne
+                try:
+                    cursor.execute("DELETE FROM campaign_sessions WHERE campaign_id = %s", (campaign_id,))
+                except Exception:
+                    pass
+                
+                # 6. Associations de lieux avec les campagnes
+                try:
+                    cursor.execute("DELETE FROM place_campaigns WHERE campaign_id = %s", (campaign_id,))
+                except Exception:
+                    pass
+                
+                # 7. Supprimer la campagne
+                cursor.execute("DELETE FROM campaigns WHERE id = %s", (campaign_id,))
+                
+                print(f"✅ Campagne de test '{campaign['title']}' nettoyée de la base de données")
+        
+        connection.commit()
+        connection.close()
+        
+    except Exception as e:
+        print(f"⚠️ Erreur lors du nettoyage des campagnes de test: {e}")
 
 @pytest.fixture(scope="session")
 def browser_config():

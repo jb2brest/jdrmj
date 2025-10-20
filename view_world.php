@@ -565,15 +565,27 @@ $external_countries = $monde->getExternalCountries();
                                                 <td>
                                                     <div class="btn-group btn-group-sm">
                                                         <?php if ($entity['type'] === 'PNJ'): ?>
-                                                            <a href="view_character.php?id=<?php echo (int)$entity['id']; ?>" 
-                                                               class="btn btn-outline-info btn-sm" title="Voir le PNJ">
-                                                                <i class="fas fa-eye"></i>
-                                                            </a>
+                                                            <?php if (!empty($entity['npc_character_id'])): ?>
+                                                                <a href="view_character.php?id=<?php echo (int)$entity['npc_character_id']; ?>" 
+                                                                   class="btn btn-outline-info btn-sm" title="Voir le PNJ">
+                                                                    <i class="fas fa-eye"></i>
+                                                                </a>
+                                                            <?php else: ?>
+                                                                <span class="btn btn-outline-secondary btn-sm disabled" title="PNJ sans personnage associé">
+                                                                    <i class="fas fa-eye-slash"></i>
+                                                                </span>
+                                                            <?php endif; ?>
                                                         <?php else: ?>
-                                                            <a href="view_monster_sheet.php?id=<?php echo (int)($entity['monster_id'] ?? 0); ?>" 
-                                                               class="btn btn-outline-info btn-sm" title="Voir le monstre">
-                                                                <i class="fas fa-eye"></i>
-                                                            </a>
+                                                            <?php if (!empty($entity['monster_id'])): ?>
+                                                                <a href="view_monster_sheet.php?id=<?php echo (int)$entity['id']; ?>" 
+                                                                   class="btn btn-outline-info btn-sm" title="Voir le monstre">
+                                                                    <i class="fas fa-eye"></i>
+                                                                </a>
+                                                            <?php else: ?>
+                                                                <span class="btn btn-outline-secondary btn-sm disabled" title="Monstre sans fiche associée">
+                                                                    <i class="fas fa-eye-slash"></i>
+                                                                </span>
+                                                            <?php endif; ?>
                                                         <?php endif; ?>
                                                     </div>
                                                 </td>

@@ -438,6 +438,7 @@ class Monde
             $stmt = $pdo->prepare("
                 SELECT 
                     pn.id,
+                    pn.npc_character_id,
                     pn.name,
                     pn.description,
                     pn.profile_photo,
