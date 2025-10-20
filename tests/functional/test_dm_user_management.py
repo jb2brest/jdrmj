@@ -11,9 +11,15 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 class TestDMUserManagement:
     """Tests pour la gestion des utilisateurs MJ"""
     
-    def test_dm_user_creation(self, driver, wait, app_url, test_users):
+    def test_dm_user_creation(self, driver, wait, app_url):
         """Test de création d'un utilisateur de type 'Maître du jeu'"""
-        dm_user = test_users['dm_user']
+        # Créer des données uniques pour ce test
+        timestamp = str(int(time.time()))
+        dm_user = {
+            'username': f'dm_test_{timestamp}',
+            'email': f'dm_test_{timestamp}@example.com',
+            'password': 'TestPassword123!'
+        }
         
         # Aller à la page d'inscription
         driver.get(f"{app_url}/register.php")
@@ -92,10 +98,18 @@ class TestDMUserManagement:
                     pytest.fail(f"Erreurs d'inscription MJ: {error_texts}")
             else:
                 pytest.fail("Inscription MJ échouée sans message d'erreur visible")
+        
+        finally:
+            # Nettoyer l'utilisateur créé pour ce test
+            try:
+                from conftest import cleanup_test_user_from_db
+                cleanup_test_user_from_db(dm_user)
+            except Exception:
+                pass  # Ignorer les erreurs de nettoyage
     
-    def test_dm_user_login(self, driver, wait, app_url, test_users):
+    def test_dm_user_login(self, driver, wait, app_url, test_user):
         """Test de connexion avec un utilisateur MJ"""
-        dm_user = test_users['dm_user']
+        dm_user = test_user
         
         # Aller à la page de connexion
         driver.get(f"{app_url}/login.php")
@@ -172,12 +186,12 @@ class TestDMUserManagement:
             else:
                 pytest.fail(f"Connexion MJ échouée sans message d'erreur visible. URL actuelle: {current_url}")
     
-    def test_dm_user_deletion(self, driver, wait, app_url, test_users):
+    def test_dm_user_deletion(self, driver, wait, app_url, test_user, test_admin):
         """Test de suppression d'un utilisateur MJ"""
-        dm_user = test_users['dm_user']
+        dm_user = test_user
         
         # D'abord se connecter en tant qu'admin pour pouvoir supprimer des utilisateurs
-        admin_user = test_users['admin_user']
+        admin_user = test_admin
         
         # Connexion admin
         driver.get(f"{app_url}/login.php")
@@ -293,9 +307,9 @@ class TestDMUserManagement:
             pytest.fail(f"Erreur lors de la suppression de l'utilisateur MJ: {str(e)}")
     
     @pytest.mark.smoke
-    def test_dm_privileges_verification(self, driver, wait, app_url, test_users):
+    def test_dm_privileges_verification(self, driver, wait, app_url, test_user):
         """Test de vérification des privilèges MJ après connexion"""
-        dm_user = test_users['dm_user']
+        dm_user = test_user
         
         # Se connecter en tant que MJ
         driver.get(f"{app_url}/login.php")
@@ -337,12 +351,12 @@ class TestDMUserManagement:
         # Au moins une fonctionnalité MJ devrait être accessible
         assert accessible_features > 0, "Aucune fonctionnalité MJ accessible"
     
-    def test_dm_to_player_role_change(self, driver, wait, app_url, test_users):
+    def test_dm_to_player_role_change(self, driver, wait, app_url, test_user, test_admin):
         """Test de changement de rôle d'un MJ vers joueur"""
-        dm_user = test_users['dm_user']
+        dm_user = test_user
         
         # Se connecter en tant qu'admin
-        admin_user = test_users['admin_user']
+        admin_user = test_admin
         driver.get(f"{app_url}/login.php")
         username_field = wait.until(EC.presence_of_element_located((By.NAME, "username")))
         password_field = driver.find_element(By.NAME, "password")

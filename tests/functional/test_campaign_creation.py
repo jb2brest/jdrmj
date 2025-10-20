@@ -52,8 +52,15 @@ class TestCampaignCreation:
         submit_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
         submit_button.click()
         
+        # Attendre que la page se charge
+        wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+        
         # Vérifier que la campagne a été créée
-        wait.until(EC.presence_of_element_located((By.XPATH, f"//*[contains(text(), '{campaign_title}')]")))
+        try:
+            # Utiliser un XPath qui cherche le texte dans l'élément entier (y compris les enfants)
+            campaign_element = wait.until(EC.presence_of_element_located((By.XPATH, f"//h5[contains(@class, 'card-title') and contains(., '{campaign_title}')]")))
+        except TimeoutException:
+            raise AssertionError(f"La campagne '{campaign_title}' n'a pas été trouvée sur la page après la création")
         
         # Vérifier le message de succès
         success_message = driver.find_element(By.CSS_SELECTOR, ".alert-success, .success, [class*='success']")
@@ -77,7 +84,14 @@ class TestCampaignCreation:
         driver.get(f"{app_url}/campaigns.php")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         
+        # Désactiver la validation HTML5 pour tester la validation côté serveur
+        driver.execute_script("document.querySelector('input[name=\"title\"]').removeAttribute('required');")
+        
         # Remplir le formulaire avec un titre vide
+        title_input = driver.find_element(By.NAME, "title")
+        title_input.clear()
+        # Ne pas envoyer de texte pour avoir un titre vide
+        
         description_input = driver.find_element(By.NAME, "description")
         description_input.clear()
         description_input.send_keys("Description sans titre")
@@ -85,6 +99,9 @@ class TestCampaignCreation:
         # Soumettre le formulaire
         submit_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
         submit_button.click()
+        
+        # Attendre que la page se charge
+        wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         
         # Vérifier qu'une erreur est affichée
         error_message = driver.find_element(By.CSS_SELECTOR, ".alert-danger, .error, [class*='error']")
@@ -149,10 +166,11 @@ class TestCampaignCreation:
         submit_button.click()
         
         # Vérifier que la campagne a été créée
-        wait.until(EC.presence_of_element_located((By.XPATH, f"//*[contains(text(), '{campaign_title}')]")))
+        wait.until(EC.presence_of_element_located((By.XPATH, f"//h5[contains(@class, 'card-title') and contains(., '{campaign_title}')]")))
         
         # Vérifier que la campagne est marquée comme privée
-        private_badge = driver.find_element(By.XPATH, f"//*[contains(text(), '{campaign_title}')]/following-sibling::*//span[contains(text(), 'Privée')]")
+        # Chercher le badge "Privée" dans la même carte que le titre
+        private_badge = driver.find_element(By.XPATH, f"//h5[contains(@class, 'card-title') and contains(., '{campaign_title}')]/ancestor::div[contains(@class, 'card')]//span[contains(text(), 'Privée')]")
         assert private_badge is not None
         
         # Stocker les données pour le nettoyage
@@ -179,7 +197,7 @@ class TestCampaignCreation:
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         
         # Cliquer sur le bouton de visualisation de la campagne
-        view_button = wait.until(EC.element_to_be_clickable((By.XPATH, f"//*[contains(text(), '{campaign_title}')]/following-sibling::*//a[contains(@href, 'view_campaign.php')]")))
+        view_button = wait.until(EC.element_to_be_clickable((By.XPATH, f"//h5[contains(@class, 'card-title') and contains(., '{campaign_title}')]/ancestor::div[contains(@class, 'card')]//a[contains(@href, 'view_campaign.php')]")))
         view_button.click()
         
         # Attendre que la page se charge
@@ -226,7 +244,7 @@ class TestCampaignCreation:
         
         # Vérifier que toutes les campagnes sont affichées
         for campaign in campaigns:
-            campaign_element = driver.find_element(By.XPATH, f"//*[contains(text(), '{campaign['title']}')]")
+            campaign_element = driver.find_element(By.XPATH, f"//h5[contains(@class, 'card-title') and contains(., '{campaign['title']}')]")
             assert campaign_element is not None
         
         # Stocker les données pour le nettoyage
@@ -248,7 +266,7 @@ class TestCampaignCreation:
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         
         # Vérifier que le code d'invitation est affiché
-        invite_code_element = wait.until(EC.presence_of_element_located((By.XPATH, f"//*[contains(text(), '{campaign_title}')]/following-sibling::*//code")))
+        invite_code_element = wait.until(EC.presence_of_element_located((By.XPATH, f"//h5[contains(@class, 'card-title') and contains(., '{campaign_title}')]/ancestor::div[contains(@class, 'card')]//code")))
         assert invite_code_element is not None
         assert len(invite_code_element.text) > 0
         
@@ -295,7 +313,7 @@ class TestCampaignCreation:
             submit_button.click()
             
             # Vérifier que la campagne a été créée
-            wait.until(EC.presence_of_element_located((By.XPATH, f"//*[contains(text(), '{campaign_title}')]")))
+            wait.until(EC.presence_of_element_located((By.XPATH, f"//h5[contains(@class, 'card-title') and contains(., '{campaign_title}')]")))
             
             campaigns.append({
                 'title': campaign_title,
@@ -309,11 +327,11 @@ class TestCampaignCreation:
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         
         for campaign in campaigns:
-            campaign_element = driver.find_element(By.XPATH, f"//*[contains(text(), '{campaign['title']}')]")
+            campaign_element = driver.find_element(By.XPATH, f"//h5[contains(@class, 'card-title') and contains(., '{campaign['title']}')]")
             assert campaign_element is not None
             
             # Vérifier que le système de jeu est affiché
-            system_element = driver.find_element(By.XPATH, f"//*[contains(text(), '{campaign['title']}')]/following-sibling::*//*[contains(text(), '{campaign['game_system']}')]")
+            system_element = driver.find_element(By.XPATH, f"//h5[contains(@class, 'card-title') and contains(., '{campaign['title']}')]/ancestor::div[contains(@class, 'card')]//*[contains(text(), '{campaign['game_system']}')]")
             assert system_element is not None
         
         # Stocker les données pour le nettoyage
@@ -372,4 +390,4 @@ class TestCampaignCreation:
         submit_button.click()
         
         # Attendre la confirmation
-        wait.until(EC.presence_of_element_located((By.XPATH, f"//*[contains(text(), '{title}')]")))
+        wait.until(EC.presence_of_element_located((By.XPATH, f"//h5[contains(@class, 'card-title') and contains(., '{title}')]")))
