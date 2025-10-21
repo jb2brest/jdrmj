@@ -413,6 +413,8 @@ chmod 755 includes/
 chmod 644 includes/*.php
 chmod 755 css/
 chmod 644 css/*
+chmod 755 js/
+chmod 644 js/*
 chmod 755 images/
 chmod 644 images/*
 chmod 755 database/
@@ -541,6 +543,8 @@ prepare_files() {
             --include="includes/**" \
             --include="css/" \
             --include="css/**" \
+            --include="js/" \
+            --include="js/**" \
             --include="images/" \
             --include="images/**" \
             --include="database/" \
@@ -578,6 +582,8 @@ prepare_files() {
             --include="includes/**" \
             --include="css/" \
             --include="css/**" \
+            --include="js/" \
+            --include="js/**" \
             --include="images/" \
             --include="images/**" \
             --include="database/" \

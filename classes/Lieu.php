@@ -874,8 +874,35 @@ class Lieu
     public function toggleNpcIdentification($npcId)
     {
         try {
+            // Log de début
+            error_log("DEBUG toggleNpcIdentification - Début: place_id={$this->id}, npc_id={$npcId}");
+            
+            // Vérifier l'état actuel avant modification
+            $stmt_check = $this->pdo->prepare("SELECT is_identified, npc_character_id FROM place_npcs WHERE place_id = ? AND id = ? AND monster_id IS NULL");
+            $stmt_check->execute([$this->id, $npcId]);
+            $current_state = $stmt_check->fetch(PDO::FETCH_ASSOC);
+            
+            if ($current_state) {
+                error_log("DEBUG toggleNpcIdentification - État actuel: is_identified=" . ($current_state['is_identified'] ? 'true' : 'false') . ", npc_character_id=" . $current_state['npc_character_id']);
+            } else {
+                error_log("DEBUG toggleNpcIdentification - ERREUR: PNJ non trouvé avec place_id={$this->id}, npc_id={$npcId}");
+                return ['success' => false, 'message' => 'PNJ non trouvé.'];
+            }
+            
+            // Exécuter la mise à jour
             $stmt = $this->pdo->prepare("UPDATE place_npcs SET is_identified = NOT is_identified WHERE place_id = ? AND id = ? AND monster_id IS NULL");
-            $stmt->execute([$this->id, $npcId]);
+            $result = $stmt->execute([$this->id, $npcId]);
+            $rows_affected = $stmt->rowCount();
+            
+            error_log("DEBUG toggleNpcIdentification - Résultat SQL: success=" . ($result ? 'true' : 'false') . ", rows_affected={$rows_affected}");
+            
+            // Vérifier l'état après modification
+            $stmt_check->execute([$this->id, $npcId]);
+            $new_state = $stmt_check->fetch(PDO::FETCH_ASSOC);
+            
+            if ($new_state) {
+                error_log("DEBUG toggleNpcIdentification - Nouvel état: is_identified=" . ($new_state['is_identified'] ? 'true' : 'false') . ", npc_character_id=" . $new_state['npc_character_id']);
+            }
             
             return ['success' => true, 'message' => 'Identification du PNJ mise à jour.'];
             

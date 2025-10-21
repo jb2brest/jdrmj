@@ -16,6 +16,11 @@ if (!isset($_GET['id'])) {
 $place_id = (int)$_GET['id'];
 $isModal = isset($_GET['modal']);
 
+// Gestion des messages de succès depuis l'URL
+if (isset($_GET['success'])) {
+    $success_message = $_GET['success'];
+}
+
 // Charger le lieu et sa campagne avec hiérarchie géographique
 $lieu = Lieu::findById($place_id);
 if (!$lieu) {
@@ -374,13 +379,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
     
     // Basculer l'identification d'un PNJ
     if (isset($_POST['action']) && $_POST['action'] === 'toggle_npc_identification' && isset($_POST['npc_id'])) {
+        error_log("DEBUG view_place.php - Action toggle_npc_identification reçue: npc_id=" . $_POST['npc_id'] . ", place_id=" . $place_id);
+        
         $npc_id = (int)$_POST['npc_id'];
+        error_log("DEBUG view_place.php - npc_id converti: " . $npc_id);
+        
         $result = $lieu->toggleNpcIdentification($npc_id);
+        error_log("DEBUG view_place.php - Résultat toggleNpcIdentification: " . json_encode($result));
+        
         if ($result['success']) {
-            $success_message = $result['message'];
-            // Recharger les PNJ
-            $placeNpcs = $lieu->getAllNpcsDetailed();
+            error_log("DEBUG view_place.php - Redirection vers: view_place.php?id=" . $place_id . "&success=" . urlencode($result['message']));
+            // Rediriger pour éviter la resoumission du formulaire
+            header('Location: view_place.php?id=' . $place_id . '&success=' . urlencode($result['message']));
+            exit();
         } else {
+            error_log("DEBUG view_place.php - Erreur: " . $result['message']);
             $error_message = $result['message'];
         }
     }
@@ -2280,13 +2293,11 @@ foreach ($allScenes as $s) {
                                                 </a>
                                             <?php endif; ?>
                                             <?php if ($isOwnerDM): ?>
-                                                <form method="POST" class="d-inline" onsubmit="return confirm('<?php echo ($npc['is_identified'] ? 'Désidentifier' : 'Identifier'); ?> <?php echo htmlspecialchars($npc['name']); ?> pour les joueurs ?');">
-                                                    <input type="hidden" name="action" value="toggle_npc_identification">
-                                                    <input type="hidden" name="npc_id" value="<?php echo (int)$npc['id']; ?>">
-                                                    <button type="submit" class="btn btn-sm <?php echo $npc['is_identified'] ? 'btn-outline-info' : 'btn-outline-secondary'; ?>" title="<?php echo $npc['is_identified'] ? 'Désidentifier pour les joueurs' : 'Identifier pour les joueurs'; ?>">
-                                                        <i class="fas <?php echo $npc['is_identified'] ? 'fa-user-check' : 'fa-question'; ?>"></i>
-                                                    </button>
-                                                </form>
+                                                <button type="button" class="btn btn-sm <?php echo $npc['is_identified'] ? 'btn-outline-info' : 'btn-outline-secondary'; ?>" 
+                                                        title="<?php echo $npc['is_identified'] ? 'Désidentifier pour les joueurs' : 'Identifier pour les joueurs'; ?>"
+                                                        onclick="toggleNpcIdentification(<?php echo (int)$npc['id']; ?>, '<?php echo htmlspecialchars($npc['name']); ?>', <?php echo $npc['is_identified'] ? 'true' : 'false'; ?>)">
+                                                    <i class="fas <?php echo $npc['is_identified'] ? 'fa-user-check' : 'fa-question'; ?>"></i>
+                                                </button>
                                                 <form method="POST" class="d-inline" onsubmit="return confirm('<?php echo ($npc['is_visible'] ? 'Masquer' : 'Afficher'); ?> <?php echo htmlspecialchars($npc['name']); ?> pour les joueurs ?');">
                                                     <input type="hidden" name="action" value="toggle_npc_visibility">
                                                     <input type="hidden" name="npc_id" value="<?php echo (int)$npc['id']; ?>">
@@ -3066,6 +3077,9 @@ foreach ($allScenes as $s) {
 
 <?php if (!$isModal): ?>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Inclusion du script d'identification des PNJ -->
+    <script src="js/npc_identification.js"></script>
     
     <script>
     // Gestion de la recherche de monstres

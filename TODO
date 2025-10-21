@@ -223,9 +223,20 @@ Il faut différencier la création de PNJ et de PJ.
 Ajouter la possibilité de créer des monstres et des PNJ depuis la page manage_npcs 
 Les PJ doivent être créés en utilisant la création par step à partir de l'écran characters.php
 Les PNJ doivent être créés à partir de l'écran manage_npcs.php en utilisant soit la création par step soit la création automatique.
+toggleNpcIdentification(32, 'Dara', true)
+
+Il faut revoir le code de view_place.php
+Voici les règles à appliquer : 
+- le SQL doit être géré dans des méthodes de classes 
+- le javascript doit être mis dans un fichier de javacript global. 
+- les appels à des modification en base doivent être codé en ajax et faire un appel à un endpoint en php codé dans un répertoire api. 
 
 
 
+
+Dessine moi un gnome ensorceleur de niveau 4 
+Dans un univers D&D.
+L'image doit être carrée.
 
 ############################# Dés ################################
 Je voudrais que tu me génères une image contenant un set de dés :
