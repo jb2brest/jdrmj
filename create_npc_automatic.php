@@ -73,25 +73,27 @@ function createAutomaticNPC($race_id, $class_id, $level, $user_id, $custom_name 
     
     // Insérer le personnage dans la base de données
     $stmt = $pdo->prepare("
-        INSERT INTO characters (
-            user_id, name, race_id, class_id, level, experience_points, background, alignment,
+        INSERT INTO npcs (
+            name, race_id, class_id, level, experience, background_id, alignment,
             strength, dexterity, constitution, intelligence, wisdom, charisma,
-            hit_points_max, armor_class, speed, equipment, personality_traits, ideals, bonds, flaws, is_npc, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())
+            hit_points, armor_class, speed, starting_equipment, personality_traits, ideals, bonds, flaws, 
+            world_id, location_id, created_by, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
     ");
     
     $stmt->execute([
-        $user_id, $name, $race_id, $class_id, $level, $experience_points, $background, $alignment,
+        $name, $race_id, $class_id, $level, $experience_points, $background_id, $alignment,
         $stats['strength'], $stats['dexterity'], $stats['constitution'], 
         $stats['intelligence'], $stats['wisdom'], $stats['charisma'],
         $stats['hit_points'], $stats['armor_class'], $stats['speed'], $equipment,
-        $personality_traits, $ideals, $bonds, $flaws
+        $personality_traits, $ideals, $bonds, $flaws,
+        $world_id, $place_id, $user_id
     ]);
     
-    $character_id = $pdo->lastInsertId();
+    $npc_id = $pdo->lastInsertId();
     
     return [
-        'id' => $character_id,
+        'id' => $npc_id,
         'name' => $name,
         'race' => $race_name,
         'class' => $class_name,

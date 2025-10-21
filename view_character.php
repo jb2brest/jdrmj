@@ -2,6 +2,7 @@
 require_once 'classes/init.php';
 require_once 'includes/functions.php';
 require_once 'includes/capabilities_functions.php';
+require_once 'includes/upload_config.php';
 $page_title = "Fiche de Personnage";
 $current_page = "view_character";
 
@@ -655,7 +656,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
 
 // Traitement de l'upload de photo de profil
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['action']) && $_POST['action'] === 'upload_photo') {
-    if (isset($_FILES['profile_photo']) && $_FILES['profile_photo']['error'] === UPLOAD_ERR_OK) {
+    // Debug des données d'upload
+    error_log("Upload debug - FILES: " . print_r($_FILES, true));
+    error_log("Upload debug - POST: " . print_r($_POST, true));
+    
+    if (isset($_FILES['profile_photo'])) {
+        $upload_error = $_FILES['profile_photo']['error'];
+        error_log("Upload error code: " . $upload_error);
+        
+        if ($upload_error === UPLOAD_ERR_OK) {
         $upload_dir = 'uploads/profiles/';
         if (!is_dir($upload_dir)) {
             mkdir($upload_dir, 0777, true);
@@ -693,10 +702,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                     $error_message = "Erreur lors de l'upload de la photo.";
                 }
             } else {
-                $error_message = "La photo est trop volumineuse (max 10MB).";
+                $error_message = "La photo est trop volumineuse (max 10M).";
             }
         } else {
             $error_message = "Format de fichier non supporté. Utilisez JPG, PNG ou GIF.";
+        }
+        } else {
+            // Gestion des erreurs d'upload spécifiques
+            switch ($upload_error) {
+                case UPLOAD_ERR_NO_FILE:
+                    $error_message = "Aucun fichier sélectionné.";
+                    break;
+                case UPLOAD_ERR_INI_SIZE:
+                    $error_message = "Le fichier dépasse la limite de taille du serveur (max 10M).";
+                    break;
+                case UPLOAD_ERR_FORM_SIZE:
+                    $error_message = "Le fichier dépasse la limite de taille du formulaire (max 10M).";
+                    break;
+                case UPLOAD_ERR_PARTIAL:
+                    $error_message = "Le fichier n'a été que partiellement uploadé.";
+                    break;
+                case UPLOAD_ERR_NO_TMP_DIR:
+                    $error_message = "Dossier temporaire manquant.";
+                    break;
+                case UPLOAD_ERR_CANT_WRITE:
+                    $error_message = "Impossible d'écrire le fichier.";
+                    break;
+                case UPLOAD_ERR_EXTENSION:
+                    $error_message = "Upload arrêté par une extension PHP.";
+                    break;
+                default:
+                    $error_message = "Erreur lors de l'upload (code: " . $upload_error . ").";
+                    break;
+            }
         }
     } else {
         $error_message = "Aucun fichier sélectionné ou erreur lors de l'upload.";
@@ -2369,7 +2407,7 @@ $initiative = $dexterityMod;
                             <label for="profile_photo" class="form-label">Sélectionner une nouvelle photo :</label>
                             <input type="file" class="form-control" name="profile_photo" id="profile_photo" accept="image/*" required>
                             <div class="form-text">
-                                Formats acceptés : JPG, PNG, GIF (max 10MB)
+                                Formats acceptés : JPG, PNG, GIF (max 10M)
                             </div>
                         </div>
                         
@@ -2504,16 +2542,23 @@ $initiative = $dexterityMod;
             const form = document.getElementById('photoForm');
             const fileInput = document.getElementById('profile_photo');
             
-            if (!fileInput.files || fileInput.files.length === 0) {
+            // Vérification plus robuste
+            if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
                 alert('Veuillez sélectionner un fichier image.');
-                return;
+                return false;
+            }
+            
+            // Vérifier que le fichier n'est pas vide
+            if (fileInput.files[0].size === 0) {
+                alert('Le fichier sélectionné est vide.');
+                return false;
             }
             
             const file = fileInput.files[0];
-            const maxSize = 10 * 1024 * 1024; // 10MB
+            const maxSize = 10 * 1024 * 1024; // 10MB en octets
             
             if (file.size > maxSize) {
-                alert('Le fichier est trop volumineux. Taille maximale : 10MB.');
+                alert('Le fichier est trop volumineux. Taille maximale : 10M.');
                 return;
             }
             
@@ -2524,6 +2569,11 @@ $initiative = $dexterityMod;
             }
             
             if (confirm('Confirmer l\'upload de cette photo de profil ?')) {
+                // Vérification finale avant soumission
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    alert('Erreur : Aucun fichier sélectionné.');
+                    return false;
+                }
                 form.submit();
             }
         }

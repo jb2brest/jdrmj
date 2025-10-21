@@ -272,7 +272,18 @@ Character::syncBaseEquipmentToCharacterEquipment($npc_id);
 
 // Récupérer l'équipement du PNJ depuis les données JSON
 $magicalEquipment = [];
-$equippedItems = [];
+$equippedItems = [
+    'main_hand' => '',
+    'off_hand' => '',
+    'armor' => '',
+    'shield' => '',
+    'helmet' => '',
+    'gloves' => '',
+    'boots' => '',
+    'ring1' => '',
+    'ring2' => '',
+    'amulet' => ''
+];
 
 // Décoder l'équipement de départ du PNJ
 if (!empty($character['starting_equipment'])) {
@@ -294,7 +305,19 @@ if (!empty($character['starting_equipment'])) {
             if ($item) {
                 $item['equipped'] = true; // Pour les PNJ, tous les équipements sont considérés comme équipés
                 $magicalEquipment[] = $item;
-                $equippedItems[] = $item;
+                
+                // Structurer les équipements par slot
+                if ($item['object_type'] === 'weapon') {
+                    if (empty($equippedItems['main_hand'])) {
+                        $equippedItems['main_hand'] = $item['item_name'];
+                    } else {
+                        $equippedItems['off_hand'] = $item['item_name'];
+                    }
+                } elseif ($item['object_type'] === 'armor') {
+                    $equippedItems['armor'] = $item['item_name'];
+                } elseif ($item['object_type'] === 'shield') {
+                    $equippedItems['shield'] = $item['item_name'];
+                }
             }
         }
     }
@@ -665,7 +688,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
         if (in_array($file_extension, $allowed_extensions)) {
             $file_size = $_FILES['profile_photo']['size'];
             if ($file_size <= 10 * 1024 * 1024) { // 10MB max
-                $new_filename = 'profile_' . $character_id . '_' . time() . '_' . uniqid() . '.' . $file_extension;
+                $new_filename = 'profile_' . $npc_id . '_' . time() . '_' . uniqid() . '.' . $file_extension;
                 $upload_path = $upload_dir . $new_filename;
                 
                 if (move_uploaded_file($_FILES['profile_photo']['tmp_name'], $upload_path)) {
@@ -676,13 +699,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                     
                     // Mettre à jour la base de données
                     $db = Database::getInstance();
-                    $stmt = $db->prepare("UPDATE characters SET profile_photo = ? WHERE id = ?");
-                    if ($stmt->execute([$upload_path, $character_id])) {
+                    $stmt = $db->prepare("UPDATE npcs SET profile_photo = ? WHERE id = ?");
+                    if ($stmt->execute([$upload_path, $npc_id])) {
                         $success_message = "Photo de profil mise à jour avec succès.";
-                        // Recharger les données du personnage
-                        $characterObj = Character::findById($character_id);
-                        if ($characterObj) {
-                            $character = $characterObj->toArray();
+                        // Recharger les données du PNJ
+                        $npcData = NPC::getById($pdo, $npc_id);
+                        if ($npcData) {
+                            $character = $npcData;
                         }
                     } else {
                         $error_message = "Erreur lors de la mise à jour de la base de données.";

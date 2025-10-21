@@ -73,9 +73,10 @@ Le MJ a le choix entre deux options pour le nom du PNJ :
 php run_npc_migration.php
 ```
 
-Cette commande ajoute :
-- Colonne `is_npc` à la table `characters`
-- Index pour améliorer les performances
+Cette commande utilise :
+- Table `npcs` pour stocker les PNJ
+- Table `place_npcs` pour lier les PNJ aux lieux
+- Architecture séparée des personnages joueurs
 
 ### **2. Vérification**
 - Accéder à `characters.php` en tant que MJ/Admin
@@ -200,7 +201,7 @@ Cette commande ajoute :
 
 ### **Problèmes Courants**
 1. **Bouton non visible** : Vérifier les permissions utilisateur
-2. **Erreur de création** : Vérifier la colonne `is_npc`
+2. **Erreur de création** : Vérifier la table `npcs` et les contraintes de clés étrangères
 3. **Noms vides** : Vérifier les données de race/classe
 
 ### **Logs**

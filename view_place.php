@@ -2053,9 +2053,9 @@ foreach ($allScenes as $s) {
                                                 }
                                                 ?>
                                                 <?php if (!$alreadyPresent): ?>
-                                                    <option value="<?php echo (int)$member['user_id']; ?>" data-character-id="<?php echo (int)$member['character_id']; ?>">
+                                                    <option value="<?php echo (int)$member['user_id']; ?>" data-character-id="<?php echo (int)($member['character_id'] ?? 0); ?>">
                                                         <?php echo htmlspecialchars($member['username']); ?>
-                                                        <?php if ($member['character_name']): ?>
+                                                        <?php if (!empty($member['character_name'])): ?>
                                                             (<?php echo htmlspecialchars($member['character_name']); ?>)
                                                         <?php endif; ?>
                                                     </option>

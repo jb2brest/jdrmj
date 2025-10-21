@@ -780,24 +780,26 @@ if (!function_exists('finalizeNPCCreation')) {
             
             // Créer d'abord le personnage dans la table characters
             $stmt = $pdo->prepare("
-                INSERT INTO characters (
-                    user_id, name, race_id, class_id, level, experience_points, background, alignment,
+                INSERT INTO npcs (
+                    name, race_id, class_id, level, experience, background_id, alignment,
                     strength, dexterity, constitution, intelligence, wisdom, charisma,
-                    hit_points_max, armor_class, speed, equipment, personality_traits, ideals, bonds, flaws, is_npc, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())
+                    hit_points, armor_class, speed, starting_equipment, personality_traits, ideals, bonds, flaws, 
+                    world_id, location_id, created_by, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
             ");
             
             $stmt->execute([
-                $userId, $data['name'], $data['race_id'], $data['class_id'], $data['level'] ?? 1, 
-                $data['experience_points'] ?? 0, $data['background'] ?? '', $data['alignment'] ?? '',
+                $data['name'], $data['race_id'], $data['class_id'], $data['level'] ?? 1, 
+                $data['experience_points'] ?? 0, $data['background_id'] ?? null, $data['alignment'] ?? '',
                 $data['strength'] ?? 10, $data['dexterity'] ?? 10, $data['constitution'] ?? 10,
                 $data['intelligence'] ?? 10, $data['wisdom'] ?? 10, $data['charisma'] ?? 10,
                 $data['hit_points_max'] ?? 8, $data['armor_class'] ?? 10, $data['speed'] ?? 30,
                 $data['equipment'] ?? '', $data['personality_traits'] ?? '', $data['ideals'] ?? '',
-                $data['bonds'] ?? '', $data['flaws'] ?? ''
+                $data['bonds'] ?? '', $data['flaws'] ?? '',
+                $data['world_id'] ?? null, $data['location_id'] ?? null, $userId
             ]);
             
-            $character_id = $pdo->lastInsertId();
+            $npc_id = $pdo->lastInsertId();
             
             // Créer ensuite l'entrée dans place_npcs
             $description = "PNJ de niveau " . ($data['level'] ?? 1) . " - " . ($data['race_name'] ?? '') . " " . ($data['class_name'] ?? '') . ". " . ($data['personality_traits'] ?? '');
@@ -809,7 +811,7 @@ if (!function_exists('finalizeNPCCreation')) {
             $stmt->execute([
                 $data['name'], $description, $data['profile_photo'] ?? null, 
                 $data['is_visible'] ?? 1, $data['is_identified'] ?? 1, 
-                $data['place_id'], $character_id
+                $data['place_id'], $npc_id
             ]);
             
             // Nettoyer la session
