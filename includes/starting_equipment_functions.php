@@ -3,6 +3,9 @@
  * Nouvelles fonctions pour gérer l'équipement de départ avec la table starting_equipment
  */
 
+// Inclure la configuration de la base de données
+require_once __DIR__ . '/../config/database.php';
+
 /**
  * Récupère l'équipement de départ pour une source donnée (classe, background, race)
  */
@@ -79,7 +82,7 @@ function structureStartingEquipmentByChoices($equipment) {
         if (!isset($choices[$choiceId])) {
             $choices[$choiceId] = [
                 'id' => $choiceId,
-                'type_choix' => $item['type_choix'],
+                'type_choix' => $item['type_choix'] ?? 'obligatoire',
                 'options' => []
             ];
         }
@@ -92,7 +95,12 @@ function structureStartingEquipmentByChoices($equipment) {
     foreach ($choices as $choiceId => $choice) {
         if ($choiceId == 0) {
             // Équipement obligatoire sans no_choix
-            $mergedChoices[$choiceId] = $choice;
+            $mergedChoices[$choiceId] = [
+                'id' => $choiceId,
+                'type' => 'fixed',
+                'description' => 'Équipement de base',
+                'options' => $choice['options']
+            ];
         } else {
             // Grouper par option_letter pour fusionner a et b
             $groupedOptions = [];
@@ -111,15 +119,24 @@ function structureStartingEquipmentByChoices($equipment) {
                     // Fusionner plusieurs items de la même option
                     $mergedOption = $options[0]; // Prendre le premier comme base
                     $mergedOption['merged_items'] = $options; // Garder tous les items
-                    $mergedOptions[] = $mergedOption;
+                    $mergedOptions[$letter] = $mergedOption;
                 } else {
-                    $mergedOptions[] = $options[0];
+                    $mergedOptions[$letter] = $options[0];
                 }
+            }
+            
+            // Générer une description basée sur le type de choix
+            $description = '';
+            if ($choice['type_choix'] === 'à_choisir') {
+                $description = 'Choisissez une option d\'équipement';
+            } else {
+                $description = 'Équipement ' . $choice['type_choix'];
             }
             
             $mergedChoices[$choiceId] = [
                 'id' => $choiceId,
-                'type_choix' => $choice['type_choix'],
+                'type' => 'choice',
+                'description' => $description,
                 'options' => $mergedOptions
             ];
         }
@@ -241,13 +258,13 @@ function generateFinalEquipmentNew($classId, $backgroundId, $raceId, $equipmentC
         $classChoices = structureStartingEquipmentByChoices($classEquipment);
         
         foreach ($classChoices as $choiceIndex => $choiceGroup) {
-            if ($choiceGroup['type_choix'] === 'obligatoire') {
+            if ($choiceGroup['type'] === 'fixed') {
                 // Équipement obligatoire - ajouter tous les items
                 foreach ($choiceGroup['options'] as $option) {
                     $itemId = $option['id'];
                     $finalEquipment[] = $itemId; // Utiliser l'ID pour addStartingEquipmentToCharacterNew
                 }
-            } elseif ($choiceGroup['type_choix'] === 'à_choisir') {
+            } elseif ($choiceGroup['type'] === 'choice') {
                 // Choix d'équipement - traiter selon les choix du joueur
                 if (isset($equipmentChoices['class'][$choiceIndex])) {
                     $selectedOptionIndex = $equipmentChoices['class'][$choiceIndex];
@@ -258,10 +275,12 @@ function generateFinalEquipmentNew($classId, $backgroundId, $raceId, $equipmentC
                     }
                 } else {
                     // Si aucun choix n'a été fait, prendre la première option par défaut
-                    if (!empty($choiceGroup['options'])) {
+                    if (!empty($choiceGroup['options']) && isset($choiceGroup['options'][0])) {
                         $firstOption = $choiceGroup['options'][0];
-                        $itemId = $firstOption['id'];
-                        $finalEquipment[] = $itemId; // Utiliser l'ID pour addStartingEquipmentToCharacterNew
+                        if (isset($firstOption['id'])) {
+                            $itemId = $firstOption['id'];
+                            $finalEquipment[] = $itemId; // Utiliser l'ID pour addStartingEquipmentToCharacterNew
+                        }
                     }
                 }
             }
@@ -274,13 +293,13 @@ function generateFinalEquipmentNew($classId, $backgroundId, $raceId, $equipmentC
         $backgroundChoices = structureStartingEquipmentByChoices($backgroundEquipment);
         
         foreach ($backgroundChoices as $choiceIndex => $choiceGroup) {
-            if ($choiceGroup['type_choix'] === 'obligatoire') {
+            if ($choiceGroup['type'] === 'fixed') {
                 // Équipement obligatoire - ajouter tous les items
                 foreach ($choiceGroup['options'] as $option) {
                     $itemId = $option['id'];
                     $finalEquipment[] = $itemId; // Utiliser l'ID pour addStartingEquipmentToCharacterNew
                 }
-            } elseif ($choiceGroup['type_choix'] === 'à_choisir') {
+            } elseif ($choiceGroup['type'] === 'choice') {
                 // Choix d'équipement - traiter selon les choix du joueur
                 if (isset($equipmentChoices['background'][$choiceIndex])) {
                     $selectedOptionIndex = $equipmentChoices['background'][$choiceIndex];
@@ -291,10 +310,12 @@ function generateFinalEquipmentNew($classId, $backgroundId, $raceId, $equipmentC
                     }
                 } else {
                     // Si aucun choix n'a été fait, prendre la première option par défaut
-                    if (!empty($choiceGroup['options'])) {
+                    if (!empty($choiceGroup['options']) && isset($choiceGroup['options'][0])) {
                         $firstOption = $choiceGroup['options'][0];
-                        $itemId = $firstOption['id'];
-                        $finalEquipment[] = $itemId; // Utiliser l'ID pour addStartingEquipmentToCharacterNew
+                        if (isset($firstOption['id'])) {
+                            $itemId = $firstOption['id'];
+                            $finalEquipment[] = $itemId; // Utiliser l'ID pour addStartingEquipmentToCharacterNew
+                        }
                     }
                 }
             }
@@ -307,13 +328,13 @@ function generateFinalEquipmentNew($classId, $backgroundId, $raceId, $equipmentC
         $raceChoices = structureStartingEquipmentByChoices($raceEquipment);
         
         foreach ($raceChoices as $choiceIndex => $choiceGroup) {
-            if ($choiceGroup['type_choix'] === 'obligatoire') {
+            if ($choiceGroup['type'] === 'fixed') {
                 // Équipement obligatoire - ajouter tous les items
                 foreach ($choiceGroup['options'] as $option) {
                     $itemId = $option['id'];
                     $finalEquipment[] = $itemId; // Utiliser l'ID pour addStartingEquipmentToCharacterNew
                 }
-            } elseif ($choiceGroup['type_choix'] === 'à_choisir') {
+            } elseif ($choiceGroup['type'] === 'choice') {
                 // Choix d'équipement - traiter selon les choix du joueur
                 if (isset($equipmentChoices['race'][$choiceIndex])) {
                     $selectedOptionIndex = $equipmentChoices['race'][$choiceIndex];
@@ -324,10 +345,12 @@ function generateFinalEquipmentNew($classId, $backgroundId, $raceId, $equipmentC
                     }
                 } else {
                     // Si aucun choix n'a été fait, prendre la première option par défaut
-                    if (!empty($choiceGroup['options'])) {
+                    if (!empty($choiceGroup['options']) && isset($choiceGroup['options'][0])) {
                         $firstOption = $choiceGroup['options'][0];
-                        $itemId = $firstOption['id'];
-                        $finalEquipment[] = $itemId; // Utiliser l'ID pour addStartingEquipmentToCharacterNew
+                        if (isset($firstOption['id'])) {
+                            $itemId = $firstOption['id'];
+                            $finalEquipment[] = $itemId; // Utiliser l'ID pour addStartingEquipmentToCharacterNew
+                        }
                     }
                 }
             }

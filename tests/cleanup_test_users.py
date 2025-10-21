@@ -54,7 +54,7 @@ def connect_to_database():
         print(f"Erreur de connexion à la base de données: {e}")
         return None
 
-def cleanup_test_users(days_old=1, dry_run=False):
+def cleanup_test_users(days_old=1, dry_run=False, auto_confirm=False):
     """
     Nettoie les utilisateurs de test de la base de données
     
@@ -120,11 +120,18 @@ def cleanup_test_users(days_old=1, dry_run=False):
             print("🔍 Mode dry-run: Aucune suppression effectuée")
             return True
         
-        # Demander confirmation
-        response = input(f"\n❓ Voulez-vous supprimer ces {len(test_users)} utilisateur(s) de test? (oui/non): ")
-        if response.lower() not in ['oui', 'o', 'yes', 'y']:
-            print("❌ Suppression annulée")
-            return False
+        # Demander confirmation (sauf en mode auto_confirm)
+        if not auto_confirm:
+            try:
+                response = input(f"\n❓ Voulez-vous supprimer ces {len(test_users)} utilisateur(s) de test? (oui/non): ")
+                if response.lower() not in ['oui', 'o', 'yes', 'y']:
+                    print("❌ Suppression annulée")
+                    return False
+            except (EOFError, KeyboardInterrupt):
+                print("\n❌ Suppression annulée")
+                return False
+        else:
+            print(f"\n✅ Suppression automatique de {len(test_users)} utilisateur(s) de test...")
         
         # Supprimer les utilisateurs de test
         deleted_count = 0
@@ -140,44 +147,80 @@ def cleanup_test_users(days_old=1, dry_run=False):
                 # Supprimer les campagnes créées par l'utilisateur
                 cursor.execute("DELETE FROM campaigns WHERE dm_id = %s", (user_id,))
                 
-                # Supprimer les sessions de campagne
-                cursor.execute("DELETE FROM campaign_sessions WHERE dm_id = %s", (user_id,))
+                # Supprimer les sessions de campagne (si la table existe)
+                try:
+                    cursor.execute("DELETE FROM campaign_sessions WHERE dm_id = %s", (user_id,))
+                except Exception:
+                    pass  # La table n'existe peut-être pas
                 
                 # Supprimer les jets de dés
                 cursor.execute("DELETE FROM dice_rolls WHERE user_id = %s", (user_id,))
                 
-                # Supprimer les tokens de scène
-                cursor.execute("DELETE FROM scene_tokens WHERE user_id = %s", (user_id,))
+                # Supprimer les tokens de scène (si la table existe)
+                try:
+                    cursor.execute("DELETE FROM scene_tokens WHERE user_id = %s", (user_id,))
+                except Exception:
+                    pass
                 
-                # Supprimer les objets de lieu
-                cursor.execute("DELETE FROM place_objects WHERE user_id = %s", (user_id,))
+                # Supprimer les objets de lieu (si la table existe)
+                try:
+                    cursor.execute("DELETE FROM place_objects WHERE user_id = %s", (user_id,))
+                except Exception:
+                    pass
                 
-                # Supprimer les monstres créés par l'utilisateur
-                cursor.execute("DELETE FROM monsters WHERE created_by = %s", (user_id,))
+                # Supprimer les monstres créés par l'utilisateur (si la table existe)
+                try:
+                    cursor.execute("DELETE FROM monsters WHERE created_by = %s", (user_id,))
+                except Exception:
+                    pass
                 
-                # Supprimer les objets magiques créés par l'utilisateur
-                cursor.execute("DELETE FROM magical_items WHERE created_by = %s", (user_id,))
+                # Supprimer les objets magiques créés par l'utilisateur (si la table existe)
+                try:
+                    cursor.execute("DELETE FROM magical_items WHERE created_by = %s", (user_id,))
+                except Exception:
+                    pass
                 
-                # Supprimer les poisons créés par l'utilisateur
-                cursor.execute("DELETE FROM poisons WHERE created_by = %s", (user_id,))
+                # Supprimer les poisons créés par l'utilisateur (si la table existe)
+                try:
+                    cursor.execute("DELETE FROM poisons WHERE created_by = %s", (user_id,))
+                except Exception:
+                    pass
                 
-                # Supprimer les sorts appris
-                cursor.execute("DELETE FROM character_spells WHERE character_id IN (SELECT id FROM characters WHERE user_id = %s)", (user_id,))
+                # Supprimer les sorts appris (si la table existe)
+                try:
+                    cursor.execute("DELETE FROM character_spells WHERE character_id IN (SELECT id FROM characters WHERE user_id = %s)", (user_id,))
+                except Exception:
+                    pass
                 
-                # Supprimer les équipements des personnages
-                cursor.execute("DELETE FROM character_equipment WHERE character_id IN (SELECT id FROM characters WHERE user_id = %s)", (user_id,))
+                # Supprimer les équipements des personnages (si la table existe)
+                try:
+                    cursor.execute("DELETE FROM character_equipment WHERE character_id IN (SELECT id FROM characters WHERE user_id = %s)", (user_id,))
+                except Exception:
+                    pass
                 
-                # Supprimer les capacités des personnages
-                cursor.execute("DELETE FROM character_capabilities WHERE character_id IN (SELECT id FROM characters WHERE user_id = %s)", (user_id,))
+                # Supprimer les capacités des personnages (si la table existe)
+                try:
+                    cursor.execute("DELETE FROM character_capabilities WHERE character_id IN (SELECT id FROM characters WHERE user_id = %s)", (user_id,))
+                except Exception:
+                    pass
                 
-                # Supprimer les langues des personnages
-                cursor.execute("DELETE FROM character_languages WHERE character_id IN (SELECT id FROM characters WHERE user_id = %s)", (user_id,))
+                # Supprimer les langues des personnages (si la table existe)
+                try:
+                    cursor.execute("DELETE FROM character_languages WHERE character_id IN (SELECT id FROM characters WHERE user_id = %s)", (user_id,))
+                except Exception:
+                    pass
                 
-                # Supprimer les sorts de classe
-                cursor.execute("DELETE FROM class_spells WHERE character_id IN (SELECT id FROM characters WHERE user_id = %s)", (user_id,))
+                # Supprimer les sorts de classe (si la table existe)
+                try:
+                    cursor.execute("DELETE FROM class_spells WHERE character_id IN (SELECT id FROM characters WHERE user_id = %s)", (user_id,))
+                except Exception:
+                    pass
                 
-                # Supprimer les emplacements de sorts
-                cursor.execute("DELETE FROM spell_slots WHERE character_id IN (SELECT id FROM characters WHERE user_id = %s)", (user_id,))
+                # Supprimer les emplacements de sorts (si la table existe)
+                try:
+                    cursor.execute("DELETE FROM spell_slots WHERE character_id IN (SELECT id FROM characters WHERE user_id = %s)", (user_id,))
+                except Exception:
+                    pass
                 
                 # Supprimer les personnages (cascade)
                 cursor.execute("DELETE FROM characters WHERE user_id = %s", (user_id,))
@@ -206,7 +249,7 @@ def cleanup_test_users(days_old=1, dry_run=False):
     finally:
         connection.close()
 
-def cleanup_all_test_users(dry_run=False):
+def cleanup_all_test_users(dry_run=False, auto_confirm=False):
     """Nettoie tous les utilisateurs de test (peu importe l'âge)"""
     connection = connect_to_database()
     if not connection:
@@ -260,11 +303,18 @@ def cleanup_all_test_users(dry_run=False):
             print("🔍 Mode dry-run: Aucune suppression effectuée")
             return True
         
-        # Demander confirmation
-        response = input(f"\n❓ Voulez-vous supprimer TOUS ces {len(test_users)} utilisateur(s) de test? (oui/non): ")
-        if response.lower() not in ['oui', 'o', 'yes', 'y']:
-            print("❌ Suppression annulée")
-            return False
+        # Demander confirmation (sauf en mode auto_confirm)
+        if not auto_confirm:
+            try:
+                response = input(f"\n❓ Voulez-vous supprimer TOUS ces {len(test_users)} utilisateur(s) de test? (oui/non): ")
+                if response.lower() not in ['oui', 'o', 'yes', 'y']:
+                    print("❌ Suppression annulée")
+                    return False
+            except (EOFError, KeyboardInterrupt):
+                print("\n❌ Suppression annulée")
+                return False
+        else:
+            print(f"\n✅ Suppression automatique de TOUS les {len(test_users)} utilisateur(s) de test...")
         
         # Supprimer tous les utilisateurs de test
         deleted_count = 0
@@ -276,19 +326,68 @@ def cleanup_all_test_users(dry_run=False):
                 # Supprimer toutes les données liées (même logique que cleanup_test_users)
                 cursor.execute("DELETE FROM characters WHERE user_id = %s", (user_id,))
                 cursor.execute("DELETE FROM campaigns WHERE dm_id = %s", (user_id,))
-                cursor.execute("DELETE FROM campaign_sessions WHERE dm_id = %s", (user_id,))
+                
+                # Tables optionnelles
+                try:
+                    cursor.execute("DELETE FROM campaign_sessions WHERE dm_id = %s", (user_id,))
+                except Exception:
+                    pass
+                
                 cursor.execute("DELETE FROM dice_rolls WHERE user_id = %s", (user_id,))
-                cursor.execute("DELETE FROM scene_tokens WHERE user_id = %s", (user_id,))
-                cursor.execute("DELETE FROM place_objects WHERE user_id = %s", (user_id,))
-                cursor.execute("DELETE FROM monsters WHERE created_by = %s", (user_id,))
-                cursor.execute("DELETE FROM magical_items WHERE created_by = %s", (user_id,))
-                cursor.execute("DELETE FROM poisons WHERE created_by = %s", (user_id,))
-                cursor.execute("DELETE FROM character_spells WHERE character_id IN (SELECT id FROM characters WHERE user_id = %s)", (user_id,))
-                cursor.execute("DELETE FROM character_equipment WHERE character_id IN (SELECT id FROM characters WHERE user_id = %s)", (user_id,))
-                cursor.execute("DELETE FROM character_capabilities WHERE character_id IN (SELECT id FROM characters WHERE user_id = %s)", (user_id,))
-                cursor.execute("DELETE FROM character_languages WHERE character_id IN (SELECT id FROM characters WHERE user_id = %s)", (user_id,))
-                cursor.execute("DELETE FROM class_spells WHERE character_id IN (SELECT id FROM characters WHERE user_id = %s)", (user_id,))
-                cursor.execute("DELETE FROM spell_slots WHERE character_id IN (SELECT id FROM characters WHERE user_id = %s)", (user_id,))
+                
+                try:
+                    cursor.execute("DELETE FROM scene_tokens WHERE user_id = %s", (user_id,))
+                except Exception:
+                    pass
+                
+                try:
+                    cursor.execute("DELETE FROM place_objects WHERE user_id = %s", (user_id,))
+                except Exception:
+                    pass
+                
+                try:
+                    cursor.execute("DELETE FROM monsters WHERE created_by = %s", (user_id,))
+                except Exception:
+                    pass
+                
+                try:
+                    cursor.execute("DELETE FROM magical_items WHERE created_by = %s", (user_id,))
+                except Exception:
+                    pass
+                
+                try:
+                    cursor.execute("DELETE FROM poisons WHERE created_by = %s", (user_id,))
+                except Exception:
+                    pass
+                try:
+                    cursor.execute("DELETE FROM character_spells WHERE character_id IN (SELECT id FROM characters WHERE user_id = %s)", (user_id,))
+                except Exception:
+                    pass
+                
+                try:
+                    cursor.execute("DELETE FROM character_equipment WHERE character_id IN (SELECT id FROM characters WHERE user_id = %s)", (user_id,))
+                except Exception:
+                    pass
+                
+                try:
+                    cursor.execute("DELETE FROM character_capabilities WHERE character_id IN (SELECT id FROM characters WHERE user_id = %s)", (user_id,))
+                except Exception:
+                    pass
+                
+                try:
+                    cursor.execute("DELETE FROM character_languages WHERE character_id IN (SELECT id FROM characters WHERE user_id = %s)", (user_id,))
+                except Exception:
+                    pass
+                
+                try:
+                    cursor.execute("DELETE FROM class_spells WHERE character_id IN (SELECT id FROM characters WHERE user_id = %s)", (user_id,))
+                except Exception:
+                    pass
+                
+                try:
+                    cursor.execute("DELETE FROM spell_slots WHERE character_id IN (SELECT id FROM characters WHERE user_id = %s)", (user_id,))
+                except Exception:
+                    pass
                 cursor.execute("DELETE FROM characters WHERE user_id = %s", (user_id,))
                 cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
                 
@@ -334,6 +433,16 @@ def show_test_users():
             '%@example.com'
         ]
         
+        # Exclure les utilisateurs légitimes
+        exclude_patterns = [
+            'admin',
+            'dm_test',
+            'player_test',
+            'admin@jdrmj.com',
+            'dm@jdrmj.com',
+            'player@jdrmj.com'
+        ]
+        
         # Construire la requête pour trouver tous les utilisateurs de test
         where_conditions = []
         params = []
@@ -371,7 +480,34 @@ def show_test_users():
         connection.close()
 
 def main():
-    """Fonction principale avec menu interactif"""
+    """Fonction principale avec support des arguments en ligne de commande"""
+    import sys
+    
+    # Vérifier les arguments en ligne de commande
+    if len(sys.argv) > 1:
+        if "--dry-run" in sys.argv:
+            print("🔍 Mode dry-run - Affichage des utilisateurs qui seraient supprimés:")
+            cleanup_test_users(days_old=1, dry_run=True)
+            return
+        elif "--all" in sys.argv:
+            cleanup_all_test_users(dry_run=False, auto_confirm=True)
+            return
+        elif "--days=" in " ".join(sys.argv):
+            days = 1
+            for arg in sys.argv:
+                if arg.startswith("--days="):
+                    days = int(arg.split("=")[1])
+                    break
+            cleanup_test_users(days_old=days, dry_run=False, auto_confirm=True)
+            return
+        elif "--help" in sys.argv or "-h" in sys.argv:
+            print("Usage: python3 cleanup_test_users.py [--dry-run] [--all] [--days=N]")
+            print("  --dry-run    Afficher sans supprimer")
+            print("  --all        Supprimer tous les utilisateurs de test")
+            print("  --days=N     Supprimer les utilisateurs > N jours (défaut: 1)")
+            return
+    
+    # Mode interactif si aucun argument
     print("🧹 Script de nettoyage des utilisateurs de test")
     print("=" * 50)
     
@@ -384,7 +520,11 @@ def main():
         print("5. Mode dry-run (afficher sans supprimer)")
         print("0. Quitter")
         
-        choice = input("\nVotre choix (0-5): ").strip()
+        try:
+            choice = input("\nVotre choix (0-5): ").strip()
+        except EOFError:
+            # Mode non-interactif, sortir
+            break
         
         if choice == "0":
             print("👋 Au revoir!")

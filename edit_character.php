@@ -89,24 +89,8 @@ if ($character['class_id']) {
 
 // Capacités de classe basées sur le niveau
 $classCapabilities = [];
-if ($isBarbarian) {
-    $classCapabilities = getBarbarianCapabilities($character['level']);
-} elseif ($isBard) {
-    $classCapabilities = getBardCapabilities($character['level']);
-} elseif ($isCleric) {
-    $classCapabilities = getClericCapabilities($character['level']);
-} elseif ($isDruid) {
-    $classCapabilities = getDruidCapabilities($character['level']);
-} elseif ($isSorcerer) {
-    $classCapabilities = getSorcererCapabilities($character['level']);
-} elseif ($isFighter) {
-    $classCapabilities = getFighterCapabilities($character['level']);
-} elseif ($isWizard) {
-    $classCapabilities = getWizardCapabilities($character['level']);
-} elseif ($isMonk) {
-    $classCapabilities = getMonkCapabilities($character['level']);
-} elseif ($isWarlock) {
-    $classCapabilities = getWarlockCapabilities($character['level']);
+if ($character['class_id']) {
+    $classCapabilities = getClassCapabilities($character['class_id'], $character['level']);
 }
 
 // Capacités raciales

@@ -327,6 +327,66 @@ class Character
     }
     
     /**
+     * Supprimer complètement le personnage avec toutes ses données associées
+     * 
+     * @return bool True si succès, false sinon
+     */
+    public function deleteCompletely()
+    {
+        try {
+            $this->pdo->beginTransaction();
+            
+            // 1. Supprimer l'équipement du personnage
+            $stmt = $this->pdo->prepare("DELETE FROM character_equipment WHERE character_id = ?");
+            $stmt->execute([$this->id]);
+            
+            // 2. Supprimer les sorts appris
+            $stmt = $this->pdo->prepare("DELETE FROM character_spells WHERE character_id = ?");
+            $stmt->execute([$this->id]);
+            
+            // 3. Supprimer les capacités du personnage
+            $stmt = $this->pdo->prepare("DELETE FROM character_capabilities WHERE character_id = ?");
+            $stmt->execute([$this->id]);
+            
+            // 4. Supprimer les améliorations d'aptitudes
+            $stmt = $this->pdo->prepare("DELETE FROM character_ability_improvements WHERE character_id = ?");
+            $stmt->execute([$this->id]);
+            
+            // 5. Supprimer l'utilisation de rage
+            $stmt = $this->pdo->prepare("DELETE FROM character_rage_usage WHERE character_id = ?");
+            $stmt->execute([$this->id]);
+            
+            // 6. Supprimer les sessions de création
+            $stmt = $this->pdo->prepare("DELETE FROM character_creation_sessions WHERE character_id = ?");
+            $stmt->execute([$this->id]);
+            
+            // 7. Retirer le personnage de tous les lieux
+            $stmt = $this->pdo->prepare("DELETE FROM place_players WHERE character_id = ?");
+            $stmt->execute([$this->id]);
+            
+            // 8. Retirer le personnage de tous les groupes
+            $stmt = $this->pdo->prepare("DELETE FROM groupe_membres WHERE member_id = ? AND member_type = 'pj'");
+            $stmt->execute([$this->id]);
+            
+            // 9. Supprimer le personnage lui-même
+            $stmt = $this->pdo->prepare("DELETE FROM characters WHERE id = ? AND user_id = ?");
+            $stmt->execute([$this->id, $this->user_id]);
+            
+            if ($stmt->rowCount() === 0) {
+                throw new Exception("Personnage non trouvé ou permissions insuffisantes");
+            }
+            
+            $this->pdo->commit();
+            return true;
+            
+        } catch (Exception $e) {
+            $this->pdo->rollBack();
+            error_log("Erreur lors de la suppression complète du personnage: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
      * Vérifier si le personnage appartient à un utilisateur
      */
     public function belongsToUser($userId)

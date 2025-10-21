@@ -215,7 +215,17 @@ occultiste : FOR 8 DEX 13 CON 14 SAG 10 INT 12 CHA 15
 Roublard : FOR 8 DEX 15 CON 13 SAG 10 INT 14 CHA 12
 Rodeur : FOR 8 DEX 15 CON 13 SAG 14 INT 12 CHA 10
 
-Ajouter la possibilité de créer des monstres
+
+Ils faut ajouter un boutons PNJ en entêtes. Entre "Groupes" et "Admin"
+Ce bouton permet de lister les PNJ et les MNJ.
+
+Il faut différencier la création de PNJ et de PJ. 
+Ajouter la possibilité de créer des monstres et des PNJ depuis la page manage_npcs 
+Les PJ doivent être créés en utilisant la création par step à partir de l'écran characters.php
+Les PNJ doivent être créés à partir de l'écran manage_npcs.php en utilisant soit la création par step soit la création automatique.
+
+
+
 
 ############################# Dés ################################
 Je voudrais que tu me génères une image contenant un set de dés :

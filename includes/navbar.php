@@ -46,6 +46,20 @@
                             <i class="fas fa-globe-americas me-1"></i>Mondes
                         </a>
                     </li>
+                    
+                    <!-- Groupes (uniquement pour les MJ et Admin) -->
+                    <li class="nav-item">
+                        <a class="nav-link <?php echo (isset($current_page) && $current_page === 'manage_groups') ? 'active' : ''; ?>" href="manage_groups.php">
+                            <i class="fas fa-users me-1"></i>Groupes
+                        </a>
+                    </li>
+                    
+                    <!-- PNJ (uniquement pour les MJ et Admin) -->
+                    <li class="nav-item">
+                        <a class="nav-link <?php echo (isset($current_page) && $current_page === 'manage_npcs') ? 'active' : ''; ?>" href="manage_npcs.php">
+                            <i class="fas fa-user-tie me-1"></i>PNJ
+                        </a>
+                    </li>
                     <?php endif; ?>
                     
                     <!-- Admin (uniquement pour les administrateurs) -->

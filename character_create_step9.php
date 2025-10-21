@@ -663,8 +663,8 @@ if (isset($_GET['debug'])) {
                                                 <?php 
                                                 // Gérer la nouvelle structure avec 'options'
                                                 if (isset($choiceGroup['options'])) {
-                                                    foreach ($choiceGroup['options'] as $optionIndex => $choice): 
-                                                        $optionLetter = chr(97 + $optionIndex); // a, b, c, etc.
+                                                    foreach ($choiceGroup['options'] as $optionLetter => $choice): 
+                                                        // $optionLetter est déjà une lettre (a, b, c, etc.)
                                                 ?>
                                                         <?php 
                                                         // Utiliser displayEquipmentOption pour gérer les dropdowns d'armes
@@ -762,8 +762,8 @@ if (isset($_GET['debug'])) {
                                                 <?php 
                                                 // Gérer la nouvelle structure avec 'options'
                                                 if (isset($choiceGroup['options'])) {
-                                                    foreach ($choiceGroup['options'] as $optionIndex => $choice): 
-                                                        $optionLetter = chr(97 + $optionIndex); // a, b, c, etc.
+                                                    foreach ($choiceGroup['options'] as $optionLetter => $choice): 
+                                                        // $optionLetter est déjà une lettre (a, b, c, etc.)
                                                 ?>
                                                         <?php 
                                                         // Utiliser la fonction détaillée si nous avons des données de starting_equipment

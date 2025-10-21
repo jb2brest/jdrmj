@@ -276,7 +276,7 @@ class CandidatureCampagne
     public static function hasPlayerApplied($campaignId, $playerId, $status = self::STATUS_PENDING, PDO $pdo = null)
     {
         $candidature = self::getByCampaignAndPlayer($campaignId, $playerId, $status, $pdo);
-        return $candidature !== null;
+        return $candidature !== null && $candidature !== false;
     }
 
     /**

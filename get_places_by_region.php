@@ -1,44 +1,26 @@
 <?php
-/**
- * Endpoint pour récupérer les lieux d'une région
- */
-
-require_once 'config/database.php';
+require_once 'classes/init.php';
+require_once 'includes/functions.php';
 
 header('Content-Type: application/json');
 
 try {
-    $region_id = (int)($_GET['region_id'] ?? 0);
-    $exclude_place_id = (int)($_GET['exclude_place_id'] ?? 0);
+    $pdo = getPdo();
+    
+    $region_id = $_GET['region_id'] ?? null;
     
     if (!$region_id) {
-        echo json_encode(['success' => false, 'error' => 'ID de région manquant']);
+        echo json_encode([]);
         exit;
     }
     
-    $pdo = getPDO();
-    
-    if ($exclude_place_id) {
-        $stmt = $pdo->prepare("SELECT id, title FROM places WHERE region_id = ? AND id != ? ORDER BY title");
-        $stmt->execute([$region_id, $exclude_place_id]);
-    } else {
-        $stmt = $pdo->prepare("SELECT id, title FROM places WHERE region_id = ? ORDER BY title");
-        $stmt->execute([$region_id]);
-    }
-    
+    $stmt = $pdo->prepare("SELECT id, title FROM places WHERE region_id = ? ORDER BY title");
+    $stmt->execute([$region_id]);
     $places = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    echo json_encode([
-        'success' => true,
-        'places' => $places
-    ]);
-    
+    echo json_encode($places);
 } catch (Exception $e) {
-    echo json_encode([
-        'success' => false,
-        'error' => $e->getMessage()
-    ]);
+    http_response_code(500);
+    echo json_encode(['error' => 'Erreur lors de la récupération des lieux']);
 }
 ?>
-
-

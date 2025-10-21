@@ -157,8 +157,7 @@ $current_page = "profile";
                                 else echo 'user';
                             ?> me-2"></i>
                             <?php 
-                            $tempUser = new User();
-                            $tempUser->role = $user['role'];
+                            $tempUser = new User(null, ['role' => $user['role']]);
                             echo $tempUser->getRoleLabel(); 
                             ?>
                         </span>

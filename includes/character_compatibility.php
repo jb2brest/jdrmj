@@ -687,6 +687,335 @@ if (!function_exists('saveCharacterCreationData')) {
 }
 
 /**
+ * Créer une session de création de PNJ (compatibilité)
+ */
+if (!function_exists('createNPCCreationSession')) {
+    function createNPCCreationSession($userId) {
+        return uniqid('npc_creation_', true);
+    }
+}
+
+/**
+ * Obtenir les données de création de PNJ (compatibilité)
+ */
+if (!function_exists('getNPCCreationData')) {
+    function getNPCCreationData($userId, $sessionId) {
+        if (isset($_SESSION['npc_creation_data'][$sessionId])) {
+            $data = $_SESSION['npc_creation_data'][$sessionId];
+            
+            if ($data['user_id'] == $userId) {
+                return $data;
+            }
+        }
+        
+        return [
+            'user_id' => $userId,
+            'session_id' => $sessionId,
+            'step' => 1,
+            'data' => []
+        ];
+    }
+}
+
+/**
+ * Sauvegarder une étape de création de PNJ (compatibilité)
+ */
+if (!function_exists('saveNPCCreationStep')) {
+    function saveNPCCreationStep($userId, $sessionId, $step, $data) {
+        if (!isset($_SESSION['npc_creation_data'])) {
+            $_SESSION['npc_creation_data'] = [];
+        }
+        
+        if (!isset($_SESSION['npc_creation_data'][$sessionId])) {
+            $_SESSION['npc_creation_data'][$sessionId] = [
+                'user_id' => $userId,
+                'session_id' => $sessionId,
+                'step' => $step,
+                'data' => []
+            ];
+        }
+        
+        $_SESSION['npc_creation_data'][$sessionId]['data'] = array_merge(
+            $_SESSION['npc_creation_data'][$sessionId]['data'],
+            $data
+        );
+        $_SESSION['npc_creation_data'][$sessionId]['step'] = $step;
+        
+        return true;
+    }
+}
+
+/**
+ * Nettoyer les données de création de PNJ (compatibilité)
+ */
+if (!function_exists('clearNPCCreationData')) {
+    function clearNPCCreationData($userId, $sessionId) {
+        if (isset($_SESSION['npc_creation_data'][$sessionId])) {
+            unset($_SESSION['npc_creation_data'][$sessionId]);
+        }
+        return true;
+    }
+}
+
+/**
+ * Finaliser la création d'un PNJ (compatibilité)
+ */
+if (!function_exists('finalizeNPCCreation')) {
+    function finalizeNPCCreation($userId, $sessionId) {
+        $pdo = getPDO();
+        
+        try {
+            $sessionData = getNPCCreationData($userId, $sessionId);
+            if (!$sessionData || empty($sessionData['data'])) {
+                error_log("Erreur finalizeNPCCreation: Aucune donnée de session trouvée");
+                return false;
+            }
+            
+            $data = $sessionData['data'];
+            
+            if (empty($data['name']) || empty($data['class_id']) || empty($data['race_id']) || empty($data['place_id'])) {
+                error_log("Erreur finalizeNPCCreation: Données essentielles manquantes");
+                return false;
+            }
+            
+            // Créer d'abord le personnage dans la table characters
+            $stmt = $pdo->prepare("
+                INSERT INTO characters (
+                    user_id, name, race_id, class_id, level, experience_points, background, alignment,
+                    strength, dexterity, constitution, intelligence, wisdom, charisma,
+                    hit_points_max, armor_class, speed, equipment, personality_traits, ideals, bonds, flaws, is_npc, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())
+            ");
+            
+            $stmt->execute([
+                $userId, $data['name'], $data['race_id'], $data['class_id'], $data['level'] ?? 1, 
+                $data['experience_points'] ?? 0, $data['background'] ?? '', $data['alignment'] ?? '',
+                $data['strength'] ?? 10, $data['dexterity'] ?? 10, $data['constitution'] ?? 10,
+                $data['intelligence'] ?? 10, $data['wisdom'] ?? 10, $data['charisma'] ?? 10,
+                $data['hit_points_max'] ?? 8, $data['armor_class'] ?? 10, $data['speed'] ?? 30,
+                $data['equipment'] ?? '', $data['personality_traits'] ?? '', $data['ideals'] ?? '',
+                $data['bonds'] ?? '', $data['flaws'] ?? ''
+            ]);
+            
+            $character_id = $pdo->lastInsertId();
+            
+            // Créer ensuite l'entrée dans place_npcs
+            $description = "PNJ de niveau " . ($data['level'] ?? 1) . " - " . ($data['race_name'] ?? '') . " " . ($data['class_name'] ?? '') . ". " . ($data['personality_traits'] ?? '');
+            
+            $stmt = $pdo->prepare("
+                INSERT INTO place_npcs (name, description, profile_photo, is_visible, is_identified, place_id, monster_id, npc_character_id) 
+                VALUES (?, ?, ?, ?, ?, ?, NULL, ?)
+            ");
+            $stmt->execute([
+                $data['name'], $description, $data['profile_photo'] ?? null, 
+                $data['is_visible'] ?? 1, $data['is_identified'] ?? 1, 
+                $data['place_id'], $character_id
+            ]);
+            
+            // Nettoyer la session
+            unset($_SESSION['npc_creation_data'][$sessionId]);
+            
+            return [
+                'character_id' => $character_id,
+                'npc_id' => $pdo->lastInsertId()
+            ];
+            
+        } catch (Exception $e) {
+            error_log("Erreur finalizeNPCCreation: " . $e->getMessage());
+            return false;
+        }
+    }
+}
+
+/**
+ * Fonction pour obtenir l'icône d'une classe
+ */
+if (!function_exists('getClassIcon')) {
+    function getClassIcon($className) {
+        $icons = [
+            'Barbare' => 'fist-raised',
+            'Barde' => 'music',
+            'Clerc' => 'cross',
+            'Druide' => 'leaf',
+            'Ensorceleur' => 'magic',
+            'Guerrier' => 'sword',
+            'Magicien' => 'hat-wizard',
+            'Moine' => 'hand-rock',
+            'Occultiste' => 'skull',
+            'Paladin' => 'shield-alt',
+            'Rôdeur' => 'bow-arrow',
+            'Roublard' => 'mask'
+        ];
+        
+        return $icons[$className] ?? 'user';
+    }
+}
+
+/**
+ * Fonction pour obtenir l'icône d'une race
+ */
+if (!function_exists('getRaceIcon')) {
+    function getRaceIcon($raceName) {
+        $icons = [
+            'Humain' => 'user',
+            'Elfe' => 'leaf',
+            'Nain' => 'hammer',
+            'Halfelin' => 'seedling',
+            'Demi-elfe' => 'star',
+            'Demi-orc' => 'fist-raised',
+            'Dragonide' => 'dragon',
+            'Gnome' => 'magic',
+            'Tieffelin' => 'fire'
+        ];
+        
+        return $icons[$raceName] ?? 'user';
+    }
+}
+
+/**
+ * Fonction pour obtenir l'icône d'un historique
+ */
+if (!function_exists('getBackgroundIcon')) {
+    function getBackgroundIcon($backgroundName) {
+        $icons = [
+            'Acolyte' => 'cross',
+            'Artisan' => 'hammer',
+            'Charlatan' => 'mask',
+            'Criminel' => 'user-secret',
+            'Ermite' => 'mountain',
+            'Folk Hero' => 'star',
+            'Guild Artisan' => 'tools',
+            'Hermit' => 'tree',
+            'Noble' => 'crown',
+            'Outlander' => 'hiking',
+            'Sage' => 'book',
+            'Sailor' => 'ship',
+            'Soldier' => 'shield-alt',
+            'Spy' => 'eye',
+            'Urchin' => 'home'
+        ];
+        
+        return $icons[$backgroundName] ?? 'scroll';
+    }
+}
+
+/**
+ * Fonction pour obtenir l'icône d'une option de classe
+ */
+if (!function_exists('getClassOptionIcon')) {
+    function getClassOptionIcon($className) {
+        $icons = [
+            'Barbare' => 'axe-battle',
+            'Barde' => 'music',
+            'Clerc' => 'cross',
+            'Druide' => 'leaf',
+            'Guerrier' => 'sword',
+            'Magicien' => 'hat-wizard',
+            'Moine' => 'fist-raised',
+            'Paladin' => 'shield-alt',
+            'Rôdeur' => 'bow-arrow',
+            'Roublard' => 'mask',
+            'Ensorceleur' => 'magic',
+            'Occultiste' => 'hand-holding-magic'
+        ];
+        
+        return $icons[$className] ?? 'star';
+    }
+}
+
+/**
+ * Fonction pour vérifier si une classe peut lancer des sorts
+ */
+if (!function_exists('canCastSpells')) {
+    function canCastSpells($className) {
+        $spellcasters = [
+            'Barde',
+            'Clerc', 
+            'Druide',
+            'Ensorceleur',
+            'Magicien',
+            'Occultiste',
+            'Paladin',
+            'Rôdeur'
+        ];
+        
+        return in_array($className, $spellcasters);
+    }
+}
+
+/**
+ * Fonction pour obtenir les préconisations D&D pour une classe
+ */
+if (!function_exists('getDnDRecommendations')) {
+    function getDnDRecommendations($className) {
+        $recommendations = [
+            'Barbare' => [
+                'primary' => ['Force', 'Constitution'],
+                'secondary' => ['Dextérité', 'Sagesse'],
+                'description' => 'La Force pour les attaques, la Constitution pour la rage et la survie.'
+            ],
+            'Barde' => [
+                'primary' => ['Charisme', 'Dextérité'],
+                'secondary' => ['Constitution', 'Intelligence'],
+                'description' => 'Le Charisme alimente les sorts et les performances, la Dextérité améliore l\'armure.'
+            ],
+            'Clerc' => [
+                'primary' => ['Sagesse', 'Constitution'],
+                'secondary' => ['Force', 'Dextérité'],
+                'description' => 'La Sagesse alimente les sorts divins, la Constitution assure la survie au combat.'
+            ],
+            'Druide' => [
+                'primary' => ['Sagesse', 'Constitution'],
+                'secondary' => ['Dextérité', 'Intelligence'],
+                'description' => 'La Sagesse alimente les sorts, la Constitution assure la survie en forme animale.'
+            ],
+            'Guerrier' => [
+                'primary' => ['Force', 'Constitution'],
+                'secondary' => ['Dextérité', 'Intelligence'],
+                'description' => 'Les guerriers comptent sur la Force pour les attaques et la Constitution pour survivre au combat.'
+            ],
+            'Moine' => [
+                'primary' => ['Dextérité', 'Sagesse'],
+                'secondary' => ['Force', 'Constitution'],
+                'description' => 'La Dextérité améliore l\'armure et les attaques, la Sagesse alimente les capacités ki.'
+            ],
+            'Paladin' => [
+                'primary' => ['Force', 'Charisme'],
+                'secondary' => ['Dextérité', 'Constitution'],
+                'description' => 'La Force pour les attaques, le Charisme alimente les sorts et les capacités divines.'
+            ],
+            'Magicien' => [
+                'primary' => ['Intelligence', 'Constitution'],
+                'secondary' => ['Dextérité', 'Sagesse'],
+                'description' => 'L\'Intelligence détermine la puissance des sorts, la Constitution aide à maintenir la concentration.'
+            ],
+            'Ensorceleur' => [
+                'primary' => ['Charisme', 'Constitution'],
+                'secondary' => ['Dextérité', 'Intelligence'],
+                'description' => 'Le Charisme alimente les sorts, la Constitution aide à maintenir la concentration.'
+            ],
+            'Occultiste' => [
+                'primary' => ['Charisme', 'Constitution'],
+                'secondary' => ['Dextérité', 'Intelligence'],
+                'description' => 'Le Charisme alimente les sorts, la Constitution aide à maintenir la concentration.'
+            ],
+            'Roublard' => [
+                'primary' => ['Dextérité', 'Intelligence'],
+                'secondary' => ['Constitution', 'Charisme'],
+                'description' => 'La Dextérité améliore les attaques furtives, l\'Intelligence aide aux compétences.'
+            ],
+            'Rôdeur' => [
+                'primary' => ['Dextérité', 'Sagesse'],
+                'secondary' => ['Constitution', 'Intelligence'],
+                'description' => 'La Dextérité pour les attaques à distance, la Sagesse pour les sorts et la perception.'
+            ]
+        ];
+        
+        return $recommendations[$className] ?? $recommendations['Guerrier'];
+    }
+}
+
+/**
  * Finaliser la création d'un personnage (compatibilité)
  */
 if (!function_exists('finalizeCharacterCreation')) {

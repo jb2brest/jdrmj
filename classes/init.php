@@ -24,6 +24,7 @@ require_once __DIR__ . '/Sort.php';
 require_once __DIR__ . '/Item.php';
 require_once __DIR__ . '/Lieu.php';
 require_once __DIR__ . '/Monstre.php';
+require_once __DIR__ . '/Groupe.php';
 require_once __DIR__ . '/StartingEquipment.php';
 require_once __DIR__ . '/StartingEquipmentChoix.php';
 require_once __DIR__ . '/StartingEquipmentOption.php';

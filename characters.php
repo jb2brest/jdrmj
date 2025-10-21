@@ -31,7 +31,7 @@ foreach ($characterObjects as $character) {
 }
 ?>
 <?php
-$page_title = "Mes Personnages";
+$page_title = "Mes Personnages Joueurs (PJ)";
 $current_page = "characters";
 ?>
 
@@ -99,18 +99,20 @@ $current_page = "characters";
     <div class="container mt-4">
         <!-- En-tête -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>
-                <i class="fas fa-users me-2"></i>Mes Personnages
-            </h1>
+            <div>
+                <h1>
+                    <i class="fas fa-users me-2"></i>Mes Personnages Joueurs (PJ)
+                </h1>
+                <p class="text-muted mb-0">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Cette page gère vos personnages joueurs (PJ). Pour créer des PNJ et monstres, utilisez la page 
+                    <a href="manage_npcs.php" class="text-decoration-none">PNJ</a>.
+                </p>
+            </div>
             <div class="btn-group" role="group">
                 <a href="character_create_step1.php" class="btn btn-dnd">
                     <i class="fas fa-plus me-2"></i>Créer un Personnage
                 </a>
-                <?php if (User::isDMOrAdmin()): ?>
-                    <a href="create_npc_automatic.php" class="btn btn-outline-primary">
-                        <i class="fas fa-robot me-2"></i>Création Automatique
-                    </a>
-                <?php endif; ?>
             </div>
         </div>
 

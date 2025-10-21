@@ -378,8 +378,24 @@ def cleanup_test_user_from_db(user_data):
             # 3. Pays
             cursor.execute("DELETE FROM countries WHERE world_id IN (SELECT id FROM worlds WHERE created_by = %s)", (user_id,))
             
-            # 4. Mondes
+            # 4. Mondes (ceux créés par l'utilisateur ET ceux stockés dans created_worlds)
             cursor.execute("DELETE FROM worlds WHERE created_by = %s", (user_id,))
+            
+            # Nettoyer aussi les mondes stockés dans created_worlds
+            if user_data.get('created_worlds'):
+                for world in user_data['created_worlds']:
+                    if world.get('name'):
+                        cursor.execute("DELETE FROM worlds WHERE name = %s", (world['name'],))
+                        
+                        # Nettoyer aussi les pays et régions stockés dans les mondes
+                        if world.get('countries'):
+                            for country in world['countries']:
+                                if country.get('name'):
+                                    cursor.execute("DELETE FROM countries WHERE name = %s", (country['name'],))
+                                    if country.get('regions'):
+                                        for region in country['regions']:
+                                            if region.get('name'):
+                                                cursor.execute("DELETE FROM regions WHERE name = %s", (region['name'],))
             
             # 5. Données de campagne (dans l'ordre hiérarchique)
             # 5.1. Notifications liées aux campagnes

@@ -1135,3 +1135,4 @@ class TestRogueClass:
 
 
 
+
