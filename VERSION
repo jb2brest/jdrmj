@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.18.3
+VERSION=2.18.4
 
 # Date de déploiement
 DEPLOY_DATE=2025-10-22
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-10-22
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=05694058a2e94dba8c9b67507b07e049401211d2
+GIT_COMMIT=b8038a3305a37fd380391f810e7d54ad240118b2
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251022-070533
+BUILD_ID=20251022-124832
 
 # Notes de version
-RELEASE_NOTES="ajax + endpoint"
+RELEASE_NOTES="mise au normes view_place.php"
