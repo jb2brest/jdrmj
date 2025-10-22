@@ -2,19 +2,19 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.18.2
+VERSION=2.18.3
 
 # Date de déploiement
-DEPLOY_DATE=2025-10-21
+DEPLOY_DATE=2025-10-22
 
 # Environnement
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=a17044eaffa560d6b5087aee7413225a71fcc715
+GIT_COMMIT=05694058a2e94dba8c9b67507b07e049401211d2
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251021-223450
+BUILD_ID=20251022-070533
 
 # Notes de version
 RELEASE_NOTES="ajax + endpoint"
