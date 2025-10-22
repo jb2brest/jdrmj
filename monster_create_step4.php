@@ -302,3 +302,4 @@ $current_page = "manage_npcs";
 </body>
 </html>
 
+
