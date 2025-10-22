@@ -2917,4 +2917,25 @@ class Character
         }
     }
 
+    /**
+     * Récupérer les personnages d'un utilisateur
+     * 
+     * @param int $userId ID de l'utilisateur
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return array Liste des personnages
+     */
+    public static function getByUserId($userId, PDO $pdo = null)
+    {
+        $pdo = $pdo ?: getPDO();
+        
+        try {
+            $stmt = $pdo->prepare("SELECT id, name FROM characters WHERE user_id = ? ORDER BY name");
+            $stmt->execute([$userId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération des personnages de l'utilisateur: " . $e->getMessage());
+            return [];
+        }
+    }
+
 }

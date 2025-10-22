@@ -683,5 +683,24 @@ class Region
     {
         return $this->name;
     }
+
+    /**
+     * Récupérer toutes les régions
+     * 
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return array Liste de toutes les régions
+     */
+    public static function getAllRegions(PDO $pdo = null)
+    {
+        $pdo = $pdo ?: getPDO();
+        
+        try {
+            $stmt = $pdo->query("SELECT id, name, country_id FROM regions ORDER BY name");
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération de toutes les régions: " . $e->getMessage());
+            return [];
+        }
+    }
 }
 

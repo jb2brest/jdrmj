@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Save Dice Roll API</title>
+</head>
+<body>
+    <h1>Test Save Dice Roll API</h1>
+    <button onclick="testSaveDiceRoll()">Tester l'API</button>
+    <div id="result"></div>
+
+    <script>
+    async function testSaveDiceRoll() {
+        const testData = {
+            campaign_id: 120,
+            dice_sides: 20,
+            quantity: 1,
+            results: [15],
+            total: 15,
+            max_result: 15,
+            min_result: 15,
+            is_hidden: false
+        };
+
+        console.log('📊 Données envoyées:', testData);
+
+        try {
+            const response = await fetch('api/save_dice_roll.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(testData)
+            });
+
+            const result = await response.json();
+            console.log('📄 Réponse reçue:', result);
+            
+            document.getElementById('result').innerHTML = 
+                '<h3>Réponse:</h3><pre>' + JSON.stringify(result, null, 2) + '</pre>';
+        } catch (error) {
+            console.error('❌ Erreur:', error);
+            document.getElementById('result').innerHTML = 
+                '<h3>Erreur:</h3><p>' + error.message + '</p>';
+        }
+    }
+    </script>
+</body>
+</html>

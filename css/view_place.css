@@ -1,0 +1,114 @@
+/* Styles pour la page view_place */
+
+/* Conteneur de la carte avec overflow visible */
+#mapContainer {
+    overflow: visible !important;
+}
+
+/* Zone des pions (sidebar) */
+#tokenSidebar {
+    position: absolute !important;
+    right: -120px !important;
+    top: 0 !important;
+    width: 100px !important;
+    height: 500px !important;
+    border: 2px dashed #ccc !important;
+    border-radius: 8px !important;
+    background: rgba(248, 249, 250, 0.8) !important;
+    padding: 10px !important;
+    overflow-y: auto !important;
+    z-index: 10 !important;
+    visibility: visible !important;
+    display: block !important;
+}
+
+.token {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: move;
+    z-index: 10;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.token.player {
+    background-color: #007bff;
+}
+
+.token.npc {
+    background-color: #28a745;
+}
+
+.token.monster {
+    background-color: #dc3545;
+}
+
+.token:hover {
+    transform: scale(1.1);
+    transition: transform 0.2s;
+}
+
+#mapContainer {
+    position: relative;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    overflow: hidden;
+}
+
+.notes-content {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.dice-roll-item {
+    transition: background-color 0.2s;
+}
+
+.dice-roll-item:hover {
+    background-color: #f8f9fa;
+}
+
+.player-item, .npc-item, .monster-item, .object-item {
+    transition: background-color 0.2s;
+}
+
+.player-item:hover, .npc-item:hover, .monster-item:hover, .object-item:hover {
+    background-color: #f8f9fa;
+}
+
+.list-group-item {
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.list-group-item:hover {
+    background-color: #f8f9fa;
+}
+
+.modal-body .form-control:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.alert {
+    border-radius: 0.5rem;
+}
+
+.card {
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.btn {
+    border-radius: 0.375rem;
+}
+
+.form-control {
+    border-radius: 0.375rem;
+}
+
+.badge {
+    border-radius: 0.375rem;
+}

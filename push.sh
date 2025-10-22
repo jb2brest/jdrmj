@@ -421,6 +421,10 @@ chmod 755 database/
 chmod 644 database/*.sql
 chmod 755 classes/
 chmod 644 classes/*.php
+chmod 755 api/
+chmod 644 api/*.php
+chmod 755 templates/
+chmod 644 templates/*.php
 chmod 755 tests/
 chmod 755 tests/reports/
 chmod 644 tests/reports/*.json
@@ -551,6 +555,10 @@ prepare_files() {
             --include="database/**" \
             --include="classes/" \
             --include="classes/**" \
+            --include="api/" \
+            --include="api/**" \
+            --include="templates/" \
+            --include="templates/**" \
             --include="uploads/" \
             --include="uploads/**" \
             --include="tests/" \
@@ -590,6 +598,10 @@ prepare_files() {
             --include="database/**" \
             --include="classes/" \
             --include="classes/**" \
+            --include="api/" \
+            --include="api/**" \
+            --include="templates/" \
+            --include="templates/**" \
             --include="uploads/" \
             --include="uploads/**" \
             --include="tests/reports/" \

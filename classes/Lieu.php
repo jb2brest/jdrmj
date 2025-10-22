@@ -556,17 +556,39 @@ class Lieu
     {
         try {
             $stmt = $this->pdo->prepare("
-                SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, sn.current_hit_points, sn.is_visible, sn.is_identified,
-                       m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class, m.csv_id
-                FROM place_npcs sn 
-                JOIN dnd_monsters m ON sn.monster_id = m.id 
-                WHERE sn.place_id = ? AND sn.monster_id IS NOT NULL AND sn.is_visible = 1
-                ORDER BY sn.name ASC
+                SELECT pm.id, pm.monster_id, pm.is_visible, pm.is_identified,
+                       m.name, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class, m.csv_id
+                FROM place_monsters pm 
+                JOIN dnd_monsters m ON pm.monster_id = m.id 
+                WHERE pm.place_id = ? AND pm.is_visible = 1
+                ORDER BY m.name ASC
             ");
             $stmt->execute([$this->id]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             error_log("Erreur lors de la récupération des monstres: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Obtenir tous les monstres présents dans ce lieu (pour le MJ)
+     */
+    public function getAllMonsters()
+    {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT pm.id, pm.monster_id, pm.is_visible, pm.is_identified,
+                       m.name, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class, m.csv_id
+                FROM place_monsters pm 
+                JOIN dnd_monsters m ON pm.monster_id = m.id 
+                WHERE pm.place_id = ?
+                ORDER BY m.name ASC
+            ");
+            $stmt->execute([$this->id]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération de tous les monstres: " . $e->getMessage());
             return [];
         }
     }
@@ -1815,5 +1837,24 @@ class Lieu
             'npcs' => self::getNpcsForPlaces($placeIds, $pdo),
             'monsters' => self::getMonstersForPlaces($placeIds, $pdo)
         ];
+    }
+
+    /**
+     * Récupérer tous les lieux
+     * 
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return array Liste de tous les lieux
+     */
+    public static function getAllPlaces(PDO $pdo = null)
+    {
+        $pdo = $pdo ?: getPDO();
+        
+        try {
+            $stmt = $pdo->query("SELECT id, title, region_id FROM places ORDER BY title");
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération de tous les lieux: " . $e->getMessage());
+            return [];
+        }
     }
 }

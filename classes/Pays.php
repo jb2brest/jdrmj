@@ -652,4 +652,23 @@ class Pays
     {
         return $this->name;
     }
+
+    /**
+     * Récupérer tous les pays
+     * 
+     * @param PDO|null $pdo Instance PDO (optionnelle)
+     * @return array Liste de tous les pays
+     */
+    public static function getAllCountries(PDO $pdo = null)
+    {
+        $pdo = $pdo ?: getPDO();
+        
+        try {
+            $stmt = $pdo->query("SELECT id, name FROM countries ORDER BY name");
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération de tous les pays: " . $e->getMessage());
+            return [];
+        }
+    }
 }
