@@ -32,7 +32,7 @@ try {
     $pdo = getPDO();
     $stmt = $pdo->prepare("
         SELECT * FROM items 
-        WHERE id = ? AND owner_type = 'place' AND owner_id IS NULL
+        WHERE id = ? AND (owner_type = 'place' OR owner_type IS NULL)
     ");
     $stmt->execute([$objectId]);
     $object = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -59,8 +59,12 @@ try {
             break;
             
         case 'npc':
-            $stmt = $pdo->prepare("SELECT name FROM npcs WHERE id = ?");
-            $stmt->execute([$targetId]);
+            $stmt = $pdo->prepare("
+                SELECT pn.name 
+                FROM place_npcs pn 
+                WHERE pn.id = ? AND pn.place_id = ?
+            ");
+            $stmt->execute([$targetId, $placeId]);
             $target = $stmt->fetch(PDO::FETCH_ASSOC);
             if ($target) {
                 $targetExists = true;
@@ -69,8 +73,13 @@ try {
             break;
             
         case 'monster':
-            $stmt = $pdo->prepare("SELECT name FROM monsters WHERE id = ?");
-            $stmt->execute([$targetId]);
+            $stmt = $pdo->prepare("
+                SELECT m.name 
+                FROM place_monsters pm 
+                JOIN monsters m ON pm.monster_id = m.id 
+                WHERE pm.id = ? AND pm.place_id = ?
+            ");
+            $stmt->execute([$targetId, $placeId]);
             $target = $stmt->fetch(PDO::FETCH_ASSOC);
             if ($target) {
                 $targetExists = true;

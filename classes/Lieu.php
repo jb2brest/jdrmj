@@ -645,6 +645,28 @@ class Lieu
     }
     
     /**
+     * Obtenir les objets non attribués du lieu (pour l'interface MJ)
+     */
+    public function getUnassignedObjects()
+    {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped,
+                       position_x, position_y, is_on_map, owner_type, owner_id,
+                       poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed
+                FROM items 
+                WHERE place_id = ? AND (owner_type = 'place' OR owner_type IS NULL)
+                ORDER BY display_name ASC
+            ");
+            $stmt->execute([$this->id]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération des objets non attribués: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
      * Recharger tous les objets du lieu (pour view_place.php)
      */
     public function reloadAllObjects()
