@@ -31,10 +31,10 @@ if ($itemId <= 0) {
 // Vérifier les permissions (vérifier que l'objet appartient à un personnage accessible)
 $pdo = getPDO();
 $stmt = $pdo->prepare("
-    SELECT ce.character_id, c.user_id 
-    FROM character_equipment ce 
-    JOIN characters c ON ce.character_id = c.id 
-    WHERE ce.id = ?
+    SELECT i.owner_id as character_id, c.user_id 
+    FROM items i 
+    JOIN characters c ON i.owner_id = c.id 
+    WHERE i.id = ? AND i.owner_type = 'player'
 ");
 $stmt->execute([$itemId]);
 $item = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -55,16 +55,45 @@ if (!$isOwner && !$isDM && !$isAdmin) {
     exit();
 }
 
-// Supprimer l'objet
-$success = Character::deleteItem($itemId);
+// Récupérer le lieu du personnage pour déposer l'objet
+$stmt = $pdo->prepare("
+    SELECT pp.place_id 
+    FROM place_players pp 
+    JOIN characters c ON pp.character_id = c.id 
+    WHERE c.id = ? AND c.user_id = ?
+");
+$stmt->execute([$item['character_id'], $item['user_id']]);
+$place = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$place || !$place['place_id']) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Le personnage n\'est dans aucun lieu']);
+    exit();
+}
+
+// Déposer l'objet dans le lieu (mettre à jour place_id et owner_type)
+$stmt = $pdo->prepare("
+    UPDATE items 
+    SET place_id = ?, 
+        owner_type = 'place', 
+        owner_id = ?, 
+        is_visible = 1, 
+        is_equipped = 0,
+        position_x = 0,
+        position_y = 0,
+        is_on_map = 0
+    WHERE id = ?
+");
+
+$success = $stmt->execute([$place['place_id'], $place['place_id'], $itemId]);
 
 if ($success) {
     echo json_encode([
         'success' => true, 
-        'message' => 'Objet supprimé avec succès'
+        'message' => 'Objet déposé dans le lieu avec succès'
     ]);
 } else {
     http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Erreur lors de la suppression']);
+    echo json_encode(['success' => false, 'message' => 'Erreur lors du dépôt de l\'objet']);
 }
 ?>
