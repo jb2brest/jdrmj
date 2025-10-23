@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.18.16
+VERSION=2.18.17
 
 # Date de déploiement
 DEPLOY_DATE=2025-10-23
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-10-23
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=a3d53c56a5423be6d78f34a31703089a5c4c494d
+GIT_COMMIT=30e23ad021a7d1d8f2b593bf51881c54e5b47d3a
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251023-211950
+BUILD_ID=20251023-212642
 
 # Notes de version
-RELEASE_NOTES="dépôt des objets"
+RELEASE_NOTES="attribution des objets"
