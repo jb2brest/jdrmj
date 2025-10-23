@@ -98,6 +98,8 @@ try {
             // L'objet est maintenant dans l'inventaire de la cible
             $newObjectData['owner_type'] = $targetType;
             $newObjectData['owner_id'] = $targetId;
+            // L'objet n'est plus dans un lieu spécifique
+            $newObjectData['place_id'] = null;
             // L'objet n'est plus visible sur la carte du lieu
             $newObjectData['is_visible'] = 0;
             $newObjectData['is_on_map'] = 0;
@@ -156,6 +158,7 @@ try {
             UPDATE items 
             SET owner_type = ?, 
                 owner_id = ?, 
+                place_id = NULL,
                 is_visible = 0, 
                 is_on_map = 0, 
                 position_x = 0, 

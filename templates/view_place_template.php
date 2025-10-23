@@ -658,9 +658,14 @@ extract($template_vars ?? []);
                     <?php else: ?>
                         <div class="objects-list">
                             <?php foreach ($placeObjects as $object): ?>
-                                <div class="object-item d-flex align-items-center p-2 border-bottom">
+                                <div class="object-item d-flex align-items-center p-2 border-bottom <?php echo !$object['is_visible'] ? 'opacity-50 bg-light' : ''; ?>">
                                     <div class="object-info flex-grow-1">
-                                        <div class="fw-bold"><?php echo htmlspecialchars($object['display_name']); ?></div>
+                                        <div class="fw-bold">
+                                            <?php echo htmlspecialchars($object['display_name']); ?>
+                                            <?php if (!$object['is_visible']): ?>
+                                                <span class="badge bg-secondary ms-2">Masqué</span>
+                                            <?php endif; ?>
+                                        </div>
                                         <small class="text-muted"><?php echo htmlspecialchars($object['object_type']); ?></small>
                                     </div>
                                     <div class="d-flex gap-1">

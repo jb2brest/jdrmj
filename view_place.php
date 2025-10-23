@@ -280,7 +280,7 @@ $placeAccesses = Access::getFromPlace($place_id);
 $placePlayers = $lieu->getAllPlayersDetailed();
 $placeNpcs = $lieu->getAllNpcsDetailed();
 $placeMonsters = $lieu->getAllMonsters();
-$placeObjects = $lieu->getVisibleObjects();
+$placeObjects = $lieu->getAllObjects();
 $tokenPositions = $lieu->getTokenPositions();
 
 // Récupérer les positions des objets depuis place_tokens (système unifié)
