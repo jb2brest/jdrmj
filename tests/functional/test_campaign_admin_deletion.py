@@ -69,7 +69,7 @@ class TestCampaignAdminDeletion:
             driver.execute_script("arguments[0].click();", delete_button)
             
             # Attendre la confirmation JavaScript
-            time.sleep(1)
+            time.sleep(0.5)
             
             # Vérifier qu'une alerte de confirmation apparaît
             try:
@@ -100,35 +100,51 @@ class TestCampaignAdminDeletion:
     def test_non_admin_cannot_see_delete_buttons(self, driver, wait, app_url):
         """Test que les non-admins ne peuvent pas voir les boutons de suppression"""
         # Créer un utilisateur non-admin pour ce test
+        import time
+        timestamp = str(int(time.time()))
         non_admin_user = {
-            'username': 'test_player',
-            'email': 'player@test.com',
+            'username': f'test_player_{timestamp}',
+            'email': f'player_{timestamp}@test.com',
             'password': 'TestPassword123!',
-            'is_dm': False
+            'is_dm': False,
+            'role': 'player'
         }
         
-        # Se connecter en tant que joueur normal
-        self._login_user(driver, wait, app_url, non_admin_user)
+        # Créer l'utilisateur en base de données
+        from conftest import create_test_user_in_db
+        user_id = create_test_user_in_db(non_admin_user)
+        if user_id:
+            non_admin_user['id'] = user_id
         
-        # Aller à la page des campagnes
-        driver.get(f"{app_url}/campaigns.php")
-        
-        # Attendre que la page se charge
-        wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-        
-        # Vérifier qu'aucun bouton de suppression n'est visible
-        delete_buttons = driver.find_elements(By.CSS_SELECTOR, "button[title*='Supprimer'], .btn-outline-danger")
-        
-        if delete_buttons:
-            print(f"⚠️  {len(delete_buttons)} bouton(s) de suppression trouvé(s) pour un non-admin")
-            for i, btn in enumerate(delete_buttons):
-                title = btn.get_attribute('title')
-                print(f"   Bouton {i+1}: {title}")
-        else:
-            print("✅ Aucun bouton de suppression visible pour un non-admin")
-        
-        # Le test passe pour permettre le diagnostic
-        assert True, "Test de restriction des boutons de suppression terminé"
+        try:
+            # Se connecter en tant que joueur normal
+            self._login_user(driver, wait, app_url, non_admin_user)
+            
+            # Aller à la page des campagnes
+            driver.get(f"{app_url}/campaigns.php")
+            
+            # Attendre que la page se charge
+            wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+            
+            # Vérifier qu'aucun bouton de suppression n'est visible
+            delete_buttons = driver.find_elements(By.CSS_SELECTOR, "button[title*='Supprimer'], .btn-outline-danger")
+            
+            if delete_buttons:
+                print(f"⚠️  {len(delete_buttons)} bouton(s) de suppression trouvé(s) pour un non-admin")
+                for i, btn in enumerate(delete_buttons):
+                    title = btn.get_attribute('title')
+                    print(f"   Bouton {i+1}: {title}")
+            else:
+                print("✅ Aucun bouton de suppression visible pour un non-admin")
+            
+            # Le test passe pour permettre le diagnostic
+            assert True, "Test de restriction des boutons de suppression terminé"
+            
+        finally:
+            # Nettoyer l'utilisateur de test
+            if 'id' in non_admin_user:
+                from conftest import cleanup_test_user_from_db
+                cleanup_test_user_from_db(non_admin_user)
     
     def _login_user(self, driver, wait, app_url, test_user):
         """Helper method pour se connecter"""

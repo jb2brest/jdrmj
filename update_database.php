@@ -367,25 +367,7 @@ if ($stmt->rowCount() == 0) {
     }
 }
 
-// Vérifier la table user_monster_collection
-$stmt = $pdo->query("SHOW TABLES LIKE 'user_monster_collection'");
-if ($stmt->rowCount() == 0) {
-    echo "<p>Création de la table 'user_monster_collection'...</p>";
-    $pdo->exec("
-        CREATE TABLE user_monster_collection (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            user_id INT NOT NULL,
-            monster_id INT NOT NULL,
-            added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (monster_id) REFERENCES dnd_monsters(id) ON DELETE CASCADE,
-            UNIQUE KEY unique_collection (user_id, monster_id)
-        )
-    ");
-    echo "<p style='color: green;'>✓ Table 'user_monster_collection' créée</p>";
-} else {
-    echo "<p style='color: blue;'>ℹ Table 'user_monster_collection' existe déjà</p>";
-}
+// Table user_monster_collection supprimée - fonctionnalité de collection non disponible
 
 // Vérifier la colonne monster_id dans scene_npcs
 $stmt = $pdo->query("SHOW TABLES LIKE 'scene_npcs'");

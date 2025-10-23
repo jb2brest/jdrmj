@@ -34,8 +34,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_experience'])) {
     
     if ($character && $experience_to_add > 0) {
         $new_experience = $character['experience_points'] + $experience_to_add;
-        $new_level = calculateLevelFromExperience($new_experience);
-        $new_proficiency_bonus = calculateProficiencyBonusFromExperience($new_experience);
+        $new_level = Character::calculateLevelFromExperienceStatic($new_experience);
+        $new_proficiency_bonus = Character::calculateProficiencyBonusFromExperience($new_experience);
         
         $stmt = $pdo->prepare("
             UPDATE characters 

@@ -11,6 +11,14 @@ $response = ['success' => false, 'rolls' => []];
 $campaign_id = filter_input(INPUT_GET, 'campaign_id', FILTER_VALIDATE_INT);
 $show_hidden = filter_input(INPUT_GET, 'show_hidden', FILTER_VALIDATE_BOOLEAN);
 
+// Fallback pour les tests locaux
+if ($campaign_id === null && isset($_GET['campaign_id'])) {
+    $campaign_id = (int)$_GET['campaign_id'];
+}
+if ($show_hidden === null && isset($_GET['show_hidden'])) {
+    $show_hidden = filter_var($_GET['show_hidden'], FILTER_VALIDATE_BOOLEAN);
+}
+
 if (!$campaign_id) {
     $response['error'] = "ID de campagne manquant ou invalide";
     echo json_encode($response);

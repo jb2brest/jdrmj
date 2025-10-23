@@ -22,6 +22,17 @@ $show_hero = true;
 <body>
     <?php include 'includes/navbar.php'; ?>
 
+    <!-- Message de confirmation de suppression de compte -->
+    <?php if (isset($_GET['deleted']) && $_GET['deleted'] == '1'): ?>
+        <div class="container mt-4">
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle me-2"></i>
+                <strong>Compte supprimé avec succès</strong> - Votre compte et toutes vos données ont été définitivement supprimés.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <!-- Features Section -->
     <section class="py-5">
         <div class="container">
@@ -59,7 +70,7 @@ $show_hero = true;
     </section>
 
     <!-- DM Features Section -->
-    <?php if (isDMOrAdmin()): ?>
+    <?php if (User::isDMOrAdmin()): ?>
     <section class="bg-dark text-light py-5">
         <div class="container">
             <h2 class="text-center mb-5">Fonctionnalités Maître de Donjon</h2>
@@ -79,7 +90,7 @@ $show_hero = true;
                         <div class="card-body text-center">
                             <i class="fas fa-dragon fa-3x text-success mb-3"></i>
                             <h5 class="card-title">Bestiaire D&D</h5>
-                            <p class="card-text">Parcourez le bestiaire et créez votre collection de monstres.</p>
+                            <p class="card-text">Parcourez le bestiaire D&D complet.</p>
                             <a href="bestiary.php" class="btn btn-success">Parcourir le bestiaire</a>
                         </div>
                     </div>
@@ -87,10 +98,10 @@ $show_hero = true;
                 <div class="col-md-4">
                     <div class="card bg-dark border-light h-100">
                         <div class="card-body text-center">
-                            <i class="fas fa-bookmark fa-3x text-warning mb-3"></i>
-                            <h5 class="card-title">Ma Collection</h5>
-                            <p class="card-text">Gérez votre collection de monstres et créez des MNJ.</p>
-                            <a href="my_monsters.php" class="btn btn-warning">Ma collection</a>
+                            <i class="fas fa-users fa-3x text-warning mb-3"></i>
+                            <h5 class="card-title">Créer des MNJ</h5>
+                            <p class="card-text">Créez des monstres et personnages non-joueurs.</p>
+                            <a href="create_monster_npc.php" class="btn btn-warning">Créer un MNJ</a>
                         </div>
                     </div>
                 </div>

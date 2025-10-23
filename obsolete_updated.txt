@@ -1,0 +1,84 @@
+# Tables Obsolètes - Base de Données JDRMJ (MISE À JOUR)
+# Généré le : 2025-10-13
+# ATTENTION: Ne pas supprimer sans vérification manuelle et sauvegarde
+
+## ✅ MIGRATION TERMINÉE - Tables d'Archetypes Fusionnées
+# Les 12 tables d'archetypes ont été fusionnées en une seule table: class_archetypes
+# Code PHP mis à jour dans character_create_step5.php
+
+# Tables d'archetypes SUPPRIMABLES (après validation):
+barbarian_paths
+bard_colleges
+cleric_domains
+druid_circles
+fighter_archetypes
+monk_traditions
+paladin_oaths
+ranger_archetypes
+rogue_archetypes
+sorcerer_origins
+warlock_pacts
+wizard_traditions
+
+## Tables de Liaison Personnage-Archetypes (Obsolètes)
+# Ces tables ne sont plus nécessaires avec la nouvelle structure unifiée
+character_barbarian_path
+character_bard_college
+character_cleric_domain
+character_druid_circle
+character_fighter_archetype
+character_monk_tradition
+character_paladin_oaths
+character_ranger_archetypes
+character_rogue_archetypes
+character_sorcerer_origin
+character_warlock_pact
+character_wizard_tradition
+
+## Tables de Système (À Vérifier)
+# Tables système qui pourraient être obsolètes selon l'analyse
+
+place_objects_backup
+character_creation_sessions
+campaign_journal
+capabilities
+capability_types
+rage_usage
+
+## ✅ NOUVELLE TABLE CRÉÉE
+# class_archetypes - Table unifiée contenant tous les archetypes
+# - 81 enregistrements migrés avec succès
+# - Structure: id, class_id, name, description, level_X_feature, timestamps
+# - Utilisée par character_create_step5.php
+
+## Instructions de Suppression Sécurisée
+
+1. SAUVEGARDE COMPLÈTE de la base de données avant toute suppression
+2. Tester la création de personnage étape 5 pour valider la migration
+3. Vérifier manuellement chaque table pour s'assurer qu'elle n'est pas utilisée
+4. Supprimer par petits groupes pour minimiser les risques
+
+## Tables à NE JAMAIS Supprimer
+
+users
+characters
+campaigns
+campaign_members
+worlds
+countries
+regions
+places
+spells
+character_spells
+items
+dice_rolls
+races
+classes
+backgrounds
+languages
+weapons
+armor
+Object
+magical_items
+poisons
+class_archetypes  # NOUVELLE TABLE UNIFIÉE

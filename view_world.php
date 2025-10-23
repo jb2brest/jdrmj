@@ -1,5 +1,5 @@
 <?php
-require_once 'config/database.php';
+require_once 'classes/init.php';
 require_once 'includes/functions.php';
 $page_title = "Monde";
 $current_page = "view_world";
@@ -7,7 +7,7 @@ $current_page = "view_world";
 requireLogin();
 
 // Vérifier que l'utilisateur est MJ ou Admin
-if (!isDMOrAdmin()) {
+if (!User::isDMOrAdmin()) {
     header('Location: index.php');
     exit();
 }
@@ -20,12 +20,10 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
 $world_id = (int)$_GET['id'];
 $user_id = $_SESSION['user_id'];
 
-// Récupérer le monde
-$stmt = $pdo->prepare("SELECT * FROM worlds WHERE id = ? AND created_by = ?");
-$stmt->execute([$world_id, $user_id]);
-$world = $stmt->fetch();
+// Récupérer le monde via la classe Monde
+$monde = Monde::findById($world_id);
 
-if (!$world) {
+if (!$monde || $monde->getCreatedBy() != $user_id) {
     header('Location: manage_worlds.php?error=world_not_found');
     exit();
 }
@@ -111,15 +109,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 if (empty($error_message)) {
                     try {
-                        $stmt = $pdo->prepare("INSERT INTO countries (name, description, map_url, coat_of_arms_url, world_id) VALUES (?, ?, ?, ?, ?)");
-                        $stmt->execute([$name, $description, $map_url, $coat_of_arms_url, $world_id]);
+                        $univers = getUnivers();
+                        $pays = $univers->createPays($world_id, $name, $description, $map_url, $coat_of_arms_url);
                         $success_message = "Pays '$name' créé avec succès.";
-                    } catch (PDOException $e) {
-                        if ($e->getCode() == 23000) {
-                            $error_message = "Un pays avec ce nom existe déjà dans ce monde.";
-                        } else {
-                            $error_message = "Erreur lors de la création du pays: " . $e->getMessage();
-                        }
+                    } catch (Exception $e) {
+                        $error_message = "Erreur lors de la création du pays: " . $e->getMessage();
                     }
                 }
             }
@@ -133,12 +127,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (empty($name)) {
                 $error_message = "Le nom du pays est requis.";
             } else {
-                // Récupérer les URLs actuelles
-                $stmt = $pdo->prepare("SELECT map_url, coat_of_arms_url FROM countries WHERE id = ? AND world_id = ?");
-                $stmt->execute([$country_id, $world_id]);
-                $current_country = $stmt->fetch();
-                $map_url = $current_country['map_url'] ?? '';
-                $coat_of_arms_url = $current_country['coat_of_arms_url'] ?? '';
+                // Récupérer le pays via la classe Pays
+                $pays = Pays::findById($country_id);
+                if (!$pays || $pays->getWorldId() != $world_id) {
+                    $error_message = "Pays non trouvé.";
+                } else {
+                    $map_url = $pays->getMapUrl();
+                    $coat_of_arms_url = $pays->getCoatOfArmsUrl();
                 
                 // Gérer l'upload de la nouvelle carte si un fichier est fourni
                 if (isset($_FILES['map_image']) && $_FILES['map_image']['error'] === UPLOAD_ERR_OK) {
@@ -168,19 +163,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
                 
-                if (empty($error_message)) {
-                    try {
-                        $stmt = $pdo->prepare("UPDATE countries SET name = ?, description = ?, map_url = ?, coat_of_arms_url = ? WHERE id = ? AND world_id = ?");
-                        $stmt->execute([$name, $description, $map_url, $coat_of_arms_url, $country_id, $world_id]);
-                        if ($stmt->rowCount() > 0) {
-                            $success_message = "Pays '$name' mis à jour avec succès.";
-                        } else {
-                            $error_message = "Pays non trouvé.";
-                        }
-                    } catch (PDOException $e) {
-                        if ($e->getCode() == 23000) {
-                            $error_message = "Un pays avec ce nom existe déjà dans ce monde.";
-                        } else {
+                    if (empty($error_message)) {
+                        try {
+                            // Mettre à jour les propriétés du pays
+                            $pays->setName($name);
+                            $pays->setDescription($description);
+                            $pays->setMapUrl($map_url);
+                            $pays->setCoatOfArmsUrl($coat_of_arms_url);
+                            
+                            if ($pays->save()) {
+                                $success_message = "Pays '$name' mis à jour avec succès.";
+                            } else {
+                                $error_message = "Erreur lors de la mise à jour du pays.";
+                            }
+                        } catch (Exception $e) {
                             $error_message = "Erreur lors de la mise à jour: " . $e->getMessage();
                         }
                     }
@@ -192,122 +188,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $country_id = (int)($_POST['country_id'] ?? 0);
             
             try {
-                // Vérifier s'il y a des régions dans ce pays
-                $stmt = $pdo->prepare("SELECT COUNT(*) FROM regions WHERE country_id = ?");
-                $stmt->execute([$country_id]);
-                $region_count = $stmt->fetchColumn();
+                // Récupérer le pays via la classe Pays
+                $pays = Pays::findById($country_id);
                 
-                if ($region_count > 0) {
-                    $error_message = "Impossible de supprimer ce pays car il contient $region_count régions. Supprimez d'abord les régions.";
+                if ($pays && $pays->getWorldId() == $world_id) {
+                    $pays->delete();
+                    $success_message = "Pays supprimé avec succès.";
                 } else {
-                    // Récupérer les URLs des images avant suppression
-                    $stmt = $pdo->prepare("SELECT map_url, coat_of_arms_url FROM countries WHERE id = ? AND world_id = ?");
-                    $stmt->execute([$country_id, $world_id]);
-                    $country = $stmt->fetch();
-                    
-                    // Supprimer le pays
-                    $stmt = $pdo->prepare("DELETE FROM countries WHERE id = ? AND world_id = ?");
-                    $stmt->execute([$country_id, $world_id]);
-                    
-                    if ($stmt->rowCount() > 0) {
-                        // Supprimer les images associées si elles existent
-                        if (!empty($country['map_url']) && file_exists($country['map_url'])) {
-                            unlink($country['map_url']);
-                        }
-                        if (!empty($country['coat_of_arms_url']) && file_exists($country['coat_of_arms_url'])) {
-                            unlink($country['coat_of_arms_url']);
-                        }
-                        $success_message = "Pays supprimé avec succès.";
-                    } else {
-                        $error_message = "Pays non trouvé.";
-                    }
+                    $error_message = "Pays non trouvé.";
                 }
-            } catch (PDOException $e) {
-                $error_message = "Erreur lors de la suppression: " . $e->getMessage();
+            } catch (Exception $e) {
+                $error_message = $e->getMessage();
             }
             break;
     }
 }
 
-// Récupérer les pays du monde
-$stmt = $pdo->prepare("SELECT c.*, 
-    (SELECT COUNT(*) FROM regions WHERE country_id = c.id) as region_count
-    FROM countries c 
-    WHERE c.world_id = ? 
-    ORDER BY c.name");
-$stmt->execute([$world_id]);
-$countries = $stmt->fetchAll();
+// Récupérer les pays du monde via la classe Monde
+$countries = $monde->getCountries();
 
 // Récupérer un pays spécifique pour l'édition
 $edit_country = null;
 if (isset($_GET['edit_country']) && is_numeric($_GET['edit_country'])) {
     $country_id = (int)$_GET['edit_country'];
-    $stmt = $pdo->prepare("SELECT * FROM countries WHERE id = ? AND world_id = ?");
-    $stmt->execute([$country_id, $world_id]);
-    $edit_country = $stmt->fetch();
+    $edit_country = Pays::findById($country_id);
+    if (!$edit_country || $edit_country->getWorldId() != $world_id) {
+        $edit_country = null;
+    }
 }
 
-// Récupérer tous les PNJs du monde (via la hiérarchie pays → régions → lieux)
-$stmt = $pdo->prepare("
-    SELECT 
-        pn.id,
-        pn.name,
-        pn.description,
-        pn.profile_photo,
-        pn.is_visible,
-        pn.is_identified,
-        c.name AS character_name,
-        c.profile_photo AS character_profile_photo,
-        cl.name AS class_name,
-        r.name AS race_name,
-        pl.title AS place_name,
-        co.name AS country_name,
-        reg.name AS region_name,
-        'PNJ' AS type
-    FROM place_npcs pn
-    JOIN places pl ON pn.place_id = pl.id
-    LEFT JOIN countries co ON pl.country_id = co.id
-    LEFT JOIN regions reg ON pl.region_id = reg.id
-    LEFT JOIN characters c ON pn.npc_character_id = c.id
-    LEFT JOIN classes cl ON c.class_id = cl.id
-    LEFT JOIN races r ON c.race_id = r.id
-    WHERE co.world_id = ? AND pn.monster_id IS NULL
-    ORDER BY pn.name ASC
-");
-$stmt->execute([$world_id]);
-$world_npcs = $stmt->fetchAll();
+// Récupérer tous les PNJs du monde via la classe Monde
+$world_npcs = $monde->getNpcs();
 
-// Récupérer tous les monstres du monde (via la hiérarchie pays → régions → lieux)
-$stmt = $pdo->prepare("
-    SELECT 
-        pn.id,
-        pn.name,
-        pn.description,
-        pn.profile_photo,
-        pn.is_visible,
-        pn.is_identified,
-        pn.quantity,
-        pn.current_hit_points,
-        dm.name AS monster_name,
-        dm.type,
-        dm.size,
-        dm.challenge_rating,
-        dm.hit_points,
-        dm.armor_class,
-        pl.title AS place_name,
-        co.name AS country_name,
-        reg.name AS region_name,
-        'Monstre' AS type
-    FROM place_npcs pn
-    JOIN places pl ON pn.place_id = pl.id
-    LEFT JOIN countries co ON pl.country_id = co.id
-    LEFT JOIN regions reg ON pl.region_id = reg.id
-    JOIN dnd_monsters dm ON pn.monster_id = dm.id
-    WHERE co.world_id = ? AND pn.monster_id IS NOT NULL
-    ORDER BY pn.name ASC
-");
-$stmt->execute([$world_id]);
-$world_monsters = $stmt->fetchAll();
+// Récupérer tous les monstres du monde via la classe Monde
+$world_monsters = $monde->getMonsters();
+
+// Récupérer les données pour la cartographie inter-pays
+$world_accesses = $monde->getInterCountryAccesses();
+$external_countries = $monde->getExternalCountries();
 ?>
 
 <!DOCTYPE html>
@@ -315,7 +233,7 @@ $world_monsters = $stmt->fetchAll();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($world['name']); ?> - JDR 4 MJ</title>
+    <title><?php echo htmlspecialchars($monde->getName()); ?> - JDR 4 MJ</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
@@ -399,10 +317,10 @@ $world_monsters = $stmt->fetchAll();
                             <div>
                                 <h1 class="mb-2">
                                     <i class="fas fa-globe-americas me-2"></i>
-                                    <?php echo htmlspecialchars($world['name']); ?>
+                                    <?php echo htmlspecialchars($monde->getName()); ?>
                                 </h1>
-                                <?php if (!empty($world['description'])): ?>
-                                    <p class="text-muted mb-3"><?php echo nl2br(htmlspecialchars($world['description'])); ?></p>
+                                <?php if (!empty($monde->getDescription())): ?>
+                                    <p class="text-muted mb-3"><?php echo nl2br(htmlspecialchars($monde->getDescription())); ?></p>
                                 <?php endif; ?>
                                 <div class="d-flex gap-3">
                                     <a href="manage_worlds.php" class="btn btn-outline-secondary">
@@ -411,15 +329,20 @@ $world_monsters = $stmt->fetchAll();
                                     <button class="btn btn-outline-primary" onclick="editWorld()">
                                         <i class="fas fa-edit me-1"></i>Modifier le monde
                                     </button>
+                                    <?php if (!empty($countries)): ?>
+                                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#worldCartographyModal">
+                                            <i class="fas fa-map me-2"></i>Cartographie
+                                        </button>
+                                    <?php endif; ?>
                                 </div>
                             </div>
-                            <?php if (!empty($world['map_url'])): ?>
+                            <?php if (!empty($monde->getMapUrl())): ?>
                                 <div class="text-end">
-                                    <img src="<?php echo htmlspecialchars($world['map_url']); ?>" 
-                                         alt="Carte de <?php echo htmlspecialchars($world['name']); ?>" 
+                                    <img src="<?php echo htmlspecialchars($monde->getMapUrl()); ?>" 
+                                         alt="Carte de <?php echo htmlspecialchars($monde->getName()); ?>" 
                                          class="img-fluid rounded cursor-pointer" 
                                          style="max-height: 200px; max-width: 300px;"
-                                         onclick="openMapFullscreen('<?php echo htmlspecialchars($world['map_url']); ?>', '<?php echo htmlspecialchars($world['name']); ?>')"
+                                         onclick="openMapFullscreen('<?php echo htmlspecialchars($monde->getMapUrl()); ?>', '<?php echo htmlspecialchars($monde->getName()); ?>')"
                                          title="Cliquer pour voir en plein écran">
                                 </div>
                             <?php endif; ?>
@@ -455,23 +378,23 @@ $world_monsters = $stmt->fetchAll();
                                     <div class="col-lg-4 col-md-6 mb-3">
                                         <div class="card h-100">
                                             <div class="card-body">
-                                                <h6 class="card-title"><?php echo htmlspecialchars($country['name']); ?></h6>
-                                                <?php if (!empty($country['description'])): ?>
-                                                    <p class="card-text text-muted small"><?php echo nl2br(htmlspecialchars($country['description'])); ?></p>
+                                                <h6 class="card-title"><?php echo htmlspecialchars($country->getName()); ?></h6>
+                                                <?php if (!empty($country->getDescription())): ?>
+                                                    <p class="card-text text-muted small"><?php echo nl2br(htmlspecialchars($country->getDescription())); ?></p>
                                                 <?php endif; ?>
                                                 <div class="d-flex justify-content-between align-items-center">
                                                     <small class="text-muted">
                                                         <i class="fas fa-map-marked-alt me-1"></i>
-                                                        <?php echo $country['region_count']; ?> régions
+                                                        <?php echo $country->getRegionCount(); ?> régions
                                                     </small>
                                                     <div class="btn-group btn-group-sm">
-                                                        <a href="view_country.php?id=<?php echo (int)$country['id']; ?>" class="btn btn-outline-info btn-sm" title="Voir les régions">
+                                                        <a href="view_country.php?id=<?php echo (int)$country->getId(); ?>" class="btn btn-outline-info btn-sm" title="Voir les régions">
                                                             <i class="fas fa-eye"></i>
                                                         </a>
-                                                        <button class="btn btn-outline-primary btn-sm" onclick="editCountry(<?php echo htmlspecialchars(json_encode($country)); ?>)">
+                                                        <button class="btn btn-outline-primary btn-sm" onclick="editCountry(<?php echo htmlspecialchars(json_encode($country->toArray())); ?>)">
                                                             <i class="fas fa-edit"></i>
                                                         </button>
-                                                        <button class="btn btn-outline-danger btn-sm" onclick="deleteCountry(<?php echo $country['id']; ?>, '<?php echo htmlspecialchars($country['name']); ?>')">
+                                                        <button class="btn btn-outline-danger btn-sm" onclick="deleteCountry(<?php echo $country->getId(); ?>, '<?php echo htmlspecialchars($country->getName()); ?>')">
                                                             <i class="fas fa-trash"></i>
                                                         </button>
                                                     </div>
@@ -642,15 +565,27 @@ $world_monsters = $stmt->fetchAll();
                                                 <td>
                                                     <div class="btn-group btn-group-sm">
                                                         <?php if ($entity['type'] === 'PNJ'): ?>
-                                                            <a href="view_character.php?id=<?php echo (int)$entity['id']; ?>" 
-                                                               class="btn btn-outline-info btn-sm" title="Voir le PNJ">
-                                                                <i class="fas fa-eye"></i>
-                                                            </a>
+                                                            <?php if (!empty($entity['npc_character_id'])): ?>
+                                                                <a href="view_character.php?id=<?php echo (int)$entity['npc_character_id']; ?>" 
+                                                                   class="btn btn-outline-info btn-sm" title="Voir le PNJ">
+                                                                    <i class="fas fa-eye"></i>
+                                                                </a>
+                                                            <?php else: ?>
+                                                                <span class="btn btn-outline-secondary btn-sm disabled" title="PNJ sans personnage associé">
+                                                                    <i class="fas fa-eye-slash"></i>
+                                                                </span>
+                                                            <?php endif; ?>
                                                         <?php else: ?>
-                                                            <a href="view_monster_sheet.php?id=<?php echo (int)$entity['monster_id']; ?>" 
-                                                               class="btn btn-outline-info btn-sm" title="Voir le monstre">
-                                                                <i class="fas fa-eye"></i>
-                                                            </a>
+                                                            <?php if (!empty($entity['monster_id'])): ?>
+                                                                <a href="view_monster_sheet.php?id=<?php echo (int)$entity['id']; ?>" 
+                                                                   class="btn btn-outline-info btn-sm" title="Voir le monstre">
+                                                                    <i class="fas fa-eye"></i>
+                                                                </a>
+                                                            <?php else: ?>
+                                                                <span class="btn btn-outline-secondary btn-sm disabled" title="Monstre sans fiche associée">
+                                                                    <i class="fas fa-eye-slash"></i>
+                                                                </span>
+                                                            <?php endif; ?>
                                                         <?php endif; ?>
                                                     </div>
                                                 </td>
@@ -859,7 +794,7 @@ $world_monsters = $stmt->fetchAll();
 
         function editWorld() {
             // Rediriger vers la page de gestion des mondes avec l'ID en paramètre
-            window.location.href = 'manage_worlds.php?edit=<?php echo $world_id; ?>';
+            window.location.href = 'manage_worlds.php?edit=<?php echo $monde->getId(); ?>';
         }
         
         function editCountry(country) {
@@ -1078,5 +1013,374 @@ $world_monsters = $stmt->fetchAll();
             </div>
         </div>
     </div>
+
+    <!-- Modal Cartographie Inter-pays -->
+    <div class="modal fade" id="worldCartographyModal" tabindex="-1" aria-labelledby="worldCartographyModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="worldCartographyModalLabel">
+                        <i class="fas fa-map me-2"></i>Cartographie Inter-pays - <?php echo htmlspecialchars($monde->getName()); ?>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="position-relative" style="height: 600px; border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden;">
+                                <div id="worldCartographyCanvas" style="width: 100%; height: 100%; position: relative; cursor: grab;"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <h6><i class="fas fa-info-circle me-2"></i>Légende</h6>
+                                <div class="small">
+                                    <div class="mb-2">
+                                        <span class="badge bg-primary me-2">●</span>
+                                        <strong>Pays de ce monde</strong>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="badge bg-secondary me-2">●</span>
+                                        <strong>Pays d'un autre monde</strong>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="badge bg-success me-2">━━━</span>
+                                        <strong>Accès ouvert</strong>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="badge bg-warning me-2">━━━</span>
+                                        <strong>Accès fermé</strong>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="badge bg-danger me-2">━━━</span>
+                                        <strong>Accès piégé</strong>
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="badge bg-secondary me-2">┅┅┅</span>
+                                        <strong>Accès caché</strong>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-info small">
+                                <i class="fas fa-mouse-pointer me-2"></i>
+                                <strong>Interaction :</strong> Vous pouvez déplacer les pays en les faisant glisser pour une meilleure visibilité.
+                            </div>
+                            
+                            <?php if (!empty($world_accesses)): ?>
+                                <div class="mb-3">
+                                    <h6><i class="fas fa-route me-2"></i>Accès Inter-pays</h6>
+                                    <div class="small" style="max-height: 200px; overflow-y: auto;">
+                                        <?php foreach ($world_accesses as $access): ?>
+                                            <div class="mb-2 p-2 border rounded">
+                                                <div class="fw-bold"><?php echo htmlspecialchars($access->name); ?></div>
+                                                <div class="text-muted">
+                                                    <?php echo htmlspecialchars($access->from_place_name); ?> 
+                                                    (<?php echo htmlspecialchars($access->from_country_name); ?>)
+                                                    <i class="fas fa-arrow-right mx-1"></i>
+                                                    <?php echo htmlspecialchars($access->to_place_name); ?>
+                                                    (<?php echo htmlspecialchars($access->to_country_name); ?>)
+                                                </div>
+                                                <div class="small">
+                                                    <?php if (!$access->is_visible): ?>
+                                                        <span class="badge bg-secondary">Caché</span>
+                                                    <?php elseif ($access->is_trapped): ?>
+                                                        <span class="badge bg-danger">Piégé</span>
+                                                    <?php elseif ($access->is_open): ?>
+                                                        <span class="badge bg-success">Ouvert</span>
+                                                    <?php else: ?>
+                                                        <span class="badge bg-warning">Fermé</span>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="generateWorldCartography()">
+                        <i class="fas fa-sync-alt me-2"></i>Réorganiser
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Fermer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // === CARTographie INTER-PAYS ===
+        const worldCartographyData = {
+            countries: <?php echo json_encode(array_map(function($country) { return $country->toArray(); }, $countries)) ?>,
+            externalCountries: <?php echo json_encode($external_countries) ?>,
+            accesses: <?php echo json_encode($world_accesses) ?>,
+            currentWorldId: <?php echo $world_id ?>
+        };
+
+        let worldPlacePositions = {};
+        let worldIsDragging = false;
+        let worldDraggedElement = null;
+        let worldDragOffset = { x: 0, y: 0 };
+        let worldCartographyInitialized = false;
+
+        function generateWorldCartography() {
+            console.log('generateWorldCartography() called');
+            const canvas = document.getElementById('worldCartographyCanvas');
+            if (!canvas) {
+                console.log('Canvas not found!');
+                return;
+            }
+            
+            // Éviter les appels multiples
+            if (worldCartographyInitialized) {
+                console.log('World cartography already initialized, skipping...');
+                return;
+            }
+            worldCartographyInitialized = true;
+            
+            console.log('Canvas dimensions:', canvas.offsetWidth, 'x', canvas.offsetHeight);
+            
+            // Nettoyer le canvas
+            canvas.innerHTML = '';
+            
+            const width = canvas.offsetWidth;
+            const height = canvas.offsetHeight;
+            const margin = 50;
+            const availableWidth = width - (margin * 2);
+            const availableHeight = height - (margin * 2);
+            
+            // Réinitialiser les positions
+            worldPlacePositions = {};
+            console.log('Place positions reset');
+            
+            // Récupérer tous les pays (pour la cartographie de monde)
+            const allPlaces = [];
+            
+            // Ajouter les pays du monde
+            worldCartographyData.countries.forEach(country => {
+                allPlaces.push({
+                    id: 'country_' + country.id,
+                    title: country.name,
+                    isCountry: true,
+                    countryId: country.id
+                });
+            });
+            
+            // Ajouter les pays externes (si des accès vont vers d'autres mondes)
+            worldCartographyData.externalCountries.forEach(country => {
+                // Vérifier si ce pays externe n'est pas déjà ajouté
+                const existingCountry = allPlaces.find(p => p.countryId === country.id);
+                if (!existingCountry) {
+                    allPlaces.push({
+                        id: 'country_' + country.id,
+                        title: country.name,
+                        isCountry: true,
+                        countryId: country.id,
+                        worldName: country.world_name
+                    });
+                }
+            });
+            
+            if (allPlaces.length === 0) {
+                console.log('No countries to position');
+                return;
+            }
+            
+            console.log('Countries to position:', allPlaces.length);
+            
+            // Calculer les positions des pays en cercle
+            allPlaces.forEach((place, index) => {
+                console.log('Positioning country:', place.title, 'at index', index);
+                const angle = (index * 2 * Math.PI) / Math.max(allPlaces.length, 1);
+                const x = margin + (availableWidth / 2) + (Math.cos(angle) * (availableWidth / 3));
+                const y = margin + (availableHeight / 2) + (Math.sin(angle) * (availableHeight / 3));
+                
+                const initialPos = { x, y };
+                const adjustedPos = adjustWorldPosition(initialPos, worldPlacePositions);
+                
+                worldPlacePositions[place.id] = { 
+                    x: adjustedPos.x, 
+                    y: adjustedPos.y, 
+                    place, 
+                    isExternal: place.worldName !== undefined, // Pays externe s'il a un worldName
+                    isDragging: false
+                };
+            });
+            
+            // Dessiner les connexions
+            redrawWorldConnections();
+            
+            // Dessiner les pays
+            console.log('Final place positions:', Object.keys(worldPlacePositions));
+            Object.values(worldPlacePositions).forEach(({ x, y, place, isExternal }) => {
+                const placeElement = document.createElement('div');
+                placeElement.style.position = 'absolute';
+                placeElement.style.left = (x - 15) + 'px';
+                placeElement.style.top = (y - 15) + 'px';
+                placeElement.style.width = '30px';
+                placeElement.style.height = '30px';
+                placeElement.style.backgroundColor = isExternal ? '#6c757d' : '#007bff';
+                placeElement.style.border = '2px solid #fff';
+                placeElement.style.borderRadius = '50%';
+                placeElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+                placeElement.style.cursor = 'move';
+                placeElement.style.zIndex = '10';
+                placeElement.title = place.title + (isExternal ? ' (Autre monde)' : '') + ' - Cliquer et glisser pour déplacer';
+                placeElement.dataset.placeId = place.id;
+                
+                // Ajouter le nom du pays
+                const label = document.createElement('div');
+                label.style.position = 'absolute';
+                label.style.left = '35px';
+                label.style.top = '5px';
+                label.style.fontSize = '12px';
+                label.style.fontWeight = 'bold';
+                label.style.color = '#333';
+                label.style.backgroundColor = 'rgba(255,255,255,0.9)';
+                label.style.padding = '2px 6px';
+                label.style.borderRadius = '4px';
+                label.style.whiteSpace = 'nowrap';
+                label.style.pointerEvents = 'none';
+                label.style.zIndex = '11';
+                label.textContent = place.title;
+                
+                // Ajouter le nom du monde pour les pays externes
+                if (isExternal && place.worldName) {
+                    const worldLabel = document.createElement('div');
+                    worldLabel.style.position = 'absolute';
+                    worldLabel.style.left = '35px';
+                    worldLabel.style.top = '20px';
+                    worldLabel.style.fontSize = '10px';
+                    worldLabel.style.color = '#666';
+                    worldLabel.style.backgroundColor = 'rgba(255,255,255,0.9)';
+                    worldLabel.style.padding = '1px 4px';
+                    worldLabel.style.borderRadius = '3px';
+                    worldLabel.style.whiteSpace = 'nowrap';
+                    worldLabel.style.pointerEvents = 'none';
+                    worldLabel.style.zIndex = '11';
+                    worldLabel.textContent = '(' + place.worldName + ')';
+                    placeElement.appendChild(worldLabel);
+                }
+                
+                placeElement.appendChild(label);
+                canvas.appendChild(placeElement);
+            });
+        }
+
+        function redrawWorldConnections() {
+            const canvas = document.getElementById('worldCartographyCanvas');
+            if (!canvas) return;
+            
+            // Supprimer les anciennes connexions
+            const existingConnections = canvas.querySelectorAll('.connection-line');
+            existingConnections.forEach(conn => conn.remove());
+            
+            // Dessiner les accès entre pays
+            console.log('Drawing connections for', worldCartographyData.accesses.length, 'accesses');
+            worldCartographyData.accesses.forEach(access => {
+                console.log('Processing access:', access.name, 'from country', access.from_country_name, 'to country', access.to_country_name);
+                
+                // Trouver les positions des pays connectés
+                let fromPos = null;
+                let toPos = null;
+                
+                // Chercher par country_id (logique pour la cartographie de monde)
+                Object.values(worldPlacePositions).forEach(({ place, x, y }) => {
+                    if (place.title === access.from_country_name) {
+                        fromPos = { x, y };
+                    }
+                    if (place.title === access.to_country_name) {
+                        toPos = { x, y };
+                    }
+                });
+                
+                console.log('From position (country):', fromPos ? 'FOUND' : 'NOT FOUND', access.from_country_name);
+                console.log('To position (country):', toPos ? 'FOUND' : 'NOT FOUND', access.to_country_name);
+                
+                console.log('Final positions - From:', fromPos, 'To:', toPos);
+                
+                if (fromPos && toPos) {
+                    console.log('Drawing connection for access:', access.name);
+                    // Créer une ligne SVG
+                    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    svg.style.position = 'absolute';
+                    svg.style.top = '0';
+                    svg.style.left = '0';
+                    svg.style.width = '100%';
+                    svg.style.height = '100%';
+                    svg.style.pointerEvents = 'none';
+                    svg.style.zIndex = '5';
+                    svg.classList.add('connection-line');
+                    
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', fromPos.x);
+                    line.setAttribute('y1', fromPos.y);
+                    line.setAttribute('x2', toPos.x);
+                    line.setAttribute('y2', toPos.y);
+                    
+                    // Style selon le statut
+                    if (!access.is_visible) {
+                        line.setAttribute('stroke-dasharray', '5,5');
+                        line.setAttribute('stroke', '#6c757d');
+                    } else if (access.is_trapped) {
+                        line.setAttribute('stroke', '#dc3545');
+                    } else if (access.is_open) {
+                        line.setAttribute('stroke', '#28a745');
+                    } else {
+                        line.setAttribute('stroke', '#ffc107');
+                    }
+                    
+                    line.setAttribute('stroke-width', '3');
+                    svg.appendChild(line);
+                    canvas.appendChild(svg);
+                } else {
+                    console.log('Cannot draw connection - missing positions');
+                }
+            });
+        }
+
+        function adjustWorldPosition(newPos, existingPositions, minDistance = 80) {
+            let adjustedPos = { ...newPos };
+            let attempts = 0;
+            const maxAttempts = 50;
+            
+            while (attempts < maxAttempts) {
+                let hasCollision = false;
+                for (const [id, pos] of Object.entries(existingPositions)) {
+                    if (detectWorldCollision(adjustedPos, pos, minDistance)) {
+                        hasCollision = true;
+                        break;
+                    }
+                }
+                if (!hasCollision) {
+                    break;
+                }
+                const angle = Math.random() * 2 * Math.PI;
+                adjustedPos.x += Math.cos(angle) * minDistance * 0.5;
+                adjustedPos.y += Math.sin(angle) * minDistance * 0.5;
+                attempts++;
+            }
+            return adjustedPos;
+        }
+
+        function detectWorldCollision(pos1, pos2, minDistance = 80) {
+            const dx = pos1.x - pos2.x;
+            const dy = pos1.y - pos2.y;
+            return Math.sqrt(dx * dx + dy * dy) < minDistance;
+        }
+
+        // Initialiser la cartographie quand le modal s'ouvre
+        document.getElementById('worldCartographyModal').addEventListener('shown.bs.modal', function () {
+            setTimeout(() => {
+                generateWorldCartography();
+            }, 100);
+        });
+    </script>
 </body>
 </html>

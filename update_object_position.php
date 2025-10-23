@@ -39,7 +39,7 @@ try {
     // Vérifier que l'objet appartient au lieu et que l'utilisateur a les droits
     $stmt = $pdo->prepare("
         SELECT po.id, c.dm_id 
-        FROM place_objects po 
+        FROM items po 
         JOIN places p ON po.place_id = p.id 
         JOIN place_campaigns pc ON p.id = pc.place_id
         JOIN campaigns c ON pc.campaign_id = c.id 
@@ -54,14 +54,14 @@ try {
     }
     
     // Vérifier que l'utilisateur est le MJ de la campagne ou un admin
-    if (!isAdmin() && $_SESSION['user_id'] != $object['dm_id']) {
+    if (!User::isAdmin() && $_SESSION['user_id'] != $object['dm_id']) {
         echo json_encode(['success' => false, 'error' => 'Non autorisé']);
         exit();
     }
     
     // Mettre à jour la position de l'objet
     $stmt = $pdo->prepare("
-        UPDATE place_objects 
+        UPDATE items 
         SET position_x = ?, position_y = ?, is_on_map = ? 
         WHERE id = ? AND place_id = ?
     ");

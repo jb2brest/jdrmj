@@ -33,13 +33,13 @@ if (!$character) {
 }
 
 // Vérifier que la classe peut lancer des sorts
-if (!canCastSpells($character['class_id'])) {
+if (!Character::canCastSpells($character['class_id'])) {
     echo json_encode(['success' => false, 'message' => 'Cette classe ne peut pas lancer de sorts']);
     exit;
 }
 
 try {
-    if (resetSpellSlotsUsage($character_id)) {
+    if (Character::resetSpellSlotsUsageStatic($character_id)) {
         echo json_encode(['success' => true, 'message' => 'Long repos effectué avec succès']);
     } else {
         echo json_encode(['success' => false, 'message' => 'Erreur lors du long repos']);

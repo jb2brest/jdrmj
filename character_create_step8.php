@@ -2,6 +2,7 @@
 session_start();
 require_once 'config/database.php';
 require_once 'includes/functions.php';
+require_once 'includes/character_compatibility.php';
 
 // Vérifier que l'utilisateur est connecté
 if (!isset($_SESSION['user_id'])) {
@@ -26,6 +27,34 @@ if (!$sessionData || $sessionData['step'] < 7) {
 }
 
 $data = $sessionData['data'];
+
+// Récupérer les données sélectionnées
+$selectedClassId = $sessionData['data']['class_id'] ?? null;
+$selectedRaceId = $sessionData['data']['race_id'] ?? null;
+$selectedBackgroundId = $sessionData['data']['background_id'] ?? null;
+
+// Récupérer les informations des choix précédents
+$selectedClass = null;
+$selectedRace = null;
+$selectedBackground = null;
+
+if ($selectedClassId) {
+    $stmt = $pdo->prepare("SELECT * FROM classes WHERE id = ?");
+    $stmt->execute([$selectedClassId]);
+    $selectedClass = $stmt->fetch();
+}
+
+if ($selectedRaceId) {
+    $stmt = $pdo->prepare("SELECT * FROM races WHERE id = ?");
+    $stmt->execute([$selectedRaceId]);
+    $selectedRace = $stmt->fetch();
+}
+
+if ($selectedBackgroundId) {
+    $stmt = $pdo->prepare("SELECT * FROM backgrounds WHERE id = ?");
+    $stmt->execute([$selectedBackgroundId]);
+    $selectedBackground = $stmt->fetch();
+}
 
 // Traitement du formulaire
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -76,6 +105,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $error_message = "Erreur lors de la sauvegarde des données.";
         }
+    } elseif (isset($_POST['action']) && $_POST['action'] === 'go_back') {
+        header("Location: character_create_step7.php?session_id=$session_id");
+        exit();
     } else {
         $error_message = implode('<br>', $errors);
     }
@@ -157,33 +189,137 @@ if ($selectedBackgroundId) {
     $backgroundInfo = $stmt->fetch();
 }
 
-include 'includes/layout.php';
 ?>
 
-<div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-10">
-            <!-- En-tête de l'étape -->
-            <div class="text-center mb-4">
-                <h2><i class="fas fa-book me-2"></i>Étape 8 : Histoire du Personnage</h2>
-                <p class="text-muted">Définissez l'apparence physique et l'histoire de votre personnage</p>
-                
-                <!-- Progression -->
-                <div class="progress mb-3" style="height: 8px;">
-                    <div class="progress-bar bg-primary" role="progressbar" style="width: 88.9%"></div>
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Création de Personnage - Étape 8</title>
+    <link rel="icon" type="image/png" href="images/logo.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="css/custom-theme.css" rel="stylesheet">
+    <style>
+        .step-progress-bar {
+            width: 88.89%; /* 8/9 * 100 */
+        }
+        .summary-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 1px solid #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <?php include 'includes/navbar.php'; ?>
+
+    <!-- Indicateur d'étape -->
+    <div class="step-indicator">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-user-plus me-3"></i>Création de Personnage</h1>
+                    <p class="mb-0">Étape 8 sur 9 - Personnalité et Historique</p>
                 </div>
-                <small class="text-muted">Étape 8 sur 9</small>
+                <div class="col-md-4">
+                    <div class="step-progress">
+                        <div class="step-progress-bar"></div>
+                    </div>
+                    <small class="mt-2 d-block">Étape 8/9</small>
+                </div>
             </div>
+        </div>
+    </div>
 
-            <?php if (isset($error_message)): ?>
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    <?php echo $error_message; ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <div class="container">
+        <?php if (isset($error_message)): ?>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <?php echo htmlspecialchars($error_message); ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+
+        <!-- Récapitulatif des étapes précédentes -->
+        <div class="row mb-4">
+            <div class="col-md-2">
+                <?php if ($selectedClass): ?>
+                    <div class="card summary-card">
+                        <div class="card-body py-2">
+                            <small class="text-muted">
+                                <i class="fas fa-shield-alt me-1"></i>
+                                <strong>Classe :</strong> <?php echo htmlspecialchars($selectedClass['name']); ?>
+                            </small>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </div>
+            <div class="col-md-2">
+                <?php if ($selectedRace): ?>
+                    <div class="card summary-card">
+                        <div class="card-body py-2">
+                            <small class="text-muted">
+                                <i class="fas fa-users me-1"></i>
+                                <strong>Race :</strong> <?php echo htmlspecialchars($selectedRace['name']); ?>
+                            </small>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </div>
+            <div class="col-md-2">
+                <?php if ($selectedBackground): ?>
+                    <div class="card summary-card">
+                        <div class="card-body py-2">
+                            <small class="text-muted">
+                                <i class="fas fa-scroll me-1"></i>
+                                <strong>Historique :</strong> <?php echo htmlspecialchars($selectedBackground['name']); ?>
+                            </small>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </div>
+            <div class="col-md-2">
+                <div class="card summary-card">
+                    <div class="card-body py-2">
+                        <small class="text-muted">
+                            <i class="fas fa-dice-d20 me-1"></i>
+                            <strong>Caractéristiques :</strong> Définies
+                        </small>
+                    </div>
                 </div>
-            <?php endif; ?>
-
-            <form method="POST" id="step8Form">
+            </div>
+            <div class="col-md-2">
+                <div class="card summary-card">
+                    <div class="card-body py-2">
+                        <small class="text-muted">
+                            <i class="fas fa-star me-1"></i>
+                            <strong>Spécialisation :</strong> Choisie
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card summary-card">
+                    <div class="card-body py-2">
+                        <small class="text-muted">
+                            <i class="fas fa-brain me-1"></i>
+                            <strong>Compétences :</strong> Sélectionnées
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-book me-2"></i>Histoire du Personnage</h3>
+                        <p class="mb-0 text-muted">Définissez l'histoire, la personnalité et les traits de votre personnage</p>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" id="step8Form">
                 <div class="row">
                     <!-- Informations de base -->
                     <div class="col-md-6">
@@ -202,7 +338,7 @@ include 'includes/layout.php';
                                     <label for="age" class="form-label">Âge</label>
                                     <input type="number" class="form-control" id="age" name="age" 
                                            value="<?php echo htmlspecialchars($data['age'] ?? ''); ?>" min="1" max="1000">
-                                    <?php if ($raceInfo && $raceInfo['age_range']): ?>
+                                    <?php if ($raceInfo && isset($raceInfo['age_range']) && $raceInfo['age_range']): ?>
                                         <div class="form-text">
                                             <i class="fas fa-info-circle me-1"></i>
                                             Âge typique pour un <?php echo htmlspecialchars($raceInfo['name']); ?> : <?php echo htmlspecialchars($raceInfo['age_range']); ?>
@@ -215,7 +351,7 @@ include 'includes/layout.php';
                                     <input type="text" class="form-control" id="height" name="height" 
                                            value="<?php echo htmlspecialchars($data['height'] ?? ''); ?>" 
                                            placeholder="ex: 1m80, 5'10&quot;">
-                                    <?php if ($raceInfo && $raceInfo['height_range']): ?>
+                                    <?php if ($raceInfo && isset($raceInfo['height_range']) && $raceInfo['height_range']): ?>
                                         <div class="form-text">
                                             <i class="fas fa-info-circle me-1"></i>
                                             Taille typique pour un <?php echo htmlspecialchars($raceInfo['name']); ?> : <?php echo htmlspecialchars($raceInfo['height_range']); ?>
@@ -228,7 +364,7 @@ include 'includes/layout.php';
                                     <input type="text" class="form-control" id="weight" name="weight" 
                                            value="<?php echo htmlspecialchars($data['weight'] ?? ''); ?>" 
                                            placeholder="ex: 70kg, 150lbs">
-                                    <?php if ($raceInfo && $raceInfo['weight_range']): ?>
+                                    <?php if ($raceInfo && isset($raceInfo['weight_range']) && $raceInfo['weight_range']): ?>
                                         <div class="form-text">
                                             <i class="fas fa-info-circle me-1"></i>
                                             Poids typique pour un <?php echo htmlspecialchars($raceInfo['name']); ?> : <?php echo htmlspecialchars($raceInfo['weight_range']); ?>
@@ -391,21 +527,20 @@ include 'includes/layout.php';
                     </div>
                 </div>
 
-                <!-- Boutons de navigation -->
-                <div class="d-flex justify-content-between">
-                    <a href="character_create_step7.php?session_id=<?php echo htmlspecialchars($session_id); ?>" 
-                       class="btn btn-outline-secondary">
-                        <i class="fas fa-arrow-left me-2"></i>Étape précédente
-                    </a>
-                    
-                    <button type="submit" class="btn btn-primary" id="continueBtn">
-                        Continuer <i class="fas fa-arrow-right ms-2"></i>
-                    </button>
+                            <div class="text-center mt-4">
+                                <button type="submit" name="action" value="go_back" class="btn btn-outline-secondary me-3">
+                                    <i class="fas fa-arrow-left me-2"></i>Retour
+                                </button>
+                                <button type="submit" class="btn btn-primary btn-lg" id="continueBtn">
+                                    <i class="fas fa-arrow-right me-2"></i>Continuer vers l'étape 9
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
-</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

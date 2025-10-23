@@ -41,16 +41,16 @@ $class = $stmt->fetch();
 // Calculer les modificateurs (caractéristiques totales incluant les bonus raciaux)
 $wisdomModifier = floor(($character['wisdom'] + $character['wisdom_bonus'] - 10) / 2);
 $intelligenceModifier = floor(($character['intelligence'] + $character['intelligence_bonus'] - 10) / 2);
-$spell_capabilities = getClassSpellCapabilities($character['class_id'], $character['level'], $wisdomModifier, $character['max_spells_learned'], $intelligenceModifier);
+$spell_capabilities = Character::getClassSpellCapabilities($character['class_id'], $character['level'], $wisdomModifier, $character['max_spells_learned'], $intelligenceModifier);
 
 // Récupérer les sorts du personnage
-$character_spells = getCharacterSpells($character_id);
+$character_spells = Character::getCharacterSpells($character_id);
 
 // Récupérer les utilisations d'emplacements de sorts
-$spell_slots_usage = getSpellSlotsUsage($character_id);
+$spell_slots_usage = Character::getSpellSlotsUsageStatic($character_id);
 
 // Récupérer les sorts disponibles pour la classe
-$available_spells = getSpellsForClass($character['class_id']);
+$available_spells = Character::getSpellsForClass($character['class_id']);
 
 // Vérifier si la classe peut apprendre de nouveaux sorts (Magicien, Ensorceleur, etc.)
 $canLearnSpells = in_array($character['class_id'], [7, 5]); // 7 = Magicien, 5 = Ensorceleur
@@ -104,7 +104,7 @@ if (isset($_GET['debug'])) {
     echo "<!-- Character Name: " . $character['name'] . " -->\n";
     echo "<!-- Class ID: " . $character['class_id'] . " -->\n";
     echo "<!-- Level: " . $character['level'] . " -->\n";
-    echo "<!-- Can Cast Spells: " . (canCastSpells($character['class_id']) ? 'YES' : 'NO') . " -->\n";
+    echo "<!-- Can Cast Spells: " . (Character::canCastSpells($character['class_id']) ? 'YES' : 'NO') . " -->\n";
     echo "<!-- Available Spells Count: " . count($available_spells) . " -->\n";
     echo "<!-- Character Spells Count: " . count($character_spells) . " -->\n";
     echo "<!-- END DEBUG INFO -->\n";
@@ -1132,17 +1132,33 @@ function updateReadModeTabs() {
         const isBard = <?php echo $is_bard ? 'true' : 'false'; ?>;
         
         let spells;
+        let label;
         if (isBard) {
             // Pour les bardes, utiliser tous les sorts disponibles
             spells = availableSpells.filter(spell => spell.level === level);
+            label = 'disponibles';
         } else {
-            // Pour les autres classes, utiliser les sorts appris
-            spells = characterSpells.filter(spell => spell.level === level);
+            // Pour les autres classes, filtrer selon le mode
+            if (isEditMode) {
+                // Mode édition : afficher tous les sorts appris
+                spells = characterSpells.filter(spell => spell.level === level);
+                label = 'connus';
+            } else {
+                // Mode lecture (Sorts préparés) : compter seulement les sorts préparés + tous les sorts mineurs
+                if (level === 0) {
+                    // Tous les sorts mineurs (niveau 0)
+                    spells = characterSpells.filter(spell => spell.level === level);
+                    label = 'mineurs';
+                } else {
+                    // Seulement les sorts préparés (niveau 1+)
+                    spells = characterSpells.filter(spell => spell.level === level && spell.prepared);
+                    label = 'préparés';
+                }
+            }
         }
         
         const countElement = tab.querySelector('.spell-count');
         if (countElement) {
-            const label = isBard ? 'disponibles' : 'connus';
             countElement.textContent = `(${spells.length} ${label})`;
         }
     });
@@ -1163,8 +1179,20 @@ function updateReadModeSpellLists() {
                 // Pour les bardes, utiliser tous les sorts disponibles
                 spells = availableSpells.filter(spell => spell.level === level);
             } else {
-                // Pour les autres classes, utiliser les sorts appris
-                spells = characterSpells.filter(spell => spell.level === level);
+                // Pour les autres classes, filtrer selon le mode
+                if (isEditMode) {
+                    // Mode édition : afficher tous les sorts appris
+                    spells = characterSpells.filter(spell => spell.level === level);
+                } else {
+                    // Mode lecture (Sorts préparés) : afficher seulement les sorts préparés + tous les sorts mineurs
+                    if (level === 0) {
+                        // Tous les sorts mineurs (niveau 0)
+                        spells = characterSpells.filter(spell => spell.level === level);
+                    } else {
+                        // Seulement les sorts préparés (niveau 1+)
+                        spells = characterSpells.filter(spell => spell.level === level && spell.prepared);
+                    }
+                }
             }
             
             if (spells.length > 0) {
@@ -1173,13 +1201,17 @@ function updateReadModeSpellLists() {
                 spells.forEach(spell => {
                     const spellData = isBard ? spell : availableSpells.find(s => s.id == spell.id);
                     if (spellData) {
+                        const isPrepared = isBard || spell.prepared || level === 0;
+                        const preparedIcon = isPrepared ? '<i class="fas fa-star text-warning ms-1"></i>' : '';
+                        const knownIcon = '<i class="fas fa-check-circle text-success ms-1"></i>';
+                        
                         spellsHtml += `
-                            <div class="spell-button known prepared" onclick="selectSpell(${spellData.id}, this)" data-spell-id="${spellData.id}">
+                            <div class="spell-button known ${isPrepared ? 'prepared' : ''}" onclick="selectSpell(${spellData.id}, this)" data-spell-id="${spellData.id}">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span>
                                         ${spellData.name}
-                                        <i class="fas fa-check-circle text-success ms-1"></i>
-                                        <i class="fas fa-star text-warning ms-1"></i>
+                                        ${knownIcon}
+                                        ${preparedIcon}
                                     </span>
                                     <small class="text-muted">
                                         ${spellData.school}
@@ -1199,7 +1231,18 @@ function updateReadModeSpellLists() {
                 // Aucun sort pour ce niveau
                 const spellsContainer = tabContent.querySelector('.spell-buttons-container');
                 if (spellsContainer) {
-                    const message = isBard ? 'Aucun sort disponible' : 'Aucun sort connu';
+                    let message;
+                    if (isBard) {
+                        message = 'Aucun sort disponible';
+                    } else if (isEditMode) {
+                        message = 'Aucun sort connu';
+                    } else {
+                        if (level === 0) {
+                            message = 'Aucun sort mineur connu';
+                        } else {
+                            message = 'Aucun sort préparé';
+                        }
+                    }
                     spellsContainer.innerHTML = `<div class="no-spells">${message}</div>`;
                 }
             }

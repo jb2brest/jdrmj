@@ -1,5 +1,5 @@
 <?php
-require_once 'config/database.php';
+require_once 'classes/init.php';
 require_once 'includes/functions.php';
 $page_title = "Lieu - Vue Joueur";
 $current_page = "view_scene_player";
@@ -9,108 +9,133 @@ requireLogin();
 $user_id = $_SESSION['user_id'];
 $requested_campaign_id = isset($_GET['campaign_id']) ? (int)$_GET['campaign_id'] : null;
 
-// Trouver le lieu où se trouve le joueur
-if ($requested_campaign_id) {
-    // Si un campaign_id est spécifié, chercher dans cette campagne
-    $stmt = $pdo->prepare("
-        SELECT p.*, c.title as campaign_title, c.dm_id, c.id as campaign_id
-        FROM places p 
-        INNER JOIN place_campaigns pc ON p.id = pc.place_id
-        JOIN campaigns c ON pc.campaign_id = c.id 
-        JOIN place_players pp ON p.id = pp.place_id 
-        WHERE pp.player_id = ? AND c.id = ?
-        LIMIT 1
-    ");
-    $stmt->execute([$user_id, $requested_campaign_id]);
-    $place = $stmt->fetch();
-    
-    // Si aucun lieu trouvé dans cette campagne, vérifier si le joueur est membre de la campagne
-    if (!$place) {
-        $stmt = $pdo->prepare("SELECT cm.role FROM campaign_members cm WHERE cm.campaign_id = ? AND cm.user_id = ?");
-        $stmt->execute([$requested_campaign_id, $user_id]);
-        $membership = $stmt->fetch();
+// Localiser le personnage/joueur dans le monde
+$localization = Monde::localizeCharacter($user_id, $requested_campaign_id);
+
+// Traiter les différents statuts de localisation
+switch ($localization['status']) {
+    case 'found':
+        $place = $localization['place'];
+        break;
         
-        if ($membership) {
-            // Le joueur est membre mais pas assigné à un lieu, afficher un message spécifique
-            $page_title = "Aucun lieu assigné dans cette campagne";
-            include 'includes/layout.php';
-            ?>
-            <div class="container mt-4">
-                <div class="row justify-content-center">
-                    <div class="col-md-8">
-                        <div class="card">
-                            <div class="card-body text-center">
-                                <i class="fas fa-map-marker-alt fa-3x text-muted mb-3"></i>
-                                <h4 class="card-title">Aucun lieu assigné</h4>
-                                <p class="card-text text-muted">
-                                    Vous êtes membre de cette campagne mais n'êtes pas encore assigné à un lieu spécifique. 
-                                    Le maître du jeu doit vous ajouter à un lieu pour que vous puissiez y accéder.
-                                </p>
-                                <a href="view_campaign.php?id=<?php echo $requested_campaign_id; ?>" class="btn btn-primary">
-                                    <i class="fas fa-arrow-left me-2"></i>Retour à la campagne
-                                </a>
-                            </div>
+    case 'member_no_place':
+        // Le joueur est membre mais pas assigné à un lieu dans cette campagne
+        $page_title = "Aucun lieu assigné dans cette campagne";
+        include 'includes/layout.php';
+        ?>
+        <div class="container mt-4">
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-map-marker-alt fa-3x text-muted mb-3"></i>
+                            <h4 class="card-title">Aucun lieu assigné</h4>
+                            <p class="card-text text-muted">
+                                <?php echo htmlspecialchars($localization['message']); ?>
+                                Le maître du jeu doit vous ajouter à un lieu pour que vous puissiez y accéder.
+                            </p>
+                            <a href="view_campaign.php?id=<?php echo $localization['campaign_id']; ?>" class="btn btn-primary">
+                                <i class="fas fa-arrow-left me-2"></i>Retour à la campagne
+                            </a>
                         </div>
                     </div>
                 </div>
             </div>
-            <?php
-            exit();
-        } else {
-            // Le joueur n'est pas membre de cette campagne
-            header('Location: campaigns.php');
-            exit();
-        }
-    }
-} else {
-    // Comportement original : chercher n'importe quel lieu où se trouve le joueur
-    $stmt = $pdo->prepare("
-        SELECT p.*, c.title as campaign_title, c.dm_id, c.id as campaign_id
-        FROM places p 
-        INNER JOIN place_campaigns pc ON p.id = pc.place_id
-        JOIN campaigns c ON pc.campaign_id = c.id 
-        JOIN place_players pp ON p.id = pp.place_id 
-        WHERE pp.player_id = ?
-        LIMIT 1
-    ");
-    $stmt->execute([$user_id]);
-    $place = $stmt->fetch();
-}
-
-if (!$place) {
-    // Le joueur n'est dans aucun lieu, afficher un message informatif
-    $page_title = "Aucun lieu assigné";
-    include 'includes/layout.php';
-    ?>
-    <div class="container mt-4">
-        <div class="row justify-content-center">
-            <div class="col-md-8">
-                <div class="card">
-                    <div class="card-body text-center">
-                        <i class="fas fa-map-marker-alt fa-3x text-muted mb-3"></i>
-                        <h4 class="card-title">Aucun lieu assigné</h4>
-                        <p class="card-text text-muted">
-                            Vous n'êtes actuellement assigné à aucun lieu. 
-                            Le maître du jeu doit vous ajouter à un lieu pour que vous puissiez y accéder.
-                        </p>
-                        <a href="campaigns.php" class="btn btn-primary">
-                            <i class="fas fa-arrow-left me-2"></i>Retour aux campagnes
-                        </a>
+        </div>
+        <?php
+        exit();
+        
+    case 'not_member':
+        // Le joueur n'est pas membre de cette campagne
+        header('Location: campaigns.php');
+        exit();
+        
+    case 'member_no_place_any':
+        // Le joueur est membre d'une campagne mais pas assigné à un lieu
+        $page_title = "Aucun lieu assigné";
+        include 'includes/layout.php';
+        ?>
+        <div class="container mt-4">
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-map-marker-alt fa-3x text-muted mb-3"></i>
+                            <h4 class="card-title">Aucun lieu assigné</h4>
+                            <p class="card-text text-muted">
+                                <?php echo htmlspecialchars($localization['message']); ?>
+                                Le maître du jeu doit vous ajouter à un lieu pour que vous puissiez y accéder.
+                            </p>
+                            <a href="campaigns.php" class="btn btn-primary">
+                                <i class="fas fa-list me-2"></i>Voir mes campagnes
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    <?php
-    exit();
+        <?php
+        exit();
+        
+    case 'no_campaigns':
+        // Le joueur n'est membre d'aucune campagne
+        $page_title = "Aucune campagne";
+        include 'includes/layout.php';
+        ?>
+        <div class="container mt-4">
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                            <h4 class="card-title">Aucune campagne</h4>
+                            <p class="card-text text-muted">
+                                <?php echo htmlspecialchars($localization['message']); ?>
+                                Rejoignez une campagne pour commencer à jouer.
+                            </p>
+                            <a href="campaigns.php" class="btn btn-primary">
+                                <i class="fas fa-list me-2"></i>Voir les campagnes
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php
+        exit();
+        
+    case 'error':
+    default:
+        // Erreur lors de la localisation
+        $page_title = "Erreur de localisation";
+        include 'includes/layout.php';
+        ?>
+        <div class="container mt-4">
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                            <h4 class="card-title">Erreur</h4>
+                            <p class="card-text text-muted">
+                                <?php echo htmlspecialchars($localization['message']); ?>
+                            </p>
+                            <a href="campaigns.php" class="btn btn-primary">
+                                <i class="fas fa-arrow-left me-2"></i>Retour aux campagnes
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php
+        exit();
 }
 
 $place_id = (int)$place['id'];
 
 // Vérifier que l'utilisateur est membre de la campagne
-$stmt = $pdo->prepare("SELECT cm.role FROM campaign_members cm WHERE cm.campaign_id = ? AND cm.user_id = ?");
-$stmt->execute([$place['campaign_id'], $user_id]);
-$membership = $stmt->fetch();
+$membership = User::isMemberOfCampaign($user_id, $place['campaign_id']);
 
 if (!$membership) {
     header('Location: campaigns.php');
@@ -118,46 +143,14 @@ if (!$membership) {
 }
 
 // Récupérer les personnages du joueur présents dans ce lieu
-$stmt = $pdo->prepare("
-    SELECT c.id, c.name, c.level, c.profile_photo, c.class_id, cl.name as class_name
-    FROM characters c
-    LEFT JOIN classes cl ON c.class_id = cl.id
-    WHERE c.user_id = ? AND c.id IN (
-        SELECT sp.character_id FROM place_players sp WHERE sp.place_id = ? AND sp.character_id IS NOT NULL
-    )
-    ORDER BY c.name ASC
-");
-$stmt->execute([$user_id, $place_id]);
-$player_characters = $stmt->fetchAll();
+$lieu = Lieu::findById($place_id);
+$player_characters = $lieu ? $lieu->getPlayerCharacters($user_id) : [];
 
 // Récupérer les positions de tous les pions (comme dans view_scene.php)
-$stmt = $pdo->prepare("
-    SELECT token_type, entity_id, position_x, position_y, is_on_map
-    FROM place_tokens 
-    WHERE place_id = ?
-");
-$stmt->execute([$place_id]);
-$tokenPositions = [];
-while ($row = $stmt->fetch()) {
-    $tokenPositions[$row['token_type'] . '_' . $row['entity_id']] = [
-        'x' => (int)$row['position_x'],
-        'y' => (int)$row['position_y'],
-        'is_on_map' => (bool)$row['is_on_map']
-    ];
-}
+$tokenPositions = $lieu ? $lieu->getTokenPositions() : [];
 
 // Récupérer TOUS les joueurs présents dans le lieu (comme dans view_scene.php)
-$stmt = $pdo->prepare("
-    SELECT sp.player_id, u.username, c.id as character_id, c.name as character_name, c.profile_photo, c.level, cl.name as class_name
-    FROM place_players sp 
-    JOIN users u ON sp.player_id = u.id 
-    LEFT JOIN characters c ON sp.character_id = c.id
-    LEFT JOIN classes cl ON c.class_id = cl.id
-    WHERE sp.place_id = ?
-    ORDER BY u.username ASC
-");
-$stmt->execute([$place_id]);
-$placePlayers = $stmt->fetchAll();
+$placePlayers = $lieu ? $lieu->getAllPlayers() : [];
 
 // Récupérer les autres joueurs (pour l'affichage séparé)
 $other_players = array_filter($placePlayers, function($player) use ($user_id) {
@@ -165,41 +158,15 @@ $other_players = array_filter($placePlayers, function($player) use ($user_id) {
 });
 
 // Récupérer les PNJ présents dans le lieu (seulement ceux visibles)
-$stmt = $pdo->prepare("
-    SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, sn.is_visible, sn.is_identified, c.profile_photo AS character_profile_photo
-    FROM place_npcs sn 
-    LEFT JOIN characters c ON sn.npc_character_id = c.id
-    WHERE sn.place_id = ? AND sn.monster_id IS NULL AND sn.is_visible = 1
-    ORDER BY sn.name ASC
-");
-$stmt->execute([$place_id]);
-$placeNpcs = $stmt->fetchAll();
+$placeNpcs = $lieu ? $lieu->getVisibleNpcs() : [];
 
 // Récupérer les monstres présents dans le lieu (seulement ceux visibles)
-$stmt = $pdo->prepare("
-    SELECT sn.id, sn.name, sn.description, sn.monster_id, sn.quantity, sn.current_hit_points, sn.is_visible, sn.is_identified,
-           m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class, m.csv_id
-    FROM place_npcs sn 
-    JOIN dnd_monsters m ON sn.monster_id = m.id 
-    WHERE sn.place_id = ? AND sn.monster_id IS NOT NULL AND sn.is_visible = 1
-    ORDER BY sn.name ASC
-");
-$stmt->execute([$place_id]);
-$placeMonsters = $stmt->fetchAll();
+$placeMonsters = $lieu ? $lieu->getVisibleMonsters() : [];
 
 // Récupérer les objets présents dans le lieu (seulement ceux visibles et non attribués)
-$stmt = $pdo->prepare("
-    SELECT id, display_name, object_type, type_precis, description, is_visible, is_identified, is_equipped,
-           position_x, position_y, is_on_map, owner_type, owner_id,
-           poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed
-    FROM place_objects 
-    WHERE place_id = ? AND is_visible = 1 AND (owner_type = 'place' OR owner_type IS NULL)
-    ORDER BY display_name ASC
-");
-$stmt->execute([$place_id]);
-$placeObjects = $stmt->fetchAll();
+$placeObjects = $lieu ? $lieu->getVisibleObjects() : [];
 
-// Récupérer les positions des objets depuis place_objects
+// Récupérer les positions des objets depuis items
 foreach ($placeObjects as $object) {
     $tokenKey = 'object_' . $object['id'];
     $tokenPositions[$tokenKey] = [

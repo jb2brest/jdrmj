@@ -1,7 +1,7 @@
 <?php
 session_start();
-require_once 'config/database.php';
 require_once 'includes/functions.php';
+require_once 'classes/init.php';
 $page_title = "Fiche de Monstre";
 $current_page = "view_monster_sheet";
 
@@ -13,72 +13,91 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $monster_npc_id = (int)$_GET['id'];
-$campaign_id = (int)$_GET['campaign_id'];
+$campaign_id = isset($_GET['campaign_id']) ? (int)$_GET['campaign_id'] : null;
 
-// Récupérer les informations du monstre dans la lieu
-$stmt = $pdo->prepare("
-    SELECT sn.*, m.id as monster_db_id, m.name as monster_name, m.type, m.size, m.challenge_rating, 
-           m.hit_points as max_hit_points, m.armor_class, m.csv_id, c.dm_id, c.id as campaign_id, s.id as place_id,
-           m.strength, m.dexterity, m.constitution, m.intelligence, m.wisdom, m.charisma, m.competences, m.saving_throws, m.damage_immunities, m.damage_resistances, m.condition_immunities, m.senses, m.languages
-    FROM place_npcs sn 
-    JOIN dnd_monsters m ON sn.monster_id = m.id 
-    JOIN places s ON sn.place_id = s.id
-    JOIN campaigns c ON s.campaign_id = c.id
-    WHERE sn.id = ? AND s.campaign_id = ? AND sn.monster_id IS NOT NULL
-");
-$stmt->execute([$monster_npc_id, $campaign_id]);
-$monster = $stmt->fetch();
+// Si pas de campaign_id, essayer de trouver une campagne par défaut
+if (!$campaign_id) {
+    // Récupérer une campagne de l'utilisateur connecté
+    try {
+        $pdo = getPdo();
+        $stmt = $pdo->prepare("SELECT id FROM campaigns WHERE dm_id = ? LIMIT 1");
+        $stmt->execute([$_SESSION['user_id']]);
+        $result = $stmt->fetch();
+        if ($result) {
+            $campaign_id = $result['id'];
+        }
+    } catch (Exception $e) {
+        // Ignorer l'erreur
+    }
+}
+
+// Si toujours pas de campaign_id, utiliser 0 (campagne par défaut)
+if (!$campaign_id) {
+    $campaign_id = 0;
+}
+
+// Récupérer la campagne et vérifier les permissions (si campaign_id > 0)
+if ($campaign_id > 0) {
+    $campaign = Campaign::findById($campaign_id);
+    if (!$campaign) {
+        header('Location: index.php');
+        exit();
+    }
+
+    // Vérifier que l'utilisateur est le DM de la campagne
+    if ($campaign->getDmId() != $_SESSION['user_id'] && !User::isAdmin()) {
+        header('Location: index.php');
+        exit();
+    }
+} else {
+    // Mode sans campagne - vérifier que l'utilisateur est DM ou Admin
+    if (!User::isDMOrAdmin()) {
+        header('Location: index.php');
+        exit();
+    }
+}
+
+// Récupérer les informations du monstre dans le lieu via la classe Monstre
+$monster = Monstre::getMonsterInPlace($monster_npc_id);
 
 if (!$monster) {
     header('Location: index.php');
     exit();
 }
 
-// Récupérer les données de combat du monstre
+// Récupérer le lieu via la classe Lieu
+$lieu = Lieu::findById($monster['place_id']);
+if (!$lieu) {
+    header('Location: index.php');
+    exit();
+}
+
+// Ajouter les informations de campagne
+$monster['campaign_id'] = $campaign_id;
+$monster['dm_id'] = $campaign->getDmId();
+
+// Récupérer les données de combat du monstre via la classe Monstre
 $monster_db_id = $monster['monster_db_id'];
+$monstre = Monstre::findById($monster_db_id);
 
-// Récupérer les actions
-$stmt = $pdo->prepare("SELECT name, description FROM monster_actions WHERE monster_id = ? ORDER BY name");
-$stmt->execute([$monster_db_id]);
-$monster_actions = $stmt->fetchAll();
+if (!$monstre) {
+    header('Location: index.php');
+    exit();
+}
 
-// Récupérer les actions légendaires
-$stmt = $pdo->prepare("SELECT name, description FROM monster_legendary_actions WHERE monster_id = ? ORDER BY name");
-$stmt->execute([$monster_db_id]);
-$monster_legendary_actions = $stmt->fetchAll();
+// Récupérer les actions via la classe Monstre
+$monster_actions = $monstre->getActions();
+$monster_legendary_actions = $monstre->getLegendaryActions();
+$monster_special_attacks = $monstre->getSpecialAttacks();
 
-// Récupérer les attaques spéciales
-$stmt = $pdo->prepare("SELECT name, description FROM monster_special_attacks WHERE monster_id = ? ORDER BY name");
-$stmt->execute([$monster_db_id]);
-$monster_special_attacks = $stmt->fetchAll();
+// Récupérer les sorts via la classe Monstre
+$monster_spells = $monstre->getSpells();
 
-// Récupérer les sorts
-$stmt = $pdo->prepare("SELECT name, description FROM monster_spells WHERE monster_id = ? ORDER BY name");
-$stmt->execute([$monster_db_id]);
-$monster_spells = $stmt->fetchAll();
+// Récupérer l'équipement magique du monstre via la classe Monstre
+$magicalEquipment = Monstre::getMonsterMagicalEquipment($monster_npc_id, $campaign_id);
 
-// Récupérer l'équipement magique du monstre (exclure les poisons)
-$stmt = $pdo->prepare("
-    SELECT me.*, mi.nom as magical_item_nom, mi.type as magical_item_type, mi.description as magical_item_description, mi.source as magical_item_source
-    FROM monster_equipment me
-    LEFT JOIN magical_items mi ON me.magical_item_id = mi.csv_id
-    WHERE me.monster_id = ? AND me.campaign_id = ? 
-    AND me.magical_item_id NOT IN (SELECT csv_id FROM poisons)
-    ORDER BY me.obtained_at DESC
-");
-$stmt->execute([$monster_npc_id, $campaign_id]);
-$magicalEquipment = $stmt->fetchAll();
-
-// Récupérer les poisons du monstre (stockés dans monster_equipment avec magical_item_id correspondant à un poison)
-$stmt = $pdo->prepare("
-    SELECT me.*, p.nom as poison_nom, p.type as poison_type, p.description as poison_description, p.source as poison_source
-    FROM monster_equipment me
-    JOIN poisons p ON me.magical_item_id = p.csv_id
-    WHERE me.monster_id = ? AND me.campaign_id = ?
-    ORDER BY me.obtained_at DESC
-");
-$stmt->execute([$monster_npc_id, $campaign_id]);
-$monsterPoisons = $stmt->fetchAll();
+// Récupérer les poisons du monstre via la classe Monstre
+$monsterPoisons = Monstre::getMonsterPoisons($monster_npc_id, $campaign_id);
 
 // Vérifier que l'utilisateur est le MJ de cette lieu
 if ($monster['dm_id'] != $_SESSION['user_id']) {
@@ -106,8 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 
                 // Mettre à jour les points de vie actuels
-                $stmt = $pdo->prepare("UPDATE place_npcs SET current_hit_points = ? WHERE id = ?");
-                $stmt->execute([$new_hp, $monster_npc_id]);
+                Monstre::updateCurrentHitPoints($monster_npc_id, $new_hp);
                 
                 $success_message = "Points de vie mis à jour : {$new_hp}/{$max_hp}";
                 break;
@@ -116,8 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $damage = (int)$_POST['damage'];
                 if ($damage > 0) {
                     $new_hp = max(0, $monster['current_hit_points'] - $damage);
-                    $stmt = $pdo->prepare("UPDATE place_npcs SET current_hit_points = ? WHERE id = ?");
-                    $stmt->execute([$new_hp, $monster_npc_id]);
+                    Monstre::updateCurrentHitPoints($monster_npc_id, $new_hp);
                     
                     $success_message = "Dégâts infligés : {$damage} PV. Points de vie restants : {$new_hp}";
                 }
@@ -127,16 +144,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $healing = (int)$_POST['healing'];
                 if ($healing > 0) {
                     $new_hp = min($monster['max_hit_points'], $monster['current_hit_points'] + $healing);
-                    $stmt = $pdo->prepare("UPDATE place_npcs SET current_hit_points = ? WHERE id = ?");
-                    $stmt->execute([$new_hp, $monster_npc_id]);
+                    Monstre::updateCurrentHitPoints($monster_npc_id, $new_hp);
                     
                     $success_message = "Soins appliqués : {$healing} PV. Points de vie actuels : {$new_hp}";
                 }
                 break;
                 
             case 'reset_hp':
-                $stmt = $pdo->prepare("UPDATE place_npcs SET current_hit_points = ? WHERE id = ?");
-                $stmt->execute([$monster['max_hit_points'], $monster_npc_id]);
+                Monstre::updateCurrentHitPoints($monster_npc_id, $monster['max_hit_points']);
                 
                 $success_message = "Points de vie réinitialisés au maximum : {$monster['max_hit_points']}";
                 break;
@@ -147,9 +162,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $notes = $_POST['notes'] ?? '';
                 
                 // Récupérer les informations de l'objet à transférer
-                $stmt = $pdo->prepare("SELECT * FROM monster_equipment WHERE id = ? AND monster_id = ? AND campaign_id = ?");
-                $stmt->execute([$item_id, $monster_npc_id, $campaign_id]);
-                $item = $stmt->fetch();
+                $item = Monstre::getMonsterEquipmentById($item_id, $monster_npc_id, $campaign_id);
                 
                 if (!$item) {
                     $error_message = "Objet introuvable.";
@@ -165,28 +178,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     switch ($target_type) {
                         case 'character':
                             // Transférer vers un personnage
-                            $stmt = $pdo->prepare("SELECT name FROM characters WHERE id = ?");
-                            $stmt->execute([$target_id]);
-                            $target_char = $stmt->fetch();
+                            $target_char_obj = Character::findById($target_id);
+                            $target_char = $target_char_obj ? ['name' => $target_char_obj->getName()] : null;
                             
                             if ($target_char) {
-                                // Insérer dans place_objects
-                                $stmt = $pdo->prepare("INSERT INTO place_objects (place_id, display_name, object_type, type_precis, description, is_identified, is_visible, is_equipped, position_x, position_y, is_on_map, owner_type, owner_id, poison_id, weapon_id, armor_id, gold_coins, silver_coins, copper_coins, letter_content, is_sealed, magical_item_id, item_source, quantity, equipped_slot, notes, obtained_at, obtained_from) VALUES (NULL, ?, ?, ?, ?, 1, 0, 0, 0, 0, 0, 'player', ?, NULL, NULL, NULL, 0, 0, 0, NULL, 0, ?, 'Objet du monstre', ?, NULL, ?, NOW(), ?)");
-                                $stmt->execute([
-                                    $item['item_name'],
-                                    $item['item_type'],
-                                    $item['item_name'],
-                                    $item['item_description'],
-                                    $target_id,
-                                    $item['magical_item_id'],
-                                    (int)($item['quantity'] ?: 1),
-                                    $notes ?: $item['notes'],
-                                    'Transfert depuis ' . $monster['name']
+                                // Insérer dans items
+                                Item::create([
+                                    'place_id' => null,
+                                    'display_name' => $item['item_name'],
+                                    'object_type' => $item['item_type'],
+                                    'type_precis' => $item['item_name'],
+                                    'description' => $item['item_description'],
+                                    'is_identified' => true,
+                                    'is_visible' => false,
+                                    'is_equipped' => false,
+                                    'position_x' => 0,
+                                    'position_y' => 0,
+                                    'is_on_map' => false,
+                                    'owner_type' => 'player',
+                                    'owner_id' => $target_id,
+                                    'magical_item_id' => $item['magical_item_id'],
+                                    'quantity' => (int)($item['quantity'] ?: 1),
+                                    'notes' => $notes ?: $item['notes'],
+                                    'obtained_from' => 'Transfert depuis ' . $monster['name']
                                 ]);
                                 
                                 // Supprimer de l'ancien propriétaire
-                                $stmt = $pdo->prepare("DELETE FROM monster_equipment WHERE id = ?");
-                                $stmt->execute([$item_id]);
+                                Monstre::deleteMonsterEquipment($item_id);
                                 
                                 $transfer_success = true;
                                 $target_name = $target_char['name'];
@@ -195,30 +213,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             
                         case 'monster':
                             // Transférer vers un autre monstre
-                            $stmt = $pdo->prepare("SELECT sn.name FROM place_npcs sn WHERE sn.id = ?");
-                            $stmt->execute([$target_id]);
-                            $target_monster = $stmt->fetch();
+                            $target_monster = Monstre::getMonsterInfoInPlace($target_id);
                             
                             if ($target_monster) {
                                 // Insérer dans monster_equipment du nouveau propriétaire
-                                $stmt = $pdo->prepare("INSERT INTO monster_equipment (monster_id, campaign_id, magical_item_id, item_name, item_type, item_description, item_source, quantity, equipped, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                                $stmt->execute([
-                                    $target_id,
-                                    $campaign_id,
-                                    $item['magical_item_id'],
-                                    $item['item_name'],
-                                    $item['item_type'],
-                                    $item['item_description'],
-                                    $item['item_source'],
-                                    $item['quantity'],
-                                    0, // Toujours non équipé lors du transfert (0 = false)
-                                    $notes ?: $item['notes'],
-                                    'Transfert depuis ' . $monster['name']
+                                Monstre::addMonsterEquipment($target_id, $campaign_id, [
+                                    'magical_item_id' => $item['magical_item_id'],
+                                    'item_name' => $item['item_name'],
+                                    'item_type' => $item['item_type'],
+                                    'item_description' => $item['item_description'],
+                                    'item_source' => $item['item_source'],
+                                    'quantity' => $item['quantity'],
+                                    'equipped' => 0, // Toujours non équipé lors du transfert
+                                    'notes' => $notes ?: $item['notes'],
+                                    'obtained_from' => 'Transfert depuis ' . $monster['name']
                                 ]);
                                 
                                 // Supprimer de l'ancien propriétaire
-                                $stmt = $pdo->prepare("DELETE FROM monster_equipment WHERE id = ?");
-                                $stmt->execute([$item_id]);
+                                Monstre::deleteMonsterEquipment($item_id);
                                 
                                 $transfer_success = true;
                                 $target_name = $target_monster['name'];
@@ -227,30 +239,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             
                         case 'npc':
                             // Transférer vers un PNJ
-                            $stmt = $pdo->prepare("SELECT sn.name FROM place_npcs sn WHERE sn.id = ?");
-                            $stmt->execute([$target_id]);
-                            $target_npc = $stmt->fetch();
+                            $target_npc = PNJ::getNpcInfoInPlace($target_id);
                             
                             if ($target_npc) {
                                 // Insérer dans npc_equipment
-                                $stmt = $pdo->prepare("INSERT INTO npc_equipment (npc_id, campaign_id, magical_item_id, item_name, item_type, item_description, item_source, quantity, equipped, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                                $stmt->execute([
-                                    $target_id,
-                                    $campaign_id,
-                                    $item['magical_item_id'],
-                                    $item['item_name'],
-                                    $item['item_type'],
-                                    $item['item_description'],
-                                    $item['item_source'],
-                                    $item['quantity'],
-                                    0, // Toujours non équipé lors du transfert (0 = false)
-                                    $notes ?: $item['notes'],
-                                    'Transfert depuis ' . $monster['name']
+                                PNJ::addNpcEquipment($target_id, $monster['place_id'], [
+                                    'magical_item_id' => $item['magical_item_id'],
+                                    'item_name' => $item['item_name'],
+                                    'item_type' => $item['item_type'],
+                                    'item_description' => $item['item_description'],
+                                    'item_source' => $item['item_source'],
+                                    'quantity' => $item['quantity'],
+                                    'equipped' => 0, // Toujours non équipé lors du transfert
+                                    'notes' => $notes ?: $item['notes'],
+                                    'obtained_from' => 'Transfert depuis ' . $monster['name']
                                 ]);
                                 
                                 // Supprimer de l'ancien propriétaire
-                                $stmt = $pdo->prepare("DELETE FROM monster_equipment WHERE id = ?");
-                                $stmt->execute([$item_id]);
+                                Monstre::deleteMonsterEquipment($item_id);
                                 
                                 $transfer_success = true;
                                 $target_name = $target_npc['name'];
@@ -268,25 +274,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         // Recharger les données du monstre
-        $stmt = $pdo->prepare("
-            SELECT sn.*, m.id as monster_db_id, m.name as monster_name, m.type, m.size, m.challenge_rating, 
-                   m.hit_points as max_hit_points, m.armor_class, m.csv_id, c.dm_id, c.id as campaign_id, s.id as place_id,
-                   m.strength, m.dexterity, m.constitution, m.intelligence, m.wisdom, m.charisma, m.competences, m.saving_throws, m.damage_immunities, m.damage_resistances, m.condition_immunities, m.senses, m.languages
-            FROM place_npcs sn 
-            JOIN dnd_monsters m ON sn.monster_id = m.id 
-            JOIN places s ON sn.place_id = s.id
-            JOIN campaigns c ON s.campaign_id = c.id
-            WHERE sn.id = ? AND s.campaign_id = ? AND sn.monster_id IS NOT NULL
-        ");
-        $stmt->execute([$monster_npc_id, $campaign_id]);
-        $monster = $stmt->fetch();
+        $monster = Monstre::getMonsterInPlace($monster_npc_id);
     }
 }
 
 // Initialiser les points de vie actuels s'ils ne sont pas définis
 if ($monster['current_hit_points'] === null) {
-    $stmt = $pdo->prepare("UPDATE place_npcs SET current_hit_points = ? WHERE id = ?");
-    $stmt->execute([$monster['max_hit_points'], $monster_npc_id]);
+    Monstre::updateCurrentHitPoints($monster_npc_id, $monster['max_hit_points']);
     $monster['current_hit_points'] = $monster['max_hit_points'];
 }
 
@@ -531,9 +525,15 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
                     </p>
                 </div>
                 <div class="col-md-4 text-end">
-                    <a href="view_campaign.php?id=<?php echo (int)$campaign_id; ?>" class="btn btn-light">
-                        <i class="fas fa-arrow-left me-2"></i>Retour à la Campagne
-                    </a>
+                    <?php if ($campaign_id > 0): ?>
+                        <a href="view_campaign.php?id=<?php echo (int)$campaign_id; ?>" class="btn btn-light">
+                            <i class="fas fa-arrow-left me-2"></i>Retour à la Campagne
+                        </a>
+                    <?php else: ?>
+                        <a href="manage_worlds.php" class="btn btn-light">
+                            <i class="fas fa-arrow-left me-2"></i>Retour aux Mondes
+                        </a>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

@@ -64,8 +64,8 @@ show_tests_menu() {
     echo -e "${BLUE}║                    🧪 Configuration des Tests                ║${NC}"
     echo -e "${BLUE}╠══════════════════════════════════════════════════════════════╣${NC}"
     echo -e "${BLUE}║                                                              ║${NC}"
-    echo -e "${BLUE}║  ${GREEN}1.${NC} ✅ Exécuter les tests avant déploiement              ${BLUE}║${NC}"
-    echo -e "${BLUE}║  ${GREEN}2.${NC} ⚡ Déployer sans exécuter les tests                 ${BLUE}║${NC}"
+    echo -e "${BLUE}║  ${GREEN}1.${NC} ✅ Synchroniser les rapports de tests existants      ${BLUE}║${NC}"
+    echo -e "${BLUE}║  ${GREEN}2.${NC} ⚡ Déployer sans synchroniser les rapports           ${BLUE}║${NC}"
     echo -e "${BLUE}║                                                              ║${NC}"
     echo -e "${BLUE}╚══════════════════════════════════════════════════════════════╝${NC}"
     echo
@@ -97,7 +97,7 @@ confirm_deployment() {
     echo -e "${BLUE}╠══════════════════════════════════════════════════════════════╣${NC}"
     echo -e "${BLUE}║                                                              ║${NC}"
     echo -e "${BLUE}║  ${GREEN}Serveur :${NC} $server_name                                    ${BLUE}║${NC}"
-    echo -e "${BLUE}║  ${GREEN}Tests :${NC} $test_status                                      ${BLUE}║${NC}"
+    echo -e "${BLUE}║  ${GREEN}Tests :${NC} $test_status (rapports synchronisés)              ${BLUE}║${NC}"
     echo -e "${BLUE}║  ${GREEN}Message :${NC} $MESSAGE                                        ${BLUE}║${NC}"
     echo -e "${BLUE}║  ${GREEN}Timestamp :${NC} $TIMESTAMP                                    ${BLUE}║${NC}"
     echo -e "${BLUE}║                                                              ║${NC}"
@@ -134,7 +134,7 @@ show_help() {
     echo -e "${BLUE}║    🏭 production - Serveur de production (avec protection)  ${BLUE}║${NC}"
     echo -e "${BLUE}║                                                              ║${NC}"
     echo -e "${BLUE}║  ${GREEN}Options :${NC}                                                ${BLUE}║${NC}"
-    echo -e "${BLUE}║    --no-tests - Déployer sans exécuter les tests             ${BLUE}║${NC}"
+    echo -e "${BLUE}║    --no-tests - Déployer sans synchroniser les rapports      ${BLUE}║${NC}"
     echo -e "${BLUE}║    --help     - Afficher cette aide                         ${BLUE}║${NC}"
     echo -e "${BLUE}║                                                              ║${NC}"
     echo -e "${BLUE}╚══════════════════════════════════════════════════════════════╝${NC}"
@@ -283,33 +283,30 @@ check_prerequisites() {
     log_success "Prérequis vérifiés"
 }
 
-# Fonction pour exécuter les tests
+# Fonction pour vérifier les rapports de tests existants
 run_tests() {
     if [ "$RUN_TESTS" = false ]; then
         log_info "Tests ignorés (option --no-tests activée)"
         return 0
     fi
     
-    log_info "Exécution des tests avant livraison..."
+    log_info "Vérification des rapports de tests existants..."
     
-    if [ -d "tests" ]; then
-        cd tests
+    if [ -d "tests/reports" ]; then
+        # Compter les rapports disponibles
+        individual_count=$(find tests/reports/individual -name "*.json" 2>/dev/null | wc -l)
+        aggregated_count=$(find tests/reports/aggregated -name "*.json" 2>/dev/null | wc -l)
         
-        # Vérifier si l'environnement de test existe
-        if [ -d "../testenv" ]; then
-            log_info "Exécution des tests de base..."
-            if ../testenv/bin/python -m pytest functional/test_authentication.py functional/test_application_availability.py functional/test_fixtures.py -v --tb=short; then
-                log_success "Tests de base réussis"
-            else
-                log_warning "Certains tests de base ont échoué, mais on continue..."
-            fi
+        if [ $individual_count -gt 0 ] || [ $aggregated_count -gt 0 ]; then
+            log_success "Rapports de tests trouvés : $individual_count individuels, $aggregated_count agrégés"
+            log_info "Les rapports seront synchronisés lors du déploiement"
         else
-            log_warning "Environnement de test non trouvé, tests ignorés"
+            log_warning "Aucun rapport de test trouvé"
+            log_info "Exécutez './launch_tests.sh' pour générer des rapports avant le déploiement"
         fi
-        
-        cd ..
     else
-        log_warning "Répertoire de tests non trouvé, tests ignorés"
+        log_warning "Répertoire de rapports de tests non trouvé"
+        log_info "Exécutez './launch_tests.sh' pour générer des rapports avant le déploiement"
     fi
 }
 
@@ -409,16 +406,28 @@ chmod 644 *.css
 chmod 644 *.js
 chmod 644 *.md
 chmod 644 *.txt
+chmod 644 *.json
 chmod 755 config/
 chmod 644 config/*.php
 chmod 755 includes/
 chmod 644 includes/*.php
 chmod 755 css/
 chmod 644 css/*
+chmod 755 js/
+chmod 644 js/*
 chmod 755 images/
 chmod 644 images/*
 chmod 755 database/
 chmod 644 database/*.sql
+chmod 755 classes/
+chmod 644 classes/*.php
+chmod 755 api/
+chmod 644 api/*.php
+chmod 755 templates/
+chmod 644 templates/*.php
+chmod 755 tests/
+chmod 755 tests/reports/
+chmod 644 tests/reports/*.json
 
 quit
 EOF
@@ -436,6 +445,60 @@ EOF
     rm -f "$lftp_script"
 }
 
+# Fonction pour synchroniser les rapports JSON
+sync_test_reports() {
+    local deploy_path=$1
+    
+    log_info "Synchronisation des rapports de tests JSON..."
+    
+    # Répertoires source et destination
+    local source_dir="/home/jean/Documents/jdrmj/tests/reports"
+    local dest_dir="$deploy_path/tests/reports"
+    
+    # Créer les répertoires de destination s'ils n'existent pas
+    mkdir -p "$dest_dir/individual"
+    mkdir -p "$dest_dir/aggregated"
+    
+    # Copier les rapports individuels
+    if [ -d "$source_dir/individual" ]; then
+        log_info "Copie des rapports individuels..."
+        cp "$source_dir/individual"/*.json "$dest_dir/individual/" 2>/dev/null || log_warning "Aucun rapport individuel trouvé"
+        
+        # Compter les fichiers copiés
+        local individual_count=$(find "$dest_dir/individual" -name "*.json" 2>/dev/null | wc -l)
+        log_success "Rapports individuels copiés: $individual_count fichiers"
+    else
+        log_warning "Répertoire source des rapports individuels non trouvé"
+    fi
+    
+    # Copier les rapports agrégés
+    if [ -d "$source_dir/aggregated" ]; then
+        log_info "Copie des rapports agrégés..."
+        cp "$source_dir/aggregated"/*.json "$dest_dir/aggregated/" 2>/dev/null || log_warning "Aucun rapport agrégé trouvé"
+        
+        # Compter les fichiers copiés
+        local aggregated_count=$(find "$dest_dir/aggregated" -name "*.json" 2>/dev/null | wc -l)
+        log_success "Rapports agrégés copiés: $aggregated_count fichiers"
+    else
+        log_warning "Répertoire source des rapports agrégés non trouvé"
+    fi
+    
+    # Configurer les permissions
+    log_info "Configuration des permissions pour les rapports JSON..."
+    chmod -R 755 "$dest_dir"
+    find "$dest_dir" -name "*.json" -exec chmod 644 {} \; 2>/dev/null || true
+    
+    # Vérifier la synchronisation
+    local total_individual=$(find "$dest_dir/individual" -name "*.json" 2>/dev/null | wc -l)
+    local total_aggregated=$(find "$dest_dir/aggregated" -name "*.json" 2>/dev/null | wc -l)
+    
+    if [ $total_individual -gt 0 ] || [ $total_aggregated -gt 0 ]; then
+        log_success "Synchronisation des rapports JSON réussie: $total_individual individuels, $total_aggregated agrégés"
+    else
+        log_warning "Aucun rapport JSON trouvé - l'onglet Tests sera vide"
+    fi
+}
+
 # Fonction pour préparer les fichiers
 prepare_files() {
     local temp_dir=$1
@@ -446,44 +509,106 @@ prepare_files() {
     mkdir -p "$temp_dir"
     
     # Sauvegarder les uploads existants sur le serveur de test
-    if [ "$SERVER" = "test" ] && [ -d "/var/www/html/jdrmj_test/uploads" ]; then
+    if [ "$SERVER" = "test" ] && [ -d "/var/www/html/jdrmj/uploads" ]; then
         log_info "Sauvegarde des uploads existants..."
-        cp -r /var/www/html/jdrmj_test/uploads "$temp_dir/uploads_backup" 2>/dev/null || true
+        cp -r /var/www/html/jdrmj/uploads "$temp_dir/uploads_backup" 2>/dev/null || true
     fi
     
     # Copier les fichiers nécessaires
     log_info "Copie des fichiers de l'application..."
+    log_info "Inclusion des rapports JSON de tests..."
+    
+    if [ "$SERVER" = "staging" ]; then
+        log_info "Mode staging: inclusion des fichiers de tests nécessaires (launch_tests.sh, etc.)"
+    fi
     
     # Copier tous les fichiers et répertoires nécessaires
-    rsync -av \
-        --include="*.php" \
-        --include="*.htaccess" \
-        --include="*.ini" \
-        --include="*.env" \
-        --include="*.css" \
-        --include="*.js" \
-        --include="*.jpg" \
-        --include="*.png" \
-        --include="*.gif" \
-        --include="*.svg" \
-        --include="*.sql" \
-        --include="*.md" \
-        --include="*.txt" \
-        --include="VERSION" \
-        --include="config/" \
-        --include="config/**" \
-        --include="includes/" \
-        --include="includes/**" \
-        --include="css/" \
-        --include="css/**" \
-        --include="images/" \
-        --include="images/**" \
-        --include="database/" \
-        --include="database/**" \
-        --include="uploads/" \
-        --include="uploads/**" \
-        --exclude="*" \
-        . "$temp_dir/" >/dev/null 2>&1
+    if [ "$SERVER" = "staging" ]; then
+        # Pour le staging, inclure les fichiers de tests nécessaires
+        rsync -av \
+            --include="*.php" \
+            --include="*.htaccess" \
+            --include="*.ini" \
+            --include="*.env" \
+            --include="*.css" \
+            --include="*.js" \
+            --include="*.jpg" \
+            --include="*.png" \
+            --include="*.gif" \
+            --include="*.svg" \
+            --include="*.sql" \
+            --include="*.md" \
+            --include="*.txt" \
+            --include="*.json" \
+            --include="VERSION" \
+            --include="config/" \
+            --include="config/**" \
+            --include="includes/" \
+            --include="includes/**" \
+            --include="css/" \
+            --include="css/**" \
+            --include="js/" \
+            --include="js/**" \
+            --include="images/" \
+            --include="images/**" \
+            --include="database/" \
+            --include="database/**" \
+            --include="classes/" \
+            --include="classes/**" \
+            --include="api/" \
+            --include="api/**" \
+            --include="templates/" \
+            --include="templates/**" \
+            --include="uploads/" \
+            --include="uploads/**" \
+            --include="tests/" \
+            --include="tests/**" \
+            --include="launch_tests.sh" \
+            --exclude="*" \
+            . "$temp_dir/" >/dev/null 2>&1
+    else
+        # Pour les autres serveurs, copie standard
+        rsync -av \
+            --include="*.php" \
+            --include="*.htaccess" \
+            --include="*.ini" \
+            --include="*.env" \
+            --include="*.css" \
+            --include="*.js" \
+            --include="*.jpg" \
+            --include="*.png" \
+            --include="*.gif" \
+            --include="*.svg" \
+            --include="*.sql" \
+            --include="*.md" \
+            --include="*.txt" \
+            --include="*.json" \
+            --include="VERSION" \
+            --include="config/" \
+            --include="config/**" \
+            --include="includes/" \
+            --include="includes/**" \
+            --include="css/" \
+            --include="css/**" \
+            --include="js/" \
+            --include="js/**" \
+            --include="images/" \
+            --include="images/**" \
+            --include="database/" \
+            --include="database/**" \
+            --include="classes/" \
+            --include="classes/**" \
+            --include="api/" \
+            --include="api/**" \
+            --include="templates/" \
+            --include="templates/**" \
+            --include="uploads/" \
+            --include="uploads/**" \
+            --include="tests/reports/" \
+            --include="tests/reports/**" \
+            --exclude="*" \
+            . "$temp_dir/" >/dev/null 2>&1
+    fi
     
     # Restaurer les uploads sauvegardés si le répertoire local est vide
     if [ -d "$temp_dir/uploads_backup" ]; then
@@ -498,17 +623,125 @@ prepare_files() {
         fi
     fi
     
-    # Exclure les fichiers de développement
-    rm -rf "$temp_dir/tests"
-    rm -rf "$temp_dir/testenv"
-    rm -rf "$temp_dir/monenv"
-    rm -rf "$temp_dir/__pycache__"
-    rm -rf "$temp_dir/.git"
-    rm -rf "$temp_dir/.gitignore"
-    rm -rf "$temp_dir/publish.sh"
-    rm -rf "$temp_dir/push.sh"
+    # Exclure les fichiers de développement (mais garder les rapports JSON)
+    # Pour le serveur de staging, garder les fichiers nécessaires aux tests
+    if [ "$SERVER" = "staging" ]; then
+        log_info "Mode staging: conservation des fichiers de tests nécessaires"
+        # Garder les fichiers essentiels pour les tests sur staging
+        # Garder les tests fonctionnels pour le staging
+        # rm -rf "$temp_dir/tests/functional"  # Gardé pour staging
+        rm -rf "$temp_dir/tests/fixtures"
+        # rm -rf "$temp_dir/tests/conftest.py"  # Gardé pour staging
+        rm -rf "$temp_dir/tests/run_*.py"
+        # rm -rf "$temp_dir/tests/test_*.py"  # Gardé pour staging
+        rm -rf "$temp_dir/tests/demo_*.py"
+        # Garder les fichiers de rapport et de configuration des tests
+        # rm -rf "$temp_dir/tests/json_test_reporter.py"  # Gardé pour staging
+        # rm -rf "$temp_dir/tests/pytest_json_reporter.py"  # Gardé pour staging
+        # rm -rf "$temp_dir/tests/version_detector.py"  # Gardé pour staging
+        rm -rf "$temp_dir/tests/README_*.md"
+        # Garder launch_tests.sh pour staging
+        # rm -rf "$temp_dir/tests/*.sh"  # Gardé pour staging
+        # Ne pas supprimer launch_tests.sh à la racine
+        # rm -rf "$temp_dir/launch_tests.sh"  # Gardé pour staging
+        rm -rf "$temp_dir/testenv"
+        rm -rf "$temp_dir/monenv"
+        rm -rf "$temp_dir/__pycache__"
+        rm -rf "$temp_dir/.git"
+        rm -rf "$temp_dir/.gitignore"
+        rm -rf "$temp_dir/publish.sh"
+        rm -rf "$temp_dir/push.sh"
+    else
+        # Pour les autres serveurs (test, production), supprimer tous les fichiers de tests
+        rm -rf "$temp_dir/tests/functional"
+        rm -rf "$temp_dir/tests/fixtures"
+        rm -rf "$temp_dir/tests/conftest.py"
+        rm -rf "$temp_dir/tests/run_*.py"
+        rm -rf "$temp_dir/tests/test_*.py"
+        rm -rf "$temp_dir/tests/demo_*.py"
+        rm -rf "$temp_dir/tests/json_test_reporter.py"
+        rm -rf "$temp_dir/tests/pytest_json_reporter.py"
+        rm -rf "$temp_dir/tests/version_detector.py"
+        rm -rf "$temp_dir/tests/README_*.md"
+        rm -rf "$temp_dir/tests/*.sh"
+        rm -rf "$temp_dir/testenv"
+        rm -rf "$temp_dir/monenv"
+        rm -rf "$temp_dir/__pycache__"
+        rm -rf "$temp_dir/.git"
+        rm -rf "$temp_dir/.gitignore"
+        rm -rf "$temp_dir/publish.sh"
+        rm -rf "$temp_dir/push.sh"
+    fi
+    
+    # Synchroniser les rapports JSON depuis le répertoire de développement
+    sync_test_reports "$temp_dir"
     
     log_success "Fichiers préparés dans $temp_dir"
+}
+
+# Fonction pour déployer les classes
+deploy_classes() {
+    local deploy_path=$1
+    
+    log_info "Déploiement des classes PHP..."
+    
+    # Vérifier que le répertoire classes existe dans le déploiement
+    if [ ! -d "$deploy_path/classes" ]; then
+        log_error "Répertoire classes non trouvé dans le déploiement"
+        return 1
+    fi
+    
+    # Créer le répertoire de destination s'il n'existe pas
+    sudo mkdir -p "$deploy_path/classes"
+    
+    # Copier les classes
+    sudo cp -r "$deploy_path/classes"/* "$deploy_path/classes/"
+    
+    # Configurer les permissions pour les classes
+    sudo chown -R www-data:www-data "$deploy_path/classes"
+    sudo chmod -R 755 "$deploy_path/classes"
+    
+    # Vérifier la syntaxe PHP des classes
+    log_info "Vérification de la syntaxe PHP des classes..."
+    local syntax_errors=0
+    for file in "$deploy_path/classes"/*.php; do
+        if [ -f "$file" ]; then
+            if ! php -l "$file" >/dev/null 2>&1; then
+                log_error "Erreur de syntaxe dans $(basename "$file")"
+                syntax_errors=$((syntax_errors + 1))
+            fi
+        fi
+    done
+    
+    if [ $syntax_errors -eq 0 ]; then
+        log_success "Toutes les classes ont une syntaxe PHP valide"
+    else
+        log_error "$syntax_errors erreur(s) de syntaxe détectée(s) dans les classes"
+        return 1
+    fi
+    
+    # Tester l'initialisation des classes
+    log_info "Test d'initialisation des classes..."
+    if php -r "
+        try {
+            require_once '$deploy_path/classes/init.php';
+            echo 'Classes initialisées avec succès\n';
+            \$univers = getUnivers();
+            echo 'Univers accessible: ' . \$univers . '\n';
+            \$pdo = getPDO();
+            echo 'PDO accessible: ' . get_class(\$pdo) . '\n';
+        } catch (Exception \$e) {
+            echo 'Erreur: ' . \$e->getMessage() . '\n';
+            exit(1);
+        }
+    " 2>/dev/null; then
+        log_success "Initialisation des classes réussie"
+    else
+        log_error "Erreur lors de l'initialisation des classes"
+        return 1
+    fi
+    
+    log_success "Déploiement des classes terminé"
 }
 
 # Fonction pour livrer sur le serveur
@@ -521,7 +754,7 @@ deploy_to_server() {
     case $SERVER in
         "test")
             # Serveur de test local
-            DEPLOY_PATH="/var/www/html/jdrmj_test"
+            DEPLOY_PATH="/var/www/html/jdrmj"
             log_info "Livraison sur le serveur de test local: $DEPLOY_PATH"
             
             # Créer le répertoire de destination s'il n'existe pas
@@ -537,10 +770,26 @@ deploy_to_server() {
             # Livrer les fichiers
             sudo rsync -av --delete "$temp_dir/" "$DEPLOY_PATH/"
             
+            # Déployer les classes
+            deploy_classes "$DEPLOY_PATH"
+            
+            # Synchroniser les rapports JSON depuis le répertoire de développement
+            log_info "Synchronisation des rapports JSON sur le serveur de test..."
+            sync_test_reports "$DEPLOY_PATH"
+            
             # Ajuster les permissions
-    sudo chown -R www-data:www-data "$DEPLOY_PATH"
-    sudo chmod -R 755 "$DEPLOY_PATH"
-    sudo chmod -R 777 "$DEPLOY_PATH/uploads" 2>/dev/null || true
+            sudo chown -R www-data:www-data "$DEPLOY_PATH"
+            sudo chmod -R 755 "$DEPLOY_PATH"
+            sudo chmod -R 777 "$DEPLOY_PATH/uploads" 2>/dev/null || true
+            
+            # Configurer les permissions pour les rapports JSON
+            if [ -d "$DEPLOY_PATH/tests/reports" ]; then
+                log_info "Configuration des permissions pour les rapports JSON..."
+                sudo chown -R www-data:www-data "$DEPLOY_PATH/tests/reports"
+                sudo chmod -R 755 "$DEPLOY_PATH/tests/reports"
+                sudo chmod -R 644 "$DEPLOY_PATH/tests/reports"/*.json 2>/dev/null || true
+                log_success "Permissions des rapports JSON configurées"
+            fi
             
             log_success "Livraison terminée sur le serveur de test"
             ;;
@@ -553,9 +802,40 @@ deploy_to_server() {
             sudo mkdir -p "$DEPLOY_PATH"
             sudo rsync -av --delete "$temp_dir/" "$DEPLOY_PATH/"
             
+            # Déployer les classes
+            deploy_classes "$DEPLOY_PATH"
+            
+            # Synchroniser les rapports JSON depuis le répertoire de développement
+            log_info "Synchronisation des rapports JSON sur le serveur de staging..."
+            sync_test_reports "$DEPLOY_PATH"
+            
             sudo chown -R www-data:www-data "$DEPLOY_PATH"
             sudo chmod -R 755 "$DEPLOY_PATH"
             sudo chmod -R 777 "$DEPLOY_PATH/uploads" 2>/dev/null || true
+            
+            # Configurer les permissions pour les rapports JSON
+            if [ -d "$DEPLOY_PATH/tests/reports" ]; then
+                log_info "Configuration des permissions pour les rapports JSON..."
+                sudo chown -R www-data:www-data "$DEPLOY_PATH/tests/reports"
+                sudo chmod -R 755 "$DEPLOY_PATH/tests/reports"
+                sudo chmod -R 644 "$DEPLOY_PATH/tests/reports"/*.json 2>/dev/null || true
+                log_success "Permissions des rapports JSON configurées"
+            fi
+            
+            # Configurer les permissions pour les fichiers de tests sur staging
+            log_info "Configuration des permissions pour les fichiers de tests..."
+            if [ -f "$DEPLOY_PATH/launch_tests.sh" ]; then
+                sudo chmod +x "$DEPLOY_PATH/launch_tests.sh"
+                log_success "Permissions d'exécution configurées pour launch_tests.sh"
+            fi
+            
+            if [ -d "$DEPLOY_PATH/tests" ]; then
+                sudo chown -R www-data:www-data "$DEPLOY_PATH/tests"
+                sudo chmod -R 755 "$DEPLOY_PATH/tests"
+                sudo chmod -R 644 "$DEPLOY_PATH/tests"/*.py 2>/dev/null || true
+                sudo chmod -R 644 "$DEPLOY_PATH/tests"/*.ini 2>/dev/null || true
+                log_success "Permissions des fichiers de tests configurées"
+            fi
             
             log_success "Livraison terminée sur le serveur de staging"
             ;;
@@ -671,7 +951,7 @@ main() {
     # Afficher l'URL selon le serveur
     case $SERVER in
         "test")
-            log_info "URL: http://localhost/jdrmj_test"
+            log_info "URL: http://localhost/jdrmj"
             ;;
         "staging")
             log_info "URL: http://localhost/jdrmj_staging"

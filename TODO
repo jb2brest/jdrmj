@@ -174,6 +174,82 @@ Les lieux :
 - Temples
 - 
 
+Les tables suivantes, sont utilisées pour la création de personnage à l'étape 5. 
+barbarian_paths
+bard_colleges
+cleric_domains
+druid_circles
+fighter_archetypes
+monk_traditions
+paladin_oaths
+ranger_archetypes
+rogue_archetypes
+sorcerer_origins
+warlock_pacts
+wizard_traditions
+Il faudrait fusionner ces tables en utilisant la classe requise pour permettre de les récupérer. 
+
+dans http://localhost/jdrmj/admin_versions.php
+onglets actions, il faut ajouter trois boutons
+- Save Data : exporte tous les fichiers uploadés et toute la base de données sauf la table des users dans un fichier zip
+- Save user : exporte les users dans un fichier zip. 
+- Load Data : permet d'importer un fichier générer avec "Save data"
+- Load user : permet d'importer un fichier générer avec "Save user"
+
+
+Dans characters.php, un MJ (ou un admin), il faut ajouter la possibilité de créer un PNJ de façon automatique via un bouton "Creation Automatique" 
+Le MJ sélectionne la race, la classe et le niveau du personnage. 
+Pour les charactéristiques sont sélectionnées en fonction des recommandations du jeu DnD.
+Le reste est sélectionné de façon aléatoire. 
+
+Barbare : FOR 15 DEX 13 CON 14 SAG 12 INT 8 CHA 10
+Barde : FOR 8 DEX 14 CON 13 SAG 10 INT 12 CHA 15
+Clerc : FOR 13 DEX 12 CON 14 SAG 15 INT 8 CHA 10
+Druide : FOR 8 DEX 13 CON 14 SAG 15 INT 12 CHA 10
+Guerrier : FOR 15 DEX 13 CON 14 SAG 10 INT 12 CHA 8
+Moine : FOR 12 DEX 15 CON 13 SAG 14 INT 10 CHA 8
+Paladin : FOR 15 DEX 12 CON 13 SAG 10 INT 8 CHA 14
+Magicien : FOR 8 DEX 13 CON 14 SAG 12 INT 15 CHA 10
+Ensorceleur : FOR 8 DEX 13 CON 14 SAG 10 INT 12 CHA 15
+occultiste : FOR 8 DEX 13 CON 14 SAG 10 INT 12 CHA 15
+Roublard : FOR 8 DEX 15 CON 13 SAG 10 INT 14 CHA 12
+Rodeur : FOR 8 DEX 15 CON 13 SAG 14 INT 12 CHA 10
+
+
+Ils faut ajouter un boutons PNJ en entêtes. Entre "Groupes" et "Admin"
+Ce bouton permet de lister les PNJ et les MNJ.
+
+Il faut différencier la création de PNJ et de PJ. 
+Ajouter la possibilité de créer des monstres et des PNJ depuis la page manage_npcs 
+Les PJ doivent être créés en utilisant la création par step à partir de l'écran characters.php
+Les PNJ doivent être créés à partir de l'écran manage_npcs.php en utilisant soit la création par step soit la création automatique.
+toggleNpcIdentification(32, 'Dara', true)
+
+Il faut revoir le code de view_character.php
+Voici les règles à appliquer : 
+- le SQL doit être géré dans des méthodes de classes 
+- le javascript doit être mis dans le fichier jdrmj.js
+- les css dans le fichier style.css
+- les appels à des modification en base doivent être codé en ajax et faire un appel à un endpoint en php codé dans un répertoire api. 
+
+Dans la zone "Combat", il faut ajouter les zones "Classe d'armure" et "Attaques" comme dans l'ancienne page.
+
+Revoir la CA avec armure et le dépot de fichier
+
+dans view_place.php zone "PNJ présents" l'image du PNJ n'est pas affichée dans la balise npc-avatar
+
+Ok alors il faut réorganiser les choses comme il suit :
+- dnd_monsters est la table décrivant les types de monstres. Elle est utilisée pour récupérer la description des monstres. 
+- place_monsters est la table utilisée pour enregistrer les positions des monstres
+- place_npc est la table utilisée pour enregistrer les positions des npcs et ne doit pas être utilisées pour les monstres
+- il manque la table monsters, qui enregistre les instances de monstres déployées dans le monde
+
+
+Revoir le stockages des données "monstres"
+
+Dessine moi un gnome ensorceleur de niveau 4 
+Dans un univers D&D.
+L'image doit être carrée.
 
 ############################# Dés ################################
 Je voudrais que tu me génères une image contenant un set de dés :
@@ -200,7 +276,20 @@ Dans chaque case est dessinée un dé 8 faces avec une valeur différente.
 Les cases contiendront alors les valeurs de 1 à 8.
 Le dés est marbré gris très clair et bleu. Les chiffres sont écrit en doré.
 
+Dans un univers DnD, dessine une image carrée de nain des montagnes clerc de niveau 1 sans texte
 
+On va ajouter la possibiliter d'ajouter des "accès" qui permettent de passer d'un lieu à un autre. 
+Ces accès peuvent être : 
+- Visible des joueurs ou pas.
+- Ouvert ou pas.
+- piégé ou pas. 
+
+Un accès s'ajoute depuis la page de création d'un lieu.
+
+
+Dans un univers médiéval fantastique. Dessine moi le plan d'une entrée dans une foret de cyprès 
+En vue de dessus. 
+En noir et blanc. Avec un cadrillage. Sans texte.
 
 
 

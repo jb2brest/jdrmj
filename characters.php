@@ -1,5 +1,5 @@
 <?php
-require_once 'config/database.php';
+require_once 'classes/init.php';
 require_once 'includes/functions.php';
 
 requireLogin();
@@ -8,38 +8,30 @@ requireLogin();
 if (isset($_POST['delete_character']) && isset($_POST['character_id'])) {
     $character_id = (int)$_POST['character_id'];
     
-    // Vérifier que le personnage appartient à l'utilisateur connecté
-    $stmt = $pdo->prepare("SELECT id FROM characters WHERE id = ? AND user_id = ?");
-    $stmt->execute([$character_id, $_SESSION['user_id']]);
+    $character = Character::findById($character_id);
     
-    if ($stmt->fetch()) {
-        // Supprimer le personnage
-        $stmt = $pdo->prepare("DELETE FROM characters WHERE id = ? AND user_id = ?");
-        $stmt->execute([$character_id, $_SESSION['user_id']]);
-        
-        $success_message = "Personnage supprimé avec succès.";
+    if ($character && $character->belongsToUser($_SESSION['user_id'])) {
+        if ($character->delete()) {
+            $success_message = "Personnage supprimé avec succès.";
+        } else {
+            $error_message = "Erreur lors de la suppression du personnage.";
+        }
     } else {
         $error_message = "Erreur: Personnage non trouvé ou vous n'avez pas les permissions.";
     }
 }
 
-// Récupération des personnages de l'utilisateur avec informations de campagne
-$stmt = $pdo->prepare("
-    SELECT c.*, r.name as race_name, cl.name as class_name, c.profile_photo,
-           ca.campaign_id, ca.status as campaign_status, camp.title as campaign_title
-    FROM characters c 
-    JOIN races r ON c.race_id = r.id 
-    JOIN classes cl ON c.class_id = cl.id 
-    LEFT JOIN campaign_applications ca ON c.id = ca.character_id AND ca.status = 'approved'
-    LEFT JOIN campaigns camp ON ca.campaign_id = camp.id
-    WHERE c.user_id = ? 
-    ORDER BY c.created_at DESC
-");
-$stmt->execute([$_SESSION['user_id']]);
-$characters = $stmt->fetchAll();
+// Récupération des personnages de l'utilisateur
+$characterObjects = Character::findByUserId($_SESSION['user_id']);
+
+// Convertir les objets Character en tableaux pour la compatibilité avec le code HTML
+$characters = [];
+foreach ($characterObjects as $character) {
+    $characters[] = $character->toArray();
+}
 ?>
 <?php
-$page_title = "Mes Personnages";
+$page_title = "Mes Personnages Joueurs (PJ)";
 $current_page = "characters";
 ?>
 
@@ -107,12 +99,21 @@ $current_page = "characters";
     <div class="container mt-4">
         <!-- En-tête -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>
-                <i class="fas fa-users me-2"></i>Mes Personnages
-            </h1>
-            <a href="character_create_step1.php" class="btn btn-dnd">
-                <i class="fas fa-plus me-2"></i>Créer un Personnage
-            </a>
+            <div>
+                <h1>
+                    <i class="fas fa-users me-2"></i>Mes Personnages Joueurs (PJ)
+                </h1>
+                <p class="text-muted mb-0">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Cette page gère vos personnages joueurs (PJ). Pour créer des PNJ et monstres, utilisez la page 
+                    <a href="manage_npcs.php" class="text-decoration-none">PNJ</a>.
+                </p>
+            </div>
+            <div class="btn-group" role="group">
+                <a href="character_create_step1.php" class="btn btn-dnd">
+                    <i class="fas fa-plus me-2"></i>Créer un Personnage
+                </a>
+            </div>
         </div>
 
         <!-- Messages d'alerte -->
@@ -130,9 +131,16 @@ $current_page = "characters";
                 <i class="fas fa-user-friends"></i>
                 <h3>Aucun personnage créé</h3>
                 <p class="lead">Vous n'avez pas encore créé de personnage. Commencez votre aventure !</p>
-                <a href="character_create_step1.php" class="btn btn-dnd btn-lg">
-                    <i class="fas fa-plus me-2"></i>Créer votre premier personnage
-                </a>
+                <div class="btn-group" role="group">
+                    <a href="character_create_step1.php" class="btn btn-dnd btn-lg">
+                        <i class="fas fa-plus me-2"></i>Créer votre premier personnage
+                    </a>
+                    <?php if (User::isDMOrAdmin()): ?>
+                        <a href="create_npc_automatic.php" class="btn btn-outline-primary btn-lg">
+                            <i class="fas fa-robot me-2"></i>Création Automatique
+                        </a>
+                    <?php endif; ?>
+                </div>
             </div>
         <?php else: ?>
             <div class="row g-4">

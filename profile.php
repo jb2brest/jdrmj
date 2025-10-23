@@ -1,11 +1,12 @@
 <?php
 require_once 'config/database.php';
+require_once 'classes/init.php';
 require_once 'includes/functions.php';
 
 requireLogin();
 
 $user_id = $_SESSION['user_id'];
-$user = getUserInfo($user_id);
+$user = User::findById($user_id)->toArray();
 
 // Traitement de la mise à jour du profil
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -34,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$bio, $experience_level, $preferred_game_system, $timezone, $user_id]);
             
             $success_message = "Profil mis à jour avec succès !";
-            $user = getUserInfo($user_id); // Recharger les données
+            $user = User::findById($user_id)->toArray(); // Recharger les données
         } catch (Exception $e) {
             $error_message = "Erreur lors de la mise à jour du profil.";
         }
@@ -44,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Récupération des statistiques selon le rôle
-if (isDMOrAdmin()) {
+if (User::isDMOrAdmin()) {
     // Statistiques pour les MJ
     $stmt = $pdo->prepare("SELECT COUNT(*) as campaign_count FROM campaigns WHERE dm_id = ?");
     $stmt->execute([$user_id]);
@@ -155,12 +156,15 @@ $current_page = "profile";
                                 elseif ($user['role'] === 'dm') echo 'crown';
                                 else echo 'user';
                             ?> me-2"></i>
-                            <?php echo getRoleLabel($user['role']); ?>
+                            <?php 
+                            $tempUser = new User(null, ['role' => $user['role']]);
+                            echo $tempUser->getRoleLabel(); 
+                            ?>
                         </span>
                     </p>
                     <p class="mb-0">
                         <i class="fas fa-star me-2"></i>
-                        <?php echo getExperienceLevelLabel($user['experience_level']); ?> en <?php echo htmlspecialchars($user['preferred_game_system']); ?>
+                        <?php echo User::getExperienceLevelLabel($user['experience_level']); ?> en <?php echo htmlspecialchars($user['preferred_game_system']); ?>
                     </p>
                     <p class="mb-0">
                         <i class="fas fa-calendar me-2"></i>
@@ -245,15 +249,15 @@ $current_page = "profile";
             <div class="col-md-4">
                 <div class="stat-card">
                     <h3 class="text-primary">
-                        <i class="fas fa-<?php echo isDMOrAdmin() ? 'crown' : 'users'; ?>"></i>
-                        <?php echo isDMOrAdmin() ? $campaign_count : $character_count; ?>
+                        <i class="fas fa-<?php echo User::isDMOrAdmin() ? 'crown' : 'users'; ?>"></i>
+                        <?php echo User::isDMOrAdmin() ? $campaign_count : $character_count; ?>
                     </h3>
                     <p class="text-muted">
-                        <?php echo isDMOrAdmin() ? 'Campagnes créées' : 'Personnages créés'; ?>
+                        <?php echo User::isDMOrAdmin() ? 'Campagnes créées' : 'Personnages créés'; ?>
                     </p>
                 </div>
 
-                <?php if (isDMOrAdmin()): ?>
+                <?php if (User::isDMOrAdmin()): ?>
                     <div class="stat-card">
                         <h3 class="text-success">
                             <i class="fas fa-users"></i>
@@ -288,7 +292,7 @@ $current_page = "profile";
                     </div>
                     <div class="card-body">
                         <div class="d-grid gap-2">
-                            <?php if (isDMOrAdmin()): ?>
+                            <?php if (User::isDMOrAdmin()): ?>
                                 <a href="create_session.php" class="btn btn-outline-primary btn-sm">
                                     <i class="fas fa-plus me-2"></i>Créer une session
                                 </a>
@@ -308,6 +312,10 @@ $current_page = "profile";
                                 <?php if ($unread_notifications > 0): ?>
                                     <span class="badge bg-danger ms-1"><?php echo $unread_notifications; ?></span>
                                 <?php endif; ?>
+                            </a>
+                            <hr class="my-3">
+                            <a href="delete_account.php" class="btn btn-outline-danger btn-sm">
+                                <i class="fas fa-trash-alt me-2"></i>Supprimer mon compte
                             </a>
                         </div>
                     </div>

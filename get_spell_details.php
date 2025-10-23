@@ -1,9 +1,10 @@
 <?php
 require_once 'config/database.php';
 require_once 'includes/functions.php';
+require_once 'classes/init.php';
 
 // Vérifier que l'utilisateur est connecté
-requireLogin();
+User::requireLogin();
 
 header('Content-Type: application/json');
 
@@ -15,18 +16,16 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
 $spellId = (int)$_GET['id'];
 
 try {
-    $stmt = $pdo->prepare("SELECT * FROM spells WHERE id = ?");
-    $stmt->execute([$spellId]);
-    $spell = $stmt->fetch();
+    $spell = Sort::findById($spellId);
     
     if (!$spell) {
         echo json_encode(['success' => false, 'message' => 'Sort non trouvé']);
         exit;
     }
     
-    echo json_encode(['success' => true, 'spell' => $spell]);
+    echo json_encode(['success' => true, 'spell' => $spell->toArray()]);
     
-} catch (PDOException $e) {
+} catch (Exception $e) {
     echo json_encode(['success' => false, 'message' => 'Erreur de base de données']);
     error_log("Erreur get_spell_details: " . $e->getMessage());
 }

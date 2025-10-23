@@ -37,7 +37,7 @@ try {
     
     switch ($action) {
         case 'use':
-            $success = useRage($characterId);
+            $success = Character::useRageStatic($characterId);
             if ($success) {
                 echo json_encode(['success' => true, 'message' => 'Rage utilisée']);
             } else {
@@ -46,7 +46,7 @@ try {
             break;
             
         case 'free':
-            $success = freeRage($characterId);
+            $success = Character::freeRageStatic($characterId);
             if ($success) {
                 echo json_encode(['success' => true, 'message' => 'Rage libérée']);
             } else {
@@ -55,7 +55,7 @@ try {
             break;
             
         case 'reset':
-            $success = resetRageUsage($characterId);
+            $success = Character::resetRageUsageStatic($characterId);
             if ($success) {
                 echo json_encode(['success' => true, 'message' => 'Rages réinitialisées']);
             } else {
@@ -74,6 +74,14 @@ try {
     echo json_encode(['success' => false, 'message' => 'Erreur serveur: ' . $e->getMessage()]);
 }
 ?>
+
+
+
+
+
+
+
+
 
 
 

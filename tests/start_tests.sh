@@ -18,9 +18,9 @@ echo "🔧 Activation de l'environnement virtuel..."
 source ../testenv/bin/activate
 
 # Vérifier les dépendances
-if ! python -c "import selenium, pytest" 2>/dev/null; then
+if ! python3 -c "import selenium, pytest" 2>/dev/null; then
     echo "📦 Installation des dépendances..."
-    python -m pip install -r requirements.txt
+    python3 -m pip install -r requirements.txt
 fi
 
 # Vérifier ChromeDriver
@@ -39,10 +39,10 @@ echo ""
 
 # Afficher les options
 echo "📋 Commandes disponibles:"
-echo "   python test_simple.py                    # Test simple"
-echo "   python run_tests.py --type smoke         # Tests de fumée"
-echo "   python run_tests.py --type authentication # Tests d'authentification"
-echo "   python run_tests.py --help               # Aide complète"
+echo "   python3 test_simple.py                    # Test simple"
+echo "   python3 run_tests.py --type smoke         # Tests de fumée"
+echo "   python3 run_tests.py --type authentication # Tests d'authentification"
+echo "   python3 run_tests.py --help               # Aide complète"
 echo "   make help                                # Aide Makefile"
 echo ""
 
@@ -59,22 +59,22 @@ read -p "Votre choix (1-5): " choice
 case $choice in
     1)
         echo "🧪 Lancement du test simple..."
-        python test_simple.py
+        python3 test_simple.py
         ;;
     2)
         echo "🧪 Lancement des tests de fumée..."
-        python run_tests.py --type smoke --headless
+        python3 run_tests.py --type smoke --headless
         ;;
     3)
         echo "🧪 Lancement des tests d'authentification..."
-        python run_tests.py --type authentication --headless
+        python3 run_tests.py --type authentication --headless
         ;;
     4)
         echo "🧪 Lancement de tous les tests..."
-        python run_tests.py --type all --headless
+        python3 run_tests.py --type all --headless
         ;;
     5)
-        python run_tests.py --help
+        python3 run_tests.py --help
         ;;
     *)
         echo "❌ Choix invalide"

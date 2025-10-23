@@ -15,7 +15,7 @@ if ($backgroundId === 0) {
 }
 
 try {
-    $background = getBackgroundById($backgroundId);
+    $background = Character::getBackgroundById($backgroundId);
     
     if (!$background) {
         echo json_encode([

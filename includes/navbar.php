@@ -35,21 +35,35 @@
                     <!-- Campagnes -->
                     <li class="nav-item">
                         <a class="nav-link <?php echo (isset($current_page) && $current_page === 'campaigns') ? 'active' : ''; ?>" href="campaigns.php">
-                            <i class="fas fa-book me-1"></i><?php echo isAdmin() ? 'Toutes les Campagnes' : 'Campagnes'; ?>
+                            <i class="fas fa-book me-1"></i><?php echo User::isAdmin() ? 'Toutes les Campagnes' : 'Campagnes'; ?>
                         </a>
                     </li>
                     
                     <!-- Mondes (uniquement pour les MJ et Admin) -->
-                    <?php if (isDMOrAdmin()): ?>
+                    <?php if (User::isDMOrAdmin()): ?>
                     <li class="nav-item">
                         <a class="nav-link <?php echo (isset($current_page) && $current_page === 'manage_worlds') ? 'active' : ''; ?>" href="manage_worlds.php">
                             <i class="fas fa-globe-americas me-1"></i>Mondes
                         </a>
                     </li>
+                    
+                    <!-- Groupes (uniquement pour les MJ et Admin) -->
+                    <li class="nav-item">
+                        <a class="nav-link <?php echo (isset($current_page) && $current_page === 'manage_groups') ? 'active' : ''; ?>" href="manage_groups.php">
+                            <i class="fas fa-users me-1"></i>Groupes
+                        </a>
+                    </li>
+                    
+                    <!-- PNJ (uniquement pour les MJ et Admin) -->
+                    <li class="nav-item">
+                        <a class="nav-link <?php echo (isset($current_page) && $current_page === 'manage_npcs') ? 'active' : ''; ?>" href="manage_npcs.php">
+                            <i class="fas fa-user-tie me-1"></i>PNJ
+                        </a>
+                    </li>
                     <?php endif; ?>
                     
                     <!-- Admin (uniquement pour les administrateurs) -->
-                    <?php if (isAdmin()): ?>
+                    <?php if (User::isAdmin()): ?>
                     <li class="nav-item">
                         <a class="nav-link <?php echo (isset($current_page) && $current_page === 'admin') ? 'active' : ''; ?>" href="admin_versions.php">
                             <i class="fas fa-shield-alt me-1"></i>Admin
@@ -65,7 +79,7 @@
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-user me-1"></i><?php echo htmlspecialchars($_SESSION['username']); ?>
-                            <?php if (isAdmin()): ?>
+                            <?php if (User::isAdmin()): ?>
                                 <span class="badge bg-danger ms-1">Admin</span>
                             <?php elseif (isDM()): ?>
                                 <span class="badge bg-warning ms-1">MJ</span>
@@ -81,7 +95,7 @@
                             <li><a class="dropdown-item" href="character_create_step1.php">
                                 <i class="fas fa-plus me-2"></i>Créer un Personnage
                             </a></li>
-                            <?php if (isDMOrAdmin()): ?>
+                            <?php if (User::isDMOrAdmin()): ?>
                             <li><a class="dropdown-item" href="my_monsters.php">
                                 <i class="fas fa-dragon me-2"></i>Mes Monstres
                             </a></li>
@@ -137,7 +151,7 @@
                     <i class="fas fa-users me-2"></i>Mes Personnages
                 </a>
                 <a href="campaigns.php" class="btn btn-outline-light btn-lg">
-                    <i class="fas fa-book me-2"></i><?php echo isAdmin() ? 'Toutes les Campagnes' : 'Mes Campagnes'; ?>
+                    <i class="fas fa-book me-2"></i><?php echo User::isAdmin() ? 'Toutes les Campagnes' : 'Mes Campagnes'; ?>
                 </a>
                 <a href="character_create_step1.php" class="btn btn-outline-light btn-lg">
                     <i class="fas fa-plus me-2"></i>Créer un Personnage

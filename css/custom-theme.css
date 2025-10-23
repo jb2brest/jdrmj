@@ -368,3 +368,24 @@
 .bg-dnd-light {
   background-color: var(--dnd-bg-light) !important;
 }
+
+/* Styles pour l'indicateur d'étape de création de personnage */
+.step-indicator {
+    background: linear-gradient(135deg, var(--dnd-primary) 0%, var(--dnd-secondary) 100%); 
+    color: white;
+    padding: 20px 0;
+    margin-bottom: 30px;
+}
+
+.step-progress {
+    height: 4px;
+    background-color: rgba(255,255,255,0.3);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.step-progress-bar {
+    height: 100%;
+    background-color: white;
+    transition: width 0.3s ease;
+}

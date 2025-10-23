@@ -1,0 +1,10 @@
+# Configuration pour les fichiers JavaScript
+<Files "*.js">
+    Header set Content-Type "application/javascript"
+    Header set Cache-Control "public, max-age=3600"
+</Files>
+
+# Autoriser l'accès aux fichiers JavaScript
+<Files "npc_identification.js">
+    Require all granted
+</Files>

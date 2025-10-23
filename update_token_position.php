@@ -10,8 +10,8 @@ error_log("User ID: " . ($_SESSION['user_id'] ?? 'non défini'));
 error_log("Request Method: " . $_SERVER['REQUEST_METHOD']);
 
 // Vérifier que l'utilisateur est connecté et est DM ou Admin
-if (!isset($_SESSION['user_id']) || !isDMOrAdmin()) {
-    error_log("ERREUR: Accès refusé - User ID: " . ($_SESSION['user_id'] ?? 'non défini') . ", isDMOrAdmin: " . (isDMOrAdmin() ? 'true' : 'false'));
+if (!isset($_SESSION['user_id']) || !User::isDMOrAdmin()) {
+    error_log("ERREUR: Accès refusé - User ID: " . ($_SESSION['user_id'] ?? 'non défini') . ", isDMOrAdmin: " . (User::isDMOrAdmin() ? 'true' : 'false'));
     http_response_code(403);
     echo json_encode(['error' => 'Accès refusé']);
     exit();

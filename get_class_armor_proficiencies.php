@@ -15,7 +15,7 @@ if ($classId === 0) {
 }
 
 try {
-    $proficiencies = getClassProficiencies($classId);
+    $proficiencies = Character::getClassProficiencies($classId);
     
     echo json_encode([
         'success' => true,

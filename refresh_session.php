@@ -39,14 +39,14 @@ try {
     // Tester les fonctions
     echo "<h2>Test des fonctions:</h2>\n";
     echo "<ul>\n";
-    echo "<li>isAdmin(): " . (isAdmin() ? '✅ Oui' : '❌ Non') . "</li>\n";
-    echo "<li>isDM(): " . (isDM() ? '✅ Oui' : '❌ Non') . "</li>\n";
-    echo "<li>isPlayer(): " . (isPlayer() ? '✅ Oui' : '❌ Non') . "</li>\n";
+    echo "<li>isAdmin(): " . (User::isAdmin() ? '✅ Oui' : '❌ Non') . "</li>\n";
+    echo "<li>isDM(): " . (User::isDM() ? '✅ Oui' : '❌ Non') . "</li>\n";
+    echo "<li>isPlayer(): " . (User::isPlayer() ? '✅ Oui' : '❌ Non') . "</li>\n";
     echo "</ul>\n";
     
     echo "<h2>Actions:</h2>\n";
     echo "<p><a href='profile.php'>Voir le profil</a></p>\n";
-    if (isAdmin()) {
+    if (User::isAdmin()) {
         echo "<p><a href='admin_versions.php'>Page d'administration</a></p>\n";
     }
     echo "<p><a href='index.php'>Retour à l'accueil</a></p>\n";

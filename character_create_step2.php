@@ -1,6 +1,7 @@
 <?php
 require_once 'config/database.php';
 require_once 'includes/functions.php';
+require_once 'includes/character_compatibility.php';
 $page_title = "Création de Personnage - Étape 2";
 $current_page = "create_character";
 
@@ -85,23 +86,8 @@ if ($selectedClassId) {
             border-color: #0d6efd;
             background-color: #e7f3ff;
         }
-        .step-indicator {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px 0;
-            margin-bottom: 30px;
-        }
-        .step-progress {
-            height: 4px;
-            background-color: rgba(255,255,255,0.3);
-            border-radius: 2px;
-            overflow: hidden;
-        }
         .step-progress-bar {
-            height: 100%;
-            background-color: white;
             width: 22.22%; /* 2/9 * 100 */
-            transition: width 0.3s ease;
         }
         .race-bonuses {
             font-size: 0.9em;

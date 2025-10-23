@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Versions - Onglet Tests (Démo)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .version-card {
+            transition: transform 0.2s;
+        }
+        .version-card:hover {
+            transform: translateY(-2px);
+        }
+        .version-badge {
+            font-size: 0.9em;
+        }
+        .system-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .migration-success {
+            color: #28a745;
+        }
+        .migration-error {
+            color: #dc3545;
+        }
+        
+        /* Styles pour les onglets */
+        .nav-tabs .nav-link {
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: #6c757d;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-tabs .nav-link:hover {
+            border-color: #dee2e6;
+            color: #495057;
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: #0d6efd;
+            border-bottom-color: #0d6efd;
+            background-color: transparent;
+        }
+        
+        .tab-content {
+            border: 1px solid #dee2e6;
+            border-top: none;
+            border-radius: 0 0 0.375rem 0.375rem;
+            padding: 1.5rem;
+            background-color: #fff;
+        }
+        
+        .tab-pane {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .tab-icon {
+            margin-right: 0.5rem;
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+        }
+        
+        .stats-card .card-body {
+            padding: 1.5rem;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        /* Styles spécifiques pour l'onglet Tests */
+        .test-status-passed {
+            color: #28a745;
+        }
+        
+        .test-status-failed {
+            color: #dc3545;
+        }
+        
+        .test-status-error {
+            color: #ffc107;
+        }
+        
+        .category-card {
+            transition: transform 0.2s ease;
+        }
+        
+        .category-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .test-badge {
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="mb-4">
+                    <i class="fas fa-code-branch"></i> Versions du Système
+                    <span class="badge bg-danger">Admin</span>
+                </h1>
+            </div>
+        </div>
+
+        <!-- Onglets de navigation -->
+        <div class="row">
+            <div class="col-12">
+                <ul class="nav nav-tabs" id="versionTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="system-tab" data-bs-toggle="tab" data-bs-target="#system" type="button" role="tab">
+                            <i class="fas fa-server tab-icon"></i>Système
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="application-tab" data-bs-toggle="tab" data-bs-target="#application" type="button" role="tab">
+                            <i class="fas fa-code tab-icon"></i>Application
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="database-tab" data-bs-toggle="tab" data-bs-target="#database" type="button" role="tab">
+                            <i class="fas fa-database tab-icon"></i>Base de Données
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="migrations-tab" data-bs-toggle="tab" data-bs-target="#migrations" type="button" role="tab">
+                            <i class="fas fa-history tab-icon"></i>Migrations
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="tests-tab" data-bs-toggle="tab" data-bs-target="#tests" type="button" role="tab">
+                            <i class="fas fa-vial tab-icon"></i>Tests
+                            <span class="badge bg-success ms-1">66.7%</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="actions-tab" data-bs-toggle="tab" data-bs-target="#actions" type="button" role="tab">
+                            <i class="fas fa-tools tab-icon"></i>Actions
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Contenu des onglets -->
+        <div class="tab-content" id="versionTabsContent">
+            <!-- Onglet Tests (actif) -->
+            <div class="tab-pane fade show active" id="tests" role="tabpanel" aria-labelledby="tests-tab">
+                <!-- Statistiques générales -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card stats-card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-chart-bar"></i> Statistiques des Tests
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3 stat-item">
+                                        <div class="stat-value">9</div>
+                                        <div class="stat-label">Total Tests</div>
+                                    </div>
+                                    <div class="col-md-3 stat-item">
+                                        <div class="stat-value text-success">6</div>
+                                        <div class="stat-label">Réussis</div>
+                                    </div>
+                                    <div class="col-md-3 stat-item">
+                                        <div class="stat-value text-danger">3</div>
+                                        <div class="stat-label">Échoués</div>
+                                    </div>
+                                    <div class="col-md-3 stat-item">
+                                        <div class="stat-value text-warning">66.7%</div>
+                                        <div class="stat-label">Taux de Réussite</div>
+                                    </div>
+                                </div>
+                                <hr style="border-color: rgba(255,255,255,0.3);">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <strong>Rapports individuels:</strong> 9
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Rapports agrégés:</strong> 6
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tests récents -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card version-card">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-clock"></i> Tests Récents
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Test</th>
+                                                <th>Catégorie</th>
+                                                <th>Statut</th>
+                                                <th>Durée</th>
+                                                <th>Date</th>
+                                                <th>Heure</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td><code>test_bestiary_search</code></td>
+                                                <td><span class="badge bg-secondary">Bestiaire</span></td>
+                                                <td><span class="badge bg-success"><i class="fas fa-check"></i> Réussi</span></td>
+                                                <td>0.05s</td>
+                                                <td>2025-10-14</td>
+                                                <td>22:09:23</td>
+                                            </tr>
+                                            <tr>
+                                                <td><code>test_campaign_creation_timeout</code></td>
+                                                <td><span class="badge bg-secondary">Gestion_Campagnes</span></td>
+                                                <td><span class="badge bg-danger"><i class="fas fa-times"></i> Échoué</span></td>
+                                                <td>0.05s</td>
+                                                <td>2025-10-14</td>
+                                                <td>22:09:23</td>
+                                            </tr>
+                                            <tr>
+                                                <td><code>test_character_creation</code></td>
+                                                <td><span class="badge bg-secondary">Gestion_Personnages</span></td>
+                                                <td><span class="badge bg-success"><i class="fas fa-check"></i> Réussi</span></td>
+                                                <td>0.05s</td>
+                                                <td>2025-10-14</td>
+                                                <td>22:09:23</td>
+                                            </tr>
+                                            <tr>
+                                                <td><code>test_user_login_success</code></td>
+                                                <td><span class="badge bg-secondary">Authentification</span></td>
+                                                <td><span class="badge bg-success"><i class="fas fa-check"></i> Réussi</span></td>
+                                                <td>0.05s</td>
+                                                <td>2025-10-14</td>
+                                                <td>22:09:23</td>
+                                            </tr>
+                                            <tr>
+                                                <td><code>test_user_login_invalid_password</code></td>
+                                                <td><span class="badge bg-secondary">Authentification</span></td>
+                                                <td><span class="badge bg-danger"><i class="fas fa-times"></i> Échoué</span></td>
+                                                <td>0.05s</td>
+                                                <td>2025-10-14</td>
+                                                <td>22:09:23</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistiques par catégorie -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card version-card">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-layer-group"></i> Statistiques par Catégorie
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 col-lg-4 mb-3">
+                                        <div class="card border-0 shadow-sm category-card">
+                                            <div class="card-body">
+                                                <h6 class="card-title">
+                                                    <i class="fas fa-folder text-primary"></i>
+                                                    Bestiaire
+                                                </h6>
+                                                <div class="row text-center">
+                                                    <div class="col-4">
+                                                        <div class="text-success">
+                                                            <strong>1</strong>
+                                                            <br><small>Réussis</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-4">
+                                                        <div class="text-danger">
+                                                            <strong>0</strong>
+                                                            <br><small>Échoués</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-4">
+                                                        <div class="text-warning">
+                                                            <strong>0</strong>
+                                                            <br><small>Erreurs</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <hr>
+                                                <div class="text-center">
+                                                    <small class="text-muted">
+                                                        Total: <strong>1</strong> |
+                                                        Taux: <strong>100.0%</strong>
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6 col-lg-4 mb-3">
+                                        <div class="card border-0 shadow-sm category-card">
+                                            <div class="card-body">
+                                                <h6 class="card-title">
+                                                    <i class="fas fa-folder text-primary"></i>
+                                                    Gestion_Campagnes
+                                                </h6>
+                                                <div class="row text-center">
+                                                    <div class="col-4">
+                                                        <div class="text-success">
+                                                            <strong>0</strong>
+                                                            <br><small>Réussis</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-4">
+                                                        <div class="text-danger">
+                                                            <strong>1</strong>
+                                                            <br><small>Échoués</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-4">
+                                                        <div class="text-warning">
+                                                            <strong>0</strong>
+                                                            <br><small>Erreurs</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <hr>
+                                                <div class="text-center">
+                                                    <small class="text-muted">
+                                                        Total: <strong>1</strong> |
+                                                        Taux: <strong>0.0%</strong>
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="col-md-6 col-lg-4 mb-3">
+                                        <div class="card border-0 shadow-sm category-card">
+                                            <div class="card-body">
+                                                <h6 class="card-title">
+                                                    <i class="fas fa-folder text-primary"></i>
+                                                    Authentification
+                                                </h6>
+                                                <div class="row text-center">
+                                                    <div class="col-4">
+                                                        <div class="text-success">
+                                                            <strong>1</strong>
+                                                            <br><small>Réussis</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-4">
+                                                        <div class="text-danger">
+                                                            <strong>1</strong>
+                                                            <br><small>Échoués</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-4">
+                                                        <div class="text-warning">
+                                                            <strong>0</strong>
+                                                            <br><small>Erreurs</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <hr>
+                                                <div class="text-center">
+                                                    <small class="text-muted">
+                                                        Total: <strong>2</strong> |
+                                                        Taux: <strong>50.0%</strong>
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rapports agrégés récents -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card version-card">
+                            <div class="card-header bg-warning text-dark">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-file-alt"></i> Rapports Agrégés Récents
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Fichier</th>
+                                                <th>Type</th>
+                                                <th>Tests</th>
+                                                <th>Réussis</th>
+                                                <th>Échoués</th>
+                                                <th>Taux</th>
+                                                <th>Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td><code>session_demo_version_date_session_20251014_221017.json</code></td>
+                                                <td><span class="badge bg-primary">Session</span></td>
+                                                <td>3</td>
+                                                <td>2</td>
+                                                <td>1</td>
+                                                <td><span class="badge bg-warning">66.7%</span></td>
+                                                <td>2025-10-14</td>
+                                            </tr>
+                                            <tr>
+                                                <td><code>summary_20251014_220924.json</code></td>
+                                                <td><span class="badge bg-info">Résumé</span></td>
+                                                <td>9</td>
+                                                <td>6</td>
+                                                <td>3</td>
+                                                <td><span class="badge bg-warning">66.7%</span></td>
+                                                <td>2025-10-14</td>
+                                            </tr>
+                                            <tr>
+                                                <td><code>session_demo_test_session_20251014_220924.json</code></td>
+                                                <td><span class="badge bg-primary">Session</span></td>
+                                                <td>5</td>
+                                                <td>3</td>
+                                                <td>2</td>
+                                                <td><span class="badge bg-warning">60.0%</span></td>
+                                                <td>2025-10-14</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animation des cartes de catégories
+            const categoryCards = document.querySelectorAll('.category-card');
+            categoryCards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+                card.style.animation = 'fadeIn 0.5s ease-in forwards';
+            });
+        });
+    </script>
+</body>
+</html>

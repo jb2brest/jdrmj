@@ -37,8 +37,8 @@ $message = '';
 // Récupération des races, classes, historiques et langues
 $races = $pdo->query("SELECT * FROM races ORDER BY name")->fetchAll();
 $classes = $pdo->query("SELECT * FROM classes ORDER BY name")->fetchAll();
-$backgrounds = getAllBackgrounds();
-$languages = getLanguagesByType();
+$backgrounds = Character::getAllBackgrounds();
+$languages = Character::getLanguagesByType();
 
 // Charger les compétences, langues et équipement du personnage existant
 $character_skills = json_decode($character['skills'] ?? '[]', true);
@@ -89,24 +89,8 @@ if ($character['class_id']) {
 
 // Capacités de classe basées sur le niveau
 $classCapabilities = [];
-if ($isBarbarian) {
-    $classCapabilities = getBarbarianCapabilities($character['level']);
-} elseif ($isBard) {
-    $classCapabilities = getBardCapabilities($character['level']);
-} elseif ($isCleric) {
-    $classCapabilities = getClericCapabilities($character['level']);
-} elseif ($isDruid) {
-    $classCapabilities = getDruidCapabilities($character['level']);
-} elseif ($isSorcerer) {
-    $classCapabilities = getSorcererCapabilities($character['level']);
-} elseif ($isFighter) {
-    $classCapabilities = getFighterCapabilities($character['level']);
-} elseif ($isWizard) {
-    $classCapabilities = getWizardCapabilities($character['level']);
-} elseif ($isMonk) {
-    $classCapabilities = getMonkCapabilities($character['level']);
-} elseif ($isWarlock) {
-    $classCapabilities = getWarlockCapabilities($character['level']);
+if ($character['class_id']) {
+    $classCapabilities = getClassCapabilities($character['class_id'], $character['level']);
 }
 
 // Capacités raciales
@@ -224,15 +208,15 @@ $character_languages = array_filter($character_languages, function($lang) {
     return !preg_match('/une? (langue )?de votre choix/i', $lang);
 });
 
-// Charger l'équipement depuis la table place_objects
-$stmt = $pdo->prepare("SELECT * FROM place_objects WHERE owner_type = 'player' AND owner_id = ?");
+// Charger l'équipement depuis la table items
+$stmt = $pdo->prepare("SELECT * FROM items WHERE owner_type = 'player' AND owner_id = ?");
 $stmt->execute([$character_id]);
 $equipment_items = $stmt->fetchAll();
 
 // Reconstruire l'équipement de départ basé sur l'équipement actuel
 $character_equipment = [];
 if (count($equipment_items) > 0) {
-    // Nouveau système : équipement dans la table place_objects
+    // Nouveau système : équipement dans la table items
     foreach ($equipment_items as $item) {
         // Charger les équipements de départ (pas les objets magiques ou les objets obtenus en jeu)
         if ($item['item_source'] === 'Attribution MJ' || 
@@ -357,7 +341,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     ];
     
     // Ajouter automatiquement les compétences de classe
-    $classProficiencies = getClassProficiencies($class_id);
+    $classProficiencies = Character::getClassProficiencies($class_id);
     $classSkills = array_merge(
         $classProficiencies['armor'],
         $classProficiencies['weapon'],
@@ -368,7 +352,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $backgroundSkills = [];
     $backgroundTools = [];
     if ($background_id > 0) {
-        $backgroundProficiencies = getBackgroundProficiencies($background_id);
+        $backgroundProficiencies = Character::getBackgroundProficiencies($background_id);
         $backgroundSkills = $backgroundProficiencies['skills'];
         $backgroundTools = $backgroundProficiencies['tools'];
     }
@@ -380,7 +364,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Ajouter automatiquement les langues d'historique
     $backgroundLanguages = [];
     if ($background_id > 0) {
-        $backgroundLanguages = getBackgroundLanguages($background_id);
+        $backgroundLanguages = Character::getBackgroundLanguages($background_id);
     }
     
     // Fusionner toutes les langues
@@ -397,7 +381,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
     
     // Générer l'équipement final basé sur les choix
-    $equipmentData = generateFinalEquipment($class_id, $startingEquipment, $background_id);
+    $equipmentData = Character::generateFinalEquipment($class_id, $startingEquipment, $background_id);
     $finalEquipment = $equipmentData['equipment'];
     $backgroundGold = $equipmentData['gold'];
     
@@ -413,7 +397,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
     
     // Calculer le niveau basé sur l'expérience
-    $level = calculateLevelFromExperience($experience_points);
+    $level = Character::calculateLevelFromExperienceStatic($experience_points);
     
     // Validation des caractéristiques
     $stats = [$strength, $dexterity, $constitution, $intelligence, $wisdom, $charisma];
@@ -430,11 +414,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $stmt->execute([$class_id]);
         $hitDie = $stmt->fetch()['hit_dice'];
         
-        $constitutionModifier = getAbilityModifier($constitution);
-        $maxHP = calculateMaxHP($level, $hitDie, $constitutionModifier);
+        // Créer un objet Character temporaire pour les calculs
+        $tempCharacter = new Character();
+        $tempCharacter->level = $level;
+        $tempCharacter->constitution = $constitution;
+        $tempCharacter->hit_dice = $hitDie;
+        
+        $constitutionModifier = $tempCharacter->getAbilityModifier('constitution');
+        $maxHP = $tempCharacter->calculateMaxHitPoints();
         
         // Calcul du bonus de maîtrise basé sur l'expérience
-        $proficiencyBonus = calculateProficiencyBonusFromExperience($experience_points);
+        $proficiencyBonus = Character::calculateProficiencyBonusFromExperience($experience_points);
         
         try {
             $stmt = $pdo->prepare("
@@ -1529,14 +1519,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <?php
                     $classId = isset($_POST['class_id']) ? (int)$_POST['class_id'] : null;
                     $backgroundId = isset($_POST['background_id']) ? (int)$_POST['background_id'] : null;
-                    $skillData = getSkillsByCategoryWithClass($classId);
+                    $skillData = Character::getSkillsByCategoryWithClass($classId);
                     $skillCategories = $skillData['categories'];
                     $classProficiencies = $skillData['classProficiencies'];
                     
                     // Récupérer les compétences d'historique
                     $backgroundProficiencies = ['skills' => [], 'tools' => []];
                     if ($backgroundId) {
-                        $backgroundProficiencies = getBackgroundProficiencies($backgroundId);
+                        $backgroundProficiencies = Character::getBackgroundProficiencies($backgroundId);
                     }
                     
                     // Debug: Afficher les compétences de classe pour debug
@@ -1664,7 +1654,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             </div>
 
                             <!-- Grimoire -->
-                            <?php if (canCastSpells($character['class_id'])): ?>
+                            <?php if (Character::canCastSpells($character['class_id'])): ?>
                             <div class="form-section">
                                 <h3><i class="fas fa-book-open me-2"></i>Grimoire</h3>
                                 <div class="row">
@@ -1681,8 +1671,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                         // Calculer les modificateurs pour l'affichage
                                         $wisdomModifier = floor(($character['wisdom'] + $character['wisdom_bonus'] - 10) / 2);
                                         $intelligenceModifier = floor(($character['intelligence'] + $character['intelligence_bonus'] - 10) / 2);
-                                        $spell_capabilities = getClassSpellCapabilities($character['class_id'], $character['level'], $wisdomModifier, $character['max_spells_learned'], $intelligenceModifier);
-                                        $character_spells = getCharacterSpells($character_id);
+                                        $spell_capabilities = Character::getClassSpellCapabilities($character['class_id'], $character['level'], $wisdomModifier, $character['max_spells_learned'], $intelligenceModifier);
+                                        $character_spells = Character::getCharacterSpells($character_id);
                                         ?>
                                         
                                         <div class="row">
@@ -2341,7 +2331,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             });
             
             // Récupérer les langues d'historique
-            const backgroundLanguages = getBackgroundLanguages();
+            const backgroundLanguages = <?php echo json_encode(Character::getBackgroundLanguages($backgroundId ?? 0)); ?>;
             const hasBackgroundChoice = backgroundLanguages.length > 0;
             
             // Calculer le nombre maximum de langues
@@ -2403,7 +2393,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         
         // Fonction pour récupérer les langues d'historique
-        function getBackgroundLanguages() {
+        function getBackgroundLanguagesStatic() {
             const backgroundSelect = document.getElementById('background_id');
             if (!backgroundSelect.value) return [];
             

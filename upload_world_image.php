@@ -5,7 +5,7 @@ require_once 'includes/functions.php';
 header('Content-Type: application/json');
 
 // Vérifier l'authentification
-if (!isLoggedIn() || !isDMOrAdmin()) {
+if (!User::isLoggedIn() || !User::isDMOrAdmin()) {
     http_response_code(403);
     echo json_encode(['error' => 'Accès non autorisé']);
     exit;

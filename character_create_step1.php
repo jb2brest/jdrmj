@@ -1,6 +1,7 @@
 <?php
 require_once 'config/database.php';
 require_once 'includes/functions.php';
+require_once 'includes/character_compatibility.php';
 $page_title = "Création de Personnage - Étape 1";
 $current_page = "create_character";
 
@@ -36,9 +37,17 @@ $classes = $pdo->query("SELECT * FROM classes ORDER BY name")->fetchAll();
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] === 'select_class') {
     $class_id = (int)$_POST['class_id'];
     
+    // DEBUG: Logs pour déboguer la soumission
+    error_log("DEBUG character_create_step1.php - POST action: " . ($_POST['action'] ?? 'NOT_SET'));
+    error_log("DEBUG character_create_step1.php - POST class_id: " . ($class_id ?? 'NOT_SET'));
+    
     if ($class_id > 0) {
         // Sauvegarder le choix de classe
-        if (saveCharacterCreationStep($user_id, $session_id, 2, ['class_id' => $class_id])) {
+        $saveResult = saveCharacterCreationStep($user_id, $session_id, 2, ['class_id' => $class_id]);
+        error_log("DEBUG character_create_step1.php - Save result: " . ($saveResult ? 'SUCCESS' : 'FAILED'));
+        
+        if ($saveResult) {
+            error_log("DEBUG character_create_step1.php - Redirecting to step2");
             header("Location: character_create_step2.php?session_id=$session_id");
             exit();
         } else {
@@ -51,6 +60,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
 
 // Récupérer la classe sélectionnée si elle existe
 $selectedClassId = $sessionData['data']['class_id'] ?? null;
+
+// DEBUG: Logs pour déboguer la sélection de classe
+error_log("DEBUG character_create_step1.php - Session ID: " . $session_id);
+error_log("DEBUG character_create_step1.php - User ID: " . $user_id);
+error_log("DEBUG character_create_step1.php - Session Data: " . print_r($sessionData, true));
+error_log("DEBUG character_create_step1.php - Selected Class ID: " . ($selectedClassId ?? 'NULL'));
 ?>
 
 <!DOCTYPE html>
@@ -77,23 +92,8 @@ $selectedClassId = $sessionData['data']['class_id'] ?? null;
             border-color: #0d6efd;
             background-color: #e7f3ff;
         }
-        .step-indicator {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px 0;
-            margin-bottom: 30px;
-        }
-        .step-progress {
-            height: 4px;
-            background-color: rgba(255,255,255,0.3);
-            border-radius: 2px;
-            overflow: hidden;
-        }
         .step-progress-bar {
-            height: 100%;
-            background-color: white;
             width: 11.11%; /* 1/9 * 100 */
-            transition: width 0.3s ease;
         }
     </style>
 </head>
@@ -129,7 +129,7 @@ $selectedClassId = $sessionData['data']['class_id'] ?? null;
                         <p class="mb-0 text-muted">Votre classe détermine vos capacités principales et votre style de jeu.</p>
                     </div>
                     <div class="card-body">
-                        <form method="POST" id="classForm">
+                        <form method="POST" id="classForm" onsubmit="console.log('Formulaire soumis avec class_id:', document.getElementById('selected_class_id').value);">
                             <input type="hidden" name="action" value="select_class">
                             <input type="hidden" name="class_id" id="selected_class_id" value="<?php echo $selectedClassId; ?>">
                             
@@ -160,9 +160,10 @@ $selectedClassId = $sessionData['data']['class_id'] ?? null;
                             </div>
                             
                             <div class="text-center mt-4">
-                                <button type="submit" class="btn btn-primary btn-lg" id="continueBtn" <?php echo !$selectedClassId ? 'disabled' : ''; ?>>
+                                <button type="submit" class="btn btn-primary btn-lg" id="continueBtn" disabled>
                                     <i class="fas fa-arrow-right me-2"></i>Continuer vers l'étape 2
                                 </button>
+                                <p class="text-muted mt-2 small">Sélectionnez une classe pour continuer</p>
                             </div>
                         </form>
                     </div>
@@ -179,6 +180,8 @@ $selectedClassId = $sessionData['data']['class_id'] ?? null;
             
             classCards.forEach(card => {
                 card.addEventListener('click', function() {
+                    console.log('Classe cliquée:', this.dataset.classId);
+                    
                     // Désélectionner toutes les cartes
                     classCards.forEach(c => c.classList.remove('selected'));
                     
@@ -188,9 +191,12 @@ $selectedClassId = $sessionData['data']['class_id'] ?? null;
                     // Mettre à jour l'input caché
                     const classId = this.dataset.classId;
                     selectedClassIdInput.value = classId;
+                    console.log('Class ID mis à jour:', classId);
+                    console.log('Input value:', selectedClassIdInput.value);
                     
                     // Activer le bouton continuer
                     continueBtn.disabled = false;
+                    console.log('Bouton activé:', !continueBtn.disabled);
                 });
             });
         });

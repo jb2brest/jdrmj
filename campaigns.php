@@ -1,5 +1,7 @@
 <?php
 require_once 'config/database.php';
+require_once 'classes/init.php';
+require_once 'classes/CampaignEvent.php';
 require_once 'includes/functions.php';
 
 // Les joueurs peuvent voir les campagnes publiques, les DM/Admin peuvent voir toutes les campagnes
@@ -11,44 +13,39 @@ if (!isLoggedIn()) {
 $user_id = $_SESSION['user_id'];
 
 
-// Création d'un code d'invitation simple
-function generateInviteCode($length = 12) {
-    $chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    $code = '';
-    for ($i = 0; $i < $length; $i++) {
-        $code .= $chars[random_int(0, strlen($chars) - 1)];
-    }
-    return $code;
-}
+// La fonction generateInviteCode est maintenant gérée par la classe Campaign
 
 // Traitements POST: créer, supprimer, basculer visibilité (DM et Admin seulement)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isDMOrAdmin()) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
     if (isset($_POST['action']) && $_POST['action'] === 'create') {
         $title = sanitizeInput($_POST['title'] ?? '');
         $description = sanitizeInput($_POST['description'] ?? '');
         $is_public = isset($_POST['is_public']) ? 1 : 0;
         $game_system = sanitizeInput($_POST['game_system'] ?? 'D&D 5e');
-        $invite_code = generateInviteCode(12);
+        // Le code d'invitation est généré automatiquement par la classe Campaign
 
         if (strlen($title) < 3) {
             $error_message = "Le titre doit contenir au moins 3 caractères.";
         } else {
-            $pdo->beginTransaction();
             try {
-                // Créer la campagne
-                $stmt = $pdo->prepare("INSERT INTO campaigns (dm_id, title, description, game_system, is_public, invite_code) VALUES (?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$user_id, $title, $description, $game_system, $is_public, $invite_code]);
-                $campaign_id = $pdo->lastInsertId();
+                // Utilisation de la classe Campaign pour la création
+                $campaignData = [
+                    'dm_id' => $user_id,
+                    'title' => $title,
+                    'description' => $description,
+                    'game_system' => $game_system,
+                    'is_public' => $is_public
+                ];
                 
-                // Ajouter le DM comme membre de sa propre campagne
-                $stmt = $pdo->prepare("INSERT INTO campaign_members (campaign_id, user_id, role) VALUES (?, ?, 'dm')");
-                $stmt->execute([$campaign_id, $user_id]);
+                $newCampaign = Campaign::create($campaignData);
                 
-                $pdo->commit();
-                $success_message = "Campagne créée avec succès.";
+                if ($newCampaign) {
+                    $success_message = "Campagne créée avec succès.";
+                } else {
+                    $error_message = "Erreur lors de la création de la campagne.";
+                }
             } catch (Exception $e) {
-                $pdo->rollBack();
-                $error_message = "Erreur lors de la création de la campagne.";
+                $error_message = "Erreur lors de la création de la campagne : " . $e->getMessage();
             }
         }
     }
@@ -60,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isDMOrAdmin()) {
             $pdo->beginTransaction();
             
             // Vérifier que l'utilisateur a le droit de supprimer cette campagne
-            if (isAdmin()) {
+            if (User::isAdmin()) {
                 $stmt = $pdo->prepare("SELECT id FROM campaigns WHERE id = ?");
                 $stmt->execute([$campaign_id]);
             } else {
@@ -85,9 +82,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isDMOrAdmin()) {
             $stmt = $pdo->prepare("DELETE FROM campaign_applications WHERE campaign_id = ?");
             $stmt->execute([$campaign_id]);
             
-            // 3. Supprimer les entrées du journal de campagne
-            $stmt = $pdo->prepare("DELETE FROM campaign_journal WHERE campaign_id = ?");
-            $stmt->execute([$campaign_id]);
+            // 3. Supprimer les entrées du journal de campagne via la classe CampaignEvent
+            CampaignEvent::deleteByCampaignId($campaign_id);
             
             // 4. Dissocier les lieux de la campagne (ne pas les supprimer)
             $stmt = $pdo->prepare("DELETE FROM place_campaigns WHERE campaign_id = ?");
@@ -137,7 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isDMOrAdmin()) {
     if (isset($_POST['action']) && $_POST['action'] === 'toggle_visibility' && isset($_POST['campaign_id'])) {
         $campaign_id = (int)$_POST['campaign_id'];
         // Les admins peuvent modifier la visibilité de toutes les campagnes, les MJ seulement les leurs
-        if (isAdmin()) {
+        if (User::isAdmin()) {
             $stmt = $pdo->prepare("UPDATE campaigns SET is_public = NOT is_public WHERE id = ?");
             $stmt->execute([$campaign_id]);
         } else {
@@ -148,40 +144,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isDMOrAdmin()) {
     }
 }
 
-// Récupérer les campagnes selon le rôle
-if (isAdmin()) {
-    // Les admins voient toutes les campagnes
-    $stmt = $pdo->prepare("SELECT c.*, u.username as dm_name FROM campaigns c LEFT JOIN users u ON c.dm_id = u.id ORDER BY c.created_at DESC");
-    $stmt->execute();
+// Récupérer les campagnes selon le rôle en utilisant la classe Campaign
+$userRole = getUserRole();
+$campaigns = Campaign::getAccessibleCampaigns($user_id, $userRole);
+
+// Définir le titre de la page selon le rôle
+if ($userRole === 'admin') {
     $page_title = 'Toutes les Campagnes';
-} elseif (isDM()) {
-    // Les DM voient leurs campagnes + les campagnes publiques
-    $stmt = $pdo->prepare("
-        SELECT c.*, u.username as dm_name 
-        FROM campaigns c 
-        LEFT JOIN users u ON c.dm_id = u.id 
-        WHERE c.dm_id = ? OR c.is_public = 1 
-        ORDER BY c.created_at DESC
-    ");
-    $stmt->execute([$user_id]);
+} elseif ($userRole === 'dm') {
     $page_title = 'Mes Campagnes';
 } else {
-    // Les joueurs voient les campagnes publiques ET les campagnes où ils sont membres
-    $stmt = $pdo->prepare("
-        SELECT c.*, u.username as dm_name 
-        FROM campaigns c 
-        LEFT JOIN users u ON c.dm_id = u.id 
-        WHERE c.is_public = 1 
-        OR EXISTS (
-            SELECT 1 FROM campaign_members cm 
-            WHERE cm.campaign_id = c.id AND cm.user_id = ?
-        )
-        ORDER BY c.created_at DESC
-    ");
-    $stmt->execute([$user_id]);
-    $page_title = 'Mes Campagnes';
+    $page_title = 'Campagnes Disponibles';
 }
-$campaigns = $stmt->fetchAll();
 $current_page = "campaigns";
 ?>
 <!DOCTYPE html>
@@ -200,13 +174,13 @@ $current_page = "campaigns";
 
     <div class="container mt-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1><i class="fas fa-book me-2"></i><?php echo isAdmin() ? 'Toutes les Campagnes' : 'Mes Campagnes'; ?></h1>
+            <h1><i class="fas fa-book me-2"></i><?php echo User::isAdmin() ? 'Toutes les Campagnes' : 'Mes Campagnes'; ?></h1>
         </div>
 
         <?php if (!empty($success_message)) echo displayMessage($success_message, 'success'); ?>
         <?php if (!empty($error_message)) echo displayMessage($error_message, 'error'); ?>
 
-        <?php if (isDMOrAdmin()): ?>
+        <?php if (User::isDMOrAdmin()): ?>
         <div class="card mb-4">
             <div class="card-header">
                 <i class="fas fa-plus me-2"></i>Créer une nouvelle campagne
@@ -264,7 +238,7 @@ $current_page = "campaigns";
                                 </div>
                                 <p class="text-muted mb-2">
                                     Système : <?php echo htmlspecialchars($c['game_system']); ?>
-                                    <?php if (isAdmin() && !empty($c['dm_name'])): ?>
+                                    <?php if (User::isAdmin() && !empty($c['dm_name'])): ?>
                                         <br>MJ : <?php echo htmlspecialchars($c['dm_name']); ?>
                                     <?php endif; ?>
                                 </p>
@@ -277,11 +251,11 @@ $current_page = "campaigns";
                                         <a class="btn btn-sm btn-outline-primary" href="view_campaign.php?id=<?php echo $c['id']; ?>">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        <?php if (isAdmin() || (isDM() && $c['dm_id'] == $user_id)): ?>
+                                        <?php if (User::isAdmin() || (User::isDM() && $c['dm_id'] == $user_id)): ?>
                                             <form method="POST" onsubmit="return confirm('Supprimer cette campagne ? Cette action supprimera également toutes les inscriptions des joueurs et personnages participants.');">
                                                 <input type="hidden" name="action" value="delete">
                                                 <input type="hidden" name="campaign_id" value="<?php echo $c['id']; ?>">
-                                                <button class="btn btn-sm btn-outline-danger" title="<?php echo isAdmin() ? 'Supprimer la campagne (Admin)' : 'Supprimer ma campagne'; ?>">
+                                                <button class="btn btn-sm btn-outline-danger" title="<?php echo User::isAdmin() ? 'Supprimer la campagne (Admin)' : 'Supprimer ma campagne'; ?>">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </form>
@@ -295,7 +269,7 @@ $current_page = "campaigns";
                                             </form>
                                     </div>
                                 </div>
-                                <?php if (isDMOrAdmin()): ?>
+                                <?php if (User::isDMOrAdmin()): ?>
                                     <div class="mt-3">
                                         <small class="text-muted">Code d'invitation :</small>
                                         <code><?php echo htmlspecialchars($c['invite_code']); ?></code>

@@ -4,7 +4,7 @@ require_once 'includes/functions.php';
 require_once 'includes/starting_equipment_functions.php';
 
 // Vérifier que l'utilisateur est admin
-requireAdmin();
+User::requireAdmin();
 
 // Récupérer les filtres
 $filter_class = isset($_GET['class']) ? (int)$_GET['class'] : 0;

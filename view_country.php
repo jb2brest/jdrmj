@@ -1,12 +1,12 @@
 <?php
-require_once 'config/database.php';
+require_once 'classes/init.php';
 require_once 'includes/functions.php';
 
 $page_title = "Détails du Pays";
 $current_page = "manage_worlds"; // Pour garder le bouton "Mondes" actif dans la navbar
 
 requireLogin();
-requireDMOrAdmin();
+User::requireDMOrAdmin();
 
 $country_id = (int)($_GET['id'] ?? 0);
 if ($country_id === 0) {
@@ -16,21 +16,24 @@ if ($country_id === 0) {
 
 $user_id = $_SESSION['user_id'];
 
-// Récupérer le pays avec ses informations de monde
-$stmt = $pdo->prepare("SELECT c.*, w.name as world_name, w.created_by 
-                      FROM countries c 
-                      JOIN worlds w ON c.world_id = w.id 
-                      WHERE c.id = ? AND w.created_by = ?");
-$stmt->execute([$country_id, $user_id]);
-$country = $stmt->fetch();
+// Récupérer le pays via la classe Pays
+$pays = Pays::findById($country_id);
 
-if (!$country) {
+if (!$pays) {
     header('Location: manage_worlds.php?error=country_not_found');
+    exit();
+}
+
+// Vérifier que l'utilisateur a le droit d'accéder à ce pays
+$monde = $pays->getMonde();
+if (!$monde || $monde['created_by'] != $user_id) {
+    header('Location: manage_worlds.php?error=access_denied');
     exit();
 }
 
 $success_message = '';
 $error_message = '';
+
 
 // Fonction helper pour tronquer le texte
 function truncateText($text, $length = 100) {
@@ -108,15 +111,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 if (empty($error_message)) {
                     try {
-                        $stmt = $pdo->prepare("INSERT INTO regions (name, description, map_url, country_id) VALUES (?, ?, ?, ?)");
-                        $stmt->execute([$name, $description, $map_url, $country_id]);
+                        $region = new Region([
+                            'name' => $name,
+                            'description' => $description,
+                            'map_url' => $map_url,
+                            'country_id' => $country_id
+                        ]);
+                        $region->save();
                         $success_message = "Région '$name' créée avec succès.";
-                    } catch (PDOException $e) {
-                        if ($e->getCode() == 23000) {
-                            $error_message = "Une région avec ce nom existe déjà dans ce pays.";
-                        } else {
-                            $error_message = "Erreur lors de la création de la région: " . $e->getMessage();
-                        }
+                    } catch (Exception $e) {
+                        $error_message = $e->getMessage();
                     }
                 }
             }
@@ -130,11 +134,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (empty($name)) {
                 $error_message = "Le nom de la région est requis.";
             } else {
-                // Récupérer l'URL actuelle
-                $stmt = $pdo->prepare("SELECT map_url FROM regions WHERE id = ? AND country_id = ?");
-                $stmt->execute([$region_id, $country_id]);
-                $current_region = $stmt->fetch();
-                $map_url = $current_region['map_url'] ?? '';
+                // Récupérer l'URL actuelle via la classe Region
+                $current_region = Region::findById($region_id);
+                $map_url = $current_region ? $current_region->getMapUrl() : '';
                 
                 // Gérer l'upload de la nouvelle carte si un fichier est fourni
                 if (isset($_FILES['map_image']) && $_FILES['map_image']['error'] === UPLOAD_ERR_OK) {
@@ -153,19 +155,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 if (empty($error_message)) {
                     try {
-                        $stmt = $pdo->prepare("UPDATE regions SET name = ?, description = ?, map_url = ? WHERE id = ? AND country_id = ?");
-                        $stmt->execute([$name, $description, $map_url, $region_id, $country_id]);
-                        if ($stmt->rowCount() > 0) {
+                        $region = Region::findById($region_id);
+                        if ($region && $region->getCountryId() == $country_id) {
+                            $region->setName($name);
+                            $region->setDescription($description);
+                            $region->setMapUrl($map_url);
+                            $region->save();
                             $success_message = "Région '$name' mise à jour avec succès.";
                         } else {
                             $error_message = "Région non trouvée.";
                         }
-                    } catch (PDOException $e) {
-                        if ($e->getCode() == 23000) {
-                            $error_message = "Une région avec ce nom existe déjà dans ce pays.";
-                        } else {
-                            $error_message = "Erreur lors de la mise à jour: " . $e->getMessage();
-                        }
+                    } catch (Exception $e) {
+                        $error_message = $e->getMessage();
                     }
                 }
             }
@@ -175,102 +176,85 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $region_id = (int)($_POST['region_id'] ?? 0);
             
             try {
-                // Vérifier s'il y a des lieux dans cette région
-                $stmt = $pdo->prepare("SELECT COUNT(*) FROM places WHERE region_id = ?");
-                $stmt->execute([$region_id]);
-                $place_count = $stmt->fetchColumn();
-                
-                if ($place_count > 0) {
-                    $error_message = "Impossible de supprimer cette région car elle contient $place_count lieux. Supprimez d'abord les lieux.";
+                $region = Region::findById($region_id);
+                if ($region && $region->getCountryId() == $country_id) {
+                    $region->delete();
+                    $success_message = "Région supprimée avec succès.";
                 } else {
-                    // Récupérer l'URL de l'image avant suppression
-                    $stmt = $pdo->prepare("SELECT map_url FROM regions WHERE id = ? AND country_id = ?");
-                    $stmt->execute([$region_id, $country_id]);
-                    $region = $stmt->fetch();
-                    
-                    // Supprimer la région
-                    $stmt = $pdo->prepare("DELETE FROM regions WHERE id = ? AND country_id = ?");
-                    $stmt->execute([$region_id, $country_id]);
-                    
-                    if ($stmt->rowCount() > 0) {
-                        // Supprimer l'image associée si elle existe
-                        if (!empty($region['map_url']) && file_exists($region['map_url'])) {
-                            unlink($region['map_url']);
-                        }
-                        $success_message = "Région supprimée avec succès.";
-                    } else {
-                        $error_message = "Région non trouvée.";
-                    }
+                    $error_message = "Région non trouvée.";
                 }
-            } catch (PDOException $e) {
-                $error_message = "Erreur lors de la suppression: " . $e->getMessage();
+            } catch (Exception $e) {
+                $error_message = $e->getMessage();
             }
             break;
     }
 }
 
-// Récupérer les régions du pays
-$stmt = $pdo->prepare("SELECT * FROM regions WHERE country_id = ? ORDER BY name");
-$stmt->execute([$country_id]);
-$regions = $stmt->fetchAll();
+// Récupérer les régions du pays via la classe Pays
+$regions = $pays->getRegions();
 
-// Récupérer tous les PNJs du pays (via la hiérarchie pays → régions → lieux)
-$stmt = $pdo->prepare("
-    SELECT 
-        pn.id,
-        pn.name,
-        pn.description,
-        pn.profile_photo,
-        pn.is_visible,
-        pn.is_identified,
-        c.name AS character_name,
-        c.profile_photo AS character_profile_photo,
-        cl.name AS class_name,
-        r.name AS race_name,
-        pl.title AS place_name,
-        reg.name AS region_name,
-        'PNJ' AS type
-    FROM place_npcs pn
-    JOIN places pl ON pn.place_id = pl.id
-    LEFT JOIN regions reg ON pl.region_id = reg.id
-    LEFT JOIN characters c ON pn.npc_character_id = c.id
-    LEFT JOIN classes cl ON c.class_id = cl.id
-    LEFT JOIN races r ON c.race_id = r.id
-    WHERE pl.country_id = ? AND pn.monster_id IS NULL
-    ORDER BY pn.name ASC
-");
-$stmt->execute([$country_id]);
-$country_npcs = $stmt->fetchAll();
+// Récupérer tous les PNJs et monstres du monde
+$monde = $pays->getMonde();
+$world_id = $monde['id'];
 
-// Récupérer tous les monstres du pays (via la hiérarchie pays → régions → lieux)
-$stmt = $pdo->prepare("
-    SELECT 
-        pn.id,
-        pn.name,
-        pn.description,
-        pn.profile_photo,
-        pn.is_visible,
-        pn.is_identified,
-        pn.quantity,
-        pn.current_hit_points,
-        dm.name AS monster_name,
-        dm.type,
-        dm.size,
-        dm.challenge_rating,
-        dm.hit_points,
-        dm.armor_class,
-        pl.title AS place_name,
-        reg.name AS region_name,
-        'Monstre' AS type
-    FROM place_npcs pn
-    JOIN places pl ON pn.place_id = pl.id
-    LEFT JOIN regions reg ON pl.region_id = reg.id
-    JOIN dnd_monsters dm ON pn.monster_id = dm.id
-    WHERE pl.country_id = ? AND pn.monster_id IS NOT NULL
-    ORDER BY pn.name ASC
-");
-$stmt->execute([$country_id]);
-$country_monsters = $stmt->fetchAll();
+// Récupérer les PNJs et monstres du monde (si les tables existent)
+$all_npcs = [];
+$all_monsters = [];
+
+try {
+    $pdo = getPDO();
+    
+    // Vérifier si la table npcs existe
+    $stmt = $pdo->query("SHOW TABLES LIKE 'npcs'");
+    if ($stmt->rowCount() > 0) {
+        $stmt = $pdo->prepare("
+            SELECT n.*, c.name as country_name, r.name as region_name, p.title as place_name
+            FROM npcs n
+            LEFT JOIN places p ON n.place_id = p.id
+            LEFT JOIN regions r ON p.region_id = r.id
+            LEFT JOIN countries c ON r.country_id = c.id
+            WHERE n.world_id = ?
+            ORDER BY c.name, r.name, p.title, n.name
+        ");
+        $stmt->execute([$world_id]);
+        $all_npcs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+    
+    // Vérifier si la table monsters existe
+    $stmt = $pdo->query("SHOW TABLES LIKE 'monsters'");
+    if ($stmt->rowCount() > 0) {
+        $stmt = $pdo->prepare("
+            SELECT m.*, c.name as country_name, r.name as region_name, p.title as place_name
+            FROM monsters m
+            LEFT JOIN places p ON m.place_id = p.id
+            LEFT JOIN regions r ON p.region_id = r.id
+            LEFT JOIN countries c ON r.country_id = c.id
+            WHERE m.world_id = ?
+            ORDER BY c.name, r.name, p.title, m.name
+        ");
+        $stmt->execute([$world_id]);
+        $all_monsters = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+} catch (PDOException $e) {
+    // En cas d'erreur, initialiser avec des tableaux vides
+    $all_npcs = [];
+    $all_monsters = [];
+}
+
+// Récupérer les données pour la cartographie interrégionale
+// Utiliser les nouvelles méthodes de la classe Pays
+$country_accesses = $pays->getInterRegionAccesses();
+$external_places = $pays->getExternalPlaces();
+
+// Filtrer les PNJs et monstres pour ne garder que ceux du pays actuel
+// Utiliser le champ country_name qui est déjà inclus dans les résultats de la classe Monde
+$country_npcs = array_filter($all_npcs, function($npc) use ($pays) {
+    return $npc['country_name'] === $pays->getName();
+});
+
+$country_monsters = array_filter($all_monsters, function($monster) use ($pays) {
+    return $monster['country_name'] === $pays->getName();
+});
 ?>
 
 <!DOCTYPE html>
@@ -278,10 +262,10 @@ $country_monsters = $stmt->fetchAll();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($country['name']); ?> - JDR 4 MJ</title>
+    <title><?php echo htmlspecialchars($pays->getName()); ?> - JDR 4 MJ</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="css/style.css" rel="stylesheet">
+    <link href="css/custom-theme.css" rel="stylesheet">
     <style>
         .cursor-pointer {
             cursor: pointer;
@@ -359,28 +343,28 @@ $country_monsters = $stmt->fetchAll();
                         <div>
                             <h1 class="mb-2">
                                 <i class="fas fa-flag me-2"></i>
-                                <?php echo htmlspecialchars($country['name']); ?>
+                                <?php echo htmlspecialchars($pays->getName()); ?>
                             </h1>
                             <p class="text-muted mb-1">
                                 <i class="fas fa-globe-americas me-1"></i>
-                                Monde: <?php echo htmlspecialchars($country['world_name']); ?>
+                                Monde: <?php echo htmlspecialchars($pays->getWorldName()); ?>
                             </p>
-                            <?php if (!empty($country['description'])): ?>
-                                <p class="text-muted mb-3"><?php echo nl2br(htmlspecialchars($country['description'])); ?></p>
+                            <?php if (!empty($pays->getDescription())): ?>
+                                <p class="text-muted mb-3"><?php echo nl2br(htmlspecialchars($pays->getDescription())); ?></p>
                             <?php endif; ?>
                             <div class="d-flex gap-3">
-                                <a href="view_world.php?id=<?php echo (int)$country['world_id']; ?>" class="btn btn-outline-secondary">
+                                <a href="view_world.php?id=<?php echo (int)$pays->getWorldId(); ?>" class="btn btn-outline-secondary">
                                     <i class="fas fa-arrow-left me-1"></i>Retour au monde
                                 </a>
                             </div>
                         </div>
-                        <?php if (!empty($country['map_url'])): ?>
+                        <?php if (!empty($pays->getMapUrl())): ?>
                             <div class="text-end">
-                                <img src="<?php echo htmlspecialchars($country['map_url']); ?>" 
-                                     alt="Carte de <?php echo htmlspecialchars($country['name']); ?>" 
+                                <img src="<?php echo htmlspecialchars($pays->getMapUrl()); ?>" 
+                                     alt="Carte de <?php echo htmlspecialchars($pays->getName()); ?>" 
                                      class="img-fluid rounded cursor-pointer" 
                                      style="max-height: 200px; max-width: 300px;"
-                                     onclick="openMapFullscreen('<?php echo htmlspecialchars($country['map_url']); ?>', '<?php echo htmlspecialchars($country['name']); ?>')"
+                                     onclick="openMapFullscreen('<?php echo htmlspecialchars($pays->getMapUrl()); ?>', '<?php echo htmlspecialchars($pays->getName()); ?>')"
                                      title="Cliquer pour voir en plein écran">
                             </div>
                         <?php endif; ?>
@@ -394,9 +378,16 @@ $country_monsters = $stmt->fetchAll();
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="fas fa-map-marked-alt me-2"></i>Régions de ce pays</h5>
-            <button class="btn btn-brown" data-bs-toggle="modal" data-bs-target="#createRegionModal">
-                <i class="fas fa-plus me-2"></i>Nouvelle Région
-            </button>
+            <div class="btn-group">
+                <?php if (!empty($regions) && (!empty($country_accesses) || !empty($external_places))): ?>
+                    <button class="btn btn-info" data-bs-toggle="modal" data-bs-target="#cartographyModal">
+                        <i class="fas fa-map me-2"></i>Cartographie
+                    </button>
+                <?php endif; ?>
+                <button class="btn btn-brown" data-bs-toggle="modal" data-bs-target="#createRegionModal">
+                    <i class="fas fa-plus me-2"></i>Nouvelle Région
+                </button>
+            </div>
         </div>
         <div class="card-body">
             <?php if (empty($regions)): ?>
@@ -604,7 +595,7 @@ $country_monsters = $stmt->fetchAll();
                                                             <i class="fas fa-eye"></i>
                                                         </a>
                                                     <?php else: ?>
-                                                        <a href="view_monster_sheet.php?id=<?php echo (int)$entity['monster_id']; ?>" 
+                                                        <a href="view_monster_sheet.php?id=<?php echo (int)($entity['monster_id'] ?? 0); ?>" 
                                                            class="btn btn-outline-info btn-sm" title="Voir le monstre">
                                                             <i class="fas fa-eye"></i>
                                                         </a>
@@ -915,6 +906,433 @@ $country_monsters = $stmt->fetchAll();
             sortRows();
         }
     }
+
+    // === CARTographie INTERRÉGIONALE ===
+    const cartographyData = {
+        regions: <?php echo json_encode($regions) ?>,
+        externalPlaces: <?php echo json_encode($external_places) ?>,
+        accesses: <?php echo json_encode($country_accesses) ?>,
+        currentCountryId: <?php echo $country_id ?>
+    };
+
+    let placePositions = {};
+    let isDragging = false;
+    let draggedElement = null;
+    let dragOffset = { x: 0, y: 0 };
+
+    let cartographyInitialized = false;
+    
+    function generateCartography() {
+        console.log('generateCartography() called');
+        const canvas = document.getElementById('cartographyCanvas');
+        if (!canvas) {
+            console.log('Canvas not found!');
+            return;
+        }
+        
+        // Éviter les appels multiples
+        if (cartographyInitialized) {
+            console.log('Cartography already initialized, skipping...');
+            return;
+        }
+        cartographyInitialized = true;
+        
+        console.log('Canvas dimensions:', canvas.offsetWidth, 'x', canvas.offsetHeight);
+        
+        // Nettoyer le canvas
+        canvas.innerHTML = '';
+        
+        const width = canvas.offsetWidth;
+        const height = canvas.offsetHeight;
+        const margin = 50;
+        const availableWidth = width - (margin * 2);
+        const availableHeight = height - (margin * 2);
+        
+        // Réinitialiser les positions
+        placePositions = {};
+        console.log('Place positions reset');
+        
+        // Récupérer toutes les régions (pour la cartographie de pays)
+        const allPlaces = [];
+        
+        // Ajouter les régions du pays
+        cartographyData.regions.forEach(region => {
+            allPlaces.push({
+                id: 'region_' + region.id,
+                title: region.name,
+                isRegion: true,
+                regionId: region.id
+            });
+        });
+        
+        // Ajouter les régions externes (si des accès vont vers d'autres pays)
+        cartographyData.externalPlaces.forEach(place => {
+            // Vérifier si cette région externe n'est pas déjà ajoutée
+            const existingRegion = allPlaces.find(p => p.regionId === place.region_id);
+            if (!existingRegion) {
+                allPlaces.push({
+                    id: 'region_' + place.region_id,
+                    title: place.region_name,
+                    isRegion: true,
+                    regionId: place.region_id,
+                    countryName: place.country_name
+                });
+            }
+        });
+        
+        if (allPlaces.length === 0) {
+            console.log('No places to position');
+            return;
+        }
+        
+        console.log('Regions to position:', allPlaces.length);
+        
+        // Calculer les positions des régions en cercle
+        allPlaces.forEach((place, index) => {
+            console.log('Positioning region:', place.title, 'at index', index);
+            const angle = (index * 2 * Math.PI) / Math.max(allPlaces.length, 1);
+            const x = margin + (availableWidth / 2) + (Math.cos(angle) * (availableWidth / 3));
+            const y = margin + (availableHeight / 2) + (Math.sin(angle) * (availableHeight / 3));
+            
+            const initialPos = { x, y };
+            const adjustedPos = adjustPosition(initialPos, placePositions);
+            
+            placePositions[place.id] = { 
+                x: adjustedPos.x, 
+                y: adjustedPos.y, 
+                place, 
+                isExternal: place.countryName !== undefined, // Région externe si elle a un countryName
+                isDragging: false
+            };
+        });
+        
+        // Dessiner les connexions
+        redrawConnections();
+        
+        // Dessiner les lieux
+        console.log('Final place positions:', Object.keys(placePositions));
+        Object.values(placePositions).forEach(({ x, y, place, isExternal }) => {
+            const placeElement = document.createElement('div');
+            placeElement.style.position = 'absolute';
+            placeElement.style.left = (x - 15) + 'px';
+            placeElement.style.top = (y - 15) + 'px';
+            placeElement.style.width = '30px';
+            placeElement.style.height = '30px';
+            placeElement.style.backgroundColor = isExternal ? '#6c757d' : '#007bff';
+            placeElement.style.border = '2px solid #fff';
+            placeElement.style.borderRadius = '50%';
+            placeElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+            placeElement.style.cursor = 'move';
+            placeElement.style.zIndex = '10';
+            placeElement.title = place.title + (isExternal ? ' (Autre région)' : '') + ' - Cliquer et glisser pour déplacer';
+            placeElement.dataset.placeId = place.id;
+            
+            // Ajouter le nom du lieu
+            const label = document.createElement('div');
+            label.style.position = 'absolute';
+            label.style.left = '35px';
+            label.style.top = '5px';
+            label.style.fontSize = '12px';
+            label.style.fontWeight = 'bold';
+            label.style.color = '#333';
+            label.style.backgroundColor = 'rgba(255,255,255,0.9)';
+            label.style.padding = '2px 6px';
+            label.style.borderRadius = '4px';
+            label.style.whiteSpace = 'nowrap';
+            label.style.pointerEvents = 'none';
+            label.style.zIndex = '11';
+            label.textContent = place.title;
+            
+            // Ajouter un indicateur pour les lieux externes
+            if (isExternal && place.regionName) {
+                const regionLabel = document.createElement('div');
+                regionLabel.style.position = 'absolute';
+                regionLabel.style.left = '35px';
+                regionLabel.style.top = '20px';
+                regionLabel.style.fontSize = '10px';
+                regionLabel.style.color = '#666';
+                regionLabel.style.backgroundColor = 'rgba(255,255,255,0.8)';
+                regionLabel.style.padding = '1px 4px';
+                regionLabel.style.borderRadius = '3px';
+                regionLabel.style.whiteSpace = 'nowrap';
+                regionLabel.style.pointerEvents = 'none';
+                regionLabel.style.zIndex = '11';
+                regionLabel.textContent = '(' + place.regionName + ')';
+                placeElement.appendChild(regionLabel);
+            }
+            
+            placeElement.appendChild(label);
+            canvas.appendChild(placeElement);
+        });
+    }
+
+    function redrawConnections() {
+        const canvas = document.getElementById('cartographyCanvas');
+        if (!canvas) return;
+        
+        // Supprimer les anciennes connexions
+        const existingConnections = canvas.querySelectorAll('.connection-line');
+        existingConnections.forEach(conn => conn.remove());
+        
+        // Dessiner les accès entre régions
+        console.log('Drawing connections for', cartographyData.accesses.length, 'accesses');
+        cartographyData.accesses.forEach(access => {
+            console.log('Processing access:', access.name, 'from region', access.from_region_id, 'to region', access.to_region_id);
+            
+            // Trouver les positions des régions connectées
+            let fromPos = null;
+            let toPos = null;
+            
+            // Chercher par region_id (logique pour la cartographie de pays)
+            fromPos = placePositions['region_' + access.from_region_id];
+            toPos = placePositions['region_' + access.to_region_id];
+            
+            console.log('From position (region):', fromPos ? 'FOUND' : 'NOT FOUND', 'region_' + access.from_region_id);
+            console.log('To position (region):', toPos ? 'FOUND' : 'NOT FOUND', 'region_' + access.to_region_id);
+            
+            console.log('Final positions - From:', fromPos, 'To:', toPos);
+            
+            if (fromPos && toPos) {
+                console.log('Drawing connection for access:', access.name);
+                // Créer une ligne SVG
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.style.position = 'absolute';
+                svg.style.top = '0';
+                svg.style.left = '0';
+                svg.style.width = '100%';
+                svg.style.height = '100%';
+                svg.style.pointerEvents = 'none';
+                svg.style.zIndex = '5';
+                svg.classList.add('connection-line');
+                
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', fromPos.x);
+                line.setAttribute('y1', fromPos.y);
+                line.setAttribute('x2', toPos.x);
+                line.setAttribute('y2', toPos.y);
+                
+                // Style selon le statut
+                if (!access.is_visible) {
+                    line.setAttribute('stroke-dasharray', '5,5');
+                    line.setAttribute('stroke', '#6c757d');
+                } else if (access.is_trapped) {
+                    line.setAttribute('stroke', '#dc3545');
+                } else if (access.is_open) {
+                    line.setAttribute('stroke', '#28a745');
+                } else {
+                    line.setAttribute('stroke', '#ffc107');
+                }
+                
+                line.setAttribute('stroke-width', '3');
+                svg.appendChild(line);
+                canvas.appendChild(svg);
+            } else {
+                console.log('Cannot draw connection - missing positions');
+            }
+            });
+    }
+
+    function detectCollision(pos1, pos2, minDistance = 80) {
+        const dx = pos1.x - pos2.x;
+        const dy = pos1.y - pos2.y;
+        return Math.sqrt(dx * dx + dy * dy) < minDistance;
+    }
+
+    function adjustPosition(newPos, existingPositions, minDistance = 80) {
+        let adjustedPos = { ...newPos };
+        let attempts = 0;
+        const maxAttempts = 50;
+        
+        while (attempts < maxAttempts) {
+            let hasCollision = false;
+            
+            for (const [id, pos] of Object.entries(existingPositions)) {
+                if (detectCollision(adjustedPos, pos, minDistance)) {
+                    hasCollision = true;
+                    break;
+                }
+            }
+            
+            if (!hasCollision) {
+                break;
+            }
+            
+            // Déplacer légèrement la position
+            const angle = Math.random() * 2 * Math.PI;
+            adjustedPos.x += Math.cos(angle) * minDistance * 0.5;
+            adjustedPos.y += Math.sin(angle) * minDistance * 0.5;
+            
+            // S'assurer que la position reste dans les limites
+            const canvas = document.getElementById('cartographyCanvas');
+            const margin = 50;
+            adjustedPos.x = Math.max(margin, Math.min(canvas.offsetWidth - margin, adjustedPos.x));
+            adjustedPos.y = Math.max(margin, Math.min(canvas.offsetHeight - margin, adjustedPos.y));
+            
+            attempts++;
+        }
+        
+        return adjustedPos;
+    }
+
+    // Fonctions de glisser-déposer
+    function startDrag(event) {
+        if (event.target.dataset.placeId) {
+            isDragging = true;
+            draggedElement = event.target.dataset.placeId;
+            placePositions[draggedElement].isDragging = true;
+            
+            const rect = event.target.getBoundingClientRect();
+            dragOffset.x = event.clientX - rect.left;
+            dragOffset.y = event.clientY - rect.top;
+            
+            event.target.style.cursor = 'grabbing';
+        }
+    }
+
+    function drag(event) {
+        if (!isDragging || !draggedElement) return;
+        
+        const canvas = document.getElementById('cartographyCanvas');
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        
+        placePositions[draggedElement].x = x - dragOffset.x;
+        placePositions[draggedElement].y = y - dragOffset.y;
+        
+        // Vérifier les limites
+        placePositions[draggedElement].x = Math.max(30, Math.min(canvas.offsetWidth - 30, placePositions[draggedElement].x));
+        placePositions[draggedElement].y = Math.max(30, Math.min(canvas.offsetHeight - 30, placePositions[draggedElement].y));
+        
+        // Mettre à jour la position de l'élément DOM
+        const element = canvas.querySelector(`[data-place-id="${draggedElement}"]`);
+        if (element) {
+            element.style.left = (placePositions[draggedElement].x - 15) + 'px';
+            element.style.top = (placePositions[draggedElement].y - 15) + 'px';
+        }
+        
+        redrawConnections();
+    }
+
+    function stopDrag(event) {
+        if (isDragging && draggedElement) {
+            placePositions[draggedElement].isDragging = false;
+            
+            const element = document.querySelector(`[data-place-id="${draggedElement}"]`);
+            if (element) {
+                element.style.cursor = 'move';
+            }
+        }
+        isDragging = false;
+        draggedElement = null;
+    }
+
+    // Initialiser la cartographie quand le modal s'ouvre
+    const cartographyModal = document.getElementById('cartographyModal');
+    if (cartographyModal) {
+        cartographyModal.addEventListener('shown.bs.modal', function () {
+            console.log('Modal cartographie ouvert');
+            setTimeout(() => {
+                console.log('Génération de la cartographie...');
+                generateCartography();
+                
+                const canvas = document.getElementById('cartographyCanvas');
+                if (canvas) {
+                    console.log('Canvas trouvé, ajout des événements');
+                    
+                    // Ajouter les événements de glisser-déposer aux éléments
+                    canvas.addEventListener('mousedown', startDrag);
+                    canvas.addEventListener('mousemove', drag);
+                    canvas.addEventListener('mouseup', stopDrag);
+                    canvas.addEventListener('mouseleave', stopDrag);
+                    
+                    // Support tactile
+                    canvas.addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        const touch = e.touches[0];
+                        const mouseEvent = new MouseEvent('mousedown', {
+                            clientX: touch.clientX,
+                            clientY: touch.clientY
+                        });
+                        canvas.dispatchEvent(mouseEvent);
+                    });
+                    
+                    canvas.addEventListener('touchmove', (e) => {
+                        e.preventDefault();
+                        const touch = e.touches[0];
+                        const mouseEvent = new MouseEvent('mousemove', {
+                            clientX: touch.clientX,
+                            clientY: touch.clientY
+                        });
+                        canvas.dispatchEvent(mouseEvent);
+                    });
+                    
+                    canvas.addEventListener('touchend', (e) => {
+                        e.preventDefault();
+                        const mouseEvent = new MouseEvent('mouseup', {});
+                        canvas.dispatchEvent(mouseEvent);
+                    });
+                    
+                    console.log('Événements de glisser-déposer attachés');
+                } else {
+                    console.error('Canvas non trouvé');
+                }
+            }, 100);
+        });
+    } else {
+        console.error('Modal cartographie non trouvé');
+    }
+
+    // Initialisation alternative au cas où l'événement ne se déclenche pas
+    if (cartographyModal) {
+        cartographyModal.addEventListener('show.bs.modal', function () {
+            console.log('Modal cartographie en cours d\'ouverture');
+        });
+
+        // Initialisation de secours - forcer la génération après un délai plus long
+        cartographyModal.addEventListener('shown.bs.modal', function () {
+            setTimeout(() => {
+                const canvas = document.getElementById('cartographyCanvas');
+                if (canvas && Object.keys(placePositions).length === 0) {
+                    console.log('Initialisation de secours - génération forcée');
+                    generateCartography();
+                }
+            }, 500);
+        });
+    }
+
+    // Ignorer les erreurs 404 d'images pour éviter qu'elles bloquent le JavaScript
+    window.addEventListener('error', function(e) {
+        if (e.target.tagName === 'IMG') {
+            console.log('Image manquante ignorée:', e.target.src);
+            e.preventDefault();
+            return false;
+        }
+    }, true);
+
+    // Initialisation forcée au chargement de la page
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM chargé, initialisation de la cartographie');
+        
+        // Attendre que Bootstrap soit chargé
+        setTimeout(() => {
+            const modal = document.getElementById('cartographyModal');
+            if (modal) {
+                console.log('Modal trouvé, ajout des événements');
+                
+                // Forcer l'ajout des événements
+                modal.addEventListener('shown.bs.modal', function () {
+                    console.log('Modal ouvert (événement forcé)');
+                    setTimeout(() => {
+                        console.log('Génération forcée de la cartographie');
+                        generateCartography();
+                    }, 100);
+                });
+            } else {
+                console.error('Modal non trouvé au chargement');
+            }
+        }, 1000);
+    });
 </script>
 
 <!-- Modal Plein Écran pour la Carte -->
@@ -937,6 +1355,104 @@ $country_monsters = $stmt->fetchAll();
             <div class="modal-footer border-secondary">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="fas fa-times me-1"></i>Fermer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Cartographie Interrégionale -->
+<div class="modal fade" id="cartographyModal" tabindex="-1" aria-labelledby="cartographyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cartographyModalLabel">
+                    <i class="fas fa-map me-2"></i>Cartographie Interrégionale - <?php echo htmlspecialchars($pays->getName()); ?>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="position-relative" style="height: 600px; border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden;">
+                            <div id="cartographyCanvas" style="width: 100%; height: 100%; position: relative; cursor: grab;"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <h6><i class="fas fa-info-circle me-2"></i>Légende</h6>
+                            <div class="small">
+                                <div class="mb-2">
+                                    <span class="badge bg-primary me-2">●</span>
+                                    <strong>Région de ce pays</strong>
+                                </div>
+                                <div class="mb-2">
+                                    <span class="badge bg-secondary me-2">●</span>
+                                    <strong>Région d'un autre pays</strong>
+                                </div>
+                                <div class="mb-2">
+                                    <span class="badge bg-success me-2">━━━</span>
+                                    <strong>Accès ouvert</strong>
+                                </div>
+                                <div class="mb-2">
+                                    <span class="badge bg-warning me-2">━━━</span>
+                                    <strong>Accès fermé</strong>
+                                </div>
+                                <div class="mb-2">
+                                    <span class="badge bg-danger me-2">━━━</span>
+                                    <strong>Accès piégé</strong>
+                                </div>
+                                <div class="mb-2">
+                                    <span class="badge bg-secondary me-2">┅┅┅</span>
+                                    <strong>Accès caché</strong>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info small">
+                            <i class="fas fa-mouse-pointer me-2"></i>
+                            <strong>Interaction :</strong> Vous pouvez déplacer les lieux en les faisant glisser pour une meilleure visibilité.
+                        </div>
+                        
+                        <?php if (!empty($country_accesses)): ?>
+                            <div class="mb-3">
+                                <h6><i class="fas fa-route me-2"></i>Accès Interrégionaux</h6>
+                                <div class="small" style="max-height: 200px; overflow-y: auto;">
+                                    <?php foreach ($country_accesses as $access): ?>
+                                        <div class="mb-2 p-2 border rounded">
+                                            <div class="fw-bold"><?php echo htmlspecialchars($access->name); ?></div>
+                                            <div class="text-muted">
+                                                <?php echo htmlspecialchars($access->from_place_name); ?> 
+                                                (<?php echo htmlspecialchars($access->from_region_name); ?>)
+                                                <i class="fas fa-arrow-right mx-1"></i>
+                                                <?php echo htmlspecialchars($access->to_place_name); ?>
+                                                (<?php echo htmlspecialchars($access->to_region_name); ?>)
+                                            </div>
+                                            <div class="small">
+                                                <?php if (!$access->is_visible): ?>
+                                                    <span class="badge bg-secondary">Caché</span>
+                                                <?php elseif ($access->is_trapped): ?>
+                                                    <span class="badge bg-danger">Piégé</span>
+                                                <?php elseif ($access->is_open): ?>
+                                                    <span class="badge bg-success">Ouvert</span>
+                                                <?php else: ?>
+                                                    <span class="badge bg-warning">Fermé</span>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="generateCartography()">
+                    <i class="fas fa-sync-alt me-2"></i>Réorganiser
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Fermer
                 </button>
             </div>
         </div>
