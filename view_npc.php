@@ -382,6 +382,36 @@ $character['intelligence_modifier'] = $intelligenceMod;
 $character['wisdom_modifier'] = $wisdomMod;
 $character['charisma_modifier'] = $charismaMod;
 
+// Bonus d'équipements (pour l'instant à 0, peut être calculé plus tard)
+$equipmentBonuses = [
+    'strength' => 0,
+    'dexterity' => 0,
+    'constitution' => 0,
+    'intelligence' => 0,
+    'wisdom' => 0,
+    'charisma' => 0
+];
+
+// Bonus temporaires (pour l'instant à 0, peut être calculé plus tard)
+$temporaryBonuses = [
+    'strength' => 0,
+    'dexterity' => 0,
+    'constitution' => 0,
+    'intelligence' => 0,
+    'wisdom' => 0,
+    'charisma' => 0
+];
+
+// Calculer les totaux (caractéristiques de base + bonus raciaux + bonus de niveau + bonus d'équipements + bonus temporaires)
+$totalAbilities = [
+    'strength' => $character['strength'] + $characterDetails['strength_bonus'] + $abilityImprovements['strength'] + $equipmentBonuses['strength'] + $temporaryBonuses['strength'],
+    'dexterity' => $character['dexterity'] + $characterDetails['dexterity_bonus'] + $abilityImprovements['dexterity'] + $equipmentBonuses['dexterity'] + $temporaryBonuses['dexterity'],
+    'constitution' => $character['constitution'] + $characterDetails['constitution_bonus'] + $abilityImprovements['constitution'] + $equipmentBonuses['constitution'] + $temporaryBonuses['constitution'],
+    'intelligence' => $character['intelligence'] + $characterDetails['intelligence_bonus'] + $abilityImprovements['intelligence'] + $equipmentBonuses['intelligence'] + $temporaryBonuses['intelligence'],
+    'wisdom' => $character['wisdom'] + $characterDetails['wisdom_bonus'] + $abilityImprovements['wisdom'] + $equipmentBonuses['wisdom'] + $temporaryBonuses['wisdom'],
+    'charisma' => $character['charisma'] + $characterDetails['charisma_bonus'] + $abilityImprovements['charisma'] + $equipmentBonuses['charisma'] + $temporaryBonuses['charisma']
+];
+
 // Calculer les attaques du personnage
 $characterAttacks = Character::calculateCharacterAttacks($npc_id, $character);
 $armorClass = Character::calculateArmorClassExtended($character, $equippedArmor, $equippedShield);
@@ -1213,41 +1243,42 @@ $initiative = $dexterityMod;
                             <!-- Bonus d'équipements -->
                             <tr>
                                 <td><strong>Bonus d'équipements</strong></td>
-                                <td><span class="text-info">+0</span></td>
-                                <td><span class="text-info">+0</span></td>
-                                <td><span class="text-info">+0</span></td>
-                                <td><span class="text-info">+0</span></td>
-                                <td><span class="text-info">+0</span></td>
-                                <td><span class="text-info">+0</span></td>
+                                <td><span class="text-info"><?php echo ($equipmentBonuses['strength'] > 0 ? '+' : '') . $equipmentBonuses['strength']; ?></span></td>
+                                <td><span class="text-info"><?php echo ($equipmentBonuses['dexterity'] > 0 ? '+' : '') . $equipmentBonuses['dexterity']; ?></span></td>
+                                <td><span class="text-info"><?php echo ($equipmentBonuses['constitution'] > 0 ? '+' : '') . $equipmentBonuses['constitution']; ?></span></td>
+                                <td><span class="text-info"><?php echo ($equipmentBonuses['intelligence'] > 0 ? '+' : '') . $equipmentBonuses['intelligence']; ?></span></td>
+                                <td><span class="text-info"><?php echo ($equipmentBonuses['wisdom'] > 0 ? '+' : '') . $equipmentBonuses['wisdom']; ?></span></td>
+                                <td><span class="text-info"><?php echo ($equipmentBonuses['charisma'] > 0 ? '+' : '') . $equipmentBonuses['charisma']; ?></span></td>
                             </tr>
                             <!-- Bonus temporaires -->
                             <tr>
                                 <td><strong>Bonus temporaires</strong></td>
-                                <td><span class="text-warning">+0</span></td>
-                                <td><span class="text-warning">+0</span></td>
-                                <td><span class="text-warning">+0</span></td>
-                                <td><span class="text-warning">+0</span></td>
-                                <td><span class="text-warning">+0</span></td>
-                                <td><span class="text-warning">+0</span></td>
+                                <td><span class="text-warning"><?php echo ($temporaryBonuses['strength'] > 0 ? '+' : '') . $temporaryBonuses['strength']; ?></span></td>
+                                <td><span class="text-warning"><?php echo ($temporaryBonuses['dexterity'] > 0 ? '+' : '') . $temporaryBonuses['dexterity']; ?></span></td>
+                                <td><span class="text-warning"><?php echo ($temporaryBonuses['constitution'] > 0 ? '+' : '') . $temporaryBonuses['constitution']; ?></span></td>
+                                <td><span class="text-warning"><?php echo ($temporaryBonuses['intelligence'] > 0 ? '+' : '') . $temporaryBonuses['intelligence']; ?></span></td>
+                                <td><span class="text-warning"><?php echo ($temporaryBonuses['wisdom'] > 0 ? '+' : '') . $temporaryBonuses['wisdom']; ?></span></td>
+                                <td><span class="text-warning"><?php echo ($temporaryBonuses['charisma'] > 0 ? '+' : '') . $temporaryBonuses['charisma']; ?></span></td>
                             </tr>
                             <!-- Total -->
-                            <tr class="table-primary">
+                            <tr class="table-success">
                                 <td><strong>Total</strong></td>
-                                <?php 
-                                $tempChar = new Character();
-                                $tempChar->strength = $finalAbilities['strength'];
-                                $tempChar->dexterity = $finalAbilities['dexterity'];
-                                $tempChar->constitution = $finalAbilities['constitution'];
-                                $tempChar->intelligence = $finalAbilities['intelligence'];
-                                $tempChar->wisdom = $finalAbilities['wisdom'];
-                                $tempChar->charisma = $finalAbilities['charisma'];
-                                ?>
-                                <td><strong><?php echo $finalAbilities['strength']; ?> (<?php echo ($tempChar->getAbilityModifier('strength') >= 0 ? '+' : '') . $tempChar->getAbilityModifier('strength'); ?>)</strong></td>
-                                <td><strong><?php echo $finalAbilities['dexterity']; ?> (<?php echo ($tempChar->getAbilityModifier('dexterity') >= 0 ? '+' : '') . $tempChar->getAbilityModifier('dexterity'); ?>)</strong></td>
-                                <td><strong><?php echo $finalAbilities['constitution']; ?> (<?php echo ($tempChar->getAbilityModifier('constitution') >= 0 ? '+' : '') . $tempChar->getAbilityModifier('constitution'); ?>)</strong></td>
-                                <td><strong><?php echo $finalAbilities['intelligence']; ?> (<?php echo ($tempChar->getAbilityModifier('intelligence') >= 0 ? '+' : '') . $tempChar->getAbilityModifier('intelligence'); ?>)</strong></td>
-                                <td><strong><?php echo $finalAbilities['wisdom']; ?> (<?php echo ($tempChar->getAbilityModifier('wisdom') >= 0 ? '+' : '') . $tempChar->getAbilityModifier('wisdom'); ?>)</strong></td>
-                                <td><strong><?php echo $finalAbilities['charisma']; ?> (<?php echo ($tempChar->getAbilityModifier('charisma') >= 0 ? '+' : '') . $tempChar->getAbilityModifier('charisma'); ?>)</strong></td>
+                                <td><strong><?php echo $totalAbilities['strength']; ?></strong></td>
+                                <td><strong><?php echo $totalAbilities['dexterity']; ?></strong></td>
+                                <td><strong><?php echo $totalAbilities['constitution']; ?></strong></td>
+                                <td><strong><?php echo $totalAbilities['intelligence']; ?></strong></td>
+                                <td><strong><?php echo $totalAbilities['wisdom']; ?></strong></td>
+                                <td><strong><?php echo $totalAbilities['charisma']; ?></strong></td>
+                            </tr>
+                            <!-- Modificateurs -->
+                            <tr class="table-primary">
+                                <td><strong>Modificateurs</strong></td>
+                                <td><strong><?php echo ($character['strength_modifier'] >= 0 ? '+' : '') . $character['strength_modifier']; ?></strong></td>
+                                <td><strong><?php echo ($character['dexterity_modifier'] >= 0 ? '+' : '') . $character['dexterity_modifier']; ?></strong></td>
+                                <td><strong><?php echo ($character['constitution_modifier'] >= 0 ? '+' : '') . $character['constitution_modifier']; ?></strong></td>
+                                <td><strong><?php echo ($character['intelligence_modifier'] >= 0 ? '+' : '') . $character['intelligence_modifier']; ?></strong></td>
+                                <td><strong><?php echo ($character['wisdom_modifier'] >= 0 ? '+' : '') . $character['wisdom_modifier']; ?></strong></td>
+                                <td><strong><?php echo ($character['charisma_modifier'] >= 0 ? '+' : '') . $character['charisma_modifier']; ?></strong></td>
                             </tr>
                         </tbody>
                     </table>
