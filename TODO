@@ -225,7 +225,7 @@ Les PJ doivent être créés en utilisant la création par step à partir de l'�
 Les PNJ doivent être créés à partir de l'écran manage_npcs.php en utilisant soit la création par step soit la création automatique.
 toggleNpcIdentification(32, 'Dara', true)
 
-Il faut revoir le code de view_character.php
+Il faut revoir le code de view_npc.php
 Voici les règles à appliquer : 
 - le SQL doit être géré dans des méthodes de classes 
 - le javascript doit être mis dans le fichier jdrmj.js

@@ -281,7 +281,7 @@ class NPC
             return false;
         }
     }
-    
+
     /**
      * Mettre à jour le NPC en base de données
      * 
@@ -351,7 +351,7 @@ class NPC
             return false;
         }
     }
-    
+
     /**
      * Supprimer le NPC de la base de données
      * 
@@ -368,7 +368,7 @@ class NPC
             return false;
         }
     }
-    
+
     /**
      * Trouver un NPC par son ID
      * 
@@ -431,7 +431,7 @@ class NPC
             return [];
         }
     }
-    
+
     /**
      * Obtenir les informations d'un NPC dans un lieu
      * 
@@ -459,7 +459,7 @@ class NPC
             return null;
         }
     }
-    
+
     /**
      * Ajouter automatiquement les capacités de base à un NPC
      * 
@@ -583,7 +583,7 @@ class NPC
             return false;
         }
     }
-    
+
     /**
      * Ajouter automatiquement les compétences de base à un NPC
      * 
@@ -757,7 +757,7 @@ class NPC
                         $objectType = self::detectEquipmentType($item);
 
                         // Créer un objet dans la table items
-                        $stmt = $pdo->prepare("
+                $stmt = $pdo->prepare("
                             INSERT INTO items (
                                 display_name, description, object_type, type_precis,
                                 owner_type, owner_id, place_id, is_visible, is_identified,
@@ -805,7 +805,7 @@ class NPC
         }
         
         try {
-            $stmt = $pdo->prepare("
+                $stmt = $pdo->prepare("
                 SELECT ne.*, mi.name, mi.description, mi.type, mi.rarity, mi.attunement_required
                 FROM npc_equipment ne
                 LEFT JOIN magical_items mi ON ne.magical_item_id = mi.id
@@ -867,7 +867,7 @@ class NPC
             return false;
         }
     }
-    
+
     /**
      * Obtenir l'équipement d'un NPC par personnage
      * 
@@ -942,7 +942,7 @@ class NPC
             return [];
         }
     }
-    
+
     /**
      * Obtenir les compétences du NPC
      * 
@@ -966,7 +966,7 @@ class NPC
             return [];
         }
     }
-    
+
     /**
      * Obtenir les détails d'un historique par ID
      * 
@@ -1028,22 +1028,21 @@ class NPC
     }
     
     /**
-     * Obtenir les améliorations de caractéristiques d'un NPC
+     * Obtenir les améliorations de caractéristiques de ce NPC
      * 
-     * @param int $npcId ID du NPC
      * @return array Améliorations de caractéristiques
      */
-    public static function getCharacterAbilityImprovements($npcId)
+    public function getCharacterAbilityImprovements()
     {
         $pdo = \Database::getInstance()->getPdo();
         try {
-            $stmt = $pdo->prepare("
+                $stmt = $pdo->prepare("
                 SELECT strength_bonus, dexterity_bonus, constitution_bonus, 
                        intelligence_bonus, wisdom_bonus, charisma_bonus
                 FROM npc_ability_improvements
                 WHERE npc_id = ?
             ");
-            $stmt->execute([$npcId]);
+            $stmt->execute([$this->id]);
             $improvements = $stmt->fetch(PDO::FETCH_ASSOC);
             
             if ($improvements) {
@@ -1142,7 +1141,7 @@ class NPC
     public static function syncBaseEquipmentToCharacterEquipment($npcId)
     {
         // Cette méthode peut être vide pour les NPCs car ils utilisent déjà la table items
-        return true;
+            return true;
     }
     
     /**
@@ -1216,7 +1215,7 @@ class NPC
             return false;
         }
     }
-    
+
     /**
      * Mettre à jour les points d'expérience d'un NPC
      * 
@@ -1300,7 +1299,7 @@ class NPC
         $pdo = \Database::getInstance()->getPdo();
         
         try {
-            $stmt = $pdo->prepare("
+                        $stmt = $pdo->prepare("
                 SELECT s.*, ns.prepared 
                 FROM npc_spells ns
                 JOIN spells s ON ns.spell_id = s.id
@@ -1447,7 +1446,7 @@ class NPC
             return false;
         }
     }
-    
+
     /**
      * Restaurer tous les emplacements de sorts (repos long)
      * 
@@ -1631,9 +1630,9 @@ class NPC
                             // Vérifier si le sort n'est pas déjà préparé
                             $checkStmt = $pdo->prepare("SELECT COUNT(*) as count FROM npc_spells WHERE npc_id = ? AND spell_id = ?");
                             $checkStmt->execute([$npcId, $spell['id']]);
-                            $exists = $checkStmt->fetch(PDO::FETCH_ASSOC);
-                            
-                            if ($exists['count'] == 0) {
+                    $exists = $checkStmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    if ($exists['count'] == 0) {
                                 $insertStmt = $pdo->prepare("INSERT INTO npc_spells (npc_id, spell_id, prepared) VALUES (?, ?, 1)");
                                 $insertStmt->execute([$npcId, $spell['id']]);
                                 $addedSpells++;
@@ -1659,9 +1658,9 @@ class NPC
                             // Vérifier si le sort n'est pas déjà préparé
                             $checkStmt = $pdo->prepare("SELECT COUNT(*) as count FROM npc_spells WHERE npc_id = ? AND spell_id = ?");
                             $checkStmt->execute([$npcId, $spell['id']]);
-                            $exists = $checkStmt->fetch(PDO::FETCH_ASSOC);
-                            
-                            if ($exists['count'] == 0) {
+                    $exists = $checkStmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    if ($exists['count'] == 0) {
                                 $insertStmt = $pdo->prepare("INSERT INTO npc_spells (npc_id, spell_id, prepared) VALUES (?, ?, 1)");
                                 $insertStmt->execute([$npcId, $spell['id']]);
                                 $addedSpells++;
@@ -1679,7 +1678,7 @@ class NPC
             return false;
         }
     }
-    
+
     /**
      * Ajoute automatiquement les améliorations de caractéristiques selon le niveau
      */
@@ -1792,9 +1791,9 @@ class NPC
                     $newBonuses['intelligence_bonus'],
                     $newBonuses['wisdom_bonus'],
                     $newBonuses['charisma_bonus'],
-                    $npcId
-                ]);
-                
+                $npcId
+            ]);
+            
                 // Les améliorations sont stockées en base et appliquées via getCharacterAbilityImprovements
                 // Les caractéristiques de base restent intactes (niveau 1)
                 // PAS de modification des caractéristiques ici !
@@ -1807,7 +1806,7 @@ class NPC
             return false;
         }
     }
-    
+
     /**
      * Met à jour les scores de caractéristiques du NPC
      * DÉSACTIVÉE - Les caractéristiques de base doivent rester intactes
@@ -1816,6 +1815,121 @@ class NPC
         // DÉSACTIVÉE - Les caractéristiques de base doivent rester intactes
         // Les améliorations sont appliquées via getCharacterAbilityImprovements dans view_npc.php
         return true;
+    }
+    
+    /**
+     * Récupère l'équipement d'un NPC
+     */
+    public static function getEquipment($npcId) {
+        $pdo = \Database::getInstance()->getPdo();
+        $stmt = $pdo->prepare("
+            SELECT i.*, 
+                   i.display_name as item_name,
+                   i.description as item_description,
+                   i.object_type as item_type,
+                   i.is_equipped as equipped
+            FROM items i
+            WHERE i.owner_type = 'npc' AND i.owner_id = ?
+            ORDER BY i.created_at ASC
+        ");
+        $stmt->execute([$npcId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+
+    /**
+     * Récupère les langues d'un NPC
+     */
+    public static function getLanguages($npcId) {
+        $pdo = \Database::getInstance()->getPdo();
+        $stmt = $pdo->prepare("
+            SELECT l.language_name, l.is_known
+            FROM npc_languages l
+            WHERE l.npc_id = ?
+            ORDER BY l.language_name ASC
+        ");
+        $stmt->execute([$npcId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Récupère les compétences d'un NPC
+     */
+    public static function getSkills($npcId) {
+        $pdo = \Database::getInstance()->getPdo();
+        $stmt = $pdo->prepare("
+            SELECT skill_name, proficiency_bonus, is_proficient, is_expertise
+            FROM npc_skills
+            WHERE npc_id = ?
+            ORDER BY skill_name ASC
+        ");
+        $stmt->execute([$npcId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+
+
+    /**
+     * Calcule la classe d'armure selon les règles D&D
+     */
+    public static function calculateArmorClass($npcId) {
+        $pdo = \Database::getInstance()->getPdo();
+        try {
+            // Récupérer les informations du NPC
+            $stmt = $pdo->prepare("SELECT * FROM npcs WHERE id = ?");
+            $stmt->execute([$npcId]);
+            $npc = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$npc) {
+                return 10; // CA de base
+            }
+            
+            $dexterityModifier = floor(($npc['dexterity'] - 10) / 2);
+            
+            // Récupérer l'équipement équipé
+            $stmt = $pdo->prepare("
+                SELECT 
+                    i.display_name,
+                    i.object_type,
+                    i.equipped_slot,
+                    a.name as armor_name,
+                    a.ac_formula
+                FROM items i
+                LEFT JOIN armor a ON i.armor_id = a.id
+                WHERE i.owner_type = 'npc' AND i.owner_id = ? AND i.is_equipped = 1
+            ");
+            $stmt->execute([$npcId]);
+            $equipment = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $armorAC = 10; // CA de base
+            $shieldBonus = 0;
+            
+            foreach ($equipment as $item) {
+                if ($item['object_type'] == 'armor' && $item['ac_formula']) {
+                    // Extraire la valeur de base de l'armure de la formule
+                    if (preg_match('/(\d+)\s*\+\s*Mod\.Dex/', $item['ac_formula'], $matches)) {
+                        $armorAC = (int)$matches[1];
+                    } elseif (preg_match('/(\d+)/', $item['ac_formula'], $matches)) {
+                        $armorAC = (int)$matches[1];
+                    }
+                } elseif ($item['object_type'] == 'shield') {
+                    $shieldBonus = 2; // Bonus standard de bouclier
+                }
+            }
+            
+            // Calculer la CA selon la formule : Armure + Modificateur Dextérité + Bonus bouclier
+            $totalAC = $armorAC + $dexterityModifier + $shieldBonus;
+            
+            // Mettre à jour la CA en base
+            $updateStmt = $pdo->prepare("UPDATE npcs SET armor_class = ? WHERE id = ?");
+            $updateStmt->execute([$totalAC, $npcId]);
+            
+            error_log("Debug NPC::calculateArmorClass - Updated NPC $npcId AC to $totalAC (armor: $armorAC, dex: $dexterityModifier, shield: $shieldBonus)");
+            return $totalAC;
+        } catch (PDOException $e) {
+            error_log("Erreur lors du calcul de la CA: " . $e->getMessage());
+            return 10;
+        }
     }
     
     /**
@@ -1873,6 +1987,202 @@ class NPC
         } catch (PDOException $e) {
             error_log("Erreur lors du calcul des points de vie: " . $e->getMessage());
             return 0;
+        }
+    }
+    
+    /**
+     * Calcule le modificateur d'une caractéristique
+     */
+    public function getAbilityModifier($ability) {
+        $value = $this->$ability;
+        return floor(($value - 10) / 2);
+    }
+    
+    /**
+     * Calcule tous les modificateurs de caractéristiques
+     */
+    public function getAllAbilityModifiers() {
+        return [
+            'strength' => $this->getAbilityModifier('strength'),
+            'dexterity' => $this->getAbilityModifier('dexterity'),
+            'constitution' => $this->getAbilityModifier('constitution'),
+            'intelligence' => $this->getAbilityModifier('intelligence'),
+            'wisdom' => $this->getAbilityModifier('wisdom'),
+            'charisma' => $this->getAbilityModifier('charisma')
+        ];
+    }
+    
+    /**
+     * Calcule les caractéristiques totales (base + bonus raciaux + améliorations de niveau)
+     */
+    public function getTotalAbilities() {
+        // Récupérer les bonus raciaux
+        $race = Race::findById($this->race_id);
+        $raceBonuses = $race ? $race->toArray() : [];
+        
+        // Récupérer les améliorations de niveau
+        $abilityImprovements = $this->getCharacterAbilityImprovements();
+        
+        return [
+            'strength' => $this->strength + ($raceBonuses['strength_bonus'] ?? 0) + ($abilityImprovements['strength'] ?? 0),
+            'dexterity' => $this->dexterity + ($raceBonuses['dexterity_bonus'] ?? 0) + ($abilityImprovements['dexterity'] ?? 0),
+            'constitution' => $this->constitution + ($raceBonuses['constitution_bonus'] ?? 0) + ($abilityImprovements['constitution'] ?? 0),
+            'intelligence' => $this->intelligence + ($raceBonuses['intelligence_bonus'] ?? 0) + ($abilityImprovements['intelligence'] ?? 0),
+            'wisdom' => $this->wisdom + ($raceBonuses['wisdom_bonus'] ?? 0) + ($abilityImprovements['wisdom'] ?? 0),
+            'charisma' => $this->charisma + ($raceBonuses['charisma_bonus'] ?? 0) + ($abilityImprovements['charisma'] ?? 0)
+        ];
+    }
+    
+    /**
+     * Calcule les modificateurs basés sur les caractéristiques totales
+     */
+    public function getTotalAbilityModifiers() {
+        $totalAbilities = $this->getTotalAbilities();
+        
+        return [
+            'strength' => floor(($totalAbilities['strength'] - 10) / 2),
+            'dexterity' => floor(($totalAbilities['dexterity'] - 10) / 2),
+            'constitution' => floor(($totalAbilities['constitution'] - 10) / 2),
+            'intelligence' => floor(($totalAbilities['intelligence'] - 10) / 2),
+            'wisdom' => floor(($totalAbilities['wisdom'] - 10) / 2),
+            'charisma' => floor(($totalAbilities['charisma'] - 10) / 2)
+        ];
+    }
+    
+    /**
+     * Met à jour la photo de profil du NPC
+     */
+    public static function updateProfilePhoto($npcId, $photoPath, PDO $pdo = null) {
+        if ($pdo === null) {
+            $pdo = Database::getInstance();
+        }
+        
+        try {
+            $stmt = $pdo->prepare("UPDATE npcs SET profile_photo = ? WHERE id = ?");
+            return $stmt->execute([$photoPath, $npcId]);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la mise à jour de la photo de profil: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Récupère l'équipement détaillé d'un NPC avec les informations des objets
+     */
+    public static function getDetailedEquipment($npcId, PDO $pdo = null) {
+        if ($pdo === null) {
+            $pdo = Database::getInstance();
+        }
+        
+        try {
+            $stmt = $pdo->prepare("
+                SELECT i.*, 
+                       i.display_name as item_name,
+                       i.description as item_description,
+                       i.object_type as item_type,
+                       i.weight as item_weight,
+                       i.value as item_value,
+                       i.rarity as item_rarity,
+                       i.magical as item_magical,
+                       i.attunement_required as item_attunement_required,
+                       i.armor_class as item_armor_class,
+                       i.damage as item_damage,
+                       i.damage_type as item_damage_type,
+                       i.range as item_range,
+                       i.properties as item_properties,
+                       i.weapon_type as item_weapon_type,
+                       i.armor_type as item_armor_type,
+                       i.shield_type as item_shield_type,
+                       i.tool_type as item_tool_type,
+                       i.consumable_type as item_consumable_type,
+                       i.misc_type as item_misc_type,
+                       ne.equipped,
+                       ne.slot,
+                       ne.quantity
+                FROM npc_equipment ne
+                JOIN items i ON ne.item_id = i.id
+                WHERE ne.character_id = ?
+                ORDER BY ne.equipped DESC, i.display_name ASC
+            ");
+            $stmt->execute([$npcId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération de l'équipement détaillé: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    
+    /**
+     * Équipe un objet sur un NPC
+     */
+    public static function equipItem($npcId, $itemName, $itemType, $slot, PDO $pdo = null) {
+        if ($pdo === null) {
+            $pdo = Database::getInstance();
+        }
+        
+        try {
+            // Récupérer l'ID de l'objet
+            $stmt = $pdo->prepare("SELECT id FROM items WHERE display_name = ? AND object_type = ?");
+            $stmt->execute([$itemName, $itemType]);
+            $item = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$item) {
+                return ['success' => false, 'message' => 'Objet non trouvé'];
+            }
+            
+            // Vérifier si l'objet est déjà équipé
+            $stmt = $pdo->prepare("SELECT id FROM npc_equipment WHERE character_id = ? AND item_id = ? AND equipped = 1");
+            $stmt->execute([$npcId, $item['id']]);
+            if ($stmt->fetch()) {
+                return ['success' => false, 'message' => 'Objet déjà équipé'];
+            }
+            
+            // Équiper l'objet
+            $stmt = $pdo->prepare("UPDATE npc_equipment SET equipped = 1, slot = ? WHERE character_id = ? AND item_id = ?");
+            $result = $stmt->execute([$slot, $npcId, $item['id']]);
+            
+            if ($result) {
+                return ['success' => true, 'message' => 'Objet équipé avec succès'];
+            } else {
+                return ['success' => false, 'message' => 'Erreur lors de l\'équipement'];
+            }
+        } catch (PDOException $e) {
+            error_log("Erreur lors de l'équipement: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Erreur de base de données'];
+        }
+    }
+    
+    /**
+     * Déséquipe un objet d'un NPC
+     */
+    public static function unequipItem($npcId, $itemName, PDO $pdo = null) {
+        if ($pdo === null) {
+            $pdo = Database::getInstance();
+        }
+        
+        try {
+            // Récupérer l'ID de l'objet
+            $stmt = $pdo->prepare("SELECT id FROM items WHERE display_name = ?");
+            $stmt->execute([$itemName]);
+            $item = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$item) {
+                return ['success' => false, 'message' => 'Objet non trouvé'];
+            }
+            
+            // Déséquiper l'objet
+            $stmt = $pdo->prepare("UPDATE npc_equipment SET equipped = 0, slot = NULL WHERE character_id = ? AND item_id = ?");
+            $result = $stmt->execute([$npcId, $item['id']]);
+            
+            if ($result) {
+                return ['success' => true, 'message' => 'Objet déséquipé avec succès'];
+            } else {
+                return ['success' => false, 'message' => 'Erreur lors du déséquipement'];
+            }
+        } catch (PDOException $e) {
+            error_log("Erreur lors du déséquipement: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Erreur de base de données'];
         }
     }
     

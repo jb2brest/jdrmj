@@ -5,6 +5,105 @@
 
 // ===== GESTION DES PERSONNAGES =====
 
+// ===== GESTION DES NPCs =====
+
+/**
+ * Dégâts rapides sur un NPC
+ */
+function quickDamage(amount, npcName) {
+    if (confirm(`Infliger ${amount} points de dégâts à ${npcName} ?`)) {
+        const npcId = getCurrentNpcId();
+        updateNpcHp(npcId, 'damage', amount);
+    }
+}
+
+/**
+ * Soins rapides sur un NPC
+ */
+function quickHeal(amount, npcName) {
+    if (confirm(`Appliquer ${amount} points de soins à ${npcName} ?`)) {
+        const npcId = getCurrentNpcId();
+        updateNpcHp(npcId, 'heal', amount);
+    }
+}
+
+/**
+ * Changement d'XP rapide sur un NPC
+ */
+function quickXpChange(amount, npcName) {
+    const action = amount > 0 ? 'ajouter' : 'retirer';
+    const absAmount = Math.abs(amount);
+    if (confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} ${absAmount} points d'expérience à ${npcName} ?`)) {
+        const npcId = getCurrentNpcId();
+        updateNpcXp(npcId, amount > 0 ? 'add' : 'remove', absAmount);
+    }
+}
+
+/**
+ * Met à jour les PV d'un NPC via API
+ */
+function updateNpcHp(npcId, action, amount) {
+    fetch('api/update_npc_hp.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            npc_id: npcId,
+            action: action,
+            amount: amount
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Erreur lors de la mise à jour des PV');
+    });
+}
+
+/**
+ * Met à jour l'XP d'un NPC via API
+ */
+function updateNpcXp(npcId, action, amount) {
+    fetch('api/update_npc_xp.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            npc_id: npcId,
+            action: action,
+            amount: amount
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Erreur lors de la mise à jour de l\'XP');
+    });
+}
+
+/**
+ * Récupère l'ID du NPC actuel depuis l'URL
+ */
+function getCurrentNpcId() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('id');
+}
 
 /**
  * Équiper un objet sur un personnage
@@ -2482,3 +2581,531 @@ function initializeObjectAddition() {
 if (document.getElementById('addObjectModal')) {
     initializeObjectAddition();
 }
+
+// ===== FONCTIONS SPÉCIFIQUES À VIEW_NPC.PHP =====
+
+/**
+ * Gestion du modal de transfert d'objets
+ */
+function initializeTransferModal() {
+    const transferModal = document.getElementById('transferModal');
+    if (transferModal) {
+        transferModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const itemId = button.getAttribute('data-item-id');
+            const itemName = button.getAttribute('data-item-name');
+            const currentOwner = button.getAttribute('data-current-owner');
+            const currentOwnerName = button.getAttribute('data-current-owner-name');
+            const source = button.getAttribute('data-source');
+            
+            // Remplir les informations de base
+            document.getElementById('transferItemName').textContent = itemName;
+            document.getElementById('transferCurrentOwner').textContent = currentOwnerName;
+            document.getElementById('transferItemId').value = itemId;
+            document.getElementById('transferCurrentOwnerType').value = currentOwner;
+            document.getElementById('transferSource').value = source;
+            
+            // Charger les cibles disponibles
+            loadTransferTargets(currentOwner);
+        });
+    }
+}
+
+/**
+ * Charge les cibles de transfert disponibles
+ */
+function loadTransferTargets(currentOwner) {
+    const select = document.getElementById('transferTarget');
+    if (!select) return;
+    
+    select.innerHTML = '<option value="">Chargement...</option>';
+    
+    // Simuler le chargement des cibles (à remplacer par un appel AJAX)
+    setTimeout(() => {
+        select.innerHTML = '<option value="">Sélectionner une cible...</option>';
+        
+        // Ajouter les personnages joueurs
+        select.innerHTML += '<optgroup label="Personnages Joueurs">';
+        select.innerHTML += '<option value="character_1">Hyphrédicte (Robin)</option>';
+        select.innerHTML += '<option value="character_2">Lieutenant Cameron (MJ)</option>';
+        select.innerHTML += '</optgroup>';
+        
+        // Ajouter les PNJ
+        select.innerHTML += '<optgroup label="PNJ">';
+        select.innerHTML += '<option value="npc_1">PNJ Test</option>';
+        select.innerHTML += '</optgroup>';
+        
+        // Ajouter les monstres
+        select.innerHTML += '<optgroup label="Monstres">';
+        select.innerHTML += '<option value="monster_10">Aboleth #1</option>';
+        select.innerHTML += '<option value="monster_11">Aboleth #2</option>';
+        select.innerHTML += '</optgroup>';
+    }, 500);
+}
+
+/**
+ * Confirme le transfert d'un objet
+ */
+function confirmTransfer() {
+    const form = document.getElementById('transferForm');
+    const target = document.getElementById('transferTarget').value;
+    const itemName = document.getElementById('transferItemName').textContent;
+    
+    if (!target) {
+        alert('Veuillez sélectionner une cible pour le transfert.');
+        return;
+    }
+    
+    const targetName = document.getElementById('transferTarget').selectedOptions[0].text;
+    
+    if (confirm(`Confirmer le transfert de "${itemName}" vers "${targetName}" ?`)) {
+        form.submit();
+    }
+}
+
+/**
+ * Upload de photo de profil
+ */
+function uploadPhoto() {
+    const form = document.getElementById('photoForm');
+    const fileInput = document.getElementById('profile_photo');
+    
+    if (!fileInput.files || fileInput.files.length === 0) {
+        alert('Veuillez sélectionner un fichier image.');
+        return;
+    }
+    
+    const file = fileInput.files[0];
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    
+    if (file.size > maxSize) {
+        alert('Le fichier est trop volumineux. Taille maximale : 10MB.');
+        return;
+    }
+    
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+        alert('Format de fichier non supporté. Utilisez JPG, PNG ou GIF.');
+        return;
+    }
+    
+    if (confirm('Confirmer l\'upload de cette photo de profil ?')) {
+        form.submit();
+    }
+}
+
+/**
+ * Équipe un objet sur un NPC
+ */
+function equipItem(characterId, itemName, itemType, slot) {
+    fetch('api/equip_npc_item.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            character_id: characterId,
+            item_name: itemName,
+            item_type: itemType,
+            slot: slot
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Erreur lors de l\'équipement');
+    });
+}
+
+/**
+ * Déséquipe un objet d'un NPC
+ */
+function unequipItem(characterId, itemName) {
+    console.log('Debug unequipItem - characterId:', characterId, 'itemName:', itemName);
+    fetch('api/unequip_npc_item.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            character_id: characterId,
+            item_name: itemName
+        })
+    })
+    .then(response => {
+        console.log('Debug unequipItem - Response status:', response.status);
+        return response.json();
+    })
+    .then(data => {
+        console.log('Debug unequipItem - Response data:', data);
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Erreur lors du déséquipement');
+    });
+}
+
+/**
+ * Dépose un objet dans le lieu actuel
+ */
+function dropItem(itemId, itemName) {
+    if (!confirm(`Êtes-vous sûr de vouloir déposer "${itemName}" dans le lieu actuel ?`)) {
+        return;
+    }
+
+    fetch('drop_item.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            item_id: itemId,
+            item_name: itemName
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Objet déposé avec succès dans le lieu actuel !');
+            location.reload();
+        } else {
+            alert('Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Erreur lors du dépôt de l\'objet');
+    });
+}
+
+/**
+ * Gère les rages d'un personnage
+ */
+function toggleRage(characterId, rageNumber) {
+    const rageSymbol = document.querySelector(`[data-rage="${rageNumber}"]`);
+    const isUsed = rageSymbol.classList.contains('used');
+    
+    const action = isUsed ? 'free' : 'use';
+    
+    fetch('manage_rage.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            character_id: characterId,
+            action: action
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Mettre à jour l'affichage
+            updateRageDisplay();
+        } else {
+            alert('Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Erreur lors de la mise à jour de la rage');
+    });
+}
+
+/**
+ * Réinitialise toutes les rages
+ */
+function resetRages(characterId) {
+    if (confirm('Effectuer un long repos ? Cela récupérera toutes les rages.')) {
+        fetch('manage_rage.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                character_id: characterId,
+                action: 'reset'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Mettre à jour l'affichage
+                updateRageDisplay();
+            } else {
+                alert('Erreur: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors de la réinitialisation des rages');
+        });
+    }
+}
+
+/**
+ * Met à jour l'affichage des rages
+ */
+function updateRageDisplay() {
+    // Recharger la page pour mettre à jour l'affichage
+    window.location.reload();
+}
+
+// Variables pour le tri
+let currentSortColumn = -1;
+let currentSortDirection = 'asc';
+
+/**
+ * Trie le tableau d'équipement
+ */
+function sortTable(columnIndex) {
+    const table = document.getElementById('equipmentTable');
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    
+    // Déterminer la direction du tri
+    if (currentSortColumn === columnIndex) {
+        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        currentSortDirection = 'asc';
+        currentSortColumn = columnIndex;
+    }
+    
+    // Trier les lignes
+    rows.sort((a, b) => {
+        const aText = a.cells[columnIndex].textContent.trim().toLowerCase();
+        const bText = b.cells[columnIndex].textContent.trim().toLowerCase();
+        
+        if (currentSortDirection === 'asc') {
+            return aText.localeCompare(bText);
+        } else {
+            return bText.localeCompare(aText);
+        }
+    });
+    
+    // Réorganiser les lignes dans le DOM
+    rows.forEach(row => tbody.appendChild(row));
+    
+    // Mettre à jour les icônes de tri
+    updateSortIcons(columnIndex);
+}
+
+/**
+ * Met à jour les icônes de tri
+ */
+function updateSortIcons(activeColumn) {
+    const headers = document.querySelectorAll('#equipmentTable th');
+    headers.forEach((header, index) => {
+        const icon = header.querySelector('i');
+        if (index === activeColumn) {
+            icon.className = currentSortDirection === 'asc' ? 'fas fa-sort-up ms-1' : 'fas fa-sort-down ms-1';
+        } else {
+            icon.className = 'fas fa-sort ms-1';
+        }
+    });
+}
+
+/**
+ * Filtre le tableau d'équipement
+ */
+function filterTable() {
+    const searchTerm = document.getElementById('equipmentSearch').value.toLowerCase();
+    const typeFilter = document.getElementById('typeFilter').value;
+    const equippedFilter = document.getElementById('equippedFilter').value;
+    
+    const table = document.getElementById('equipmentTable');
+    const rows = table.querySelectorAll('tbody tr');
+    
+    rows.forEach(row => {
+        const name = row.cells[0].textContent.toLowerCase();
+        const type = row.dataset.type;
+        const equipped = row.dataset.equipped;
+        
+        let showRow = true;
+        
+        // Filtre de recherche
+        if (searchTerm && !name.includes(searchTerm)) {
+            showRow = false;
+        }
+        
+        // Filtre de type
+        if (typeFilter && type !== typeFilter) {
+            showRow = false;
+        }
+        
+        // Filtre d'état d'équipement
+        if (equippedFilter && equipped !== equippedFilter) {
+            showRow = false;
+        }
+        
+        row.style.display = showRow ? '' : 'none';
+    });
+}
+
+/**
+ * Réinitialise les filtres
+ */
+function resetFilters() {
+    document.getElementById('equipmentSearch').value = '';
+    document.getElementById('typeFilter').value = '';
+    document.getElementById('equippedFilter').value = '';
+    filterTable();
+}
+
+/**
+ * Initialise les gestionnaires d'événements pour les filtres
+ */
+function initializeEquipmentFilters() {
+    const searchInput = document.getElementById('equipmentSearch');
+    const typeSelect = document.getElementById('typeFilter');
+    const equippedSelect = document.getElementById('equippedFilter');
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', filterTable);
+    }
+    if (typeSelect) {
+        typeSelect.addEventListener('change', filterTable);
+    }
+    if (equippedSelect) {
+        equippedSelect.addEventListener('change', filterTable);
+    }
+}
+
+/**
+ * Initialise la gestion des compétences
+ */
+function initializeSkillsManagement() {
+    const skillItems = document.querySelectorAll('.skill-item');
+    const skillDetail = document.getElementById('skill-detail');
+    
+    // Base de données des compétences
+    const skillsData = {
+        'Athlétisme': {
+            'caracteristic': 'Force',
+            'description': 'Votre test d\'Athlétisme couvre les situations difficiles que vous rencontrez en escaladant, en sautant ou en nageant.',
+            'examples': [
+                'Escalader une falaise escarpée',
+                'Sauter par-dessus un ravin',
+                'Nager contre un courant fort',
+                'Pousser une lourde pierre'
+            ]
+        },
+        'Intimidation': {
+            'caracteristic': 'Charisme',
+            'description': 'Quand vous tentez d\'influencer quelqu\'un par la menace, l\'hostilité ou la violence, le MJ peut vous demander de faire un test d\'Intimidation.',
+            'examples': [
+                'Menacer un garde pour qu\'il vous laisse passer',
+                'Faire parler un prisonnier',
+                'Impressionner des bandits',
+                'Obtenir des informations par la peur'
+            ]
+        },
+        'Nature': {
+            'caracteristic': 'Intelligence',
+            'description': 'Votre test d\'Intelligence (Nature) mesure votre capacité à vous rappeler des informations utiles sur le terrain, les plantes et les animaux, le temps et les cycles naturels.',
+            'examples': [
+                'Identifier une plante vénéneuse',
+                'Prédire le temps qu\'il va faire',
+                'Reconnaître les traces d\'un animal',
+                'Trouver de l\'eau potable'
+            ]
+        }
+    };
+    
+    skillItems.forEach(item => {
+        item.addEventListener('click', function() {
+            // Retirer la classe active de tous les éléments
+            skillItems.forEach(skill => skill.classList.remove('active'));
+            
+            // Ajouter la classe active à l'élément cliqué
+            this.classList.add('active');
+            
+            // Récupérer le nom de la compétence
+            const skillName = this.querySelector('h6').textContent;
+            
+            // Afficher les détails
+            if (skillDetail && skillsData[skillName]) {
+                const skillData = skillsData[skillName];
+                skillDetail.innerHTML = `
+                    <div class="card-body">
+                        <h6>${skillName}</h6>
+                        <p><strong>Caractéristique :</strong> ${skillData.caracteristic}</p>
+                        <p>${skillData.description}</p>
+                        <h6>Exemples d'utilisation :</h6>
+                        <ul>
+                            ${skillData.examples.map(example => `<li>${example}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+        });
+    });
+}
+
+/**
+ * Initialise la gestion des capacités
+ */
+function initializeCapabilitiesManagement() {
+    const capabilityItems = document.querySelectorAll('.capability-item');
+    const capabilityDetail = document.getElementById('capability-detail');
+    
+    // Base de données des capacités
+    const capabilitiesData = {
+        'Rage': {
+            'description': 'En combat, vous pouvez entrer dans un état de rage déchaînée. Pendant votre rage, si vous n\'avez pas porté d\'armure lourde depuis le début de votre dernier tour, vous gagnez un bonus de +2 aux jets de dégâts des attaques de corps à corps avec des armes de Force.',
+            'type': 'Classe',
+            'level': '1'
+        },
+        'Défense sans armure': {
+            'description': 'Quand vous ne portez pas d\'armure, votre classe d\'armure est égale à 10 + modificateur de Dextérité + modificateur de Constitution.',
+            'type': 'Classe',
+            'level': '1'
+        }
+    };
+    
+    capabilityItems.forEach(item => {
+        item.addEventListener('click', function() {
+            // Retirer la classe active de tous les éléments
+            capabilityItems.forEach(capability => capability.classList.remove('active'));
+            
+            // Ajouter la classe active à l'élément cliqué
+            this.classList.add('active');
+            
+            // Récupérer le nom de la capacité
+            const capabilityName = this.querySelector('h6').textContent;
+            
+            // Afficher les détails
+            if (capabilityDetail && capabilitiesData[capabilityName]) {
+                const capabilityData = capabilitiesData[capabilityName];
+                capabilityDetail.innerHTML = `
+                    <div class="card-body">
+                        <h6>${capabilityName}</h6>
+                        <p><strong>Type :</strong> ${capabilityData.type}</p>
+                        <p><strong>Niveau :</strong> ${capabilityData.level}</p>
+                        <p class="card-text">${capabilityData.description}</p>
+                    </div>
+                `;
+            }
+        });
+    });
+}
+
+// Initialisation au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    initializeTransferModal();
+    initializeEquipmentFilters();
+    initializeSkillsManagement();
+    initializeCapabilitiesManagement();
+});
