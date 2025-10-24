@@ -264,7 +264,7 @@ if ($characterArchetype) {
 }
 
 // Récupérer les améliorations de caractéristiques
-$abilityImprovements = NPC::getCharacterAbilityImprovements($npc_id);
+$abilityImprovements = $npc->getCharacterAbilityImprovements();
 
 // Convertir les améliorations en format associatif pour l'affichage
 $abilityImprovementsArray = [
@@ -344,40 +344,22 @@ foreach ($npcItems as $item) {
     }
 }
 
-// Décoder l'équipement de départ du PNJ (format JSON - pour compatibilité)
-if (!empty($character['starting_equipment'])) {
-    $equipmentData = json_decode($character['starting_equipment'], true);
-    if ($equipmentData && isset($equipmentData['equipment'])) {
-        // Récupérer les détails des équipements
-        foreach ($equipmentData['equipment'] as $equipmentId) {
-            $stmt = $pdo->prepare("
-                SELECT i.*, 
-                       i.display_name as item_name,
-                       i.description as item_description,
-                       i.object_type as item_type,
-                       i.is_equipped as equipped
-                FROM items i
-                WHERE i.id = ?
-            ");
-            $stmt->execute([$equipmentId]);
-            $item = $stmt->fetch(PDO::FETCH_ASSOC);
-            if ($item) {
-                $item['equipped'] = true; // Pour les PNJ, tous les équipements sont considérés comme équipés
-                $magicalEquipment[] = $item;
-                
-                // Structurer les équipements par slot
-                if ($item['object_type'] === 'weapon') {
-                    if (empty($equippedItems['main_hand'])) {
-                        $equippedItems['main_hand'] = $item['item_name'];
-                    } else {
-                        $equippedItems['off_hand'] = $item['item_name'];
-                    }
-                } elseif ($item['object_type'] === 'armor') {
-                    $equippedItems['armor'] = $item['item_name'];
-                } elseif ($item['object_type'] === 'shield') {
-                    $equippedItems['shield'] = $item['item_name'];
-                }
+// Récupérer l'équipement détaillé du NPC en utilisant la nouvelle méthode
+$magicalEquipment = NPC::getDetailedEquipment($npc_id, $pdo);
+
+// Structurer les équipements par slot
+foreach ($magicalEquipment as $item) {
+    if ($item['equipped']) {
+        if ($item['item_type'] === 'weapon') {
+            if (empty($equippedItems['main_hand'])) {
+                $equippedItems['main_hand'] = $item['item_name'];
+            } else {
+                $equippedItems['off_hand'] = $item['item_name'];
             }
+        } elseif ($item['item_type'] === 'armor') {
+            $equippedItems['armor'] = $item['item_name'];
+        } elseif ($item['item_type'] === 'shield') {
+            $equippedItems['shield'] = $item['item_name'];
         }
     }
 }
@@ -806,10 +788,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                         unlink($character['profile_photo']);
                     }
                     
-                    // Mettre à jour la base de données
-                    $db = Database::getInstance();
-                    $stmt = $db->prepare("UPDATE npcs SET profile_photo = ? WHERE id = ?");
-                    if ($stmt->execute([$upload_path, $npc_id])) {
+                    // Mettre à jour la base de données en utilisant la nouvelle méthode
+                    if (NPC::updateProfilePhoto($npc_id, $upload_path, $pdo)) {
                         $success_message = "Photo de profil mise à jour avec succès.";
                         // Recharger les données du PNJ
                         $npc = NPC::findById($npc_id, $pdo);
@@ -911,173 +891,6 @@ $initiative = $dexterityMod;
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="css/custom-theme.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
-</head>
-<body>
-    <!-- Navigation -->
-    <?php include 'includes/navbar.php'; ?>
-
-    <div class="container mt-4">
-            transform: scale(1.1);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
-        }
-        
-        .rage-symbol.available {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
-            border-color: #dc3545;
-            color: white;
-        }
-        
-        .rage-symbol.used {
-            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
-            border-color: #6c757d;
-            color: #adb5bd;
-            opacity: 0.6;
-        }
-        
-        .rage-symbol.used:hover {
-            background: linear-gradient(135deg, #495057 0%, #343a40 100%);
-        }
-        
-        .rage-info {
-            text-align: center;
-        }
-        
-        /* Styles pour les capacités */
-        .capabilities-list {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        
-        .capability-item {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 15px;
-            border-left: 4px solid #007bff;
-            transition: all 0.3s ease;
-        }
-        
-        .capability-item:hover {
-            background: #e9ecef;
-            transform: translateX(5px);
-        }
-        
-        .capability-header h6 {
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-        
-        .capability-description {
-            line-height: 1.5;
-        }
-        
-        .capability-item .text-primary {
-            color: #007bff !important;
-        }
-        
-        .capability-item .text-success {
-            color: #28a745 !important;
-        }
-        
-        .capability-item .text-warning {
-            color: #ffc107 !important;
-        }
-        
-        /* Styles pour les compétences */
-        .skills-list .list-group-item {
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            margin-bottom: 5px;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        
-        .skills-list .list-group-item:hover {
-            background-color: #f8f9fa;
-            border-color: #0d6efd;
-            transform: translateX(5px);
-        }
-        
-        .skills-list .list-group-item.active {
-            background-color: #0d6efd;
-            border-color: #0d6efd;
-            color: white;
-        }
-        
-        .skills-list .list-group-item.active h6 {
-            color: white;
-        }
-        
-        .skills-list .list-group-item.active small {
-            color: rgba(255, 255, 255, 0.8);
-        }
-        
-        #skill-detail {
-            min-height: 200px;
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-        }
-        
-        #skill-detail .card-body {
-            padding: 20px;
-        }
-        
-        #skill-detail h6 {
-            color: #0d6efd;
-            margin-bottom: 15px;
-        }
-        
-        #skill-detail ul {
-            padding-left: 20px;
-        }
-        
-        #skill-detail li {
-            margin-bottom: 5px;
-        }
-        
-        /* Styles pour les capacités */
-        .capabilities-list .list-group-item {
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            margin-bottom: 5px;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        
-        .capabilities-list .list-group-item:hover {
-            background-color: #f8f9fa;
-            border-color: #0d6efd;
-            transform: translateX(5px);
-        }
-        
-        .capabilities-list .list-group-item.active {
-            background-color: #0d6efd;
-            border-color: #0d6efd;
-            color: white;
-        }
-        
-        .capabilities-list .list-group-item.active h6 {
-            color: white;
-        }
-        
-        .capabilities-list .list-group-item.active small {
-            color: rgba(255, 255, 255, 0.8);
-        }
-        
-        #capability-detail {
-            min-height: 200px;
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-        }
-        
-        #capability-detail .card-body {
-            padding: 20px;
-        }
-        
-        #capability-detail h6 {
-            color: #0d6efd;
-            margin-bottom: 15px;
-        }
-    </style>
 </head>
 <body>
     <!-- Navigation -->
@@ -2452,12 +2265,7 @@ $initiative = $dexterityMod;
     <?php endif; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Les fonctions quickDamage, quickHeal et quickXpChange sont maintenant dans jdrmj.js
-        // Elles sont appelées avec le nom du NPC en paramètre
-
-        // Gestion du modal de transfert
-        document.getElementById('transferModal').addEventListener('show.bs.modal', function (event) {
+    <script src="js/jdrmj.js"></script>
             const button = event.relatedTarget;
             const itemId = button.getAttribute('data-item-id');
             const itemName = button.getAttribute('data-item-name');
