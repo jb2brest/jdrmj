@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.20.9
+VERSION=2.20.10
 
 # Date de déploiement
 DEPLOY_DATE=2025-10-24
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-10-24
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=9543758a36421a2edd7f196c77fe843af1a6ba05
+GIT_COMMIT=a1c40b375e7150b5e23ff1fadf1e67025ba5aa9c
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251024-212104
+BUILD_ID=20251024-213211
 
 # Notes de version
 RELEASE_NOTES="view_npc.php : normes"
