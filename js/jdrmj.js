@@ -3102,6 +3102,65 @@ function initializeCapabilitiesManagement() {
     });
 }
 
+/**
+ * Transférer un objet via l'API
+ */
+function transferObject(itemId, target, notes, source, npcId) {
+    const formData = new FormData();
+    formData.append('item_id', itemId);
+    formData.append('target', target);
+    formData.append('notes', notes);
+    formData.append('source', source);
+    formData.append('npc_id', npcId);
+    
+    fetch('api/transferObject.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Afficher le message de succès
+            showMessage(data.message, 'success');
+            // Recharger la page pour mettre à jour les données
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            // Afficher le message d'erreur
+            showMessage(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur lors du transfert:', error);
+        showMessage('Erreur lors du transfert de l\'objet.', 'error');
+    });
+}
+
+/**
+ * Afficher un message à l'utilisateur
+ */
+function showMessage(message, type) {
+    // Créer un élément de message
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+    messageDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Insérer le message en haut de la page
+    const container = document.querySelector('.container-fluid') || document.body;
+    container.insertBefore(messageDiv, container.firstChild);
+    
+    // Supprimer automatiquement après 5 secondes
+    setTimeout(() => {
+        if (messageDiv.parentNode) {
+            messageDiv.remove();
+        }
+    }, 5000);
+}
+
 // Initialisation au chargement de la page
 document.addEventListener('DOMContentLoaded', function() {
     initializeTransferModal();
