@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.20.2
+VERSION=2.20.3
 
 # Date de déploiement
 DEPLOY_DATE=2025-10-24
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-10-24
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=553467ba3578d20f62c4901db548e002fedfc732
+GIT_COMMIT=bf45b56101aa87bad43de8a467f0fdd683790672
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251024-163407
+BUILD_ID=20251024-165636
 
 # Notes de version
-RELEASE_NOTES="view_npc.php : gestion des charactéristiques"
+RELEASE_NOTES="view_npc.php : PV"
