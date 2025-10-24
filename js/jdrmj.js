@@ -3103,6 +3103,321 @@ function initializeCapabilitiesManagement() {
 }
 
 /**
+ * Mettre à jour les points de vie d'un NPC
+ */
+function updateNpcHp(npcId, currentHp, maxHp, typeCible = 'PNJ') {
+    const formData = new FormData();
+    formData.append('npc_id', npcId);
+    formData.append('current_hp', currentHp);
+    formData.append('max_hp', maxHp);
+    formData.append('type_cible', typeCible);
+    
+    fetch('api/update_hp.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(data.message, 'success');
+            // Mettre à jour l'affichage des PV
+            updateHpDisplay(data.current_hp, data.max_hp);
+        } else {
+            showMessage(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur lors de la mise à jour des PV:', error);
+        showMessage('Erreur lors de la mise à jour des points de vie.', 'error');
+    });
+}
+
+/**
+ * Infliger des dégâts à un NPC
+ */
+function damageNpc(npcId, damage, typeCible = 'PNJ') {
+    const formData = new FormData();
+    formData.append('npc_id', npcId);
+    formData.append('damage', damage);
+    formData.append('type_cible', typeCible);
+    
+    fetch('api/damage.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(data.message, 'success');
+            // Mettre à jour l'affichage des PV
+            updateHpDisplay(data.current_hp);
+        } else {
+            showMessage(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur lors de l\'application des dégâts:', error);
+        showMessage('Erreur lors de l\'application des dégâts.', 'error');
+    });
+}
+
+/**
+ * Soigner un NPC
+ */
+function healNpc(npcId, healing, typeCible = 'PNJ') {
+    const formData = new FormData();
+    formData.append('npc_id', npcId);
+    formData.append('healing', healing);
+    formData.append('type_cible', typeCible);
+    
+    fetch('api/heal.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(data.message, 'success');
+            // Mettre à jour l'affichage des PV
+            updateHpDisplay(data.current_hp);
+        } else {
+            showMessage(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur lors de l\'application des soins:', error);
+        showMessage('Erreur lors de l\'application des soins.', 'error');
+    });
+}
+
+/**
+ * Réinitialiser les points de vie d'un NPC
+ */
+function resetNpcHp(npcId, typeCible = 'PNJ') {
+    const formData = new FormData();
+    formData.append('npc_id', npcId);
+    formData.append('type_cible', typeCible);
+    
+    fetch('api/reset_hp.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(data.message, 'success');
+            // Mettre à jour l'affichage des PV
+            updateHpDisplay(data.current_hp, data.max_hp);
+        } else {
+            showMessage(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur lors de la réinitialisation des PV:', error);
+        showMessage('Erreur lors de la réinitialisation des points de vie.', 'error');
+    });
+}
+
+/**
+ * Mettre à jour l'affichage des points de vie
+ */
+function updateHpDisplay(currentHp, maxHp = null) {
+    // Mettre à jour le champ de saisie des PV actuels
+    const currentHpInput = document.querySelector('input[name="current_hp"]');
+    if (currentHpInput) {
+        currentHpInput.value = currentHp;
+    }
+    
+    // Mettre à jour l'affichage des PV si maxHp est fourni
+    if (maxHp !== null) {
+        const maxHpInput = document.querySelector('input[name="max_hp"]');
+        if (maxHpInput) {
+            maxHpInput.value = maxHp;
+        }
+    }
+    
+    // Mettre à jour l'affichage textuel des PV
+    const hpDisplay = document.querySelector('.hp-display');
+    if (hpDisplay) {
+        const maxHpValue = maxHp || document.querySelector('input[name="max_hp"]')?.value || currentHp;
+        hpDisplay.textContent = `${currentHp}/${maxHpValue}`;
+    }
+}
+
+/**
+ * Mettre à jour les points d'expérience
+ */
+function updateXp(npcId, xpAction, xpAmount, typeCible = 'PNJ') {
+    const formData = new FormData();
+    formData.append('npc_id', npcId);
+    formData.append('xp_action', xpAction);
+    formData.append('xp_amount', xpAmount);
+    formData.append('type_cible', typeCible);
+    
+    fetch('api/update_xp.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(data.message, 'success');
+            // Mettre à jour l'affichage des XP
+            updateXpDisplay(data.current_xp);
+        } else {
+            showMessage(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur lors de la mise à jour des XP:', error);
+        showMessage('Erreur lors de la mise à jour des points d\'expérience.', 'error');
+    });
+}
+
+/**
+ * Mettre à jour l'affichage des points d'expérience
+ */
+function updateXpDisplay(currentXp) {
+    // Mettre à jour le champ de saisie des XP
+    const xpInput = document.querySelector('input[name="xp_amount"]');
+    if (xpInput) {
+        xpInput.value = '';
+    }
+    
+    // Mettre à jour l'affichage textuel des XP
+    const xpDisplay = document.querySelector('.xp-display');
+    if (xpDisplay) {
+        xpDisplay.textContent = number_format(currentXp) + ' XP';
+    }
+    
+    // Mettre à jour l'affichage dans le profil
+    const profileXpDisplay = document.querySelector('.experience-display');
+    if (profileXpDisplay) {
+        profileXpDisplay.textContent = number_format(currentXp) + ' XP';
+    }
+}
+
+/**
+ * Fonction utilitaire pour formater les nombres
+ */
+function number_format(number) {
+    return new Intl.NumberFormat('fr-FR').format(number);
+}
+
+/**
+ * Uploader une photo de profil
+ */
+function uploadPhoto(npcId, typeCible = 'PNJ') {
+    // Récupérer l'input de fichier
+    const fileInput = document.querySelector('input[type="file"][name="profile_photo"]');
+    if (!fileInput) {
+        showMessage('Champ de fichier non trouvé.', 'error');
+        return;
+    }
+    
+    const file = fileInput.files[0];
+    if (!file) {
+        showMessage('Aucun fichier sélectionné.', 'error');
+        return;
+    }
+    
+    // Vérifier la taille du fichier (10MB max)
+    if (file.size > 10 * 1024 * 1024) {
+        showMessage('La photo est trop volumineuse (max 10MB).', 'error');
+        return;
+    }
+    
+    // Vérifier le type de fichier
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+        showMessage('Format de fichier non supporté. Utilisez JPG, PNG ou GIF.', 'error');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('npc_id', npcId);
+    formData.append('profile_photo', file);
+    formData.append('type_cible', typeCible);
+    
+    // Afficher un indicateur de chargement
+    const submitButton = document.querySelector('button[type="submit"]');
+    const originalText = submitButton ? submitButton.textContent : '';
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = 'Upload en cours...';
+    }
+    
+    fetch('api/upload_photo.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(data.message, 'success');
+            // Mettre à jour l'affichage de la photo
+            updatePhotoDisplay(data.photo_path);
+            // Fermer la modale automatiquement
+            const modal = bootstrap.Modal.getInstance(document.getElementById('photoModal'));
+            if (modal) {
+                modal.hide();
+            }
+        } else {
+            showMessage(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur lors de l\'upload:', error);
+        showMessage('Erreur lors de l\'upload de la photo.', 'error');
+    })
+    .finally(() => {
+        // Restaurer le bouton
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = originalText;
+        }
+        // Vider le champ de fichier
+        if (fileInput) {
+            fileInput.value = '';
+        }
+    });
+}
+
+/**
+ * Mettre à jour l'affichage de la photo de profil
+ */
+function updatePhotoDisplay(photoPath) {
+    console.log('updatePhotoDisplay appelé avec:', photoPath);
+    console.log('window.location.origin:', window.location.origin);
+    console.log('window.location.pathname:', window.location.pathname);
+    
+    // Construire l'URL complète (photoPath est relatif au projet)
+    const baseUrl = window.location.origin;
+    const projectPath = window.location.pathname.split('/').slice(0, -1).join('/');
+    const fullImageUrl = baseUrl + projectPath + '/' + photoPath;
+    
+    console.log('URL complète construite:', fullImageUrl);
+    
+    // Mettre à jour l'image de profil
+    const profileImage = document.getElementById('npc-profile-photo');
+    if (profileImage) {
+        console.log('Image de profil trouvée, mise à jour...');
+        profileImage.src = fullImageUrl + '?t=' + Date.now(); // Cache busting
+        console.log('Nouvelle src:', profileImage.src);
+    } else {
+        console.log('Image de profil non trouvée');
+    }
+    
+    // Mettre à jour l'image dans le modal ou autres endroits
+    const modalImages = document.querySelectorAll('.modal .profile-image, .modal .character-image');
+    console.log('Images dans modals trouvées:', modalImages.length);
+    modalImages.forEach((img, index) => {
+        img.src = fullImageUrl + '?t=' + Date.now();
+        console.log(`Modal image ${index} mise à jour:`, img.src);
+    });
+}
+
+/**
  * Transférer un objet via l'API
  */
 function transferObject(itemId, target, notes, source, npcId) {

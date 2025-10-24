@@ -378,152 +378,19 @@ if (!$canModifyHP && User::isDMOrAdmin()) {
 $success_message = '';
 $error_message = '';
 
-// Traitement des actions POST pour la gestion des points de vie
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['hp_action'])) {
-    switch ($_POST['hp_action']) {
-        case 'update_hp':
-            $new_hp = (int)$_POST['current_hp'];
-            $max_hp = (int)$_POST['max_hp'];
-            
-            // Valider les points de vie
-            if ($new_hp < 0) {
-                $new_hp = 0;
-            }
-            if ($new_hp > $max_hp) {
-                $new_hp = $max_hp;
-            }
-            
-            // Mettre à jour les points de vie actuels
-            $npc->updateMyHitPoints($new_hp);
-            
-            $success_message = "Points de vie mis à jour : {$new_hp}/{$max_hp}";
-            break;
-            
-        case 'damage':
-            $damage = (int)$_POST['damage'];
-            if ($damage > 0) {
-                $new_hp = max(0, $npc->hit_points - $damage);
-                $npc->updateMyHitPoints($new_hp);
-                
-                $success_message = "Dégâts infligés : {$damage} PV. Points de vie restants : {$new_hp}";
-            }
-            break;
-            
-        case 'heal':
-            $healing = (int)$_POST['healing'];
-            if ($healing > 0) {
-                $new_hp = min($npc->hit_points, $npc->hit_points + $healing);
-                $npc->updateMyHitPoints($new_hp);
-                
-                $success_message = "Soins appliqués : {$healing} PV. Points de vie actuels : {$new_hp}";
-            }
-            break;
-            
-        case 'reset_hp':
-            $npc->updateMyHitPoints($npc->hit_points);
-            
-            $success_message = "Points de vie réinitialisés au maximum : {$npc->hit_points}";
-            break;
-    }
-    
-    // Recharger les données du personnage
-    // Recharger l'objet NPC après modification
-    $npc = NPC::findById($npc_id, $pdo);
-    if (!$npc) {
-        header('Location: characters.php?error=character_not_found');
-        exit;
-    }
+// La gestion des points de vie est maintenant gérée via AJAX dans les APIs :
+// - api/update_hp.php (mise à jour manuelle)
+// - api/damage.php (dégâts)
+// - api/heal.php (soins)
+// - api/reset_hp.php (réinitialisation)
 
-    // L'objet NPC est déjà disponible, pas besoin de conversion
-}
-
-// Traitement des actions POST pour la gestion des points d'expérience
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['xp_action'])) {
-    switch ($_POST['xp_action']) {
-        case 'add':
-            $xp_amount = (int)$_POST['xp_amount'];
-            if ($xp_amount > 0) {
-                $new_xp = ($npc->experience ?? 0) + $xp_amount;
-                $npc->updateMyExperiencePoints($new_xp);
-                
-                $success_message = "Points d'expérience ajoutés : +{$xp_amount} XP. Total : " . number_format($new_xp) . " XP";
-            }
-            break;
-            
-        case 'remove':
-            $xp_amount = (int)$_POST['xp_amount'];
-            if ($xp_amount > 0) {
-                $new_xp = max(0, ($npc->experience ?? 0) - $xp_amount);
-                $npc->updateMyExperiencePoints($new_xp);
-                
-                $success_message = "Points d'expérience retirés : -{$xp_amount} XP. Total : " . number_format($new_xp) . " XP";
-            }
-            break;
-            
-        case 'set':
-            $xp_amount = (int)$_POST['xp_amount'];
-            if ($xp_amount >= 0) {
-                $npc->updateMyExperiencePoints($xp_amount);
-                
-                $success_message = "Points d'expérience définis à : " . number_format($xp_amount) . " XP";
-            }
-            break;
-    }
-    
-    // Recharger les données du personnage après modification des XP
-    if (isset($success_message)) {
-        $npc = NPC::findById($npc_id, $pdo);
-        // L'objet NPC est déjà disponible
-    }
-}
+// La gestion des points d'expérience est maintenant gérée via AJAX dans l'API :
+// - api/update_xp.php (ajout, retrait, définition d'XP)
 
 // Le transfert d'objets est maintenant géré via AJAX dans l'API transferObject.php
 
-// Traitement de l'upload de photo de profil
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['action']) && $_POST['action'] === 'upload_photo') {
-    if (isset($_FILES['profile_photo']) && $_FILES['profile_photo']['error'] === UPLOAD_ERR_OK) {
-        $upload_dir = 'uploads/profiles/';
-        if (!is_dir($upload_dir)) {
-            mkdir($upload_dir, 0777, true);
-        }
-        
-        $file_extension = strtolower(pathinfo($_FILES['profile_photo']['name'], PATHINFO_EXTENSION));
-        $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif'];
-        
-        if (in_array($file_extension, $allowed_extensions)) {
-            $file_size = $_FILES['profile_photo']['size'];
-            if ($file_size <= 10 * 1024 * 1024) { // 10MB max
-                $new_filename = 'profile_' . $npc_id . '_' . time() . '_' . uniqid() . '.' . $file_extension;
-                $upload_path = $upload_dir . $new_filename;
-                
-                if (move_uploaded_file($_FILES['profile_photo']['tmp_name'], $upload_path)) {
-                    // Supprimer l'ancienne photo si elle existe
-                    if (!empty($npc->profile_photo) && file_exists($npc->profile_photo)) {
-                        unlink($npc->profile_photo);
-                    }
-                    
-                    // Mettre à jour la base de données en utilisant la nouvelle méthode
-                    if ($npc->updateMyProfilePhoto($upload_path)) {
-                        $success_message = "Photo de profil mise à jour avec succès.";
-                        // Recharger les données du PNJ
-                        $npc = NPC::findById($npc_id, $pdo);
-                        // L'objet NPC est déjà disponible
-                    } else {
-                        $error_message = "Erreur lors de la mise à jour de la base de données.";
-                    }
-                } else {
-                    $error_message = "Erreur lors de l'upload de la photo.";
-                }
-            } else {
-                $error_message = "La photo est trop volumineuse (max 10MB).";
-            }
-        } else {
-            $error_message = "Format de fichier non supporté. Utilisez JPG, PNG ou GIF.";
-        }
-    } else {
-        $error_message = "Aucun fichier sélectionné ou erreur lors de l'upload.";
-    }
-}
+// L'upload de photo de profil est maintenant géré via AJAX dans l'API :
+// - api/upload_photo.php (upload de photo de profil)
 
 // Récupérer l'équipement depuis la table items pour les nouveaux PNJ via la classe NPC
 $npcMagicalEquipment = [];
@@ -652,7 +519,7 @@ $initiative = $dexterityModifier;
                     <div class="d-flex align-items-start">
                         <div class="me-3 position-relative">
                             <?php if (!empty($npc->profile_photo)): ?>
-                                <img src="<?php echo htmlspecialchars($npc->profile_photo); ?>" alt="Photo de <?php echo htmlspecialchars($npc->name); ?>" class="rounded" style="width: 100px; height: 100px; object-fit: cover;">
+                                <img id="npc-profile-photo" src="<?php echo htmlspecialchars($npc->profile_photo); ?>" alt="Photo de <?php echo htmlspecialchars($npc->name); ?>" class="rounded" style="width: 100px; height: 100px; object-fit: cover;">
                             <?php else: ?>
                                 <div class="bg-secondary rounded d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
                                     <i class="fas fa-user text-white" style="font-size: 2.5rem;"></i>
@@ -1967,7 +1834,7 @@ $initiative = $dexterityModifier;
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="button" class="btn btn-primary" onclick="uploadPhoto()">
+                    <button type="button" class="btn btn-primary" onclick="uploadPhoto(<?php echo $npc_id; ?>, 'PNJ')">
                         <i class="fas fa-upload me-1"></i>Uploader
                     </button>
                 </div>
