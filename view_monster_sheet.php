@@ -239,11 +239,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             
                         case 'npc':
                             // Transférer vers un PNJ
-                            $target_npc = PNJ::getNpcInfoInPlace($target_id);
+                            $target_npc = NPC::getNpcInfoInPlace($target_id);
                             
                             if ($target_npc) {
                                 // Insérer dans npc_equipment
-                                PNJ::addNpcEquipment($target_id, $monster['place_id'], [
+                                NPC::addNpcEquipment($target_id, $monster['place_id'], [
                                     'magical_item_id' => $item['magical_item_id'],
                                     'item_name' => $item['item_name'],
                                     'item_type' => $item['item_type'],

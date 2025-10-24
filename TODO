@@ -234,7 +234,7 @@ Voici les règles à appliquer :
 
 Dans la zone "Combat", il faut ajouter les zones "Classe d'armure" et "Attaques" comme dans l'ancienne page.
 
-Revoir la CA avec armure et le dépot de fichier
+Supprimer l'ID 13 de la classe armor
 
 dans view_place.php zone "PNJ présents" l'image du PNJ n'est pas affichée dans la balise npc-avatar
 

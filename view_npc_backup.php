@@ -615,7 +615,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
     if ($source === 'npc_equipment') {
         // Récupérer depuis npc_equipment via le personnage associé
         // Récupérer l'équipement du PNJ via la classe PNJ
-        $item = PNJ::getNpcEquipmentWithDetails($item_id, $npc_id);
+        $item = NPC::getNpcEquipmentWithDetails($item_id, $npc_id);
     } else {
         // Récupérer depuis items via la classe Item
         $itemObj = Item::findByIdAndOwner($item_id, 'player', $npc_id);
@@ -676,7 +676,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                     
                     // Supprimer de l'ancien propriétaire selon la source
                     if ($source === 'npc_equipment') {
-                        PNJ::removeEquipmentFromNpc($item_id);
+                        NPC::removeEquipmentFromNpc($item_id);
                     } else {
                         Item::deleteById($item_id);
                     }
@@ -688,7 +688,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                 
             case 'monster':
                 // Transférer vers un monstre
-                $target_monster = PNJ::getNpcInfoInPlace($target_id);
+                $target_monster = NPC::getNpcInfoInPlace($target_id);
                 
                 if ($target_monster) {
                     // Insérer dans monster_equipment via la classe Monstre
@@ -708,7 +708,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                     
                     // Supprimer de l'ancien propriétaire selon la source
                     if ($source === 'npc_equipment') {
-                        PNJ::removeEquipmentFromNpc($item_id);
+                        NPC::removeEquipmentFromNpc($item_id);
                     } else {
                         Item::deleteById($item_id);
                     }
@@ -720,7 +720,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                 
             case 'npc':
                 // Transférer vers un PNJ
-                $target_npc = PNJ::getNpcInfoInPlace($target_id);
+                $target_npc = NPC::getNpcInfoInPlace($target_id);
                 
                 if ($target_npc) {
                     // Insérer dans npc_equipment via la classe PNJ
@@ -736,11 +736,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                         'obtained_from' => 'Transfert depuis ' . $character['name']
                     ];
                     
-                    PNJ::addEquipmentToNpc($target_id, $target_npc['place_id'], $equipmentData);
+                    NPC::addEquipmentToNpc($target_id, $target_npc['place_id'], $equipmentData);
                     
                     // Supprimer de l'ancien propriétaire selon la source
                     if ($source === 'npc_equipment') {
-                        PNJ::removeEquipmentFromNpc($item_id);
+                        NPC::removeEquipmentFromNpc($item_id);
                     } else {
                         Item::deleteById($item_id);
                     }
@@ -826,7 +826,7 @@ foreach ($npcItems as $item) {
 $characterPoisons = NPC::getCharacterPoisons($npc_id);
 
 // Récupérer l'équipement attribué aux PNJ associés à ce personnage via la classe PNJ
-$npcEquipment = PNJ::getNpcEquipmentByCharacter($npc_id);
+$npcEquipment = NPC::getNpcEquipmentByCharacter($npc_id);
 
 // Séparer les objets magiques et poisons des PNJ
 $npcMagicalEquipment = [];

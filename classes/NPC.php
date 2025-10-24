@@ -523,7 +523,6 @@ class NPC
                 }
             }
             
-            error_log("Debug NPC::addBaseCapabilities - Added " . $addedCapabilities . " capabilities to NPC " . $this->id);
             return true;
         } catch (PDOException $e) {
             error_log("Erreur lors de l'ajout des capacités de base du PNJ: " . $e->getMessage());
@@ -578,7 +577,6 @@ class NPC
                 }
             }
             
-            error_log("Debug NPC::addBaseLanguages - Added " . $addedLanguages . " languages to NPC " . $this->id);
             return true;
         } catch (PDOException $e) {
             error_log("Erreur lors de l'ajout des langues de base du PNJ: " . $e->getMessage());
@@ -643,7 +641,6 @@ class NPC
                 }
             }
             
-            error_log("Debug NPC::addBaseSkills - Added " . $addedSkills . " skills to NPC " . $this->id);
             return true;
         } catch (PDOException $e) {
             error_log("Erreur lors de l'ajout des compétences de base du PNJ: " . $e->getMessage());
@@ -782,7 +779,6 @@ class NPC
                     }
                 }
 
-                error_log("Debug NPC::addStartingEquipment - Added " . $addedItems . " items to NPC " . $this->id);
             }
 
             return true;
@@ -1322,7 +1318,6 @@ class NPC
                 }
             }
             
-            error_log("Debug NPC::addBaseSpells - Added " . $addedSpells . " spells to NPC " . $npcId);
             return true;
         } catch (PDOException $e) {
             error_log("Erreur lors de l'ajout des sorts de base du NPC: " . $e->getMessage());
@@ -1450,7 +1445,6 @@ class NPC
                 // PAS de modification des caractéristiques ici !
             }
             
-            error_log("Debug NPC::addAbilityImprovements - Added $addedImprovements improvements to NPC $npcId");
             return true;
         } catch (PDOException $e) {
             error_log("Erreur lors de l'ajout des améliorations de caractéristiques: " . $e->getMessage());
@@ -1947,5 +1941,240 @@ class NPC
         ];
     }
     
+    /**
+     * Détecte l'armure et le bouclier équipés (méthode d'instance)
+     */
+    public function getMyEquippedArmorAndShield() {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            // Récupérer l'équipement du NPC
+            $stmt = $pdo->prepare("
+                SELECT i.*
+                FROM items i
+                WHERE i.owner_type = 'npc' AND i.owner_id = ? AND i.is_equipped = 1
+            ");
+            $stmt->execute([$this->id]);
+            $magicalEquipment = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Récupérer toutes les armures disponibles
+            $stmt = $pdo->prepare("SELECT * FROM armor ORDER BY name");
+            $stmt->execute();
+            $detectedArmor = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Récupérer tous les boucliers disponibles
+            $stmt = $pdo->prepare("SELECT * FROM shields ORDER BY name");
+            $stmt->execute();
+            $detectedShields = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $equippedArmor = null;
+            $equippedShield = null;
+            
+            // Chercher l'armure équipée
+            foreach ($magicalEquipment as $item) {
+                if (($item['object_type'] ?? '') === 'armor') {
+                    foreach ($detectedArmor as $armor) {
+                        if (stripos($item['display_name'], $armor['name']) !== false) {
+                            $equippedArmor = $armor;
+                            break 2;
+                        }
+                    }
+                }
+            }
+            
+            // Chercher le bouclier équipé
+            foreach ($magicalEquipment as $item) {
+                if (($item['object_type'] ?? '') === 'shield') {
+                    foreach ($detectedShields as $shield) {
+                        if (stripos($item['display_name'], $shield['name']) !== false) {
+                            $equippedShield = $shield;
+                            break 2;
+                        }
+                    }
+                }
+            }
+            
+            return [
+                'armor' => $equippedArmor,
+                'shield' => $equippedShield
+            ];
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la détection de l'armure et du bouclier: " . $e->getMessage());
+            return [
+                'armor' => null,
+                'shield' => null
+            ];
+        }
+    }
+    
+    /**
+     * Ajouter un équipement à ce NPC (méthode d'instance)
+     */
+    public function addMyNpcEquipment($sceneId, $equipmentData, $pdo = null)
+    {
+        try {
+            $pdo = $pdo ?: \Database::getInstance()->getPdo();
+            $stmt = $pdo->prepare("INSERT INTO npc_equipment (npc_id, scene_id, magical_item_id, item_name, item_type, item_description, item_source, quantity, equipped, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([
+                $this->id,
+                $sceneId,
+                $equipmentData['magical_item_id'],
+                $equipmentData['item_name'],
+                $equipmentData['item_type'],
+                $equipmentData['item_description'],
+                $equipmentData['item_source'],
+                $equipmentData['quantity'],
+                $equipmentData['equipped'],
+                $equipmentData['notes'],
+                $equipmentData['obtained_from']
+            ]);
+            return true;
+        } catch (PDOException $e) {
+            error_log("Erreur lors de l'ajout de l'équipement au NPC: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Récupérer les détails d'un équipement de NPC (méthode statique)
+     */
+    public static function getNpcEquipmentWithDetails($equipmentId, $characterId, $pdo = null)
+    {
+        try {
+            $pdo = $pdo ?: \Database::getInstance()->getPdo();
+            $stmt = $pdo->prepare("
+                SELECT ne.*, sn.name as npc_name, sn.place_id, s.title as scene_title
+                FROM npc_equipment ne
+                JOIN place_npcs sn ON ne.npc_id = sn.id AND ne.scene_id = sn.place_id
+                JOIN places s ON sn.place_id = s.id
+                WHERE ne.id = ? AND sn.npc_character_id = ?
+            ");
+            $stmt->execute([$equipmentId, $characterId]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération des détails de l'équipement: " . $e->getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Ajouter un équipement à ce NPC (méthode d'instance)
+     */
+    public function addMyEquipmentToNpc($placeId, $equipmentData, $pdo = null)
+    {
+        try {
+            $pdo = $pdo ?: \Database::getInstance()->getPdo();
+            $stmt = $pdo->prepare("INSERT INTO npc_equipment (npc_id, place_id, magical_item_id, item_name, item_type, item_description, item_source, quantity, equipped, notes, obtained_from) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([
+                $this->id,
+                $placeId,
+                $equipmentData['magical_item_id'],
+                $equipmentData['item_name'],
+                $equipmentData['item_type'],
+                $equipmentData['item_description'],
+                $equipmentData['item_source'],
+                $equipmentData['quantity'],
+                $equipmentData['equipped'],
+                $equipmentData['notes'],
+                $equipmentData['obtained_from']
+            ]);
+            return true;
+        } catch (PDOException $e) {
+            error_log("Erreur lors de l'ajout de l'équipement au NPC: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Supprimer un équipement de ce NPC (méthode d'instance)
+     */
+    public function removeMyEquipmentFromNpc($equipmentId, $pdo = null)
+    {
+        try {
+            $pdo = $pdo ?: \Database::getInstance()->getPdo();
+            $stmt = $pdo->prepare("DELETE FROM npc_equipment WHERE id = ? AND npc_id = ?");
+            return $stmt->execute([$equipmentId, $this->id]);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la suppression de l'équipement du NPC: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Récupérer l'équipement de ce NPC (méthode d'instance)
+     */
+    public function getMyNpcEquipment($pdo = null)
+    {
+        try {
+            $pdo = $pdo ?: \Database::getInstance()->getPdo();
+            $stmt = $pdo->prepare("
+                SELECT ne.*, sn.name as npc_name, sn.place_id, s.title as scene_title
+                FROM npc_equipment ne
+                JOIN place_npcs sn ON ne.npc_id = sn.id AND ne.scene_id = sn.place_id
+                JOIN places s ON sn.place_id = s.id
+                WHERE ne.npc_id = ?
+                ORDER BY ne.obtained_at DESC
+            ");
+            $stmt->execute([$this->id]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération de l'équipement du NPC: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Déséquiper un objet de ce NPC (méthode d'instance)
+     */
+    public function unequipMyItem($itemName, $pdo = null)
+    {
+        try {
+            $pdo = $pdo ?: \Database::getInstance()->getPdo();
+            
+            // Récupérer l'ID de l'objet
+            $stmt = $pdo->prepare("SELECT id FROM items WHERE display_name = ? AND owner_type = 'npc' AND owner_id = ?");
+            $stmt->execute([$itemName, $this->id]);
+            $item = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$item) {
+                return ['success' => false, 'message' => 'Objet non trouvé'];
+            }
+            
+            // Déséquiper l'objet
+            $stmt = $pdo->prepare("UPDATE items SET is_equipped = 0 WHERE id = ?");
+            $result = $stmt->execute([$item['id']]);
+            
+            if ($result) {
+                return ['success' => true, 'message' => 'Objet déséquipé avec succès'];
+            } else {
+                return ['success' => false, 'message' => 'Erreur lors du déséquipement'];
+            }
+        } catch (PDOException $e) {
+            error_log("Erreur lors du déséquipement: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Erreur de base de données'];
+        }
+    }
+    
+    /**
+     * Récupérer les détails d'un équipement de ce NPC (méthode d'instance)
+     */
+    public function getMyNpcEquipmentWithDetails($equipmentId, $pdo = null)
+    {
+        try {
+            $pdo = $pdo ?: \Database::getInstance()->getPdo();
+            $stmt = $pdo->prepare("
+                SELECT ne.*, sn.name as npc_name, sn.place_id, s.title as scene_title
+                FROM npc_equipment ne
+                JOIN place_npcs sn ON ne.npc_id = sn.id AND ne.scene_id = sn.place_id
+                JOIN places s ON sn.place_id = s.id
+                WHERE ne.id = ? AND ne.npc_id = ?
+            ");
+            $stmt->execute([$equipmentId, $this->id]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération des détails de l'équipement: " . $e->getMessage());
+            return null;
+        }
+    }
 }
 ?>

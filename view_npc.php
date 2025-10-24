@@ -323,33 +323,10 @@ $detectedWeapons = Item::detectWeaponsInEquipment($equipmentText);
 $detectedArmor = Item::detectArmorInEquipment($equipmentText);
 $detectedShields = Item::detectShieldsInEquipment($equipmentText);
 
-// Calculer la classe d'armure
-$equippedArmor = null;
-$equippedShield = null;
-
-// Chercher l'armure équipée dans character_equipment
-foreach ($magicalEquipment as $item) {
-    if ($item['is_equipped'] && ($item['item_type'] ?? '') === 'armor') {
-        foreach ($detectedArmor as $armor) {
-            if (stripos($item['item_name'], $armor['name']) !== false) {
-                $equippedArmor = $armor;
-                break 2;
-            }
-        }
-    }
-}
-
-// Chercher le bouclier équipé dans character_equipment
-foreach ($magicalEquipment as $item) {
-    if ($item['is_equipped'] && ($item['item_type'] ?? '') === 'shield') {
-        foreach ($detectedShields as $shield) {
-            if (stripos($item['item_name'], $shield['name']) !== false) {
-                $equippedShield = $shield;
-                break 2;
-            }
-        }
-    }
-}
+// Calculer la classe d'armure en utilisant la méthode d'instance
+$equippedArmorAndShield = $npc->getMyEquippedArmorAndShield();
+$equippedArmor = $equippedArmorAndShield['armor'];
+$equippedShield = $equippedArmorAndShield['shield'];
 
 // Récupérer les bonus d'équipement via la méthode d'instance
 $equipmentBonuses = $npc->getMyEquipmentBonuses();
@@ -511,8 +488,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
     $item = null;
     if ($source === 'npc_equipment') {
         // Récupérer depuis npc_equipment via le personnage associé
-        // Récupérer l'équipement du PNJ via la classe PNJ
-        $item = PNJ::getNpcEquipmentWithDetails($item_id, $npc_id);
+        // Récupérer l'équipement du PNJ via la méthode d'instance
+        $item = $npc->getMyNpcEquipmentWithDetails($item_id);
     } else {
         // Récupérer depuis items via la classe Item
         $itemObj = Item::findByIdAndOwner($item_id, 'player', $npc_id);
@@ -573,7 +550,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                     
                     // Supprimer de l'ancien propriétaire selon la source
                     if ($source === 'npc_equipment') {
-                        PNJ::removeEquipmentFromNpc($item_id);
+                        $npc->removeMyEquipmentFromNpc($item_id);
                     } else {
                         Item::deleteById($item_id);
                     }
@@ -585,7 +562,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                 
             case 'monster':
                 // Transférer vers un monstre
-                $target_monster = PNJ::getNpcInfoInPlace($target_id);
+                $target_monster = NPC::getNpcInfoInPlace($target_id);
                 
                 if ($target_monster) {
                     // Insérer dans monster_equipment via la classe Monstre
@@ -605,7 +582,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                     
                     // Supprimer de l'ancien propriétaire selon la source
                     if ($source === 'npc_equipment') {
-                        PNJ::removeEquipmentFromNpc($item_id);
+                        $npc->removeMyEquipmentFromNpc($item_id);
                     } else {
                         Item::deleteById($item_id);
                     }
@@ -617,33 +594,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                 
             case 'npc':
                 // Transférer vers un PNJ
-                $target_npc = PNJ::getNpcInfoInPlace($target_id);
+                $target_npc_info = NPC::getNpcInfoInPlace($target_id);
                 
-                if ($target_npc) {
-                    // Insérer dans npc_equipment via la classe PNJ
-                    $equipmentData = [
-                        'magical_item_id' => $item['magical_item_id'],
-                        'item_name' => $item['display_name'],
-                        'item_type' => $item['object_type'],
-                        'item_description' => $item['description'],
-                        'item_source' => $item['item_source'],
-                        'quantity' => $item['quantity'],
-                        'equipped' => 0, // Toujours non équipé lors du transfert
-                        'notes' => $notes ?: $item['notes'],
-                        'obtained_from' => 'Transfert depuis ' . $npc->name
-                    ];
+                if ($target_npc_info) {
+                    // Créer une instance NPC pour la cible
+                    $target_npc_instance = NPC::findById($target_id);
                     
-                    PNJ::addEquipmentToNpc($target_id, $target_npc['place_id'], $equipmentData);
-                    
-                    // Supprimer de l'ancien propriétaire selon la source
-                    if ($source === 'npc_equipment') {
-                        PNJ::removeEquipmentFromNpc($item_id);
-                    } else {
-                        Item::deleteById($item_id);
+                    if ($target_npc_instance) {
+                        // Insérer dans npc_equipment via la méthode d'instance
+                        $equipmentData = [
+                            'magical_item_id' => $item['magical_item_id'],
+                            'item_name' => $item['display_name'],
+                            'item_type' => $item['object_type'],
+                            'item_description' => $item['description'],
+                            'item_source' => $item['item_source'],
+                            'quantity' => $item['quantity'],
+                            'equipped' => 0, // Toujours non équipé lors du transfert
+                            'notes' => $notes ?: $item['notes'],
+                            'obtained_from' => 'Transfert depuis ' . $npc->name
+                        ];
+                        
+                        $target_npc_instance->addMyEquipmentToNpc($target_npc_info['place_id'], $equipmentData);
+                        
+                        // Supprimer de l'ancien propriétaire selon la source
+                        if ($source === 'npc_equipment') {
+                            $npc->removeMyEquipmentFromNpc($item_id);
+                        } else {
+                            Item::deleteById($item_id);
+                        }
+                        
+                        $transfer_success = true;
+                        $target_name = $target_npc_info['name'];
                     }
-                    
-                    $transfer_success = true;
-                    $target_name = $target_npc['name'];
                 }
                 break;
         }
@@ -718,8 +700,8 @@ foreach ($npcItems as $item) {
 // Récupérer les poisons du personnage via la classe NPC
 $characterPoisons = $npc->getMyCharacterPoisons();
 
-// Récupérer l'équipement attribué aux PNJ associés à ce personnage via la classe PNJ
-$npcEquipment = PNJ::getNpcEquipmentByCharacter($npc_id);
+// Récupérer l'équipement de ce NPC via la méthode d'instance
+$npcEquipment = $npc->getMyNpcEquipment();
 
 // Séparer les objets magiques et poisons des PNJ
 $npcMagicalEquipment = [];
