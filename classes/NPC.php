@@ -2234,7 +2234,21 @@ class NPC
      * Récupère l'équipement détaillé du NPC (méthode d'instance)
      */
     public function getMyDetailedEquipment() {
-        return self::getDetailedEquipment($this->id);
+        try {
+            // Utiliser la classe Item pour récupérer l'équipement
+            $items = Item::findByOwner('npc', $npcId, $pdo);
+            
+            // Convertir les objets Item en tableaux pour la compatibilité
+            $equipment = [];
+            foreach ($items as $item) {
+                $equipment[] = $item->toArray();
+            }
+            
+            return $equipment;
+        } catch (Exception $e) {
+            error_log("Erreur lors de la récupération de l'équipement détaillé: " . $e->getMessage());
+            return [];
+        }
     }
     
     /**
@@ -2349,6 +2363,92 @@ class NPC
         }
         
         return $ac;
+    }
+    
+    /**
+     * Récupère les bonus d'équipement du NPC (méthode d'instance)
+     */
+    public function getMyEquipmentBonuses() {
+        // Pour l'instant, retourner des bonus à 0
+        // Cette méthode peut être étendue pour calculer les vrais bonus d'équipement
+        return [
+            'strength' => 0,
+            'dexterity' => 0,
+            'constitution' => 0,
+            'intelligence' => 0,
+            'wisdom' => 0,
+            'charisma' => 0
+        ];
+    }
+    
+    /**
+     * Récupère les bonus temporaires du NPC (méthode d'instance)
+     */
+    public function getMyTemporaryBonuses() {
+        // Pour l'instant, retourner des bonus à 0
+        // Cette méthode peut être étendue pour calculer les vrais bonus temporaires
+        return [
+            'strength' => 0,
+            'dexterity' => 0,
+            'constitution' => 0,
+            'intelligence' => 0,
+            'wisdom' => 0,
+            'charisma' => 0
+        ];
+    }
+    
+    /**
+     * Calcule les caractéristiques totales du NPC (méthode d'instance)
+     */
+    public function getMyTotalAbilities() {
+        // Récupérer les objets nécessaires
+        $raceObject = Race::findById($this->race_id);
+        $abilityImprovements = $this->getCharacterAbilityImprovements();
+        $equipmentBonuses = $this->getMyEquipmentBonuses();
+        $temporaryBonuses = $this->getMyTemporaryBonuses();
+        
+        // Convertir les améliorations en tableau simple
+        $abilityImprovementsArray = [
+            'strength' => 0,
+            'dexterity' => 0,
+            'constitution' => 0,
+            'intelligence' => 0,
+            'wisdom' => 0,
+            'charisma' => 0
+        ];
+        
+        foreach ($abilityImprovements as $improvement) {
+            $ability = $improvement['ability'];
+            if (isset($abilityImprovementsArray[$ability])) {
+                $abilityImprovementsArray[$ability] = $improvement['improvement'];
+            }
+        }
+        
+        // Calculer les totaux
+        return [
+            'strength' => $this->strength + ($raceObject->strength_bonus ?? 0) + $abilityImprovementsArray['strength'] + $equipmentBonuses['strength'] + $temporaryBonuses['strength'],
+            'dexterity' => $this->dexterity + ($raceObject->dexterity_bonus ?? 0) + $abilityImprovementsArray['dexterity'] + $equipmentBonuses['dexterity'] + $temporaryBonuses['dexterity'],
+            'constitution' => $this->constitution + ($raceObject->constitution_bonus ?? 0) + $abilityImprovementsArray['constitution'] + $equipmentBonuses['constitution'] + $temporaryBonuses['constitution'],
+            'intelligence' => $this->intelligence + ($raceObject->intelligence_bonus ?? 0) + $abilityImprovementsArray['intelligence'] + $equipmentBonuses['intelligence'] + $temporaryBonuses['intelligence'],
+            'wisdom' => $this->wisdom + ($raceObject->wisdom_bonus ?? 0) + $abilityImprovementsArray['wisdom'] + $equipmentBonuses['wisdom'] + $temporaryBonuses['wisdom'],
+            'charisma' => $this->charisma + ($raceObject->charisma_bonus ?? 0) + $abilityImprovementsArray['charisma'] + $equipmentBonuses['charisma'] + $temporaryBonuses['charisma']
+        ];
+    }
+    
+    /**
+     * Calcule les modificateurs de caractéristiques du NPC (méthode d'instance)
+     */
+    public function getMyAbilityModifiers() {
+        $totalAbilities = $this->getMyTotalAbilities();
+        
+        return [
+            'strength' => floor(($totalAbilities['strength'] - 10) / 2),
+            'dexterity' => floor(($totalAbilities['dexterity'] - 10) / 2),
+            'constitution' => floor(($totalAbilities['constitution'] - 10) / 2),
+            'intelligence' => floor(($totalAbilities['intelligence'] - 10) / 2),
+            'wisdom' => floor(($totalAbilities['wisdom'] - 10) / 2),
+            'charisma' => floor(($totalAbilities['charisma'] - 10) / 2)
+        ];
     }
     
 }

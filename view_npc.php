@@ -351,63 +351,25 @@ foreach ($magicalEquipment as $item) {
     }
 }
 
-// Les modificateurs seront calculés après la définition de $totalAbilities
+// Récupérer les bonus d'équipement via la méthode d'instance
+$equipmentBonuses = $npc->getMyEquipmentBonuses();
 
-// Les modificateurs seront définis après leur calcul
+// Récupérer les bonus temporaires via la méthode d'instance
+$temporaryBonuses = $npc->getMyTemporaryBonuses();
 
-// Bonus d'équipements (pour l'instant à 0, peut être calculé plus tard)
-$equipmentBonuses = [
-    'strength' => 0,
-    'dexterity' => 0,
-    'constitution' => 0,
-    'intelligence' => 0,
-    'wisdom' => 0,
-    'charisma' => 0
-];
+// Récupérer les caractéristiques totales via la méthode d'instance
+$totalAbilities = $npc->getMyTotalAbilities();
 
-// Bonus temporaires (pour l'instant à 0, peut être calculé plus tard)
-$temporaryBonuses = [
-    'strength' => 0,
-    'dexterity' => 0,
-    'constitution' => 0,
-    'intelligence' => 0,
-    'wisdom' => 0,
-    'charisma' => 0
-];
+// Récupérer les modificateurs via la méthode d'instance
+$abilityModifiers = $npc->getMyAbilityModifiers();
 
-// Calculer les totaux (caractéristiques de base + bonus raciaux + bonus de niveau + bonus d'équipements + bonus temporaires)
-$totalAbilities = [
-    'strength' => $npc->strength + $raceObject->strength_bonus + $abilityImprovementsArray['strength'] + $equipmentBonuses['strength'] + $temporaryBonuses['strength'],
-    'dexterity' => $npc->dexterity + $raceObject->dexterity_bonus + $abilityImprovementsArray['dexterity'] + $equipmentBonuses['dexterity'] + $temporaryBonuses['dexterity'],
-    'constitution' => $npc->constitution + $raceObject->constitution_bonus + $abilityImprovementsArray['constitution'] + $equipmentBonuses['constitution'] + $temporaryBonuses['constitution'],
-    'intelligence' => $npc->intelligence + $raceObject->intelligence_bonus + $abilityImprovementsArray['intelligence'] + $equipmentBonuses['intelligence'] + $temporaryBonuses['intelligence'],
-    'wisdom' => $npc->wisdom + $raceObject->wisdom_bonus + $abilityImprovementsArray['wisdom'] + $equipmentBonuses['wisdom'] + $temporaryBonuses['wisdom'],
-    'charisma' => $npc->charisma + $raceObject->charisma_bonus + $abilityImprovementsArray['charisma'] + $equipmentBonuses['charisma'] + $temporaryBonuses['charisma']
-];
-
-// Calculer les modificateurs de caractéristiques
-$tempCharacter = new Character();
-$tempCharacter->strength = $totalAbilities['strength'];
-$tempCharacter->dexterity = $totalAbilities['dexterity'];
-$tempCharacter->constitution = $totalAbilities['constitution'];
-$tempCharacter->intelligence = $totalAbilities['intelligence'];
-$tempCharacter->wisdom = $totalAbilities['wisdom'];
-$tempCharacter->charisma = $totalAbilities['charisma'];
-
-$strengthMod = $tempCharacter->getAbilityModifier('strength');
-$dexterityMod = $tempCharacter->getAbilityModifier('dexterity');
-$constitutionMod = $tempCharacter->getAbilityModifier('constitution');
-$intelligenceMod = $tempCharacter->getAbilityModifier('intelligence');
-$wisdomMod = $tempCharacter->getAbilityModifier('wisdom');
-$charismaMod = $tempCharacter->getAbilityModifier('charisma');
-
-// Les modificateurs sont calculés et stockés dans des variables locales
-$strengthModifier = $strengthMod;
-$dexterityModifier = $dexterityMod;
-$constitutionModifier = $constitutionMod;
-$intelligenceModifier = $intelligenceMod;
-$wisdomModifier = $wisdomMod;
-$charismaModifier = $charismaMod;
+// Assigner les modificateurs aux variables locales pour la compatibilité
+$strengthModifier = $abilityModifiers['strength'];
+$dexterityModifier = $abilityModifiers['dexterity'];
+$constitutionModifier = $abilityModifiers['constitution'];
+$intelligenceModifier = $abilityModifiers['intelligence'];
+$wisdomModifier = $abilityModifiers['wisdom'];
+$charismaModifier = $abilityModifiers['charisma'];
 
 // Les modificateurs sont déjà calculés plus haut
 
@@ -806,7 +768,7 @@ if (isset($npcPoisons)) {
 // Les modificateurs sont déjà calculés plus haut dans le fichier
 
 // Calcul de l'initiative
-$initiative = $dexterityMod;
+$initiative = $dexterityModifier;
 
 // La classe d'armure est déjà calculée plus haut avec calculateArmorClassExtended()
 // $armorClass = $character['armor_class']; // Cette ligne écrasait le calcul correct
@@ -1022,12 +984,12 @@ $initiative = $dexterityMod;
                             <!-- Modificateurs -->
                             <tr class="table-primary">
                                 <td><strong>Modificateurs</strong></td>
-                                <td><strong><?php echo ($strengthMod >= 0 ? '+' : '') . $strengthMod; ?></strong></td>
-                                <td><strong><?php echo ($dexterityMod >= 0 ? '+' : '') . $dexterityMod; ?></strong></td>
-                                <td><strong><?php echo ($constitutionMod >= 0 ? '+' : '') . $constitutionMod; ?></strong></td>
-                                <td><strong><?php echo ($intelligenceMod >= 0 ? '+' : '') . $intelligenceMod; ?></strong></td>
-                                <td><strong><?php echo ($wisdomMod >= 0 ? '+' : '') . $wisdomMod; ?></strong></td>
-                                <td><strong><?php echo ($charismaMod >= 0 ? '+' : '') . $charismaMod; ?></strong></td>
+                                <td><strong><?php echo ($strengthModifier >= 0 ? '+' : '') . $strengthModifier; ?></strong></td>
+                                <td><strong><?php echo ($dexterityModifier >= 0 ? '+' : '') . $dexterityModifier; ?></strong></td>
+                                <td><strong><?php echo ($constitutionModifier >= 0 ? '+' : '') . $constitutionModifier; ?></strong></td>
+                                <td><strong><?php echo ($intelligenceModifier >= 0 ? '+' : '') . $intelligenceModifier; ?></strong></td>
+                                <td><strong><?php echo ($wisdomModifier >= 0 ? '+' : '') . $wisdomModifier; ?></strong></td>
+                                <td><strong><?php echo ($charismaModifier >= 0 ? '+' : '') . $charismaModifier; ?></strong></td>
                             </tr>
                         </tbody>
                     </table>
@@ -1108,9 +1070,9 @@ $initiative = $dexterityMod;
                                                 <strong>Bouclier:</strong> Aucun<br>
                                             <?php endif; ?>
                                             
-                                            <strong>Modificateur de Dextérité:</strong> <?php echo ($dexterityMod >= 0 ? '+' : '') . $dexterityMod; ?>
+                                            <strong>Modificateur de Dextérité:</strong> <?php echo ($dexterityModifier >= 0 ? '+' : '') . $dexterityModifier; ?>
                                             <?php if ($isBarbarian && !$equippedArmor): ?>
-                                                <br><strong>Modificateur de Constitution:</strong> <?php echo ($constitutionMod >= 0 ? '+' : '') . $constitutionMod; ?>
+                                                <br><strong>Modificateur de Constitution:</strong> <?php echo ($constitutionModifier >= 0 ? '+' : '') . $constitutionModifier; ?>
                                             <?php endif; ?>
                                         </small>
                                     </div>
@@ -1758,7 +1720,7 @@ $initiative = $dexterityMod;
                                 $displayName = htmlspecialchars($itemName);
                                 $typeLabel = ucfirst(str_replace('_', ' ', $itemType));
                             ?>
-                            <tr data-type="<?php echo $itemType; ?>" data-equipped="<?php echo $item['is_equipped'] ? 'equipped' : 'unequipped'; ?>">
+                            <tr data-type="<?php echo $itemType; ?>" data-equipped="<?php echo (isset($item['is_equipped']) && $item['is_equipped']) ? 'equipped' : 'unequipped'; ?>">
                                 <td>
                                     <strong><?php echo $displayName; ?></strong>
                                     <?php if ($item['quantity'] > 1): ?>
@@ -1788,7 +1750,7 @@ $initiative = $dexterityMod;
                                     <small class="text-muted"><?php echo htmlspecialchars($item['item_description'] ?? ''); ?></small>
                                 </td>
                                 <td>
-                                    <?php if ($item['is_equipped']): ?>
+                                    <?php if (isset($item['is_equipped']) && $item['is_equipped']): ?>
                                         <span class="badge bg-success">
                                             <i class="fas fa-check-circle me-1"></i>Équipé
                                         </span>
@@ -1812,7 +1774,7 @@ $initiative = $dexterityMod;
                                 </td>
                                 <td style="min-width: 300px; white-space: nowrap; overflow: visible;">
                                     <?php if ($itemType === 'weapon' || $itemType === 'armor' || $itemType === 'shield'): ?>
-                                        <?php if ($item['is_equipped']): ?>
+                                        <?php if (isset($item['is_equipped']) && $item['is_equipped']): ?>
                                             <button class="btn btn-warning btn-sm" onclick="unequipItem(<?php echo $npc_id; ?>, '<?php echo addslashes($itemName); ?>')"
                                                     style="white-space: nowrap; min-width: 80px;">
                                                 <i class="fas fa-hand-paper me-1"></i>Déséquiper
@@ -1846,7 +1808,7 @@ $initiative = $dexterityMod;
                                                 style="white-space: nowrap; min-width: 80px;">
                                             <i class="fas fa-exchange-alt me-1"></i>Transférer
                                         </button>
-                                        <?php if (!$item['is_equipped']): ?>
+                                        <?php if (!isset($item['is_equipped']) || !$item['is_equipped']): ?>
                                             <button type="button" class="btn btn-outline-warning btn-sm ms-1" 
                                                     onclick="dropItem(<?php echo $item['id']; ?>, '<?php echo addslashes($item['item_name']); ?>')"
                                                     title="Déposer l'objet dans le lieu actuel"
