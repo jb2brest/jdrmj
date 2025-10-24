@@ -1818,5 +1818,63 @@ class NPC
         return true;
     }
     
+    /**
+     * Calcule les points de vie selon les règles D&D avec tirages aléatoires
+     */
+    public static function calculateHitPoints($npcId) {
+        $pdo = \Database::getInstance()->getPdo();
+        try {
+            // Récupérer les informations du NPC
+            $stmt = $pdo->prepare("
+                SELECT n.*, c.hit_dice
+                FROM npcs n
+                LEFT JOIN classes c ON n.class_id = c.id
+                WHERE n.id = ?
+            ");
+            $stmt->execute([$npcId]);
+            $npc = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$npc || !$npc['hit_dice']) {
+                return 0;
+            }
+            
+            $level = $npc['level'];
+            $constitution = $npc['constitution'];
+            $constitutionModifier = floor(($constitution - 10) / 2);
+            
+            // Extraire le nombre de faces du dé (ex: "1d8" -> 8)
+            $hitDie = (int)substr($npc['hit_dice'], strpos($npc['hit_dice'], 'd') + 1);
+            
+            // Calcul D&D avec tirages aléatoires
+            $totalHp = 0;
+            $rolls = [];
+            
+            // Premier niveau = dé maximum + modificateur Constitution
+            $firstLevelRoll = $hitDie; // Maximum du dé
+            $firstLevelHp = $firstLevelRoll + $constitutionModifier;
+            $totalHp += $firstLevelHp;
+            $rolls[] = "Niveau 1: " . $firstLevelRoll . " + " . $constitutionModifier . " = " . $firstLevelHp;
+            
+            // Niveaux suivants = tirage aléatoire + modificateur Constitution
+            for ($i = 2; $i <= $level; $i++) {
+                $roll = rand(1, $hitDie); // Tirage aléatoire du dé
+                $levelHp = $roll + $constitutionModifier;
+                $totalHp += $levelHp;
+                $rolls[] = "Niveau $i: " . $roll . " + " . $constitutionModifier . " = " . $levelHp;
+            }
+            
+            // Mettre à jour les points de vie en base
+            $updateStmt = $pdo->prepare("UPDATE npcs SET hit_points = ? WHERE id = ?");
+            $updateStmt->execute([$totalHp, $npcId]);
+            
+            $rollsString = implode(", ", $rolls);
+            error_log("Debug NPC::calculateHitPoints - Updated NPC $npcId HP to $totalHp (level $level, constitution $constitution, hit_die $hitDie) - Rolls: $rollsString");
+            return $totalHp;
+        } catch (PDOException $e) {
+            error_log("Erreur lors du calcul des points de vie: " . $e->getMessage());
+            return 0;
+        }
+    }
+    
 }
 ?>

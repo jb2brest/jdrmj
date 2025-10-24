@@ -77,14 +77,14 @@ function generateRecommendedStats($class) {
     $stats = $recommendedStats[$class] ?? $recommendedStats['Guerrier'];
     
     // Calculer les valeurs dérivées
-    $stats['hit_points'] = calculateHitPoints($class, $stats['constitution'], 1);
+    $stats['hit_points'] = calculateHitPoints($class, $stats['constitution'], $level);
     $stats['armor_class'] = calculateArmorClass($class, $stats['dexterity']);
     $stats['speed'] = 30; // Vitesse de base
     
     return $stats;
 }
 
-// Fonction pour calculer les points de vie
+// Fonction pour calculer les points de vie selon les règles D&D avec tirages aléatoires
 function calculateHitPoints($class, $constitution, $level) {
     $hitDie = [
         'Guerrier' => 10, 'Paladin' => 10, 'Rôdeur' => 10,
@@ -96,7 +96,21 @@ function calculateHitPoints($class, $constitution, $level) {
     $die = $hitDie[$class] ?? 8;
     $constitutionModifier = floor(($constitution - 10) / 2);
     
-    return $die + $constitutionModifier;
+    // Calcul D&D avec tirages aléatoires
+    $totalHp = 0;
+    
+    // Premier niveau = dé maximum + modificateur Constitution
+    $firstLevelHp = $die + $constitutionModifier;
+    $totalHp += $firstLevelHp;
+    
+    // Niveaux suivants = tirage aléatoire + modificateur Constitution
+    for ($i = 2; $i <= $level; $i++) {
+        $roll = rand(1, $die); // Tirage aléatoire du dé
+        $levelHp = $roll + $constitutionModifier;
+        $totalHp += $levelHp;
+    }
+    
+    return $totalHp;
 }
 
 // Fonction pour calculer la classe d'armure
@@ -367,6 +381,9 @@ function createAutomaticNPC($race_id, $class_id, $level, $user_id, $custom_name,
         
         // Ajouter les améliorations de caractéristiques selon le niveau
         NPC::addAbilityImprovements($npc_id);
+        
+        // Calculer les points de vie selon les règles D&D
+        NPC::calculateHitPoints($npc_id);
         
         // Ajouter l'équipement de départ et l'or
         $npc->addStartingEquipment($equipment, $starting_gold);

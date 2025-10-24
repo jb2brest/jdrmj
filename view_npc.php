@@ -1390,12 +1390,12 @@ $initiative = $dexterityMod;
                             <!-- Modificateurs -->
                             <tr class="table-primary">
                                 <td><strong>Modificateurs</strong></td>
-                                <td><strong><?php echo ($character['strength_modifier'] >= 0 ? '+' : '') . $character['strength_modifier']; ?></strong></td>
-                                <td><strong><?php echo ($character['dexterity_modifier'] >= 0 ? '+' : '') . $character['dexterity_modifier']; ?></strong></td>
-                                <td><strong><?php echo ($character['constitution_modifier'] >= 0 ? '+' : '') . $character['constitution_modifier']; ?></strong></td>
-                                <td><strong><?php echo ($character['intelligence_modifier'] >= 0 ? '+' : '') . $character['intelligence_modifier']; ?></strong></td>
-                                <td><strong><?php echo ($character['wisdom_modifier'] >= 0 ? '+' : '') . $character['wisdom_modifier']; ?></strong></td>
-                                <td><strong><?php echo ($character['charisma_modifier'] >= 0 ? '+' : '') . $character['charisma_modifier']; ?></strong></td>
+                                <td><strong><?php echo ($strengthMod >= 0 ? '+' : '') . $strengthMod; ?></strong></td>
+                                <td><strong><?php echo ($dexterityMod >= 0 ? '+' : '') . $dexterityMod; ?></strong></td>
+                                <td><strong><?php echo ($constitutionMod >= 0 ? '+' : '') . $constitutionMod; ?></strong></td>
+                                <td><strong><?php echo ($intelligenceMod >= 0 ? '+' : '') . $intelligenceMod; ?></strong></td>
+                                <td><strong><?php echo ($wisdomMod >= 0 ? '+' : '') . $wisdomMod; ?></strong></td>
+                                <td><strong><?php echo ($charismaMod >= 0 ? '+' : '') . $charismaMod; ?></strong></td>
                             </tr>
                         </tbody>
                     </table>
