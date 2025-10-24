@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.20.14
+VERSION=2.20.15
 
 # Date de déploiement
 DEPLOY_DATE=2025-10-24
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-10-24
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=192c09ea8bf36744e8720a25b28004e9132a3b78
+GIT_COMMIT=871f49ae92c00029a5721a3f6208c5170de7ec82
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251024-232915
+BUILD_ID=20251024-233703
 
 # Notes de version
-RELEASE_NOTES="NPC.php : normes upload photo"
+RELEASE_NOTES="NPC.php : normes PV"
