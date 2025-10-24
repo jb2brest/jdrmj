@@ -50,7 +50,7 @@ $classDetails = $classObject ? $classObject->toArray() : [];
 // Récupérer les détails du background
 $backgroundDetails = null;
 if ($character['background_id']) {
-    $backgroundDetails = Character::getBackgroundById($character['background_id']);
+    $backgroundDetails = NPC::getBackgroundById($character['background_id']);
 }
 
 // Construire le tableau characterDetails pour la compatibilité
@@ -141,10 +141,10 @@ $isRogue = strpos(strtolower($characterDetails['class_name']), 'roublard') !== f
 $rageData = null;
 if ($isBarbarian) {
     // Récupérer le nombre maximum de rages pour ce niveau
-    $maxRages = Character::getMaxRages($character['class_id'], $character['level']);
+    $maxRages = NPC::getMaxRages($character['class_id'], $character['level']);
     
     // Récupérer le nombre de rages utilisées
-    $rageUsage = Character::getRageUsageStatic($npc_id);
+    $rageUsage = NPC::getRageUsageStatic($npc_id);
     $usedRages = is_array($rageUsage) ? $rageUsage['used'] : $rageUsage;
     
     $rageData = [
@@ -185,7 +185,8 @@ $raceCapabilities = [];
 $backgroundCapabilities = [];
 
 foreach ($allCapabilities as $capability) {
-    switch ($capability['source_type']) {
+    $sourceType = $capability['source_type'] ?? 'unknown';
+    switch ($sourceType) {
         case 'class':
             $classCapabilities[] = $capability;
             break;
@@ -263,13 +264,29 @@ if ($characterArchetype) {
 }
 
 // Récupérer les améliorations de caractéristiques
-$abilityImprovements = Character::getCharacterAbilityImprovements($npc_id);
+$abilityImprovements = NPC::getCharacterAbilityImprovements($npc_id);
+
+// Convertir les améliorations en format associatif pour l'affichage
+$abilityImprovementsArray = [
+    'strength' => 0,
+    'dexterity' => 0,
+    'constitution' => 0,
+    'intelligence' => 0,
+    'wisdom' => 0,
+    'charisma' => 0
+];
+
+foreach ($abilityImprovements as $improvement) {
+    if (isset($improvement['ability']) && isset($improvement['improvement'])) {
+        $abilityImprovementsArray[$improvement['ability']] = $improvement['improvement'];
+    }
+}
 
 // Calculer les caractéristiques finales
-$finalAbilities = Character::calculateFinalAbilitiesStatic($character, $abilityImprovements);
+$finalAbilities = NPC::calculateFinalAbilitiesStatic($character, $abilityImprovements);
 
 // Calculer les points d'amélioration restants
-$remainingPoints = Character::getRemainingAbilityPoints($character['level'], $abilityImprovements);
+$remainingPoints = NPC::getRemainingAbilityPoints($character['level'], $abilityImprovements);
 
 // Les langues du personnage sont déjà stockées dans le champ 'languages' 
 // et incluent toutes les langues (race + historique + choix)
@@ -293,7 +310,7 @@ $wisdomMod = $tempCharacter->getAbilityModifier('wisdom');
 $charismaMod = $tempCharacter->getAbilityModifier('charisma');
 
 // Synchroniser l'équipement de base vers items
-Character::syncBaseEquipmentToCharacterEquipment($npc_id);
+NPC::syncBaseEquipmentToCharacterEquipment($npc_id);
 
 // Récupérer l'équipement du PNJ depuis les données JSON
 $magicalEquipment = [];
@@ -321,7 +338,7 @@ $stmt = $pdo->prepare("
     WHERE i.owner_type = 'npc' AND i.owner_id = ?
     ORDER BY i.created_at ASC
 ");
-$stmt->execute([$character_id]);
+$stmt->execute([$npc_id]);
 $npcItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Traiter les équipements du PNJ
@@ -467,17 +484,17 @@ $temporaryBonuses = [
 
 // Calculer les totaux (caractéristiques de base + bonus raciaux + bonus de niveau + bonus d'équipements + bonus temporaires)
 $totalAbilities = [
-    'strength' => $character['strength'] + $characterDetails['strength_bonus'] + $abilityImprovements['strength'] + $equipmentBonuses['strength'] + $temporaryBonuses['strength'],
-    'dexterity' => $character['dexterity'] + $characterDetails['dexterity_bonus'] + $abilityImprovements['dexterity'] + $equipmentBonuses['dexterity'] + $temporaryBonuses['dexterity'],
-    'constitution' => $character['constitution'] + $characterDetails['constitution_bonus'] + $abilityImprovements['constitution'] + $equipmentBonuses['constitution'] + $temporaryBonuses['constitution'],
-    'intelligence' => $character['intelligence'] + $characterDetails['intelligence_bonus'] + $abilityImprovements['intelligence'] + $equipmentBonuses['intelligence'] + $temporaryBonuses['intelligence'],
-    'wisdom' => $character['wisdom'] + $characterDetails['wisdom_bonus'] + $abilityImprovements['wisdom'] + $equipmentBonuses['wisdom'] + $temporaryBonuses['wisdom'],
-    'charisma' => $character['charisma'] + $characterDetails['charisma_bonus'] + $abilityImprovements['charisma'] + $equipmentBonuses['charisma'] + $temporaryBonuses['charisma']
+    'strength' => $character['strength'] + $characterDetails['strength_bonus'] + $abilityImprovementsArray['strength'] + $equipmentBonuses['strength'] + $temporaryBonuses['strength'],
+    'dexterity' => $character['dexterity'] + $characterDetails['dexterity_bonus'] + $abilityImprovementsArray['dexterity'] + $equipmentBonuses['dexterity'] + $temporaryBonuses['dexterity'],
+    'constitution' => $character['constitution'] + $characterDetails['constitution_bonus'] + $abilityImprovementsArray['constitution'] + $equipmentBonuses['constitution'] + $temporaryBonuses['constitution'],
+    'intelligence' => $character['intelligence'] + $characterDetails['intelligence_bonus'] + $abilityImprovementsArray['intelligence'] + $equipmentBonuses['intelligence'] + $temporaryBonuses['intelligence'],
+    'wisdom' => $character['wisdom'] + $characterDetails['wisdom_bonus'] + $abilityImprovementsArray['wisdom'] + $equipmentBonuses['wisdom'] + $temporaryBonuses['wisdom'],
+    'charisma' => $character['charisma'] + $characterDetails['charisma_bonus'] + $abilityImprovementsArray['charisma'] + $equipmentBonuses['charisma'] + $temporaryBonuses['charisma']
 ];
 
 // Calculer les attaques du personnage
-$characterAttacks = Character::calculateCharacterAttacks($npc_id, $character);
-$armorClass = Character::calculateArmorClassExtended($character, $equippedArmor, $equippedShield);
+$characterAttacks = NPC::calculateCharacterAttacks($npc_id, $character);
+$armorClass = NPC::calculateArmorClassExtended($character, $equippedArmor, $equippedShield);
 
 
 // Contrôle d'accès: propriétaire OU MJ
@@ -519,7 +536,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['hp_ac
             }
             
             // Mettre à jour les points de vie actuels
-            Character::updateHitPoints($npc_id, $new_hp);
+            NPC::updateHitPoints($npc_id, $new_hp);
             
             $success_message = "Points de vie mis à jour : {$new_hp}/{$max_hp}";
             break;
@@ -528,7 +545,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['hp_ac
             $damage = (int)$_POST['damage'];
             if ($damage > 0) {
                 $new_hp = max(0, $character['hit_points_current'] - $damage);
-                Character::updateHitPoints($npc_id, $new_hp);
+                NPC::updateHitPoints($npc_id, $new_hp);
                 
                 $success_message = "Dégâts infligés : {$damage} PV. Points de vie restants : {$new_hp}";
             }
@@ -538,22 +555,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['hp_ac
             $healing = (int)$_POST['healing'];
             if ($healing > 0) {
                 $new_hp = min($character['hit_points_max'], $character['hit_points_current'] + $healing);
-                Character::updateHitPoints($npc_id, $new_hp);
+                NPC::updateHitPoints($npc_id, $new_hp);
                 
                 $success_message = "Soins appliqués : {$healing} PV. Points de vie actuels : {$new_hp}";
             }
             break;
             
         case 'reset_hp':
-            Character::updateHitPoints($character_id, $character['hit_points_max']);
+            NPC::updateHitPoints($npc_id, $character['hit_points_max']);
             
             $success_message = "Points de vie réinitialisés au maximum : {$character['hit_points_max']}";
             break;
     }
     
     // Recharger les données du personnage
-    // Récupérer les détails du personnage via la classe Character
-    $characterObj = Character::findById($character_id);
+    // Récupérer les détails du personnage via la classe NPC
+    $characterObj = NPC::findById($npc_id, $pdo);
     if (!$characterObj) {
         header('Location: characters.php?error=character_not_found');
         exit;
@@ -570,7 +587,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['xp_ac
             $xp_amount = (int)$_POST['xp_amount'];
             if ($xp_amount > 0) {
                 $new_xp = ($character['experience'] ?? 0) + $xp_amount;
-                Character::updateExperiencePoints($npc_id, $new_xp);
+                NPC::updateExperiencePoints($npc_id, $new_xp);
                 
                 $success_message = "Points d'expérience ajoutés : +{$xp_amount} XP. Total : " . number_format($new_xp) . " XP";
             }
@@ -580,7 +597,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['xp_ac
             $xp_amount = (int)$_POST['xp_amount'];
             if ($xp_amount > 0) {
                 $new_xp = max(0, ($character['experience'] ?? 0) - $xp_amount);
-                Character::updateExperiencePoints($npc_id, $new_xp);
+                NPC::updateExperiencePoints($npc_id, $new_xp);
                 
                 $success_message = "Points d'expérience retirés : -{$xp_amount} XP. Total : " . number_format($new_xp) . " XP";
             }
@@ -589,7 +606,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['xp_ac
         case 'set':
             $xp_amount = (int)$_POST['xp_amount'];
             if ($xp_amount >= 0) {
-                Character::updateExperiencePoints($character_id, $xp_amount);
+                NPC::updateExperiencePoints($npc_id, $xp_amount);
                 
                 $success_message = "Points d'expérience définis à : " . number_format($xp_amount) . " XP";
             }
@@ -598,7 +615,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['xp_ac
     
     // Recharger les données du personnage après modification des XP
     if (isset($success_message)) {
-        $characterObj = Character::findById($character_id);
+        $characterObj = NPC::findById($npc_id, $pdo);
         if ($characterObj) {
             $character = $characterObj->toArray();
         }
@@ -617,10 +634,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
     if ($source === 'npc_equipment') {
         // Récupérer depuis npc_equipment via le personnage associé
         // Récupérer l'équipement du PNJ via la classe PNJ
-        $item = PNJ::getNpcEquipmentWithDetails($item_id, $character_id);
+        $item = PNJ::getNpcEquipmentWithDetails($item_id, $npc_id);
     } else {
         // Récupérer depuis items via la classe Item
-        $itemObj = Item::findByIdAndOwner($item_id, 'player', $character_id);
+        $itemObj = Item::findByIdAndOwner($item_id, 'player', $npc_id);
         $item = $itemObj ? $itemObj->toArray() : null;
     }
     
@@ -638,7 +655,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
         switch ($target_type) {
             case 'character':
                 // Transférer vers un autre personnage
-                $target_char_obj = Character::findById($target_id);
+                $target_char_obj = NPC::findById($target_id, $pdo);
                 $target_char = $target_char_obj ? ['name' => $target_char_obj->name] : null;
                 
                 if ($target_char) {
@@ -761,7 +778,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
     }
     
     // Recharger les données du personnage
-    $characterObj = Character::findById($character_id);
+    $characterObj = NPC::findById($npc_id, $pdo);
     if ($characterObj) {
         $character = $characterObj->toArray();
     }
@@ -836,8 +853,8 @@ foreach ($npcItems as $item) {
     $npcMagicalEquipment[] = $item;
 }
 
-// Récupérer les poisons du personnage via la classe Character
-$characterPoisons = Character::getCharacterPoisons($npc_id);
+// Récupérer les poisons du personnage via la classe NPC
+$characterPoisons = NPC::getCharacterPoisons($npc_id);
 
 // Récupérer l'équipement attribué aux PNJ associés à ce personnage via la classe PNJ
 $npcEquipment = PNJ::getNpcEquipmentByCharacter($npc_id);
@@ -848,7 +865,7 @@ $npcPoisons = [];
 
 foreach ($npcEquipment as $item) {
     // Vérifier d'abord si c'est un poison
-    $poison_info = Character::getPoisonInfo($item['magical_item_id']);
+    $poison_info = NPC::getPoisonInfo($item['magical_item_id']);
     
     if ($poison_info) {
         // C'est un poison
@@ -859,7 +876,7 @@ foreach ($npcEquipment as $item) {
         $npcPoisons[] = $item;
     } else {
         // Vérifier si c'est un objet magique
-        $magical_info = Character::getMagicalItemInfo($item['magical_item_id']);
+        $magical_info = NPC::getMagicalItemInfo($item['magical_item_id']);
         
         if ($magical_info) {
             // C'est un objet magique
@@ -1323,12 +1340,12 @@ $initiative = $dexterityMod;
                             <!-- Bonus de niveau -->
                             <tr>
                                 <td><strong>Bonus de niveau (<?php echo $remainingPoints; ?> pts restants)</strong></td>
-                                <td><span class="text-warning"><?php echo ($abilityImprovements['strength'] > 0 ? '+' : '') . $abilityImprovements['strength']; ?></span></td>
-                                <td><span class="text-warning"><?php echo ($abilityImprovements['dexterity'] > 0 ? '+' : '') . $abilityImprovements['dexterity']; ?></span></td>
-                                <td><span class="text-warning"><?php echo ($abilityImprovements['constitution'] > 0 ? '+' : '') . $abilityImprovements['constitution']; ?></span></td>
-                                <td><span class="text-warning"><?php echo ($abilityImprovements['intelligence'] > 0 ? '+' : '') . $abilityImprovements['intelligence']; ?></span></td>
-                                <td><span class="text-warning"><?php echo ($abilityImprovements['wisdom'] > 0 ? '+' : '') . $abilityImprovements['wisdom']; ?></span></td>
-                                <td><span class="text-warning"><?php echo ($abilityImprovements['charisma'] > 0 ? '+' : '') . $abilityImprovements['charisma']; ?></span></td>
+                                <td><span class="text-warning"><?php echo ($abilityImprovementsArray['strength'] > 0 ? '+' : '') . $abilityImprovementsArray['strength']; ?></span></td>
+                                <td><span class="text-warning"><?php echo ($abilityImprovementsArray['dexterity'] > 0 ? '+' : '') . $abilityImprovementsArray['dexterity']; ?></span></td>
+                                <td><span class="text-warning"><?php echo ($abilityImprovementsArray['constitution'] > 0 ? '+' : '') . $abilityImprovementsArray['constitution']; ?></span></td>
+                                <td><span class="text-warning"><?php echo ($abilityImprovementsArray['intelligence'] > 0 ? '+' : '') . $abilityImprovementsArray['intelligence']; ?></span></td>
+                                <td><span class="text-warning"><?php echo ($abilityImprovementsArray['wisdom'] > 0 ? '+' : '') . $abilityImprovementsArray['wisdom']; ?></span></td>
+                                <td><span class="text-warning"><?php echo ($abilityImprovementsArray['charisma'] > 0 ? '+' : '') . $abilityImprovementsArray['charisma']; ?></span></td>
                             </tr>
                             <!-- Bonus d'équipements -->
                             <tr>
@@ -1385,7 +1402,7 @@ $initiative = $dexterityMod;
                             <div class="rage-symbols">
                                 <?php for ($i = 1; $i <= $rageData['max']; $i++): ?>
                                     <div class="rage-symbol <?php echo $i <= $rageData['used'] ? 'used' : 'available'; ?>" 
-                                         onclick="toggleRage(<?php echo $character_id; ?>, <?php echo $i; ?>)"
+                                         onclick="toggleRage(<?php echo $npc_id; ?>, <?php echo $i; ?>)"
                                          data-rage="<?php echo $i; ?>"
                                          title="<?php echo $i <= $rageData['used'] ? 'Rage utilisée' : 'Rage disponible'; ?>">
                                         <i class="fas fa-fire"></i>
@@ -1398,7 +1415,7 @@ $initiative = $dexterityMod;
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <button class="btn btn-warning" onclick="resetRages(<?php echo $character_id; ?>)">
+                        <button class="btn btn-warning" onclick="resetRages(<?php echo $npc_id; ?>)">
                             <i class="fas fa-moon me-1"></i>Long repos
                         </button>
                     </div>
@@ -1475,7 +1492,7 @@ $initiative = $dexterityMod;
                                                     </div>
                                                     <div class="text-end">
                                                         <span class="badge bg-<?php echo $attack['type'] === 'two_handed' ? 'danger' : ($attack['type'] === 'main_hand' ? 'success' : 'info'); ?> fs-6">
-                                                            <?php echo ($attack['attack_bonus'] >= 0 ? '+' : '') . $attack['attack_bonus']; ?>
+                                                            <?php echo (($attack['attack_bonus'] ?? 0) >= 0 ? '+' : '') . ($attack['attack_bonus'] ?? 0); ?>
                                                         </span>
                                                     </div>
                                                 </div>
@@ -1506,7 +1523,7 @@ $initiative = $dexterityMod;
                 <div class="row mt-3">
                     <div class="col-12">
                         <div class="d-flex justify-content-center">
-                            <a href="grimoire.php?id=<?php echo $npc_id; ?>" class="btn btn-primary btn-lg">
+                            <a href="grimoire_npc.php?id=<?php echo $npc_id; ?>" class="btn btn-primary btn-lg">
                                 <i class="fas fa-book-open me-2"></i>Grimoire
                             </a>
                         </div>
@@ -2154,7 +2171,7 @@ $initiative = $dexterityMod;
                                 <td style="min-width: 300px; white-space: nowrap; overflow: visible;">
                                     <?php if ($itemType === 'weapon' || $itemType === 'armor' || $itemType === 'shield'): ?>
                                         <?php if ($item['equipped']): ?>
-                                            <button class="btn btn-warning btn-sm" onclick="unequipItem(<?php echo $character_id; ?>, '<?php echo addslashes($itemName); ?>')"
+                                            <button class="btn btn-warning btn-sm" onclick="unequipItem(<?php echo $npc_id; ?>, '<?php echo addslashes($itemName); ?>')"
                                                     style="white-space: nowrap; min-width: 80px;">
                                                 <i class="fas fa-hand-paper me-1"></i>Déséquiper
                                             </button>
@@ -2167,7 +2184,7 @@ $initiative = $dexterityMod;
                                                 default => 'main_hand'
                                             };
                                             ?>
-                                            <button class="btn btn-success btn-sm" onclick="equipItem(<?php echo $character_id; ?>, '<?php echo addslashes($itemName); ?>', '<?php echo $itemType; ?>', '<?php echo $slot; ?>')"
+                                            <button class="btn btn-success btn-sm" onclick="equipItem(<?php echo $npc_id; ?>, '<?php echo addslashes($itemName); ?>', '<?php echo $itemType; ?>', '<?php echo $slot; ?>')"
                                                     style="white-space: nowrap; min-width: 80px;">
                                                 <i class="fas fa-hand-rock me-1"></i>Équiper
                                             </button>

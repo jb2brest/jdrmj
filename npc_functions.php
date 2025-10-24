@@ -354,13 +354,20 @@ function createAutomaticNPC($race_id, $class_id, $level, $user_id, $custom_name,
     
     $npc_id = $pdo->lastInsertId();
     
-    // Ajouter automatiquement les capacités, langues et compétences de base
-    NPC::addBaseCapabilities($npc_id);
-    NPC::addBaseLanguages($npc_id);
-    NPC::addBaseSkills($npc_id);
-    
-    // Ajouter l'équipement de départ et l'or
-    NPC::addStartingEquipment($npc_id, $equipment, $starting_gold);
+    // Récupérer l'instance NPC pour utiliser les méthodes d'instance
+    $npc = NPC::findById($npc_id, $pdo);
+    if ($npc) {
+        // Ajouter automatiquement les capacités, langues et compétences de base
+        $npc->addBaseCapabilities();
+        $npc->addBaseLanguages();
+        $npc->addBaseSkills();
+        
+        // Ajouter les sorts de base si la classe peut lancer des sorts
+        NPC::addBaseSpells($npc_id);
+        
+        // Ajouter l'équipement de départ et l'or
+        $npc->addStartingEquipment($equipment, $starting_gold);
+    }
     
     // Créer ensuite l'entrée dans place_npcs
     $description = "PNJ de niveau $level - $race_name $class_name. " . $personality_traits;

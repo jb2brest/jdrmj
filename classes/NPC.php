@@ -470,9 +470,9 @@ class NPC
         $pdo = \Database::getInstance()->getPdo();
         
         try {
-            // Récupérer les capacités de la classe
+            // Récupérer les informations de la classe
             $stmt = $pdo->prepare("
-                SELECT c.name as class_name, c.capabilities as class_capabilities
+                SELECT c.name as class_name
                 FROM classes c
                 WHERE c.id = ?
             ");
@@ -485,25 +485,39 @@ class NPC
             
             $addedCapabilities = 0;
             
+            // Définir les capacités de base par classe (logique simplifiée)
+            $classCapabilities = [
+                'Barbare' => ['Rage', 'Défense sans armure'],
+                'Barde' => ['Inspiration bardique', 'Magie'],
+                'Clerc' => ['Magie divine', 'Sorts de clerc'],
+                'Druide' => ['Magie de la nature', 'Transformation sauvage'],
+                'Guerrier' => ['Style de combat', 'Second souffle'],
+                'Magicien' => ['Magie d\'arcane', 'Récupération d\'arcane'],
+                'Moine' => ['Arts martiaux', 'Ki'],
+                'Paladin' => ['Magie divine', 'Sorts de paladin'],
+                'Rôdeur' => ['Magie de la nature', 'Sorts de rôdeur'],
+                'Roublard' => ['Attaque sournoise', 'Expertise'],
+                'Ensorceleur' => ['Magie d\'arcane', 'Points de sorcellerie'],
+                'Occultiste' => ['Magie d\'arcane', 'Pacte mystique']
+            ];
+            
+            $className = $class['class_name'];
+            $capabilities = $classCapabilities[$className] ?? [];
+            
             // Ajouter les capacités de classe
-            if (!empty($class['class_capabilities'])) {
-                $capabilities = json_decode($class['class_capabilities'], true);
-                if ($capabilities) {
-                    foreach ($capabilities as $capability) {
-                        // Vérifier si la capacité n'est pas déjà assignée
-                        $checkStmt = $pdo->prepare("SELECT COUNT(*) as count FROM npc_capabilities WHERE npc_id = ? AND capability_name = ?");
-                        $checkStmt->execute([$this->id, $capability]);
-                        $exists = $checkStmt->fetch(PDO::FETCH_ASSOC);
-                        
-                        if ($exists['count'] == 0) {
-                            $insertStmt = $pdo->prepare("
-                                INSERT INTO npc_capabilities (npc_id, capability_name, is_active, learned_at)
-                                VALUES (?, ?, 1, NOW())
-                            ");
-                            $insertStmt->execute([$this->id, $capability]);
-                            $addedCapabilities++;
-                        }
-                    }
+            foreach ($capabilities as $capability) {
+                // Vérifier si la capacité n'est pas déjà assignée
+                $checkStmt = $pdo->prepare("SELECT COUNT(*) as count FROM npc_capabilities WHERE npc_id = ? AND notes = ?");
+                $checkStmt->execute([$this->id, $capability]);
+                $exists = $checkStmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($exists['count'] == 0) {
+                    $insertStmt = $pdo->prepare("
+                        INSERT INTO npc_capabilities (npc_id, capability_id, is_active, notes, obtained_at)
+                        VALUES (?, 1, 1, ?, NOW())
+                    ");
+                    $insertStmt->execute([$this->id, $capability]);
+                    $addedCapabilities++;
                 }
             }
             
@@ -891,10 +905,10 @@ class NPC
         
         try {
             $stmt = $pdo->prepare("
-                SELECT capability_name, is_active, learned_at
+                SELECT notes as capability_name, is_active, obtained_at as learned_at
                 FROM npc_capabilities
                 WHERE npc_id = ? AND is_active = 1
-                ORDER BY capability_name
+                ORDER BY notes
             ");
             $stmt->execute([$this->id]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -952,5 +966,681 @@ class NPC
             return [];
         }
     }
+    
+    /**
+     * Obtenir les détails d'un historique par ID
+     * 
+     * @param int $backgroundId ID de l'historique
+     * @return array|null Détails de l'historique ou null
+     */
+    public static function getBackgroundById($backgroundId)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            $stmt = $pdo->prepare("SELECT * FROM backgrounds WHERE id = ?");
+            $stmt->execute([$backgroundId]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération de l'historique: " . $e->getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Obtenir le nombre maximum de rages pour une classe et un niveau
+     * 
+     * @param int $classId ID de la classe
+     * @param int $level Niveau
+     * @return int Nombre maximum de rages
+     */
+    public static function getMaxRages($classId, $level)
+    {
+        // Logique simplifiée pour les barbares
+        if ($classId == 1) { // ID de la classe Barbare
+            return $level >= 20 ? 999 : $level;
+        }
+        return 0;
+    }
+    
+    /**
+     * Obtenir l'utilisation des rages pour un NPC
+     * 
+     * @param int $npcId ID du NPC
+     * @return array Utilisation des rages
+     */
+    public static function getRageUsageStatic($npcId)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            $stmt = $pdo->prepare("
+                SELECT used_rages FROM npcs 
+                WHERE id = ?
+            ");
+            $stmt->execute([$npcId]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result ? ['used' => $result['used_rages']] : ['used' => 0];
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération de l'utilisation des rages: " . $e->getMessage());
+            return ['used' => 0];
+        }
+    }
+    
+    /**
+     * Obtenir les améliorations de caractéristiques d'un NPC
+     * 
+     * @param int $npcId ID du NPC
+     * @return array Améliorations de caractéristiques
+     */
+    public static function getCharacterAbilityImprovements($npcId)
+    {
+        // Table npc_ability_improvements n'existe pas encore, retourner un tableau vide
+        return [];
+    }
+    
+    /**
+     * Calculer les caractéristiques finales d'un NPC
+     * 
+     * @param array $character Données du personnage
+     * @param array $abilityImprovements Améliorations de caractéristiques
+     * @return array Caractéristiques finales
+     */
+    public static function calculateFinalAbilitiesStatic($character, $abilityImprovements)
+    {
+        $finalAbilities = [
+            'strength' => $character['strength'],
+            'dexterity' => $character['dexterity'],
+            'constitution' => $character['constitution'],
+            'intelligence' => $character['intelligence'],
+            'wisdom' => $character['wisdom'],
+            'charisma' => $character['charisma']
+        ];
+        
+        // Ajouter les améliorations
+        foreach ($abilityImprovements as $improvement) {
+            $ability = $improvement['ability'];
+            if (isset($finalAbilities[$ability])) {
+                $finalAbilities[$ability] += $improvement['improvement'];
+            }
+        }
+        
+        return $finalAbilities;
+    }
+    
+    /**
+     * Obtenir les points d'amélioration restants
+     * 
+     * @param int $level Niveau
+     * @param array $abilityImprovements Améliorations existantes
+     * @return int Points restants
+     */
+    public static function getRemainingAbilityPoints($level, $abilityImprovements)
+    {
+        $totalPoints = 0;
+        $usedPoints = 0;
+        
+        // Calculer les points disponibles selon le niveau
+        for ($i = 1; $i <= $level; $i++) {
+            if ($i % 4 == 0) {
+                $totalPoints += 2; // Points d'amélioration tous les 4 niveaux
+            }
+        }
+        
+        // Calculer les points utilisés
+        foreach ($abilityImprovements as $improvement) {
+            $usedPoints += $improvement['improvement'];
+        }
+        
+        return max(0, $totalPoints - $usedPoints);
+    }
+    
+    /**
+     * Synchroniser l'équipement de base vers la table items
+     * 
+     * @param int $npcId ID du NPC
+     * @return bool Succès de l'opération
+     */
+    public static function syncBaseEquipmentToCharacterEquipment($npcId)
+    {
+        // Cette méthode peut être vide pour les NPCs car ils utilisent déjà la table items
+        return true;
+    }
+    
+    /**
+     * Calculer les attaques d'un NPC
+     * 
+     * @param int $npcId ID du NPC
+     * @param array $character Données du personnage
+     * @return array Attaques calculées
+     */
+    public static function calculateCharacterAttacks($npcId, $character)
+    {
+        // Logique simplifiée pour les attaques
+        $attacks = [];
+        
+        // Attaque de base (coup de poing)
+        $attacks[] = [
+            'name' => 'Coup de poing',
+            'bonus' => floor(($character['strength'] - 10) / 2),
+            'damage' => '1d4 + ' . floor(($character['strength'] - 10) / 2),
+            'type' => 'Corps à corps'
+        ];
+        
+        return $attacks;
+    }
+    
+    /**
+     * Calculer la classe d'armure étendue
+     * 
+     * @param array $character Données du personnage
+     * @param array $equippedArmor Armure équipée
+     * @param array $equippedShield Bouclier équipé
+     * @return int Classe d'armure
+     */
+    public static function calculateArmorClassExtended($character, $equippedArmor, $equippedShield)
+    {
+        $ac = 10; // Base
+        
+        // Bonus de Dextérité
+        $dexBonus = floor(($character['dexterity'] - 10) / 2);
+        $ac += $dexBonus;
+        
+        // Bonus d'armure
+        if ($equippedArmor) {
+            $ac += $equippedArmor['ac_bonus'] ?? 0;
+        }
+        
+        // Bonus de bouclier
+        if ($equippedShield) {
+            $ac += $equippedShield['ac_bonus'] ?? 0;
+        }
+        
+        return $ac;
+    }
+    
+    /**
+     * Mettre à jour les points de vie d'un NPC
+     * 
+     * @param int $npcId ID du NPC
+     * @param int $newHp Nouveaux points de vie
+     * @return bool Succès de l'opération
+     */
+    public static function updateHitPoints($npcId, $newHp)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            $stmt = $pdo->prepare("UPDATE npcs SET hit_points = ? WHERE id = ?");
+            return $stmt->execute([$newHp, $npcId]);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la mise à jour des points de vie: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Mettre à jour les points d'expérience d'un NPC
+     * 
+     * @param int $npcId ID du NPC
+     * @param int $newXp Nouveaux points d'expérience
+     * @return bool Succès de l'opération
+     */
+    public static function updateExperiencePoints($npcId, $newXp)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            $stmt = $pdo->prepare("UPDATE npcs SET experience = ? WHERE id = ?");
+            return $stmt->execute([$newXp, $npcId]);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la mise à jour des points d'expérience: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Obtenir les poisons d'un NPC
+     * 
+     * @param int $npcId ID du NPC
+     * @return array Liste des poisons
+     */
+    public static function getCharacterPoisons($npcId)
+    {
+        // Table npc_poisons n'existe pas encore, retourner un tableau vide
+        return [];
+    }
+    
+    /**
+     * Obtenir les informations d'un poison
+     * 
+     * @param int $poisonId ID du poison
+     * @return array|null Informations du poison ou null
+     */
+    public static function getPoisonInfo($poisonId)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            $stmt = $pdo->prepare("SELECT * FROM poisons WHERE id = ?");
+            $stmt->execute([$poisonId]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération des informations du poison: " . $e->getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Obtenir les informations d'un objet magique
+     * 
+     * @param int $itemId ID de l'objet magique
+     * @return array|null Informations de l'objet ou null
+     */
+    public static function getMagicalItemInfo($itemId)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            $stmt = $pdo->prepare("SELECT * FROM magical_items WHERE id = ?");
+            $stmt->execute([$itemId]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération des informations de l'objet magique: " . $e->getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Obtenir les sorts d'un NPC (comme pour les PJ)
+     * 
+     * @param int $npcId ID du NPC
+     * @return array Liste des sorts
+     */
+    public static function getNpcSpells($npcId)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            $stmt = $pdo->prepare("
+                SELECT s.*, ns.prepared 
+                FROM npc_spells ns
+                JOIN spells s ON ns.spell_id = s.id
+                WHERE ns.npc_id = ?
+                ORDER BY s.level, s.name
+            ");
+            $stmt->execute([$npcId]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération des sorts du NPC: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Obtenir les capacités de sorts d'une classe pour un NPC
+     * 
+     * @param int $classId ID de la classe
+     * @param int $level Niveau du NPC
+     * @param int $wisdomModifier Modificateur de sagesse
+     * @param int $intelligenceModifier Modificateur d'intelligence
+     * @return array|null Capacités de sorts
+     */
+    public static function getClassSpellCapabilities($classId, $level, $wisdomModifier = 0, $intelligenceModifier = 0)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        $stmt = $pdo->prepare("
+            SELECT cantrips_known, spells_known, 
+                   spell_slots_1st, spell_slots_2nd, spell_slots_3rd, 
+                   spell_slots_4th, spell_slots_5th, spell_slots_6th, 
+                   spell_slots_7th, spell_slots_8th, spell_slots_9th
+            FROM class_evolution 
+            WHERE class_id = ? AND level = ?
+        ");
+        $stmt->execute([$classId, $level]);
+        $capabilities = $stmt->fetch();
+        
+        if ($capabilities) {
+            // Récupérer le nom de la classe
+            $stmt = $pdo->prepare("SELECT name FROM classes WHERE id = ?");
+            $stmt->execute([$classId]);
+            $class = $stmt->fetch();
+            
+            // Calculer le modificateur de caractéristique d'incantation
+            $spellcastingAbility = 0;
+            switch ($classId) {
+                case 2: // Barde
+                case 7: // Magicien
+                case 10: // Occultiste
+                case 11: // Ensorceleur
+                    $spellcastingAbility = $intelligenceModifier;
+                    break;
+                case 3: // Clerc
+                case 4: // Druide
+                case 9: // Paladin
+                case 5: // Rôdeur
+                    $spellcastingAbility = $wisdomModifier;
+                    break;
+            }
+            
+            return [
+                'class_name' => $class['name'],
+                'cantrips_known' => $capabilities['cantrips_known'],
+                'spells_known' => $capabilities['spells_known'],
+                'spell_slots' => [
+                    1 => $capabilities['spell_slots_1st'],
+                    2 => $capabilities['spell_slots_2nd'],
+                    3 => $capabilities['spell_slots_3rd'],
+                    4 => $capabilities['spell_slots_4th'],
+                    5 => $capabilities['spell_slots_5th'],
+                    6 => $capabilities['spell_slots_6th'],
+                    7 => $capabilities['spell_slots_7th'],
+                    8 => $capabilities['spell_slots_8th'],
+                    9 => $capabilities['spell_slots_9th']
+                ],
+                'spellcasting_ability' => $spellcastingAbility
+            ];
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Obtenir l'utilisation des emplacements de sorts d'un NPC
+     * 
+     * @param int $npcId ID du NPC
+     * @return array Utilisation des emplacements
+     */
+    public static function getSpellSlotsUsage($npcId)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            $stmt = $pdo->prepare("
+                SELECT spell_level, slots_used 
+                FROM npc_spell_slots_usage 
+                WHERE npc_id = ?
+            ");
+            $stmt->execute([$npcId]);
+            $usage = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $result = [];
+            foreach ($usage as $row) {
+                $result[$row['spell_level']] = $row['slots_used'];
+            }
+            
+            return $result;
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération de l'utilisation des emplacements: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Utiliser un emplacement de sort
+     * 
+     * @param int $npcId ID du NPC
+     * @param int $spellLevel Niveau du sort
+     * @return bool Succès de l'opération
+     */
+    public static function useSpellSlot($npcId, $spellLevel)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            // Vérifier si l'emplacement existe déjà
+            $stmt = $pdo->prepare("SELECT slots_used FROM npc_spell_slots_usage WHERE npc_id = ? AND spell_level = ?");
+            $stmt->execute([$npcId, $spellLevel]);
+            $existing = $stmt->fetch();
+            
+            if ($existing) {
+                // Mettre à jour
+                $stmt = $pdo->prepare("UPDATE npc_spell_slots_usage SET slots_used = slots_used + 1 WHERE npc_id = ? AND spell_level = ?");
+                $stmt->execute([$npcId, $spellLevel]);
+            } else {
+                // Créer
+                $stmt = $pdo->prepare("INSERT INTO npc_spell_slots_usage (npc_id, spell_level, slots_used) VALUES (?, ?, 1)");
+                $stmt->execute([$npcId, $spellLevel]);
+            }
+            
+            return true;
+        } catch (PDOException $e) {
+            error_log("Erreur lors de l'utilisation de l'emplacement de sort: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Restaurer tous les emplacements de sorts (repos long)
+     * 
+     * @param int $npcId ID du NPC
+     * @return bool Succès de l'opération
+     */
+    public static function restoreSpellSlots($npcId)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            $stmt = $pdo->prepare("DELETE FROM npc_spell_slots_usage WHERE npc_id = ?");
+            $stmt->execute([$npcId]);
+            return true;
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la restauration des emplacements de sorts: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Ajouter un sort à un NPC
+     * 
+     * @param int $npcId ID du NPC
+     * @param int $spellId ID du sort
+     * @return bool Succès de l'opération
+     */
+    public static function addSpellToNpc($npcId, $spellId)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            // Vérifier si le sort n'est pas déjà préparé
+            $checkStmt = $pdo->prepare("SELECT COUNT(*) as count FROM npc_spells WHERE npc_id = ? AND spell_id = ?");
+            $checkStmt->execute([$npcId, $spellId]);
+            $exists = $checkStmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($exists['count'] == 0) {
+                $insertStmt = $pdo->prepare("INSERT INTO npc_spells (npc_id, spell_id, prepared) VALUES (?, ?, 1)");
+                $insertStmt->execute([$npcId, $spellId]);
+                return true;
+            }
+            return false;
+        } catch (PDOException $e) {
+            error_log("Erreur lors de l'ajout du sort au NPC: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Retirer un sort d'un NPC
+     * 
+     * @param int $npcId ID du NPC
+     * @param int $spellId ID du sort
+     * @return bool Succès de l'opération
+     */
+    public static function removeSpellFromNpc($npcId, $spellId)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            $deleteStmt = $pdo->prepare("DELETE FROM npc_spells WHERE npc_id = ? AND spell_id = ?");
+            $deleteStmt->execute([$npcId, $spellId]);
+            return true;
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la suppression du sort du NPC: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Ajouter automatiquement les sorts de base à un NPC selon sa classe
+     * 
+     * @param int $npcId ID du NPC
+     * @return bool Succès de l'opération
+     */
+    public static function addBaseSpells($npcId)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            // Récupérer les informations du NPC
+            $stmt = $pdo->prepare("
+                SELECT n.*, c.name as class_name
+                FROM npcs n
+                LEFT JOIN classes c ON n.class_id = c.id
+                WHERE n.id = ?
+            ");
+            $stmt->execute([$npcId]);
+            $npc = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$npc) {
+                return false;
+            }
+            
+            $addedSpells = 0;
+            
+            // Définir les sorts de base par classe et niveau
+            $classSpells = [
+                'Magicien' => [
+                    0 => ['Lumière', 'Prestidigitation', 'Thaumaturgie'], // Sorts mineurs
+                    1 => ['Bouclier', 'Détection de la magie', 'Projectile magique', 'Soins des blessures']
+                ],
+                'Clerc' => [
+                    0 => ['Lumière', 'Thaumaturgie', 'Guidance'], // Sorts mineurs
+                    1 => ['Soins des blessures', 'Bénédiction', 'Détection du mal', 'Protection contre le mal']
+                ],
+                'Druide' => [
+                    0 => ['Lumière', 'Guidance', 'Prestidigitation'], // Sorts mineurs
+                    1 => ['Soins des blessures', 'Entrelacement', 'Détection de la magie', 'Parler avec les animaux']
+                ],
+                'Barde' => [
+                    0 => ['Lumière', 'Prestidigitation', 'Thaumaturgie'], // Sorts mineurs
+                    1 => ['Charme-personne', 'Détection de la magie', 'Soins des blessures', 'Déguisement']
+                ],
+                'Paladin' => [
+                    0 => ['Lumière', 'Thaumaturgie', 'Guidance'], // Sorts mineurs
+                    1 => ['Soins des blessures', 'Détection du mal', 'Protection contre le mal', 'Bénédiction']
+                ],
+                'Rôdeur' => [
+                    0 => ['Lumière', 'Guidance', 'Prestidigitation'], // Sorts mineurs
+                    1 => ['Détection de la magie', 'Parler avec les animaux', 'Soins des blessures', 'Entrelacement']
+                ],
+                'Ensorceleur' => [
+                    0 => ['Lumière', 'Prestidigitation', 'Thaumaturgie'], // Sorts mineurs
+                    1 => ['Bouclier', 'Détection de la magie', 'Projectile magique', 'Charme-personne']
+                ],
+                'Occultiste' => [
+                    0 => ['Lumière', 'Prestidigitation', 'Thaumaturgie'], // Sorts mineurs
+                    1 => ['Détection de la magie', 'Charme-personne', 'Bouclier', 'Projectile magique']
+                ]
+            ];
+            
+            $className = $npc['class_name'];
+            $npcLevel = $npc['level'];
+            
+            // Calculer les capacités de sorts pour respecter les limites
+            $capabilities = self::getClassSpellCapabilities($npc['class_id'], $npcLevel, 0, 0);
+            $maxCantrips = $capabilities['cantrips_known'] ?? 0;
+            $maxPrepared = $capabilities['spells_known'] ?? 0;
+            
+            // Compter les sorts existants
+            $existingCantrips = 0;
+            $existingPreparedSpells = 0;
+            $stmt = $pdo->prepare("
+                SELECT s.level, COUNT(*) as count
+                FROM npc_spells ns
+                JOIN spells s ON ns.spell_id = s.id
+                WHERE ns.npc_id = ?
+                GROUP BY s.level
+            ");
+            $stmt->execute([$npcId]);
+            $existingSpells = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            foreach ($existingSpells as $spell) {
+                if ($spell['level'] == 0) {
+                    $existingCantrips = $spell['count'];
+                } else {
+                    $existingPreparedSpells += $spell['count'];
+                }
+            }
+            
+            // Ajouter les sorts selon le niveau du NPC
+            if (isset($classSpells[$className])) {
+                $cantripsAdded = 0;
+                $preparedSpellsAdded = 0;
+                
+                // D'abord, ajouter les sorts mineurs jusqu'à la limite
+                if (isset($classSpells[$className][0]) && $npcLevel >= 1) {
+                    foreach ($classSpells[$className][0] as $spellName) {
+                        if ($existingCantrips + $cantripsAdded >= $maxCantrips) {
+                            break; // Limite de sorts mineurs atteinte
+                        }
+                        
+                        // Trouver l'ID du sort
+                        $spellStmt = $pdo->prepare("SELECT id FROM spells WHERE name = ? LIMIT 1");
+                        $spellStmt->execute([$spellName]);
+                        $spell = $spellStmt->fetch(PDO::FETCH_ASSOC);
+                        
+                        if ($spell) {
+                            // Vérifier si le sort n'est pas déjà préparé
+                            $checkStmt = $pdo->prepare("SELECT COUNT(*) as count FROM npc_spells WHERE npc_id = ? AND spell_id = ?");
+                            $checkStmt->execute([$npcId, $spell['id']]);
+                            $exists = $checkStmt->fetch(PDO::FETCH_ASSOC);
+                            
+                            if ($exists['count'] == 0) {
+                                $insertStmt = $pdo->prepare("INSERT INTO npc_spells (npc_id, spell_id, prepared) VALUES (?, ?, 1)");
+                                $insertStmt->execute([$npcId, $spell['id']]);
+                                $addedSpells++;
+                                $cantripsAdded++;
+                            }
+                        }
+                    }
+                }
+                
+                // Ensuite, ajouter les sorts de niveau 1+ jusqu'à la limite
+                if (isset($classSpells[$className][1]) && $npcLevel >= 1) {
+                    foreach ($classSpells[$className][1] as $spellName) {
+                        if ($existingPreparedSpells + $preparedSpellsAdded >= $maxPrepared) {
+                            break; // Limite de sorts préparés atteinte
+                        }
+                        
+                        // Trouver l'ID du sort
+                        $spellStmt = $pdo->prepare("SELECT id FROM spells WHERE name = ? LIMIT 1");
+                        $spellStmt->execute([$spellName]);
+                        $spell = $spellStmt->fetch(PDO::FETCH_ASSOC);
+                        
+                        if ($spell) {
+                            // Vérifier si le sort n'est pas déjà préparé
+                            $checkStmt = $pdo->prepare("SELECT COUNT(*) as count FROM npc_spells WHERE npc_id = ? AND spell_id = ?");
+                            $checkStmt->execute([$npcId, $spell['id']]);
+                            $exists = $checkStmt->fetch(PDO::FETCH_ASSOC);
+                            
+                            if ($exists['count'] == 0) {
+                                $insertStmt = $pdo->prepare("INSERT INTO npc_spells (npc_id, spell_id, prepared) VALUES (?, ?, 1)");
+                                $insertStmt->execute([$npcId, $spell['id']]);
+                                $addedSpells++;
+                                $preparedSpellsAdded++;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            error_log("Debug NPC::addBaseSpells - Added " . $addedSpells . " spells to NPC " . $npcId);
+            return true;
+        } catch (PDOException $e) {
+            error_log("Erreur lors de l'ajout des sorts de base du NPC: " . $e->getMessage());
+            return false;
+        }
+    }
+    
 }
 ?>
