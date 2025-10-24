@@ -23,11 +23,8 @@ if (!$npc) {
     exit();
 }
 
-// Convertir en tableau pour compatibilité
-$npcData = $npc->toArray();
-
 // Vérifier les permissions (créateur ou DM)
-$isOwner = ($npcData['created_by'] == $_SESSION['user_id']);
+$isOwner = ($npc->created_by == $_SESSION['user_id']);
 $isDM = isDM();
 
 if (!$isOwner && !$isDM) {
@@ -35,22 +32,19 @@ if (!$isOwner && !$isDM) {
     exit();
 }
 
-// Utiliser directement les données du PNJ
-$character = $npcData;
-
 
 // Récupérer les détails de la race via la classe Race
-$raceObject = Race::findById($character['race_id']);
+$raceObject = Race::findById($npc->race_id);
 $raceDetails = $raceObject ? $raceObject->toArray() : [];
 
 // Récupérer les détails de la classe via la classe Classe
-$classObject = Classe::findById($character['class_id']);
+$classObject = Classe::findById($npc->class_id);
 $classDetails = $classObject ? $classObject->toArray() : [];
 
 // Récupérer les détails du background
 $backgroundDetails = null;
-if ($character['background_id']) {
-    $backgroundDetails = NPC::getBackgroundById($character['background_id']);
+if ($npc->background_id) {
+    $backgroundDetails = NPC::getBackgroundById($npc->background_id);
 }
 
 // Construire le tableau characterDetails pour la compatibilité
@@ -82,8 +76,8 @@ if (!$characterDetails) {
 }
 
 // Parser les données JSON du personnage
-$characterSkills = $character['skills'] ? json_decode($character['skills'], true) : [];
-$characterLanguages = $character['languages'] ? json_decode($character['languages'], true) : [];
+$characterSkills = $npc->skills ? json_decode($npc->skills, true) : [];
+$characterLanguages = $npc->languages ? json_decode($npc->languages, true) : [];
 
 // Parser les données de l'historique depuis la table backgrounds
 $backgroundSkills = $characterDetails['background_skills'] ? json_decode($characterDetails['background_skills'], true) : [];
@@ -141,7 +135,7 @@ $isRogue = strpos(strtolower($characterDetails['class_name']), 'roublard') !== f
 $rageData = null;
 if ($isBarbarian) {
     // Récupérer le nombre maximum de rages pour ce niveau
-    $maxRages = NPC::getMaxRages($character['class_id'], $character['level']);
+    $maxRages = NPC::getMaxRages($npc->class_id, $npc->level);
     
     // Récupérer le nombre de rages utilisées
     $rageUsage = NPC::getRageUsageStatic($npc_id);
@@ -203,8 +197,8 @@ foreach ($allCapabilities as $capability) {
 
 // Récupérer l'archetype choisi depuis les données du PNJ
 $characterArchetype = null;
-if ($character['archetype_id']) {
-    $archetypeObject = ClassArchetype::findById($character['archetype_id']);
+if ($npc->archetype_id) {
+    $archetypeObject = ClassArchetype::findById($npc->archetype_id);
     $characterArchetype = $archetypeObject ? $archetypeObject->toArray() : null;
 }
 
@@ -286,7 +280,7 @@ foreach ($abilityImprovements as $improvement) {
 $finalAbilities = NPC::calculateFinalAbilitiesStatic($character, $abilityImprovements);
 
 // Calculer les points d'amélioration restants
-$remainingPoints = NPC::getRemainingAbilityPoints($character['level'], $abilityImprovements);
+$remainingPoints = NPC::getRemainingAbilityPoints($npc->level, $abilityImprovements);
 
 // Les langues du personnage sont déjà stockées dans le champ 'languages' 
 // et incluent toutes les langues (race + historique + choix)
@@ -295,12 +289,12 @@ $allLanguages = $npcLanguages;
 // Calcul des modificateurs (nécessaire pour le calcul de la CA)
 // Utiliser les valeurs totales incluant les bonus raciaux
 $tempCharacter = new Character();
-$tempCharacter->strength = $character['strength'] + $characterDetails['strength_bonus'];
-$tempCharacter->dexterity = $character['dexterity'] + $characterDetails['dexterity_bonus'];
-$tempCharacter->constitution = $character['constitution'] + $characterDetails['constitution_bonus'];
-$tempCharacter->intelligence = $character['intelligence'] + $characterDetails['intelligence_bonus'];
-$tempCharacter->wisdom = $character['wisdom'] + $characterDetails['wisdom_bonus'];
-$tempCharacter->charisma = $character['charisma'] + $characterDetails['charisma_bonus'];
+$tempCharacter->strength = $npc->strength + $characterDetails['strength_bonus'];
+$tempCharacter->dexterity = $npc->dexterity + $characterDetails['dexterity_bonus'];
+$tempCharacter->constitution = $npc->constitution + $characterDetails['constitution_bonus'];
+$tempCharacter->intelligence = $npc->intelligence + $characterDetails['intelligence_bonus'];
+$tempCharacter->wisdom = $npc->wisdom + $characterDetails['wisdom_bonus'];
+$tempCharacter->charisma = $npc->charisma + $characterDetails['charisma_bonus'];
 
 // Les modificateurs seront calculés plus tard avec les totaux complets
 
@@ -365,14 +359,11 @@ foreach ($magicalEquipment as $item) {
 }
 
 // Récupérer l'or du PNJ
-$npcGold = 0;
-if (isset($character['gold'])) {
-    $npcGold = $character['gold'];
-}
+$npcGold = $npc->gold ?? 0;
 
 // Récupérer l'or depuis les données JSON (pour compatibilité)
-if (!empty($character['starting_equipment'])) {
-    $equipmentData = json_decode($character['starting_equipment'], true);
+if (!empty($npc->starting_equipment)) {
+    $equipmentData = json_decode($npc->starting_equipment, true);
     if ($equipmentData && isset($equipmentData['gold'])) {
         $npcGold = $equipmentData['gold'];
     }
@@ -421,12 +412,13 @@ foreach ($magicalEquipment as $item) {
 }
 
 // Ajouter les modificateurs de caractéristiques au tableau character pour la fonction
-$character['strength_modifier'] = $strengthMod;
-$character['dexterity_modifier'] = $dexterityMod;
-$character['constitution_modifier'] = $constitutionMod;
-$character['intelligence_modifier'] = $intelligenceMod;
-$character['wisdom_modifier'] = $wisdomMod;
-$character['charisma_modifier'] = $charismaMod;
+// Les modificateurs sont calculés et stockés dans des variables locales
+$strengthModifier = $strengthMod;
+$dexterityModifier = $dexterityMod;
+$constitutionModifier = $constitutionMod;
+$intelligenceModifier = $intelligenceMod;
+$wisdomModifier = $wisdomMod;
+$charismaModifier = $charismaMod;
 
 // Bonus d'équipements (pour l'instant à 0, peut être calculé plus tard)
 $equipmentBonuses = [
@@ -450,12 +442,12 @@ $temporaryBonuses = [
 
 // Calculer les totaux (caractéristiques de base + bonus raciaux + bonus de niveau + bonus d'équipements + bonus temporaires)
 $totalAbilities = [
-    'strength' => $character['strength'] + $characterDetails['strength_bonus'] + $abilityImprovementsArray['strength'] + $equipmentBonuses['strength'] + $temporaryBonuses['strength'],
-    'dexterity' => $character['dexterity'] + $characterDetails['dexterity_bonus'] + $abilityImprovementsArray['dexterity'] + $equipmentBonuses['dexterity'] + $temporaryBonuses['dexterity'],
-    'constitution' => $character['constitution'] + $characterDetails['constitution_bonus'] + $abilityImprovementsArray['constitution'] + $equipmentBonuses['constitution'] + $temporaryBonuses['constitution'],
-    'intelligence' => $character['intelligence'] + $characterDetails['intelligence_bonus'] + $abilityImprovementsArray['intelligence'] + $equipmentBonuses['intelligence'] + $temporaryBonuses['intelligence'],
-    'wisdom' => $character['wisdom'] + $characterDetails['wisdom_bonus'] + $abilityImprovementsArray['wisdom'] + $equipmentBonuses['wisdom'] + $temporaryBonuses['wisdom'],
-    'charisma' => $character['charisma'] + $characterDetails['charisma_bonus'] + $abilityImprovementsArray['charisma'] + $equipmentBonuses['charisma'] + $temporaryBonuses['charisma']
+    'strength' => $npc->strength + $characterDetails['strength_bonus'] + $abilityImprovementsArray['strength'] + $equipmentBonuses['strength'] + $temporaryBonuses['strength'],
+    'dexterity' => $npc->dexterity + $characterDetails['dexterity_bonus'] + $abilityImprovementsArray['dexterity'] + $equipmentBonuses['dexterity'] + $temporaryBonuses['dexterity'],
+    'constitution' => $npc->constitution + $characterDetails['constitution_bonus'] + $abilityImprovementsArray['constitution'] + $equipmentBonuses['constitution'] + $temporaryBonuses['constitution'],
+    'intelligence' => $npc->intelligence + $characterDetails['intelligence_bonus'] + $abilityImprovementsArray['intelligence'] + $equipmentBonuses['intelligence'] + $temporaryBonuses['intelligence'],
+    'wisdom' => $npc->wisdom + $characterDetails['wisdom_bonus'] + $abilityImprovementsArray['wisdom'] + $equipmentBonuses['wisdom'] + $temporaryBonuses['wisdom'],
+    'charisma' => $npc->charisma + $characterDetails['charisma_bonus'] + $abilityImprovementsArray['charisma'] + $equipmentBonuses['charisma'] + $temporaryBonuses['charisma']
 ];
 
 // Calculer les modificateurs avec les totaux complets
@@ -479,7 +471,7 @@ $armorClass = NPC::calculateArmorClassExtended($character, $equippedArmor, $equi
 
 
 // Contrôle d'accès: propriétaire OU MJ
-$canView = ($character['created_by'] == $_SESSION['user_id']);
+$canView = ($npc->created_by == $_SESSION['user_id']);
 
 if (!$canView && User::isDMOrAdmin()) {
     // Les MJ et admins peuvent voir tous les PNJ
@@ -492,7 +484,7 @@ if (!$canView) {
 }
 
 // Vérifier si l'utilisateur peut modifier les points de vie (propriétaire ou MJ)
-$canModifyHP = ($character['created_by'] == $_SESSION['user_id']);
+$canModifyHP = ($npc->created_by == $_SESSION['user_id']);
 if (!$canModifyHP && User::isDMOrAdmin()) {
     // Les MJ et admins peuvent modifier tous les PNJ
     $canModifyHP = true;
@@ -525,7 +517,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['hp_ac
         case 'damage':
             $damage = (int)$_POST['damage'];
             if ($damage > 0) {
-                $new_hp = max(0, $character['hit_points_current'] - $damage);
+                $new_hp = max(0, $npc->hit_points - $damage);
                 NPC::updateHitPoints($npc_id, $new_hp);
                 
                 $success_message = "Dégâts infligés : {$damage} PV. Points de vie restants : {$new_hp}";
@@ -535,7 +527,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['hp_ac
         case 'heal':
             $healing = (int)$_POST['healing'];
             if ($healing > 0) {
-                $new_hp = min($character['hit_points_max'], $character['hit_points_current'] + $healing);
+                $new_hp = min($npc->hit_points, $npc->hit_points + $healing);
                 NPC::updateHitPoints($npc_id, $new_hp);
                 
                 $success_message = "Soins appliqués : {$healing} PV. Points de vie actuels : {$new_hp}";
@@ -543,9 +535,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['hp_ac
             break;
             
         case 'reset_hp':
-            NPC::updateHitPoints($npc_id, $character['hit_points_max']);
+            NPC::updateHitPoints($npc_id, $npc->hit_points);
             
-            $success_message = "Points de vie réinitialisés au maximum : {$character['hit_points_max']}";
+            $success_message = "Points de vie réinitialisés au maximum : {$npc->hit_points}";
             break;
     }
     
@@ -567,7 +559,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['xp_ac
         case 'add':
             $xp_amount = (int)$_POST['xp_amount'];
             if ($xp_amount > 0) {
-                $new_xp = ($character['experience'] ?? 0) + $xp_amount;
+                $new_xp = ($npc->experience ?? 0) + $xp_amount;
                 NPC::updateExperiencePoints($npc_id, $new_xp);
                 
                 $success_message = "Points d'expérience ajoutés : +{$xp_amount} XP. Total : " . number_format($new_xp) . " XP";
@@ -577,7 +569,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['xp_ac
         case 'remove':
             $xp_amount = (int)$_POST['xp_amount'];
             if ($xp_amount > 0) {
-                $new_xp = max(0, ($character['experience'] ?? 0) - $xp_amount);
+                $new_xp = max(0, ($npc->experience ?? 0) - $xp_amount);
                 NPC::updateExperiencePoints($npc_id, $new_xp);
                 
                 $success_message = "Points d'expérience retirés : -{$xp_amount} XP. Total : " . number_format($new_xp) . " XP";
@@ -669,7 +661,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                         'equipped_slot' => $item['equipped_slot'],
                         'notes' => $notes ?: $item['notes'],
                         'obtained_at' => $item['obtained_at'],
-                        'obtained_from' => 'Transfert depuis ' . $character['name']
+                        'obtained_from' => 'Transfert depuis ' . $npc->name
                     ];
                     
                     Item::createExtended($itemData);
@@ -701,7 +693,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                         'quantity' => $item['quantity'],
                         'equipped' => false, // Toujours non équipé lors du transfert
                         'notes' => $notes ?: $item['notes'],
-                        'obtained_from' => 'Transfert depuis ' . $character['name']
+                        'obtained_from' => 'Transfert depuis ' . $npc->name
                     ];
                     
                     Monstre::addMonsterEquipment($target_id, $target_monster['place_id'], $equipmentData);
@@ -733,7 +725,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                         'quantity' => $item['quantity'],
                         'equipped' => 0, // Toujours non équipé lors du transfert
                         'notes' => $notes ?: $item['notes'],
-                        'obtained_from' => 'Transfert depuis ' . $character['name']
+                        'obtained_from' => 'Transfert depuis ' . $npc->name
                     ];
                     
                     PNJ::addEquipmentToNpc($target_id, $target_npc['place_id'], $equipmentData);
@@ -784,8 +776,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                 
                 if (move_uploaded_file($_FILES['profile_photo']['tmp_name'], $upload_path)) {
                     // Supprimer l'ancienne photo si elle existe
-                    if (!empty($character['profile_photo']) && file_exists($character['profile_photo'])) {
-                        unlink($character['profile_photo']);
+                    if (!empty($npc->profile_photo) && file_exists($npc->profile_photo)) {
+                        unlink($npc->profile_photo);
                     }
                     
                     // Mettre à jour la base de données en utilisant la nouvelle méthode
@@ -885,7 +877,7 @@ $initiative = $dexterityMod;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($character['name']); ?> - JDR 4 MJ</title>
+    <title><?php echo htmlspecialchars($npc->name); ?> - JDR 4 MJ</title>
     <link rel="icon" type="image/png" href="images/logo.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -924,7 +916,7 @@ $initiative = $dexterityMod;
 
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1>
-                <i class="fas fa-user-ninja me-2"></i><?php echo htmlspecialchars($character['name']); ?>
+                <i class="fas fa-user-ninja me-2"></i><?php echo htmlspecialchars($npc->name); ?>
             </h1>
             <div>
                 <a href="manage_npcs.php" class="btn btn-secondary">
@@ -939,8 +931,8 @@ $initiative = $dexterityMod;
                 <div class="col-md-6">
                     <div class="d-flex align-items-start">
                         <div class="me-3 position-relative">
-                            <?php if (!empty($character['profile_photo'])): ?>
-                                <img src="<?php echo htmlspecialchars($character['profile_photo']); ?>" alt="Photo de <?php echo htmlspecialchars($character['name']); ?>" class="rounded" style="width: 100px; height: 100px; object-fit: cover;">
+                            <?php if (!empty($npc->profile_photo)): ?>
+                                <img src="<?php echo htmlspecialchars($npc->profile_photo); ?>" alt="Photo de <?php echo htmlspecialchars($npc->name); ?>" class="rounded" style="width: 100px; height: 100px; object-fit: cover;">
                             <?php else: ?>
                                 <div class="bg-secondary rounded d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
                                     <i class="fas fa-user text-white" style="font-size: 2.5rem;"></i>
@@ -954,17 +946,17 @@ $initiative = $dexterityMod;
                             <?php endif; ?>
                         </div>
                         <div>
-                            <h2><?php echo htmlspecialchars($character['name']); ?></h2>
+                            <h2><?php echo htmlspecialchars($npc->name); ?></h2>
                             <p class="text-muted">
                                 <?php echo htmlspecialchars($characterDetails['race_name']); ?> 
                                 <?php echo htmlspecialchars($characterDetails['class_name']); ?> 
-                                niveau <?php echo $character['level']; ?>
+                                niveau <?php echo $npc->level; ?>
                             </p>
                             <?php if ($characterDetails['background_name']): ?>
                                 <p><strong>Historique:</strong> <?php echo htmlspecialchars($characterDetails['background_name']); ?></p>
                             <?php endif; ?>
-                            <?php if ($character['alignment']): ?>
-                                <p><strong>Alignement:</strong> <?php echo htmlspecialchars($character['alignment']); ?></p>
+                            <?php if ($npc->alignment): ?>
+                                <p><strong>Alignement:</strong> <?php echo htmlspecialchars($npc->alignment); ?></p>
                             <?php endif; ?>
                             
                             <?php if ($characterArchetype): ?>
@@ -977,7 +969,7 @@ $initiative = $dexterityMod;
                     <div class="row">
                         <div class="col-4">
                             <div class="stat-box">
-                                <div class="hp-display"><?php echo $character['hit_points']; ?>/<?php echo $character['hit_points']; ?></div>
+                                <div class="hp-display"><?php echo $npc->hit_points; ?>/<?php echo $npc->hit_points; ?></div>
                                 <div class="stat-label">Points de Vie</div>
                                 <?php if ($canModifyHP): ?>
                                     <div class="mt-2">
@@ -997,12 +989,12 @@ $initiative = $dexterityMod;
                         <div class="col-4">
                             <div class="stat-box">
                                 <?php if ($canModifyHP): ?>
-                                    <div class="xp-display clickable-xp" data-bs-toggle="modal" data-bs-target="#xpModal" title="Gérer les points d'expérience" style="cursor: pointer;">&nbsp;<?php echo number_format($character['experience'] ?? 0); ?></div>
+                                    <div class="xp-display clickable-xp" data-bs-toggle="modal" data-bs-target="#xpModal" title="Gérer les points d'expérience" style="cursor: pointer;">&nbsp;<?php echo number_format($npc->experience ?? 0); ?></div>
                                 <?php else: ?>
-                                    <div class="xp-display">&nbsp;<?php echo number_format($character['experience'] ?? 0); ?></div>
+                                    <div class="xp-display">&nbsp;<?php echo number_format($npc->experience ?? 0); ?></div>
                                 <?php endif; ?>
                                 <div class="stat-label">Exp.</div>
-                                <small class="text-muted">Niveau <?php echo $character['level']; ?></small>
+                                <small class="text-muted">Niveau <?php echo $npc->level; ?></small>
                             </div>
                         </div>
                     </div>
@@ -1031,12 +1023,12 @@ $initiative = $dexterityMod;
                             <!-- Caractéristiques de base -->
                             <tr>
                                 <td><strong>Caractéristiques de base</strong></td>
-                                <td><strong><?php echo $character['strength']; ?></strong></td>
-                                <td><strong><?php echo $character['dexterity']; ?></strong></td>
-                                <td><strong><?php echo $character['constitution']; ?></strong></td>
-                                <td><strong><?php echo $character['intelligence']; ?></strong></td>
-                                <td><strong><?php echo $character['wisdom']; ?></strong></td>
-                                <td><strong><?php echo $character['charisma']; ?></strong></td>
+                                <td><strong><?php echo $npc->strength; ?></strong></td>
+                                <td><strong><?php echo $npc->dexterity; ?></strong></td>
+                                <td><strong><?php echo $npc->constitution; ?></strong></td>
+                                <td><strong><?php echo $npc->intelligence; ?></strong></td>
+                                <td><strong><?php echo $npc->wisdom; ?></strong></td>
+                                <td><strong><?php echo $npc->charisma; ?></strong></td>
                             </tr>
                             <!-- Bonus raciaux -->
                             <tr>
@@ -1142,10 +1134,10 @@ $initiative = $dexterityMod;
                         <strong>Initiative:</strong> &nbsp;<?php echo ($initiative >= 0 ? '+' : '') . $initiative; ?>
                     </div>
                     <div class="col-md-3">
-                        <strong>Vitesse:</strong> &nbsp;<?php echo $character['speed']; ?> pieds
+                        <strong>Vitesse:</strong> &nbsp;<?php echo $npc->speed; ?> pieds
                     </div>
                     <div class="col-md-3">
-                        <strong>Bonus de maîtrise:</strong> &nbsp;+<?php echo ceil($character['level'] / 4) + 1; ?>
+                        <strong>Bonus de maîtrise:</strong> &nbsp;+<?php echo ceil($npc->level / 4) + 1; ?>
                     </div>
                 </div>
                 
@@ -1228,7 +1220,7 @@ $initiative = $dexterityMod;
                 <?php 
                 // Classes qui peuvent lancer des sorts
                 $spellcastingClasses = [2, 3, 4, 5, 7, 9, 10, 11]; // Barde, Clerc, Druide, Ensorceleur, Magicien, Occultiste, Paladin, Rôdeur
-                $canCastSpells = in_array($character['class_id'], $spellcastingClasses);
+                $canCastSpells = in_array($npc->class_id, $spellcastingClasses);
                 ?>
                 <?php if ($canCastSpells): ?>
                 <div class="row mt-3">
@@ -1944,32 +1936,32 @@ $initiative = $dexterityMod;
 
 
             <!-- Informations personnelles -->
-            <?php if ($character['personality_traits'] || $character['ideals'] || $character['bonds'] || $character['flaws']): ?>
+            <?php if ($npc->personality_traits || $npc->ideals || $npc->bonds || $npc->flaws): ?>
                 <div class="info-section">
                     <h3><i class="fas fa-user-edit me-2"></i>Informations Personnelles</h3>
                     <div class="row">
-                        <?php if ($character['personality_traits']): ?>
+                        <?php if ($npc->personality_traits): ?>
                             <div class="col-md-6">
                                 <p><strong>Traits de personnalité:</strong></p>
-                                <p><?php echo nl2br(htmlspecialchars($character['personality_traits'])); ?></p>
+                                <p><?php echo nl2br(htmlspecialchars($npc->personality_traits)); ?></p>
                             </div>
                         <?php endif; ?>
-                        <?php if ($character['ideals']): ?>
+                        <?php if ($npc->ideals): ?>
                             <div class="col-md-6">
                                 <p><strong>Idéaux:</strong></p>
-                                <p><?php echo nl2br(htmlspecialchars($character['ideals'])); ?></p>
+                                <p><?php echo nl2br(htmlspecialchars($npc->ideals)); ?></p>
                             </div>
                         <?php endif; ?>
-                        <?php if ($character['bonds']): ?>
+                        <?php if ($npc->bonds): ?>
                             <div class="col-md-6">
                                 <p><strong>Liens:</strong></p>
-                                <p><?php echo nl2br(htmlspecialchars($character['bonds'])); ?></p>
+                                <p><?php echo nl2br(htmlspecialchars($npc->bonds)); ?></p>
                             </div>
                         <?php endif; ?>
-                        <?php if ($character['flaws']): ?>
+                        <?php if ($npc->flaws): ?>
                             <div class="col-md-6">
                                 <p><strong>Défauts:</strong></p>
-                                <p><?php echo nl2br(htmlspecialchars($character['flaws'])); ?></p>
+                                <p><?php echo nl2br(htmlspecialchars($npc->flaws)); ?></p>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -1986,7 +1978,7 @@ $initiative = $dexterityMod;
                 <div class="modal-header">
                     <h5 class="modal-title">
                         <i class="fas fa-heart me-2"></i>
-                        Gestion des Points de Vie - <?php echo htmlspecialchars($character['name']); ?>
+                        Gestion des Points de Vie - <?php echo htmlspecialchars($npc->name); ?>
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
@@ -1995,8 +1987,8 @@ $initiative = $dexterityMod;
                     <div class="mb-4">
                         <h6>Points de Vie Actuels</h6>
                         <?php
-                        $current_hp = $character['hit_points'];
-                        $max_hp = $character['hit_points'];
+                        $current_hp = $npc->hit_points;
+                        $max_hp = $npc->hit_points;
                         $hp_percentage = $max_hp > 0 ? ($current_hp / $max_hp) * 100 : 100;
                         $hp_class = $hp_percentage > 50 ? 'bg-success' : ($hp_percentage > 25 ? 'bg-warning' : 'bg-danger');
                         ?>
@@ -2013,10 +2005,10 @@ $initiative = $dexterityMod;
                         <div class="col-md-6">
                             <h6><i class="fas fa-sword text-danger me-2"></i>Infliger des Dégâts</h6>
                             <div class="d-flex gap-2 mb-2">
-                                <button class="btn btn-outline-danger btn-sm" onclick="quickDamage(1, '<?php echo htmlspecialchars($character['name']); ?>')">-1</button>
-                                <button class="btn btn-outline-danger btn-sm" onclick="quickDamage(5, '<?php echo htmlspecialchars($character['name']); ?>')">-5</button>
-                                <button class="btn btn-outline-danger btn-sm" onclick="quickDamage(10, '<?php echo htmlspecialchars($character['name']); ?>')">-10</button>
-                                <button class="btn btn-outline-danger btn-sm" onclick="quickDamage(20, '<?php echo htmlspecialchars($character['name']); ?>')">-20</button>
+                                <button class="btn btn-outline-danger btn-sm" onclick="quickDamage(1, '<?php echo htmlspecialchars($npc->name); ?>')">-1</button>
+                                <button class="btn btn-outline-danger btn-sm" onclick="quickDamage(5, '<?php echo htmlspecialchars($npc->name); ?>')">-5</button>
+                                <button class="btn btn-outline-danger btn-sm" onclick="quickDamage(10, '<?php echo htmlspecialchars($npc->name); ?>')">-10</button>
+                                <button class="btn btn-outline-danger btn-sm" onclick="quickDamage(20, '<?php echo htmlspecialchars($npc->name); ?>')">-20</button>
                             </div>
                             <form method="POST" class="d-flex gap-2">
                                 <input type="hidden" name="hp_action" value="damage">
@@ -2029,10 +2021,10 @@ $initiative = $dexterityMod;
                         <div class="col-md-6">
                             <h6><i class="fas fa-heart text-success me-2"></i>Appliquer des Soins</h6>
                             <div class="d-flex gap-2 mb-2">
-                                <button class="btn btn-outline-success btn-sm" onclick="quickHeal(1, '<?php echo htmlspecialchars($character['name']); ?>')">+1</button>
-                                <button class="btn btn-outline-success btn-sm" onclick="quickHeal(5, '<?php echo htmlspecialchars($character['name']); ?>')">+5</button>
-                                <button class="btn btn-outline-success btn-sm" onclick="quickHeal(10, '<?php echo htmlspecialchars($character['name']); ?>')">+10</button>
-                                <button class="btn btn-outline-success btn-sm" onclick="quickHeal(20, '<?php echo htmlspecialchars($character['name']); ?>')">+20</button>
+                                <button class="btn btn-outline-success btn-sm" onclick="quickHeal(1, '<?php echo htmlspecialchars($npc->name); ?>')">+1</button>
+                                <button class="btn btn-outline-success btn-sm" onclick="quickHeal(5, '<?php echo htmlspecialchars($npc->name); ?>')">+5</button>
+                                <button class="btn btn-outline-success btn-sm" onclick="quickHeal(10, '<?php echo htmlspecialchars($npc->name); ?>')">+10</button>
+                                <button class="btn btn-outline-success btn-sm" onclick="quickHeal(20, '<?php echo htmlspecialchars($npc->name); ?>')">+20</button>
                             </div>
                             <form method="POST" class="d-flex gap-2">
                                 <input type="hidden" name="hp_action" value="heal">
@@ -2050,16 +2042,16 @@ $initiative = $dexterityMod;
                             <h6><i class="fas fa-edit text-warning me-2"></i>Modifier Directement</h6>
                             <form method="POST">
                                 <input type="hidden" name="hp_action" value="update_hp">
-                                <input type="hidden" name="max_hp" value="<?php echo $character['hit_points']; ?>">
+                                <input type="hidden" name="max_hp" value="<?php echo $npc->hit_points; ?>">
                                 <div class="d-flex gap-2">
                                     <input type="number" name="current_hp" class="form-control form-control-sm" 
-                                           value="<?php echo $character['hit_points']; ?>" 
-                                           min="0" max="<?php echo $character['hit_points']; ?>" required>
+                                           value="<?php echo $npc->hit_points; ?>" 
+                                           min="0" max="<?php echo $npc->hit_points; ?>" required>
                                     <button type="submit" class="btn btn-warning btn-sm">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                 </div>
-                                <small class="text-muted">Maximum : <?php echo $character['hit_points']; ?> PV</small>
+                                <small class="text-muted">Maximum : <?php echo $npc->hit_points; ?> PV</small>
                             </form>
                         </div>
                         <div class="col-md-6">
@@ -2090,7 +2082,7 @@ $initiative = $dexterityMod;
                 <div class="modal-header">
                     <h5 class="modal-title">
                         <i class="fas fa-star me-2"></i>
-                        Gestion des Points d'Expérience - <?php echo htmlspecialchars($character['name']); ?>
+                        Gestion des Points d'Expérience - <?php echo htmlspecialchars($npc->name); ?>
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
@@ -2101,9 +2093,9 @@ $initiative = $dexterityMod;
                         <div class="alert alert-warning">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <strong><?php echo number_format($character['experience'] ?? 0); ?> XP</strong>
+                                    <strong><?php echo number_format($npc->experience ?? 0); ?> XP</strong>
                                     <br>
-                                    <small class="text-muted">Niveau <?php echo $character['level']; ?></small>
+                                    <small class="text-muted">Niveau <?php echo $npc->level; ?></small>
                                 </div>
                                 <div class="text-end">
                                     <i class="fas fa-star fa-2x text-warning"></i>
@@ -2117,9 +2109,9 @@ $initiative = $dexterityMod;
                         <div class="col-md-6">
                             <h6><i class="fas fa-minus text-danger me-2"></i>Retirer des Points d'Expérience</h6>
                             <div class="d-flex gap-2 mb-2">
-                                <button class="btn btn-outline-danger btn-sm" onclick="quickXpChange(-100, '<?php echo htmlspecialchars($character['name']); ?>')">-100</button>
-                                <button class="btn btn-outline-danger btn-sm" onclick="quickXpChange(-500, '<?php echo htmlspecialchars($character['name']); ?>')">-500</button>
-                                <button class="btn btn-outline-danger btn-sm" onclick="quickXpChange(-1000, '<?php echo htmlspecialchars($character['name']); ?>')">-1000</button>
+                                <button class="btn btn-outline-danger btn-sm" onclick="quickXpChange(-100, '<?php echo htmlspecialchars($npc->name); ?>')">-100</button>
+                                <button class="btn btn-outline-danger btn-sm" onclick="quickXpChange(-500, '<?php echo htmlspecialchars($npc->name); ?>')">-500</button>
+                                <button class="btn btn-outline-danger btn-sm" onclick="quickXpChange(-1000, '<?php echo htmlspecialchars($npc->name); ?>')">-1000</button>
                             </div>
                             <form method="POST" class="d-flex gap-2">
                                 <input type="hidden" name="xp_action" value="remove">
@@ -2132,9 +2124,9 @@ $initiative = $dexterityMod;
                         <div class="col-md-6">
                             <h6><i class="fas fa-plus text-success me-2"></i>Ajouter des Points d'Expérience</h6>
                             <div class="d-flex gap-2 mb-2">
-                                <button class="btn btn-outline-success btn-sm" onclick="quickXpChange(100, '<?php echo htmlspecialchars($character['name']); ?>')">+100</button>
-                                <button class="btn btn-outline-success btn-sm" onclick="quickXpChange(500, '<?php echo htmlspecialchars($character['name']); ?>')">+500</button>
-                                <button class="btn btn-outline-success btn-sm" onclick="quickXpChange(1000, '<?php echo htmlspecialchars($character['name']); ?>')">+1000</button>
+                                <button class="btn btn-outline-success btn-sm" onclick="quickXpChange(100, '<?php echo htmlspecialchars($npc->name); ?>')">+100</button>
+                                <button class="btn btn-outline-success btn-sm" onclick="quickXpChange(500, '<?php echo htmlspecialchars($npc->name); ?>')">+500</button>
+                                <button class="btn btn-outline-success btn-sm" onclick="quickXpChange(1000, '<?php echo htmlspecialchars($npc->name); ?>')">+1000</button>
                             </div>
                             <form method="POST" class="d-flex gap-2">
                                 <input type="hidden" name="xp_action" value="add">
@@ -2154,7 +2146,7 @@ $initiative = $dexterityMod;
                                 <input type="hidden" name="xp_action" value="set">
                                 <div class="d-flex gap-2">
                                     <input type="number" name="xp_amount" class="form-control" 
-                                           value="<?php echo $character['experience'] ?? 0; ?>" 
+                                           value="<?php echo $npc->experience ?? 0; ?>" 
                                            min="0" required>
                                     <button type="submit" class="btn btn-warning">
                                         <i class="fas fa-edit me-2"></i>
