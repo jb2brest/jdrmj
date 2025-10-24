@@ -33,7 +33,7 @@ try {
     }
     
     // Calculer les nouveaux points de vie
-    $new_hp = max(0, $npc->hit_points - $damage);
+    $new_hp = max(0, $npc->hit_points_current - $damage);
     $npc->updateMyHitPoints($new_hp);
     
     echo json_encode([

@@ -556,7 +556,7 @@ $initiative = $dexterityModifier;
                     <div class="row">
                         <div class="col-4">
                             <div class="stat-box">
-                                <div class="hp-display"><?php echo $npc->hit_points; ?>/<?php echo $npc->hit_points; ?></div>
+                                <div class="hp-display"><?php echo $npc->hit_points_current; ?>/<?php echo $npc->hit_points_max; ?></div>
                                 <div class="stat-label">Points de Vie</div>
                                 <?php if ($canModifyHP): ?>
                                     <div class="mt-2">
@@ -1574,8 +1574,8 @@ $initiative = $dexterityModifier;
                     <div class="mb-4">
                         <h6>Points de Vie Actuels</h6>
                         <?php
-                        $current_hp = $npc->hit_points;
-                        $max_hp = $npc->hit_points;
+                        $current_hp = $npc->hit_points_current;
+                        $max_hp = $npc->hit_points_max;
                         $hp_percentage = $max_hp > 0 ? ($current_hp / $max_hp) * 100 : 100;
                         $hp_class = $hp_percentage > 50 ? 'bg-success' : ($hp_percentage > 25 ? 'bg-warning' : 'bg-danger');
                         ?>
@@ -1629,16 +1629,16 @@ $initiative = $dexterityModifier;
                             <h6><i class="fas fa-edit text-warning me-2"></i>Modifier Directement</h6>
                             <form method="POST">
                                 <input type="hidden" name="hp_action" value="update_hp">
-                                <input type="hidden" name="max_hp" value="<?php echo $npc->hit_points; ?>">
+                                <input type="hidden" name="max_hp" value="<?php echo $npc->hit_points_max; ?>">
                                 <div class="d-flex gap-2">
                                     <input type="number" name="current_hp" class="form-control form-control-sm" 
-                                           value="<?php echo $npc->hit_points; ?>" 
-                                           min="0" max="<?php echo $npc->hit_points; ?>" required>
+                                           value="<?php echo $npc->hit_points_current; ?>" 
+                                           min="0" max="<?php echo $npc->hit_points_max; ?>" required>
                                     <button type="submit" class="btn btn-warning btn-sm">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                 </div>
-                                <small class="text-muted">Maximum : <?php echo $npc->hit_points; ?> PV</small>
+                                <small class="text-muted">Maximum : <?php echo $npc->hit_points_max; ?> PV</small>
                             </form>
                         </div>
                         <div class="col-md-6">

@@ -28,13 +28,13 @@ try {
     }
     
     // Réinitialiser aux points de vie maximum
-    $npc->updateMyHitPoints($npc->hit_points);
+    $npc->updateMyHitPoints($npc->hit_points_max);
     
     echo json_encode([
         'success' => true,
-        'message' => "Points de vie réinitialisés au maximum ({$type_cible}) : {$npc->hit_points}",
-        'current_hp' => $npc->hit_points,
-        'max_hp' => $npc->hit_points,
+        'message' => "Points de vie réinitialisés au maximum ({$type_cible}) : {$npc->hit_points_max}",
+        'current_hp' => $npc->hit_points_max,
+        'max_hp' => $npc->hit_points_max,
         'type_cible' => $type_cible
     ]);
     

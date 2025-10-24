@@ -29,7 +29,8 @@ class NPC
     public $intelligence;
     public $wisdom;
     public $charisma;
-    public $hit_points;
+    public $hit_points_current;
+    public $hit_points_max;
     public $armor_class;
     public $speed;
     public $alignment;
@@ -100,7 +101,8 @@ class NPC
         $this->intelligence = $data['intelligence'] ?? 10;
         $this->wisdom = $data['wisdom'] ?? 10;
         $this->charisma = $data['charisma'] ?? 10;
-        $this->hit_points = $data['hit_points'] ?? 8;
+        $this->hit_points_current = $data['hit_points_current'] ?? 8;
+        $this->hit_points_max = $data['hit_points_max'] ?? 8;
         $this->armor_class = $data['armor_class'] ?? 10;
         $this->speed = $data['speed'] ?? 30;
         $this->alignment = $data['alignment'] ?? 'Neutre';
@@ -158,7 +160,8 @@ class NPC
             'intelligence' => $this->intelligence,
             'wisdom' => $this->wisdom,
             'charisma' => $this->charisma,
-            'hit_points' => $this->hit_points,
+            'hit_points_current' => $this->hit_points_current,
+            'hit_points_max' => $this->hit_points_max,
             'armor_class' => $this->armor_class,
             'speed' => $this->speed,
             'alignment' => $this->alignment,
@@ -218,14 +221,14 @@ class NPC
             $sql = "INSERT INTO npcs (
                 name, class_id, race_id, background_id, archetype_id, level, experience,
                 strength, dexterity, constitution, intelligence, wisdom, charisma,
-                hit_points, armor_class, speed, alignment, age, height, weight,
+                hit_points_current, hit_points_max, armor_class, speed, alignment, age, height, weight,
                 eyes, skin, hair, backstory, personality_traits, ideals, bonds, flaws,
                 starting_equipment, gold, spells, skills, languages, profile_photo,
                 created_by, world_id, location_id, is_active
             ) VALUES (
                 :name, :class_id, :race_id, :background_id, :archetype_id, :level, :experience,
                 :strength, :dexterity, :constitution, :intelligence, :wisdom, :charisma,
-                :hit_points, :armor_class, :speed, :alignment, :age, :height, :weight,
+                :hit_points_current, :hit_points_max, :armor_class, :speed, :alignment, :age, :height, :weight,
                 :eyes, :skin, :hair, :backstory, :personality_traits, :ideals, :bonds, :flaws,
                 :starting_equipment, :gold, :spells, :skills, :languages, :profile_photo,
                 :created_by, :world_id, :location_id, :is_active
@@ -246,7 +249,8 @@ class NPC
                 ':intelligence' => $this->intelligence,
                 ':wisdom' => $this->wisdom,
                 ':charisma' => $this->charisma,
-                ':hit_points' => $this->hit_points,
+                ':hit_points_current' => $this->hit_points_current,
+                ':hit_points_max' => $this->hit_points_max,
                 ':armor_class' => $this->armor_class,
                 ':speed' => $this->speed,
                 ':alignment' => $this->alignment,
@@ -297,7 +301,7 @@ class NPC
                 archetype_id = :archetype_id, level = :level, experience = :experience,
                 strength = :strength, dexterity = :dexterity, constitution = :constitution,
                 intelligence = :intelligence, wisdom = :wisdom, charisma = :charisma,
-                hit_points = :hit_points, armor_class = :armor_class, speed = :speed,
+                hit_points_current = :hit_points_current, hit_points_max = :hit_points_max, armor_class = :armor_class, speed = :speed,
                 alignment = :alignment, age = :age, height = :height, weight = :weight,
                 eyes = :eyes, skin = :skin, hair = :hair, backstory = :backstory,
                 personality_traits = :personality_traits, ideals = :ideals, bonds = :bonds, flaws = :flaws,
@@ -323,7 +327,8 @@ class NPC
                 ':intelligence' => $this->intelligence,
                 ':wisdom' => $this->wisdom,
                 ':charisma' => $this->charisma,
-                ':hit_points' => $this->hit_points,
+                ':hit_points_current' => $this->hit_points_current,
+                ':hit_points_max' => $this->hit_points_max,
                 ':armor_class' => $this->armor_class,
                 ':speed' => $this->speed,
                 ':alignment' => $this->alignment,
@@ -1587,7 +1592,7 @@ class NPC
         $stmt->execute([$this->id]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-    
+
     /**
      * Récupère l'équipement détaillé du NPC (méthode d'instance)
      */
@@ -1743,10 +1748,10 @@ class NPC
         $pdo = \Database::getInstance()->getPdo();
         
         try {
-            $stmt = $pdo->prepare("UPDATE npcs SET hit_points = ? WHERE id = ?");
+            $stmt = $pdo->prepare("UPDATE npcs SET hit_points_current = ? WHERE id = ?");
             $result = $stmt->execute([$newHp, $this->id]);
             if ($result) {
-                $this->hit_points = $newHp; // Mettre à jour la propriété de l'instance
+                $this->hit_points_current = $newHp; // Mettre à jour la propriété de l'instance
             }
             return $result;
         } catch (PDOException $e) {
