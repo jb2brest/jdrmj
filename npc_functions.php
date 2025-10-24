@@ -365,6 +365,9 @@ function createAutomaticNPC($race_id, $class_id, $level, $user_id, $custom_name,
         // Ajouter les sorts de base si la classe peut lancer des sorts
         NPC::addBaseSpells($npc_id);
         
+        // Ajouter les améliorations de caractéristiques selon le niveau
+        NPC::addAbilityImprovements($npc_id);
+        
         // Ajouter l'équipement de départ et l'or
         $npc->addStartingEquipment($equipment, $starting_gold);
     }

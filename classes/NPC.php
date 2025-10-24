@@ -1035,8 +1035,46 @@ class NPC
      */
     public static function getCharacterAbilityImprovements($npcId)
     {
-        // Table npc_ability_improvements n'existe pas encore, retourner un tableau vide
-        return [];
+        $pdo = \Database::getInstance()->getPdo();
+        try {
+            $stmt = $pdo->prepare("
+                SELECT strength_bonus, dexterity_bonus, constitution_bonus, 
+                       intelligence_bonus, wisdom_bonus, charisma_bonus
+                FROM npc_ability_improvements
+                WHERE npc_id = ?
+            ");
+            $stmt->execute([$npcId]);
+            $improvements = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($improvements) {
+                // Convertir en format attendu par view_npc.php
+                $result = [];
+                if ($improvements['strength_bonus'] > 0) {
+                    $result[] = ['ability' => 'strength', 'improvement' => $improvements['strength_bonus']];
+                }
+                if ($improvements['dexterity_bonus'] > 0) {
+                    $result[] = ['ability' => 'dexterity', 'improvement' => $improvements['dexterity_bonus']];
+                }
+                if ($improvements['constitution_bonus'] > 0) {
+                    $result[] = ['ability' => 'constitution', 'improvement' => $improvements['constitution_bonus']];
+                }
+                if ($improvements['intelligence_bonus'] > 0) {
+                    $result[] = ['ability' => 'intelligence', 'improvement' => $improvements['intelligence_bonus']];
+                }
+                if ($improvements['wisdom_bonus'] > 0) {
+                    $result[] = ['ability' => 'wisdom', 'improvement' => $improvements['wisdom_bonus']];
+                }
+                if ($improvements['charisma_bonus'] > 0) {
+                    $result[] = ['ability' => 'charisma', 'improvement' => $improvements['charisma_bonus']];
+                }
+                return $result;
+            }
+            
+            return [];
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération des améliorations de caractéristiques: " . $e->getMessage());
+            return [];
+        }
     }
     
     /**
@@ -1640,6 +1678,144 @@ class NPC
             error_log("Erreur lors de l'ajout des sorts de base du NPC: " . $e->getMessage());
             return false;
         }
+    }
+    
+    /**
+     * Ajoute automatiquement les améliorations de caractéristiques selon le niveau
+     */
+    public static function addAbilityImprovements($npcId) {
+        $pdo = \Database::getInstance()->getPdo();
+        try {
+            // Récupérer les informations du NPC
+            $stmt = $pdo->prepare("
+                SELECT n.*, c.name as class_name
+                FROM npcs n
+                LEFT JOIN classes c ON n.class_id = c.id
+                WHERE n.id = ?
+            ");
+            $stmt->execute([$npcId]);
+            $npc = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$npc) {
+                return false;
+            }
+            
+            $level = $npc['level'];
+            $addedImprovements = 0;
+            
+            // Calculer le nombre d'améliorations attendues selon le niveau
+            $expectedImprovements = 0;
+            if ($level >= 4) $expectedImprovements++;
+            if ($level >= 8) $expectedImprovements++;
+            if ($level >= 12) $expectedImprovements++;
+            if ($level >= 16) $expectedImprovements++;
+            if ($level >= 19) $expectedImprovements++;
+            
+            // Vérifier les améliorations existantes
+            $existingStmt = $pdo->prepare("SELECT * FROM npc_ability_improvements WHERE npc_id = ?");
+            $existingStmt->execute([$npcId]);
+            $existing = $existingStmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$existing) {
+                // Créer un enregistrement pour ce NPC
+                $insertStmt = $pdo->prepare("
+                    INSERT INTO npc_ability_improvements (npc_id, strength_bonus, dexterity_bonus, constitution_bonus, intelligence_bonus, wisdom_bonus, charisma_bonus)
+                    VALUES (?, 0, 0, 0, 0, 0, 0)
+                ");
+                $insertStmt->execute([$npcId]);
+                $existing = [
+                    'strength_bonus' => 0,
+                    'dexterity_bonus' => 0,
+                    'constitution_bonus' => 0,
+                    'intelligence_bonus' => 0,
+                    'wisdom_bonus' => 0,
+                    'charisma_bonus' => 0
+                ];
+            }
+            
+            // Calculer les améliorations manquantes
+            $totalBonus = $existing['strength_bonus'] + $existing['dexterity_bonus'] + $existing['constitution_bonus'] + 
+                          $existing['intelligence_bonus'] + $existing['wisdom_bonus'] + $existing['charisma_bonus'];
+            $currentImprovements = $totalBonus / 2; // Chaque amélioration donne +2
+            $missingImprovements = $expectedImprovements - $currentImprovements;
+            
+            if ($missingImprovements > 0) {
+                // Définir les caractéristiques prioritaires par classe
+                $classPriorities = [
+                    'Barbare' => ['strength', 'constitution'],
+                    'Barde' => ['charisma', 'dexterity'],
+                    'Clerc' => ['wisdom', 'constitution'],
+                    'Druide' => ['wisdom', 'constitution'],
+                    'Guerrier' => ['strength', 'constitution'],
+                    'Magicien' => ['intelligence', 'constitution'],
+                    'Moine' => ['dexterity', 'wisdom'],
+                    'Paladin' => ['strength', 'charisma'],
+                    'Rôdeur' => ['dexterity', 'wisdom'],
+                    'Roublard' => ['dexterity', 'intelligence'],
+                    'Ensorceleur' => ['charisma', 'constitution'],
+                    'Occultiste' => ['charisma', 'intelligence']
+                ];
+                
+                $className = $npc['class_name'];
+                $priorities = $classPriorities[$className] ?? ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
+                
+                // Calculer les nouveaux bonus
+                $newBonuses = [
+                    'strength_bonus' => $existing['strength_bonus'],
+                    'dexterity_bonus' => $existing['dexterity_bonus'],
+                    'constitution_bonus' => $existing['constitution_bonus'],
+                    'intelligence_bonus' => $existing['intelligence_bonus'],
+                    'wisdom_bonus' => $existing['wisdom_bonus'],
+                    'charisma_bonus' => $existing['charisma_bonus']
+                ];
+                
+                // Ajouter les améliorations manquantes
+                for ($i = 0; $i < $missingImprovements; $i++) {
+                    // Choisir la caractéristique à améliorer
+                    $abilityToImprove = $priorities[$i % count($priorities)];
+                    $bonusColumn = $abilityToImprove . '_bonus';
+                    $newBonuses[$bonusColumn] += 2;
+                    $addedImprovements++;
+                }
+                
+                // Mettre à jour la base de données
+                $updateStmt = $pdo->prepare("
+                    UPDATE npc_ability_improvements 
+                    SET strength_bonus = ?, dexterity_bonus = ?, constitution_bonus = ?, 
+                        intelligence_bonus = ?, wisdom_bonus = ?, charisma_bonus = ?
+                    WHERE npc_id = ?
+                ");
+                $updateStmt->execute([
+                    $newBonuses['strength_bonus'],
+                    $newBonuses['dexterity_bonus'],
+                    $newBonuses['constitution_bonus'],
+                    $newBonuses['intelligence_bonus'],
+                    $newBonuses['wisdom_bonus'],
+                    $newBonuses['charisma_bonus'],
+                    $npcId
+                ]);
+                
+                // Les améliorations sont stockées en base et appliquées via getCharacterAbilityImprovements
+                // Les caractéristiques de base restent intactes (niveau 1)
+                // PAS de modification des caractéristiques ici !
+            }
+            
+            error_log("Debug NPC::addAbilityImprovements - Added $addedImprovements improvements to NPC $npcId");
+            return true;
+        } catch (PDOException $e) {
+            error_log("Erreur lors de l'ajout des améliorations de caractéristiques: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Met à jour les scores de caractéristiques du NPC
+     * DÉSACTIVÉE - Les caractéristiques de base doivent rester intactes
+     */
+    private static function updateAbilityScores($npcId) {
+        // DÉSACTIVÉE - Les caractéristiques de base doivent rester intactes
+        // Les améliorations sont appliquées via getCharacterAbilityImprovements dans view_npc.php
+        return true;
     }
     
 }

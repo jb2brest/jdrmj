@@ -302,12 +302,7 @@ $tempCharacter->intelligence = $character['intelligence'] + $characterDetails['i
 $tempCharacter->wisdom = $character['wisdom'] + $characterDetails['wisdom_bonus'];
 $tempCharacter->charisma = $character['charisma'] + $characterDetails['charisma_bonus'];
 
-$strengthMod = $tempCharacter->getAbilityModifier('strength');
-$dexterityMod = $tempCharacter->getAbilityModifier('dexterity');
-$constitutionMod = $tempCharacter->getAbilityModifier('constitution');
-$intelligenceMod = $tempCharacter->getAbilityModifier('intelligence');
-$wisdomMod = $tempCharacter->getAbilityModifier('wisdom');
-$charismaMod = $tempCharacter->getAbilityModifier('charisma');
+// Les modificateurs seront calculés plus tard avec les totaux complets
 
 // Synchroniser l'équipement de base vers items
 NPC::syncBaseEquipmentToCharacterEquipment($npc_id);
@@ -491,6 +486,21 @@ $totalAbilities = [
     'wisdom' => $character['wisdom'] + $characterDetails['wisdom_bonus'] + $abilityImprovementsArray['wisdom'] + $equipmentBonuses['wisdom'] + $temporaryBonuses['wisdom'],
     'charisma' => $character['charisma'] + $characterDetails['charisma_bonus'] + $abilityImprovementsArray['charisma'] + $equipmentBonuses['charisma'] + $temporaryBonuses['charisma']
 ];
+
+// Calculer les modificateurs avec les totaux complets
+$tempCharacter->strength = $totalAbilities['strength'];
+$tempCharacter->dexterity = $totalAbilities['dexterity'];
+$tempCharacter->constitution = $totalAbilities['constitution'];
+$tempCharacter->intelligence = $totalAbilities['intelligence'];
+$tempCharacter->wisdom = $totalAbilities['wisdom'];
+$tempCharacter->charisma = $totalAbilities['charisma'];
+
+$strengthMod = $tempCharacter->getAbilityModifier('strength');
+$dexterityMod = $tempCharacter->getAbilityModifier('dexterity');
+$constitutionMod = $tempCharacter->getAbilityModifier('constitution');
+$intelligenceMod = $tempCharacter->getAbilityModifier('intelligence');
+$wisdomMod = $tempCharacter->getAbilityModifier('wisdom');
+$charismaMod = $tempCharacter->getAbilityModifier('charisma');
 
 // Calculer les attaques du personnage
 $characterAttacks = NPC::calculateCharacterAttacks($npc_id, $character);
