@@ -256,15 +256,6 @@ $remainingPoints = $npc->getMyRemainingAbilityPoints($abilityImprovements);
 // et incluent toutes les langues (race + historique + choix)
 $allLanguages = $npcLanguages;
 
-// Calcul des modificateurs (nécessaire pour le calcul de la CA)
-// Utiliser les valeurs totales incluant les bonus raciaux
-$tempCharacter = new Character();
-$tempCharacter->strength = $npc->strength + $raceObject->strength_bonus;
-$tempCharacter->dexterity = $npc->dexterity + $raceObject->dexterity_bonus;
-$tempCharacter->constitution = $npc->constitution + $raceObject->constitution_bonus;
-$tempCharacter->intelligence = $npc->intelligence + $raceObject->intelligence_bonus;
-$tempCharacter->wisdom = $npc->wisdom + $raceObject->wisdom_bonus;
-$tempCharacter->charisma = $npc->charisma + $raceObject->charisma_bonus;
 
 // Les modificateurs seront calculés plus tard avec les totaux complets
 
@@ -291,7 +282,7 @@ $npcItems = $npc->getMyEquipment();
 
 // Traiter les équipements du PNJ
 foreach ($npcItems as $item) {
-    $item['equipped'] = true; // Pour les PNJ, tous les équipements sont considérés comme équipés
+    $item['is_equipped'] = true; // Pour les PNJ, tous les équipements sont considérés comme équipés
     $magicalEquipment[] = $item;
     
     // Structurer les équipements par slot
@@ -307,27 +298,6 @@ foreach ($npcItems as $item) {
         $equippedItems['shield'] = $item['item_name'];
     }
 }
-
-// Récupérer l'équipement détaillé du NPC en utilisant la nouvelle méthode
-$magicalEquipment = $npc->getMyDetailedEquipment();
-                
-                // Structurer les équipements par slot
-foreach ($magicalEquipment as $item) {
-    if ($item['equipped']) {
-        if ($item['item_type'] === 'weapon') {
-                    if (empty($equippedItems['main_hand'])) {
-                        $equippedItems['main_hand'] = $item['item_name'];
-                    } else {
-                        $equippedItems['off_hand'] = $item['item_name'];
-                    }
-        } elseif ($item['item_type'] === 'armor') {
-                    $equippedItems['armor'] = $item['item_name'];
-        } elseif ($item['item_type'] === 'shield') {
-                    $equippedItems['shield'] = $item['item_name'];
-        }
-    }
-}
-
 // Récupérer l'or du PNJ
 $npcGold = $npc->gold ?? 0;
 
@@ -342,7 +312,7 @@ if (!empty($npc->starting_equipment)) {
 // Construire le texte d'équipement à partir des équipements du PNJ
 $equipmentText = '';
 foreach ($magicalEquipment as $item) {
-    if (isset($item['equipped']) && $item['equipped']) {
+    if (isset($item['is_equipped']) && $item['is_equipped']) {
         $equipmentText .= $item['item_name'] . ', ';
     }
 }
@@ -359,7 +329,7 @@ $equippedShield = null;
 
 // Chercher l'armure équipée dans character_equipment
 foreach ($magicalEquipment as $item) {
-    if ($item['equipped'] && ($item['item_type'] ?? '') === 'armor') {
+    if ($item['is_equipped'] && ($item['item_type'] ?? '') === 'armor') {
         foreach ($detectedArmor as $armor) {
             if (stripos($item['item_name'], $armor['name']) !== false) {
                 $equippedArmor = $armor;
@@ -371,7 +341,7 @@ foreach ($magicalEquipment as $item) {
 
 // Chercher le bouclier équipé dans character_equipment
 foreach ($magicalEquipment as $item) {
-    if ($item['equipped'] && ($item['item_type'] ?? '') === 'shield') {
+    if ($item['is_equipped'] && ($item['item_type'] ?? '') === 'shield') {
         foreach ($detectedShields as $shield) {
             if (stripos($item['item_name'], $shield['name']) !== false) {
                 $equippedShield = $shield;
@@ -381,29 +351,9 @@ foreach ($magicalEquipment as $item) {
     }
 }
 
-// Calculer les modificateurs de caractéristiques
-$tempCharacter = new Character();
-$tempCharacter->strength = $totalAbilities['strength'];
-$tempCharacter->dexterity = $totalAbilities['dexterity'];
-$tempCharacter->constitution = $totalAbilities['constitution'];
-$tempCharacter->intelligence = $totalAbilities['intelligence'];
-$tempCharacter->wisdom = $totalAbilities['wisdom'];
-$tempCharacter->charisma = $totalAbilities['charisma'];
+// Les modificateurs seront calculés après la définition de $totalAbilities
 
-$strengthMod = $tempCharacter->getAbilityModifier('strength');
-$dexterityMod = $tempCharacter->getAbilityModifier('dexterity');
-$constitutionMod = $tempCharacter->getAbilityModifier('constitution');
-$intelligenceMod = $tempCharacter->getAbilityModifier('intelligence');
-$wisdomMod = $tempCharacter->getAbilityModifier('wisdom');
-$charismaMod = $tempCharacter->getAbilityModifier('charisma');
-
-// Les modificateurs sont calculés et stockés dans des variables locales
-$strengthModifier = $strengthMod;
-$dexterityModifier = $dexterityMod;
-$constitutionModifier = $constitutionMod;
-$intelligenceModifier = $intelligenceMod;
-$wisdomModifier = $wisdomMod;
-$charismaModifier = $charismaMod;
+// Les modificateurs seront définis après leur calcul
 
 // Bonus d'équipements (pour l'instant à 0, peut être calculé plus tard)
 $equipmentBonuses = [
@@ -435,11 +385,35 @@ $totalAbilities = [
     'charisma' => $npc->charisma + $raceObject->charisma_bonus + $abilityImprovementsArray['charisma'] + $equipmentBonuses['charisma'] + $temporaryBonuses['charisma']
 ];
 
+// Calculer les modificateurs de caractéristiques
+$tempCharacter = new Character();
+$tempCharacter->strength = $totalAbilities['strength'];
+$tempCharacter->dexterity = $totalAbilities['dexterity'];
+$tempCharacter->constitution = $totalAbilities['constitution'];
+$tempCharacter->intelligence = $totalAbilities['intelligence'];
+$tempCharacter->wisdom = $totalAbilities['wisdom'];
+$tempCharacter->charisma = $totalAbilities['charisma'];
+
+$strengthMod = $tempCharacter->getAbilityModifier('strength');
+$dexterityMod = $tempCharacter->getAbilityModifier('dexterity');
+$constitutionMod = $tempCharacter->getAbilityModifier('constitution');
+$intelligenceMod = $tempCharacter->getAbilityModifier('intelligence');
+$wisdomMod = $tempCharacter->getAbilityModifier('wisdom');
+$charismaMod = $tempCharacter->getAbilityModifier('charisma');
+
+// Les modificateurs sont calculés et stockés dans des variables locales
+$strengthModifier = $strengthMod;
+$dexterityModifier = $dexterityMod;
+$constitutionModifier = $constitutionMod;
+$intelligenceModifier = $intelligenceMod;
+$wisdomModifier = $wisdomMod;
+$charismaModifier = $charismaMod;
+
 // Les modificateurs sont déjà calculés plus haut
 
 // Calculer les attaques du personnage
 $characterAttacks = $npc->calculateMyCharacterAttacks();
-$armorClass = $npc->calculateMyArmorClassExtended($equippedArmor, $equippedShield);
+$armorClass = $npc->calculateMyArmorClass($equippedArmor, $equippedShield);
 
 
 // Contrôle d'accès: propriétaire OU MJ
@@ -775,7 +749,7 @@ $npcMagicalEquipment = [];
 $npcItems = $npc->getMyEquipment();
 
 foreach ($npcItems as $item) {
-    $item['equipped'] = true; // Pour les PNJ, tous les équipements sont considérés comme équipés
+    $item['is_equipped'] = true; // Pour les PNJ, tous les équipements sont considérés comme équipés
     $npcMagicalEquipment[] = $item;
 }
 
@@ -1784,7 +1758,7 @@ $initiative = $dexterityMod;
                                 $displayName = htmlspecialchars($itemName);
                                 $typeLabel = ucfirst(str_replace('_', ' ', $itemType));
                             ?>
-                            <tr data-type="<?php echo $itemType; ?>" data-equipped="<?php echo $item['equipped'] ? 'equipped' : 'unequipped'; ?>">
+                            <tr data-type="<?php echo $itemType; ?>" data-equipped="<?php echo $item['is_equipped'] ? 'equipped' : 'unequipped'; ?>">
                                 <td>
                                     <strong><?php echo $displayName; ?></strong>
                                     <?php if ($item['quantity'] > 1): ?>
@@ -1814,7 +1788,7 @@ $initiative = $dexterityMod;
                                     <small class="text-muted"><?php echo htmlspecialchars($item['item_description'] ?? ''); ?></small>
                                 </td>
                                 <td>
-                                    <?php if ($item['equipped']): ?>
+                                    <?php if ($item['is_equipped']): ?>
                                         <span class="badge bg-success">
                                             <i class="fas fa-check-circle me-1"></i>Équipé
                                         </span>
@@ -1838,7 +1812,7 @@ $initiative = $dexterityMod;
                                 </td>
                                 <td style="min-width: 300px; white-space: nowrap; overflow: visible;">
                                     <?php if ($itemType === 'weapon' || $itemType === 'armor' || $itemType === 'shield'): ?>
-                                        <?php if ($item['equipped']): ?>
+                                        <?php if ($item['is_equipped']): ?>
                                             <button class="btn btn-warning btn-sm" onclick="unequipItem(<?php echo $npc_id; ?>, '<?php echo addslashes($itemName); ?>')"
                                                     style="white-space: nowrap; min-width: 80px;">
                                                 <i class="fas fa-hand-paper me-1"></i>Déséquiper
@@ -1872,7 +1846,7 @@ $initiative = $dexterityMod;
                                                 style="white-space: nowrap; min-width: 80px;">
                                             <i class="fas fa-exchange-alt me-1"></i>Transférer
                                         </button>
-                                        <?php if (!$item['equipped']): ?>
+                                        <?php if (!$item['is_equipped']): ?>
                                             <button type="button" class="btn btn-outline-warning btn-sm ms-1" 
                                                     onclick="dropItem(<?php echo $item['id']; ?>, '<?php echo addslashes($item['item_name']); ?>')"
                                                     title="Déposer l'objet dans le lieu actuel"

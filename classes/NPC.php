@@ -1,5 +1,7 @@
 <?php
 
+require_once 'Item.php';
+
 /**
  * Classe NPC - Gestion des Personnages Non-Joueurs
  * 
@@ -2112,23 +2114,18 @@ class NPC
      * Récupère l'équipement détaillé d'un NPC avec les informations des objets
      */
     public static function getDetailedEquipment($npcId, PDO $pdo = null) {
-        if ($pdo === null) {
-            $pdo = Database::getInstance();
-        }
-        
         try {
-            $stmt = $pdo->prepare("
-                SELECT ne.*,
-                       ne.equipped,
-                       ne.slot,
-                       ne.quantity
-                FROM npc_equipment ne
-                WHERE ne.character_id = ?
-                ORDER BY ne.equipped DESC, ne.item_name ASC
-            ");
-            $stmt->execute([$npcId]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
+            // Utiliser la classe Item pour récupérer l'équipement
+            $items = Item::findByOwner('npc', $npcId, $pdo);
+            
+            // Convertir les objets Item en tableaux pour la compatibilité
+            $equipment = [];
+            foreach ($items as $item) {
+                $equipment[] = $item->toArray();
+            }
+            
+            return $equipment;
+        } catch (Exception $e) {
             error_log("Erreur lors de la récupération de l'équipement détaillé: " . $e->getMessage());
             return [];
         }
@@ -2329,6 +2326,29 @@ class NPC
      */
     public function getMyRageUsage() {
         return self::getRageUsageStatic($this->id);
+    }
+    
+    /**
+     * Calcule la classe d'armure du NPC (méthode d'instance)
+     */
+    public function calculateMyArmorClass($equippedArmor = null, $equippedShield = null) {
+        $ac = 10; // Base
+        
+        // Bonus de Dextérité
+        $dexBonus = floor(($this->dexterity - 10) / 2);
+        $ac += $dexBonus;
+        
+        // Bonus d'armure
+        if ($equippedArmor && isset($equippedArmor['ac_bonus'])) {
+            $ac += $equippedArmor['ac_bonus'];
+        }
+        
+        // Bonus de bouclier
+        if ($equippedShield && isset($equippedShield['ac_bonus'])) {
+            $ac += $equippedShield['ac_bonus'];
+        }
+        
+        return $ac;
     }
     
 }
