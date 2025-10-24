@@ -33,44 +33,16 @@ if (!$isOwner && !$isDM) {
 }
 
 
-// Récupérer les détails de la race via la classe Race
+// Récupérer les objets directement
 $raceObject = Race::findById($npc->race_id);
-$raceDetails = $raceObject ? $raceObject->toArray() : [];
-
-// Récupérer les détails de la classe via la classe Classe
 $classObject = Classe::findById($npc->class_id);
-$classDetails = $classObject ? $classObject->toArray() : [];
-
-// Récupérer les détails du background
-$backgroundDetails = null;
+$backgroundObject = null;
 if ($npc->background_id) {
-    $backgroundDetails = NPC::getBackgroundById($npc->background_id);
+    $backgroundObject = NPC::getBackgroundById($npc->background_id);
 }
 
-// Construire le tableau characterDetails pour la compatibilité
-$characterDetails = [
-    'race_name' => $raceDetails['name'] ?? '',
-    'race_description' => $raceDetails['description'] ?? '',
-    'strength_bonus' => $raceDetails['strength_bonus'] ?? 0,
-    'dexterity_bonus' => $raceDetails['dexterity_bonus'] ?? 0,
-    'constitution_bonus' => $raceDetails['constitution_bonus'] ?? 0,
-    'intelligence_bonus' => $raceDetails['intelligence_bonus'] ?? 0,
-    'wisdom_bonus' => $raceDetails['wisdom_bonus'] ?? 0,
-    'charisma_bonus' => $raceDetails['charisma_bonus'] ?? 0,
-    'traits' => $raceDetails['traits'] ?? '',
-    'race_languages' => $raceDetails['languages'] ?? '',
-    'class_name' => $classDetails['name'] ?? '',
-    'class_description' => $classDetails['description'] ?? '',
-    'hit_dice' => $classDetails['hit_dice'] ?? '',
-    'background_name' => $backgroundDetails['name'] ?? '',
-    'background_description' => $backgroundDetails['description'] ?? '',
-    'background_skills' => $backgroundDetails['skill_proficiencies'] ?? '',
-    'background_tools' => $backgroundDetails['tool_proficiencies'] ?? '',
-    'background_languages' => $backgroundDetails['languages'] ?? '',
-    'background_feature' => $backgroundDetails['feature'] ?? ''
-];
-
-if (!$characterDetails) {
+// Vérifier que les objets essentiels existent
+if (!$raceObject || !$classObject) {
     header('Location: characters.php');
     exit();
 }
@@ -79,10 +51,10 @@ if (!$characterDetails) {
 $characterSkills = $npc->skills ? json_decode($npc->skills, true) : [];
 $characterLanguages = $npc->languages ? json_decode($npc->languages, true) : [];
 
-// Parser les données de l'historique depuis la table backgrounds
-$backgroundSkills = $characterDetails['background_skills'] ? json_decode($characterDetails['background_skills'], true) : [];
-$backgroundTools = $characterDetails['background_tools'] ? json_decode($characterDetails['background_tools'], true) : [];
-$backgroundLanguages = $characterDetails['background_languages'] ? json_decode($characterDetails['background_languages'], true) : [];
+// Parser les données de l'historique depuis l'objet background
+$backgroundSkills = $backgroundObject && $backgroundObject['skill_proficiencies'] ? json_decode($backgroundObject['skill_proficiencies'], true) : [];
+$backgroundTools = $backgroundObject && $backgroundObject['tool_proficiencies'] ? json_decode($backgroundObject['tool_proficiencies'], true) : [];
+$backgroundLanguages = $backgroundObject && $backgroundObject['languages'] ? json_decode($backgroundObject['languages'], true) : [];
 
 // Séparer les compétences des outils/instruments
 $allSkills = [];
@@ -120,18 +92,18 @@ $allTools = array_unique(array_merge($allTools, $filteredBackgroundTools));
 $allSkills = array_unique(array_merge($allSkills, $backgroundSkills));
 
 // Récupérer les données de rage pour les barbares
-$isBarbarian = strpos(strtolower($characterDetails['class_name']), 'barbare') !== false;
-$isBard = strpos(strtolower($characterDetails['class_name']), 'barde') !== false;
-$isCleric = strpos(strtolower($characterDetails['class_name']), 'clerc') !== false;
-$isDruid = strpos(strtolower($characterDetails['class_name']), 'druide') !== false;
-$isSorcerer = strpos(strtolower($characterDetails['class_name']), 'ensorceleur') !== false;
-$isFighter = strpos(strtolower($characterDetails['class_name']), 'guerrier') !== false;
-$isWizard = strpos(strtolower($characterDetails['class_name']), 'magicien') !== false;
-$isMonk = strpos(strtolower($characterDetails['class_name']), 'moine') !== false;
-$isWarlock = strpos(strtolower($characterDetails['class_name']), 'occultiste') !== false;
-$isPaladin = strpos(strtolower($characterDetails['class_name']), 'paladin') !== false;
-$isRanger = strpos(strtolower($characterDetails['class_name']), 'rôdeur') !== false;
-$isRogue = strpos(strtolower($characterDetails['class_name']), 'roublard') !== false;
+$isBarbarian = strpos(strtolower($classObject->name), 'barbare') !== false;
+$isBard = strpos(strtolower($classObject->name), 'barde') !== false;
+$isCleric = strpos(strtolower($classObject->name), 'clerc') !== false;
+$isDruid = strpos(strtolower($classObject->name), 'druide') !== false;
+$isSorcerer = strpos(strtolower($classObject->name), 'ensorceleur') !== false;
+$isFighter = strpos(strtolower($classObject->name), 'guerrier') !== false;
+$isWizard = strpos(strtolower($classObject->name), 'magicien') !== false;
+$isMonk = strpos(strtolower($classObject->name), 'moine') !== false;
+$isWarlock = strpos(strtolower($classObject->name), 'occultiste') !== false;
+$isPaladin = strpos(strtolower($classObject->name), 'paladin') !== false;
+$isRanger = strpos(strtolower($classObject->name), 'rôdeur') !== false;
+$isRogue = strpos(strtolower($classObject->name), 'roublard') !== false;
 $rageData = null;
 if ($isBarbarian) {
     // Récupérer le nombre maximum de rages pour ce niveau
@@ -289,12 +261,12 @@ $allLanguages = $npcLanguages;
 // Calcul des modificateurs (nécessaire pour le calcul de la CA)
 // Utiliser les valeurs totales incluant les bonus raciaux
 $tempCharacter = new Character();
-$tempCharacter->strength = $npc->strength + $characterDetails['strength_bonus'];
-$tempCharacter->dexterity = $npc->dexterity + $characterDetails['dexterity_bonus'];
-$tempCharacter->constitution = $npc->constitution + $characterDetails['constitution_bonus'];
-$tempCharacter->intelligence = $npc->intelligence + $characterDetails['intelligence_bonus'];
-$tempCharacter->wisdom = $npc->wisdom + $characterDetails['wisdom_bonus'];
-$tempCharacter->charisma = $npc->charisma + $characterDetails['charisma_bonus'];
+$tempCharacter->strength = $npc->strength + $raceObject->strength_bonus;
+$tempCharacter->dexterity = $npc->dexterity + $raceObject->dexterity_bonus;
+$tempCharacter->constitution = $npc->constitution + $raceObject->constitution_bonus;
+$tempCharacter->intelligence = $npc->intelligence + $raceObject->intelligence_bonus;
+$tempCharacter->wisdom = $npc->wisdom + $raceObject->wisdom_bonus;
+$tempCharacter->charisma = $npc->charisma + $raceObject->charisma_bonus;
 
 // Les modificateurs seront calculés plus tard avec les totaux complets
 
@@ -442,12 +414,12 @@ $temporaryBonuses = [
 
 // Calculer les totaux (caractéristiques de base + bonus raciaux + bonus de niveau + bonus d'équipements + bonus temporaires)
 $totalAbilities = [
-    'strength' => $npc->strength + $characterDetails['strength_bonus'] + $abilityImprovementsArray['strength'] + $equipmentBonuses['strength'] + $temporaryBonuses['strength'],
-    'dexterity' => $npc->dexterity + $characterDetails['dexterity_bonus'] + $abilityImprovementsArray['dexterity'] + $equipmentBonuses['dexterity'] + $temporaryBonuses['dexterity'],
-    'constitution' => $npc->constitution + $characterDetails['constitution_bonus'] + $abilityImprovementsArray['constitution'] + $equipmentBonuses['constitution'] + $temporaryBonuses['constitution'],
-    'intelligence' => $npc->intelligence + $characterDetails['intelligence_bonus'] + $abilityImprovementsArray['intelligence'] + $equipmentBonuses['intelligence'] + $temporaryBonuses['intelligence'],
-    'wisdom' => $npc->wisdom + $characterDetails['wisdom_bonus'] + $abilityImprovementsArray['wisdom'] + $equipmentBonuses['wisdom'] + $temporaryBonuses['wisdom'],
-    'charisma' => $npc->charisma + $characterDetails['charisma_bonus'] + $abilityImprovementsArray['charisma'] + $equipmentBonuses['charisma'] + $temporaryBonuses['charisma']
+    'strength' => $npc->strength + $raceObject->strength_bonus + $abilityImprovementsArray['strength'] + $equipmentBonuses['strength'] + $temporaryBonuses['strength'],
+    'dexterity' => $npc->dexterity + $raceObject->dexterity_bonus + $abilityImprovementsArray['dexterity'] + $equipmentBonuses['dexterity'] + $temporaryBonuses['dexterity'],
+    'constitution' => $npc->constitution + $raceObject->constitution_bonus + $abilityImprovementsArray['constitution'] + $equipmentBonuses['constitution'] + $temporaryBonuses['constitution'],
+    'intelligence' => $npc->intelligence + $raceObject->intelligence_bonus + $abilityImprovementsArray['intelligence'] + $equipmentBonuses['intelligence'] + $temporaryBonuses['intelligence'],
+    'wisdom' => $npc->wisdom + $raceObject->wisdom_bonus + $abilityImprovementsArray['wisdom'] + $equipmentBonuses['wisdom'] + $temporaryBonuses['wisdom'],
+    'charisma' => $npc->charisma + $raceObject->charisma_bonus + $abilityImprovementsArray['charisma'] + $equipmentBonuses['charisma'] + $temporaryBonuses['charisma']
 ];
 
 // Calculer les modificateurs avec les totaux complets
@@ -948,12 +920,12 @@ $initiative = $dexterityMod;
                         <div>
                             <h2><?php echo htmlspecialchars($npc->name); ?></h2>
                             <p class="text-muted">
-                                <?php echo htmlspecialchars($characterDetails['race_name']); ?> 
-                                <?php echo htmlspecialchars($characterDetails['class_name']); ?> 
+                                <?php echo htmlspecialchars($raceObject->name); ?> 
+                                <?php echo htmlspecialchars($classObject->name); ?> 
                                 niveau <?php echo $npc->level; ?>
                             </p>
-                            <?php if ($characterDetails['background_name']): ?>
-                                <p><strong>Historique:</strong> <?php echo htmlspecialchars($characterDetails['background_name']); ?></p>
+                            <?php if ($backgroundObject && $backgroundObject['name']): ?>
+                                <p><strong>Historique:</strong> <?php echo htmlspecialchars($backgroundObject['name']); ?></p>
                             <?php endif; ?>
                             <?php if ($npc->alignment): ?>
                                 <p><strong>Alignement:</strong> <?php echo htmlspecialchars($npc->alignment); ?></p>
@@ -1033,12 +1005,12 @@ $initiative = $dexterityMod;
                             <!-- Bonus raciaux -->
                             <tr>
                                 <td><strong>Bonus raciaux</strong></td>
-                                <td><span class="text-success"><?php echo ($characterDetails['strength_bonus'] > 0 ? '+' : '') . $characterDetails['strength_bonus']; ?></span></td>
-                                <td><span class="text-success"><?php echo ($characterDetails['dexterity_bonus'] > 0 ? '+' : '') . $characterDetails['dexterity_bonus']; ?></span></td>
-                                <td><span class="text-success"><?php echo ($characterDetails['constitution_bonus'] > 0 ? '+' : '') . $characterDetails['constitution_bonus']; ?></span></td>
-                                <td><span class="text-success"><?php echo ($characterDetails['intelligence_bonus'] > 0 ? '+' : '') . $characterDetails['intelligence_bonus']; ?></span></td>
-                                <td><span class="text-success"><?php echo ($characterDetails['wisdom_bonus'] > 0 ? '+' : '') . $characterDetails['wisdom_bonus']; ?></span></td>
-                                <td><span class="text-success"><?php echo ($characterDetails['charisma_bonus'] > 0 ? '+' : '') . $characterDetails['charisma_bonus']; ?></span></td>
+                                <td><span class="text-success"><?php echo ($raceObject->strength_bonus > 0 ? '+' : '') . $raceObject->strength_bonus; ?></span></td>
+                                <td><span class="text-success"><?php echo ($raceObject->dexterity_bonus > 0 ? '+' : '') . $raceObject->dexterity_bonus; ?></span></td>
+                                <td><span class="text-success"><?php echo ($raceObject->constitution_bonus > 0 ? '+' : '') . $raceObject->constitution_bonus; ?></span></td>
+                                <td><span class="text-success"><?php echo ($raceObject->intelligence_bonus > 0 ? '+' : '') . $raceObject->intelligence_bonus; ?></span></td>
+                                <td><span class="text-success"><?php echo ($raceObject->wisdom_bonus > 0 ? '+' : '') . $raceObject->wisdom_bonus; ?></span></td>
+                                <td><span class="text-success"><?php echo ($raceObject->charisma_bonus > 0 ? '+' : '') . $raceObject->charisma_bonus; ?></span></td>
                             </tr>
                             <!-- Bonus de niveau -->
                             <tr>
@@ -1568,31 +1540,31 @@ $initiative = $dexterityMod;
             <div class="row">
                 <div class="col-md-6">
                     <div class="info-section">
-                        <h3><i class="fas fa-dragon me-2"></i>Race: <?php echo htmlspecialchars($characterDetails['race_name']); ?></h3>
-                        <p><?php echo htmlspecialchars($characterDetails['race_description']); ?></p>
+                        <h3><i class="fas fa-dragon me-2"></i>Race: <?php echo htmlspecialchars($raceObject->name); ?></h3>
+                        <p><?php echo htmlspecialchars($raceObject->description); ?></p>
                         <p><strong>Bonus de caractéristiques:</strong> 
-                            Force: +<?php echo $characterDetails['strength_bonus']; ?> | 
-                            Dextérité: +<?php echo $characterDetails['dexterity_bonus']; ?> | 
-                            Constitution: +<?php echo $characterDetails['constitution_bonus']; ?> | 
-                            Intelligence: +<?php echo $characterDetails['intelligence_bonus']; ?> | 
-                            Sagesse: +<?php echo $characterDetails['wisdom_bonus']; ?> | 
-                            Charisme: +<?php echo $characterDetails['charisma_bonus']; ?>
+                            Force: +<?php echo $raceObject->strength_bonus; ?> | 
+                            Dextérité: +<?php echo $raceObject->dexterity_bonus; ?> | 
+                            Constitution: +<?php echo $raceObject->constitution_bonus; ?> | 
+                            Intelligence: +<?php echo $raceObject->intelligence_bonus; ?> | 
+                            Sagesse: +<?php echo $raceObject->wisdom_bonus; ?> | 
+                            Charisme: +<?php echo $raceObject->charisma_bonus; ?>
                         </p>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="info-section">
-                        <h3><i class="fas fa-shield-alt me-2"></i>Classe: <?php echo htmlspecialchars($characterDetails['class_name']); ?></h3>
-                        <p><?php echo htmlspecialchars($characterDetails['class_description']); ?></p>
-                        <p><strong>Dé de vie:</strong> &nbsp;<?php echo $characterDetails['hit_dice']; ?></p>
+                        <h3><i class="fas fa-shield-alt me-2"></i>Classe: <?php echo htmlspecialchars($classObject->name); ?></h3>
+                        <p><?php echo htmlspecialchars($classObject->description); ?></p>
+                        <p><strong>Dé de vie:</strong> &nbsp;<?php echo $classObject->hit_dice; ?></p>
                     </div>
                 </div>
             </div>
 
             <!-- Historique -->
-            <?php if ($characterDetails['background_name']): ?>
-            <div class="info-section">
-                <h3><i class="fas fa-book me-2"></i>Historique: <?php echo htmlspecialchars($characterDetails['background_name']); ?></h3>
+            <?php if ($backgroundObject && $backgroundObject['name']): ?>
+                <div class="info-section">
+                <h3><i class="fas fa-book me-2"></i>Historique: <?php echo htmlspecialchars($backgroundObject['name']); ?></h3>
             </div>
             <?php endif; ?>
 
