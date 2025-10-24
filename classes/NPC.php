@@ -1085,13 +1085,31 @@ class NPC
      */
     public static function calculateFinalAbilitiesStatic($character, $abilityImprovements)
     {
+        // Gérer le cas où $character est un objet NPC
+        if (is_object($character)) {
+            $strength = $character->strength;
+            $dexterity = $character->dexterity;
+            $constitution = $character->constitution;
+            $intelligence = $character->intelligence;
+            $wisdom = $character->wisdom;
+            $charisma = $character->charisma;
+        } else {
+            // Gérer le cas où $character est un tableau
+            $strength = $character['strength'];
+            $dexterity = $character['dexterity'];
+            $constitution = $character['constitution'];
+            $intelligence = $character['intelligence'];
+            $wisdom = $character['wisdom'];
+            $charisma = $character['charisma'];
+        }
+        
         $finalAbilities = [
-            'strength' => $character['strength'],
-            'dexterity' => $character['dexterity'],
-            'constitution' => $character['constitution'],
-            'intelligence' => $character['intelligence'],
-            'wisdom' => $character['wisdom'],
-            'charisma' => $character['charisma']
+            'strength' => $strength,
+            'dexterity' => $dexterity,
+            'constitution' => $constitution,
+            'intelligence' => $intelligence,
+            'wisdom' => $wisdom,
+            'charisma' => $charisma
         ];
         
         // Ajouter les améliorations
@@ -1156,11 +1174,18 @@ class NPC
         // Logique simplifiée pour les attaques
         $attacks = [];
         
+        // Gérer le cas où $character est un objet NPC
+        if (is_object($character)) {
+            $strength = $character->strength;
+        } else {
+            $strength = $character['strength'];
+        }
+        
         // Attaque de base (coup de poing)
         $attacks[] = [
             'name' => 'Coup de poing',
-            'bonus' => floor(($character['strength'] - 10) / 2),
-            'damage' => '1d4 + ' . floor(($character['strength'] - 10) / 2),
+            'bonus' => floor(($strength - 10) / 2),
+            'damage' => '1d4 + ' . floor(($strength - 10) / 2),
             'type' => 'Corps à corps'
         ];
         
@@ -1179,8 +1204,15 @@ class NPC
     {
         $ac = 10; // Base
         
+        // Gérer le cas où $character est un objet NPC
+        if (is_object($character)) {
+            $dexterity = $character->dexterity;
+        } else {
+            $dexterity = $character['dexterity'];
+        }
+        
         // Bonus de Dextérité
-        $dexBonus = floor(($character['dexterity'] - 10) / 2);
+        $dexBonus = floor(($dexterity - 10) / 2);
         $ac += $dexBonus;
         
         // Bonus d'armure
@@ -1843,13 +1875,18 @@ class NPC
     public static function getLanguages($npcId) {
         $pdo = \Database::getInstance()->getPdo();
         $stmt = $pdo->prepare("
-            SELECT l.language_name, l.is_known
-            FROM npc_languages l
-            WHERE l.npc_id = ?
-            ORDER BY l.language_name ASC
+            SELECT languages
+            FROM npcs
+            WHERE id = ?
         ");
         $stmt->execute([$npcId]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($result && $result['languages']) {
+            return json_decode($result['languages'], true) ?: [];
+        }
+        
+        return [];
     }
 
     /**
@@ -1858,13 +1895,18 @@ class NPC
     public static function getSkills($npcId) {
         $pdo = \Database::getInstance()->getPdo();
         $stmt = $pdo->prepare("
-            SELECT skill_name, proficiency_bonus, is_proficient, is_expertise
-            FROM npc_skills
-            WHERE npc_id = ?
-            ORDER BY skill_name ASC
+            SELECT skills
+            FROM npcs
+            WHERE id = ?
         ");
         $stmt->execute([$npcId]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($result && $result['skills']) {
+            return json_decode($result['skills'], true) ?: [];
+        }
+        
+        return [];
     }
 
 
@@ -2076,33 +2118,13 @@ class NPC
         
         try {
             $stmt = $pdo->prepare("
-                SELECT i.*, 
-                       i.display_name as item_name,
-                       i.description as item_description,
-                       i.object_type as item_type,
-                       i.weight as item_weight,
-                       i.value as item_value,
-                       i.rarity as item_rarity,
-                       i.magical as item_magical,
-                       i.attunement_required as item_attunement_required,
-                       i.armor_class as item_armor_class,
-                       i.damage as item_damage,
-                       i.damage_type as item_damage_type,
-                       i.range as item_range,
-                       i.properties as item_properties,
-                       i.weapon_type as item_weapon_type,
-                       i.armor_type as item_armor_type,
-                       i.shield_type as item_shield_type,
-                       i.tool_type as item_tool_type,
-                       i.consumable_type as item_consumable_type,
-                       i.misc_type as item_misc_type,
+                SELECT ne.*,
                        ne.equipped,
                        ne.slot,
                        ne.quantity
                 FROM npc_equipment ne
-                JOIN items i ON ne.item_id = i.id
                 WHERE ne.character_id = ?
-                ORDER BY ne.equipped DESC, i.display_name ASC
+                ORDER BY ne.equipped DESC, ne.item_name ASC
             ");
             $stmt->execute([$npcId]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -2184,6 +2206,129 @@ class NPC
             error_log("Erreur lors du déséquipement: " . $e->getMessage());
             return ['success' => false, 'message' => 'Erreur de base de données'];
         }
+    }
+    
+    /**
+     * Méthodes d'instance pour remplacer les méthodes statiques
+     */
+    
+    /**
+     * Récupère les compétences du NPC (méthode d'instance)
+     */
+    public function getMySkills() {
+        return self::getSkills($this->id);
+    }
+    
+    /**
+     * Récupère les langues du NPC (méthode d'instance)
+     */
+    public function getMyLanguages() {
+        return self::getLanguages($this->id);
+    }
+    
+    /**
+     * Récupère l'équipement du NPC (méthode d'instance)
+     */
+    public function getMyEquipment() {
+        return self::getEquipment($this->id);
+    }
+    
+    /**
+     * Récupère l'équipement détaillé du NPC (méthode d'instance)
+     */
+    public function getMyDetailedEquipment() {
+        return self::getDetailedEquipment($this->id);
+    }
+    
+    /**
+     * Récupère les poisons du NPC (méthode d'instance)
+     */
+    public function getMyCharacterPoisons() {
+        return self::getCharacterPoisons($this->id);
+    }
+    
+    /**
+     * Récupère les informations d'un poison (méthode d'instance)
+     */
+    public function getMyPoisonInfo($poisonId) {
+        return self::getPoisonInfo($poisonId);
+    }
+    
+    /**
+     * Récupère les informations d'un objet magique (méthode d'instance)
+     */
+    public function getMyMagicalItemInfo($itemId) {
+        return self::getMagicalItemInfo($itemId);
+    }
+    
+    /**
+     * Calcule les caractéristiques finales (méthode d'instance)
+     */
+    public function calculateMyFinalAbilities($abilityImprovements) {
+        return self::calculateFinalAbilitiesStatic($this, $abilityImprovements);
+    }
+    
+    /**
+     * Calcule les attaques du personnage (méthode d'instance)
+     */
+    public function calculateMyCharacterAttacks() {
+        return self::calculateCharacterAttacks($this->id, $this);
+    }
+    
+    /**
+     * Calcule la classe d'armure étendue (méthode d'instance)
+     */
+    public function calculateMyArmorClassExtended($equippedArmor, $equippedShield) {
+        return self::calculateArmorClassExtended($this, $equippedArmor, $equippedShield);
+    }
+    
+    /**
+     * Récupère les points d'amélioration restants (méthode d'instance)
+     */
+    public function getMyRemainingAbilityPoints($abilityImprovements) {
+        return self::getRemainingAbilityPoints($this->level, $abilityImprovements);
+    }
+    
+    /**
+     * Met à jour les points de vie (méthode d'instance)
+     */
+    public function updateMyHitPoints($newHp) {
+        return self::updateHitPoints($this->id, $newHp);
+    }
+    
+    /**
+     * Met à jour l'expérience (méthode d'instance)
+     */
+    public function updateMyExperiencePoints($newXp) {
+        return self::updateExperiencePoints($this->id, $newXp);
+    }
+    
+    /**
+     * Met à jour la photo de profil (méthode d'instance)
+     */
+    public function updateMyProfilePhoto($photoPath) {
+        return self::updateProfilePhoto($this->id, $photoPath);
+    }
+    
+    /**
+     * Synchronise l'équipement de base (méthode d'instance)
+     */
+    public function syncMyBaseEquipmentToCharacterEquipment() {
+        return self::syncBaseEquipmentToCharacterEquipment($this->id);
+    }
+    
+    /**
+     * Récupère le nombre maximum de rages (méthode d'instance)
+     */
+    public function getMyMaxRages() {
+        return self::getMaxRages($this->class_id, $this->level);
+    }
+    
+    /**
+     * Récupère l'utilisation des rages (méthode d'instance)
+     */
+    public function getMyRageUsage() {
+        return self::getRageUsageStatic($this->id);
     }
     
 }

@@ -1,5 +1,6 @@
 <?php
 require_once 'classes/init.php';
+require_once 'classes/Background.php';
 require_once 'includes/functions.php';
 require_once 'includes/capabilities_functions.php';
 $page_title = "Fiche de PNJ";
@@ -36,10 +37,7 @@ if (!$isOwner && !$isDM) {
 // Récupérer les objets directement
 $raceObject = Race::findById($npc->race_id);
 $classObject = Classe::findById($npc->class_id);
-$backgroundObject = null;
-if ($npc->background_id) {
-    $backgroundObject = NPC::getBackgroundById($npc->background_id);
-}
+$backgroundObject = Background::findById($npc->background_id);
 
 // Vérifier que les objets essentiels existent
 if (!$raceObject || !$classObject) {
@@ -47,14 +45,14 @@ if (!$raceObject || !$classObject) {
     exit();
 }
 
-// Parser les données JSON du personnage
-$characterSkills = $npc->skills ? json_decode($npc->skills, true) : [];
-$characterLanguages = $npc->languages ? json_decode($npc->languages, true) : [];
+// Utiliser les méthodes d'instance
+$characterSkills = $npc->getMySkills();
+$characterLanguages = $npc->getMyLanguages();
 
-// Parser les données de l'historique depuis l'objet background
-$backgroundSkills = $backgroundObject && $backgroundObject['skill_proficiencies'] ? json_decode($backgroundObject['skill_proficiencies'], true) : [];
-$backgroundTools = $backgroundObject && $backgroundObject['tool_proficiencies'] ? json_decode($backgroundObject['tool_proficiencies'], true) : [];
-$backgroundLanguages = $backgroundObject && $backgroundObject['languages'] ? json_decode($backgroundObject['languages'], true) : [];
+// Utiliser les méthodes d'instance du background
+$backgroundSkills = $backgroundObject ? $backgroundObject->getSkillProficiencies() : [];
+$backgroundTools = $backgroundObject ? $backgroundObject->getToolProficiencies() : [];
+$backgroundLanguages = $backgroundObject ? $backgroundObject->getLanguages() : [];
 
 // Séparer les compétences des outils/instruments
 $allSkills = [];
@@ -107,10 +105,10 @@ $isRogue = strpos(strtolower($classObject->name), 'roublard') !== false;
 $rageData = null;
 if ($isBarbarian) {
     // Récupérer le nombre maximum de rages pour ce niveau
-    $maxRages = NPC::getMaxRages($npc->class_id, $npc->level);
+    $maxRages = $npc->getMyMaxRages();
     
     // Récupérer le nombre de rages utilisées
-    $rageUsage = NPC::getRageUsageStatic($npc_id);
+    $rageUsage = $npc->getMyRageUsage();
     $usedRages = is_array($rageUsage) ? $rageUsage['used'] : $rageUsage;
     
     $rageData = [
@@ -249,10 +247,10 @@ foreach ($abilityImprovements as $improvement) {
 }
 
 // Calculer les caractéristiques finales
-$finalAbilities = NPC::calculateFinalAbilitiesStatic($character, $abilityImprovements);
+$finalAbilities = $npc->calculateMyFinalAbilities($abilityImprovements);
 
 // Calculer les points d'amélioration restants
-$remainingPoints = NPC::getRemainingAbilityPoints($npc->level, $abilityImprovements);
+$remainingPoints = $npc->getMyRemainingAbilityPoints($abilityImprovements);
 
 // Les langues du personnage sont déjà stockées dans le champ 'languages' 
 // et incluent toutes les langues (race + historique + choix)
@@ -271,7 +269,7 @@ $tempCharacter->charisma = $npc->charisma + $raceObject->charisma_bonus;
 // Les modificateurs seront calculés plus tard avec les totaux complets
 
 // Synchroniser l'équipement de base vers items
-NPC::syncBaseEquipmentToCharacterEquipment($npc_id);
+$npc->syncMyBaseEquipmentToCharacterEquipment();
 
 // Récupérer l'équipement du PNJ depuis les données JSON
 $magicalEquipment = [];
@@ -289,7 +287,7 @@ $equippedItems = [
 ];
 
 // Récupérer l'équipement du PNJ via la classe NPC
-$npcItems = NPC::getEquipment($npc_id);
+$npcItems = $npc->getMyEquipment();
 
 // Traiter les équipements du PNJ
 foreach ($npcItems as $item) {
@@ -311,21 +309,21 @@ foreach ($npcItems as $item) {
 }
 
 // Récupérer l'équipement détaillé du NPC en utilisant la nouvelle méthode
-$magicalEquipment = NPC::getDetailedEquipment($npc_id, $pdo);
-
-// Structurer les équipements par slot
+$magicalEquipment = $npc->getMyDetailedEquipment();
+                
+                // Structurer les équipements par slot
 foreach ($magicalEquipment as $item) {
     if ($item['equipped']) {
         if ($item['item_type'] === 'weapon') {
-            if (empty($equippedItems['main_hand'])) {
-                $equippedItems['main_hand'] = $item['item_name'];
-            } else {
-                $equippedItems['off_hand'] = $item['item_name'];
-            }
+                    if (empty($equippedItems['main_hand'])) {
+                        $equippedItems['main_hand'] = $item['item_name'];
+                    } else {
+                        $equippedItems['off_hand'] = $item['item_name'];
+                    }
         } elseif ($item['item_type'] === 'armor') {
-            $equippedItems['armor'] = $item['item_name'];
+                    $equippedItems['armor'] = $item['item_name'];
         } elseif ($item['item_type'] === 'shield') {
-            $equippedItems['shield'] = $item['item_name'];
+                    $equippedItems['shield'] = $item['item_name'];
         }
     }
 }
@@ -383,7 +381,22 @@ foreach ($magicalEquipment as $item) {
     }
 }
 
-// Ajouter les modificateurs de caractéristiques au tableau character pour la fonction
+// Calculer les modificateurs de caractéristiques
+$tempCharacter = new Character();
+$tempCharacter->strength = $totalAbilities['strength'];
+$tempCharacter->dexterity = $totalAbilities['dexterity'];
+$tempCharacter->constitution = $totalAbilities['constitution'];
+$tempCharacter->intelligence = $totalAbilities['intelligence'];
+$tempCharacter->wisdom = $totalAbilities['wisdom'];
+$tempCharacter->charisma = $totalAbilities['charisma'];
+
+$strengthMod = $tempCharacter->getAbilityModifier('strength');
+$dexterityMod = $tempCharacter->getAbilityModifier('dexterity');
+$constitutionMod = $tempCharacter->getAbilityModifier('constitution');
+$intelligenceMod = $tempCharacter->getAbilityModifier('intelligence');
+$wisdomMod = $tempCharacter->getAbilityModifier('wisdom');
+$charismaMod = $tempCharacter->getAbilityModifier('charisma');
+
 // Les modificateurs sont calculés et stockés dans des variables locales
 $strengthModifier = $strengthMod;
 $dexterityModifier = $dexterityMod;
@@ -422,24 +435,11 @@ $totalAbilities = [
     'charisma' => $npc->charisma + $raceObject->charisma_bonus + $abilityImprovementsArray['charisma'] + $equipmentBonuses['charisma'] + $temporaryBonuses['charisma']
 ];
 
-// Calculer les modificateurs avec les totaux complets
-$tempCharacter->strength = $totalAbilities['strength'];
-$tempCharacter->dexterity = $totalAbilities['dexterity'];
-$tempCharacter->constitution = $totalAbilities['constitution'];
-$tempCharacter->intelligence = $totalAbilities['intelligence'];
-$tempCharacter->wisdom = $totalAbilities['wisdom'];
-$tempCharacter->charisma = $totalAbilities['charisma'];
-
-$strengthMod = $tempCharacter->getAbilityModifier('strength');
-$dexterityMod = $tempCharacter->getAbilityModifier('dexterity');
-$constitutionMod = $tempCharacter->getAbilityModifier('constitution');
-$intelligenceMod = $tempCharacter->getAbilityModifier('intelligence');
-$wisdomMod = $tempCharacter->getAbilityModifier('wisdom');
-$charismaMod = $tempCharacter->getAbilityModifier('charisma');
+// Les modificateurs sont déjà calculés plus haut
 
 // Calculer les attaques du personnage
-$characterAttacks = NPC::calculateCharacterAttacks($npc_id, $character);
-$armorClass = NPC::calculateArmorClassExtended($character, $equippedArmor, $equippedShield);
+$characterAttacks = $npc->calculateMyCharacterAttacks();
+$armorClass = $npc->calculateMyArmorClassExtended($equippedArmor, $equippedShield);
 
 
 // Contrôle d'accès: propriétaire OU MJ
@@ -481,7 +481,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['hp_ac
             }
             
             // Mettre à jour les points de vie actuels
-            NPC::updateHitPoints($npc_id, $new_hp);
+            $npc->updateMyHitPoints($new_hp);
             
             $success_message = "Points de vie mis à jour : {$new_hp}/{$max_hp}";
             break;
@@ -490,7 +490,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['hp_ac
             $damage = (int)$_POST['damage'];
             if ($damage > 0) {
                 $new_hp = max(0, $npc->hit_points - $damage);
-                NPC::updateHitPoints($npc_id, $new_hp);
+                $npc->updateMyHitPoints($new_hp);
                 
                 $success_message = "Dégâts infligés : {$damage} PV. Points de vie restants : {$new_hp}";
             }
@@ -500,29 +500,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['hp_ac
             $healing = (int)$_POST['healing'];
             if ($healing > 0) {
                 $new_hp = min($npc->hit_points, $npc->hit_points + $healing);
-                NPC::updateHitPoints($npc_id, $new_hp);
+                $npc->updateMyHitPoints($new_hp);
                 
                 $success_message = "Soins appliqués : {$healing} PV. Points de vie actuels : {$new_hp}";
             }
             break;
             
         case 'reset_hp':
-            NPC::updateHitPoints($npc_id, $npc->hit_points);
+            $npc->updateMyHitPoints($npc->hit_points);
             
             $success_message = "Points de vie réinitialisés au maximum : {$npc->hit_points}";
             break;
     }
     
     // Recharger les données du personnage
-    // Récupérer les détails du personnage via la classe NPC
-    $characterObj = NPC::findById($npc_id, $pdo);
-    if (!$characterObj) {
+    // Recharger l'objet NPC après modification
+    $npc = NPC::findById($npc_id, $pdo);
+    if (!$npc) {
         header('Location: characters.php?error=character_not_found');
         exit;
     }
 
-    // Convertir l'objet en tableau pour la compatibilité
-    $character = $characterObj->toArray();
+    // L'objet NPC est déjà disponible, pas besoin de conversion
 }
 
 // Traitement des actions POST pour la gestion des points d'expérience
@@ -532,7 +531,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['xp_ac
             $xp_amount = (int)$_POST['xp_amount'];
             if ($xp_amount > 0) {
                 $new_xp = ($npc->experience ?? 0) + $xp_amount;
-                NPC::updateExperiencePoints($npc_id, $new_xp);
+                $npc->updateMyExperiencePoints($new_xp);
                 
                 $success_message = "Points d'expérience ajoutés : +{$xp_amount} XP. Total : " . number_format($new_xp) . " XP";
             }
@@ -542,7 +541,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['xp_ac
             $xp_amount = (int)$_POST['xp_amount'];
             if ($xp_amount > 0) {
                 $new_xp = max(0, ($npc->experience ?? 0) - $xp_amount);
-                NPC::updateExperiencePoints($npc_id, $new_xp);
+                $npc->updateMyExperiencePoints($new_xp);
                 
                 $success_message = "Points d'expérience retirés : -{$xp_amount} XP. Total : " . number_format($new_xp) . " XP";
             }
@@ -551,7 +550,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['xp_ac
         case 'set':
             $xp_amount = (int)$_POST['xp_amount'];
             if ($xp_amount >= 0) {
-                NPC::updateExperiencePoints($npc_id, $xp_amount);
+                $npc->updateMyExperiencePoints($xp_amount);
                 
                 $success_message = "Points d'expérience définis à : " . number_format($xp_amount) . " XP";
             }
@@ -560,10 +559,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['xp_ac
     
     // Recharger les données du personnage après modification des XP
     if (isset($success_message)) {
-        $characterObj = NPC::findById($npc_id, $pdo);
-        if ($characterObj) {
-            $character = $characterObj->toArray();
-        }
+        $npc = NPC::findById($npc_id, $pdo);
+        // L'objet NPC est déjà disponible
     }
 }
 
@@ -600,8 +597,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
         switch ($target_type) {
             case 'character':
                 // Transférer vers un autre personnage
-                $target_char_obj = NPC::findById($target_id, $pdo);
-                $target_char = $target_char_obj ? ['name' => $target_char_obj->name] : null;
+                $target_npc = NPC::findById($target_id, $pdo);
+                $target_char = $target_npc ? ['name' => $target_npc->name] : null;
                 
                 if ($target_char) {
                     // Insérer dans items du nouveau propriétaire via la classe Item
@@ -723,10 +720,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
     }
     
     // Recharger les données du personnage
-    $characterObj = NPC::findById($npc_id, $pdo);
-    if ($characterObj) {
-        $character = $characterObj->toArray();
-    }
+    $npc = NPC::findById($npc_id, $pdo);
+    // L'objet NPC est déjà disponible
 }
 
 // Traitement de l'upload de photo de profil
@@ -753,13 +748,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                     }
                     
                     // Mettre à jour la base de données en utilisant la nouvelle méthode
-                    if (NPC::updateProfilePhoto($npc_id, $upload_path, $pdo)) {
+                    if ($npc->updateMyProfilePhoto($upload_path)) {
                         $success_message = "Photo de profil mise à jour avec succès.";
                         // Recharger les données du PNJ
                         $npc = NPC::findById($npc_id, $pdo);
-                        if ($npc) {
-                            $character = $npc->toArray();
-                        }
+                        // L'objet NPC est déjà disponible
                     } else {
                         $error_message = "Erreur lors de la mise à jour de la base de données.";
                     }
@@ -779,7 +772,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
 
 // Récupérer l'équipement depuis la table items pour les nouveaux PNJ via la classe NPC
 $npcMagicalEquipment = [];
-$npcItems = NPC::getEquipment($npc_id);
+$npcItems = $npc->getMyEquipment();
 
 foreach ($npcItems as $item) {
     $item['equipped'] = true; // Pour les PNJ, tous les équipements sont considérés comme équipés
@@ -787,7 +780,7 @@ foreach ($npcItems as $item) {
 }
 
 // Récupérer les poisons du personnage via la classe NPC
-$characterPoisons = NPC::getCharacterPoisons($npc_id);
+$characterPoisons = $npc->getMyCharacterPoisons();
 
 // Récupérer l'équipement attribué aux PNJ associés à ce personnage via la classe PNJ
 $npcEquipment = PNJ::getNpcEquipmentByCharacter($npc_id);
@@ -798,7 +791,7 @@ $npcPoisons = [];
 
 foreach ($npcEquipment as $item) {
     // Vérifier d'abord si c'est un poison
-    $poison_info = NPC::getPoisonInfo($item['magical_item_id']);
+    $poison_info = $npc->getMyPoisonInfo($item['magical_item_id']);
     
     if ($poison_info) {
         // C'est un poison
@@ -809,7 +802,7 @@ foreach ($npcEquipment as $item) {
         $npcPoisons[] = $item;
     } else {
         // Vérifier si c'est un objet magique
-        $magical_info = NPC::getMagicalItemInfo($item['magical_item_id']);
+        $magical_info = $npc->getMyMagicalItemInfo($item['magical_item_id']);
         
         if ($magical_info) {
             // C'est un objet magique
@@ -924,8 +917,8 @@ $initiative = $dexterityMod;
                                 <?php echo htmlspecialchars($classObject->name); ?> 
                                 niveau <?php echo $npc->level; ?>
                             </p>
-                            <?php if ($backgroundObject && $backgroundObject['name']): ?>
-                                <p><strong>Historique:</strong> <?php echo htmlspecialchars($backgroundObject['name']); ?></p>
+                            <?php if ($backgroundObject && $backgroundObject->name): ?>
+                                <p><strong>Historique:</strong> <?php echo htmlspecialchars($backgroundObject->name); ?></p>
                             <?php endif; ?>
                             <?php if ($npc->alignment): ?>
                                 <p><strong>Alignement:</strong> <?php echo htmlspecialchars($npc->alignment); ?></p>
@@ -1562,9 +1555,9 @@ $initiative = $dexterityMod;
             </div>
 
             <!-- Historique -->
-            <?php if ($backgroundObject && $backgroundObject['name']): ?>
+            <?php if ($backgroundObject && $backgroundObject->name): ?>
                 <div class="info-section">
-                <h3><i class="fas fa-book me-2"></i>Historique: <?php echo htmlspecialchars($backgroundObject['name']); ?></h3>
+                <h3><i class="fas fa-book me-2"></i>Historique: <?php echo htmlspecialchars($backgroundObject->name); ?></h3>
             </div>
             <?php endif; ?>
 

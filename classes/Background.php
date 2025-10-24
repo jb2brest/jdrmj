@@ -1,0 +1,91 @@
+<?php
+
+require_once 'Database.php';
+
+class Background {
+    public $id;
+    public $name;
+    public $description;
+    public $skill_proficiencies;
+    public $tool_proficiencies;
+    public $languages;
+    public $feature;
+    
+    public function __construct($data = null) {
+        if ($data) {
+            $this->id = $data['id'] ?? null;
+            $this->name = $data['name'] ?? '';
+            $this->description = $data['description'] ?? '';
+            $this->skill_proficiencies = $data['skill_proficiencies'] ?? '';
+            $this->tool_proficiencies = $data['tool_proficiencies'] ?? '';
+            $this->languages = $data['languages'] ?? '';
+            $this->feature = $data['feature'] ?? '';
+        }
+    }
+    
+    /**
+     * Trouve un background par son ID
+     */
+    public static function findById($id) {
+        if (!$id) {
+            return null;
+        }
+        
+        $pdo = Database::getInstance()->getPdo();
+        $stmt = $pdo->prepare("
+            SELECT id, name, description, skill_proficiencies, 
+                   tool_proficiencies, languages, feature
+            FROM backgrounds 
+            WHERE id = ?
+        ");
+        $stmt->execute([$id]);
+        $data = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        return $data ? new self($data) : null;
+    }
+    
+    /**
+     * Récupère les compétences de maîtrise du background
+     */
+    public function getSkillProficiencies() {
+        if ($this->skill_proficiencies) {
+            return json_decode($this->skill_proficiencies, true) ?: [];
+        }
+        return [];
+    }
+    
+    /**
+     * Récupère les outils de maîtrise du background
+     */
+    public function getToolProficiencies() {
+        if ($this->tool_proficiencies) {
+            return json_decode($this->tool_proficiencies, true) ?: [];
+        }
+        return [];
+    }
+    
+    /**
+     * Récupère les langues du background
+     */
+    public function getLanguages() {
+        if ($this->languages) {
+            return json_decode($this->languages, true) ?: [];
+        }
+        return [];
+    }
+    
+    /**
+     * Convertit l'objet en tableau
+     */
+    public function toArray() {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'description' => $this->description,
+            'skill_proficiencies' => $this->skill_proficiencies,
+            'tool_proficiencies' => $this->tool_proficiencies,
+            'languages' => $this->languages,
+            'feature' => $this->feature
+        ];
+    }
+}
