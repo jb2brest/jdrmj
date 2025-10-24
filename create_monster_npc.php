@@ -42,9 +42,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
     
-    // Créer le MNJ dans la lieu
-    $stmt = $pdo->prepare("INSERT INTO place_npcs (place_id, name, description, monster_id) VALUES (?, ?, ?, ?)");
-    $stmt->execute([$place_id, $npc_name, $description, $monster_id]);
+    // Créer le MNJ en utilisant la classe NPC
+    require_once 'classes/NPC.php';
+    
+    // Créer d'abord le PNJ dans la table npcs
+    $npc = new NPC($pdo);
+    $npcData = [
+        'name' => $npc_name,
+        'class_id' => null, // Pas de classe pour un monstre
+        'race_id' => null,  // Pas de race pour un monstre
+        'background_id' => null,
+        'archetype_id' => null,
+        'level' => 1,
+        'experience' => 0,
+        'strength' => $monster['strength'] ?? 10,
+        'dexterity' => $monster['dexterity'] ?? 10,
+        'constitution' => $monster['constitution'] ?? 10,
+        'intelligence' => $monster['intelligence'] ?? 10,
+        'wisdom' => $monster['wisdom'] ?? 10,
+        'charisma' => $monster['charisma'] ?? 10,
+        'hit_points' => $monster['hit_points'] ?? 1,
+        'armor_class' => $monster['armor_class'] ?? 10,
+        'speed' => $monster['speed'] ?? 30,
+        'alignment' => $monster['alignment'] ?? 'Neutre',
+        'age' => null,
+        'height' => null,
+        'weight' => null,
+        'eyes' => null,
+        'skin' => null,
+        'hair' => null,
+        'backstory' => $description,
+        'personality_traits' => null,
+        'ideals' => null,
+        'bonds' => null,
+        'flaws' => null,
+        'starting_equipment' => null,
+        'gold' => 0,
+        'spells' => null,
+        'skills' => null,
+        'languages' => null,
+        'profile_photo' => null,
+        'created_by' => $_SESSION['user_id'],
+        'world_id' => $place['campaign_id'] ?? 1, // Utiliser l'ID de la campagne comme world_id
+        'location_id' => $place_id,
+        'is_active' => true
+    ];
+    
+    $npc_id = $npc->create($npcData);
+    
+    if ($npc_id) {
+        // Créer l'entrée dans place_npcs
+        $stmt = $pdo->prepare("INSERT INTO place_npcs (place_id, name, description, monster_id, npc_character_id) VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute([$place_id, $npc_name, $description, $monster_id, $npc_id]);
+    } else {
+        header('Location: bestiary.php?error=npc_creation_failed');
+        exit();
+    }
     
     // Rediriger vers la lieu avec un message de succès
     header('Location: view_place.php?id=' . $place_id . '&success=monster_npc_created');

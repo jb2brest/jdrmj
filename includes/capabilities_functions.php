@@ -12,6 +12,9 @@
 function getCharacterCapabilities($character_id) {
     global $pdo;
     
+    // Debug temporaire
+    error_log("Debug getCharacterCapabilities - Character ID: " . $character_id);
+    
     $stmt = $pdo->prepare("
         SELECT 
             c.id,
@@ -33,7 +36,19 @@ function getCharacterCapabilities($character_id) {
     ");
     
     $stmt->execute([$character_id]);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Debug temporaire
+    error_log("Debug getCharacterCapabilities - Result count: " . count($result));
+    if (empty($result)) {
+        // Vérifier si le personnage existe dans character_capabilities
+        $checkStmt = $pdo->prepare("SELECT COUNT(*) as count FROM character_capabilities WHERE character_id = ?");
+        $checkStmt->execute([$character_id]);
+        $checkResult = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        error_log("Debug getCharacterCapabilities - Character capabilities count in DB: " . $checkResult['count']);
+    }
+    
+    return $result;
 }
 
 /**

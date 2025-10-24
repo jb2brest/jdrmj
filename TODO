@@ -244,6 +244,7 @@ Ok alors il faut réorganiser les choses comme il suit :
 - place_npc est la table utilisée pour enregistrer les positions des npcs et ne doit pas être utilisées pour les monstres
 - il manque la table monsters, qui enregistre les instances de monstres déployées dans le monde
 
+Continuer la validation de création de ¨PNJ
 
 Revoir le stockages des données "monstres"
 

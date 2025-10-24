@@ -83,7 +83,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_npc'])) {
                         $npc = createAutomaticNPC($race_id, $class_id, $level, $user_id, $custom_name, $place_id, $is_visible, $is_identified, $world_id, $country_id);
                         
                         if ($npc) {
-                            $success_message = "PNJ créé avec succès : " . htmlspecialchars($npc['name']);
+                            // Rediriger vers manage_npcs.php avec un message de succès
+                            header('Location: manage_npcs.php?success=npc_created&name=' . urlencode($npc['name']));
+                            exit();
                         } else {
                             $error_message = "Erreur lors de la création du PNJ.";
                         }

@@ -21,6 +21,18 @@ $user_id = $_SESSION['user_id'];
 $success_message = '';
 $error_message = '';
 
+// Gérer les messages de succès
+if (isset($_GET['success'])) {
+    switch ($_GET['success']) {
+        case 'npc_created':
+            $npc_name = $_GET['name'] ?? '';
+            $success_message = "PNJ créé avec succès : " . htmlspecialchars($npc_name);
+            break;
+        default:
+            $success_message = "Opération réussie.";
+    }
+}
+
 // Récupérer les filtres
 $filters = [
     'type' => $_GET['type'] ?? '',

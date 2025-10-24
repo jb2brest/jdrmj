@@ -16,12 +16,15 @@ $npc_id = (int)$_GET['id'];
 $npc_created = isset($_GET['created']) && $_GET['created'] == '1';
 
 // Récupération du PNJ avec ses détails
-$npcData = NPC::getById($pdo, $npc_id);
+$npc = NPC::findById($npc_id, $pdo);
 
-if (!$npcData) {
+if (!$npc) {
     header('Location: manage_npcs.php');
     exit();
 }
+
+// Convertir en tableau pour compatibilité
+$npcData = $npc->toArray();
 
 // Vérifier les permissions (créateur ou DM)
 $isOwner = ($npcData['created_by'] == $_SESSION['user_id']);
@@ -151,8 +154,30 @@ if ($isBarbarian) {
     ];
 }
 
-// Récupérer les capacités du personnage depuis le nouveau système homogène
-$allCapabilities = getCharacterCapabilities($npc_id);
+// Ajouter automatiquement les capacités de base si elles n'existent pas
+$npc->addBaseCapabilities();
+
+// Ajouter automatiquement les langues de base si elles n'existent pas
+$npc->addBaseLanguages();
+
+// Ajouter automatiquement les compétences de base si elles n'existent pas
+$npc->addBaseSkills();
+
+// Récupérer les capacités du PNJ depuis le système NPC
+$allCapabilities = $npc->getCapabilities();
+
+// Récupérer les langues du PNJ
+$npcLanguages = $npc->getNpcLanguages();
+
+// Récupérer les compétences du PNJ
+$npcSkills = $npc->getNpcSkills();
+
+// Debug temporaire pour voir les capacités
+error_log("Debug view_npc.php - NPC ID: " . $npc_id);
+error_log("Debug view_npc.php - All capabilities count: " . count($allCapabilities));
+if (!empty($allCapabilities)) {
+    error_log("Debug view_npc.php - First capability: " . print_r($allCapabilities[0], true));
+}
 
 // Séparer les capacités par type pour l'affichage
 $classCapabilities = [];
@@ -248,7 +273,7 @@ $remainingPoints = Character::getRemainingAbilityPoints($character['level'], $ab
 
 // Les langues du personnage sont déjà stockées dans le champ 'languages' 
 // et incluent toutes les langues (race + historique + choix)
-$allLanguages = $characterLanguages;
+$allLanguages = $npcLanguages;
 
 // Calcul des modificateurs (nécessaire pour le calcul de la CA)
 // Utiliser les valeurs totales incluant les bonus raciaux
@@ -285,7 +310,40 @@ $equippedItems = [
     'amulet' => ''
 ];
 
-// Décoder l'équipement de départ du PNJ
+// Récupérer l'équipement du PNJ depuis la table items
+$stmt = $pdo->prepare("
+    SELECT i.*, 
+           i.display_name as item_name,
+           i.description as item_description,
+           i.object_type as item_type,
+           i.is_equipped as equipped
+    FROM items i
+    WHERE i.owner_type = 'npc' AND i.owner_id = ?
+    ORDER BY i.created_at ASC
+");
+$stmt->execute([$character_id]);
+$npcItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Traiter les équipements du PNJ
+foreach ($npcItems as $item) {
+    $item['equipped'] = true; // Pour les PNJ, tous les équipements sont considérés comme équipés
+    $magicalEquipment[] = $item;
+    
+    // Structurer les équipements par slot
+    if ($item['object_type'] === 'weapon') {
+        if (empty($equippedItems['main_hand'])) {
+            $equippedItems['main_hand'] = $item['item_name'];
+        } else {
+            $equippedItems['off_hand'] = $item['item_name'];
+        }
+    } elseif ($item['object_type'] === 'armor') {
+        $equippedItems['armor'] = $item['item_name'];
+    } elseif ($item['object_type'] === 'shield') {
+        $equippedItems['shield'] = $item['item_name'];
+    }
+}
+
+// Décoder l'équipement de départ du PNJ (format JSON - pour compatibilité)
 if (!empty($character['starting_equipment'])) {
     $equipmentData = json_decode($character['starting_equipment'], true);
     if ($equipmentData && isset($equipmentData['equipment'])) {
@@ -323,8 +381,13 @@ if (!empty($character['starting_equipment'])) {
     }
 }
 
-// Récupérer l'or depuis les données JSON
+// Récupérer l'or du PNJ
 $npcGold = 0;
+if (isset($character['gold'])) {
+    $npcGold = $character['gold'];
+}
+
+// Récupérer l'or depuis les données JSON (pour compatibilité)
 if (!empty($character['starting_equipment'])) {
     $equipmentData = json_decode($character['starting_equipment'], true);
     if ($equipmentData && isset($equipmentData['gold'])) {
@@ -733,9 +796,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                     if ($stmt->execute([$upload_path, $npc_id])) {
                         $success_message = "Photo de profil mise à jour avec succès.";
                         // Recharger les données du PNJ
-                        $npcData = NPC::getById($pdo, $npc_id);
-                        if ($npcData) {
-                            $character = $npcData;
+                        $npc = NPC::findById($npc_id, $pdo);
+                        if ($npc) {
+                            $character = $npc->toArray();
                         }
                     } else {
                         $error_message = "Erreur lors de la mise à jour de la base de données.";
@@ -754,7 +817,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
     }
 }
 
-// $magicalEquipment est déjà défini plus haut
+// Récupérer l'équipement depuis la table items pour les nouveaux PNJ
+$npcMagicalEquipment = [];
+$stmt = $pdo->prepare("
+    SELECT i.*, 
+           i.display_name as item_name,
+           i.description as item_description,
+           i.object_type as item_type,
+           i.is_equipped as equipped
+    FROM items i
+    WHERE i.owner_type = 'npc' AND i.owner_id = ?
+");
+$stmt->execute([$npc_id]);
+$npcItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+foreach ($npcItems as $item) {
+    $item['equipped'] = true; // Pour les PNJ, tous les équipements sont considérés comme équipés
+    $npcMagicalEquipment[] = $item;
+}
 
 // Récupérer les poisons du personnage via la classe Character
 $characterPoisons = Character::getCharacterPoisons($npc_id);
@@ -793,8 +873,18 @@ foreach ($npcEquipment as $item) {
 }
 
 // Combiner les équipements du personnage et des PNJ
-$allMagicalEquipment = array_merge($magicalEquipment, $npcMagicalEquipment);
-$allPoisons = array_merge($characterPoisons, $npcPoisons);
+// Pour les NPCs, $npcMagicalEquipment n'est pas défini, donc on utilise seulement $magicalEquipment
+if (isset($npcMagicalEquipment)) {
+    $allMagicalEquipment = array_merge($magicalEquipment, $npcMagicalEquipment);
+} else {
+    $allMagicalEquipment = $magicalEquipment;
+}
+
+if (isset($npcPoisons)) {
+    $allPoisons = array_merge($characterPoisons, $npcPoisons);
+} else {
+    $allPoisons = $characterPoisons;
+}
 
 // Les modificateurs sont déjà calculés plus haut dans le fichier
 
@@ -1650,6 +1740,14 @@ $initiative = $dexterityMod;
                         }
                         ?>
                         
+                        <?php 
+                        // Debug temporaire pour voir les capacités à afficher
+                        error_log("Debug view_npc.php - Display capabilities count: " . count($displayCapabilities));
+                        error_log("Debug view_npc.php - Class capabilities count: " . count($classCapabilities));
+                        error_log("Debug view_npc.php - Race capabilities count: " . count($raceCapabilities));
+                        error_log("Debug view_npc.php - Background capabilities count: " . count($backgroundCapabilities));
+                        ?>
+                        
                         <?php if (!empty($displayCapabilities)): ?>
                             <div class="list-group capabilities-list">
                                 <?php foreach ($displayCapabilities as $capability): ?>
@@ -1736,7 +1834,7 @@ $initiative = $dexterityMod;
                         <?php if (!empty($allLanguages)): ?>
                             <div class="d-flex flex-wrap">
                                 <?php foreach ($allLanguages as $language): ?>
-                                    <span class="badge bg-info me-2 mb-2"><?php echo htmlspecialchars($language); ?></span>
+                                    <span class="badge bg-info me-2 mb-2"><?php echo htmlspecialchars($language['name']); ?></span>
                                 <?php endforeach; ?>
                             </div>
                         <?php else: ?>

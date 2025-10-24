@@ -3,54 +3,15 @@
 /**
  * Classe NPC - Gestion des Personnages Non-Joueurs
  * 
- * Cette classe gère tous les aspects des NPCs :
+ * Cette classe hérite de Character et gère tous les aspects des NPCs :
  * - Données de base des NPCs (table npcs)
  * - Gestion de la visibilité et identification dans les lieux
  * - Gestion de l'équipement spécifique aux NPCs
  * - Gestion des lieux d'apparition
  * - Gestion des relations avec les campagnes
  */
-class NPC
+class NPC extends Character
 {
-    // Propriétés de base
-    public $id;
-    public $name;
-    public $class_id;
-    public $race_id;
-    public $background_id;
-    public $archetype_id;
-    public $level;
-    public $experience;
-    public $strength;
-    public $dexterity;
-    public $constitution;
-    public $intelligence;
-    public $wisdom;
-    public $charisma;
-    public $hit_points;
-    public $armor_class;
-    public $speed;
-    public $alignment;
-    public $age;
-    public $height;
-    public $weight;
-    public $eyes;
-    public $skin;
-    public $hair;
-    public $backstory;
-    public $personality_traits;
-    public $ideals;
-    public $bonds;
-    public $flaws;
-    public $starting_equipment;
-    public $gold;
-    public $spells;
-    public $skills;
-    public $languages;
-    public $profile_photo;
-    public $created_at;
-    public $updated_at;
-    
     // Propriétés spécifiques aux NPCs
     public $created_by;
     public $world_id;
@@ -62,8 +23,6 @@ class NPC
     public $description;
     public $npc_character_id; // Référence vers un personnage de joueur si c'est un NPC basé sur un personnage
     
-    private $pdo;
-    
     /**
      * Constructeur de la classe NPC
      * 
@@ -72,57 +31,10 @@ class NPC
      */
     public function __construct($data = [], PDO $pdo = null)
     {
-        $this->pdo = $pdo ?: \Database::getInstance()->getPdo();
-        $this->hydrate($data);
-    }
-    
-    /**
-     * Hydrate l'objet avec les données de la base
-     * 
-     * @param array $data Données à hydrater
-     */
-    protected function hydrate($data)
-    {
-        // Propriétés de base
-        $this->id = $data['id'] ?? null;
-        $this->name = $data['name'] ?? null;
-        $this->class_id = $data['class_id'] ?? null;
-        $this->race_id = $data['race_id'] ?? null;
-        $this->background_id = $data['background_id'] ?? null;
-        $this->archetype_id = $data['archetype_id'] ?? null;
-        $this->level = $data['level'] ?? 1;
-        $this->experience = $data['experience'] ?? 0;
-        $this->strength = $data['strength'] ?? 10;
-        $this->dexterity = $data['dexterity'] ?? 10;
-        $this->constitution = $data['constitution'] ?? 10;
-        $this->intelligence = $data['intelligence'] ?? 10;
-        $this->wisdom = $data['wisdom'] ?? 10;
-        $this->charisma = $data['charisma'] ?? 10;
-        $this->hit_points = $data['hit_points'] ?? 8;
-        $this->armor_class = $data['armor_class'] ?? 10;
-        $this->speed = $data['speed'] ?? 30;
-        $this->alignment = $data['alignment'] ?? 'Neutre';
-        $this->age = $data['age'] ?? null;
-        $this->height = $data['height'] ?? null;
-        $this->weight = $data['weight'] ?? null;
-        $this->eyes = $data['eyes'] ?? null;
-        $this->skin = $data['skin'] ?? null;
-        $this->hair = $data['hair'] ?? null;
-        $this->backstory = $data['backstory'] ?? null;
-        $this->personality_traits = $data['personality_traits'] ?? null;
-        $this->ideals = $data['ideals'] ?? null;
-        $this->bonds = $data['bonds'] ?? null;
-        $this->flaws = $data['flaws'] ?? null;
-        $this->starting_equipment = $data['starting_equipment'] ?? null;
-        $this->gold = $data['gold'] ?? 0;
-        $this->spells = $data['spells'] ?? null;
-        $this->skills = $data['skills'] ?? null;
-        $this->languages = $data['languages'] ?? null;
-        $this->profile_photo = $data['profile_photo'] ?? null;
-        $this->created_at = $data['created_at'] ?? null;
-        $this->updated_at = $data['updated_at'] ?? null;
+        // Appeler le constructeur parent
+        parent::__construct($data, $pdo);
         
-        // Propriétés spécifiques aux NPCs
+        // Initialiser les propriétés spécifiques aux NPCs
         $this->created_by = $data['created_by'] ?? null;
         $this->world_id = $data['world_id'] ?? null;
         $this->location_id = $data['location_id'] ?? null;
@@ -135,60 +47,25 @@ class NPC
     }
     
     /**
-     * Convertir l'objet en tableau
+     * Hydrate l'objet avec les données de la base
      * 
-     * @return array Tableau des propriétés
+     * @param array $data Données à hydrater
      */
-    public function toArray()
+    protected function hydrate($data)
     {
-        return [
-            'id' => $this->id,
-            'name' => $this->name,
-            'class_id' => $this->class_id,
-            'race_id' => $this->race_id,
-            'background_id' => $this->background_id,
-            'archetype_id' => $this->archetype_id,
-            'level' => $this->level,
-            'experience' => $this->experience,
-            'strength' => $this->strength,
-            'dexterity' => $this->dexterity,
-            'constitution' => $this->constitution,
-            'intelligence' => $this->intelligence,
-            'wisdom' => $this->wisdom,
-            'charisma' => $this->charisma,
-            'hit_points' => $this->hit_points,
-            'armor_class' => $this->armor_class,
-            'speed' => $this->speed,
-            'alignment' => $this->alignment,
-            'age' => $this->age,
-            'height' => $this->height,
-            'weight' => $this->weight,
-            'eyes' => $this->eyes,
-            'skin' => $this->skin,
-            'hair' => $this->hair,
-            'backstory' => $this->backstory,
-            'personality_traits' => $this->personality_traits,
-            'ideals' => $this->ideals,
-            'bonds' => $this->bonds,
-            'flaws' => $this->flaws,
-            'starting_equipment' => $this->starting_equipment,
-            'gold' => $this->gold,
-            'spells' => $this->spells,
-            'skills' => $this->skills,
-            'languages' => $this->languages,
-            'profile_photo' => $this->profile_photo,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
-            'created_by' => $this->created_by,
-            'world_id' => $this->world_id,
-            'location_id' => $this->location_id,
-            'is_active' => $this->is_active,
-            'place_id' => $this->place_id,
-            'is_visible' => $this->is_visible,
-            'is_identified' => $this->is_identified,
-            'description' => $this->description,
-            'npc_character_id' => $this->npc_character_id
-        ];
+        // Appeler la méthode parent
+        parent::hydrate($data);
+        
+        // Hydrater les propriétés spécifiques aux NPCs
+        $this->created_by = $data['created_by'] ?? null;
+        $this->world_id = $data['world_id'] ?? null;
+        $this->location_id = $data['location_id'] ?? null;
+        $this->is_active = $data['is_active'] ?? true;
+        $this->place_id = $data['place_id'] ?? null;
+        $this->is_visible = $data['is_visible'] ?? true;
+        $this->is_identified = $data['is_identified'] ?? false;
+        $this->description = $data['description'] ?? null;
+        $this->npc_character_id = $data['npc_character_id'] ?? null;
     }
     
     /**
@@ -876,79 +753,6 @@ class NPC
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             error_log("Erreur lors de la récupération de l'équipement du NPC: " . $e->getMessage());
-            return [];
-        }
-    }
-    
-    /**
-     * Obtenir les capacités du NPC
-     * 
-     * @return array Liste des capacités
-     */
-    public function getCapabilities()
-    {
-        $pdo = \Database::getInstance()->getPdo();
-        
-        try {
-            $stmt = $pdo->prepare("
-                SELECT capability_name, is_active, learned_at
-                FROM npc_capabilities
-                WHERE npc_id = ? AND is_active = 1
-                ORDER BY capability_name
-            ");
-            $stmt->execute([$this->id]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Erreur lors de la récupération des capacités du PNJ: " . $e->getMessage());
-            return [];
-        }
-    }
-    
-    /**
-     * Obtenir les langues du NPC
-     * 
-     * @return array Liste des langues
-     */
-    public function getNpcLanguages()
-    {
-        $pdo = \Database::getInstance()->getPdo();
-        
-        try {
-            $stmt = $pdo->prepare("
-                SELECT nl.*, l.name, l.type, l.typical_races, l.writing
-                FROM npc_languages nl
-                LEFT JOIN languages l ON nl.language_id = l.id
-                WHERE nl.npc_id = ? AND nl.is_active = 1
-                ORDER BY l.name
-            ");
-            $stmt->execute([$this->id]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Erreur lors de la récupération des langues du PNJ: " . $e->getMessage());
-            return [];
-        }
-    }
-    
-    /**
-     * Obtenir les compétences du NPC
-     * 
-     * @return array Liste des compétences
-     */
-    public function getNpcSkills()
-    {
-        $pdo = \Database::getInstance()->getPdo();
-        
-        try {
-            $stmt = $pdo->prepare("
-                SELECT skill_name, proficiency_bonus, is_proficient, is_expertise
-                FROM npc_skills
-                WHERE npc_id = ? AND is_active = 1
-                ORDER BY skill_name
-            ");
-            $stmt->execute([$this->id]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Erreur lors de la récupération des compétences du PNJ: " . $e->getMessage());
             return [];
         }
     }

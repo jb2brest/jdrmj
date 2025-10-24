@@ -2868,6 +2868,9 @@ class Character
     {
         $pdo = \Database::getInstance()->getPdo();
         
+        // Debug temporaire
+        error_log("Debug Character::getCharacterCapabilities - Character ID: " . $characterId);
+        
         try {
             $stmt = $pdo->prepare("
                 SELECT cc.*, c.name, c.description 
@@ -2877,7 +2880,19 @@ class Character
                 ORDER BY c.name ASC
             ");
             $stmt->execute([$characterId]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Debug temporaire
+            error_log("Debug Character::getCharacterCapabilities - Result count: " . count($result));
+            if (empty($result)) {
+                // Vérifier si le personnage existe dans character_capabilities
+                $checkStmt = $pdo->prepare("SELECT COUNT(*) as count FROM character_capabilities WHERE character_id = ?");
+                $checkStmt->execute([$characterId]);
+                $checkResult = $checkStmt->fetch(PDO::FETCH_ASSOC);
+                error_log("Debug Character::getCharacterCapabilities - Character capabilities count in DB: " . $checkResult['count']);
+            }
+            
+            return $result;
         } catch (PDOException $e) {
             error_log("Erreur lors de la récupération des capacités: " . $e->getMessage());
             return [];

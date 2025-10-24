@@ -157,7 +157,7 @@ function selectRandomBackground($class) {
 
 // Fonction pour générer les caractéristiques selon les recommandations D&D
 function generateRecommendedStats($class) {
-    // Valeurs recommandées selon les préconisations D&D (point buy system)
+    // Valeurs recommandées selon les spécifications D&D
     $recommendedStats = [
         'Barbare' => ['strength' => 15, 'dexterity' => 13, 'constitution' => 14, 'wisdom' => 12, 'intelligence' => 8, 'charisma' => 10],
         'Barde' => ['strength' => 8, 'dexterity' => 14, 'constitution' => 13, 'wisdom' => 10, 'intelligence' => 12, 'charisma' => 15],
@@ -169,7 +169,7 @@ function generateRecommendedStats($class) {
         'Magicien' => ['strength' => 8, 'dexterity' => 13, 'constitution' => 14, 'wisdom' => 12, 'intelligence' => 15, 'charisma' => 10],
         'Ensorceleur' => ['strength' => 8, 'dexterity' => 13, 'constitution' => 14, 'wisdom' => 10, 'intelligence' => 12, 'charisma' => 15],
         'Occultiste' => ['strength' => 8, 'dexterity' => 13, 'constitution' => 14, 'wisdom' => 10, 'intelligence' => 12, 'charisma' => 15],
-        'Voleur' => ['strength' => 8, 'dexterity' => 15, 'constitution' => 13, 'wisdom' => 10, 'intelligence' => 14, 'charisma' => 12],
+        'Roublard' => ['strength' => 8, 'dexterity' => 15, 'constitution' => 13, 'wisdom' => 10, 'intelligence' => 14, 'charisma' => 12],
         'Rôdeur' => ['strength' => 8, 'dexterity' => 15, 'constitution' => 13, 'wisdom' => 14, 'intelligence' => 12, 'charisma' => 10]
     ];
     
@@ -189,7 +189,7 @@ function calculateHitPoints($class, $constitution, $level) {
         'Guerrier' => 10, 'Paladin' => 10, 'Rôdeur' => 10,
         'Barbare' => 12,
         'Magicien' => 6, 'Ensorceleur' => 6, 'Occultiste' => 6,
-        'Clerc' => 8, 'Druide' => 8, 'Barde' => 8, 'Moine' => 8, 'Voleur' => 8
+        'Clerc' => 8, 'Druide' => 8, 'Barde' => 8, 'Moine' => 8, 'Roublard' => 8
     ];
     
     $die = $hitDie[$class] ?? 8;

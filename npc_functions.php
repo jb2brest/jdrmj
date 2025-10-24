@@ -1,4 +1,5 @@
 <?php
+require_once 'classes/NPC.php';
 // ===== FONCTIONS UTILITAIRES POUR LA CRÉATION DE PNJ =====
 
 // Fonction pour récupérer le nom d'une race par ID
@@ -57,7 +58,7 @@ function selectRandomBackground($class) {
 
 // Fonction pour générer les caractéristiques selon les recommandations D&D
 function generateRecommendedStats($class) {
-    // Valeurs recommandées selon les préconisations D&D (point buy system)
+    // Valeurs recommandées selon les spécifications D&D
     $recommendedStats = [
         'Barbare' => ['strength' => 15, 'dexterity' => 13, 'constitution' => 14, 'wisdom' => 12, 'intelligence' => 8, 'charisma' => 10],
         'Barde' => ['strength' => 8, 'dexterity' => 14, 'constitution' => 13, 'wisdom' => 10, 'intelligence' => 12, 'charisma' => 15],
@@ -69,7 +70,7 @@ function generateRecommendedStats($class) {
         'Magicien' => ['strength' => 8, 'dexterity' => 13, 'constitution' => 14, 'wisdom' => 12, 'intelligence' => 15, 'charisma' => 10],
         'Ensorceleur' => ['strength' => 8, 'dexterity' => 13, 'constitution' => 14, 'wisdom' => 10, 'intelligence' => 12, 'charisma' => 15],
         'Occultiste' => ['strength' => 8, 'dexterity' => 13, 'constitution' => 14, 'wisdom' => 10, 'intelligence' => 12, 'charisma' => 15],
-        'Voleur' => ['strength' => 8, 'dexterity' => 15, 'constitution' => 13, 'wisdom' => 10, 'intelligence' => 14, 'charisma' => 12],
+        'Roublard' => ['strength' => 8, 'dexterity' => 15, 'constitution' => 13, 'wisdom' => 10, 'intelligence' => 14, 'charisma' => 12],
         'Rôdeur' => ['strength' => 8, 'dexterity' => 15, 'constitution' => 13, 'wisdom' => 14, 'intelligence' => 12, 'charisma' => 10]
     ];
     
@@ -89,7 +90,7 @@ function calculateHitPoints($class, $constitution, $level) {
         'Guerrier' => 10, 'Paladin' => 10, 'Rôdeur' => 10,
         'Barbare' => 12,
         'Magicien' => 6, 'Ensorceleur' => 6, 'Occultiste' => 6,
-        'Clerc' => 8, 'Druide' => 8, 'Barde' => 8, 'Moine' => 8, 'Voleur' => 8
+        'Clerc' => 8, 'Druide' => 8, 'Barde' => 8, 'Moine' => 8, 'Roublard' => 8
     ];
     
     $die = $hitDie[$class] ?? 8;
@@ -294,14 +295,28 @@ function createAutomaticNPC($race_id, $class_id, $level, $user_id, $custom_name,
     $equipment = generateStartingEquipment($class_name);
     error_log("- equipment: " . $equipment);
     
+    // Générer l'or de départ selon la classe
+    $starting_gold = generateStartingGold($class_name);
+    error_log("- starting_gold: " . $starting_gold);
+    
+    // Générer l'historique
+    $backstory = "PNJ de niveau $level - $race_name $class_name. " . $personality_traits;
+    
     // Calculer les points d'expérience selon le niveau D&D
     $experience_points = calculateExperiencePoints($level);
     
-    // Créer d'abord le personnage dans la table npcs - version simplifiée
-    $stmt = $pdo->prepare("INSERT INTO npcs (name, race_id, class_id, created_by, world_id) VALUES (?, ?, ?, ?, ?)");
+    // Créer d'abord le personnage dans la table npcs avec toutes les caractéristiques
+    $stmt = $pdo->prepare("
+        INSERT INTO npcs (
+            name, race_id, class_id, background_id, level, experience,
+            strength, dexterity, constitution, intelligence, wisdom, charisma,
+            hit_points, armor_class, speed, alignment, backstory, personality_traits,
+            ideals, bonds, flaws, starting_equipment, gold, created_by, world_id, location_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ");
     
     // Vérification finale des valeurs critiques
-    if (empty($world_id) || $world_id <= 0) {
+    if ($world_id !== null && ($world_id <= 0)) {
         error_log("ERREUR: world_id invalide: " . $world_id);
         throw new Exception("world_id invalide: " . $world_id);
     }
@@ -310,9 +325,14 @@ function createAutomaticNPC($race_id, $class_id, $level, $user_id, $custom_name,
         throw new Exception("place_id invalide: " . $place_id);
     }
     
-    // Debug des paramètres SQL - version simplifiée
+    // Debug des paramètres SQL avec toutes les caractéristiques
     $sql_params = [
-        $name, $race_id, $class_id, $user_id, $world_id
+        $name, $race_id, $class_id, $background_id, $level, $experience_points,
+        $stats['strength'], $stats['dexterity'], $stats['constitution'], 
+        $stats['intelligence'], $stats['wisdom'], $stats['charisma'],
+        $stats['hit_points'], $stats['armor_class'], $stats['speed'], $alignment,
+        $backstory, $personality_traits, $ideals, $bonds, $flaws, $equipment, 0,
+        $user_id, $world_id, $place_id
     ];
     
     error_log("Paramètres SQL (" . count($sql_params) . "):");
@@ -334,6 +354,14 @@ function createAutomaticNPC($race_id, $class_id, $level, $user_id, $custom_name,
     
     $npc_id = $pdo->lastInsertId();
     
+    // Ajouter automatiquement les capacités, langues et compétences de base
+    NPC::addBaseCapabilities($npc_id);
+    NPC::addBaseLanguages($npc_id);
+    NPC::addBaseSkills($npc_id);
+    
+    // Ajouter l'équipement de départ et l'or
+    NPC::addStartingEquipment($npc_id, $equipment, $starting_gold);
+    
     // Créer ensuite l'entrée dans place_npcs
     $description = "PNJ de niveau $level - $race_name $class_name. " . $personality_traits;
     
@@ -350,5 +378,30 @@ function createAutomaticNPC($race_id, $class_id, $level, $user_id, $custom_name,
         'class' => $class_name,
         'level' => $level
     ];
+}
+
+/**
+ * Générer l'or de départ selon la classe
+ * 
+ * @param string $class_name Nom de la classe
+ * @return int Montant d'or de départ
+ */
+function generateStartingGold($class_name) {
+    $gold_amounts = [
+        'Barbare' => 200,
+        'Barde' => 150,
+        'Clerc' => 100,
+        'Druide' => 100,
+        'Guerrier' => 200,
+        'Moine' => 50,
+        'Paladin' => 150,
+        'Magicien' => 100,
+        'Ensorceleur' => 100,
+        'Occultiste' => 100,
+        'Roublard' => 150,
+        'Rôdeur' => 150
+    ];
+    
+    return $gold_amounts[$class_name] ?? 100;
 }
 ?>
