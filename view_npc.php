@@ -515,60 +515,58 @@ $initiative = $dexterityModifier;
             </div>
         </div>
 
-        <!-- Zone d'entête -->
-        <div class="npc-header-section mb-4">
-            <div class="card border-0 shadow-lg">
-                <div class="card-header" style="background: linear-gradient(135deg, var(--dnd-primary-darker) 0%, var(--dnd-secondary-darker) 100%); color: var(--dnd-neutral-light);">
-                    <div class="row align-items-center">
+        <!-- Zone d'en-tête -->
+        <div class="zone-d-entete">
+            <div class="row">
                         <div class="col-md-6">
                             <div class="d-flex align-items-start">
                                 <div class="me-3 position-relative">
                                     <?php if (!empty($npc->profile_photo)): ?>
-                                        <img id="npc-profile-photo" src="<?php echo htmlspecialchars($npc->profile_photo); ?>" alt="Photo de <?php echo htmlspecialchars($npc->name); ?>" class="rounded npc-profile-photo border border-3 border-light shadow">
+                                        <img id="npc-profile-photo" src="<?php echo htmlspecialchars($npc->profile_photo); ?>" alt="Photo de <?php echo htmlspecialchars($npc->name); ?>" class="profile-photo">
                                     <?php else: ?>
-                                        <div class="bg-white rounded d-flex align-items-center justify-content-center npc-profile-placeholder border border-3 border-light shadow">
-                                            <i class="fas fa-user text-muted"></i>
+                                        <div class="profile-placeholder">
+                                            <i class="fas fa-user"></i>
                                         </div>
                                     <?php endif; ?>
                                     
                                     <?php if ($canModifyHP): ?>
-                                        <button type="button" class="btn btn-sm btn-light position-absolute photo-edit-button shadow" data-bs-toggle="modal" data-bs-target="#photoModal" title="Changer la photo">
+                                        <button type="button" class="btn btn-sm btn-light photo-edit-button" data-bs-toggle="modal" data-bs-target="#photoModal" title="Changer la photo">
                                             <i class="fas fa-camera text-primary"></i>
                                         </button>
                                     <?php endif; ?>
                                 </div>
                                 <div>
-                                    <h2 class="text-white mb-2">
+                                    <h2>
                                         <i class="fas fa-user-tie me-2"></i>
                                         <?php echo htmlspecialchars($npc->name); ?>
                                     </h2>
-                                    <p class="text-white-50 mb-1">
+                                    <p>
                                         <i class="fas fa-tag me-1"></i>
                                         <strong>Race :</strong> <?php echo htmlspecialchars($raceObject->name); ?>
                                     </p>
-                                    <p class="text-white-50 mb-1">
+                                    <p>
                                         <i class="fas fa-shield-alt me-1"></i>
                                         <strong>Classe :</strong> <?php echo htmlspecialchars($classObject->name); ?>
                                     </p>
-                                    <p class="text-white-50 mb-1">
+                                    <p>
                                         <i class="fas fa-star me-1"></i>
                                         <strong>Niveau :</strong> <?php echo $npc->level; ?>
                                     </p>
                                     <?php if ($backgroundObject && $backgroundObject->name): ?>
-                                        <p class="text-white-50 mb-1">
+                                        <p>
                                             <i class="fas fa-book me-1"></i>
                                             <strong>Historique:</strong> <?php echo htmlspecialchars($backgroundObject->name); ?>
                                         </p>
                                     <?php endif; ?>
                                     <?php if ($npc->alignment): ?>
-                                        <p class="text-white-50 mb-1">
+                                        <p>
                                             <i class="fas fa-balance-scale me-1"></i>
                                             <strong>Alignement:</strong> <?php echo htmlspecialchars($npc->alignment); ?>
                                         </p>
                                     <?php endif; ?>
                                     
                                     <?php if ($characterArchetype): ?>
-                                        <p class="text-white-50 mb-1">
+                                        <p>
                                             <i class="fas fa-magic me-1"></i>
                                             <strong><?php echo htmlspecialchars($characterArchetype['archetype_type']); ?>:</strong> <?php echo htmlspecialchars($characterArchetype['name']); ?>
                                         </p>
@@ -610,8 +608,6 @@ $initiative = $dexterityModifier;
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
             </div>
         </div>
 
