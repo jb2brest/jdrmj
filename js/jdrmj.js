@@ -3061,6 +3061,12 @@ function initializeCapabilitiesManagement() {
     const capabilityItems = document.querySelectorAll('.capability-item');
     const capabilityDetail = document.getElementById('capability-detail');
     
+    // Vérifier que les éléments existent
+    if (capabilityItems.length === 0) {
+        console.log('Aucun élément .capability-item trouvé');
+        return;
+    }
+    
     // Base de données des capacités
     const capabilitiesData = {
         'Rage': {
@@ -3084,7 +3090,8 @@ function initializeCapabilitiesManagement() {
             this.classList.add('active');
             
             // Récupérer le nom de la capacité
-            const capabilityName = this.querySelector('h6').textContent;
+            const capabilityNameElement = this.querySelector('strong.text-primary');
+            const capabilityName = capabilityNameElement ? capabilityNameElement.textContent : 'Capacité inconnue';
             
             // Afficher les détails
             if (capabilityDetail && capabilitiesData[capabilityName]) {
@@ -3095,6 +3102,14 @@ function initializeCapabilitiesManagement() {
                         <p><strong>Type :</strong> ${capabilityData.type}</p>
                         <p><strong>Niveau :</strong> ${capabilityData.level}</p>
                         <p class="card-text">${capabilityData.description}</p>
+                    </div>
+                `;
+            } else if (capabilityDetail) {
+                // Afficher un message si la capacité n'est pas dans la base de données
+                capabilityDetail.innerHTML = `
+                    <div class="card-body">
+                        <h6>${capabilityName}</h6>
+                        <p class="text-muted">Informations détaillées non disponibles pour cette capacité.</p>
                     </div>
                 `;
             }
@@ -3476,10 +3491,454 @@ function showMessage(message, type) {
     }, 5000);
 }
 
+// ===== FONCTIONS POUR GESTION DES NPCs =====
+
+/**
+ * Basculer l'état de rage d'un NPC
+ */
+function toggleRage(npcId, rageIndex) {
+    fetch('api/manage_rage.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            npc_id: npcId,
+            rage_index: rageIndex,
+            action: 'toggle'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Mettre à jour l'affichage de la rage
+            updateRageDisplay(npcId, data.used_rages, data.total_rages);
+        } else {
+            showMessage(data.message || 'Erreur lors de la gestion de la rage', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showMessage('Erreur lors de la gestion de la rage', 'error');
+    });
+}
+
+/**
+ * Réinitialiser les rages d'un NPC
+ */
+function resetRages(npcId) {
+    if (confirm('Réinitialiser toutes les rages de ce NPC ?')) {
+        fetch('api/manage_rage.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                npc_id: npcId,
+                action: 'reset'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Mettre à jour l'affichage de la rage
+                updateRageDisplay(npcId, 0, data.total_rages);
+                showMessage('Rages réinitialisées', 'success');
+            } else {
+                showMessage(data.message || 'Erreur lors de la réinitialisation', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showMessage('Erreur lors de la réinitialisation', 'error');
+        });
+    }
+}
+
+/**
+ * Mettre à jour l'affichage des rages
+ */
+function updateRageDisplay(npcId, usedRages, totalRages) {
+    const rageSymbols = document.querySelectorAll(`[data-rage]`);
+    rageSymbols.forEach((symbol, index) => {
+        const rageIndex = parseInt(symbol.dataset.rage);
+        if (rageIndex <= usedRages) {
+            symbol.classList.remove('available');
+            symbol.classList.add('used');
+        } else {
+            symbol.classList.remove('used');
+            symbol.classList.add('available');
+        }
+    });
+}
+
+/**
+ * Équiper un objet sur un NPC
+ */
+function equipItem(npcId, itemName, itemType, slot) {
+    fetch('api/equip_npc_item.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            npc_id: npcId,
+            item_name: itemName,
+            item_type: itemType,
+            slot: slot
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(data.message, 'success');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showMessage(data.message || 'Erreur lors de l\'équipement', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showMessage('Erreur lors de l\'équipement', 'error');
+    });
+}
+
+/**
+ * Déséquiper un objet d'un NPC
+ */
+function unequipItem(npcId, itemName) {
+    fetch('api/unequip_npc_item.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            npc_id: npcId,
+            item_name: itemName
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(data.message, 'success');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showMessage(data.message || 'Erreur lors du déséquipement', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showMessage('Erreur lors du déséquipement', 'error');
+    });
+}
+
+/**
+ * Déposer un objet
+ */
+function dropItem(itemId, itemName) {
+    if (confirm(`Déposer l'objet "${itemName}" dans le lieu actuel ?`)) {
+        fetch('api/drop_item.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                item_id: itemId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showMessage(data.message, 'success');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                showMessage(data.message || 'Erreur lors du dépôt', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showMessage('Erreur lors du dépôt', 'error');
+        });
+    }
+}
+
+/**
+ * Réinitialiser les filtres de la table
+ */
+function resetFilters() {
+    // Réinitialiser les champs de recherche
+    const searchInputs = document.querySelectorAll('input[type="search"]');
+    searchInputs.forEach(input => {
+        input.value = '';
+    });
+    
+    // Réinitialiser les sélecteurs
+    const selects = document.querySelectorAll('select');
+    selects.forEach(select => {
+        select.selectedIndex = 0;
+    });
+    
+    // Recharger la table
+    filterTable();
+}
+
+/**
+ * Trier une table
+ */
+function sortTable(columnIndex) {
+    const table = document.querySelector('table');
+    if (!table) return;
+    
+    const tbody = table.querySelector('tbody');
+    if (!tbody) return;
+    
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    const isAscending = table.dataset.sortColumn === columnIndex.toString() ? 
+        table.dataset.sortDirection !== 'asc' : true;
+    
+    rows.sort((a, b) => {
+        const aText = a.cells[columnIndex]?.textContent.trim() || '';
+        const bText = b.cells[columnIndex]?.textContent.trim() || '';
+        
+        const comparison = aText.localeCompare(bText, 'fr', { numeric: true });
+        return isAscending ? comparison : -comparison;
+    });
+    
+    // Mettre à jour les données de tri
+    table.dataset.sortColumn = columnIndex.toString();
+    table.dataset.sortDirection = isAscending ? 'asc' : 'desc';
+    
+    // Réorganiser les lignes
+    rows.forEach(row => tbody.appendChild(row));
+    
+    // Mettre à jour les icônes de tri
+    const headers = table.querySelectorAll('th');
+    headers.forEach((header, index) => {
+        const icon = header.querySelector('i');
+        if (icon) {
+            icon.className = index === columnIndex ? 
+                (isAscending ? 'fas fa-sort-up' : 'fas fa-sort-down') : 
+                'fas fa-sort';
+        }
+    });
+}
+
+/**
+ * Filtrer la table
+ */
+function filterTable() {
+    const table = document.querySelector('table');
+    if (!table) return;
+    
+    const tbody = table.querySelector('tbody');
+    if (!tbody) return;
+    
+    const rows = tbody.querySelectorAll('tr');
+    const searchInputs = document.querySelectorAll('input[type="search"]');
+    const selects = document.querySelectorAll('select');
+    
+    rows.forEach(row => {
+        let show = true;
+        
+        // Filtrer par champs de recherche
+        searchInputs.forEach((input, index) => {
+            const searchTerm = input.value.toLowerCase();
+            const cellText = row.cells[index]?.textContent.toLowerCase() || '';
+            if (searchTerm && !cellText.includes(searchTerm)) {
+                show = false;
+            }
+        });
+        
+        // Filtrer par sélecteurs
+        selects.forEach((select, index) => {
+            const filterValue = select.value;
+            if (filterValue && filterValue !== '') {
+                const cellText = row.cells[index]?.textContent.trim() || '';
+                if (cellText !== filterValue) {
+                    show = false;
+                }
+            }
+        });
+        
+        row.style.display = show ? '' : 'none';
+    });
+}
+
+/**
+ * Confirmer le transfert d'objet
+ */
+function confirmTransfer() {
+    const itemId = document.getElementById('transferItemId').value;
+    const target = document.getElementById('transferTarget').value;
+    const notes = document.getElementById('transferNotes').value;
+    const source = document.getElementById('transferSource').value;
+    const npcId = document.getElementById('transferNpcId').value;
+    
+    if (!target) {
+        showMessage('Veuillez sélectionner une cible', 'error');
+        return;
+    }
+    
+    transferObject(itemId, target, notes, source, npcId);
+    
+    // Fermer le modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('transferModal'));
+    if (modal) {
+        modal.hide();
+    }
+}
+
+/**
+ * Uploader une photo de NPC
+ */
+function uploadPhoto(npcId, entityType) {
+    const fileInput = document.getElementById('photoFile');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        showMessage('Veuillez sélectionner un fichier', 'error');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('photo', file);
+    formData.append('npc_id', npcId);
+    formData.append('entity_type', entityType);
+    
+    fetch('api/update_npc_photo.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(data.message, 'success');
+            updateProfileImage(data.image_url);
+            
+            // Fermer le modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('photoModal'));
+            if (modal) {
+                modal.hide();
+            }
+        } else {
+            showMessage(data.message || 'Erreur lors de l\'upload', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showMessage('Erreur lors de l\'upload', 'error');
+    });
+}
+
+/**
+ * Initialiser les gestionnaires d'événements pour les NPCs
+ */
+function initializeNpcEventHandlers() {
+    // Gestionnaires pour les boutons de rage
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="toggle"]')) {
+            const element = e.target.closest('[data-action="toggle"]');
+            const npcId = element.dataset.npcId;
+            const rageIndex = element.dataset.rage;
+            toggleRage(npcId, rageIndex);
+        }
+        
+        if (e.target.closest('[data-action="reset"]')) {
+            const element = e.target.closest('[data-action="reset"]');
+            const npcId = element.dataset.npcId;
+            resetRages(npcId);
+        }
+    });
+    
+    // Gestionnaires pour les boutons de dégâts/soins/XP
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="damage"]')) {
+            const element = e.target.closest('[data-action="damage"]');
+            const amount = parseInt(element.dataset.amount);
+            const npcName = element.dataset.npcName;
+            quickDamage(amount, npcName);
+        }
+        
+        if (e.target.closest('[data-action="heal"]')) {
+            const element = e.target.closest('[data-action="heal"]');
+            const amount = parseInt(element.dataset.amount);
+            const npcName = element.dataset.npcName;
+            quickHeal(amount, npcName);
+        }
+        
+        if (e.target.closest('[data-action="xp"]')) {
+            const element = e.target.closest('[data-action="xp"]');
+            const amount = parseInt(element.dataset.amount);
+            const npcName = element.dataset.npcName;
+            quickXpChange(amount, npcName);
+        }
+    });
+    
+    // Gestionnaires pour les boutons d'équipement
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="equip"]')) {
+            const element = e.target.closest('[data-action="equip"]');
+            const npcId = element.dataset.npcId;
+            const itemName = element.dataset.itemName;
+            const itemType = element.dataset.itemType;
+            const slot = element.dataset.slot;
+            equipItem(npcId, itemName, itemType, slot);
+        }
+        
+        if (e.target.closest('[data-action="unequip"]')) {
+            const element = e.target.closest('[data-action="unequip"]');
+            const npcId = element.dataset.npcId;
+            const itemName = element.dataset.itemName;
+            unequipItem(npcId, itemName);
+        }
+        
+        if (e.target.closest('[data-action="drop"]')) {
+            const element = e.target.closest('[data-action="drop"]');
+            const itemId = element.dataset.itemId;
+            const itemName = element.dataset.itemName;
+            dropItem(itemId, itemName);
+        }
+    });
+    
+    // Gestionnaires pour les boutons de tri et filtre
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-sort]')) {
+            const element = e.target.closest('[data-sort]');
+            const columnIndex = parseInt(element.dataset.sort);
+            sortTable(columnIndex);
+        }
+        
+        if (e.target.closest('[data-action="reset-filters"]')) {
+            resetFilters();
+        }
+    });
+    
+    // Gestionnaires pour les modals
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[data-action="confirm-transfer"]')) {
+            confirmTransfer();
+        }
+        
+        if (e.target.closest('[data-action="upload-photo"]')) {
+            const element = e.target.closest('[data-action="upload-photo"]');
+            const npcId = element.dataset.npcId;
+            const entityType = element.dataset.entityType;
+            uploadPhoto(npcId, entityType);
+        }
+    });
+}
+
 // Initialisation au chargement de la page
 document.addEventListener('DOMContentLoaded', function() {
     initializeTransferModal();
     initializeEquipmentFilters();
+    initializeNpcEventHandlers();
     initializeSkillsManagement();
     initializeCapabilitiesManagement();
 });

@@ -815,14 +815,43 @@ class NPC
         $pdo = \Database::getInstance()->getPdo();
         
         try {
+            // Essayer d'abord avec la nouvelle structure (capabilities + npc_capabilities)
             $stmt = $pdo->prepare("
-                SELECT notes as capability_name, is_active, obtained_at as learned_at
-                FROM npc_capabilities
-                WHERE npc_id = ? AND is_active = 1
-                ORDER BY notes
+                SELECT 
+                    c.name,
+                    c.description,
+                    c.source_type as source,
+                    ct.name as type_name,
+                    nc.is_active,
+                    nc.obtained_at as learned_at
+                FROM npc_capabilities nc
+                LEFT JOIN capabilities c ON nc.capability_id = c.id
+                LEFT JOIN capability_types ct ON c.type_id = ct.id
+                WHERE nc.npc_id = ? AND nc.is_active = 1
+                ORDER BY c.name
             ");
             $stmt->execute([$this->id]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Si pas de résultats avec la nouvelle structure, essayer l'ancienne
+            if (empty($result)) {
+                $stmt = $pdo->prepare("
+                    SELECT 
+                        notes as name,
+                        '' as description,
+                        'class' as source,
+                        'Capacité' as type_name,
+                        is_active,
+                        obtained_at as learned_at
+                    FROM npc_capabilities
+                    WHERE npc_id = ? AND is_active = 1
+                    ORDER BY notes
+                ");
+                $stmt->execute([$this->id]);
+                $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+            
+            return $result;
         } catch (PDOException $e) {
             error_log("Erreur lors de la récupération des capacités du PNJ: " . $e->getMessage());
             return [];

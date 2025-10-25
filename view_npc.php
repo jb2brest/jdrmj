@@ -470,6 +470,7 @@ $initiative = $dexterityModifier;
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="css/custom-theme.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
+    
 </head>
 <body>
     <!-- Navigation -->
@@ -512,98 +513,329 @@ $initiative = $dexterityModifier;
             </div>
         </div>
 
-        <div class="character-sheet">
-            <!-- En-tête du personnage -->
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    <div class="d-flex align-items-start">
-                        <div class="me-3 position-relative">
-                            <?php if (!empty($npc->profile_photo)): ?>
-                                <img id="npc-profile-photo" src="<?php echo htmlspecialchars($npc->profile_photo); ?>" alt="Photo de <?php echo htmlspecialchars($npc->name); ?>" class="rounded" style="width: 100px; height: 100px; object-fit: cover;">
-                            <?php else: ?>
-                                <div class="bg-secondary rounded d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
-                                    <i class="fas fa-user text-white" style="font-size: 2.5rem;"></i>
-                                </div>
-                            <?php endif; ?>
-                            
-                            <?php if ($canModifyHP): ?>
-                                <button type="button" class="btn btn-sm btn-outline-primary position-absolute" style="bottom: -5px; right: -5px;" data-bs-toggle="modal" data-bs-target="#photoModal" title="Changer la photo">
-                                    <i class="fas fa-camera"></i>
-                                </button>
-                            <?php endif; ?>
-                        </div>
-                        <div>
-                            <h2><?php echo htmlspecialchars($npc->name); ?></h2>
-                            <p class="text-muted">
-                                <?php echo htmlspecialchars($raceObject->name); ?> 
-                                <?php echo htmlspecialchars($classObject->name); ?> 
-                                niveau <?php echo $npc->level; ?>
-                            </p>
-                            <?php if ($backgroundObject && $backgroundObject->name): ?>
-                                <p><strong>Historique:</strong> <?php echo htmlspecialchars($backgroundObject->name); ?></p>
-                            <?php endif; ?>
-                            <?php if ($npc->alignment): ?>
-                                <p><strong>Alignement:</strong> <?php echo htmlspecialchars($npc->alignment); ?></p>
-                            <?php endif; ?>
-                            
-                            <?php if ($characterArchetype): ?>
-                                <p><strong><?php echo htmlspecialchars($characterArchetype['archetype_type']); ?>:</strong> <?php echo htmlspecialchars($characterArchetype['name']); ?></p>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="row">
-                        <div class="col-4">
-                            <div class="stat-box">
-                                <div class="hp-display"><?php echo $npc->hit_points_current; ?>/<?php echo $npc->hit_points_max; ?></div>
-                                <div class="stat-label">Points de Vie</div>
-                                <?php if ($canModifyHP): ?>
-                                    <div class="mt-2">
-                                        <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#hpModal" title="Gérer les points de vie">
-                                            <i class="fas fa-edit"></i>
+        <!-- Zone d'entête -->
+        <div class="npc-header-section mb-4">
+            <div class="card border-0 shadow-lg">
+                <div class="card-header" style="background: linear-gradient(135deg, var(--dnd-primary-darker) 0%, var(--dnd-secondary-darker) 100%); color: var(--dnd-neutral-light);">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-start">
+                                <div class="me-3 position-relative">
+                                    <?php if (!empty($npc->profile_photo)): ?>
+                                        <img id="npc-profile-photo" src="<?php echo htmlspecialchars($npc->profile_photo); ?>" alt="Photo de <?php echo htmlspecialchars($npc->name); ?>" class="rounded npc-profile-photo border border-3 border-light shadow">
+                                    <?php else: ?>
+                                        <div class="bg-white rounded d-flex align-items-center justify-content-center npc-profile-placeholder border border-3 border-light shadow">
+                                            <i class="fas fa-user text-muted"></i>
+                                        </div>
+                                    <?php endif; ?>
+                                    
+                                    <?php if ($canModifyHP): ?>
+                                        <button type="button" class="btn btn-sm btn-light position-absolute photo-edit-button shadow" data-bs-toggle="modal" data-bs-target="#photoModal" title="Changer la photo">
+                                            <i class="fas fa-camera text-primary"></i>
                                         </button>
+                                    <?php endif; ?>
+                                </div>
+                                <div>
+                                    <h2 class="text-white mb-2">
+                                        <i class="fas fa-user-tie me-2"></i>
+                                        <?php echo htmlspecialchars($npc->name); ?>
+                                    </h2>
+                                    <p class="text-white-50 mb-1">
+                                        <i class="fas fa-tag me-1"></i>
+                                        <strong>Race :</strong> <?php echo htmlspecialchars($raceObject->name); ?>
+                                    </p>
+                                    <p class="text-white-50 mb-1">
+                                        <i class="fas fa-shield-alt me-1"></i>
+                                        <strong>Classe :</strong> <?php echo htmlspecialchars($classObject->name); ?>
+                                    </p>
+                                    <p class="text-white-50 mb-1">
+                                        <i class="fas fa-star me-1"></i>
+                                        <strong>Niveau :</strong> <?php echo $npc->level; ?>
+                                    </p>
+                                    <?php if ($backgroundObject && $backgroundObject->name): ?>
+                                        <p class="text-white-50 mb-1">
+                                            <i class="fas fa-book me-1"></i>
+                                            <strong>Historique:</strong> <?php echo htmlspecialchars($backgroundObject->name); ?>
+                                        </p>
+                                    <?php endif; ?>
+                                    <?php if ($npc->alignment): ?>
+                                        <p class="text-white-50 mb-1">
+                                            <i class="fas fa-balance-scale me-1"></i>
+                                            <strong>Alignement:</strong> <?php echo htmlspecialchars($npc->alignment); ?>
+                                        </p>
+                                    <?php endif; ?>
+                                    
+                                    <?php if ($characterArchetype): ?>
+                                        <p class="text-white-50 mb-1">
+                                            <i class="fas fa-magic me-1"></i>
+                                            <strong><?php echo htmlspecialchars($characterArchetype['archetype_type']); ?>:</strong> <?php echo htmlspecialchars($characterArchetype['name']); ?>
+                                        </p>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="row">
+                                <div class="col-4">
+                                    <div class="stat-box text-center p-3 bg-white bg-opacity-20 rounded">
+                                        <div class="hp-display text-white h5 mb-1"><?php echo $npc->hit_points_current; ?>/<?php echo $npc->hit_points_max; ?></div>
+                                        <div class="stat-label text-white-50 small">Points de Vie</div>
+                                        <?php if ($canModifyHP): ?>
+                                            <div class="mt-2">
+                                                <button type="button" class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#hpModal" title="Gérer les points de vie">
+                                                    <i class="fas fa-edit text-primary"></i>
+                                                </button>
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                        <div class="col-4">
-                            <div class="stat-box">
-                                <div class="ac-display">&nbsp;<?php echo $armorClass; ?></div>
-                                <div class="stat-label">Classe d'Armure</div>
-                            </div>
-                        </div>
-                        <div class="col-4">
-                            <div class="stat-box">
-                                <?php if ($canModifyHP): ?>
-                                    <div class="xp-display clickable-xp" data-bs-toggle="modal" data-bs-target="#xpModal" title="Gérer les points d'expérience" style="cursor: pointer;">&nbsp;<?php echo number_format($npc->experience ?? 0); ?></div>
-                                <?php else: ?>
-                                    <div class="xp-display">&nbsp;<?php echo number_format($npc->experience ?? 0); ?></div>
-                                <?php endif; ?>
-                                <div class="stat-label">Exp.</div>
-                                <small class="text-muted">Niveau <?php echo $npc->level; ?></small>
+                                </div>
+                                <div class="col-4">
+                                    <div class="stat-box text-center p-3 bg-white bg-opacity-20 rounded">
+                                        <div class="ac-display text-white h5 mb-1"><?php echo $armorClass; ?></div>
+                                        <div class="stat-label text-white-50 small">Classe d'Armure</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="stat-box text-center p-3 bg-white bg-opacity-20 rounded">
+                                        <?php if ($canModifyHP): ?>
+                                            <div class="xp-display clickable-xp text-white h5 mb-1" data-bs-toggle="modal" data-bs-target="#xpModal" title="Gérer les points d'expérience"><?php echo number_format($npc->experience ?? 0); ?></div>
+                                        <?php else: ?>
+                                            <div class="xp-display text-white h5 mb-1"><?php echo number_format($npc->experience ?? 0); ?></div>
+                                        <?php endif; ?>
+                                        <div class="stat-label text-white-50 small">Exp.</div>
+                                        <small class="text-white-50">Niveau <?php echo $npc->level; ?></small>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Caractéristiques -->
-            <div class="info-section">
-                <h3><i class="fas fa-dumbbell me-2"></i>Caractéristiques</h3>
+        <!-- Zone des onglets -->
+        <div class="npc-tabs-section">
+            <div class="card border-0 shadow">
+                <div class="card-header p-0" style="background: linear-gradient(135deg, var(--dnd-primary-darker) 0%, var(--dnd-secondary-darker) 100%);">
+                    <ul class="nav nav-tabs border-0" id="npcTabs" role="tablist" data-bs-toggle="tab">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active text-white" id="combat-tab" data-bs-toggle="tab" data-bs-target="#combat" type="button" role="tab" aria-controls="combat" aria-selected="true" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
+                                <i class="fas fa-sword me-2"></i>Combat
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link text-white" id="characteristics-tab" data-bs-toggle="tab" data-bs-target="#characteristics" type="button" role="tab" aria-controls="characteristics" aria-selected="false" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
+                                <i class="fas fa-dumbbell me-2"></i>Caractéristiques
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link text-white" id="capabilities-tab" data-bs-toggle="tab" data-bs-target="#capabilities" type="button" role="tab" aria-controls="capabilities" aria-selected="false" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
+                                <i class="fas fa-star me-2"></i>Capacités
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link text-white" id="skills-tab" data-bs-toggle="tab" data-bs-target="#skills" type="button" role="tab" aria-controls="skills" aria-selected="false" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
+                                <i class="fas fa-dice me-2"></i>Compétences
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link text-white" id="languages-tab" data-bs-toggle="tab" data-bs-target="#languages" type="button" role="tab" aria-controls="languages" aria-selected="false" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
+                                <i class="fas fa-language me-2"></i>Langues
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link text-white" id="treasury-tab" data-bs-toggle="tab" data-bs-target="#treasury" type="button" role="tab" aria-controls="treasury" aria-selected="false" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
+                                <i class="fas fa-coins me-2"></i>Bourse
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link text-white" id="equipment-tab" data-bs-toggle="tab" data-bs-target="#equipment" type="button" role="tab" aria-controls="equipment" aria-selected="false" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
+                                <i class="fas fa-backpack me-2"></i>Equipement
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link text-white" id="personal-info-tab" data-bs-toggle="tab" data-bs-target="#personal-info" type="button" role="tab" aria-controls="personal-info" aria-selected="false" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
+                                <i class="fas fa-user-edit me-2"></i>Info perso.
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            
+                <div class="tab-content" id="npcTabContent" style="background: linear-gradient(135deg, var(--dnd-bg-light) 0%, var(--dnd-bg) 100%);">
+                <!-- Onglet Combat -->
+                <div class="tab-pane fade show active" id="combat" role="tabpanel" aria-labelledby="combat-tab">
+                    <div class="p-4">
+                        <!-- Informations de combat -->
+                        <div class="info-section mb-4">
+                            <h4><i class="fas fa-sword me-2"></i>Informations de Combat</h4>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="stat-box text-center">
+                                        <div class="stat-value"><?php echo ($initiative >= 0 ? '+' : '') . $initiative; ?></div>
+                                        <div class="stat-label">Initiative</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="stat-box text-center">
+                                        <div class="stat-value"><?php echo $npc->speed; ?></div>
+                                        <div class="stat-label">Vitesse (pieds)</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="stat-box text-center">
+                                        <div class="stat-value">+<?php echo ceil($npc->level / 4) + 1; ?></div>
+                                        <div class="stat-label">Bonus de maîtrise</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="stat-box text-center">
+                                        <div class="stat-value"><?php echo $armorClass; ?></div>
+                                        <div class="stat-label">Classe d'Armure</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Classe d'armure détaillée -->
+                        <div class="info-section mb-4">
+                            <h5><i class="fas fa-shield-alt me-2"></i>Classe d'armure</h5>
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h4 class="text-primary">CA: <?php echo $armorClass; ?></h4>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <small class="text-muted">
+                                                <?php if ($equippedArmor): ?>
+                                                    <strong>Armure:</strong> <?php echo $equippedArmor['name']; ?> (<?php echo $equippedArmor['ac_formula']; ?>)<br>
+                                                <?php else: ?>
+                                                    <?php if ($isBarbarian): ?>
+                                                        <strong>Armure:</strong> Aucune (10 + modificateur de Dextérité + modificateur de Constitution)<br>
+                                                    <?php else: ?>
+                                                        <strong>Armure:</strong> Aucune (10 + modificateur de Dextérité)<br>
+                                                    <?php endif; ?>
+                                                <?php endif; ?>
+                                                
+                                                <?php if ($equippedShield): ?>
+                                                    <strong>Bouclier:</strong> <?php echo $equippedShield['name']; ?> (+<?php echo $equippedShield['ac_bonus']; ?>)<br>
+                                                <?php else: ?>
+                                                    <strong>Bouclier:</strong> Aucun<br>
+                                                <?php endif; ?>
+                                                
+                                                <strong>Modificateur de Dextérité:</strong> <?php echo ($dexterityModifier >= 0 ? '+' : '') . $dexterityModifier; ?>
+                                                <?php if ($isBarbarian && !$equippedArmor): ?>
+                                                    <br><strong>Modificateur de Constitution:</strong> <?php echo ($constitutionModifier >= 0 ? '+' : '') . $constitutionModifier; ?>
+                                                <?php endif; ?>
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Attaques -->
+                        <div class="info-section mb-4">
+                            <h5><i class="fas fa-sword me-2"></i>Attaques</h5>
+                            <div class="card">
+                                <div class="card-body">
+                                    <?php if (!empty($characterAttacks)): ?>
+                                        <?php foreach ($characterAttacks as $attack): ?>
+                                            <div class="row mb-2">
+                                                <div class="col-12">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <strong><?php echo htmlspecialchars($attack['name']); ?></strong><br>
+                                                            <small class="text-muted"><?php echo htmlspecialchars($attack['damage']); ?></small>
+                                                        </div>
+                                                        <div class="text-end">
+                                                            <span class="badge bg-<?php echo $attack['type'] === 'two_handed' ? 'danger' : ($attack['type'] === 'main_hand' ? 'success' : 'info'); ?> fs-6">
+                                                                <?php echo (($attack['attack_bonus'] ?? 0) >= 0 ? '+' : '') . ($attack['attack_bonus'] ?? 0); ?>
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <?php if ($attack !== end($characterAttacks)): ?>
+                                                <hr class="my-2">
+                                            <?php endif; ?>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <div class="text-center text-muted">
+                                            <i class="fas fa-hand-paper fa-2x mb-2"></i>
+                                            <p>Aucune arme équipée</p>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Rages (pour les barbares) -->
+                        <?php if ($isBarbarian && $rageData): ?>
+                        <div class="info-section mb-4">
+                            <h5><i class="fas fa-fire me-2"></i>Gestion des Rages</h5>
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <div class="rage-container">
+                                        <div class="rage-symbols">
+                                            <?php for ($i = 1; $i <= $rageData['max']; $i++): ?>
+                                                <div class="rage-symbol <?php echo $i <= $rageData['used'] ? 'used' : 'available'; ?>" 
+                                                     data-rage="<?php echo $i; ?>" data-npc-id="<?php echo $npc_id; ?>" data-action="toggle"
+                                                     title="<?php echo $i <= $rageData['used'] ? 'Rage utilisée' : 'Rage disponible'; ?>">
+                                                    <i class="fas fa-fire"></i>
+                                                </div>
+                                            <?php endfor; ?>
+                                        </div>
+                                        <div class="rage-info mt-2">
+                                            <span class="badge bg-info"><?php echo $rageData['available']; ?>/<?php echo $rageData['max']; ?> rages disponibles</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <button class="btn btn-warning" data-npc-id="<?php echo $npc_id; ?>" data-action="reset">
+                                        <i class="fas fa-moon me-1"></i>Long repos
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                        
+                        <!-- Bouton Grimoire pour les classes de sorts -->
+                        <?php 
+                        // Classes qui peuvent lancer des sorts
+                        $spellcastingClasses = [2, 3, 4, 5, 7, 9, 10, 11]; // Barde, Clerc, Druide, Ensorceleur, Magicien, Occultiste, Paladin, Rôdeur
+                        $canCastSpells = in_array($npc->class_id, $spellcastingClasses);
+                        ?>
+                        <?php if ($canCastSpells): ?>
+                        <div class="info-section">
+                            <div class="d-flex justify-content-center">
+                                <a href="grimoire_npc.php?id=<?php echo $npc_id; ?>" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-book-open me-2"></i>Grimoire
+                                </a>
+                            </div>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Onglet Caractéristiques -->
+                <div class="tab-pane fade" id="characteristics" role="tabpanel" aria-labelledby="characteristics-tab">
+                    <div class="p-4">
+                        <div class="info-section">
+                            <h4><i class="fas fa-dumbbell me-2"></i>Caractéristiques</h4>
                 
                 <!-- Tableau des caractéristiques -->
                 <div class="table-responsive">
                     <table class="table table-bordered table-striped">
                         <thead class="table-dark">
                             <tr>
-                                <th style="width: 20%;">Type</th>
-                                <th style="width: 13.33%;">Force</th>
-                                <th style="width: 13.33%;">Dextérité</th>
-                                <th style="width: 13.33%;">Constitution</th>
-                                <th style="width: 13.33%;">Intelligence</th>
-                                <th style="width: 13.33%;">Sagesse</th>
-                                <th style="width: 13.33%;">Charisme</th>
+                                <th class="table-header-narrow">Type</th>
+                                <th class="table-header-medium">Force</th>
+                                <th class="table-header-medium">Dextérité</th>
+                                <th class="table-header-medium">Constitution</th>
+                                <th class="table-header-medium">Intelligence</th>
+                                <th class="table-header-medium">Sagesse</th>
+                                <th class="table-header-medium">Charisme</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -680,884 +912,456 @@ $initiative = $dexterityModifier;
                         </tbody>
                     </table>
                 </div>
-            </div>
+                        </div>
+                    </div>
+                </div>
 
-            <!-- Rages (pour les barbares) -->
-            <?php if ($isBarbarian && $rageData): ?>
-            <div class="info-section">
-                <h3><i class="fas fa-fire me-2"></i>Rages</h3>
-                <div class="row align-items-center">
-                    <div class="col-md-8">
-                        <div class="rage-container">
-                            <div class="rage-symbols">
-                                <?php for ($i = 1; $i <= $rageData['max']; $i++): ?>
-                                    <div class="rage-symbol <?php echo $i <= $rageData['used'] ? 'used' : 'available'; ?>" 
-                                         onclick="toggleRage(<?php echo $npc_id; ?>, <?php echo $i; ?>)"
-                                         data-rage="<?php echo $i; ?>"
-                                         title="<?php echo $i <= $rageData['used'] ? 'Rage utilisée' : 'Rage disponible'; ?>">
-                                        <i class="fas fa-fire"></i>
-                                    </div>
-                                <?php endfor; ?>
-                            </div>
-                            <div class="rage-info mt-2">
-                                <span class="badge bg-info"><?php echo $rageData['available']; ?>/<?php echo $rageData['max']; ?> rages disponibles</span>
+                <!-- Onglet Capacités -->
+                <div class="tab-pane fade" id="capabilities" role="tabpanel" aria-labelledby="capabilities-tab">
+                    <div class="p-4">
+                        <div class="info-section">
+                            <h4><i class="fas fa-star me-2"></i>Capacités</h4>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <h5>Toutes les capacités</h5>
+                                    <?php if (!empty($allCapabilities)): ?>
+                                        <div class="capabilities-list">
+                                            <?php foreach ($allCapabilities as $capability): ?>
+                                                <div class="capability-item">
+                                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                                        <strong class="text-primary"><?php echo htmlspecialchars($capability['name'] ?? 'Capacité inconnue'); ?></strong>
+                                                        <?php if (!empty($capability['type_name'])): ?>
+                                                            <span class="badge bg-secondary"><?php echo htmlspecialchars($capability['type_name']); ?></span>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                    <?php if (!empty($capability['description'])): ?>
+                                                        <p class="mb-2 text-muted"><?php echo htmlspecialchars($capability['description']); ?></p>
+                                                    <?php endif; ?>
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <?php if (!empty($capability['source'])): ?>
+                                                            <small class="text-muted">
+                                                                <i class="fas fa-tag me-1"></i>Source: <?php echo htmlspecialchars($capability['source']); ?>
+                                                            </small>
+                                                        <?php endif; ?>
+                                                        <?php if (!empty($capability['learned_at'])): ?>
+                                                            <small class="text-muted">
+                                                                <i class="fas fa-calendar me-1"></i><?php echo date('d/m/Y', strtotime($capability['learned_at'])); ?>
+                                                            </small>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="text-center py-4">
+                                            <i class="fas fa-star text-muted fa-3x mb-3"></i>
+                                            <p class="text-muted">Aucune capacité assignée à ce PNJ.</p>
+                                            <small class="text-muted">Les capacités peuvent être ajoutées via la gestion des PNJ.</small>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <button class="btn btn-warning" onclick="resetRages(<?php echo $npc_id; ?>)">
-                            <i class="fas fa-moon me-1"></i>Long repos
-                        </button>
-                    </div>
                 </div>
-            </div>
-            <?php endif; ?>
 
-            <!-- Combat -->
-            <div class="info-section">
-                <h3><i class="fas fa-sword me-2"></i>Combat</h3>
-                <div class="row">
-                    <div class="col-md-3">
-                        <strong>Initiative:</strong> &nbsp;<?php echo ($initiative >= 0 ? '+' : '') . $initiative; ?>
-                    </div>
-                    <div class="col-md-3">
-                        <strong>Vitesse:</strong> &nbsp;<?php echo $npc->speed; ?> pieds
-                    </div>
-                    <div class="col-md-3">
-                        <strong>Bonus de maîtrise:</strong> &nbsp;+<?php echo ceil($npc->level / 4) + 1; ?>
+                <!-- Onglet Compétences -->
+                <div class="tab-pane fade" id="skills" role="tabpanel" aria-labelledby="skills-tab">
+                    <div class="p-4">
+                        <div class="info-section">
+                            <h4><i class="fas fa-dice me-2"></i>Compétences</h4>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>Compétences maîtrisées</h5>
+                                    <?php if (!empty($allSkills)): ?>
+                                        <div class="skills-list">
+                                            <?php foreach ($allSkills as $skill): ?>
+                                                <span class="badge bg-primary me-2 mb-2"><?php echo htmlspecialchars($skill); ?></span>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php else: ?>
+                                        <p class="text-muted">Aucune compétence maîtrisée.</p>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5>Outils et instruments</h5>
+                                    <?php if (!empty($allTools)): ?>
+                                        <div class="tools-list">
+                                            <?php foreach ($allTools as $tool): ?>
+                                                <span class="badge bg-secondary me-2 mb-2"><?php echo htmlspecialchars($tool); ?></span>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php else: ?>
+                                        <p class="text-muted">Aucun outil ou instrument maîtrisé.</p>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                
-                <!-- Classe d'armure et Attaques -->
-                <div class="row mt-3">
-                    <div class="col-md-6">
-                        <h5><i class="fas fa-shield-alt me-2"></i>Classe d'armure</h5>
-                        <div class="card">
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <h4 class="text-primary">CA: <?php echo $armorClass; ?></h4>
+
+                <!-- Onglet Langues -->
+                <div class="tab-pane fade" id="languages" role="tabpanel" aria-labelledby="languages-tab">
+                    <div class="p-4">
+                        <div class="info-section">
+                            <h4><i class="fas fa-language me-2"></i>Langues</h4>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5>Langues parlées</h5>
+                                    <?php if (!empty($characterLanguages)): ?>
+                                        <div class="languages-list">
+                                            <?php foreach ($characterLanguages as $language): ?>
+                                                <span class="badge bg-info me-2 mb-2"><?php echo htmlspecialchars($language); ?></span>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php else: ?>
+                                        <p class="text-muted">Aucune langue supplémentaire.</p>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5>Langues de l'historique</h5>
+                                    <?php if (!empty($backgroundLanguages)): ?>
+                                        <div class="languages-list">
+                                            <?php foreach ($backgroundLanguages as $language): ?>
+                                                <span class="badge bg-warning me-2 mb-2"><?php echo htmlspecialchars($language); ?></span>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php else: ?>
+                                        <p class="text-muted">Aucune langue de l'historique.</p>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Onglet Bourse -->
+                <div class="tab-pane fade" id="treasury" role="tabpanel" aria-labelledby="treasury-tab">
+                    <div class="p-4">
+                        <div class="info-section">
+                            <h4><i class="fas fa-coins me-2"></i>Bourse</h4>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="stat-box text-center">
+                                        <div class="currency-display"><?php echo $npc->gold ?? 0; ?></div>
+                                        <div class="stat-label">Pièces d'or</div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <small class="text-muted">
-                                            <?php if ($equippedArmor): ?>
-                                                <strong>Armure:</strong> <?php echo $equippedArmor['name']; ?> (<?php echo $equippedArmor['ac_formula']; ?>)<br>
-                                            <?php else: ?>
-                                                <?php if ($isBarbarian): ?>
-                                                    <strong>Armure:</strong> Aucune (10 + modificateur de Dextérité + modificateur de Constitution)<br>
-                                                <?php else: ?>
-                                                    <strong>Armure:</strong> Aucune (10 + modificateur de Dextérité)<br>
-                                                <?php endif; ?>
-                                            <?php endif; ?>
-                                            
-                                            <?php if ($equippedShield): ?>
-                                                <strong>Bouclier:</strong> <?php echo $equippedShield['name']; ?> (+<?php echo $equippedShield['ac_bonus']; ?>)<br>
-                                            <?php else: ?>
-                                                <strong>Bouclier:</strong> Aucun<br>
-                                            <?php endif; ?>
-                                            
-                                            <strong>Modificateur de Dextérité:</strong> <?php echo ($dexterityModifier >= 0 ? '+' : '') . $dexterityModifier; ?>
-                                            <?php if ($isBarbarian && !$equippedArmor): ?>
-                                                <br><strong>Modificateur de Constitution:</strong> <?php echo ($constitutionModifier >= 0 ? '+' : '') . $constitutionModifier; ?>
-                                            <?php endif; ?>
-                                        </small>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="stat-box text-center">
+                                        <div class="currency-display"><?php echo $npc->silver ?? 0; ?></div>
+                                        <div class="stat-label">Pièces d'argent</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="stat-box text-center">
+                                        <div class="currency-display"><?php echo $npc->copper ?? 0; ?></div>
+                                        <div class="stat-label">Pièces de cuivre</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="stat-box text-center">
+                                        <div class="currency-display"><?php echo $npc->platinum ?? 0; ?></div>
+                                        <div class="stat-label">Pièces de platine</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="col-md-6">
-                        <h5><i class="fas fa-sword me-2"></i>Attaques</h5>
+                </div>
+
+                <!-- Onglet Equipement -->
+                <div class="tab-pane fade" id="equipment" role="tabpanel" aria-labelledby="equipment-tab">
+                    <div class="p-4">
+                        <div class="info-section">
+                            <h4><i class="fas fa-backpack me-2"></i>Équipement</h4>
+                            
+                            <!-- Filtres et contrôles -->
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control" id="searchInput" placeholder="Rechercher un objet..." onkeyup="filterTable()">
+                                </div>
+                                <div class="col-md-3">
+                                    <select class="form-select" id="typeFilter" onchange="filterTable()">
+                                        <option value="">Tous les types</option>
+                                        <option value="weapon">Armes</option>
+                                        <option value="armor">Armures</option>
+                                        <option value="shield">Boucliers</option>
+                                        <option value="magical_item">Objets magiques</option>
+                                        <option value="poison">Poisons</option>
+                                        <option value="misc">Divers</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <select class="form-select" id="statusFilter" onchange="filterTable()">
+                                        <option value="">Tous</option>
+                                        <option value="equipped">Équipés</option>
+                                        <option value="unequipped">Non équipés</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <button class="btn btn-outline-secondary w-100" onclick="resetFilters()">
+                                        <i class="fas fa-undo me-1"></i>Réinitialiser
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Tableau d'équipement -->
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover" id="equipmentTable">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th onclick="sortTable(0)" style="cursor: pointer;">
+                                                Nom <i class="fas fa-sort ms-1"></i>
+                                            </th>
+                                            <th onclick="sortTable(1)" style="cursor: pointer;">
+                                                Type <i class="fas fa-sort ms-1"></i>
+                                            </th>
+                                            <th onclick="sortTable(2)" style="cursor: pointer;">
+                                                Description <i class="fas fa-sort ms-1"></i>
+                                            </th>
+                                            <th>État</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php 
+                                        // Combiner tous les objets du personnage
+                                        $allCharacterItems = array_merge($allMagicalEquipment, $allPoisons);
+                                        
+                                        // Fonction pour vérifier si un objet existe déjà
+                                        function itemExists($items, $name, $type) {
+                                            foreach ($items as $item) {
+                                                if (($item['item_name'] ?? '') === $name && ($item['item_type'] ?? '') === $type) {
+                                                    return true;
+                                                }
+                                            }
+                                            return false;
+                                        }
+                                        
+                                        foreach ($allCharacterItems as $item): 
+                                            // Utiliser les champs standardisés
+                                            $itemName = $item['item_name'] ?? $item['display_name'] ?? 'Objet inconnu';
+                                            $itemType = $item['item_type'] ?? $item['object_type'] ?? 'unknown';
+                                            $displayName = htmlspecialchars($itemName);
+                                            $typeLabel = ucfirst(str_replace('_', ' ', $itemType));
+                                        ?>
+                                        <tr data-type="<?php echo $itemType; ?>" data-equipped="<?php echo ($item['is_equipped'] ?? $item['equipped'] ?? false) ? 'equipped' : 'unequipped'; ?>">
+                                            <td>
+                                                <strong><?php echo $displayName; ?></strong>
+                                                <?php if (($item['quantity'] ?? 1) > 1): ?>
+                                                    <span class="badge bg-info ms-1">x<?php echo $item['quantity']; ?></span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-<?php 
+                                                    echo match($itemType) {
+                                                        'weapon' => 'danger',
+                                                        'armor' => 'primary', 
+                                                        'shield' => 'info',
+                                                        'magical_item' => 'success',
+                                                        'poison' => 'warning',
+                                                        'bag' => 'secondary',
+                                                        'tool' => 'info',
+                                                        'clothing' => 'light text-dark',
+                                                        'consumable' => 'warning',
+                                                        'misc' => 'secondary',
+                                                        default => 'light text-dark'
+                                                    };
+                                                ?>">
+                                                    <?php echo $typeLabel; ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <small class="text-muted"><?php echo htmlspecialchars($item['item_description'] ?? $item['description'] ?? ''); ?></small>
+                                            </td>
+                                            <td>
+                                                <?php if ($item['is_equipped'] ?? $item['equipped'] ?? false): ?>
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-check-circle me-1"></i>Équipé
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="badge bg-secondary">
+                                                        <i class="fas fa-times-circle me-1"></i>Non équipé
+                                                    </span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td style="min-width: 300px; white-space: nowrap; overflow: visible;">
+                                                <?php if ($itemType === 'weapon' || $itemType === 'armor' || $itemType === 'shield'): ?>
+                                                    <?php if ($item['is_equipped'] ?? $item['equipped'] ?? false): ?>
+                                                        <button class="btn btn-warning btn-sm" onclick="unequipItem(<?php echo $npc->id; ?>, '<?php echo addslashes($itemName); ?>')"
+                                                                style="white-space: nowrap; min-width: 80px;">
+                                                            <i class="fas fa-hand-paper me-1"></i>Déséquiper
+                                                        </button>
+                                                    <?php else: ?>
+                                                        <?php 
+                                                        $slot = match($itemType) {
+                                                            'weapon' => 'main_hand',
+                                                            'armor' => 'armor',
+                                                            'shield' => 'off_hand',
+                                                            default => 'main_hand'
+                                                        };
+                                                        ?>
+                                                        <button class="btn btn-success btn-sm" onclick="equipItem(<?php echo $npc->id; ?>, '<?php echo addslashes($itemName); ?>', '<?php echo $itemType; ?>', '<?php echo $slot; ?>')"
+                                                                style="white-space: nowrap; min-width: 80px;">
+                                                            <i class="fas fa-hand-rock me-1"></i>Équiper
+                                                        </button>
+                                                    <?php endif; ?>
+                                                <?php else: ?>
+                                                    <span class="text-muted">Non équipable</span>
+                                                <?php endif; ?>
+                                                
+                                                <?php if ($canModifyHP && !str_starts_with($item['id'] ?? '', 'base_')): ?>
+                                                    <button type="button" class="btn btn-outline-primary btn-sm ms-1" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#transferModal" 
+                                                            data-item-id="<?php echo $item['id'] ?? ''; ?>"
+                                                            data-item-name="<?php echo htmlspecialchars($itemName); ?>"
+                                                            data-item-type="<?php echo htmlspecialchars($itemType); ?>"
+                                                            data-source="character_equipment"
+                                                            style="white-space: nowrap; min-width: 80px;">
+                                                        <i class="fas fa-exchange-alt me-1"></i>Transférer
+                                                    </button>
+                                                    <?php if (!($item['is_equipped'] ?? $item['equipped'] ?? false)): ?>
+                                                        <button type="button" class="btn btn-outline-warning btn-sm ms-1" 
+                                                                onclick="dropItem(<?php echo $item['id'] ?? 0; ?>, '<?php echo addslashes($item['item_name'] ?? ''); ?>')"
+                                                                title="Déposer l'objet dans le lieu actuel"
+                                                                style="white-space: nowrap; min-width: 80px;">
+                                                            <i class="fas fa-hand-holding me-1"></i>Déposer
+                                                        </button>
+                                                    <?php endif; ?>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                        
+                                        <?php if (empty($allCharacterItems)): ?>
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted">
+                                                <i class="fas fa-inbox fa-2x mb-2"></i><br>
+                                                Aucun objet trouvé
+                                            </td>
+                                        </tr>
+                                        <?php endif; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Onglet Info perso. -->
+                <div class="tab-pane fade" id="personal-info" role="tabpanel" aria-labelledby="personal-info-tab">
+                    <div class="p-4">
                         <div class="card">
+                            <div class="card-header">
+                                <h3><i class="fas fa-book me-2"></i>Histoire du Personnage</h3>
+                                <p class="mb-0 text-muted">L'histoire, la personnalité et les traits de ce PNJ</p>
+                            </div>
                             <div class="card-body">
-                                <?php if (!empty($characterAttacks)): ?>
-                                    <?php foreach ($characterAttacks as $attack): ?>
-                                        <div class="row mb-2">
-                                            <div class="col-12">
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <div>
-                                                        <strong><?php echo htmlspecialchars($attack['name']); ?></strong><br>
-                                                        <small class="text-muted"><?php echo htmlspecialchars($attack['damage']); ?></small>
+                                <?php if ($npc->personality_traits || $npc->ideals || $npc->bonds || $npc->flaws): ?>
+                                    <!-- Traits de personnalité -->
+                                    <div class="card mb-4">
+                                        <div class="card-header">
+                                            <h5><i class="fas fa-heart me-2"></i>Traits de personnalité</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="text-muted mb-3">
+                                                Les traits de personnalité de ce PNJ qui l'aident à prendre des décisions 
+                                                et à interagir avec les autres.
+                                            </p>
+                                            
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Traits de personnalité</label>
+                                                        <div class="form-control-plaintext bg-light p-3 rounded">
+                                                            <?php if ($npc->personality_traits): ?>
+                                                                <?php echo nl2br(htmlspecialchars($npc->personality_traits)); ?>
+                                                            <?php else: ?>
+                                                                <em class="text-muted">Aucun trait de personnalité défini</em>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                        <div class="form-text">
+                                                            <i class="fas fa-info-circle me-1"></i>
+                                                            Comment ce PNJ se comporte-t-il ? Qu'est-ce qui le caractérise ?
+                                                        </div>
                                                     </div>
-                                                    <div class="text-end">
-                                                        <span class="badge bg-<?php echo $attack['type'] === 'two_handed' ? 'danger' : ($attack['type'] === 'main_hand' ? 'success' : 'info'); ?> fs-6">
-                                                            <?php echo (($attack['attack_bonus'] ?? 0) >= 0 ? '+' : '') . ($attack['attack_bonus'] ?? 0); ?>
-                                                        </span>
+                                                </div>
+                                                
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Idéaux</label>
+                                                        <div class="form-control-plaintext bg-light p-3 rounded">
+                                                            <?php if ($npc->ideals): ?>
+                                                                <?php echo nl2br(htmlspecialchars($npc->ideals)); ?>
+                                                            <?php else: ?>
+                                                                <em class="text-muted">Aucun idéal défini</em>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                        <div class="form-text">
+                                                            <i class="fas fa-star me-1"></i>
+                                                            Quelles valeurs sont importantes pour ce PNJ ?
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Liens</label>
+                                                        <div class="form-control-plaintext bg-light p-3 rounded">
+                                                            <?php if ($npc->bonds): ?>
+                                                                <?php echo nl2br(htmlspecialchars($npc->bonds)); ?>
+                                                            <?php else: ?>
+                                                                <em class="text-muted">Aucun lien défini</em>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                        <div class="form-text">
+                                                            <i class="fas fa-link me-1"></i>
+                                                            À quoi ou à qui ce PNJ est-il attaché ?
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="col-md-6">
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Défauts</label>
+                                                        <div class="form-control-plaintext bg-light p-3 rounded">
+                                                            <?php if ($npc->flaws): ?>
+                                                                <?php echo nl2br(htmlspecialchars($npc->flaws)); ?>
+                                                            <?php else: ?>
+                                                                <em class="text-muted">Aucun défaut défini</em>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                        <div class="form-text">
+                                                            <i class="fas fa-exclamation-triangle me-1"></i>
+                                                            Quelles sont les faiblesses ou les vices de ce PNJ ?
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                        <?php if ($attack !== end($characterAttacks)): ?>
-                                            <hr class="my-2">
-                                        <?php endif; ?>
-                                    <?php endforeach; ?>
+                                    </div>
                                 <?php else: ?>
-                                    <div class="text-center text-muted">
-                                        <i class="fas fa-hand-paper fa-2x mb-2"></i>
-                                        <p>Aucune arme équipée</p>
+                                    <div class="text-center py-4">
+                                        <i class="fas fa-user-edit text-muted fa-3x mb-3"></i>
+                                        <p class="text-muted">Aucune information personnelle définie pour ce PNJ.</p>
+                                        <small class="text-muted">Les traits de personnalité, idéaux, liens et défauts peuvent être ajoutés lors de la création ou modification du PNJ.</small>
                                     </div>
                                 <?php endif; ?>
                             </div>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Bouton Grimoire pour les classes de sorts -->
-                <?php 
-                // Classes qui peuvent lancer des sorts
-                $spellcastingClasses = [2, 3, 4, 5, 7, 9, 10, 11]; // Barde, Clerc, Druide, Ensorceleur, Magicien, Occultiste, Paladin, Rôdeur
-                $canCastSpells = in_array($npc->class_id, $spellcastingClasses);
-                ?>
-                <?php if ($canCastSpells): ?>
-                <div class="row mt-3">
-                    <div class="col-12">
-                        <div class="d-flex justify-content-center">
-                            <a href="grimoire_npc.php?id=<?php echo $npc_id; ?>" class="btn btn-primary btn-lg">
-                                <i class="fas fa-book-open me-2"></i>Grimoire
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                <?php endif; ?>
-                
-                <!-- Arme équipée -->
-                <?php if ($equippedItems['main_hand']): ?>
-                <div class="row mt-3">
-                    <div class="col-12">
-                        <h5><i class="fas fa-sword me-2"></i>Arme équipée</h5>
-                        <div class="card">
-                            <div class="card-body">
-                                <?php
-                                // Trouver l'arme équipée dans les armes détectées
-                                $equippedWeapon = null;
-                                foreach ($detectedWeapons as $weapon) {
-                                    if ($weapon['name'] === $equippedItems['main_hand']) {
-                                        $equippedWeapon = $weapon;
-                                        break;
-                                    }
-                                }
-                                ?>
-                                
-                                <?php if ($equippedWeapon): ?>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <h4 class="text-success"><?php echo htmlspecialchars($equippedWeapon['name']); ?></h4>
-                                        <p class="mb-1">
-                                            <strong>Dégâts:</strong> <?php echo htmlspecialchars($equippedWeapon['damage']); ?><br>
-                                            <strong>Type:</strong> <?php echo htmlspecialchars($equippedWeapon['type']); ?><br>
-                                            <strong>Mains:</strong> <?php echo $equippedWeapon['hands']; ?> main(s)
-                                        </p>
-                                        <?php if ($equippedWeapon['properties']): ?>
-                                        <p class="mb-1">
-                                            <strong>Propriétés:</strong> <?php echo htmlspecialchars($equippedWeapon['properties']); ?>
-                                        </p>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                                <?php else: ?>
-                                <p class="text-muted">Arme équipée non trouvée dans la base de données</p>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <?php endif; ?>
-            </div>
-
-
-            <!-- Capacités -->
-            <div class="info-section">
-                <h3><i class="fas fa-star me-2"></i>Capacités</h3>
-                <div class="row">
-                    <div class="col-md-6">
-                        <h5><i class="fas fa-star me-2"></i>Liste des capacités</h5>
-                        <?php 
-                        // Utiliser les capacités du nouveau système homogène
-                        $displayCapabilities = [];
-                        
-                        // Ajouter les capacités de classe
-                            foreach ($classCapabilities as $capability) {
-                            $displayCapabilities[] = [
-                                    'name' => $capability['name'],
-                                    'description' => $capability['description'],
-                                'type' => $capability['type_name'],
-                                'icon' => $capability['icon'],
-                                'color' => $capability['color'],
-                                'source_type' => 'Classe'
-                            ];
-                        }
-                        
-                        // Ajouter les capacités raciales
-                            foreach ($raceCapabilities as $capability) {
-                            $displayCapabilities[] = [
-                                    'name' => $capability['name'],
-                                    'description' => $capability['description'],
-                                'type' => $capability['type_name'],
-                                'icon' => $capability['icon'],
-                                'color' => $capability['color'],
-                                'source_type' => 'Race'
-                            ];
-                        }
-                        
-                        // Ajouter les capacités d'historique
-                        foreach ($backgroundCapabilities as $capability) {
-                            $displayCapabilities[] = [
-                                'name' => $capability['name'],
-                                'description' => $capability['description'],
-                                'type' => $capability['type_name'],
-                                'icon' => $capability['icon'],
-                                'color' => $capability['color'],
-                                'source_type' => 'Historique'
-                            ];
-                        }
-                        
-                        // Ajouter les capacités spécialisées (voie primitive, etc.)
-                        if ($barbarianPath) {
-                            $displayCapabilities[] = [
-                                'name' => $barbarianPath['name'],
-                                'description' => $barbarianPath['description'],
-                                'type' => 'Voie primitive',
-                                'icon' => 'fas fa-route',
-                                'color' => 'warning',
-                                'source_type' => 'Spécial'
-                            ];
-                        }
-                        
-                        // Ajouter les autres archetypes
-                        if ($paladinOath) {
-                            $displayCapabilities[] = [
-                                'name' => $paladinOath['name'],
-                                'description' => $paladinOath['description'],
-                                'type' => 'Serment sacré',
-                                'icon' => 'fas fa-shield-alt',
-                                'color' => 'primary',
-                                'source_type' => 'Spécial'
-                            ];
-                        }
-                        
-                        if ($rangerArchetype) {
-                            $displayCapabilities[] = [
-                                'name' => $rangerArchetype['name'],
-                                'description' => $rangerArchetype['description'],
-                                'type' => 'Archétype de rôdeur',
-                                'icon' => 'fas fa-bow-arrow',
-                                'color' => 'success',
-                                'source_type' => 'Spécial'
-                            ];
-                        }
-                        
-                        if ($rogueArchetype) {
-                            $displayCapabilities[] = [
-                                'name' => $rogueArchetype['name'],
-                                'description' => $rogueArchetype['description'],
-                                'type' => 'Archétype de roublard',
-                                'icon' => 'fas fa-user-ninja',
-                                'color' => 'dark',
-                                'source_type' => 'Spécial'
-                            ];
-                        }
-                        
-                        if ($bardCollege) {
-                            $displayCapabilities[] = [
-                                'name' => $bardCollege['name'],
-                                'description' => $bardCollege['description'],
-                                'type' => 'Collège bardique',
-                                'icon' => 'fas fa-music',
-                                'color' => 'info',
-                                'source_type' => 'Spécial'
-                            ];
-                        }
-                        
-                        if ($clericDomain) {
-                            $displayCapabilities[] = [
-                                'name' => $clericDomain['name'],
-                                'description' => $clericDomain['description'],
-                                'type' => 'Domaine divin',
-                                'icon' => 'fas fa-cross',
-                                'color' => 'light',
-                                'source_type' => 'Spécial'
-                            ];
-                        }
-                        
-                        if ($druidCircle) {
-                            $displayCapabilities[] = [
-                                'name' => $druidCircle['name'],
-                                'description' => $druidCircle['description'],
-                                'type' => 'Cercle druidique',
-                                'icon' => 'fas fa-leaf',
-                                'color' => 'success',
-                                'source_type' => 'Spécial'
-                            ];
-                        }
-                        
-                        if ($sorcererOrigin) {
-                            $displayCapabilities[] = [
-                                'name' => $sorcererOrigin['name'],
-                                'description' => $sorcererOrigin['description'],
-                                'type' => 'Origine magique',
-                                'icon' => 'fas fa-bolt',
-                                'color' => 'warning',
-                                'source_type' => 'Spécial'
-                            ];
-                        }
-                        
-                        if ($fighterArchetype) {
-                            $displayCapabilities[] = [
-                                'name' => $fighterArchetype['name'],
-                                'description' => $fighterArchetype['description'],
-                                'type' => 'Archétype martial',
-                                'icon' => 'fas fa-sword',
-                                'color' => 'danger',
-                                'source_type' => 'Spécial'
-                            ];
-                        }
-                        
-                        if ($wizardTradition) {
-                            $displayCapabilities[] = [
-                                'name' => $wizardTradition['name'],
-                                'description' => $wizardTradition['description'],
-                                'type' => 'Tradition arcanique',
-                                'icon' => 'fas fa-hat-wizard',
-                                'color' => 'primary',
-                                'source_type' => 'Spécial'
-                            ];
-                        }
-                        
-                        if ($monkTradition) {
-                            $displayCapabilities[] = [
-                                'name' => $monkTradition['name'],
-                                'description' => $monkTradition['description'],
-                                'type' => 'Tradition monastique',
-                                'icon' => 'fas fa-fist-raised',
-                                'color' => 'secondary',
-                                'source_type' => 'Spécial'
-                            ];
-                        }
-                        
-                        if ($warlockPact) {
-                            $displayCapabilities[] = [
-                                'name' => $warlockPact['name'],
-                                'description' => $warlockPact['description'],
-                                'type' => 'Faveur de pacte',
-                                'icon' => 'fas fa-handshake',
-                                'color' => 'dark',
-                                'source_type' => 'Spécial'
-                            ];
-                        }
-                        ?>
-                        
-                        <?php 
-                        // Debug temporaire pour voir les capacités à afficher
-                        error_log("Debug view_npc.php - Display capabilities count: " . count($displayCapabilities));
-                        error_log("Debug view_npc.php - Class capabilities count: " . count($classCapabilities));
-                        error_log("Debug view_npc.php - Race capabilities count: " . count($raceCapabilities));
-                        error_log("Debug view_npc.php - Background capabilities count: " . count($backgroundCapabilities));
-                        ?>
-                        
-                        <?php if (!empty($displayCapabilities)): ?>
-                            <div class="list-group capabilities-list">
-                                <?php foreach ($displayCapabilities as $capability): ?>
-                                    <a href="#" class="list-group-item list-group-item-action capability-item" 
-                                       data-capability='<?php echo htmlspecialchars(json_encode($capability)); ?>'>
-                                        <div class="d-flex w-100 justify-content-between">
-                                            <h6 class="mb-1">
-                                                <i class="<?php echo $capability['icon']; ?> me-1"></i>
-                                                <?php echo htmlspecialchars($capability['name']); ?>
-                                            </h6>
-                                            <small class="text-muted">Cliquez pour voir les détails</small>
-                                        </div>
-                                        <small class="text-<?php echo $capability['color']; ?>"><?php echo $capability['source_type']; ?></small>
-                                    </a>
-                                <?php endforeach; ?>
-                            </div>
-                        <?php else: ?>
-                            <p class="text-muted">Aucune capacité spéciale</p>
-                        <?php endif; ?>
-                    </div>
-                    <div class="col-md-6">
-                        <h5><i class="fas fa-info-circle me-2"></i>Détail de la capacité</h5>
-                        <div id="capability-detail" class="card">
-                            <div class="card-body">
-                                <p class="text-muted mb-0">Sélectionnez une capacité pour voir ses détails.</p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
-
-            <!-- Compétences -->
-            <div class="info-section">
-                <h3><i class="fas fa-dice me-2"></i>Compétences</h3>
-                <div class="row">
-                    <div class="col-md-6">
-                        <h5><i class="fas fa-check-circle me-2"></i>Compétences maîtrisées</h5>
-                        <?php if (!empty($allSkills)): ?>
-                            <div class="list-group skills-list">
-                                <?php foreach ($allSkills as $skill): ?>
-                                    <?php 
-                                    // Déterminer la source de la compétence
-                                    $isBackgroundSkill = in_array($skill, $backgroundSkills);
-                                    $isCharacterSkill = in_array($skill, $characterSkills);
-                                    $sourceClass = $isBackgroundSkill ? 'text-success' : 'text-primary';
-                                    $sourceIcon = $isBackgroundSkill ? 'fas fa-book' : 'fas fa-user';
-                                    $sourceText = $isBackgroundSkill ? 'Historique' : 'Classe/Race';
-                                    ?>
-                                    <a href="#" class="list-group-item list-group-item-action skill-item" data-skill="<?php echo htmlspecialchars($skill); ?>">
-                                        <div class="d-flex w-100 justify-content-between">
-                                            <h6 class="mb-1"><?php echo htmlspecialchars($skill); ?></h6>
-                                            <small class="text-muted">Cliquez pour voir les détails</small>
-                                        </div>
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <small class="<?php echo $sourceClass; ?>">
-                                                <i class="<?php echo $sourceIcon; ?> me-1"></i><?php echo $sourceText; ?>
-                                            </small>
-                                        </div>
-                                    </a>
-                                <?php endforeach; ?>
-                            </div>
-                        <?php else: ?>
-                            <p class="text-muted">Aucune compétence maîtrisée</p>
-                        <?php endif; ?>
-                    </div>
-                    <div class="col-md-6">
-                        <h5><i class="fas fa-info-circle me-2"></i>Détail de la compétence</h5>
-                        <div id="skill-detail" class="card">
-                            <div class="card-body">
-                                <p class="text-muted mb-0">Sélectionnez une compétence pour voir ses détails.</p>
-                            </div>
-                        </div>
-                        
-                    </div>
-                </div>
-            </div>
-
-            <!-- Langues -->
-            <div class="info-section">
-                <h3><i class="fas fa-language me-2"></i>Langues</h3>
-                <div class="row">
-                    <div class="col-12">
-                        <h5><i class="fas fa-comments me-2"></i>Langues parlées</h5>
-                        <?php if (!empty($allLanguages)): ?>
-                            <div class="d-flex flex-wrap">
-                                <?php foreach ($allLanguages as $language): ?>
-                                    <span class="badge bg-info me-2 mb-2"><?php echo htmlspecialchars($language['name']); ?></span>
-                                <?php endforeach; ?>
-                            </div>
-                        <?php else: ?>
-                            <p class="text-muted">Aucune langue parlée</p>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Informations de race et classe -->
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="info-section">
-                        <h3><i class="fas fa-dragon me-2"></i>Race: <?php echo htmlspecialchars($raceObject->name); ?></h3>
-                        <p><?php echo htmlspecialchars($raceObject->description); ?></p>
-                        <p><strong>Bonus de caractéristiques:</strong> 
-                            Force: +<?php echo $raceObject->strength_bonus; ?> | 
-                            Dextérité: +<?php echo $raceObject->dexterity_bonus; ?> | 
-                            Constitution: +<?php echo $raceObject->constitution_bonus; ?> | 
-                            Intelligence: +<?php echo $raceObject->intelligence_bonus; ?> | 
-                            Sagesse: +<?php echo $raceObject->wisdom_bonus; ?> | 
-                            Charisme: +<?php echo $raceObject->charisma_bonus; ?>
-                        </p>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="info-section">
-                        <h3><i class="fas fa-shield-alt me-2"></i>Classe: <?php echo htmlspecialchars($classObject->name); ?></h3>
-                        <p><?php echo htmlspecialchars($classObject->description); ?></p>
-                        <p><strong>Dé de vie:</strong> &nbsp;<?php echo $classObject->hit_dice; ?></p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Historique -->
-            <?php if ($backgroundObject && $backgroundObject->name): ?>
-                <div class="info-section">
-                <h3><i class="fas fa-book me-2"></i>Historique: <?php echo htmlspecialchars($backgroundObject->name); ?></h3>
-            </div>
-            <?php endif; ?>
-
-            <!-- Bourse -->
-            <div class="info-section">
-                <h3><i class="fas fa-coins me-2"></i>Bourse</h3>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-body">
-                                <h5 class="card-title"><i class="fas fa-coins text-warning me-2"></i>Argent du personnage</h5>
-                                <div class="row text-center">
-                                    <div class="col-4">
-                                        <div class="border rounded p-3 bg-warning bg-opacity-10">
-                                            <h4 class="text-warning mb-1"><?php echo $npcGold; ?></h4>
-                                            <small class="text-muted">PO</small>
-                                            <br><small>Pièces d'or</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-4">
-                                        <div class="border rounded p-3 bg-secondary bg-opacity-10">
-                                            <h4 class="text-secondary mb-1">0</h4>
-                                            <small class="text-muted">PA</small>
-                                            <br><small>Pièces d'argent</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-4">
-                                        <div class="border rounded p-3 bg-danger bg-opacity-10">
-                                            <h4 class="text-danger mb-1">0</h4>
-                                            <small class="text-muted">PC</small>
-                                            <br><small>Pièces de cuivre</small>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-body">
-                                <h5 class="card-title"><i class="fas fa-calculator me-2"></i>Valeur totale</h5>
-                                <?php 
-                                $totalCopper = $npcGold * 100;
-                                $totalGold = floor($totalCopper / 100);
-                                $remainingSilver = floor(($totalCopper % 100) / 10);
-                                $remainingCopper = $totalCopper % 10;
-                                ?>
-                                <p class="mb-2"><strong>En pièces de cuivre:</strong> <?php echo $totalCopper; ?> PC</p>
-                                <p class="mb-0"><strong>Équivalent:</strong> <?php echo $totalGold; ?> PO, <?php echo $remainingSilver; ?> PA, <?php echo $remainingCopper; ?> PC</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Outils et Instruments -->
-            <?php if (!empty($allTools)): ?>
-            <div class="info-section">
-                <h3><i class="fas fa-tools me-2"></i>Outils et Instruments</h3>
-                <div class="row">
-                    <div class="col-12">
-                        <h5><i class="fas fa-check-circle me-2"></i>Outils maîtrisés</h5>
-                        <div class="d-flex flex-wrap">
-                            <?php foreach ($allTools as $tool): ?>
-                                <span class="badge bg-success me-2 mb-2">
-                                    <i class="fas fa-tools me-1"></i><?php echo htmlspecialchars($tool); ?>
-                                </span>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <?php endif; ?>
-
-            <!-- Équipement -->
-            <div class="info-section">
-                <h3><i class="fas fa-backpack me-2"></i>Équipement</h3>
-                
-                <!-- Filtres et tri -->
-                <div class="row mb-3">
-                    <div class="col-md-4">
-                        <input type="text" id="equipmentSearch" class="form-control" placeholder="Rechercher un objet...">
-                    </div>
-                    <div class="col-md-3">
-                        <select id="typeFilter" class="form-select">
-                            <option value="">Tous les types</option>
-                            <option value="weapon">Arme</option>
-                            <option value="armor">Armure</option>
-                            <option value="magical_item">Objet magique</option>
-                            <option value="poison">Poison</option>
-                            <option value="bourse">Bourse</option>
-                            <option value="letter">Lettre</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <select id="equippedFilter" class="form-select">
-                            <option value="">Tous</option>
-                            <option value="equipped">Équipés</option>
-                            <option value="unequipped">Non équipés</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <button class="btn btn-outline-secondary w-100" onclick="resetFilters()">
-                            <i class="fas fa-undo me-1"></i>Réinitialiser
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Tableau d'équipement -->
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover" id="equipmentTable">
-                        <thead class="table-dark">
-                            <tr>
-                                <th onclick="sortTable(0)" style="cursor: pointer;">
-                                    Nom <i class="fas fa-sort ms-1"></i>
-                                </th>
-                                <th onclick="sortTable(1)" style="cursor: pointer;">
-                                    Type <i class="fas fa-sort ms-1"></i>
-                                </th>
-                                <th onclick="sortTable(2)" style="cursor: pointer;">
-                                    Type précis <i class="fas fa-sort ms-1"></i>
-                                </th>
-                                <th>État</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php 
-                            // Combiner tous les objets du personnage
-                            $allCharacterItems = array_merge($allMagicalEquipment, $characterPoisons);
-                            
-                            // Fonction pour vérifier si un objet existe déjà
-                            function itemExists($items, $name, $type) {
-                                foreach ($items as $item) {
-                                    if (($item['item_name'] ?? '') === $name && ($item['item_type'] ?? '') === $type) {
-                                        return true;
-                                    }
-                                }
-                                return false;
-                            }
-                            
-                            // Ajouter les objets de base détectés seulement s'ils n'existent pas déjà
-                            if (!empty($detectedWeapons)) {
-                                foreach ($detectedWeapons as $weapon) {
-                                    // Vérifier si cette arme existe déjà dans les objets du personnage
-                                    if (!itemExists($allCharacterItems, $weapon['name'], 'weapon')) {
-                                        $isEquipped = false;
-                                        if ($weapon['hands'] == 2) {
-                                            $isEquipped = ($equippedItems['main_hand'] === $weapon['name'] && $equippedItems['off_hand'] === $weapon['name']);
-                                        } else {
-                                            $isEquipped = ($equippedItems['main_hand'] === $weapon['name']);
-                                        }
-                                        
-                                        $allCharacterItems[] = [
-                                            'id' => 'base_' . $weapon['name'],
-                                            'item_name' => $weapon['name'],
-                                            'item_type' => 'weapon',
-                                            'type_precis' => $weapon['name'],
-                                            'equipped' => $isEquipped,
-                                            'equipped_slot' => $isEquipped ? 'main_hand' : null,
-                                            'item_source' => 'Équipement de base',
-                                            'quantity' => 1,
-                                            'obtained_at' => date('Y-m-d H:i:s'),
-                                            'obtained_from' => 'Équipement de base',
-                                            'item_description' => "Arme: {$weapon['type']}, {$weapon['hands']} main(s), Dégâts: {$weapon['damage']}",
-                                            'notes' => null
-                                        ];
-                                    }
-                                }
-                            }
-                            
-                            if (!empty($detectedArmor)) {
-                                foreach ($detectedArmor as $armor) {
-                                    // Vérifier si cette armure existe déjà dans les objets du personnage
-                                    if (!itemExists($allCharacterItems, $armor['name'], 'armor')) {
-                                        $isEquipped = ($equippedItems['armor'] === $armor['name']);
-                                        
-                                        $allCharacterItems[] = [
-                                            'id' => 'base_' . $armor['name'],
-                                            'item_name' => $armor['name'],
-                                            'item_type' => 'armor',
-                                            'type_precis' => $armor['name'],
-                                            'equipped' => $isEquipped,
-                                            'equipped_slot' => $isEquipped ? 'armor' : null,
-                                            'item_source' => 'Équipement de base',
-                                            'quantity' => 1,
-                                            'obtained_at' => date('Y-m-d H:i:s'),
-                                            'obtained_from' => 'Équipement de base',
-                                            'item_description' => "Armure: CA {$armor['ac_formula']}, Type: {$armor['type']}",
-                                            'notes' => null
-                                        ];
-                                    }
-                                }
-                            }
-                            
-                            if (!empty($detectedShields)) {
-                                foreach ($detectedShields as $shield) {
-                                    // Vérifier si ce bouclier existe déjà dans les objets du personnage
-                                    if (!itemExists($allCharacterItems, $shield['name'], 'shield')) {
-                                        $isEquipped = ($equippedItems['shield'] === $shield['name']);
-                                        
-                                        $allCharacterItems[] = [
-                                            'id' => 'base_' . $shield['name'],
-                                            'item_name' => $shield['name'],
-                                            'item_type' => 'shield',
-                                            'type_precis' => $shield['name'],
-                                            'equipped' => $isEquipped,
-                                            'equipped_slot' => $isEquipped ? 'off_hand' : null,
-                                            'item_source' => 'Équipement de base',
-                                            'quantity' => 1,
-                                            'obtained_at' => date('Y-m-d H:i:s'),
-                                            'obtained_from' => 'Équipement de base',
-                                            'item_description' => "Bouclier: Bonus CA +{$shield['ac_bonus']}",
-                                            'notes' => null
-                                        ];
-                                    }
-                                }
-                            }
-                            
-                            foreach ($allCharacterItems as $item): 
-                                // Utiliser les champs standardisés
-                                $itemName = $item['item_name'] ?? $item['display_name'] ?? 'Objet inconnu';
-                                $itemType = $item['item_type'] ?? 'unknown';
-                                $displayName = htmlspecialchars($itemName);
-                                $typeLabel = ucfirst(str_replace('_', ' ', $itemType));
-                            ?>
-                            <tr data-type="<?php echo $itemType; ?>" data-equipped="<?php echo (isset($item['is_equipped']) && $item['is_equipped']) ? 'equipped' : 'unequipped'; ?>">
-                                <td>
-                                    <strong><?php echo $displayName; ?></strong>
-                                    <?php if ($item['quantity'] > 1): ?>
-                                        <span class="badge bg-info ms-1">x<?php echo $item['quantity']; ?></span>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <span class="badge bg-<?php 
-                                        echo match($itemType) {
-                                            'weapon' => 'danger',
-                                            'armor' => 'primary', 
-                                            'shield' => 'info',
-                                            'magical_item' => 'success',
-                                            'poison' => 'warning',
-                                            'bag' => 'secondary',
-                                            'tool' => 'info',
-                                            'clothing' => 'light text-dark',
-                                            'consumable' => 'warning',
-                                            'misc' => 'secondary',
-                                            default => 'light text-dark'
-                                        };
-                                    ?>">
-                                        <?php echo $typeLabel; ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <small class="text-muted"><?php echo htmlspecialchars($item['item_description'] ?? ''); ?></small>
-                                </td>
-                                <td>
-                                    <?php if (isset($item['is_equipped']) && $item['is_equipped']): ?>
-                                        <span class="badge bg-success">
-                                            <i class="fas fa-check-circle me-1"></i>Équipé
-                                        </span>
-                                        <?php if ($item['equipped_slot']): ?>
-                                            <br><small class="text-muted">
-                                                <?php 
-                                                // Gérer les slots multiples (ex: "main_hand,off_hand")
-                                                $slots = explode(',', $item['equipped_slot']);
-                                                $slotLabels = array_map(function($slot) {
-                                                    return ucfirst(str_replace('_', ' ', trim($slot)));
-                                                }, $slots);
-                                                echo implode(' + ', $slotLabels);
-                                                ?>
-                                            </small>
-                                        <?php endif; ?>
-                                    <?php else: ?>
-                                        <span class="badge bg-secondary">
-                                            <i class="fas fa-times-circle me-1"></i>Non équipé
-                                        </span>
-                                    <?php endif; ?>
-                                </td>
-                                <td style="min-width: 300px; white-space: nowrap; overflow: visible;">
-                                    <?php if ($itemType === 'weapon' || $itemType === 'armor' || $itemType === 'shield'): ?>
-                                        <?php if (isset($item['is_equipped']) && $item['is_equipped']): ?>
-                                            <button class="btn btn-warning btn-sm" onclick="unequipItem(<?php echo $npc_id; ?>, '<?php echo addslashes($itemName); ?>')"
-                                                    style="white-space: nowrap; min-width: 80px;">
-                                                <i class="fas fa-hand-paper me-1"></i>Déséquiper
-                                            </button>
-                                        <?php else: ?>
-                                            <?php 
-                                            $slot = match($itemType) {
-                                                'weapon' => 'main_hand',
-                                                'armor' => 'armor',
-                                                'shield' => 'off_hand',
-                                                default => 'main_hand'
-                                            };
-                                            ?>
-                                            <button class="btn btn-success btn-sm" onclick="equipItem(<?php echo $npc_id; ?>, '<?php echo addslashes($itemName); ?>', '<?php echo $itemType; ?>', '<?php echo $slot; ?>')"
-                                                    style="white-space: nowrap; min-width: 80px;">
-                                                <i class="fas fa-hand-rock me-1"></i>Équiper
-                                            </button>
-                                        <?php endif; ?>
-                                    <?php else: ?>
-                                        <span class="text-muted">Non équipable</span>
-                                    <?php endif; ?>
-                                    
-                                    <?php if ($canModifyHP && !str_starts_with($item['id'], 'base_')): ?>
-                                        <button type="button" class="btn btn-outline-primary btn-sm ms-1" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#transferModal" 
-                                                data-item-id="<?php echo $item['id']; ?>"
-                                                data-item-name="<?php echo htmlspecialchars($itemName); ?>"
-                                                data-item-type="<?php echo htmlspecialchars($itemType); ?>"
-                                                data-source="character_equipment"
-                                                style="white-space: nowrap; min-width: 80px;">
-                                            <i class="fas fa-exchange-alt me-1"></i>Transférer
-                                        </button>
-                                        <?php if (!isset($item['is_equipped']) || !$item['is_equipped']): ?>
-                                            <button type="button" class="btn btn-outline-warning btn-sm ms-1" 
-                                                    onclick="dropItem(<?php echo $item['id']; ?>, '<?php echo addslashes($item['item_name']); ?>')"
-                                                    title="Déposer l'objet dans le lieu actuel"
-                                                    style="white-space: nowrap; min-width: 80px;">
-                                                <i class="fas fa-hand-holding me-1"></i>Déposer
-                                            </button>
-                                        <?php endif; ?>
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                            
-                            <?php if (empty($allCharacterItems)): ?>
-                            <tr>
-                                <td colspan="5" class="text-center text-muted">
-                                    <i class="fas fa-inbox fa-2x mb-2"></i><br>
-                                    Aucun objet trouvé
-                                </td>
-                            </tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-                
-            </div>
-
-
-            <!-- Informations personnelles -->
-            <?php if ($npc->personality_traits || $npc->ideals || $npc->bonds || $npc->flaws): ?>
-                <div class="info-section">
-                    <h3><i class="fas fa-user-edit me-2"></i>Informations Personnelles</h3>
-                    <div class="row">
-                        <?php if ($npc->personality_traits): ?>
-                            <div class="col-md-6">
-                                <p><strong>Traits de personnalité:</strong></p>
-                                <p><?php echo nl2br(htmlspecialchars($npc->personality_traits)); ?></p>
-                            </div>
-                        <?php endif; ?>
-                        <?php if ($npc->ideals): ?>
-                            <div class="col-md-6">
-                                <p><strong>Idéaux:</strong></p>
-                                <p><?php echo nl2br(htmlspecialchars($npc->ideals)); ?></p>
-                            </div>
-                        <?php endif; ?>
-                        <?php if ($npc->bonds): ?>
-                            <div class="col-md-6">
-                                <p><strong>Liens:</strong></p>
-                                <p><?php echo nl2br(htmlspecialchars($npc->bonds)); ?></p>
-                            </div>
-                        <?php endif; ?>
-                        <?php if ($npc->flaws): ?>
-                            <div class="col-md-6">
-                                <p><strong>Défauts:</strong></p>
-                                <p><?php echo nl2br(htmlspecialchars($npc->flaws)); ?></p>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            <?php endif; ?>
         </div>
     </div>
+</div>
 
-    <!-- Modal pour Gestion des Points de Vie -->
+<!-- Modals existants -->
     <?php if ($canModifyHP): ?>
     <div class="modal fade" id="hpModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
@@ -1579,7 +1383,7 @@ $initiative = $dexterityModifier;
                         $hp_percentage = $max_hp > 0 ? ($current_hp / $max_hp) * 100 : 100;
                         $hp_class = $hp_percentage > 50 ? 'bg-success' : ($hp_percentage > 25 ? 'bg-warning' : 'bg-danger');
                         ?>
-                        <div class="progress mb-2" style="height: 30px;">
+                        <div class="progress mb-2 progress-bar-custom">
                             <div class="progress-bar <?php echo $hp_class; ?>" role="progressbar" style="width: <?php echo $hp_percentage; ?>%">
                                 <?php echo $current_hp; ?>/<?php echo $max_hp; ?>
                             </div>
@@ -1592,10 +1396,10 @@ $initiative = $dexterityModifier;
                         <div class="col-md-6">
                             <h6><i class="fas fa-sword text-danger me-2"></i>Infliger des Dégâts</h6>
                             <div class="d-flex gap-2 mb-2">
-                                <button class="btn btn-outline-danger btn-sm" onclick="quickDamage(1, '<?php echo htmlspecialchars($npc->name); ?>')">-1</button>
-                                <button class="btn btn-outline-danger btn-sm" onclick="quickDamage(5, '<?php echo htmlspecialchars($npc->name); ?>')">-5</button>
-                                <button class="btn btn-outline-danger btn-sm" onclick="quickDamage(10, '<?php echo htmlspecialchars($npc->name); ?>')">-10</button>
-                                <button class="btn btn-outline-danger btn-sm" onclick="quickDamage(20, '<?php echo htmlspecialchars($npc->name); ?>')">-20</button>
+                                <button class="btn btn-outline-danger btn-sm" data-action="damage" data-amount="1" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">-1</button>
+                                <button class="btn btn-outline-danger btn-sm" data-action="damage" data-amount="5" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">-5</button>
+                                <button class="btn btn-outline-danger btn-sm" data-action="damage" data-amount="10" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">-10</button>
+                                <button class="btn btn-outline-danger btn-sm" data-action="damage" data-amount="20" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">-20</button>
                             </div>
                             <form method="POST" class="d-flex gap-2">
                                 <input type="hidden" name="hp_action" value="damage">
@@ -1608,10 +1412,10 @@ $initiative = $dexterityModifier;
                         <div class="col-md-6">
                             <h6><i class="fas fa-heart text-success me-2"></i>Appliquer des Soins</h6>
                             <div class="d-flex gap-2 mb-2">
-                                <button class="btn btn-outline-success btn-sm" onclick="quickHeal(1, '<?php echo htmlspecialchars($npc->name); ?>')">+1</button>
-                                <button class="btn btn-outline-success btn-sm" onclick="quickHeal(5, '<?php echo htmlspecialchars($npc->name); ?>')">+5</button>
-                                <button class="btn btn-outline-success btn-sm" onclick="quickHeal(10, '<?php echo htmlspecialchars($npc->name); ?>')">+10</button>
-                                <button class="btn btn-outline-success btn-sm" onclick="quickHeal(20, '<?php echo htmlspecialchars($npc->name); ?>')">+20</button>
+                                <button class="btn btn-outline-success btn-sm" data-action="heal" data-amount="1" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">+1</button>
+                                <button class="btn btn-outline-success btn-sm" data-action="heal" data-amount="5" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">+5</button>
+                                <button class="btn btn-outline-success btn-sm" data-action="heal" data-amount="10" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">+10</button>
+                                <button class="btn btn-outline-success btn-sm" data-action="heal" data-amount="20" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">+20</button>
                             </div>
                             <form method="POST" class="d-flex gap-2">
                                 <input type="hidden" name="hp_action" value="heal">
@@ -1652,6 +1456,7 @@ $initiative = $dexterityModifier;
                             </form>
                         </div>
                     </div>
+
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
@@ -1696,9 +1501,9 @@ $initiative = $dexterityModifier;
                         <div class="col-md-6">
                             <h6><i class="fas fa-minus text-danger me-2"></i>Retirer des Points d'Expérience</h6>
                             <div class="d-flex gap-2 mb-2">
-                                <button class="btn btn-outline-danger btn-sm" onclick="quickXpChange(-100, '<?php echo htmlspecialchars($npc->name); ?>')">-100</button>
-                                <button class="btn btn-outline-danger btn-sm" onclick="quickXpChange(-500, '<?php echo htmlspecialchars($npc->name); ?>')">-500</button>
-                                <button class="btn btn-outline-danger btn-sm" onclick="quickXpChange(-1000, '<?php echo htmlspecialchars($npc->name); ?>')">-1000</button>
+                                <button class="btn btn-outline-danger btn-sm" data-action="xp" data-amount="-100" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">-100</button>
+                                <button class="btn btn-outline-danger btn-sm" data-action="xp" data-amount="-500" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">-500</button>
+                                <button class="btn btn-outline-danger btn-sm" data-action="xp" data-amount="-1000" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">-1000</button>
                             </div>
                             <form method="POST" class="d-flex gap-2">
                                 <input type="hidden" name="xp_action" value="remove">
@@ -1711,9 +1516,9 @@ $initiative = $dexterityModifier;
                         <div class="col-md-6">
                             <h6><i class="fas fa-plus text-success me-2"></i>Ajouter des Points d'Expérience</h6>
                             <div class="d-flex gap-2 mb-2">
-                                <button class="btn btn-outline-success btn-sm" onclick="quickXpChange(100, '<?php echo htmlspecialchars($npc->name); ?>')">+100</button>
-                                <button class="btn btn-outline-success btn-sm" onclick="quickXpChange(500, '<?php echo htmlspecialchars($npc->name); ?>')">+500</button>
-                                <button class="btn btn-outline-success btn-sm" onclick="quickXpChange(1000, '<?php echo htmlspecialchars($npc->name); ?>')">+1000</button>
+                                <button class="btn btn-outline-success btn-sm" data-action="xp" data-amount="100" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">+100</button>
+                                <button class="btn btn-outline-success btn-sm" data-action="xp" data-amount="500" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">+500</button>
+                                <button class="btn btn-outline-success btn-sm" data-action="xp" data-amount="1000" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">+1000</button>
                             </div>
                             <form method="POST" class="d-flex gap-2">
                                 <input type="hidden" name="xp_action" value="add">
@@ -1792,7 +1597,7 @@ $initiative = $dexterityModifier;
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="button" class="btn btn-primary" onclick="confirmTransfer()">
+                    <button type="button" class="btn btn-primary" data-action="confirm-transfer">
                         <i class="fas fa-exchange-alt me-1"></i>Transférer
                     </button>
                 </div>
@@ -1834,7 +1639,7 @@ $initiative = $dexterityModifier;
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="button" class="btn btn-primary" onclick="uploadPhoto(<?php echo $npc_id; ?>, 'PNJ')">
+                    <button type="button" class="btn btn-primary" data-action="upload-photo" data-npc-id="<?php echo $npc_id; ?>" data-entity-type="PNJ">
                         <i class="fas fa-upload me-1"></i>Uploader
                     </button>
                 </div>
@@ -1845,5 +1650,44 @@ $initiative = $dexterityModifier;
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/jdrmj.js"></script>
+    
+    
+    <!-- Script pour l'initialisation des onglets -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialiser les onglets Bootstrap
+            var tabTriggerList = [].slice.call(document.querySelectorAll('#npcTabs button'));
+            
+            tabTriggerList.forEach(function (triggerEl) {
+                triggerEl.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    
+                    // Désactiver tous les onglets
+                    var allTabs = document.querySelectorAll('#npcTabs .nav-link');
+                    allTabs.forEach(function(tab) {
+                        tab.classList.remove('active');
+                        tab.setAttribute('aria-selected', 'false');
+                    });
+                    
+                    // Masquer tous les contenus
+                    var allPanes = document.querySelectorAll('#npcTabContent .tab-pane');
+                    allPanes.forEach(function(pane) {
+                        pane.classList.remove('show', 'active');
+                    });
+                    
+                    // Activer l'onglet cliqué
+                    triggerEl.classList.add('active');
+                    triggerEl.setAttribute('aria-selected', 'true');
+                    
+                    // Afficher le contenu correspondant
+                    var targetId = triggerEl.getAttribute('data-bs-target');
+                    var targetPane = document.querySelector(targetId);
+                    if (targetPane) {
+                        targetPane.classList.add('show', 'active');
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>

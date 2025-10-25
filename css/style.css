@@ -46,16 +46,371 @@ body {
 
 /* Styles pour les capacités */
 .capabilities-list {
-    max-height: 400px;
+    max-height: 500px;
     overflow-y: auto;
 }
 
 .capability-item {
-    background: #f8f9fa;
+    background: white;
     border-radius: 8px;
-    padding: 15px;
-    border-left: 4px solid #007bff;
+    padding: 20px;
+    border-left: 4px solid #8B4513;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     transition: all 0.3s ease;
+    margin-bottom: 15px;
+}
+
+.capability-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    border-left-color: #2D1810;
+}
+
+.capability-item .text-primary {
+    color: #2D1810 !important;
+    font-size: 1.1rem;
+}
+
+.capability-item .badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.capability-item .text-muted {
+    color: #5D4037 !important;
+    line-height: 1.4;
+}
+
+/* ===== STYLES POUR VIEW_NPC.PHP - STYLES INLINE À DÉPLACER ===== */
+
+/* Styles pour la section d'entête avec style navbar */
+.npc-header-section .card-header {
+    background: linear-gradient(135deg, var(--dnd-primary-darker) 0%, var(--dnd-secondary-darker) 100%) !important;
+    color: white !important;
+    border: none;
+    border-radius: 0.375rem 0.375rem 0 0;
+}
+
+.npc-header-section .text-white-50 {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.npc-header-section .text-white {
+    color: white !important;
+    font-weight: 500;
+}
+
+/* Styles pour les textes marron foncé dans l'entête */
+.npc-header-section .text-brown {
+    color: #3E2723 !important;
+}
+
+.npc-header-section .text-brown-light {
+    color: #5D4037 !important;
+}
+
+.npc-header-section .card {
+    border: none;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    border-radius: 0.375rem;
+}
+
+/* Styles pour les onglets avec style navbar */
+.npc-tabs-section .card-header {
+    background: linear-gradient(135deg, #F5F5DC 0%, #FAF0E6 100%) !important;
+    border: none;
+    border-radius: 0.375rem 0.375rem 0 0;
+    border-bottom: 2px solid #D2B48C;
+}
+
+.npc-tabs-section .nav-tabs {
+    border: none;
+    margin: 0;
+}
+
+.npc-tabs-section .nav-link {
+    color: #3E2723 !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0.75rem 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.npc-tabs-section .nav-link:hover {
+    color: #2D1810 !important;
+    background: rgba(62, 39, 35, 0.1) !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.npc-tabs-section .nav-link.active {
+    color: #2D1810 !important;
+    background: rgba(62, 39, 35, 0.15) !important;
+    border-bottom: 3px solid #8B4513 !important;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.npc-tabs-section .tab-content {
+    background: linear-gradient(135deg, var(--dnd-bg-light) 0%, var(--dnd-bg) 100%);
+    border-radius: 0 0 0.375rem 0.375rem;
+    min-height: 400px;
+}
+
+/* Styles pour les cartes dans les onglets */
+.npc-tabs-section .card {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background: white;
+}
+
+.npc-tabs-section .card-header {
+    background: linear-gradient(135deg, #2D1810 0%, #8B4513 100%);
+    color: white !important;
+    border: none;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.npc-tabs-section .card-body {
+    color: #3E2723;
+    background: white;
+}
+
+/* Styles pour les boutons dans les onglets */
+.npc-tabs-section .btn {
+    border-radius: 0.375rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.npc-tabs-section .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Styles pour les tableaux dans les onglets */
+.npc-tabs-section .table {
+    background: white;
+    border-radius: 0.375rem;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.npc-tabs-section .table thead th {
+    background: linear-gradient(135deg, #2D1810 0%, #8B4513 100%);
+    color: white !important;
+    border: none;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.npc-tabs-section .table tbody td {
+    color: #3E2723;
+    font-weight: 500;
+}
+
+.npc-tabs-section .table tbody tr:hover {
+    background-color: rgba(139, 69, 19, 0.05);
+}
+
+/* Styles pour les badges et labels */
+.npc-tabs-section .badge {
+    font-weight: 600;
+    border-radius: 0.375rem;
+}
+
+/* Styles pour les sections d'information */
+.npc-tabs-section .info-section {
+    background: white;
+    border-radius: 0.375rem;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+    color: #3E2723;
+}
+
+.npc-tabs-section .info-section h4,
+.npc-tabs-section .info-section h5,
+.npc-tabs-section .info-section h6 {
+    color: #2D1810;
+    font-weight: 600;
+}
+
+.npc-tabs-section .stat-box {
+    background: white;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+    color: #3E2723;
+}
+
+.npc-tabs-section .stat-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.npc-tabs-section .stat-box .stat-label {
+    color: #5D4037;
+    font-weight: 500;
+}
+
+.npc-tabs-section .stat-box .hp-display,
+.npc-tabs-section .stat-box .ac-display,
+.npc-tabs-section .stat-box .xp-display {
+    color: #2D1810;
+    font-weight: 700;
+    font-size: 1.25rem;
+}
+
+/* Amélioration des contrastes pour tous les textes */
+.npc-tabs-section {
+    color: #3E2723;
+}
+
+.npc-tabs-section p,
+.npc-tabs-section div,
+.npc-tabs-section span {
+    color: #3E2723;
+}
+
+.npc-tabs-section .text-muted {
+    color: #5D4037 !important;
+}
+
+.npc-tabs-section .text-primary {
+    color: #2D1810 !important;
+}
+
+.npc-tabs-section .text-success {
+    color: #28a745 !important;
+}
+
+.npc-tabs-section .text-warning {
+    color: #fd7e14 !important;
+}
+
+.npc-tabs-section .text-danger {
+    color: #dc3545 !important;
+}
+
+.npc-tabs-section .text-info {
+    color: #17a2b8 !important;
+}
+
+/* Styles pour les badges avec meilleur contraste */
+.npc-tabs-section .badge.bg-primary {
+    background-color: #2D1810 !important;
+    color: white !important;
+}
+
+.npc-tabs-section .badge.bg-secondary {
+    background-color: #8B4513 !important;
+    color: white !important;
+}
+
+.npc-tabs-section .badge.bg-success {
+    background-color: #28a745 !important;
+    color: white !important;
+}
+
+.npc-tabs-section .badge.bg-warning {
+    background-color: #fd7e14 !important;
+    color: white !important;
+}
+
+.npc-tabs-section .badge.bg-danger {
+    background-color: #dc3545 !important;
+    color: white !important;
+}
+
+.npc-tabs-section .badge.bg-info {
+    background-color: #17a2b8 !important;
+    color: white !important;
+}
+
+/* Styles pour les photos de profil */
+.npc-profile-photo {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+}
+
+.npc-profile-placeholder {
+    width: 100px;
+    height: 100px;
+}
+
+.npc-profile-placeholder i {
+    font-size: 2.5rem;
+}
+
+/* Styles pour les boutons de modification */
+.photo-edit-button {
+    bottom: -5px;
+    right: -5px;
+}
+
+/* Styles pour l'affichage XP */
+.xp-display {
+    cursor: pointer;
+}
+
+/* Styles pour les tableaux */
+.table-header-narrow {
+    width: 20%;
+}
+
+.table-header-medium {
+    width: 13.33%;
+}
+
+/* Styles pour les symboles de rage */
+.rage-symbol {
+    transform: scale(1.1);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+}
+
+.rage-symbol.available {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+    border-color: #dc3545;
+    color: white;
+}
+
+.rage-symbol.used {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    border-color: #6c757d;
+    color: #adb5bd;
+    opacity: 0.6;
+}
+
+.rage-symbol.used:hover {
+    background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+}
+
+/* Styles pour les boutons d'action */
+.action-button {
+    white-space: nowrap;
+    min-width: 80px;
+}
+
+/* Styles pour les barres de progression */
+.progress-bar-custom {
+    height: 30px;
+}
+
+/* Styles pour les boutons de tri */
+.sortable-header {
+    cursor: pointer;
+}
+
+/* Styles pour les boutons de filtre */
+.filter-button {
+    white-space: nowrap;
+    min-width: 80px;
 }
 
 .capability-item:hover {
@@ -723,6 +1078,451 @@ body {
     
     .btn-group .btn {
         margin-bottom: 0.5rem;
+    }
+}
+
+/* ===== STYLES POUR LES ONGLETS NPC ===== */
+
+/* Styles pour la zone d'entête */
+.npc-header-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.npc-header-section .stat-box {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.npc-header-section .stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.npc-header-section .stat-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+/* Styles pour les onglets */
+.npc-tabs-section {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.npc-tabs-section .nav-tabs {
+    border-bottom: none;
+    background: #f8f9fa;
+    padding: 0.5rem;
+}
+
+.npc-tabs-section .nav-tabs .nav-link {
+    border: none;
+    border-radius: 10px;
+    margin: 0 0.25rem;
+    padding: 0.75rem 1.5rem;
+    color: #6c757d;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.npc-tabs-section .nav-tabs .nav-link:hover {
+    background: #e9ecef;
+    color: #495057;
+    transform: translateY(-2px);
+}
+
+.npc-tabs-section .nav-tabs .nav-link.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+}
+
+.npc-tabs-section .tab-content {
+    padding: 0;
+}
+
+.npc-tabs-section .tab-pane {
+    padding: 2rem;
+}
+
+/* Styles pour les sections d'information */
+.info-section {
+    margin-bottom: 2rem;
+}
+
+.info-section h4 {
+    color: #495057;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.info-section h5 {
+    color: #6c757d;
+    margin-bottom: 1rem;
+}
+
+/* Styles pour les boîtes de statistiques */
+.stat-box {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    text-align: center;
+    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.stat-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Styles pour les cartes */
+.card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Styles pour les badges */
+.badge {
+    font-size: 0.8rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+}
+
+/* Styles pour les boutons */
+.btn {
+    border-radius: 10px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+/* Styles pour les tableaux */
+.table {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.table thead th {
+    background: #495057;
+    color: white;
+    border: none;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.9rem;
+}
+
+.table tbody tr {
+    transition: all 0.3s ease;
+}
+
+.table tbody tr:hover {
+    background: #f8f9fa;
+    transform: scale(1.01);
+}
+
+/* Styles pour les listes de capacités */
+.capabilities-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.capability-item {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid #667eea;
+}
+
+.capability-item strong {
+    color: #495057;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.capability-item p {
+    color: #6c757d;
+    margin-bottom: 0;
+    font-size: 0.9rem;
+}
+
+/* Styles pour les listes de compétences */
+.skills-list, .tools-list, .languages-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.skills-list .badge, .tools-list .badge, .languages-list .badge {
+    font-size: 0.8rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+}
+
+/* Styles pour les devises */
+.currency-display {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #28a745;
+}
+
+/* Styles pour les barres de progression */
+.progress-bar-custom {
+    height: 30px;
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.progress-bar-custom .progress-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+/* Styles pour les symboles de rage */
+.rage-symbols {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.rage-symbol {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid;
+}
+
+.rage-symbol:hover {
+    transform: scale(1.1);
+}
+
+.rage-symbol.available {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+    border-color: #dc3545;
+    color: white;
+}
+
+.rage-symbol.used {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    border-color: #6c757d;
+    color: #adb5bd;
+    opacity: 0.6;
+}
+
+.rage-symbol.used:hover {
+    background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+}
+
+/* Styles pour les boutons d'action */
+.action-button {
+    white-space: nowrap;
+    min-width: 80px;
+}
+
+/* Styles pour les boutons de tri */
+.sortable-header {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.sortable-header:hover {
+    background: #e9ecef;
+}
+
+/* Styles pour les boutons de filtre */
+.filter-button {
+    white-space: nowrap;
+    min-width: 80px;
+}
+
+/* Styles pour les photos de profil */
+.npc-profile-photo {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.npc-profile-placeholder {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #6c757d;
+    color: white;
+    border: 3px solid white;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.npc-profile-placeholder i {
+    font-size: 2.5rem;
+}
+
+.photo-edit-button {
+    position: absolute;
+    bottom: -5px;
+    right: -5px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #007bff;
+    color: white;
+    border: 2px solid white;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+}
+
+.photo-edit-button:hover {
+    background: #0056b3;
+    transform: scale(1.1);
+}
+
+/* Styles pour l'affichage XP */
+.xp-display {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.xp-display:hover {
+    transform: scale(1.05);
+}
+
+.clickable-xp {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.clickable-xp:hover {
+    transform: scale(1.05);
+    color: #007bff;
+}
+
+/* Styles pour les tableaux */
+.table-header-narrow {
+    width: 20%;
+}
+
+.table-header-medium {
+    width: 13.33%;
+}
+
+/* Styles pour les barres de progression */
+.progress-bar-custom {
+    height: 30px;
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.progress-bar-custom .progress-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+/* Styles pour les boutons de tri */
+.sortable-header {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.sortable-header:hover {
+    background: #e9ecef;
+}
+
+/* Styles pour les boutons de filtre */
+.filter-button {
+    white-space: nowrap;
+    min-width: 80px;
+}
+
+/* Responsive design pour les onglets */
+@media (max-width: 768px) {
+    .npc-tabs-section .nav-tabs {
+        flex-direction: column;
+    }
+    
+    .npc-tabs-section .nav-tabs .nav-link {
+        margin: 0.25rem 0;
+        text-align: center;
+    }
+    
+    .npc-header-section {
+        padding: 1rem;
+    }
+    
+    .npc-header-section .stat-box {
+        padding: 0.75rem;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+    }
+    
+    .tab-pane {
+        padding: 1rem;
     }
 }
 
