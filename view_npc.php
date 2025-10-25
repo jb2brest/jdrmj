@@ -136,9 +136,6 @@ $npcLanguages = $npc->getNpcLanguages();
 // Récupérer les compétences du PNJ
 $npcSkills = $npc->getNpcSkills();
 
-// Debug temporaire pour voir les capacités
-error_log("Debug view_npc.php - NPC ID: " . $npc_id);
-error_log("Debug view_npc.php - All capabilities count: " . count($allCapabilities));
 if (!empty($allCapabilities)) {
     error_log("Debug view_npc.php - First capability: " . print_r($allCapabilities[0], true));
 }
@@ -477,13 +474,6 @@ $initiative = $dexterityModifier;
     <?php include 'includes/navbar.php'; ?>
 
     <div class="container mt-4">
-        <?php if ($npc_created): ?>
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="fas fa-user-plus me-2"></i>
-                <strong>PNJ créé avec succès !</strong> Votre PNJ a été créé et équipé. Il est maintenant disponible dans le monde.
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <?php endif; ?>
         
         <?php if ($success_message): ?>
             <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -509,7 +499,7 @@ $initiative = $dexterityModifier;
             </h1>
             <div>
                     <a href="manage_npcs.php" class="btn-txt">
-                    <i class="fas fa-arrow-left me-2"></i>Retour aux PNJ
+                    <i class="fas fa-arrow-left me-2"></i>Retour
                 </a>
                 </div>
             </div>
@@ -517,84 +507,7 @@ $initiative = $dexterityModifier;
 
         <!-- Zone d'en-tête -->
         <div class="zone-d-entete">
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="d-flex align-items-start">
-                        <div class="me-3 position-relative">
-                            <?php if (!empty($npc->profile_photo)): ?>
-                                <img id="npc-profile-photo" src="<?php echo htmlspecialchars($npc->profile_photo); ?>" alt="Photo de <?php echo htmlspecialchars($npc->name); ?>" class="profile-photo">
-                            <?php else: ?>
-                                <div class="profile-placeholder">
-                                    <i class="fas fa-user"></i>
-                                </div>
-                            <?php endif; ?>
-                            <?php if ($canModifyHP): ?>
-                                <button type="button" class="btn btn-sm btn-light photo-edit-button" data-bs-toggle="modal" data-bs-target="#photoModal" title="Changer la photo">
-                                    <i class="fas fa-camera text-primary"></i>
-                                </button>
-                            <?php endif; ?>
-                        </div>
-                        <div>
-                            <p>
-                                <i class="fas fa-tag me-1"></i>
-                                <strong>Race :</strong> <?php echo htmlspecialchars($raceObject->name); ?>
-                            </p>
-                            <p>
-                                <i class="fas fa-shield-alt me-1"></i>
-                                <strong>Classe :</strong> <?php echo htmlspecialchars($classObject->name); ?>
-                            </p>
-                            <p>
-                                <i class="fas fa-star me-1"></i>
-                                <strong>Niveau :</strong> <?php echo $npc->level; ?>
-                            </p>
-                            <p>
-                                <i class="fas fa-book me-1"></i>
-                                <strong>Historique:</strong> <?php echo htmlspecialchars($backgroundObject->name); ?>
-                            </p>
-                            <p>
-                                <i class="fas fa-balance-scale me-1"></i>
-                                <strong>Alignement:</strong> <?php echo htmlspecialchars($npc->alignment); ?>
-                            </p>                            
-                            <?php if ($characterArchetype): ?>
-                                <p>
-                                    <i class="fas fa-magic me-1"></i>
-                                    <strong><?php echo htmlspecialchars($characterArchetype['archetype_type']); ?>:</strong> <?php echo htmlspecialchars($characterArchetype['name']); ?>
-                                </p>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="row">
-                        <div class="col-4">
-                            <div class="stat-box">
-                                <?php if ($canModifyHP): ?>
-                                    <div class="hp-display clickable-hp h5 mb-1" data-bs-toggle="modal" data-bs-target="#hpModal" title="Cliquer pour modifier les points de vie"><?php echo $npc->hit_points_current; ?>/<?php echo $npc->hit_points_max; ?></div>
-                                <?php else: ?>
-                                    <div class="hp-display h5 mb-1"><?php echo $npc->hit_points_current; ?>/<?php echo $npc->hit_points_max; ?></div>
-                                <?php endif; ?>
-                                <div class="stat-label small">PV</div>
-                            </div>
-                        </div>
-                        <div class="col-4">
-                            <div class="stat-box">
-                                <div class="ac-display  h5 mb-1"><?php echo $armorClass; ?></div>
-                                <div class="stat-label -50 small">CA</div>
-                            </div>
-                        </div>
-                        <div class="col-4">
-                            <div class="stat-box">
-                                <?php if ($canModifyHP): ?>
-                                    <div class="xp-display clickable-xp  h5 mb-1" data-bs-toggle="modal" data-bs-target="#xpModal" title="Gérer les points d'expérience"><?php echo number_format($npc->experience ?? 0); ?></div>
-                                <?php else: ?>
-                                    <div class="xp-display  h5 mb-1"><?php echo number_format($npc->experience ?? 0); ?></div>
-                                <?php endif; ?>
-                                <div class="stat-label -50 small">Exp.</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                </div>
+            <?php include 'templates/entete_personnage.php'; ?>
             </div>
 
         <!-- Zone des onglets -->
@@ -669,289 +582,20 @@ $initiative = $dexterityModifier;
 
 <!-- Modals existants -->
     <?php if ($canModifyHP): ?>
-    <div class="modal fade" id="hpModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-heart me-2"></i>
-                        Gestion des Points de Vie - <?php echo htmlspecialchars($npc->name); ?>
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <!-- Barre de Points de Vie -->
-                    <div class="mb-4">
-                        <h6>Points de Vie Actuels</h6>
-                        <?php
-                        $current_hp = $npc->hit_points_current;
-                        $max_hp = $npc->hit_points_max;
-                        $hp_percentage = $max_hp > 0 ? ($current_hp / $max_hp) * 100 : 100;
-                        $hp_class = $hp_percentage > 50 ? 'bg-success' : ($hp_percentage > 25 ? 'bg-warning' : 'bg-danger');
-                        ?>
-                        <div class="progress mb-2 progress-bar-custom">
-                            <div class="progress-bar <?php echo $hp_class; ?>" role="progressbar" style="width: <?php echo $hp_percentage; ?>%">
-                                <?php echo $current_hp; ?>/<?php echo $max_hp; ?>
-                            </div>
-                        </div>
-                        <small class="text-muted"><?php echo round($hp_percentage, 1); ?>% des points de vie restants</small>
-                    </div>
-
-                    <!-- Actions Rapides -->
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <h6><i class="fas fa-sword text-danger me-2"></i>Infliger des Dégâts</h6>
-                            <div class="d-flex gap-2 mb-2">
-                                <button class="btn btn-outline-danger btn-sm" data-action="damage" data-amount="1" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">-1</button>
-                                <button class="btn btn-outline-danger btn-sm" data-action="damage" data-amount="5" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">-5</button>
-                                <button class="btn btn-outline-danger btn-sm" data-action="damage" data-amount="10" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">-10</button>
-                                <button class="btn btn-outline-danger btn-sm" data-action="damage" data-amount="20" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">-20</button>
-                            </div>
-                            <form method="POST" class="d-flex gap-2">
-                                <input type="hidden" name="hp_action" value="damage">
-                                <input type="number" name="damage" class="form-control form-control-sm" placeholder="Dégâts" min="1" required>
-                                <button type="submit" class="btn btn-danger btn-sm">
-                                    <i class="fas fa-minus"></i>
-                                </button>
-                            </form>
-                        </div>
-                        <div class="col-md-6">
-                            <h6><i class="fas fa-heart text-success me-2"></i>Appliquer des Soins</h6>
-                            <div class="d-flex gap-2 mb-2">
-                                <button class="btn btn-outline-success btn-sm" data-action="heal" data-amount="1" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">+1</button>
-                                <button class="btn btn-outline-success btn-sm" data-action="heal" data-amount="5" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">+5</button>
-                                <button class="btn btn-outline-success btn-sm" data-action="heal" data-amount="10" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">+10</button>
-                                <button class="btn btn-outline-success btn-sm" data-action="heal" data-amount="20" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">+20</button>
-                            </div>
-                            <form method="POST" class="d-flex gap-2">
-                                <input type="hidden" name="hp_action" value="heal">
-                                <input type="number" name="healing" class="form-control form-control-sm" placeholder="Soins" min="1" required>
-                                <button type="submit" class="btn btn-success btn-sm">
-                                    <i class="fas fa-plus"></i>
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-
-                    <!-- Actions Avancées -->
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6><i class="fas fa-edit text-warning me-2"></i>Modifier Directement</h6>
-                            <form method="POST">
-                                <input type="hidden" name="hp_action" value="update_hp">
-                                <input type="hidden" name="max_hp" value="<?php echo $npc->hit_points_max; ?>">
-                                <div class="d-flex gap-2">
-                                    <input type="number" name="current_hp" class="form-control form-control-sm" 
-                                           value="<?php echo $npc->hit_points_current; ?>" 
-                                           min="0" max="<?php echo $npc->hit_points_max; ?>" required>
-                                    <button type="submit" class="btn btn-warning btn-sm">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                </div>
-                                <small class="text-muted">Maximum : <?php echo $npc->hit_points_max; ?> PV</small>
-                            </form>
-                        </div>
-                        <div class="col-md-6">
-                            <h6><i class="fas fa-redo text-info me-2"></i>Réinitialiser</h6>
-                            <form method="POST" class="d-inline">
-                                <input type="hidden" name="hp_action" value="reset_hp">
-                                <button type="submit" class="btn btn-info btn-sm" onclick="return confirm('Réinitialiser les points de vie au maximum ?')">
-                                    <i class="fas fa-redo me-2"></i>
-                                    Remettre au Maximum
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
-                </div>
-            </div>
-        </div>
-    </div>
+        <?php include 'templates/modal_edit_hp.php'; ?>
     <?php endif; ?>
 
     <!-- Modal pour Gestion des Points d'Expérience -->
     <?php if ($canModifyHP): ?>
-    <div class="modal fade" id="xpModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-star me-2"></i>
-                        Gestion des Points d'Expérience - <?php echo htmlspecialchars($npc->name); ?>
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <!-- Affichage des Points d'Expérience Actuels -->
-                    <div class="mb-4">
-                        <h6>Points d'Expérience Actuels</h6>
-                        <div class="alert alert-warning">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <strong><?php echo number_format($npc->experience ?? 0); ?> XP</strong>
-                                    <br>
-                                    <small class="text-muted">Niveau <?php echo $npc->level; ?></small>
-                                </div>
-                                <div class="text-end">
-                                    <i class="fas fa-star fa-2x text-warning"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Actions Rapides -->
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <h6><i class="fas fa-minus text-danger me-2"></i>Retirer des Points d'Expérience</h6>
-                            <div class="d-flex gap-2 mb-2">
-                                <button class="btn btn-outline-danger btn-sm" data-action="xp" data-amount="-100" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">-100</button>
-                                <button class="btn btn-outline-danger btn-sm" data-action="xp" data-amount="-500" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">-500</button>
-                                <button class="btn btn-outline-danger btn-sm" data-action="xp" data-amount="-1000" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">-1000</button>
-                            </div>
-                            <form method="POST" class="d-flex gap-2">
-                                <input type="hidden" name="xp_action" value="remove">
-                                <input type="number" name="xp_amount" class="form-control form-control-sm" placeholder="Points à retirer" min="1" required>
-                                <button type="submit" class="btn btn-danger btn-sm">
-                                    <i class="fas fa-minus"></i>
-                                </button>
-                            </form>
-                        </div>
-                        <div class="col-md-6">
-                            <h6><i class="fas fa-plus text-success me-2"></i>Ajouter des Points d'Expérience</h6>
-                            <div class="d-flex gap-2 mb-2">
-                                <button class="btn btn-outline-success btn-sm" data-action="xp" data-amount="100" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">+100</button>
-                                <button class="btn btn-outline-success btn-sm" data-action="xp" data-amount="500" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">+500</button>
-                                <button class="btn btn-outline-success btn-sm" data-action="xp" data-amount="1000" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">+1000</button>
-                            </div>
-                            <form method="POST" class="d-flex gap-2">
-                                <input type="hidden" name="xp_action" value="add">
-                                <input type="number" name="xp_amount" class="form-control form-control-sm" placeholder="Points à ajouter" min="1" required>
-                                <button type="submit" class="btn btn-success btn-sm">
-                                    <i class="fas fa-plus"></i>
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-
-                    <!-- Action Avancée -->
-                    <div class="row">
-                        <div class="col-md-12">
-                            <h6><i class="fas fa-edit text-warning me-2"></i>Modifier Directement</h6>
-                            <form method="POST">
-                                <input type="hidden" name="xp_action" value="set">
-                                <div class="d-flex gap-2">
-                                    <input type="number" name="xp_amount" class="form-control" 
-                                           value="<?php echo $npc->experience ?? 0; ?>" 
-                                           min="0" required>
-                                    <button type="submit" class="btn btn-warning">
-                                        <i class="fas fa-edit me-2"></i>
-                                        Définir
-                                    </button>
-                                </div>
-                                <small class="text-muted">Définir directement le nombre total de points d'expérience</small>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
-                </div>
-            </div>
-        </div>
-    </div>
+        <?php include 'templates/modal_edit_xp.php'; ?>
     <?php endif; ?>
 
     <!-- Modal pour Transfert d'Objets -->
-    <div class="modal fade" id="transferModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-exchange-alt me-2"></i>
-                        Transférer un Objet Magique
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <strong>Objet :</strong> <span id="transferItemName"></span><br>
-                        <strong>Propriétaire actuel :</strong> <span id="transferCurrentOwner"></span>
-                    </div>
-                    
-                    <form id="transferForm" method="POST">
-                        <input type="hidden" name="action" value="transfer_item">
-                        <input type="hidden" name="item_id" id="transferItemId">
-                        <input type="hidden" name="current_owner" id="transferCurrentOwnerType">
-                        <input type="hidden" name="source" id="transferSource">
-                        
-                        <div class="mb-3">
-                            <label for="transferTarget" class="form-label">Transférer vers :</label>
-                            <select class="form-select" name="target" id="transferTarget" required>
-                                <option value="">Sélectionner une cible...</option>
-                            </select>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="transferNotes" class="form-label">Notes (optionnel) :</label>
-                            <textarea class="form-control" name="notes" id="transferNotes" rows="3" placeholder="Raison du transfert, conditions, etc."></textarea>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="button" class="btn btn-primary" data-action="confirm-transfer">
-                        <i class="fas fa-exchange-alt me-1"></i>Transférer
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <?php include 'templates/modal_transfert_object.php'; ?>
 
     <!-- Modal pour Upload de Photo de Profil -->
     <?php if ($canModifyHP): ?>
-    <div class="modal fade" id="photoModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="fas fa-camera me-2"></i>
-                        Changer la Photo de Profil
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="photoForm" method="POST" enctype="multipart/form-data">
-                        <input type="hidden" name="action" value="upload_photo">
-                        
-                        <div class="mb-3">
-                            <label for="profile_photo" class="form-label">Sélectionner une nouvelle photo :</label>
-                            <input type="file" class="form-control" name="profile_photo" id="profile_photo" accept="image/*" required>
-                            <div class="form-text">
-                                Formats acceptés : JPG, PNG, GIF (max 10MB)
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <div class="alert alert-info">
-                                <i class="fas fa-info-circle me-2"></i>
-                                <strong>Conseil :</strong> Pour un meilleur rendu, utilisez une image carrée ou rectangulaire.
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="button" class="btn btn-primary" data-action="upload-photo" data-npc-id="<?php echo $npc_id; ?>" data-entity-type="PNJ">
-                        <i class="fas fa-upload me-1"></i>Uploader
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+        <?php include 'templates/modal_change_profil_photo.php'; ?>
     <?php endif; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
