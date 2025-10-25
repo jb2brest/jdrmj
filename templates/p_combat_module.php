@@ -79,9 +79,6 @@
                                                     </div>
                                                 <?php endfor; ?>
                                             </div>
-                                            <div class="rage-info mt-2">
-                                                <span class="badge bg-info"><?php echo $rageData['available']; ?>/<?php echo $rageData['max']; ?> rages disponibles</span>
-                                            </div>
                                         </div>
                                     </div>
                                 <?php endif; ?>

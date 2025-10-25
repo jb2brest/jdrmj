@@ -1942,11 +1942,23 @@ class NPC
      * Récupère le nombre maximum de rages (méthode d'instance)
      */
     public function getMyMaxRages() {
-        // Logique simplifiée pour les barbares
-        if ($this->class_id == 1) { // ID de la classe Barbare
-            return $this->level >= 20 ? 999 : $this->level;
+        $pdo = \Database::getInstance()->getPdo();
+        try {
+            // Récupérer le nombre de rages depuis la table class_evolution
+            $stmt = $pdo->prepare("SELECT rages FROM class_evolution WHERE class_id = ? AND level = ?");
+            $stmt->execute([$this->class_id, $this->level]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($result && $result['rages'] !== null) {
+                return (int)$result['rages'];
+            }
+            
+            // Si pas de données trouvées, retourner 0
+            return 0;
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération du nombre maximum de rages: " . $e->getMessage());
+            return 0;
         }
-        return 0;
     }
     
     /**

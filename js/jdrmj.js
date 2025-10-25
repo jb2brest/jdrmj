@@ -3438,15 +3438,14 @@ function showMessage(message, type) {
  * Basculer l'état de rage d'un NPC
  */
 function toggleRage(npcId, rageIndex) {
-    fetch('api/manage_rage.php', {
+    fetch('api/toggle_rage.php', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
             npc_id: npcId,
-            rage_index: rageIndex,
-            action: 'toggle'
+            rage_index: parseInt(rageIndex)
         })
     })
     .then(response => response.json())
@@ -3469,21 +3468,20 @@ function toggleRage(npcId, rageIndex) {
  */
 function resetRages(npcId) {
     if (confirm('Réinitialiser toutes les rages de ce NPC ?')) {
-        fetch('api/manage_rage.php', {
+        fetch('api/reset_rage.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                npc_id: npcId,
-                action: 'reset'
+                npc_id: npcId
             })
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 // Mettre à jour l'affichage de la rage
-                updateRageDisplay(npcId, 0, data.total_rages);
+                updateRageDisplay(npcId, data.used_rages, data.total_rages);
                 showMessage('Rages réinitialisées', 'success');
             } else {
                 showMessage(data.message || 'Erreur lors de la réinitialisation', 'error');
@@ -3825,7 +3823,7 @@ function initializeNpcEventHandlers() {
 document.addEventListener('DOMContentLoaded', function() {
     initializeTransferModal();
     initializeEquipmentFilters();
-    initializeNpcEventHandlers();
+    // initializeNpcEventHandlers(); // Supprimé car appelé dans view_npc.php
     initializeSkillsManagement();
     initializeCapabilitiesManagement();
 });
