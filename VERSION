@@ -2,19 +2,19 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.20.15
+VERSION=2.21.0
 
 # Date de déploiement
-DEPLOY_DATE=2025-10-24
+DEPLOY_DATE=2025-10-25
 
 # Environnement
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=871f49ae92c00029a5721a3f6208c5170de7ec82
+GIT_COMMIT=bce0e77d8954f890c8effc4c89bef8c28b64859e
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251024-233703
+BUILD_ID=20251025-150430
 
 # Notes de version
-RELEASE_NOTES="NPC.php : normes PV"
+RELEASE_NOTES="view_NPC.php : normes"
