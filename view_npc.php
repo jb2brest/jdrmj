@@ -522,7 +522,7 @@ $speed = $npc->speed;
 
         <!-- Zone d'en-tête -->
         <div class="zone-d-entete">
-            <?php include 'templates/entete_personnage.php'; ?>
+            <?php include 'templates/p_entete.php'; ?>
             </div>
 
         <!-- Zone des onglets -->
@@ -574,7 +574,7 @@ $speed = $npc->speed;
                 </div>
 
                 <div class="tab-content npc-tab-content" id="npcTabContent">
-                    <?php include 'templates/npc_combat_tab.php'; ?>
+                    <?php include 'templates/p_combat_module.php'; ?>
 
                     <?php include 'templates/npc_characteristics_tab.php'; ?>
 
@@ -586,7 +586,7 @@ $speed = $npc->speed;
 
                     <?php include 'templates/npc_treasury_tab.php'; ?>
 
-                    <?php include 'templates/npc_equipment_tab.php'; ?>
+                    <?php include 'templates/p_equipment_module.php'; ?>
 
                     <?php include 'templates/npc_personal_info_tab.php'; ?>
                 </div>

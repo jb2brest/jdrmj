@@ -51,7 +51,7 @@
                                 <?php endif; ?>
                                 
                                 <?php if ($equippedShield): ?>
-                                    <strong>Bouclier:</strong> <?php echo $equippedShield['name']; ?> (+<?php echo $equippedShield['ac_bonus']; ?>)<br>
+                                    <strong>Bouclier:</strong> <?php echo $equippedShield['name']; ?> (+<?php echo $equippedShield['ac_formula'] ?? '2'; ?>)<br>
                                 <?php else: ?>
                                     <strong>Bouclier:</strong> Aucun<br>
                                 <?php endif; ?>

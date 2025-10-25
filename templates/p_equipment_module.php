@@ -105,8 +105,12 @@
                             </td>
                             <td>
                                 <?php if ($item['is_equipped'] ?? $item['equipped'] ?? false): ?>
+                                    <?php 
+                                    $equippedSlot = $item['equipped_slot'] ?? null;
+                                    $slotName = $equippedSlot ? SlotManager::getSlotDisplayName($equippedSlot) : 'Équipé';
+                                    ?>
                                     <span class="badge bg-success">
-                                        <i class="fas fa-check-circle me-1"></i>Équipé
+                                        <i class="fas fa-check-circle me-1"></i><?php echo $slotName; ?>
                                     </span>
                                 <?php else: ?>
                                     <span class="badge bg-secondary">
@@ -117,20 +121,17 @@
                             <td style="min-width: 300px; white-space: nowrap; overflow: visible;">
                                 <?php if ($itemType === 'weapon' || $itemType === 'armor' || $itemType === 'shield'): ?>
                                     <?php if ($item['is_equipped'] ?? $item['equipped'] ?? false): ?>
-                                        <button class="btn btn-warning btn-sm" onclick="unequipItem(<?php echo $npc->id; ?>, '<?php echo addslashes($itemName); ?>')"
+                                        <button class="btn btn-warning btn-sm" onclick="unequipItem(<?php echo $item['id'] ?? 0; ?>)"
                                                 style="white-space: nowrap; min-width: 80px;">
                                             <i class="fas fa-hand-paper me-1"></i>Déséquiper
                                         </button>
                                     <?php else: ?>
                                         <?php 
-                                        $slot = match($itemType) {
-                                            'weapon' => 'main_hand',
-                                            'armor' => 'armor',
-                                            'shield' => 'off_hand',
-                                            default => 'main_hand'
-                                        };
+                                        // Utiliser le système de slots automatique
+                                        require_once 'classes/SlotManager.php';
+                                        $slot = SlotManager::getSlotForObjectType($itemType, $itemName);
                                         ?>
-                                        <button class="btn btn-success btn-sm" onclick="equipItem(<?php echo $npc->id; ?>, '<?php echo addslashes($itemName); ?>', '<?php echo $itemType; ?>', '<?php echo $slot; ?>')"
+                                        <button class="btn btn-success btn-sm" onclick="equipItem(<?php echo $item['id'] ?? 0; ?>)"
                                                 style="white-space: nowrap; min-width: 80px;">
                                             <i class="fas fa-hand-rock me-1"></i>Équiper
                                         </button>

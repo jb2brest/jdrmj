@@ -764,9 +764,9 @@ class NPC
                 $stmt = $pdo->prepare("
                             INSERT INTO items (
                                 display_name, description, object_type, type_precis,
-                                owner_type, owner_id, place_id, is_visible, is_identified,
+                                owner_type, owner_id, place_id, is_visible, is_identified, is_equipped,
                                 created_at, updated_at
-                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
                         ");
 
                         $stmt->execute([
@@ -778,7 +778,8 @@ class NPC
                             $this->id,
                             null,
                             1,
-                            1
+                            1,
+                            1  // Marquer comme équipé
                         ]);
                         $addedItems++;
                     }
@@ -1982,7 +1983,7 @@ class NPC
         $pdo = \Database::getInstance()->getPdo();
         
         try {
-            // Récupérer l'équipement du NPC
+            // Récupérer l'équipement du NPC (seulement les équipements marqués comme équipés)
             $stmt = $pdo->prepare("
                 SELECT i.*
                 FROM items i
@@ -2208,6 +2209,170 @@ class NPC
         } catch (PDOException $e) {
             error_log("Erreur lors de la récupération des détails de l'équipement: " . $e->getMessage());
             return null;
+        }
+    }
+    
+    /**
+     * Équiper un objet sur un NPC (méthode statique)
+     */
+    public static function equipItem($npcId, $itemName, $itemType, $slot)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            // Déséquiper l'objet actuellement dans ce slot
+            $stmt = $pdo->prepare("
+                UPDATE items 
+                SET is_equipped = 0, equipped_slot = NULL 
+                WHERE owner_type = 'npc' AND owner_id = ? AND equipped_slot = ?
+            ");
+            $stmt->execute([$npcId, $slot]);
+            
+            // Équiper le nouvel objet
+            $stmt = $pdo->prepare("
+                UPDATE items 
+                SET is_equipped = 1, equipped_slot = ?
+                WHERE owner_type = 'npc' AND owner_id = ? AND display_name = ? AND object_type = ?
+            ");
+            
+            $result = $stmt->execute([$slot, $npcId, $itemName, $itemType]);
+            
+            if ($result) {
+                return ['success' => true, 'message' => 'Objet équipé avec succès'];
+            } else {
+                return ['success' => false, 'message' => 'Erreur lors de l\'équipement'];
+            }
+            
+        } catch (PDOException $e) {
+            error_log("Erreur lors de l'équipement du PNJ: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Erreur lors de l\'équipement: ' . $e->getMessage()];
+        }
+    }
+    
+    /**
+     * Équiper un objet par son ID (méthode statique)
+     */
+    public static function equipItemById($itemId, $slot = null)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            // Récupérer les informations de l'item
+            $stmt = $pdo->prepare("
+                SELECT owner_id, object_type, display_name 
+                FROM items 
+                WHERE id = ? AND owner_type = 'npc'
+            ");
+            $stmt->execute([$itemId]);
+            $item = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$item) {
+                return ['success' => false, 'message' => 'Objet non trouvé'];
+            }
+            
+            $npcId = $item['owner_id'];
+            $itemType = $item['object_type'];
+            $itemName = $item['display_name'];
+            
+            // Si aucun slot n'est spécifié, déterminer automatiquement le slot approprié
+            if (!$slot) {
+                require_once 'classes/SlotManager.php';
+                $slot = SlotManager::getSlotForObjectType($itemType, $itemName);
+                
+                if (!$slot) {
+                    return ['success' => false, 'message' => 'Type d\'objet non supporté pour l\'équipement'];
+                }
+            }
+            
+            // Vérifier la compatibilité du slot avec le type d'objet
+            require_once 'classes/SlotManager.php';
+            if (!SlotManager::isSlotCompatible($slot, $itemType)) {
+                return ['success' => false, 'message' => 'Slot non compatible avec ce type d\'objet'];
+            }
+            
+            // Déséquiper l'objet actuellement dans ce slot
+            $stmt = $pdo->prepare("
+                UPDATE items 
+                SET is_equipped = 0, equipped_slot = NULL 
+                WHERE owner_type = 'npc' AND owner_id = ? AND equipped_slot = ?
+            ");
+            $stmt->execute([$npcId, $slot]);
+            
+            // Équiper le nouvel objet
+            $stmt = $pdo->prepare("
+                UPDATE items 
+                SET is_equipped = 1, equipped_slot = ?
+                WHERE id = ?
+            ");
+            
+            $result = $stmt->execute([$slot, $itemId]);
+            
+            if ($result) {
+                $slotName = SlotManager::getSlotDisplayName($slot);
+                return ['success' => true, 'message' => "Objet équipé avec succès dans le slot: $slotName"];
+            } else {
+                return ['success' => false, 'message' => 'Erreur lors de l\'équipement'];
+            }
+            
+        } catch (PDOException $e) {
+            error_log("Erreur lors de l'équipement du PNJ: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Erreur lors de l\'équipement: ' . $e->getMessage()];
+        }
+    }
+    
+    /**
+     * Déséquiper un objet d'un NPC (méthode statique)
+     */
+    public static function unequipItem($npcId, $itemName)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            $stmt = $pdo->prepare("
+                UPDATE items 
+                SET is_equipped = 0, equipped_slot = NULL 
+                WHERE owner_type = 'npc' AND owner_id = ? AND display_name = ?
+            ");
+            
+            $result = $stmt->execute([$npcId, $itemName]);
+            
+            if ($result) {
+                return ['success' => true, 'message' => 'Objet déséquipé avec succès'];
+            } else {
+                return ['success' => false, 'message' => 'Erreur lors du déséquipement'];
+            }
+            
+        } catch (PDOException $e) {
+            error_log("Erreur lors du déséquipement du PNJ: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Erreur lors du déséquipement: ' . $e->getMessage()];
+        }
+    }
+    
+    /**
+     * Déséquiper un objet par son ID (méthode statique)
+     */
+    public static function unequipItemById($itemId)
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            $stmt = $pdo->prepare("
+                UPDATE items 
+                SET is_equipped = 0, equipped_slot = NULL 
+                WHERE id = ? AND owner_type = 'npc'
+            ");
+            
+            $result = $stmt->execute([$itemId]);
+            
+            if ($result) {
+                return ['success' => true, 'message' => 'Objet déséquipé avec succès'];
+            } else {
+                return ['success' => false, 'message' => 'Erreur lors du déséquipement'];
+            }
+            
+        } catch (PDOException $e) {
+            error_log("Erreur lors du déséquipement du PNJ: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Erreur lors du déséquipement: ' . $e->getMessage()];
         }
     }
 }

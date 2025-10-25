@@ -136,30 +136,32 @@ function equipItem(characterId, itemName, itemType, slot) {
 }
 
 /**
- * Déséquiper un objet d'un personnage
+ * Déséquiper un objet (universel - personnages, PNJ, monstres)
  */
-function unequipItem(characterId, itemName) {
+function unequipItem(itemId) {
     fetch('api/unequip_item.php', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            character_id: characterId,
-            item_name: itemName
+            item_id: itemId
         })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            location.reload();
+            showMessage(data.message, 'success');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
         } else {
-            alert('Erreur: ' + data.message);
+            showMessage(data.message || 'Erreur lors du déséquipement', 'error');
         }
     })
     .catch(error => {
         console.error('Erreur:', error);
-        alert('Erreur lors du déséquipement');
+        showMessage('Erreur lors du déséquipement', 'error');
     });
 }
 
@@ -2694,68 +2696,7 @@ function uploadPhoto() {
     }
 }
 
-/**
- * Équipe un objet sur un NPC
- */
-function equipItem(characterId, itemName, itemType, slot) {
-    fetch('api/equip_npc_item.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            character_id: characterId,
-            item_name: itemName,
-            item_type: itemType,
-            slot: slot
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert('Erreur: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Erreur:', error);
-        alert('Erreur lors de l\'équipement');
-    });
-}
 
-/**
- * Déséquipe un objet d'un NPC
- */
-function unequipItem(characterId, itemName) {
-    console.log('Debug unequipItem - characterId:', characterId, 'itemName:', itemName);
-    fetch('api/unequip_npc_item.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            character_id: characterId,
-            item_name: itemName
-        })
-    })
-    .then(response => {
-        console.log('Debug unequipItem - Response status:', response.status);
-        return response.json();
-    })
-    .then(data => {
-        console.log('Debug unequipItem - Response data:', data);
-        if (data.success) {
-            location.reload();
-        } else {
-            alert('Erreur: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Erreur:', error);
-        alert('Erreur lors du déséquipement');
-    });
-}
 
 /**
  * Dépose un objet dans le lieu actuel
@@ -3575,16 +3516,14 @@ function updateRageDisplay(npcId, usedRages, totalRages) {
 /**
  * Équiper un objet sur un NPC
  */
-function equipItem(npcId, itemName, itemType, slot) {
-    fetch('api/equip_npc_item.php', {
+function equipItem(itemId) {
+    fetch('api/equip_item.php', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            npc_id: npcId,
-            item_name: itemName,
-            item_type: itemType,
+            item_id: itemId,
             slot: slot
         })
     })
@@ -3605,36 +3544,6 @@ function equipItem(npcId, itemName, itemType, slot) {
     });
 }
 
-/**
- * Déséquiper un objet d'un NPC
- */
-function unequipItem(npcId, itemName) {
-    fetch('api/unequip_npc_item.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            npc_id: npcId,
-            item_name: itemName
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showMessage(data.message, 'success');
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
-        } else {
-            showMessage(data.message || 'Erreur lors du déséquipement', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Erreur:', error);
-        showMessage('Erreur lors du déséquipement', 'error');
-    });
-}
 
 /**
  * Déposer un objet
