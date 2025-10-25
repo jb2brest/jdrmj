@@ -619,13 +619,50 @@ class NPC extends Character
                         // Détecter le type d'équipement
                         $objectType = self::detectEquipmentType($item);
 
+                        // Trouver l'ID correspondant dans les tables spécialisées
+                        $armorId = null;
+                        $weaponId = null;
+                        $poisonId = null;
+                        $shieldId = null;
+
+                        if ($objectType === 'armor') {
+                            $stmt = $pdo->prepare("SELECT id FROM armor WHERE name = ?");
+                            $stmt->execute([$item]);
+                            $armor = $stmt->fetch(PDO::FETCH_ASSOC);
+                            if ($armor) {
+                                $armorId = $armor['id'];
+                            }
+                        } elseif ($objectType === 'weapon') {
+                            $stmt = $pdo->prepare("SELECT id FROM weapons WHERE name = ?");
+                            $stmt->execute([$item]);
+                            $weapon = $stmt->fetch(PDO::FETCH_ASSOC);
+                            if ($weapon) {
+                                $weaponId = $weapon['id'];
+                            }
+                        } elseif ($objectType === 'poison') {
+                            $stmt = $pdo->prepare("SELECT id FROM poisons WHERE name = ?");
+                            $stmt->execute([$item]);
+                            $poison = $stmt->fetch(PDO::FETCH_ASSOC);
+                            if ($poison) {
+                                $poisonId = $poison['id'];
+                            }
+                        } elseif ($objectType === 'shield') {
+                            $stmt = $pdo->prepare("SELECT id FROM shields WHERE name = ?");
+                            $stmt->execute([$item]);
+                            $shield = $stmt->fetch(PDO::FETCH_ASSOC);
+                            if ($shield) {
+                                $shieldId = $shield['id'];
+                            }
+                        }
+
                         // Créer un objet dans la table items
                         $stmt = $pdo->prepare("
                             INSERT INTO items (
                                 display_name, description, object_type, type_precis,
                                 owner_type, owner_id, place_id, is_visible, is_identified,
+                                armor_id, weapon_id, poison_id, shield_id,
                                 created_at, updated_at
-                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
                         ");
 
                         $stmt->execute([
@@ -637,7 +674,11 @@ class NPC extends Character
                             $this->id,
                             null,
                             1,
-                            1
+                            1,
+                            $armorId,
+                            $weaponId,
+                            $poisonId,
+                            $shieldId
                         ]);
                         $addedItems++;
                     }

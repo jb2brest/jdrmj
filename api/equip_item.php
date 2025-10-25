@@ -21,18 +21,11 @@ requireLogin();
 // Récupérer les données
 $input = json_decode(file_get_contents('php://input'), true);
 $itemId = (int)($input['item_id'] ?? 0);
-$slot = $input['slot'] ?? '';
 
 // Validation
 if ($itemId <= 0) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'ID d\'objet invalide']);
-    exit();
-}
-
-if (empty($slot)) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Slot manquant']);
     exit();
 }
 
@@ -90,20 +83,138 @@ try {
         exit();
     }
     
-    // Équiper l'objet selon le type de propriétaire
-    $result = null;
+    // Déterminer le slot automatiquement selon le type d'objet
+    require_once '../classes/SlotManager.php';
+    $slot = SlotManager::getSlotForObjectType($item['object_type'], $item['display_name']);
     
-    if ($ownerType === 'player') {
-        // Utiliser la méthode existante pour les personnages
-        $result = Character::equipItemStatic($ownerId, $item['display_name'], $item['object_type'], $slot);
-        if ($result) {
-            $result = ['success' => true, 'message' => 'Objet équipé avec succès'];
+    if (!$slot) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Type d\'objet non supporté pour l\'équipement']);
+        exit();
+    }
+    
+    // Vérifier la compatibilité du slot avec le type d'objet
+    if (!SlotManager::isSlotCompatible($slot, $item['object_type'])) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Slot non compatible avec ce type d\'objet']);
+        exit();
+    }
+    
+    // Vérifier et libérer les slots nécessaires
+    $slotsToFree = [];
+    
+    // Gestion spéciale pour les boucliers
+    if ($item['object_type'] === 'shield') {
+        // Un bouclier s'équipe toujours en main secondaire
+        $slot = 'main_secondaire';
+        $slotsToFree = ['main_secondaire'];
+    } elseif ($slot === 'deux_mains') {
+        // Pour les armes à deux mains, libérer les deux mains
+        $slotsToFree = ['main_principale', 'main_secondaire'];
+    } elseif ($slot === 'main_principale') {
+        // Pour les armes en main principale, vérifier s'il y a déjà une arme à une main
+        $stmt = $pdo->prepare("
+            SELECT id, display_name, object_type, equipped_slot 
+            FROM items 
+            WHERE owner_type = ? AND owner_id = ? AND equipped_slot = 'main_principale' AND is_equipped = 1
+        ");
+        $stmt->execute([$ownerType, $ownerId]);
+        $existingMainHand = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($existingMainHand) {
+            // Vérifier si l'arme existante est à une main
+            require_once '../classes/SlotManager.php';
+            $existingSlot = SlotManager::getSlotForObjectType($existingMainHand['object_type'], $existingMainHand['display_name']);
+            
+            if ($existingSlot === 'main_principale') {
+                // L'arme existante est à une main, déplacer la nouvelle arme en main secondaire
+                $slot = 'main_secondaire';
+                $slotsToFree = ['main_secondaire'];
+            } else {
+                // L'arme existante est à deux mains, la déséquiper
+                $slotsToFree = ['main_principale'];
+            }
         } else {
-            $result = ['success' => false, 'message' => 'Erreur lors de l\'équipement'];
+            // Pas d'arme en main principale, libérer seulement la main principale
+            $slotsToFree = ['main_principale'];
+        }
+    } elseif ($slot === 'main_secondaire') {
+        // Pour les armes en main secondaire, vérifier la compatibilité avec la main principale
+        $stmt = $pdo->prepare("
+            SELECT id, display_name, object_type, equipped_slot 
+            FROM items 
+            WHERE owner_type = ? AND owner_id = ? AND equipped_slot = 'main_principale' AND is_equipped = 1
+        ");
+        $stmt->execute([$ownerType, $ownerId]);
+        $mainHandWeapon = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($mainHandWeapon) {
+            // Vérifier si l'arme en main principale est compatible avec une arme en main secondaire
+            require_once '../classes/SlotManager.php';
+            $mainHandSlot = SlotManager::getSlotForObjectType($mainHandWeapon['object_type'], $mainHandWeapon['display_name']);
+            
+            if ($mainHandSlot === 'deux_mains') {
+                // L'arme en main principale est à deux mains, la déséquiper
+                $slotsToFree = ['main_principale'];
+            } else {
+                // L'arme en main principale est compatible, libérer seulement la main secondaire
+                $slotsToFree = ['main_secondaire'];
+            }
+        } else {
+            // Pas d'arme en main principale, libérer seulement la main secondaire
+            $slotsToFree = ['main_secondaire'];
         }
     } else {
-        // Utiliser la méthode universelle pour PNJ et monstres
-        $result = NPC::equipItemById($itemId, $slot);
+        // Pour les autres objets, libérer seulement le slot cible
+        $slotsToFree = [$slot];
+    }
+    
+    // Libérer les objets dans les slots nécessaires
+    $freedItems = [];
+    foreach ($slotsToFree as $slotToFree) {
+        $stmt = $pdo->prepare("
+            SELECT id, display_name, object_type, equipped_slot 
+            FROM items 
+            WHERE owner_type = ? AND owner_id = ? AND equipped_slot = ? AND is_equipped = 1
+        ");
+        $stmt->execute([$ownerType, $ownerId, $slotToFree]);
+        $occupiedItem = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($occupiedItem) {
+            // Déséquiper l'objet qui occupe ce slot
+            $stmt = $pdo->prepare("
+                UPDATE items 
+                SET is_equipped = 0, equipped_slot = NULL 
+                WHERE id = ?
+            ");
+            $stmt->execute([$occupiedItem['id']]);
+            $freedItems[] = $occupiedItem;
+        }
+    }
+    
+    // Équiper le nouvel objet
+    $stmt = $pdo->prepare("
+        UPDATE items 
+        SET is_equipped = 1, equipped_slot = ? 
+        WHERE id = ?
+    ");
+    $result = $stmt->execute([$slot, $itemId]);
+    
+    if ($result) {
+        $slotName = SlotManager::getSlotDisplayName($slot);
+        $message = "Objet équipé avec succès dans le slot: $slotName";
+        
+        // Ajouter des informations sur les objets déséquipés
+        if (!empty($freedItems)) {
+            $freedNames = array_map(function($item) {
+                return $item['display_name'];
+            }, $freedItems);
+            $message .= ". Objets déséquipés: " . implode(', ', $freedNames);
+        }
+        
+        $result = ['success' => true, 'message' => $message];
+    } else {
+        $result = ['success' => false, 'message' => 'Erreur lors de l\'équipement'];
     }
     
     if ($result['success']) {

@@ -106,32 +106,32 @@ function getCurrentNpcId() {
 }
 
 /**
- * Équiper un objet sur un personnage
+ * Équiper un objet (universel - personnages, PNJ, monstres)
  */
-function equipItem(characterId, itemName, itemType, slot) {
+function equipItem(itemId) {
     fetch('api/equip_item.php', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            character_id: characterId,
-            item_name: itemName,
-            item_type: itemType,
-            slot: slot
+            item_id: itemId
         })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            location.reload();
+            showMessage(data.message, 'success');
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
         } else {
-            alert('Erreur: ' + data.message);
+            showMessage(data.message || 'Erreur lors de l\'équipement', 'error');
         }
     })
     .catch(error => {
         console.error('Erreur:', error);
-        alert('Erreur lors de l\'équipement');
+        showMessage('Erreur lors de l\'équipement', 'error');
     });
 }
 
@@ -3513,36 +3513,6 @@ function updateRageDisplay(npcId, usedRages, totalRages) {
     });
 }
 
-/**
- * Équiper un objet sur un NPC
- */
-function equipItem(itemId) {
-    fetch('api/equip_item.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            item_id: itemId,
-            slot: slot
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showMessage(data.message, 'success');
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
-        } else {
-            showMessage(data.message || 'Erreur lors de l\'équipement', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Erreur:', error);
-        showMessage('Erreur lors de l\'équipement', 'error');
-    });
-}
 
 
 /**

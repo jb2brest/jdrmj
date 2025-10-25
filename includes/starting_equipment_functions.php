@@ -568,11 +568,11 @@ function addStartingEquipmentToCharacterNew($characterId, $equipmentData) {
                 (place_id, display_name, object_type, type_precis, description, 
                  is_identified, is_visible, is_equipped, position_x, position_y, 
                  is_on_map, owner_type, owner_id, item_source, quantity, 
-                 equipped_slot, notes, obtained_at, obtained_from, weapon_id, armor_id) 
+                 equipped_slot, notes, obtained_at, obtained_from, weapon_id, armor_id, poison_id, shield_id) 
                 VALUES (NULL, ?, ?, ?, NULL, 
                         1, 0, 0, 0, 0, 
                         0, 'player', ?, 'Équipement de départ', ?, 
-                        NULL, 'Équipement de départ', NOW(), 'Équipement de départ', ?, ?)
+                        NULL, 'Équipement de départ', NOW(), 'Équipement de départ', ?, ?, NULL, NULL)
             ");
             $stmt->execute([$displayName, $itemType, $itemType, $characterId, $quantity, $weaponId, $armorId]);
         }

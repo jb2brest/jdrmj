@@ -85,31 +85,45 @@ try {
         exit();
     }
 
-    // Déséquiper l'objet selon le type de propriétaire
-    $result = null;
-
-    if ($ownerType === 'player') {
-        // Utiliser la méthode existante pour les personnages
-        $result = Character::unequipItemStatic($ownerId, $item['display_name']);
-        if ($result) {
-            $result = ['success' => true, 'message' => 'Objet déséquipé avec succès'];
+    // Déséquiper l'objet directement en base
+    $stmt = $pdo->prepare("
+        UPDATE items 
+        SET is_equipped = 0, equipped_slot = NULL 
+        WHERE id = ?
+    ");
+    $result = $stmt->execute([$itemId]);
+    
+    if ($result) {
+        // Vérifier si on déséquipe une arme de la main principale
+        if ($item['object_type'] === 'weapon' && $item['equipped_slot'] === 'main_principale') {
+            // Chercher une arme en main secondaire pour la basculer en main principale
+            $stmt = $pdo->prepare("
+                SELECT id, display_name 
+                FROM items 
+                WHERE owner_type = ? AND owner_id = ? AND object_type = 'weapon' AND equipped_slot = 'main_secondaire' AND is_equipped = 1
+                LIMIT 1
+            ");
+            $stmt->execute([$ownerType, $ownerId]);
+            $secondaryWeapon = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($secondaryWeapon) {
+                // Basculer l'arme de la main secondaire vers la main principale
+                $stmt = $pdo->prepare("
+                    UPDATE items 
+                    SET equipped_slot = 'main_principale' 
+                    WHERE id = ?
+                ");
+                $stmt->execute([$secondaryWeapon['id']]);
+                
+                $result = ['success' => true, 'message' => "Objet déséquipé avec succès. {$secondaryWeapon['display_name']} basculé en main principale."];
+            } else {
+                $result = ['success' => true, 'message' => 'Objet déséquipé avec succès'];
+            }
         } else {
-            $result = ['success' => false, 'message' => 'Erreur lors du déséquipement'];
+            $result = ['success' => true, 'message' => 'Objet déséquipé avec succès'];
         }
     } else {
-        // Pour les PNJ et monstres - déséquiper directement en base
-        $stmt = $pdo->prepare("
-            UPDATE items 
-            SET is_equipped = 0, equipped_slot = NULL 
-            WHERE id = ?
-        ");
-        $result = $stmt->execute([$itemId]);
-        
-        if ($result) {
-            $result = ['success' => true, 'message' => 'Objet déséquipé avec succès'];
-        } else {
-            $result = ['success' => false, 'message' => 'Erreur lors du déséquipement'];
-        }
+        $result = ['success' => false, 'message' => 'Erreur lors du déséquipement'];
     }
 
     // Retourner le résultat

@@ -1409,18 +1409,22 @@ class Character
                     INSERT INTO items 
                     (place_id, display_name, object_type, type_precis, description, 
                      is_identified, is_visible, is_equipped, position_x, position_y, 
-                     is_on_map, owner_type, owner_id, item_source, quantity, 
-                     equipped_slot, notes, obtained_at, obtained_from) 
+                     is_on_map, owner_type, owner_id, armor_id, weapon_id, poison_id, shield_id,
+                     item_source, quantity, equipped_slot, notes, obtained_at, obtained_from) 
                     VALUES (NULL, ?, ?, ?, NULL, 
                             1, 0, 0, 0, 0, 
-                            0, 'player', ?, 'Équipement de départ', 1, 
-                            NULL, 'Équipement de départ', NOW(), 'Sélection équipement de départ')
+                            0, 'player', ?, ?, ?, ?, NULL,
+                            'Équipement de départ', 1, NULL, 'Équipement de départ', NOW(), 'Sélection équipement de départ')
                 ");
                 $stmt->execute([
                     $displayName,    // display_name
                     $itemType,       // object_type
                     $itemType,       // type_precis
-                    $characterId     // owner_id
+                    $characterId,    // owner_id
+                    $armorId,        // armor_id
+                    $weaponId,       // weapon_id
+                    null,            // poison_id
+                    null             // shield_id
                 ]);
             }
             

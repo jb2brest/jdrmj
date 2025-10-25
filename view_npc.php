@@ -284,7 +284,8 @@ $npcItems = $npc->getMyEquipment();
 
 // Traiter les équipements du PNJ
 foreach ($npcItems as $item) {
-    $item['is_equipped'] = true; // Pour les PNJ, tous les équipements sont considérés comme équipés
+    // Utiliser la vraie valeur de is_equipped depuis la base de données
+    // $item['is_equipped'] est déjà défini par la requête SQL
     $magicalEquipment[] = $item;
     
     // Structurer les équipements par slot

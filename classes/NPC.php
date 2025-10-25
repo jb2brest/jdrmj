@@ -760,13 +760,50 @@ class NPC
                         // Détecter le type d'équipement
                         $objectType = self::detectEquipmentType($item);
 
+                        // Trouver l'ID correspondant dans les tables spécialisées
+                        $armorId = null;
+                        $weaponId = null;
+                        $poisonId = null;
+                        $shieldId = null;
+
+                        if ($objectType === 'armor') {
+                            $stmt = $pdo->prepare("SELECT id FROM armor WHERE name = ?");
+                            $stmt->execute([$item]);
+                            $armor = $stmt->fetch(PDO::FETCH_ASSOC);
+                            if ($armor) {
+                                $armorId = $armor['id'];
+                            }
+                        } elseif ($objectType === 'weapon') {
+                            $stmt = $pdo->prepare("SELECT id FROM weapons WHERE name = ?");
+                            $stmt->execute([$item]);
+                            $weapon = $stmt->fetch(PDO::FETCH_ASSOC);
+                            if ($weapon) {
+                                $weaponId = $weapon['id'];
+                            }
+                        } elseif ($objectType === 'poison') {
+                            $stmt = $pdo->prepare("SELECT id FROM poisons WHERE name = ?");
+                            $stmt->execute([$item]);
+                            $poison = $stmt->fetch(PDO::FETCH_ASSOC);
+                            if ($poison) {
+                                $poisonId = $poison['id'];
+                            }
+                        } elseif ($objectType === 'shield') {
+                            $stmt = $pdo->prepare("SELECT id FROM shields WHERE name = ?");
+                            $stmt->execute([$item]);
+                            $shield = $stmt->fetch(PDO::FETCH_ASSOC);
+                            if ($shield) {
+                                $shieldId = $shield['id'];
+                            }
+                        }
+
                         // Créer un objet dans la table items
-                $stmt = $pdo->prepare("
+                        $stmt = $pdo->prepare("
                             INSERT INTO items (
                                 display_name, description, object_type, type_precis,
                                 owner_type, owner_id, place_id, is_visible, is_identified, is_equipped,
+                                armor_id, weapon_id, poison_id, shield_id,
                                 created_at, updated_at
-                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
                         ");
 
                         $stmt->execute([
@@ -779,7 +816,11 @@ class NPC
                             null,
                             1,
                             1,
-                            1  // Marquer comme équipé
+                            1,  // Marquer comme équipé
+                            $armorId,
+                            $weaponId,
+                            $poisonId,
+                            $shieldId
                         ]);
                         $addedItems++;
                     }
@@ -1614,8 +1655,14 @@ class NPC
                    i.display_name as item_name,
                    i.description as item_description,
                    i.object_type as item_type,
-                   i.is_equipped as equipped
+                   i.is_equipped as equipped,
+                   a.name as armor_name, a.ac_formula as armor_ac_formula,
+                   w.name as weapon_name, w.damage as weapon_damage, w.properties as weapon_properties,
+                   s.name as shield_name, s.ac_formula as shield_ac_formula
             FROM items i
+            LEFT JOIN armor a ON i.armor_id = a.id
+            LEFT JOIN weapons w ON i.weapon_id = w.id
+            LEFT JOIN shields s ON i.shield_id = s.id AND i.object_type = 'shield'
             WHERE i.owner_type = 'npc' AND i.owner_id = ?
             ORDER BY i.created_at ASC
         ");
@@ -1871,23 +1918,59 @@ class NPC
      * Calcule la classe d'armure du NPC (méthode d'instance)
      */
     public function calculateMyArmorClass($equippedArmor = null, $equippedShield = null) {
-        $ac = 10; // Base
+        $ac = 10; // Base par défaut
         
         // Bonus de Dextérité
         $dexBonus = floor(($this->dexterity - 10) / 2);
-        $ac += $dexBonus;
         
-        // Bonus d'armure
-        if ($equippedArmor && isset($equippedArmor['ac_bonus'])) {
-            $ac += $equippedArmor['ac_bonus'];
+        // Calculer l'AC selon l'armure équipée
+        if ($equippedArmor && isset($equippedArmor['ac_formula'])) {
+            $ac = $this->parseACFormula($equippedArmor['ac_formula'], $dexBonus);
+        } else {
+            // Pas d'armure, AC de base + modificateur de Dextérité
+            $ac = 10 + $dexBonus;
         }
         
         // Bonus de bouclier
-        if ($equippedShield && isset($equippedShield['ac_bonus'])) {
-            $ac += $equippedShield['ac_bonus'];
+        if ($equippedShield && isset($equippedShield['ac_formula'])) {
+            $shieldBonus = $this->parseShieldBonus($equippedShield['ac_formula']);
+            $ac += $shieldBonus;
         }
         
         return $ac;
+    }
+    
+    /**
+     * Parse une formule d'AC d'armure
+     */
+    private function parseACFormula($formula, $dexBonus) {
+        // Extraire le nombre de base de la formule (ex: "11 + Mod.Dex" -> 11)
+        if (preg_match('/^(\d+)/', $formula, $matches)) {
+            $baseAC = (int)$matches[1];
+            
+            // Vérifier s'il y a une limitation de modificateur de Dextérité
+            if (preg_match('/max \+(\d+)/', $formula, $maxMatches)) {
+                $maxDex = (int)$maxMatches[1];
+                $dexBonus = min($dexBonus, $maxDex);
+            }
+            
+            return $baseAC + $dexBonus;
+        }
+        
+        // Fallback: AC de base + modificateur de Dextérité
+        return 10 + $dexBonus;
+    }
+    
+    /**
+     * Parse le bonus d'un bouclier
+     */
+    private function parseShieldBonus($formula) {
+        // Extraire le nombre du bonus (ex: "2" -> 2)
+        if (preg_match('/^(\d+)/', $formula, $matches)) {
+            return (int)$matches[1];
+        }
+        
+        return 0;
     }
     
     /**
@@ -1896,6 +1979,7 @@ class NPC
     public function getMyEquipmentBonuses() {
         // Pour l'instant, retourner des bonus à 0
         // Cette méthode peut être étendue pour calculer les vrais bonus d'équipement
+        // quand les colonnes de bonus seront ajoutées aux tables armor et weapons
         return [
             'strength' => 0,
             'dexterity' => 0,
@@ -1983,51 +2067,30 @@ class NPC
         $pdo = \Database::getInstance()->getPdo();
         
         try {
-            // Récupérer l'équipement du NPC (seulement les équipements marqués comme équipés)
-            $stmt = $pdo->prepare("
-                SELECT i.*
-                FROM items i
-                WHERE i.owner_type = 'npc' AND i.owner_id = ? AND i.is_equipped = 1
-            ");
-            $stmt->execute([$this->id]);
-            $magicalEquipment = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            // Récupérer toutes les armures disponibles
-            $stmt = $pdo->prepare("SELECT * FROM armor ORDER BY name");
-            $stmt->execute();
-            $detectedArmor = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            // Récupérer tous les boucliers disponibles
-            $stmt = $pdo->prepare("SELECT * FROM shields ORDER BY name");
-            $stmt->execute();
-            $detectedShields = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
             $equippedArmor = null;
             $equippedShield = null;
             
-            // Chercher l'armure équipée
-            foreach ($magicalEquipment as $item) {
-                if (($item['object_type'] ?? '') === 'armor') {
-                    foreach ($detectedArmor as $armor) {
-                        if (stripos($item['display_name'], $armor['name']) !== false) {
-                            $equippedArmor = $armor;
-                            break 2;
-                        }
-                    }
-                }
-            }
+            // Récupérer l'armure équipée via le lien direct
+            $stmt = $pdo->prepare("
+                SELECT a.*
+                FROM items i
+                JOIN armor a ON i.armor_id = a.id
+                WHERE i.owner_type = 'npc' AND i.owner_id = ? AND i.is_equipped = 1 AND i.object_type = 'armor'
+                LIMIT 1
+            ");
+            $stmt->execute([$this->id]);
+            $equippedArmor = $stmt->fetch(PDO::FETCH_ASSOC);
             
-            // Chercher le bouclier équipé
-            foreach ($magicalEquipment as $item) {
-                if (($item['object_type'] ?? '') === 'shield') {
-                    foreach ($detectedShields as $shield) {
-                        if (stripos($item['display_name'], $shield['name']) !== false) {
-                            $equippedShield = $shield;
-                            break 2;
-                        }
-                    }
-                }
-            }
+            // Récupérer le bouclier équipé via le lien direct
+            $stmt = $pdo->prepare("
+                SELECT s.*
+                FROM items i
+                JOIN shields s ON i.shield_id = s.id
+                WHERE i.owner_type = 'npc' AND i.owner_id = ? AND i.is_equipped = 1 AND i.object_type = 'shield'
+                LIMIT 1
+            ");
+            $stmt->execute([$this->id]);
+            $equippedShield = $stmt->fetch(PDO::FETCH_ASSOC);
             
             return [
                 'armor' => $equippedArmor,
