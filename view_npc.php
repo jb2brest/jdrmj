@@ -518,96 +518,82 @@ $initiative = $dexterityModifier;
         <!-- Zone d'en-tête -->
         <div class="zone-d-entete">
             <div class="row">
-                        <div class="col-md-6">
-                            <div class="d-flex align-items-start">
-                                <div class="me-3 position-relative">
-                                    <?php if (!empty($npc->profile_photo)): ?>
-                                        <img id="npc-profile-photo" src="<?php echo htmlspecialchars($npc->profile_photo); ?>" alt="Photo de <?php echo htmlspecialchars($npc->name); ?>" class="profile-photo">
-                                    <?php else: ?>
-                                        <div class="profile-placeholder">
-                                            <i class="fas fa-user"></i>
-                                        </div>
-                                    <?php endif; ?>
-                                    
-                                    <?php if ($canModifyHP): ?>
-                                        <button type="button" class="btn btn-sm btn-light photo-edit-button" data-bs-toggle="modal" data-bs-target="#photoModal" title="Changer la photo">
-                                            <i class="fas fa-camera text-primary"></i>
-                                        </button>
-                                    <?php endif; ?>
+                <div class="col-md-6">
+                    <div class="d-flex align-items-start">
+                        <div class="me-3 position-relative">
+                            <?php if (!empty($npc->profile_photo)): ?>
+                                <img id="npc-profile-photo" src="<?php echo htmlspecialchars($npc->profile_photo); ?>" alt="Photo de <?php echo htmlspecialchars($npc->name); ?>" class="profile-photo">
+                            <?php else: ?>
+                                <div class="profile-placeholder">
+                                    <i class="fas fa-user"></i>
                                 </div>
-                                <div>
-                                    <h2>
-                                        <i class="fas fa-user-tie me-2"></i>
-                                        <?php echo htmlspecialchars($npc->name); ?>
-                                    </h2>
-                                    <p>
-                                        <i class="fas fa-tag me-1"></i>
-                                        <strong>Race :</strong> <?php echo htmlspecialchars($raceObject->name); ?>
-                                    </p>
-                                    <p>
-                                        <i class="fas fa-shield-alt me-1"></i>
-                                        <strong>Classe :</strong> <?php echo htmlspecialchars($classObject->name); ?>
-                                    </p>
-                                    <p>
-                                        <i class="fas fa-star me-1"></i>
-                                        <strong>Niveau :</strong> <?php echo $npc->level; ?>
-                                    </p>
-                                    <?php if ($backgroundObject && $backgroundObject->name): ?>
-                                        <p>
-                                            <i class="fas fa-book me-1"></i>
-                                            <strong>Historique:</strong> <?php echo htmlspecialchars($backgroundObject->name); ?>
-                                        </p>
-                                    <?php endif; ?>
-                                    <?php if ($npc->alignment): ?>
-                                        <p>
-                                            <i class="fas fa-balance-scale me-1"></i>
-                                            <strong>Alignement:</strong> <?php echo htmlspecialchars($npc->alignment); ?>
-                                        </p>
-                                    <?php endif; ?>
-                                    
-                                    <?php if ($characterArchetype): ?>
-                                        <p>
-                                            <i class="fas fa-magic me-1"></i>
-                                            <strong><?php echo htmlspecialchars($characterArchetype['archetype_type']); ?>:</strong> <?php echo htmlspecialchars($characterArchetype['name']); ?>
-                                        </p>
-                                    <?php endif; ?>
-                                </div>
+                            <?php endif; ?>                            
+                            <?php if ($canModifyHP): ?>
+                                <button type="button" class="btn btn-sm btn-light photo-edit-button" data-bs-toggle="modal" data-bs-target="#photoModal" title="Changer la photo">
+                                    <i class="fas fa-camera text-primary"></i>
+                                </button>
+                            <?php endif; ?>
+                        </div>
+                        <div>
+                            <p>
+                                <i class="fas fa-tag me-1"></i>
+                                <strong>Race :</strong> <?php echo htmlspecialchars($raceObject->name); ?>
+                            </p>
+                            <p>
+                                <i class="fas fa-shield-alt me-1"></i>
+                                <strong>Classe :</strong> <?php echo htmlspecialchars($classObject->name); ?>
+                            </p>
+                            <p>
+                                <i class="fas fa-star me-1"></i>
+                                <strong>Niveau :</strong> <?php echo $npc->level; ?>
+                            </p>
+                            <p>
+                                <i class="fas fa-book me-1"></i>
+                                <strong>Historique:</strong> <?php echo htmlspecialchars($backgroundObject->name); ?>
+                            </p>
+                            <p>
+                                <i class="fas fa-balance-scale me-1"></i>
+                                <strong>Alignement:</strong> <?php echo htmlspecialchars($npc->alignment); ?>
+                            </p>                            
+                            <?php if ($characterArchetype): ?>
+                                <p>
+                                    <i class="fas fa-magic me-1"></i>
+                                    <strong><?php echo htmlspecialchars($characterArchetype['archetype_type']); ?>:</strong> <?php echo htmlspecialchars($characterArchetype['name']); ?>
+                                </p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="row">
+                        <div class="col-4">
+                            <div class="stat-box">
+                                <?php if ($canModifyHP): ?>
+                                    <div class="hp-display clickable-hp h5 mb-1" data-bs-toggle="modal" data-bs-target="#hpModal" title="Cliquer pour modifier les points de vie"><?php echo $npc->hit_points_current; ?>/<?php echo $npc->hit_points_max; ?></div>
+                                <?php else: ?>
+                                    <div class="hp-display h5 mb-1"><?php echo $npc->hit_points_current; ?>/<?php echo $npc->hit_points_max; ?></div>
+                                <?php endif; ?>
+                                <div class="stat-label small">PV</div>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="row">
-                                <div class="col-4">
-                                    <div class="stat-box">
-                                        <div class="hp-display h5 mb-1"><?php echo $npc->hit_points_current; ?>/<?php echo $npc->hit_points_max; ?></div>
-                                        <div class="stat-label small">Points de Vie</div>
-                                        <?php if ($canModifyHP): ?>
-                                            <div class="mt-2">
-                                                <button type="button" class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#hpModal" title="Gérer les points de vie">
-                                                    <i class="fas fa-edit text-primary"></i>
-                                                </button>
-                                            </div>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="stat-box">
-                                        <div class="ac-display text-white h5 mb-1"><?php echo $armorClass; ?></div>
-                                        <div class="stat-label text-white-50 small">Classe d'Armure</div>
-                                    </div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="stat-box">
-                                        <?php if ($canModifyHP): ?>
-                                            <div class="xp-display clickable-xp text-white h5 mb-1" data-bs-toggle="modal" data-bs-target="#xpModal" title="Gérer les points d'expérience"><?php echo number_format($npc->experience ?? 0); ?></div>
-                                        <?php else: ?>
-                                            <div class="xp-display text-white h5 mb-1"><?php echo number_format($npc->experience ?? 0); ?></div>
-                                        <?php endif; ?>
-                                        <div class="stat-label text-white-50 small">Exp.</div>
-                                        <small class="text-white-50">Niveau <?php echo $npc->level; ?></small>
-                                    </div>
-                                </div>
+                        <div class="col-4">
+                            <div class="stat-box">
+                                <div class="ac-display  h5 mb-1"><?php echo $armorClass; ?></div>
+                                <div class="stat-label -50 small">CA</div>
                             </div>
                         </div>
+                        <div class="col-4">
+                            <div class="stat-box">
+                                <?php if ($canModifyHP): ?>
+                                    <div class="xp-display clickable-xp  h5 mb-1" data-bs-toggle="modal" data-bs-target="#xpModal" title="Gérer les points d'expérience"><?php echo number_format($npc->experience ?? 0); ?></div>
+                                <?php else: ?>
+                                    <div class="xp-display  h5 mb-1"><?php echo number_format($npc->experience ?? 0); ?></div>
+                                <?php endif; ?>
+                                <div class="stat-label -50 small">Exp.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -617,42 +603,42 @@ $initiative = $dexterityModifier;
                 <div class="card-header p-0" style="background: linear-gradient(135deg, var(--dnd-primary-darker) 0%, var(--dnd-secondary-darker) 100%);">
                     <ul class="nav nav-tabs border-0" id="npcTabs" role="tablist" data-bs-toggle="tab">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active text-white" id="combat-tab" data-bs-toggle="tab" data-bs-target="#combat" type="button" role="tab" aria-controls="combat" aria-selected="true" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
+                            <button class="nav-link active " id="combat-tab" data-bs-toggle="tab" data-bs-target="#combat" type="button" role="tab" aria-controls="combat" aria-selected="true" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
                                 <i class="fas fa-sword me-2"></i>Combat
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link text-white" id="characteristics-tab" data-bs-toggle="tab" data-bs-target="#characteristics" type="button" role="tab" aria-controls="characteristics" aria-selected="false" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
+                            <button class="nav-link " id="characteristics-tab" data-bs-toggle="tab" data-bs-target="#characteristics" type="button" role="tab" aria-controls="characteristics" aria-selected="false" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
                                 <i class="fas fa-dumbbell me-2"></i>Caractéristiques
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link text-white" id="capabilities-tab" data-bs-toggle="tab" data-bs-target="#capabilities" type="button" role="tab" aria-controls="capabilities" aria-selected="false" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
+                            <button class="nav-link " id="capabilities-tab" data-bs-toggle="tab" data-bs-target="#capabilities" type="button" role="tab" aria-controls="capabilities" aria-selected="false" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
                                 <i class="fas fa-star me-2"></i>Capacités
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link text-white" id="skills-tab" data-bs-toggle="tab" data-bs-target="#skills" type="button" role="tab" aria-controls="skills" aria-selected="false" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
+                            <button class="nav-link " id="skills-tab" data-bs-toggle="tab" data-bs-target="#skills" type="button" role="tab" aria-controls="skills" aria-selected="false" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
                                 <i class="fas fa-dice me-2"></i>Compétences
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link text-white" id="languages-tab" data-bs-toggle="tab" data-bs-target="#languages" type="button" role="tab" aria-controls="languages" aria-selected="false" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
+                            <button class="nav-link " id="languages-tab" data-bs-toggle="tab" data-bs-target="#languages" type="button" role="tab" aria-controls="languages" aria-selected="false" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
                                 <i class="fas fa-language me-2"></i>Langues
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link text-white" id="treasury-tab" data-bs-toggle="tab" data-bs-target="#treasury" type="button" role="tab" aria-controls="treasury" aria-selected="false" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
+                            <button class="nav-link " id="treasury-tab" data-bs-toggle="tab" data-bs-target="#treasury" type="button" role="tab" aria-controls="treasury" aria-selected="false" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
                                 <i class="fas fa-coins me-2"></i>Bourse
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link text-white" id="equipment-tab" data-bs-toggle="tab" data-bs-target="#equipment" type="button" role="tab" aria-controls="equipment" aria-selected="false" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
+                            <button class="nav-link " id="equipment-tab" data-bs-toggle="tab" data-bs-target="#equipment" type="button" role="tab" aria-controls="equipment" aria-selected="false" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
                                 <i class="fas fa-backpack me-2"></i>Equipement
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link text-white" id="personal-info-tab" data-bs-toggle="tab" data-bs-target="#personal-info" type="button" role="tab" aria-controls="personal-info" aria-selected="false" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
+                            <button class="nav-link " id="personal-info-tab" data-bs-toggle="tab" data-bs-target="#personal-info" type="button" role="tab" aria-controls="personal-info" aria-selected="false" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
                                 <i class="fas fa-user-edit me-2"></i>Info perso.
                             </button>
                         </li>
