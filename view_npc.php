@@ -502,14 +502,16 @@ $initiative = $dexterityModifier;
         <?php endif; ?>
 
 
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>
-                <i class="fas fa-user-ninja me-2"></i><?php echo htmlspecialchars($npc->name); ?>
-            </h1>
-            <div>
-                <a href="manage_npcs.php" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left me-2"></i>Retour aux PNJ
-                </a>
+        <div class="zone-de-titre">
+            <div class="zone-titre-container">
+                <h1 class="titre-zone">
+                    <i class="fas fa-user-ninja me-2"></i><?php echo htmlspecialchars($npc->name); ?>
+                </h1>
+                <div>
+                    <a href="manage_npcs.php" class="btn-txt">
+                        <i class="fas fa-arrow-left me-2"></i>Retour aux PNJ
+                    </a>
+                </div>
             </div>
         </div>
 
@@ -577,9 +579,9 @@ $initiative = $dexterityModifier;
                         <div class="col-md-6">
                             <div class="row">
                                 <div class="col-4">
-                                    <div class="stat-box text-center p-3 bg-white bg-opacity-20 rounded">
-                                        <div class="hp-display text-white h5 mb-1"><?php echo $npc->hit_points_current; ?>/<?php echo $npc->hit_points_max; ?></div>
-                                        <div class="stat-label text-white-50 small">Points de Vie</div>
+                                    <div class="stat-box">
+                                        <div class="hp-display h5 mb-1"><?php echo $npc->hit_points_current; ?>/<?php echo $npc->hit_points_max; ?></div>
+                                        <div class="stat-label small">Points de Vie</div>
                                         <?php if ($canModifyHP): ?>
                                             <div class="mt-2">
                                                 <button type="button" class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#hpModal" title="Gérer les points de vie">
@@ -590,13 +592,13 @@ $initiative = $dexterityModifier;
                                     </div>
                                 </div>
                                 <div class="col-4">
-                                    <div class="stat-box text-center p-3 bg-white bg-opacity-20 rounded">
+                                    <div class="stat-box">
                                         <div class="ac-display text-white h5 mb-1"><?php echo $armorClass; ?></div>
                                         <div class="stat-label text-white-50 small">Classe d'Armure</div>
                                     </div>
                                 </div>
                                 <div class="col-4">
-                                    <div class="stat-box text-center p-3 bg-white bg-opacity-20 rounded">
+                                    <div class="stat-box">
                                         <?php if ($canModifyHP): ?>
                                             <div class="xp-display clickable-xp text-white h5 mb-1" data-bs-toggle="modal" data-bs-target="#xpModal" title="Gérer les points d'expérience"><?php echo number_format($npc->experience ?? 0); ?></div>
                                         <?php else: ?>

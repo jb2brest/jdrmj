@@ -81,54 +81,31 @@ body {
     line-height: 1.4;
 }
 
-/* ===== STYLES POUR VIEW_NPC.PHP - STYLES INLINE À DÉPLACER ===== */
+/* ===== STYLES GÉNÉRIQUES RÉUTILISABLES ===== */
 
-/* Styles pour la section d'entête avec style navbar */
-.npc-header-section .card-header {
+/* Styles pour les cartes avec dégradé sombre */
+.card-header-dark {
     background: linear-gradient(135deg, var(--dnd-primary-darker) 0%, var(--dnd-secondary-darker) 100%) !important;
     color: white !important;
     border: none;
     border-radius: 0.375rem 0.375rem 0 0;
 }
 
-.npc-header-section .text-white-50 {
-    color: rgba(255, 255, 255, 0.9) !important;
-}
-
-.npc-header-section .text-white {
-    color: white !important;
-    font-weight: 500;
-}
-
-/* Styles pour les textes marron foncé dans l'entête */
-.npc-header-section .text-brown {
-    color: #3E2723 !important;
-}
-
-.npc-header-section .text-brown-light {
-    color: #5D4037 !important;
-}
-
-.npc-header-section .card {
-    border: none;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    border-radius: 0.375rem;
-}
-
-/* Styles pour les onglets avec style navbar */
-.npc-tabs-section .card-header {
+/* Styles pour les cartes avec dégradé clair */
+.card-header-light {
     background: linear-gradient(135deg, #F5F5DC 0%, #FAF0E6 100%) !important;
     border: none;
     border-radius: 0.375rem 0.375rem 0 0;
     border-bottom: 2px solid #D2B48C;
 }
 
-.npc-tabs-section .nav-tabs {
+/* Styles pour les onglets */
+.tab-nav {
     border: none;
     margin: 0;
 }
 
-.npc-tabs-section .nav-link {
+.tab-nav .nav-link {
     color: #3E2723 !important;
     background: transparent !important;
     border: none !important;
@@ -138,13 +115,13 @@ body {
     transition: all 0.3s ease;
 }
 
-.npc-tabs-section .nav-link:hover {
+.tab-nav .nav-link:hover {
     color: #2D1810 !important;
     background: rgba(62, 39, 35, 0.1) !important;
     text-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
-.npc-tabs-section .nav-link.active {
+.tab-nav .nav-link.active {
     color: #2D1810 !important;
     background: rgba(62, 39, 35, 0.15) !important;
     border-bottom: 3px solid #8B4513 !important;
@@ -152,20 +129,21 @@ body {
     text-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
-.npc-tabs-section .tab-content {
+/* Styles pour le contenu des onglets */
+.tab-content-custom {
     background: linear-gradient(135deg, var(--dnd-bg-light) 0%, var(--dnd-bg) 100%);
     border-radius: 0 0 0.375rem 0.375rem;
     min-height: 400px;
 }
 
-/* Styles pour les cartes dans les onglets */
-.npc-tabs-section .card {
+/* Styles pour les cartes génériques */
+.card-custom {
     border: none;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     background: white;
 }
 
-.npc-tabs-section .card-header {
+.card-header-custom {
     background: linear-gradient(135deg, #2D1810 0%, #8B4513 100%);
     color: white !important;
     border: none;
@@ -173,32 +151,32 @@ body {
     text-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
 
-.npc-tabs-section .card-body {
+.card-body-custom {
     color: #3E2723;
     background: white;
 }
 
-/* Styles pour les boutons dans les onglets */
-.npc-tabs-section .btn {
+/* Styles pour les boutons */
+.btn-custom {
     border-radius: 0.375rem;
     font-weight: 500;
     transition: all 0.3s ease;
 }
 
-.npc-tabs-section .btn:hover {
+.btn-custom:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
-/* Styles pour les tableaux dans les onglets */
-.npc-tabs-section .table {
+/* Styles pour les tableaux */
+.table-custom {
     background: white;
     border-radius: 0.375rem;
     overflow: hidden;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.npc-tabs-section .table thead th {
+.table-custom thead th {
     background: linear-gradient(135deg, #2D1810 0%, #8B4513 100%);
     color: white !important;
     border: none;
@@ -206,23 +184,17 @@ body {
     text-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
 
-.npc-tabs-section .table tbody td {
+.table-custom tbody td {
     color: #3E2723;
     font-weight: 500;
 }
 
-.npc-tabs-section .table tbody tr:hover {
+.table-custom tbody tr:hover {
     background-color: rgba(139, 69, 19, 0.05);
 }
 
-/* Styles pour les badges et labels */
-.npc-tabs-section .badge {
-    font-weight: 600;
-    border-radius: 0.375rem;
-}
-
 /* Styles pour les sections d'information */
-.npc-tabs-section .info-section {
+.info-section-custom {
     background: white;
     border-radius: 0.375rem;
     padding: 1.5rem;
@@ -231,15 +203,16 @@ body {
     color: #3E2723;
 }
 
-.npc-tabs-section .info-section h4,
-.npc-tabs-section .info-section h5,
-.npc-tabs-section .info-section h6 {
+.info-section-custom h4,
+.info-section-custom h5,
+.info-section-custom h6 {
     color: #2D1810;
     font-weight: 600;
 }
 
-.npc-tabs-section .stat-box {
-    background: white;
+/* Styles pour les statistiques */
+.stat-box-custom {
+    background: white; 
     border-radius: 0.375rem;
     padding: 1rem;
     text-align: center;
@@ -248,103 +221,162 @@ body {
     color: #3E2723;
 }
 
-.npc-tabs-section .stat-box:hover {
+.stat-box-custom:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
-.npc-tabs-section .stat-box .stat-label {
+.stat-label-custom {
     color: #5D4037;
     font-weight: 500;
 }
 
-.npc-tabs-section .stat-box .hp-display,
-.npc-tabs-section .stat-box .ac-display,
-.npc-tabs-section .stat-box .xp-display {
+.stat-value-custom {
     color: #2D1810;
     font-weight: 700;
     font-size: 1.25rem;
 }
 
-/* Amélioration des contrastes pour tous les textes */
-.npc-tabs-section {
-    color: #3E2723;
+/* Styles pour les badges */
+.badge-custom {
+    font-weight: 600;
+    border-radius: 0.375rem;
 }
 
-.npc-tabs-section p,
-.npc-tabs-section div,
-.npc-tabs-section span {
-    color: #3E2723;
+/* Styles pour les textes */
+.text-brown {
+    color: #3E2723 !important;
 }
 
-.npc-tabs-section .text-muted {
+.text-brown-light {
     color: #5D4037 !important;
 }
 
-.npc-tabs-section .text-primary {
+/* ===== STYLES POUR LES ZONES DE TITRE ===== */
+
+/* Zone de titre */
+.zone-de-titre {
+    background: linear-gradient(135deg, var(--dnd-bg-light) 0%, var(--dnd-bg) 100%);
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+/* Container de zone de titre */
+.zone-titre-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Titre de zone */
+.titre-zone {
+    color: var(--dnd-primary-darker);
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.titre-zone i {
+    color: var(--dnd-secondary);
+    margin-right: 0.75rem;
+}
+
+/* Bouton de texte */
+.btn-txt {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    border: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.btn-txt:hover {
+    background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+    color: white;
+    text-decoration: none;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+
+/* Styles pour les textes dans les sections */
+.text-muted-custom {
+    color: #5D4037 !important;
+}
+
+.text-primary-custom {
     color: #2D1810 !important;
 }
 
-.npc-tabs-section .text-success {
+.text-success-custom {
     color: #28a745 !important;
 }
 
-.npc-tabs-section .text-warning {
+.text-warning-custom {
     color: #fd7e14 !important;
 }
 
-.npc-tabs-section .text-danger {
+.text-danger-custom {
     color: #dc3545 !important;
 }
 
-.npc-tabs-section .text-info {
+.text-info-custom {
     color: #17a2b8 !important;
 }
 
 /* Styles pour les badges avec meilleur contraste */
-.npc-tabs-section .badge.bg-primary {
+.badge.bg-primary-custom {
     background-color: #2D1810 !important;
     color: white !important;
 }
 
-.npc-tabs-section .badge.bg-secondary {
+.badge.bg-secondary-custom {
     background-color: #8B4513 !important;
     color: white !important;
 }
 
-.npc-tabs-section .badge.bg-success {
+.badge.bg-success-custom {
     background-color: #28a745 !important;
     color: white !important;
 }
 
-.npc-tabs-section .badge.bg-warning {
+.badge.bg-warning-custom {
     background-color: #fd7e14 !important;
     color: white !important;
 }
 
-.npc-tabs-section .badge.bg-danger {
+.badge.bg-danger-custom {
     background-color: #dc3545 !important;
     color: white !important;
 }
 
-.npc-tabs-section .badge.bg-info {
+.badge.bg-info-custom {
     background-color: #17a2b8 !important;
     color: white !important;
 }
 
 /* Styles pour les photos de profil */
-.npc-profile-photo {
+.profile-photo {
     width: 100px;
     height: 100px;
     object-fit: cover;
 }
 
-.npc-profile-placeholder {
+.profile-placeholder {
     width: 100px;
     height: 100px;
 }
 
-.npc-profile-placeholder i {
+.profile-placeholder i {
     font-size: 2.5rem;
 }
 
@@ -536,15 +568,6 @@ body {
 }
 
 /* ===== STYLES POUR LES NPCs ===== */
-
-.stat-box {
-    background: white;
-    border-radius: 10px;
-    padding: 15px;
-    text-align: center;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    margin-bottom: 20px;
-}
 
 .stat-value {
     font-size: 2rem;
@@ -1093,7 +1116,7 @@ body {
     box-shadow: 0 10px 30px rgba(0,0,0,0.1);
 }
 
-.npc-header-section .stat-box {
+.npc-header-section {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 10px;
     padding: 1rem;
@@ -1513,7 +1536,7 @@ body {
         padding: 1rem;
     }
     
-    .npc-header-section .stat-box {
+    .npc-header-section {
         padding: 0.75rem;
     }
     
