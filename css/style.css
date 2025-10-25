@@ -411,7 +411,7 @@ body {
 .btn-txt {
     display: inline-block;
     padding: 0.75rem 1.5rem;
-    background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+    background: var(--dnd-primary-dark); 
     color: white;
     text-decoration: none;
     border-radius: 0.5rem;
@@ -420,9 +420,12 @@ body {
     transition: all 0.3s ease;
     cursor: pointer;
 }
-
+.btn-txt.active {
+    background: var(--dnd-primary-darker);
+}
+ 
 .btn-txt:hover {
-    background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+    background: var(--dnd-primary-darker);
     color: white;
     text-decoration: none;
     transform: translateY(-2px);
@@ -1259,20 +1262,20 @@ body {
 }
 
 /* Styles pour les onglets */
-.npc-tabs-section {
+.tabs-section {
     background: white;
     border-radius: 15px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     overflow: hidden;
 }
 
-.npc-tabs-section .nav-tabs {
+.tabs-section .nav-tabs {
     border-bottom: none;
     background: #f8f9fa;
     padding: 0.5rem;
 }
 
-.npc-tabs-section .nav-tabs .nav-link {
+.tabs-section .nav-tabs .nav-link {
     border: none;
     border-radius: 10px;
     margin: 0 0.25rem;
@@ -1282,23 +1285,23 @@ body {
     transition: all 0.3s ease;
 }
 
-.npc-tabs-section .nav-tabs .nav-link:hover {
+.tabs-section .nav-tabs .nav-link:hover {
     background: #e9ecef;
     color: #495057;
     transform: translateY(-2px);
 }
 
-.npc-tabs-section .nav-tabs .nav-link.active {
+.tabs-section .nav-tabs .nav-link.active {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
 }
 
-.npc-tabs-section .tab-content {
+.tabs-section .tab-content {
     padding: 0;
 }
 
-.npc-tabs-section .tab-pane {
+.tabs-section .tab-pane {
     padding: 2rem;
 }
 
@@ -1653,11 +1656,11 @@ body {
 
 /* Responsive design pour les onglets */
 @media (max-width: 768px) {
-    .npc-tabs-section .nav-tabs {
+    .tabs-section .nav-tabs {
         flex-direction: column;
     }
     
-    .npc-tabs-section .nav-tabs .nav-link {
+    .tabs-section .nav-tabs .nav-link {
         margin: 0.25rem 0;
         text-align: center;
     }
