@@ -1850,28 +1850,6 @@ class NPC
         return $attacks;
     }
     
-    /**
-     * Calcule la classe d'armure étendue (méthode d'instance)
-     */
-    public function calculateMyArmorClassExtended($equippedArmor, $equippedShield) {
-        $ac = 10; // Base
-        
-        // Bonus de Dextérité
-        $dexBonus = floor(($this->dexterity - 10) / 2);
-        $ac += $dexBonus;
-        
-        // Bonus d'armure
-        if ($equippedArmor) {
-            $ac += $equippedArmor['ac_bonus'] ?? 0;
-        }
-        
-        // Bonus de bouclier
-        if ($equippedShield) {
-            $ac += $equippedShield['ac_bonus'] ?? 0;
-        }
-        
-        return $ac;
-    }
     
     /**
      * Récupère les points d'amélioration restants (méthode d'instance)
@@ -1979,39 +1957,110 @@ class NPC
         
         try {
             $stmt = $pdo->prepare("
-                SELECT used_rages FROM npcs 
-                WHERE id = ?
+                SELECT used, max_uses FROM npc_rage_usage 
+                WHERE npc_id = ?
             ");
             $stmt->execute([$this->id]);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            return $result ? ['used' => $result['used_rages']] : ['used' => 0];
+            
+            if ($result) {
+                return [
+                    'used' => $result['used'],
+                    'max' => $result['max_uses'],
+                    'available' => $result['max_uses'] - $result['used']
+                ];
+            } else {
+                // Si aucune entrée n'existe, créer une entrée par défaut
+                $stmt = $pdo->prepare("
+                    INSERT INTO npc_rage_usage (npc_id, used, max_uses) 
+                    VALUES (?, 0, 2)
+                ");
+                $stmt->execute([$this->id]);
+                
+                return [
+                    'used' => 0,
+                    'max' => 2,
+                    'available' => 2
+                ];
+            }
         } catch (PDOException $e) {
             error_log("Erreur lors de la récupération de l'utilisation des rages: " . $e->getMessage());
-            return ['used' => 0];
+            return [
+                'used' => 0,
+                'max' => 2,
+                'available' => 2
+            ];
         }
     }
     
     /**
      * Calcule la classe d'armure du NPC (méthode d'instance)
      */
-    public function calculateMyArmorClass($equippedArmor = null, $equippedShield = null) {
+    public function calculateMyArmorClass() {
+        $pdo = \Database::getInstance()->getPdo();
         $ac = 10; // Base par défaut
         
-        // Bonus de Dextérité
-        $dexBonus = floor(($this->dexterity - 10) / 2);
-        
-        // Calculer l'AC selon l'armure équipée
-        if ($equippedArmor && isset($equippedArmor['ac_formula'])) {
-            $ac = $this->parseACFormula($equippedArmor['ac_formula'], $dexBonus);
-        } else {
-            // Pas d'armure, AC de base + modificateur de Dextérité
-            $ac = 10 + $dexBonus;
-        }
-        
-        // Bonus de bouclier
-        if ($equippedShield && isset($equippedShield['ac_formula'])) {
-            $shieldBonus = $this->parseShieldBonus($equippedShield['ac_formula']);
-            $ac += $shieldBonus;
+        try {
+            // Récupérer les caractéristiques totales (base + race + niveau + équipement + temporaires)
+            $totalAbilities = $this->getMyTotalAbilities();
+            $dexterityTotal = $totalAbilities['dexterity'];
+            $constitutionTotal = $totalAbilities['constitution'];
+            
+            // Calculer les modificateurs
+            $dexBonus = floor(($dexterityTotal - 10) / 2);
+            $conBonus = floor(($constitutionTotal - 10) / 2);
+            
+            // Vérifier si c'est un barbare
+            $stmt = $pdo->prepare("SELECT name FROM classes WHERE id = ?");
+            $stmt->execute([$this->class_id]);
+            $class = $stmt->fetch(PDO::FETCH_ASSOC);
+            $isBarbarian = $class && strpos(strtolower($class['name']), 'barbare') !== false;
+            
+            // Récupérer l'armure équipée
+            $stmt = $pdo->prepare("
+                SELECT a.*
+                FROM items i
+                JOIN armor a ON i.armor_id = a.id
+                WHERE i.owner_type = 'npc' AND i.owner_id = ? AND i.is_equipped = 1 AND i.object_type = 'armor'
+                LIMIT 1
+            ");
+            $stmt->execute([$this->id]);
+            $equippedArmor = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            // Calculer l'AC selon l'armure équipée
+            if ($equippedArmor && isset($equippedArmor['ac_formula'])) {
+                $ac = $this->parseACFormula($equippedArmor['ac_formula'], $dexBonus);
+            } else {
+                // Pas d'armure, AC de base + modificateur de Dextérité
+                $ac = 10 + $dexBonus;
+                
+                // Particularité des barbares : AC = 10 + modificateur de Dextérité + modificateur de Constitution
+                if ($isBarbarian) {
+                    $ac += $conBonus;
+                }
+            }
+            
+            // Récupérer le bouclier équipé
+            $stmt = $pdo->prepare("
+                SELECT s.*
+                FROM items i
+                JOIN shields s ON i.shield_id = s.id
+                WHERE i.owner_type = 'npc' AND i.owner_id = ? AND i.is_equipped = 1 AND i.object_type = 'shield'
+                LIMIT 1
+            ");
+            $stmt->execute([$this->id]);
+            $equippedShield = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            // Bonus de bouclier
+            if ($equippedShield && isset($equippedShield['ac_formula'])) {
+                $shieldBonus = $this->parseShieldBonus($equippedShield['ac_formula']);
+                $ac += $shieldBonus;
+            }
+            
+        } catch (PDOException $e) {
+            error_log("Erreur lors du calcul de la classe d'armure: " . $e->getMessage());
+            // En cas d'erreur, retourner l'AC de base
+            $ac = 10 + floor(($this->dexterity - 10) / 2);
         }
         
         return $ac;

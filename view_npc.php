@@ -355,7 +355,7 @@ $charismaModifier = $abilityModifiers['charisma'];
 
 // Calculer les attaques du personnage
 $characterAttacks = $npc->calculateMyCharacterAttacks();
-$armorClass = $npc->calculateMyArmorClass($equippedArmor, $equippedShield);
+$armorClass = $npc->calculateMyArmorClass();
 
 
 // Contrôle d'accès: propriétaire OU MJ
@@ -654,6 +654,9 @@ $speed = $npc->speed;
                 });
             });
         });
+        
+        // Initialiser les gestionnaires d'événements pour les NPCs
+        initializeNpcEventHandlers();
     </script>
 </body>
 </html>

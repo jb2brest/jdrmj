@@ -3500,7 +3500,8 @@ function resetRages(npcId) {
  * Mettre à jour l'affichage des rages
  */
 function updateRageDisplay(npcId, usedRages, totalRages) {
-    const rageSymbols = document.querySelectorAll(`[data-rage]`);
+    // Filtrer les rages pour ce NPC spécifique
+    const rageSymbols = document.querySelectorAll(`[data-npc-id="${npcId}"][data-rage]`);
     rageSymbols.forEach((symbol, index) => {
         const rageIndex = parseInt(symbol.dataset.rage);
         if (rageIndex <= usedRages) {
@@ -3511,6 +3512,13 @@ function updateRageDisplay(npcId, usedRages, totalRages) {
             symbol.classList.add('available');
         }
     });
+    
+    // Mettre à jour le badge d'information
+    const rageInfo = document.querySelector(`[data-npc-id="${npcId}"] .rage-info .badge`);
+    if (rageInfo) {
+        const available = totalRages - usedRages;
+        rageInfo.textContent = `${available}/${totalRages} rages disponibles`;
+    }
 }
 
 

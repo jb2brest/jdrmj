@@ -69,6 +69,11 @@ if (!isset($canModifyHP)) {
                     </p>
                 <?php endif; ?>
             </div>
+            <div class="col-md-4">
+                <button class="btn btn-warning" data-npc-id="<?php echo $npc_id; ?>" data-action="reset">
+                    <i class="fas fa-moon me-1"></i>Long repos
+                </button>
+            </div>
         </div>
     </div>
     <div class="col-md-6">
