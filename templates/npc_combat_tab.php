@@ -13,13 +13,13 @@
                 </div>
                 <div class="col-md-3">
                     <div class="stat-box text-center">
-                        <div class="stat-value"><?php echo $npc->speed; ?></div>
+                        <div class="stat-value"><?php echo $speed; ?></div>
                         <div class="stat-label">Vitesse (pieds)</div>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="stat-box text-center">
-                        <div class="stat-value">+<?php echo ceil($npc->level / 4) + 1; ?></div>
+                        <div class="stat-value">+<?php echo ceil($level / 4) + 1; ?></div>
                         <div class="stat-label">Bonus de maîtrise</div>
                     </div>
                 </div>
@@ -34,14 +34,11 @@
 
         <!-- Classe d'armure détaillée -->
         <div class="info-section mb-4">
-            <h5><i class="fas fa-shield-alt me-2"></i>Classe d'armure</h5>
             <div class="card">
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
-                            <h4 class="text-primary">CA: <?php echo $armorClass; ?></h4>
-                        </div>
-                        <div class="col-md-6">
+                        <h5><i class="fas fa-shield-alt me-2"></i>Classe d'armure</h5>
                             <small class="text-muted">
                                 <?php if ($equippedArmor): ?>
                                     <strong>Armure:</strong> <?php echo $equippedArmor['name']; ?> (<?php echo $equippedArmor['ac_formula']; ?>)<br>
@@ -65,43 +62,41 @@
                                 <?php endif; ?>
                             </small>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Attaques -->
-        <div class="info-section mb-4">
-            <h5><i class="fas fa-sword me-2"></i>Attaques</h5>
-            <div class="card">
-                <div class="card-body">
-                    <?php if (!empty($characterAttacks)): ?>
-                        <?php foreach ($characterAttacks as $attack): ?>
-                            <div class="row mb-2">
-                                <div class="col-12">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <strong><?php echo htmlspecialchars($attack['name']); ?></strong><br>
-                                            <small class="text-muted"><?php echo htmlspecialchars($attack['damage']); ?></small>
+                        <div class="col-md-6">
+                            <h5><i class="fas fa-sword me-2"></i>Attaques</h5>
+                            <div class="card">
+                                <div class="card-body">
+                                    <?php if (!empty($characterAttacks)): ?>
+                                        <?php foreach ($characterAttacks as $attack): ?>
+                                            <div class="row mb-2">
+                                                <div class="col-12">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <strong><?php echo htmlspecialchars($attack['name']); ?></strong><br>
+                                                            <small class="text-muted"><?php echo htmlspecialchars($attack['damage']); ?></small>
+                                                        </div>
+                                                        <div class="text-end">
+                                                            <span class="badge bg-<?php echo $attack['type'] === 'two_handed' ? 'danger' : ($attack['type'] === 'main_hand' ? 'success' : 'info'); ?> fs-6">
+                                                                <?php echo (($attack['attack_bonus'] ?? 0) >= 0 ? '+' : '') . ($attack['attack_bonus'] ?? 0); ?>
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <?php if ($attack !== end($characterAttacks)): ?>
+                                                <hr class="my-2">
+                                            <?php endif; ?>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <div class="text-center text-muted">
+                                            <i class="fas fa-hand-paper fa-2x mb-2"></i>
+                                            <p>Aucune arme équipée</p>
                                         </div>
-                                        <div class="text-end">
-                                            <span class="badge bg-<?php echo $attack['type'] === 'two_handed' ? 'danger' : ($attack['type'] === 'main_hand' ? 'success' : 'info'); ?> fs-6">
-                                                <?php echo (($attack['attack_bonus'] ?? 0) >= 0 ? '+' : '') . ($attack['attack_bonus'] ?? 0); ?>
-                                            </span>
-                                        </div>
-                                    </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
-                            <?php if ($attack !== end($characterAttacks)): ?>
-                                <hr class="my-2">
-                            <?php endif; ?>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <div class="text-center text-muted">
-                            <i class="fas fa-hand-paper fa-2x mb-2"></i>
-                            <p>Aucune arme équipée</p>
                         </div>
-                    <?php endif; ?>
+                    </div>
                 </div>
             </div>
         </div>

@@ -76,16 +76,16 @@ function createAutomaticNPC($race_id, $class_id, $level, $user_id, $custom_name 
         INSERT INTO npcs (
             name, race_id, class_id, level, experience, background_id, alignment,
             strength, dexterity, constitution, intelligence, wisdom, charisma,
-            hit_points, armor_class, speed, starting_equipment, personality_traits, ideals, bonds, flaws, 
+            hit_points_current, hit_points_max, armor_class, speed, starting_equipment, personality_traits, ideals, bonds, flaws, 
             world_id, location_id, created_by, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
     ");
     
     $stmt->execute([
         $name, $race_id, $class_id, $level, $experience_points, $background_id, $alignment,
         $stats['strength'], $stats['dexterity'], $stats['constitution'], 
         $stats['intelligence'], $stats['wisdom'], $stats['charisma'],
-        $stats['hit_points'], $stats['armor_class'], $stats['speed'], $equipment,
+        $stats['hit_points'], $stats['hit_points'], $stats['armor_class'], $stats['speed'], $equipment,
         $personality_traits, $ideals, $bonds, $flaws,
         $world_id, $place_id, $user_id
     ]);

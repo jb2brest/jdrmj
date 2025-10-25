@@ -783,9 +783,9 @@ if (!function_exists('finalizeNPCCreation')) {
                 INSERT INTO npcs (
                     name, race_id, class_id, level, experience, background_id, alignment,
                     strength, dexterity, constitution, intelligence, wisdom, charisma,
-                    hit_points, armor_class, speed, starting_equipment, personality_traits, ideals, bonds, flaws, 
+                    hit_points_current, hit_points_max, armor_class, speed, starting_equipment, personality_traits, ideals, bonds, flaws, 
                     world_id, location_id, created_by, created_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
             ");
             
             $stmt->execute([
@@ -793,7 +793,7 @@ if (!function_exists('finalizeNPCCreation')) {
                 $data['experience_points'] ?? 0, $data['background_id'] ?? null, $data['alignment'] ?? '',
                 $data['strength'] ?? 10, $data['dexterity'] ?? 10, $data['constitution'] ?? 10,
                 $data['intelligence'] ?? 10, $data['wisdom'] ?? 10, $data['charisma'] ?? 10,
-                $data['hit_points_max'] ?? 8, $data['armor_class'] ?? 10, $data['speed'] ?? 30,
+                $data['hit_points_max'] ?? 8, $data['hit_points_max'] ?? 8, $data['armor_class'] ?? 10, $data['speed'] ?? 30,
                 $data['equipment'] ?? '', $data['personality_traits'] ?? '', $data['ideals'] ?? '',
                 $data['bonds'] ?? '', $data['flaws'] ?? '',
                 $data['world_id'] ?? null, $data['location_id'] ?? null, $userId

@@ -285,10 +285,13 @@ function createAutomaticNPC($race_id, $class_id, $level, $user_id, $custom_name,
     
     // Sélectionner un historique aléatoire
     $background_name = selectRandomBackground($class_name);
-    // Pour l'instant, on utilise un background_id par défaut (1 = Acolyte)
-    $background_id = 1;
+    $background_id = selectRandomBackgroundId($class_name);
     error_log("- background_name: " . $background_name);
     error_log("- background_id: " . $background_id);
+    
+    // Sélectionner un archétype aléatoire pour la classe
+    $archetype_id = selectRandomArchetypeId($class_id);
+    error_log("- archetype_id: " . $archetype_id);
     
     // Générer les caractéristiques selon les recommandations D&D
     $stats = generateRecommendedStats($class_name);
@@ -322,11 +325,11 @@ function createAutomaticNPC($race_id, $class_id, $level, $user_id, $custom_name,
     // Créer d'abord le personnage dans la table npcs avec toutes les caractéristiques
     $stmt = $pdo->prepare("
         INSERT INTO npcs (
-            name, race_id, class_id, background_id, level, experience,
+            name, race_id, class_id, background_id, archetype_id, level, experience,
             strength, dexterity, constitution, intelligence, wisdom, charisma,
-            hit_points, armor_class, speed, alignment, backstory, personality_traits,
+            hit_points_current, hit_points_max, armor_class, speed, alignment, backstory, personality_traits,
             ideals, bonds, flaws, starting_equipment, gold, created_by, world_id, location_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
     
     // Vérification finale des valeurs critiques
@@ -341,10 +344,10 @@ function createAutomaticNPC($race_id, $class_id, $level, $user_id, $custom_name,
     
     // Debug des paramètres SQL avec toutes les caractéristiques
     $sql_params = [
-        $name, $race_id, $class_id, $background_id, $level, $experience_points,
+        $name, $race_id, $class_id, $background_id, $archetype_id, $level, $experience_points,
         $stats['strength'], $stats['dexterity'], $stats['constitution'], 
         $stats['intelligence'], $stats['wisdom'], $stats['charisma'],
-        $stats['hit_points'], $stats['armor_class'], $stats['speed'], $alignment,
+        $stats['hit_points'], $stats['hit_points'], $stats['armor_class'], $stats['speed'], $alignment,
         $backstory, $personality_traits, $ideals, $bonds, $flaws, $equipment, 0,
         $user_id, $world_id, $place_id
     ];
@@ -383,7 +386,9 @@ function createAutomaticNPC($race_id, $class_id, $level, $user_id, $custom_name,
         NPC::addAbilityImprovements($npc_id);
         
         // Calculer les points de vie selon les règles D&D
-        NPC::calculateHitPoints($npc_id);
+        $calculatedHp = calculateHitPoints($class_name, $stats['constitution'], $level);
+        $stmt = $pdo->prepare("UPDATE npcs SET hit_points_current = ?, hit_points_max = ? WHERE id = ?");
+        $stmt->execute([$calculatedHp, $calculatedHp, $npc_id]);
         
         // Ajouter l'équipement de départ et l'or
         $npc->addStartingEquipment($equipment, $starting_gold);
@@ -430,5 +435,39 @@ function generateStartingGold($class_name) {
     ];
     
     return $gold_amounts[$class_name] ?? 100;
+}
+
+/**
+ * Sélectionne un background aléatoire et retourne son ID
+ */
+function selectRandomBackgroundId($class_name) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("SELECT id FROM backgrounds ORDER BY RAND() LIMIT 1");
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result ? $result['id'] : 1; // Fallback sur Acolyte si aucun background trouvé
+    } catch (Exception $e) {
+        error_log("Erreur lors de la sélection du background: " . $e->getMessage());
+        return 1; // Fallback sur Acolyte
+    }
+}
+
+/**
+ * Sélectionne un archétype aléatoire pour une classe donnée
+ */
+function selectRandomArchetypeId($class_id) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("SELECT id FROM class_archetypes WHERE class_id = ? ORDER BY RAND() LIMIT 1");
+        $stmt->execute([$class_id]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result ? $result['id'] : null; // Pas d'archétype si aucun trouvé
+    } catch (Exception $e) {
+        error_log("Erreur lors de la sélection de l'archétype: " . $e->getMessage());
+        return null; // Pas d'archétype en cas d'erreur
+    }
 }
 ?>

@@ -39,6 +39,7 @@ $raceObject = Race::findById($npc->race_id);
 $classObject = Classe::findById($npc->class_id);
 $backgroundObject = Background::findById($npc->background_id);
 
+
 // Vérifier que les objets essentiels existent
 if (!$raceObject || !$classObject) {
     header('Location: characters.php');
@@ -165,8 +166,12 @@ foreach ($allCapabilities as $capability) {
 // Récupérer l'archetype choisi depuis les données du PNJ
 $characterArchetype = null;
 if ($npc->archetype_id) {
-    $archetypeObject = ClassArchetype::findById($npc->archetype_id);
-    $characterArchetype = $archetypeObject ? $archetypeObject->toArray() : null;
+    // Debug: vérifier si la classe Character est disponible
+    if (!class_exists('Character')) {
+        error_log("ERREUR: Classe Character non trouvée - " . date('Y-m-d H:i:s'));
+        throw new Exception("Classe Character non trouvée");
+    }
+    $characterArchetype = Character::getArchetypeById($npc->archetype_id);
 }
 
 // Définir les variables d'archetype pour la compatibilité avec le code HTML existant
@@ -455,6 +460,16 @@ $initiative = $dexterityModifier;
 
 // La classe d'armure est déjà calculée plus haut avec calculateArmorClassExtended()
 // $armorClass = $character['armor_class']; // Cette ligne écrasait le calcul correct
+// Préparation de l'affichage : 
+$profile_photo = $npc->profile_photo;
+$name = $npc->name;
+$level = $npc->level;
+$hit_points_current = $npc->hit_points_current;
+$hit_points_max = $npc->hit_points_max;
+$experience = $npc->experience;
+$alignment = $npc->alignment;
+$speed = $npc->speed;
+
 ?>
 <!DOCTYPE html>
 <html lang="fr">
