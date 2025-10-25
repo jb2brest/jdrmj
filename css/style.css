@@ -1679,6 +1679,17 @@ body {
     }
 }
 
+/* Styles pour les onglets */
+.npc-tabs-header {
+    background: linear-gradient(135deg, var(--dnd-primary-darker) 0%, var(--dnd-secondary-darker) 100%);
+}
 
+.npc-tab-link {
+    background: transparent;
+    border: none;
+    color: var(--dnd-neutral-light);
+}
 
-
+.npc-tab-content {
+    background: linear-gradient(135deg, var(--dnd-bg-light) 0%, var(--dnd-bg) 100%);
+}

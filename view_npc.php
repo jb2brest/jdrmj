@@ -600,52 +600,52 @@ $initiative = $dexterityModifier;
         <!-- Zone des onglets -->
         <div class="npc-tabs-section">
             <div class="card border-0 shadow">
-                <div class="card-header p-0" style="background: linear-gradient(135deg, var(--dnd-primary-darker) 0%, var(--dnd-secondary-darker) 100%);">
+                <div class="card-header p-0 npc-tabs-header">
                     <ul class="nav nav-tabs border-0" id="npcTabs" role="tablist" data-bs-toggle="tab">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active " id="combat-tab" data-bs-toggle="tab" data-bs-target="#combat" type="button" role="tab" aria-controls="combat" aria-selected="true" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
+                            <button class="nav-link active npc-tab-link" id="combat-tab" data-bs-toggle="tab" data-bs-target="#combat" type="button" role="tab" aria-controls="combat" aria-selected="true">
                                 <i class="fas fa-sword me-2"></i>Combat
                         </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link " id="characteristics-tab" data-bs-toggle="tab" data-bs-target="#characteristics" type="button" role="tab" aria-controls="characteristics" aria-selected="false" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
+                            <button class="nav-link npc-tab-link" id="characteristics-tab" data-bs-toggle="tab" data-bs-target="#characteristics" type="button" role="tab" aria-controls="characteristics" aria-selected="false">
                                 <i class="fas fa-dumbbell me-2"></i>Caractéristiques
                         </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link " id="capabilities-tab" data-bs-toggle="tab" data-bs-target="#capabilities" type="button" role="tab" aria-controls="capabilities" aria-selected="false" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
+                            <button class="nav-link npc-tab-link" id="capabilities-tab" data-bs-toggle="tab" data-bs-target="#capabilities" type="button" role="tab" aria-controls="capabilities" aria-selected="false">
                                 <i class="fas fa-star me-2"></i>Capacités
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link " id="skills-tab" data-bs-toggle="tab" data-bs-target="#skills" type="button" role="tab" aria-controls="skills" aria-selected="false" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
+                            <button class="nav-link npc-tab-link" id="skills-tab" data-bs-toggle="tab" data-bs-target="#skills" type="button" role="tab" aria-controls="skills" aria-selected="false">
                                 <i class="fas fa-dice me-2"></i>Compétences
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link " id="languages-tab" data-bs-toggle="tab" data-bs-target="#languages" type="button" role="tab" aria-controls="languages" aria-selected="false" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
+                            <button class="nav-link npc-tab-link" id="languages-tab" data-bs-toggle="tab" data-bs-target="#languages" type="button" role="tab" aria-controls="languages" aria-selected="false">
                                 <i class="fas fa-language me-2"></i>Langues
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link " id="treasury-tab" data-bs-toggle="tab" data-bs-target="#treasury" type="button" role="tab" aria-controls="treasury" aria-selected="false" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
+                            <button class="nav-link npc-tab-link" id="treasury-tab" data-bs-toggle="tab" data-bs-target="#treasury" type="button" role="tab" aria-controls="treasury" aria-selected="false">
                                 <i class="fas fa-coins me-2"></i>Bourse
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link " id="equipment-tab" data-bs-toggle="tab" data-bs-target="#equipment" type="button" role="tab" aria-controls="equipment" aria-selected="false" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
+                            <button class="nav-link npc-tab-link" id="equipment-tab" data-bs-toggle="tab" data-bs-target="#equipment" type="button" role="tab" aria-controls="equipment" aria-selected="false">
                                 <i class="fas fa-backpack me-2"></i>Equipement
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link " id="personal-info-tab" data-bs-toggle="tab" data-bs-target="#personal-info" type="button" role="tab" aria-controls="personal-info" aria-selected="false" style="background: transparent; border: none; color: var(--dnd-neutral-light);">
+                            <button class="nav-link npc-tab-link" id="personal-info-tab" data-bs-toggle="tab" data-bs-target="#personal-info" type="button" role="tab" aria-controls="personal-info" aria-selected="false">
                                 <i class="fas fa-user-edit me-2"></i>Info perso.
                             </button>
                         </li>
                     </ul>
                 </div>
 
-                <div class="tab-content" id="npcTabContent" style="background: linear-gradient(135deg, var(--dnd-bg-light) 0%, var(--dnd-bg) 100%);">
+                <div class="tab-content npc-tab-content" id="npcTabContent">
                     <?php include 'templates/npc_combat_tab.php'; ?>
 
                     <?php include 'templates/npc_characteristics_tab.php'; ?>
