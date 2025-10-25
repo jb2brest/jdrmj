@@ -233,18 +233,7 @@ Rappel des règles à appliquer :
 - les appels à des modification en base doivent être codé en ajax et faire un appel à un endpoint en php codé dans un répertoire api. 
 - utilisation de méthode d'instance et non de méthode static
 
-Dans view_npc.php, on va réorganiser l'affichage avec une zone d'entête et une zone d'onglet.
-La zone d'entête reprend toute la partie avec la photo de profil qui est avant la partie "Caractéristiques". 
-Voici la liste des onglets : 
-- Combat
-- Caractéristiques
-- Capacités
-- Compétences
-- Langues
-- Bourse
-- Equipement
-- Info perso.
-
+Dans view_npc.php, dans l'onglet Combat, il faut mettre à jour les attaques en fonctions des armes équipées.
 
 Dans la zone "Combat", il faut ajouter les zones "Classe d'armure" et "Attaques" comme dans l'ancienne page.
 

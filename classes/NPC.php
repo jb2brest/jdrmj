@@ -1759,16 +1759,93 @@ class NPC
      * Calcule les attaques du personnage (méthode d'instance)
      */
     public function calculateMyCharacterAttacks() {
-        // Logique simplifiée pour les attaques
+        $pdo = \Database::getInstance()->getPdo();
         $attacks = [];
         
-        // Attaque de base (coup de poing)
-        $attacks[] = [
-            'name' => 'Coup de poing',
-            'bonus' => floor(($this->strength - 10) / 2),
-            'damage' => '1d4 + ' . floor(($this->strength - 10) / 2),
-            'type' => 'Corps à corps'
-        ];
+        try {
+            // Récupérer les armes équipées avec leurs détails
+            $stmt = $pdo->prepare("
+                SELECT i.*, w.name as weapon_name, w.damage as weapon_damage, w.properties as weapon_properties
+                FROM items i
+                LEFT JOIN weapons w ON i.weapon_id = w.id
+                WHERE i.owner_type = 'npc' AND i.owner_id = ? AND i.is_equipped = 1 AND i.object_type = 'weapon'
+            ");
+            $stmt->execute([$this->id]);
+            $equippedWeapons = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Si des armes sont équipées, les utiliser
+            if (!empty($equippedWeapons)) {
+                foreach ($equippedWeapons as $weapon) {
+                    if ($weapon['weapon_name'] && $weapon['weapon_damage']) {
+                        // Calculer le bonus d'attaque basé sur la caractéristique appropriée
+                        $attackBonus = 0;
+                        $damageBonus = 0;
+                        
+                        // Pour la plupart des armes, utiliser la Force
+                        // TODO: Détecter les armes de jet (Dextérité) et les armes magiques
+                        $strengthModifier = floor(($this->strength - 10) / 2);
+                        $dexterityModifier = floor(($this->dexterity - 10) / 2);
+                        
+                        // Détecter si c'est une arme de jet basée sur les propriétés
+                        $isRangedWeapon = false;
+                        if ($weapon['weapon_properties']) {
+                            $properties = strtolower($weapon['weapon_properties']);
+                            if (strpos($properties, 'jet') !== false || 
+                                strpos($properties, 'lancer') !== false || 
+                                strpos($properties, 'distance') !== false) {
+                                $isRangedWeapon = true;
+                            }
+                        }
+                        
+                        if ($isRangedWeapon) {
+                            $attackBonus = $dexterityModifier;
+                            $damageBonus = $dexterityModifier;
+                        } else {
+                            $attackBonus = $strengthModifier;
+                            $damageBonus = $strengthModifier;
+                        }
+                        
+                        // Formater les dégâts
+                        $damage = $weapon['weapon_damage'];
+                        if ($damageBonus > 0) {
+                            $damage .= ' + ' . $damageBonus;
+                        } elseif ($damageBonus < 0) {
+                            $damage .= ' ' . $damageBonus;
+                        }
+                        
+                        $attacks[] = [
+                            'name' => $weapon['weapon_name'],
+                            'bonus' => $attackBonus,
+                            'damage' => $damage,
+                            'type' => $isRangedWeapon ? 'À distance' : 'Corps à corps',
+                            'properties' => $weapon['weapon_properties']
+                        ];
+                    }
+                }
+            }
+            
+            // Si aucune arme équipée, ajouter l'attaque de base
+            if (empty($attacks)) {
+                $strengthModifier = floor(($this->strength - 10) / 2);
+                $attacks[] = [
+                    'name' => 'Coup de poing',
+                    'bonus' => $strengthModifier,
+                    'damage' => '1d4' . ($strengthModifier > 0 ? ' + ' . $strengthModifier : ($strengthModifier < 0 ? ' ' . $strengthModifier : '')),
+                    'type' => 'Corps à corps'
+                ];
+            }
+            
+        } catch (PDOException $e) {
+            error_log("Erreur lors du calcul des attaques: " . $e->getMessage());
+            // En cas d'erreur, retourner l'attaque de base
+            $strengthModifier = floor(($this->strength - 10) / 2);
+            $attacks[] = [
+                'name' => 'Coup de poing',
+                'bonus' => $strengthModifier,
+                'damage' => '1d4' . ($strengthModifier > 0 ? ' + ' . $strengthModifier : ($strengthModifier < 0 ? ' ' . $strengthModifier : '')),
+                'type' => 'Corps à corps'
+            ];
+        }
         
         return $attacks;
     }
