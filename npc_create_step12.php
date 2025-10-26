@@ -111,9 +111,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Insérer le PNJ dans la base de données
         $npc = new NPC();
-        $npcId = $npc->create($npcData);
+        $npc->hydrate($npcData);
+        $success = $npc->create();
         
-        if ($npcId) {
+        if ($success) {
+            $npcId = $npc->id;
+            
+            // Ajouter les langues selon le mode de création
+            if (isset($data['selected_languages']) || isset($data['fixed_languages'])) {
+                // Création par étapes : utiliser les langues choisies par l'utilisateur
+                $selectedLanguages = $data['selected_languages'] ?? [];
+                $fixedLanguages = $data['fixed_languages'] ?? [];
+                $npc->addChosenLanguages($selectedLanguages, $fixedLanguages);
+            } else {
+                // Création automatique : ajouter automatiquement les langues de base
+                $npc->addBaseLanguages();
+            }
             // Créer une entrée dans place_npcs pour la visibilité
             if ($npcData['location_id']) {
                 try {

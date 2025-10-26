@@ -536,6 +536,82 @@ class NPC
     }
     
     /**
+     * Ajouter les langues choisies par l'utilisateur lors de la création
+     * 
+     * @param array $selectedLanguages Langues choisies par l'utilisateur
+     * @param array $fixedLanguages Langues fixes (race/historique)
+     * @return bool Succès de l'opération
+     */
+    public function addChosenLanguages($selectedLanguages = [], $fixedLanguages = [])
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            $addedLanguages = 0;
+            
+            // Ajouter les langues fixes
+            foreach ($fixedLanguages as $languageName) {
+                $languageName = trim($languageName);
+                if (empty($languageName)) continue;
+                
+                // Trouver l'ID de la langue dans la table languages
+                $langStmt = $pdo->prepare("SELECT id FROM languages WHERE name = ?");
+                $langStmt->execute([$languageName]);
+                $language = $langStmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($language) {
+                    // Vérifier si la langue n'est pas déjà assignée
+                    $checkStmt = $pdo->prepare("SELECT COUNT(*) as count FROM npc_languages WHERE npc_id = ? AND language_id = ?");
+                    $checkStmt->execute([$this->id, $language['id']]);
+                    $exists = $checkStmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    if ($exists['count'] == 0) {
+                        $insertStmt = $pdo->prepare("
+                            INSERT INTO npc_languages (npc_id, language_id, is_active, learned_at)
+                            VALUES (?, ?, 1, NOW())
+                        ");
+                        $insertStmt->execute([$this->id, $language['id']]);
+                        $addedLanguages++;
+                    }
+                }
+            }
+            
+            // Ajouter les langues choisies par l'utilisateur
+            foreach ($selectedLanguages as $languageName) {
+                $languageName = trim($languageName);
+                if (empty($languageName)) continue;
+                
+                // Trouver l'ID de la langue dans la table languages
+                $langStmt = $pdo->prepare("SELECT id FROM languages WHERE name = ?");
+                $langStmt->execute([$languageName]);
+                $language = $langStmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($language) {
+                    // Vérifier si la langue n'est pas déjà assignée
+                    $checkStmt = $pdo->prepare("SELECT COUNT(*) as count FROM npc_languages WHERE npc_id = ? AND language_id = ?");
+                    $checkStmt->execute([$this->id, $language['id']]);
+                    $exists = $checkStmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    if ($exists['count'] == 0) {
+                        $insertStmt = $pdo->prepare("
+                            INSERT INTO npc_languages (npc_id, language_id, is_active, learned_at)
+                            VALUES (?, ?, 1, NOW())
+                        ");
+                        $insertStmt->execute([$this->id, $language['id']]);
+                        $addedLanguages++;
+                    }
+                }
+            }
+            
+            error_log("Debug NPC::addChosenLanguages - Added " . $addedLanguages . " languages to NPC " . $this->id);
+            return true;
+        } catch (PDOException $e) {
+            error_log("Erreur lors de l'ajout des langues choisies du PNJ: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Ajouter automatiquement les langues de base à un NPC
      * 
      * @return bool Succès de l'opération
@@ -562,26 +638,82 @@ class NPC
             
             // Ajouter les langues de race
             if (!empty($race['race_languages'])) {
+                // Les langues peuvent être stockées en JSON ou en chaîne séparée par des virgules
                 $languages = json_decode($race['race_languages'], true);
+                if (!$languages) {
+                    // Si ce n'est pas du JSON, traiter comme une chaîne séparée par des virgules
+                    $languages = array_map('trim', explode(',', $race['race_languages']));
+                }
+                
                 if ($languages) {
-                    foreach ($languages as $language) {
-                        // Vérifier si la langue n'est pas déjà assignée
-                        $checkStmt = $pdo->prepare("SELECT COUNT(*) as count FROM npc_languages WHERE npc_id = ? AND language_name = ?");
-                        $checkStmt->execute([$this->id, $language]);
-                        $exists = $checkStmt->fetch(PDO::FETCH_ASSOC);
+                    foreach ($languages as $languageName) {
+                        $languageName = trim($languageName);
+                        if (empty($languageName)) continue;
                         
-                        if ($exists['count'] == 0) {
-                            $insertStmt = $pdo->prepare("
-                                INSERT INTO npc_languages (npc_id, language_name, is_active, learned_at)
-                                VALUES (?, ?, 1, NOW())
-                            ");
-                            $insertStmt->execute([$this->id, $language]);
-                            $addedLanguages++;
+                        // Trouver l'ID de la langue dans la table languages
+                        $langStmt = $pdo->prepare("SELECT id FROM languages WHERE name = ?");
+                        $langStmt->execute([$languageName]);
+                        $language = $langStmt->fetch(PDO::FETCH_ASSOC);
+                        
+                        if ($language) {
+                            // Vérifier si la langue n'est pas déjà assignée
+                            $checkStmt = $pdo->prepare("SELECT COUNT(*) as count FROM npc_languages WHERE npc_id = ? AND language_id = ?");
+                            $checkStmt->execute([$this->id, $language['id']]);
+                            $exists = $checkStmt->fetch(PDO::FETCH_ASSOC);
+                            
+                            if ($exists['count'] == 0) {
+                                $insertStmt = $pdo->prepare("
+                                    INSERT INTO npc_languages (npc_id, language_id, is_active, learned_at)
+                                    VALUES (?, ?, 1, NOW())
+                                ");
+                                $insertStmt->execute([$this->id, $language['id']]);
+                                $addedLanguages++;
+                            }
                         }
                     }
                 }
             }
             
+            // Ajouter les langues d'historique si disponible
+            if ($this->background_id) {
+                $stmt = $pdo->prepare("
+                    SELECT languages
+                    FROM backgrounds
+                    WHERE id = ?
+                ");
+                $stmt->execute([$this->background_id]);
+                $background = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($background && $background['languages']) {
+                    $backgroundLanguages = json_decode($background['languages'], true);
+                    if ($backgroundLanguages) {
+                        foreach ($backgroundLanguages as $languageName) {
+                            // Trouver l'ID de la langue dans la table languages
+                            $langStmt = $pdo->prepare("SELECT id FROM languages WHERE name = ?");
+                            $langStmt->execute([$languageName]);
+                            $language = $langStmt->fetch(PDO::FETCH_ASSOC);
+                            
+                            if ($language) {
+                                // Vérifier si la langue n'est pas déjà assignée
+                                $checkStmt = $pdo->prepare("SELECT COUNT(*) as count FROM npc_languages WHERE npc_id = ? AND language_id = ?");
+                                $checkStmt->execute([$this->id, $language['id']]);
+                                $exists = $checkStmt->fetch(PDO::FETCH_ASSOC);
+                                
+                                if ($exists['count'] == 0) {
+                                    $insertStmt = $pdo->prepare("
+                                        INSERT INTO npc_languages (npc_id, language_id, is_active, learned_at)
+                                        VALUES (?, ?, 1, NOW())
+                                    ");
+                                    $insertStmt->execute([$this->id, $language['id']]);
+                                    $addedLanguages++;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            error_log("Debug NPC::addBaseLanguages - Added " . $addedLanguages . " languages to NPC " . $this->id);
             return true;
         } catch (PDOException $e) {
             error_log("Erreur lors de l'ajout des langues de base du PNJ: " . $e->getMessage());
@@ -1700,6 +1832,19 @@ class NPC
      * Récupère les langues du NPC (méthode d'instance)
      */
     public function getMyLanguages() {
+        // Utiliser la table npc_languages qui contient les langues choisies lors de la création
+        $npcLanguages = $this->getNpcLanguages();
+        
+        if (!empty($npcLanguages)) {
+            // Extraire seulement les noms des langues
+            $languages = [];
+            foreach ($npcLanguages as $lang) {
+                $languages[] = $lang['name'];
+            }
+            return $languages;
+        }
+        
+        // Si pas de langues dans npc_languages, essayer le champ languages de la table npcs
         $pdo = \Database::getInstance()->getPdo();
         $stmt = $pdo->prepare("
             SELECT languages
@@ -1710,11 +1855,17 @@ class NPC
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if ($result && $result['languages']) {
-            return json_decode($result['languages'], true) ?: [];
+            $languages = json_decode($result['languages'], true) ?: [];
+            if (!empty($languages)) {
+                return $languages;
+            }
         }
         
+        // Si toujours pas de langues, retourner un tableau vide
+        // Les langues doivent être ajoutées lors de la création du PNJ
         return [];
     }
+    
     
     /**
      * Récupère l'équipement du NPC (méthode d'instance)

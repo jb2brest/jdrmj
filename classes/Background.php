@@ -69,7 +69,22 @@ class Background {
      */
     public function getLanguages() {
         if ($this->languages) {
-            return json_decode($this->languages, true) ?: [];
+            $languages = json_decode($this->languages, true) ?: [];
+            
+            // Traiter les descriptions génériques
+            $processedLanguages = [];
+            foreach ($languages as $lang) {
+                if ($lang === 'deux de votre choix') {
+                    $processedLanguages[] = 'Nain';
+                    $processedLanguages[] = 'Halfelin';
+                } elseif ($lang === 'une langue de votre choix') {
+                    $processedLanguages[] = 'Elfique';
+                } else {
+                    $processedLanguages[] = $lang;
+                }
+            }
+            
+            return $processedLanguages;
         }
         return [];
     }

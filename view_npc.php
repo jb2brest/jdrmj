@@ -588,7 +588,7 @@ $charisma = $npc->charisma;
 
                     <?php include 'templates/p_capabilities_module.php'; ?>
 
-                    <?php include 'templates/npc_skills_tab.php'; ?>
+                    <?php include 'templates/p_skills_module.php'; ?>
 
                     <?php include 'templates/npc_languages_tab.php'; ?>
 
