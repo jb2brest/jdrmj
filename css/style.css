@@ -1035,6 +1035,13 @@ body {
     font-weight: bold;
     color: white;
     text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.progress-bar-custom .progress-bar span {
+    display: inline;
+    white-space: nowrap;
 }
 
 /* Styles pour les symboles de rage */
@@ -1081,4 +1088,25 @@ body {
 
 .npc-tab-content {
     background: linear-gradient(135deg, var(--dnd-bg-light) 0%, var(--dnd-bg) 100%);
+}
+
+/* Barre de progression HP - Couleurs personnalisées */
+.progress-bar.hp-full {
+    background-color: #28a745 !important; /* Vert vif pour HP au maximum */
+}
+
+.progress-bar.hp-high {
+    background-color: #4caf50 !important; /* Vert moyen pour HP élevés */
+}
+
+.progress-bar.hp-medium {
+    background-color: #ffc107 !important; /* Jaune-orange pour HP moyens */
+}
+
+.progress-bar.hp-low {
+    background-color: #fd7e14 !important; /* Orange pour HP faibles */
+}
+
+.progress-bar.hp-critical {
+    background-color: #dc3545 !important; /* Rouge pour HP critiques */
 }

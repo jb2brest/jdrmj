@@ -115,14 +115,14 @@ function updateHpDirect(targetId, targetType, newHp) {
  * Mettre à jour l'affichage des HP dans le modal
  */
 function updateHpModalDisplay(currentHp, maxHp) {
-    // Mettre à jour les valeurs textuelles
-    const currentValueElement = document.getElementById('hp-current-value');
-    const maxValueElement = document.getElementById('hp-max-value');
+    // Mettre à jour le texte d'affichage des HP
+    const hpDisplayElement = document.getElementById('hp-display-text');
     const percentageElement = document.getElementById('hp-percentage');
     const directInputElement = document.getElementById('direct_hp_input');
     
-    if (currentValueElement) currentValueElement.textContent = currentHp;
-    if (maxValueElement) maxValueElement.textContent = maxHp;
+    if (hpDisplayElement) {
+        hpDisplayElement.textContent = currentHp + '/' + maxHp;
+    }
     if (percentageElement) {
         const percentage = maxHp > 0 ? (currentHp / maxHp) * 100 : 100;
         percentageElement.textContent = Math.round(percentage * 10) / 10;
@@ -138,14 +138,18 @@ function updateHpModalDisplay(currentHp, maxHp) {
         const percentage = maxHp > 0 ? (currentHp / maxHp) * 100 : 100;
         progressBar.style.width = percentage + '%';
         
-        // Mettre à jour la classe de couleur
-        progressBar.classList.remove('bg-success', 'bg-warning', 'bg-danger');
-        if (percentage > 50) {
-            progressBar.classList.add('bg-success');
-        } else if (percentage > 25) {
-            progressBar.classList.add('bg-warning');
+        // Mettre à jour la classe de couleur avec des classes personnalisées
+        progressBar.classList.remove('hp-full', 'hp-high', 'hp-medium', 'hp-low', 'hp-critical', 'bg-success', 'bg-warning', 'bg-danger');
+        if (percentage >= 90) {
+            progressBar.classList.add('hp-full'); // Vert vif pour HP au maximum (90%+)
+        } else if (percentage >= 75) {
+            progressBar.classList.add('hp-high'); // Vert-bleu pour HP élevés (75-89%)
+        } else if (percentage >= 50) {
+            progressBar.classList.add('hp-medium'); // Jaune-orange pour HP moyens (50-74%)
+        } else if (percentage >= 25) {
+            progressBar.classList.add('hp-low'); // Orange pour HP faibles (25-49%)
         } else {
-            progressBar.classList.add('bg-danger');
+            progressBar.classList.add('hp-critical'); // Rouge pour HP critiques (<25%)
         }
     }
 }

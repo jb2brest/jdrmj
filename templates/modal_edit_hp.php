@@ -26,11 +26,11 @@ if (!isset($name) || !isset($hit_points_current) || !isset($hit_points_max) || !
                     <h6>Points de Vie Actuels</h6>
                     <?php
                     $hp_percentage = $hit_points_max > 0 ? ($hit_points_current / $hit_points_max) * 100 : 100;
-                    $hp_class = $hp_percentage > 50 ? 'bg-success' : ($hp_percentage > 25 ? 'bg-warning' : 'bg-danger');
+                    $hp_class = $hp_percentage >= 90 ? 'hp-full' : ($hp_percentage >= 75 ? 'hp-high' : ($hp_percentage >= 50 ? 'hp-medium' : ($hp_percentage >= 25 ? 'hp-low' : 'hp-critical')));
                     ?>
                     <div class="progress mb-2 progress-bar-custom">
                         <div id="hp-progress-bar" class="progress-bar <?php echo $hp_class; ?>" role="progressbar" style="width: <?php echo $hp_percentage; ?>%">
-                            <span id="hp-current-value"><?php echo $hit_points_current; ?></span>/<span id="hp-max-value"><?php echo $hit_points_max; ?></span>
+                            <span id="hp-display-text"><?php echo $hit_points_current; ?>/<?php echo $hit_points_max; ?></span>
                         </div>
                     </div>
                     <small class="text-muted"><span id="hp-percentage"><?php echo round($hp_percentage, 1); ?></span>% des points de vie restants</small>
