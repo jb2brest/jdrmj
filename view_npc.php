@@ -579,7 +579,7 @@ $speed = $npc->speed;
 
                     <?php include 'templates/npc_characteristics_tab.php'; ?>
 
-                    <?php include 'templates/npc_capabilities_tab.php'; ?>
+                    <?php include 'templates/p_capabilities_module.php'; ?>
 
                     <?php include 'templates/npc_skills_tab.php'; ?>
 
