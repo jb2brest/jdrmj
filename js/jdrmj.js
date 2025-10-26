@@ -3094,55 +3094,7 @@ function updateHpDisplay(currentHp, maxHp = null) {
 /**
  * Mettre à jour les points d'expérience
  */
-function updateXp(npcId, xpAction, xpAmount, typeCible = 'PNJ') {
-    const formData = new FormData();
-    formData.append('npc_id', npcId);
-    formData.append('xp_action', xpAction);
-    formData.append('xp_amount', xpAmount);
-    formData.append('type_cible', typeCible);
-    
-    fetch('api/update_xp.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showMessage(data.message, 'success');
-            // Mettre à jour l'affichage des XP
-            updateXpDisplay(data.current_xp);
-        } else {
-            showMessage(data.message, 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Erreur lors de la mise à jour des XP:', error);
-        showMessage('Erreur lors de la mise à jour des points d\'expérience.', 'error');
-    });
-}
-
-/**
- * Mettre à jour l'affichage des points d'expérience
- */
-function updateXpDisplay(currentXp) {
-    // Mettre à jour le champ de saisie des XP
-    const xpInput = document.querySelector('input[name="xp_amount"]');
-    if (xpInput) {
-        xpInput.value = '';
-    }
-    
-    // Mettre à jour l'affichage textuel des XP
-    const xpDisplay = document.querySelector('.xp-display');
-    if (xpDisplay) {
-        xpDisplay.textContent = number_format(currentXp) + ' XP';
-    }
-    
-    // Mettre à jour l'affichage dans le profil
-    const profileXpDisplay = document.querySelector('.experience-display');
-    if (profileXpDisplay) {
-        profileXpDisplay.textContent = number_format(currentXp) + ' XP';
-    }
-}
+// Fin du fichier - toutes les fonctions XP sont maintenant dans xp-management.js
 
 /**
  * Fonction utilitaire pour formater les nombres

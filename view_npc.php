@@ -612,6 +612,11 @@ $target_type = 'PNJ';
 
     <!-- Modal pour Gestion des Points d'Expérience -->
     <?php if ($canModifyHP): ?>
+        <?php
+        // Variables pour le modal de gestion des XP
+        $target_id = $npc->id;
+        $target_type = 'PNJ';
+        ?>
         <?php include 'templates/modal_edit_xp.php'; ?>
     <?php endif; ?>
 
@@ -626,6 +631,7 @@ $target_type = 'PNJ';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/jdrmj.js"></script>
     <script src="js/hp-management.js"></script>
+    <script src="js/xp-management.js"></script>
     
     
     <!-- Script pour l'initialisation des onglets -->
