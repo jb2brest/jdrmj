@@ -1074,6 +1074,7 @@ if (!function_exists('finalizeCharacterCreation')) {
                     armor_class, initiative, speed, hit_points_max, hit_points_current,
                     proficiency_bonus, money_gold, background, alignment,
                     personality_traits, ideals, bonds, flaws,
+                    skills, languages,
                     created_at, updated_at
                 ) VALUES (
                     ?, ?, ?, ?, ?, 1, 0,
@@ -1081,9 +1082,48 @@ if (!function_exists('finalizeCharacterCreation')) {
                     10, 0, 30, ?, ?,
                     2, 0, ?, ?,
                     ?, ?, ?, ?,
+                    ?, ?,
                     NOW(), NOW()
                 )
             ");
+            
+            // Générer les compétences et langues de base
+            $character = new Character($pdo, [
+                'race_id' => $data['race_id'],
+                'class_id' => $data['class_id']
+            ]);
+            
+            // Utiliser les compétences choisies par le joueur si disponibles, sinon générer automatiquement
+            if (isset($data['selected_skills']) && !empty($data['selected_skills'])) {
+                $baseSkills = $data['selected_skills'];
+                error_log("Utilisation des compétences choisies par le joueur: " . json_encode($baseSkills));
+            } else {
+                // Générer automatiquement : compétences fixes + compétences au choix par défaut
+                $fixedSkills = $character->generateFixedSkills();
+                $skillChoices = $character->generateSkillChoices();
+                
+                // Pour la génération automatique, prendre les premières compétences au choix
+                $defaultChosenSkills = array_slice($skillChoices, 0, 2); // 2 compétences par défaut
+                $baseSkills = array_unique(array_merge($fixedSkills, $defaultChosenSkills));
+                
+                error_log("Génération automatique des compétences - Fixes: " . json_encode($fixedSkills) . ", Choix: " . json_encode($defaultChosenSkills));
+            }
+            
+            // Utiliser les langues choisies par le joueur si disponibles, sinon générer automatiquement
+            if (isset($data['selected_languages']) && !empty($data['selected_languages'])) {
+                $baseLanguages = $data['selected_languages'];
+                error_log("Utilisation des langues choisies par le joueur: " . json_encode($baseLanguages));
+            } else {
+                // Générer automatiquement : langues fixes + langues au choix par défaut
+                $fixedLanguages = $character->generateFixedLanguages();
+                $languageChoices = $character->generateLanguageChoices();
+                
+                // Pour la génération automatique, prendre les premières langues au choix
+                $defaultChosenLanguages = array_slice($languageChoices, 0, 1); // 1 langue par défaut
+                $baseLanguages = array_unique(array_merge($fixedLanguages, $defaultChosenLanguages));
+                
+                error_log("Génération automatique des langues - Fixes: " . json_encode($fixedLanguages) . ", Choix: " . json_encode($defaultChosenLanguages));
+            }
             
             $result = $stmt->execute([
                 $userId,
@@ -1104,7 +1144,9 @@ if (!function_exists('finalizeCharacterCreation')) {
                 $data['personality_traits'] ?? null,
                 $data['ideals'] ?? null,
                 $data['bonds'] ?? null,
-                $data['flaws'] ?? null
+                $data['flaws'] ?? null,
+                json_encode($baseSkills), // Compétences de base
+                json_encode($baseLanguages) // Langues de base
             ]);
             
             if ($result) {

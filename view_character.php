@@ -70,6 +70,16 @@ $allCapabilities = $character->getCapabilities();
 $characterSkills = $character->skills ? json_decode($character->skills, true) : [];
 $characterLanguages = $character->languages ? json_decode($character->languages, true) : [];
 
+// Si les compétences ne sont pas définies dans la base de données, les générer automatiquement
+if (empty($characterSkills)) {
+    $characterSkills = $character->generateBaseSkills();
+}
+
+// Si les langues ne sont pas définies dans la base de données, les générer automatiquement
+if (empty($characterLanguages)) {
+    $characterLanguages = $character->generateBaseLanguages();
+}
+
 // Parser les données de l'historique
 $backgroundSkills = $backgroundDetails && isset($backgroundDetails['skill_proficiencies']) ? json_decode($backgroundDetails['skill_proficiencies'], true) : [];
 $backgroundLanguages = $backgroundDetails && isset($backgroundDetails['languages']) ? json_decode($backgroundDetails['languages'], true) : [];
@@ -91,6 +101,9 @@ if (!is_array($backgroundLanguages)) $backgroundLanguages = [];
 // Combiner les compétences et langues
 $allSkills = array_unique(array_merge($characterSkills, $backgroundSkills, $classSkills));
 $allLanguages = array_unique(array_merge($characterLanguages, $backgroundLanguages, $raceLanguages));
+
+// Définir $allTools comme tableau vide pour l'instant
+$allTools = [];
 
 // Vérifier si c'est un barbare pour les rages
 $isBarbarian = $classObject && strpos(strtolower($classObject->name), 'barbare') !== false;
@@ -130,46 +143,24 @@ foreach ($abilityImprovements as $stat => $value) {
 // Calculer les points restants
 $remainingPoints = max(0, $availableImprovements - $totalImprovements);
 
-// Bonus d'équipements (pour l'instant à 0, peut être calculé plus tard)
-$equipmentBonuses = [
-    'strength' => 0,
-    'dexterity' => 0,
-    'constitution' => 0,
-    'intelligence' => 0,
-    'wisdom' => 0,
-    'charisma' => 0
-];
+// Variables pour les bonus d'équipement et temporaires
+$equipmentBonuses = $character->getMyEquipmentBonuses();
+$temporaryBonuses = $character->getMyTemporaryBonuses();
 
-// Bonus temporaires (pour l'instant à 0, peut être calculé plus tard)
-$temporaryBonuses = [
-    'strength' => 0,
-    'dexterity' => 0,
-    'constitution' => 0,
-    'intelligence' => 0,
-    'wisdom' => 0,
-    'charisma' => 0
-];
+// Variables pour les caractéristiques totales et modificateurs
+$totalAbilities = $character->getMyTotalAbilities();
+$abilityModifiers = $character->getMyAbilityModifiers();
 
-// Calculer les totaux (caractéristiques de base + bonus raciaux + bonus de niveau + bonus d'équipements + bonus temporaires)
-$totalAbilities = [
-    'strength' => $character->strength + ($raceObject ? $raceObject->strength_bonus : 0) + $abilityImprovements['strength'] + $equipmentBonuses['strength'] + $temporaryBonuses['strength'],
-    'dexterity' => $character->dexterity + ($raceObject ? $raceObject->dexterity_bonus : 0) + $abilityImprovements['dexterity'] + $equipmentBonuses['dexterity'] + $temporaryBonuses['dexterity'],
-    'constitution' => $character->constitution + ($raceObject ? $raceObject->constitution_bonus : 0) + $abilityImprovements['constitution'] + $equipmentBonuses['constitution'] + $temporaryBonuses['constitution'],
-    'intelligence' => $character->intelligence + ($raceObject ? $raceObject->intelligence_bonus : 0) + $abilityImprovements['intelligence'] + $equipmentBonuses['intelligence'] + $temporaryBonuses['intelligence'],
-    'wisdom' => $character->wisdom + ($raceObject ? $raceObject->wisdom_bonus : 0) + $abilityImprovements['wisdom'] + $equipmentBonuses['wisdom'] + $temporaryBonuses['wisdom'],
-    'charisma' => $character->charisma + ($raceObject ? $raceObject->charisma_bonus : 0) + $abilityImprovements['charisma'] + $equipmentBonuses['charisma'] + $temporaryBonuses['charisma']
-];
-
-// Calculer les modificateurs à partir des totaux
-$strengthMod = floor(($totalAbilities['strength'] - 10) / 2);
-$dexterityMod = floor(($totalAbilities['dexterity'] - 10) / 2);
-$constitutionMod = floor(($totalAbilities['constitution'] - 10) / 2);
-$intelligenceMod = floor(($totalAbilities['intelligence'] - 10) / 2);
-$wisdomMod = floor(($totalAbilities['wisdom'] - 10) / 2);
-$charismaMod = floor(($totalAbilities['charisma'] - 10) / 2);
+// Variables pour les modificateurs individuels
+$strengthModifier = $abilityModifiers['strength'];
+$dexterityModifier = $abilityModifiers['dexterity'];
+$constitutionModifier = $abilityModifiers['constitution'];
+$intelligenceModifier = $abilityModifiers['intelligence'];
+$wisdomModifier = $abilityModifiers['wisdom'];
+$charismaModifier = $abilityModifiers['charisma'];
 
 // Calculer la classe d'armure (base AC + modificateur de dextérité)
-$armorClass = 10 + $dexterityMod;
+$armorClass = 10 + $dexterityModifier;
 
 // Récupérer les attaques du personnage
 $attacks = Character::getCharacterAttacks($character_id);
@@ -233,15 +224,6 @@ $flaws = $character->flaws;
 $target_id = $character->id;
 $target_type = 'PJ';
 
-// Variables pour les modificateurs de caractéristiques
-$abilityModifiers = $character->getMyAbilityModifiers();
-$strengthModifier = $abilityModifiers['strength'];
-$dexterityModifier = $abilityModifiers['dexterity'];
-$constitutionModifier = $abilityModifiers['constitution'];
-$intelligenceModifier = $abilityModifiers['intelligence'];
-$wisdomModifier = $abilityModifiers['wisdom'];
-$charismaModifier = $abilityModifiers['charisma'];
-
 // Variables pour l'initiative et l'armure
 $initiative = $dexterityModifier;
 $armor_class = $character->armor_class;
@@ -251,7 +233,7 @@ $equippedArmor = null;
 $equippedShield = null;
 
 // Variables pour les améliorations de caractéristiques (initialisées à null par défaut)
-$abilityImprovementsArray = null;
+$abilityImprovementsArray = $abilityImprovements;
 
 // Variables pour l'équipement magique et poisons (initialisées à null par défaut)
 $allMagicalEquipment = null;

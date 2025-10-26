@@ -115,6 +115,35 @@ class Character
         $pdo = $pdo ?: getPDO();
         
         try {
+            // Générer les compétences et langues de base si elles ne sont pas fournies
+            $skills = $data['skills'] ?? null;
+            $languages = $data['languages'] ?? null;
+            
+            if ($skills === null || $languages === null) {
+                // Créer un objet temporaire pour générer les compétences et langues
+                $tempCharacter = new self($pdo, [
+                    'race_id' => $data['race_id'],
+                    'class_id' => $data['class_id']
+                ]);
+                
+                if ($skills === null) {
+                    // Utiliser les compétences choisies par le joueur si disponibles
+                    if (isset($data['selected_skills']) && !empty($data['selected_skills'])) {
+                        $skills = json_encode($data['selected_skills']);
+                    } else {
+                        $skills = json_encode($tempCharacter->generateBaseSkills());
+                    }
+                }
+                if ($languages === null) {
+                    // Utiliser les langues choisies par le joueur si disponibles
+                    if (isset($data['selected_languages']) && !empty($data['selected_languages'])) {
+                        $languages = json_encode($data['selected_languages']);
+                    } else {
+                        $languages = json_encode($tempCharacter->generateBaseLanguages());
+                    }
+                }
+            }
+            
             $stmt = $pdo->prepare("
                 INSERT INTO characters (
                     user_id, name, race_id, class_id, background_id, level, experience_points,
@@ -149,8 +178,8 @@ class Character
                 $data['hit_points_current'] ?? 8,
                 $data['proficiency_bonus'] ?? 2,
                 $data['saving_throws'] ?? null,
-                $data['skills'] ?? null,
-                $data['languages'] ?? null,
+                $skills,
+                $languages,
                 $data['equipment'] ?? null,
                 $data['money_gold'] ?? 0,
                 $data['money_silver'] ?? 0,
@@ -3338,4 +3367,278 @@ class Character
         ];
     }
 
+    /**
+     * Génère les compétences de base selon la classe et la race
+     */
+    public function generateBaseSkills() {
+        $skills = [];
+        
+        // Compétences de classe selon les règles D&D
+        $classSkills = [
+            1 => ['Athlétisme'], // Barbare
+            2 => ['Histoire', 'Perspicacité'], // Barde
+            3 => ['Religion'], // Clerc
+            4 => ['Survie'], // Druide
+            5 => ['Athlétisme', 'Intimidation'], // Guerrier
+            6 => ['Athlétisme', 'Survie'], // Moine
+            7 => ['Arcane', 'Histoire'], // Magicien
+            8 => ['Athlétisme', 'Intimidation'], // Paladin
+            9 => ['Survie', 'Discrétion'], // Rôdeur
+            10 => ['Escamotage', 'Perspicacité'], // Roublard
+            11 => ['Persuasion', 'Intimidation'], // Sorcier
+            12 => ['Arcane', 'Religion'] // Ensorceleur
+        ];
+        
+        // Compétences de race selon les règles D&D
+        $raceSkills = [
+            1 => ['Athlétisme'], // Humain
+            2 => ['Athlétisme'], // Nain
+            3 => ['Athlétisme'], // Elfe
+            4 => ['Athlétisme'], // Halfelin
+            5 => ['Athlétisme'], // Dragonné
+            6 => ['Perception'], // Haut-elfe
+            7 => ['Athlétisme'], // Demi-orc
+            8 => ['Athlétisme'], // Tieffelin
+            9 => ['Athlétisme'], // Gnome
+            10 => ['Athlétisme'] // Demi-elfe
+        ];
+        
+        // Ajouter les compétences de classe
+        if (isset($classSkills[$this->class_id])) {
+            $skills = array_merge($skills, $classSkills[$this->class_id]);
+        }
+        
+        // Ajouter les compétences de race
+        if (isset($raceSkills[$this->race_id])) {
+            $skills = array_merge($skills, $raceSkills[$this->race_id]);
+        }
+        
+        // Supprimer les doublons
+        return array_unique($skills);
+    }
+
+    /**
+     * Génère les compétences obligatoires (fixes) selon la classe et la race
+     */
+    public function generateFixedSkills() {
+        $fixedSkills = [];
+        
+        // Compétences obligatoires de classe selon les règles D&D
+        $classFixedSkills = [
+            1 => [], // Barbare - pas de compétences fixes
+            2 => [], // Barde - pas de compétences fixes
+            3 => [], // Clerc - pas de compétences fixes
+            4 => [], // Druide - pas de compétences fixes
+            5 => [], // Guerrier - pas de compétences fixes
+            6 => [], // Moine - pas de compétences fixes
+            7 => [], // Magicien - pas de compétences fixes
+            8 => [], // Paladin - pas de compétences fixes
+            9 => [], // Rôdeur - pas de compétences fixes
+            10 => [], // Roublard - pas de compétences fixes
+            11 => [], // Sorcier - pas de compétences fixes
+            12 => [] // Ensorceleur - pas de compétences fixes
+        ];
+        
+        // Compétences obligatoires de race selon les règles D&D
+        $raceFixedSkills = [
+            1 => [], // Humain - pas de compétences fixes
+            2 => [], // Nain - pas de compétences fixes
+            3 => [], // Elfe - pas de compétences fixes
+            4 => [], // Halfelin - pas de compétences fixes
+            5 => [], // Dragonné - pas de compétences fixes
+            6 => ['Perception'], // Haut-elfe - Perception obligatoire
+            7 => [], // Demi-orc - pas de compétences fixes
+            8 => [], // Tieffelin - pas de compétences fixes
+            9 => [], // Gnome - pas de compétences fixes
+            10 => [] // Demi-elfe - pas de compétences fixes
+        ];
+        
+        // Ajouter les compétences obligatoires de classe
+        if (isset($classFixedSkills[$this->class_id])) {
+            $fixedSkills = array_merge($fixedSkills, $classFixedSkills[$this->class_id]);
+        }
+        
+        // Ajouter les compétences obligatoires de race
+        if (isset($raceFixedSkills[$this->race_id])) {
+            $fixedSkills = array_merge($fixedSkills, $raceFixedSkills[$this->race_id]);
+        }
+        
+        // Supprimer les doublons
+        return array_unique($fixedSkills);
+    }
+
+    /**
+     * Génère les compétences au choix selon la classe
+     */
+    public function generateSkillChoices() {
+        $skillChoices = [];
+        
+        // Compétences au choix de classe selon les règles D&D
+        $classSkillChoices = [
+            1 => ['Athlétisme', 'Intimidation', 'Nature', 'Perception', 'Survie'], // Barbare - 2 au choix
+            2 => ['Acrobaties', 'Animaux', 'Arcane', 'Athlétisme', 'Escamotage', 'Histoire', 'Intuition', 'Intimidation', 'Investigation', 'Médecine', 'Nature', 'Perception', 'Perspicacité', 'Religion', 'Représentation'], // Barde - 3 au choix
+            3 => ['Histoire', 'Médecine', 'Perspicacité', 'Religion'], // Clerc - 2 au choix
+            4 => ['Animaux', 'Arcane', 'Athlétisme', 'Intuition', 'Médecine', 'Nature', 'Perception', 'Religion', 'Survie'], // Druide - 2 au choix
+            5 => ['Acrobaties', 'Animaux', 'Athlétisme', 'Histoire', 'Intimidation', 'Perception', 'Survie'], // Guerrier - 2 au choix
+            6 => ['Acrobaties', 'Athlétisme', 'Histoire', 'Intuition', 'Religion', 'Stealth'], // Moine - 2 au choix
+            7 => ['Arcane', 'Histoire', 'Investigation', 'Médecine'], // Magicien - 2 au choix
+            8 => ['Athlétisme', 'Intimidation', 'Médecine', 'Perspicacité', 'Religion'], // Paladin - 2 au choix
+            9 => ['Animaux', 'Athlétisme', 'Intuition', 'Investigation', 'Nature', 'Perception', 'Survie', 'Stealth'], // Rôdeur - 3 au choix
+            10 => ['Acrobaties', 'Athlétisme', 'Escamotage', 'Intimidation', 'Investigation', 'Perception', 'Perspicacité', 'Représentation'], // Roublard - 4 au choix
+            11 => ['Arcane', 'Intimidation', 'Investigation', 'Religion', 'Perspicacité'], // Sorcier - 2 au choix
+            12 => ['Arcane', 'Religion', 'Intuition', 'Médecine'] // Ensorceleur - 2 au choix
+        ];
+        
+        return $classSkillChoices[$this->class_id] ?? [];
+    }
+
+    /**
+     * Génère les langues de base selon la classe et la race
+     */
+    public function generateBaseLanguages() {
+        $languages = [];
+        
+        // Langues de classe selon les règles D&D
+        $classLanguages = [
+            1 => [], // Barbare
+            2 => [], // Barde
+            3 => [], // Clerc
+            4 => [], // Druide
+            5 => [], // Guerrier
+            6 => [], // Moine
+            7 => [], // Magicien
+            8 => [], // Paladin
+            9 => [], // Rôdeur
+            10 => [], // Roublard
+            11 => [], // Sorcier
+            12 => [] // Ensorceleur
+        ];
+        
+        // Langues de race selon les règles D&D
+        $raceLanguages = [
+            1 => ['Commun'], // Humain
+            2 => ['Commun', 'Nain'], // Nain
+            3 => ['Commun', 'Elfique'], // Elfe
+            4 => ['Commun', 'Halfelin'], // Halfelin
+            5 => ['Commun', 'Draconique'], // Dragonné
+            6 => ['Commun', 'Elfique'], // Haut-elfe
+            7 => ['Commun', 'Orc'], // Demi-orc
+            8 => ['Commun', 'Infernal'], // Tieffelin
+            9 => ['Commun', 'Gnome'], // Gnome
+            10 => ['Commun', 'Elfique'] // Demi-elfe
+        ];
+        
+        // Ajouter les langues de classe
+        if (isset($classLanguages[$this->class_id])) {
+            $languages = array_merge($languages, $classLanguages[$this->class_id]);
+        }
+        
+        // Ajouter les langues de race
+        if (isset($raceLanguages[$this->race_id])) {
+            $languages = array_merge($languages, $raceLanguages[$this->race_id]);
+        }
+        
+        // Supprimer les doublons
+        return array_unique($languages);
+    }
+
+    /**
+     * Génère les langues obligatoires (fixes) selon la classe et la race
+     */
+    public function generateFixedLanguages() {
+        $fixedLanguages = [];
+        
+        // Langues obligatoires de classe selon les règles D&D
+        $classFixedLanguages = [
+            1 => [], // Barbare - pas de langues fixes
+            2 => [], // Barde - pas de langues fixes
+            3 => [], // Clerc - pas de langues fixes
+            4 => [], // Druide - pas de langues fixes
+            5 => [], // Guerrier - pas de langues fixes
+            6 => [], // Moine - pas de langues fixes
+            7 => [], // Magicien - pas de langues fixes
+            8 => [], // Paladin - pas de langues fixes
+            9 => [], // Rôdeur - pas de langues fixes
+            10 => [], // Roublard - pas de langues fixes
+            11 => [], // Sorcier - pas de langues fixes
+            12 => [] // Ensorceleur - pas de langues fixes
+        ];
+        
+        // Langues obligatoires de race selon les règles D&D
+        $raceFixedLanguages = [
+            1 => ['Commun'], // Humain - Commun obligatoire
+            2 => ['Commun', 'Nain'], // Nain - Commun et Nain obligatoires
+            3 => ['Commun', 'Elfique'], // Elfe - Commun et Elfique obligatoires
+            4 => ['Commun', 'Halfelin'], // Halfelin - Commun et Halfelin obligatoires
+            5 => ['Commun', 'Draconique'], // Dragonné - Commun et Draconique obligatoires
+            6 => ['Commun', 'Elfique'], // Haut-elfe - Commun et Elfique obligatoires
+            7 => ['Commun', 'Orc'], // Demi-orc - Commun et Orc obligatoires
+            8 => ['Commun', 'Infernal'], // Tieffelin - Commun et Infernal obligatoires
+            9 => ['Commun', 'Gnome'], // Gnome - Commun et Gnome obligatoires
+            10 => ['Commun', 'Elfique'] // Demi-elfe - Commun et Elfique obligatoires
+        ];
+        
+        // Ajouter les langues obligatoires de classe
+        if (isset($classFixedLanguages[$this->class_id])) {
+            $fixedLanguages = array_merge($fixedLanguages, $classFixedLanguages[$this->class_id]);
+        }
+        
+        // Ajouter les langues obligatoires de race
+        if (isset($raceFixedLanguages[$this->race_id])) {
+            $fixedLanguages = array_merge($fixedLanguages, $raceFixedLanguages[$this->race_id]);
+        }
+        
+        // Supprimer les doublons
+        return array_unique($fixedLanguages);
+    }
+
+    /**
+     * Génère les langues au choix selon la classe et la race
+     */
+    public function generateLanguageChoices() {
+        $languageChoices = [];
+        
+        // Langues au choix de classe selon les règles D&D
+        $classLanguageChoices = [
+            1 => [], // Barbare - pas de langues au choix
+            2 => [], // Barde - pas de langues au choix
+            3 => [], // Clerc - pas de langues au choix
+            4 => [], // Druide - pas de langues au choix
+            5 => [], // Guerrier - pas de langues au choix
+            6 => [], // Moine - pas de langues au choix
+            7 => [], // Magicien - pas de langues au choix
+            8 => [], // Paladin - pas de langues au choix
+            9 => [], // Rôdeur - pas de langues au choix
+            10 => [], // Roublard - pas de langues au choix
+            11 => [], // Sorcier - pas de langues au choix
+            12 => [] // Ensorceleur - pas de langues au choix
+        ];
+        
+        // Langues au choix de race selon les règles D&D
+        $raceLanguageChoices = [
+            1 => [], // Humain - pas de langues au choix
+            2 => [], // Nain - pas de langues au choix
+            3 => [], // Elfe - pas de langues au choix
+            4 => [], // Halfelin - pas de langues au choix
+            5 => [], // Dragonné - pas de langues au choix
+            6 => ['Une langue de votre choix'], // Haut-elfe - 1 langue au choix
+            7 => [], // Demi-orc - pas de langues au choix
+            8 => [], // Tieffelin - pas de langues au choix
+            9 => [], // Gnome - pas de langues au choix
+            10 => [] // Demi-elfe - pas de langues au choix
+        ];
+        
+        // Ajouter les langues au choix de classe
+        if (isset($classLanguageChoices[$this->class_id])) {
+            $languageChoices = array_merge($languageChoices, $classLanguageChoices[$this->class_id]);
+        }
+        
+        // Ajouter les langues au choix de race
+        if (isset($raceLanguageChoices[$this->race_id])) {
+            $languageChoices = array_merge($languageChoices, $raceLanguageChoices[$this->race_id]);
+        }
+        
+        // Supprimer les doublons
+        return array_unique($languageChoices);
+    }
 }
