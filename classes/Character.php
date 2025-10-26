@@ -3193,4 +3193,74 @@ class Character
         }
     }
 
+    /**
+     * Calculer les caractéristiques totales (base + race + améliorations + équipement + temporaires)
+     */
+    public function getMyTotalAbilities() {
+        // Récupérer les objets nécessaires
+        $raceObject = Race::findById($this->race_id);
+        $abilityImprovements = $this->getAbilityImprovements();
+        $equipmentBonuses = $this->getMyEquipmentBonuses();
+        $temporaryBonuses = $this->getMyTemporaryBonuses();
+        
+        // Calculer les totaux
+        return [
+            'strength' => $this->strength + ($raceObject->strength_bonus ?? 0) + $abilityImprovements['strength'] + $equipmentBonuses['strength'] + $temporaryBonuses['strength'],
+            'dexterity' => $this->dexterity + ($raceObject->dexterity_bonus ?? 0) + $abilityImprovements['dexterity'] + $equipmentBonuses['dexterity'] + $temporaryBonuses['dexterity'],
+            'constitution' => $this->constitution + ($raceObject->constitution_bonus ?? 0) + $abilityImprovements['constitution'] + $equipmentBonuses['constitution'] + $temporaryBonuses['constitution'],
+            'intelligence' => $this->intelligence + ($raceObject->intelligence_bonus ?? 0) + $abilityImprovements['intelligence'] + $equipmentBonuses['intelligence'] + $temporaryBonuses['intelligence'],
+            'wisdom' => $this->wisdom + ($raceObject->wisdom_bonus ?? 0) + $abilityImprovements['wisdom'] + $equipmentBonuses['wisdom'] + $temporaryBonuses['wisdom'],
+            'charisma' => $this->charisma + ($raceObject->charisma_bonus ?? 0) + $abilityImprovements['charisma'] + $equipmentBonuses['charisma'] + $temporaryBonuses['charisma']
+        ];
+    }
+
+    /**
+     * Calculer les modificateurs de caractéristiques basés sur les caractéristiques totales
+     */
+    public function getMyAbilityModifiers() {
+        $totalAbilities = $this->getMyTotalAbilities();
+        
+        return [
+            'strength' => floor(($totalAbilities['strength'] - 10) / 2),
+            'dexterity' => floor(($totalAbilities['dexterity'] - 10) / 2),
+            'constitution' => floor(($totalAbilities['constitution'] - 10) / 2),
+            'intelligence' => floor(($totalAbilities['intelligence'] - 10) / 2),
+            'wisdom' => floor(($totalAbilities['wisdom'] - 10) / 2),
+            'charisma' => floor(($totalAbilities['charisma'] - 10) / 2)
+        ];
+    }
+
+    /**
+     * Récupère les bonus d'équipement du personnage (méthode d'instance)
+     */
+    public function getMyEquipmentBonuses() {
+        // Pour l'instant, retourner des bonus à 0
+        // Cette méthode peut être étendue pour calculer les vrais bonus d'équipement
+        // quand les colonnes de bonus seront ajoutées aux tables armor et weapons
+        return [
+            'strength' => 0,
+            'dexterity' => 0,
+            'constitution' => 0,
+            'intelligence' => 0,
+            'wisdom' => 0,
+            'charisma' => 0
+        ];
+    }
+
+    /**
+     * Récupère les bonus temporaires du personnage (méthode d'instance)
+     */
+    public function getMyTemporaryBonuses() {
+        // Pour l'instant, retourner des bonus à 0
+        // Cette méthode peut être étendue pour calculer les vrais bonus temporaires
+        return [
+            'strength' => 0,
+            'dexterity' => 0,
+            'constitution' => 0,
+            'intelligence' => 0,
+            'wisdom' => 0,
+            'charisma' => 0
+        ];
+    }
+
 }

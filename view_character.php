@@ -234,12 +234,13 @@ $target_id = $character->id;
 $target_type = 'PJ';
 
 // Variables pour les modificateurs de caractéristiques
-$strengthModifier = floor(($strength - 10) / 2);
-$dexterityModifier = floor(($dexterity - 10) / 2);
-$constitutionModifier = floor(($constitution - 10) / 2);
-$intelligenceModifier = floor(($intelligence - 10) / 2);
-$wisdomModifier = floor(($wisdom - 10) / 2);
-$charismaModifier = floor(($charisma - 10) / 2);
+$abilityModifiers = $character->getMyAbilityModifiers();
+$strengthModifier = $abilityModifiers['strength'];
+$dexterityModifier = $abilityModifiers['dexterity'];
+$constitutionModifier = $abilityModifiers['constitution'];
+$intelligenceModifier = $abilityModifiers['intelligence'];
+$wisdomModifier = $abilityModifiers['wisdom'];
+$charismaModifier = $abilityModifiers['charisma'];
 
 // Variables pour l'initiative et l'armure
 $initiative = $dexterityModifier;
