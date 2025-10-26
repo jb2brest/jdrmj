@@ -470,6 +470,13 @@ $hit_points_max = $npc->hit_points_max;
 $experience = $npc->experience;
 $alignment = $npc->alignment;
 $speed = $npc->speed;
+$strength = $npc->strength;
+$dexterity = $npc->dexterity;
+$constitution = $npc->constitution;
+$intelligence = $npc->intelligence;
+$wisdom = $npc->wisdom;
+$charisma = $npc->charisma;
+
 
 ?>
 <!DOCTYPE html>
@@ -577,7 +584,7 @@ $speed = $npc->speed;
                 <div class="tab-content npc-tab-content" id="npcTabContent">
                     <?php include 'templates/p_combat_module.php'; ?>
 
-                    <?php include 'templates/npc_characteristics_tab.php'; ?>
+                    <?php include 'templates/p_characteristics_module.php'; ?>
 
                     <?php include 'templates/p_capabilities_module.php'; ?>
 

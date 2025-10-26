@@ -22,12 +22,12 @@
                         <!-- Caractéristiques de base -->
                         <tr>
                             <td><strong>Caractéristiques de base</strong></td>
-                            <td><strong><?php echo $npc->strength; ?></strong></td>
-                            <td><strong><?php echo $npc->dexterity; ?></strong></td>
-                            <td><strong><?php echo $npc->constitution; ?></strong></td>
-                            <td><strong><?php echo $npc->intelligence; ?></strong></td>
-                            <td><strong><?php echo $npc->wisdom; ?></strong></td>
-                            <td><strong><?php echo $npc->charisma; ?></strong></td>
+                            <td><strong><?php echo $strength; ?></strong></td>
+                            <td><strong><?php echo $dexterity; ?></strong></td>
+                            <td><strong><?php echo $constitution; ?></strong></td>
+                            <td><strong><?php echo $intelligence; ?></strong></td>
+                            <td><strong><?php echo $wisdom; ?></strong></td>
+                            <td><strong><?php echo $charisma; ?></strong></td>
                         </tr>
                         <!-- Bonus raciaux -->
                         <tr>
