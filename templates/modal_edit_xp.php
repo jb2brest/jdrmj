@@ -10,15 +10,15 @@ if (!isset($npc) || !isset($npc->name) || !isset($npc->level)) {
 }
 ?>
 
-<div class="modal fade" id="xpModal" tabindex="-1">
+<div class="modal fade" id="xpModal" tabindex="-1" aria-labelledby="xpModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">
+                <h5 class="modal-title" id="xpModalLabel">
                     <i class="fas fa-star me-2"></i>
                     Gestion des Points d'Expérience - <?php echo htmlspecialchars($npc->name); ?>
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
             <div class="modal-body">
                 <!-- Affichage des Points d'Expérience Actuels -->

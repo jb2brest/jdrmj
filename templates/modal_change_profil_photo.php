@@ -10,15 +10,15 @@ if (!isset($npc_id)) {
 }
 ?>
 
-<div class="modal fade" id="photoModal" tabindex="-1">
+<div class="modal fade" id="photoModal" tabindex="-1" aria-labelledby="photoModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">
+                <h5 class="modal-title" id="photoModalLabel">
                     <i class="fas fa-camera me-2"></i>
                     Changer la Photo de Profil
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
             <div class="modal-body">
                 <form id="photoForm" method="POST" enctype="multipart/form-data">

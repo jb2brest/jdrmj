@@ -8,24 +8,8 @@
 // ===== GESTION DES NPCs =====
 
 /**
- * Dégâts rapides sur un NPC
+ * Fonctions HP supprimées - maintenant dans hp-management.js
  */
-function quickDamage(amount, npcName) {
-    if (confirm(`Infliger ${amount} points de dégâts à ${npcName} ?`)) {
-        const npcId = getCurrentNpcId();
-        updateNpcHp(npcId, 'damage', amount);
-    }
-}
-
-/**
- * Soins rapides sur un NPC
- */
-function quickHeal(amount, npcName) {
-    if (confirm(`Appliquer ${amount} points de soins à ${npcName} ?`)) {
-        const npcId = getCurrentNpcId();
-        updateNpcHp(npcId, 'heal', amount);
-    }
-}
 
 /**
  * Changement d'XP rapide sur un NPC
@@ -40,32 +24,60 @@ function quickXpChange(amount, npcName) {
 }
 
 /**
- * Met à jour les PV d'un NPC via API
+ * API unifiée pour la gestion des points de vie
+ * Supporte les PNJ, monstres et personnages joueurs
  */
-function updateNpcHp(npcId, action, amount) {
-    fetch('api/update_npc_hp.php', {
+function manageHp(targetId, targetType, action, amount = 0, newHp = 0) {
+    const requestData = {
+        target_id: targetId,
+        target_type: targetType,
+        action: action,
+        amount: amount,
+        new_hp: newHp
+    };
+    
+    fetch('api/manage_hp.php', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-            npc_id: npcId,
-            action: action,
-            amount: amount
-        })
+        body: JSON.stringify(requestData)
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            location.reload();
+            showMessage(data.message, 'success');
+            // Mettre à jour l'affichage des PV si nécessaire
+            if (typeof updateHpDisplay === 'function') {
+                updateHpDisplay(data.current_hp, data.max_hp);
+            }
+            // Recharger la page pour les changements majeurs
+            if (action === 'reset' || action === 'update') {
+                setTimeout(() => location.reload(), 1000);
+            }
         } else {
-            alert('Erreur: ' + data.message);
+            showMessage(data.message, 'error');
         }
     })
     .catch(error => {
-        console.error('Erreur:', error);
-        alert('Erreur lors de la mise à jour des PV');
+        console.error('Erreur lors de la gestion des PV:', error);
+        showMessage('Erreur lors de la mise à jour des points de vie.', 'error');
     });
+}
+
+/**
+ * Fonctions spécifiques pour chaque type de cible
+ */
+function updateNpcHp(npcId, action, amount) {
+    manageHp(npcId, 'PNJ', action, amount);
+}
+
+function updateMonsterHp(monsterId, action, amount) {
+    manageHp(monsterId, 'monstre', action, amount);
+}
+
+function updateCharacterHp(characterId, action, amount) {
+    manageHp(characterId, 'PJ', action, amount);
 }
 
 /**
@@ -195,34 +207,6 @@ function dropItem(itemId, itemName) {
 }
 
 /**
- * Mettre à jour les points de vie d'un personnage via API
- */
-function updateCharacterHp(characterId, newHp) {
-    fetch('api/update_character_hp.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            character_id: characterId,
-            new_hp: newHp
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        } else {
-            alert('Erreur: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Erreur:', error);
-        alert('Erreur lors de la mise à jour des points de vie');
-    });
-}
-
-/**
  * Fonction appelée par la modale HP
  */
 function updateHP() {
@@ -230,7 +214,7 @@ function updateHP() {
     const characterId = getCharacterIdFromUrl();
     
     if (newHp && characterId) {
-        updateCharacterHp(characterId, parseInt(newHp));
+        manageHp(characterId, 'PJ', 'update', 0, parseInt(newHp));
     }
 }
 
@@ -3059,120 +3043,27 @@ function initializeCapabilitiesManagement() {
 }
 
 /**
- * Mettre à jour les points de vie d'un NPC
+ * Fonctions utilitaires pour la gestion des HP
  */
-function updateNpcHp(npcId, currentHp, maxHp, typeCible = 'PNJ') {
-    const formData = new FormData();
-    formData.append('npc_id', npcId);
-    formData.append('current_hp', currentHp);
-    formData.append('max_hp', maxHp);
-    formData.append('type_cible', typeCible);
-    
-    fetch('api/update_hp.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showMessage(data.message, 'success');
-            // Mettre à jour l'affichage des PV
-            updateHpDisplay(data.current_hp, data.max_hp);
-        } else {
-            showMessage(data.message, 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Erreur lors de la mise à jour des PV:', error);
-        showMessage('Erreur lors de la mise à jour des points de vie.', 'error');
-    });
+function getCurrentNpcId() {
+    // Récupérer l'ID du NPC depuis l'URL ou un élément de la page
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('id') || document.querySelector('[data-npc-id]')?.dataset.npcId;
 }
 
-/**
- * Infliger des dégâts à un NPC
- */
-function damageNpc(npcId, damage, typeCible = 'PNJ') {
-    const formData = new FormData();
-    formData.append('npc_id', npcId);
-    formData.append('damage', damage);
-    formData.append('type_cible', typeCible);
-    
-    fetch('api/damage.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showMessage(data.message, 'success');
-            // Mettre à jour l'affichage des PV
-            updateHpDisplay(data.current_hp);
-        } else {
-            showMessage(data.message, 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Erreur lors de l\'application des dégâts:', error);
-        showMessage('Erreur lors de l\'application des dégâts.', 'error');
-    });
+function getCurrentCharacterId() {
+    // Récupérer l'ID du personnage depuis l'URL ou un élément de la page
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('id') || document.querySelector('[data-character-id]')?.dataset.characterId;
 }
 
-/**
- * Soigner un NPC
- */
-function healNpc(npcId, healing, typeCible = 'PNJ') {
-    const formData = new FormData();
-    formData.append('npc_id', npcId);
-    formData.append('healing', healing);
-    formData.append('type_cible', typeCible);
-    
-    fetch('api/heal.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showMessage(data.message, 'success');
-            // Mettre à jour l'affichage des PV
-            updateHpDisplay(data.current_hp);
-        } else {
-            showMessage(data.message, 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Erreur lors de l\'application des soins:', error);
-        showMessage('Erreur lors de l\'application des soins.', 'error');
-    });
+function getCurrentMonsterId() {
+    // Récupérer l'ID du monstre depuis l'URL ou un élément de la page
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('id') || document.querySelector('[data-monster-id]')?.dataset.monsterId;
 }
 
-/**
- * Réinitialiser les points de vie d'un NPC
- */
-function resetNpcHp(npcId, typeCible = 'PNJ') {
-    const formData = new FormData();
-    formData.append('npc_id', npcId);
-    formData.append('type_cible', typeCible);
-    
-    fetch('api/reset_hp.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showMessage(data.message, 'success');
-            // Mettre à jour l'affichage des PV
-            updateHpDisplay(data.current_hp, data.max_hp);
-        } else {
-            showMessage(data.message, 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Erreur lors de la réinitialisation des PV:', error);
-        showMessage('Erreur lors de la réinitialisation des points de vie.', 'error');
-    });
-}
+// Fin du fichier - toutes les fonctions HP sont maintenant dans hp-management.js
 
 /**
  * Mettre à jour l'affichage des points de vie

@@ -119,15 +119,6 @@ if ($isBarbarian) {
     ];
 }
 
-// Ajouter automatiquement les capacités de base si elles n'existent pas
-$npc->addBaseCapabilities();
-
-// Ajouter automatiquement les langues de base si elles n'existent pas
-$npc->addBaseLanguages();
-
-// Ajouter automatiquement les compétences de base si elles n'existent pas
-$npc->addBaseSkills();
-
 // Récupérer les capacités du PNJ depuis le système NPC
 $allCapabilities = $npc->getCapabilities();
 
@@ -136,10 +127,6 @@ $npcLanguages = $npc->getNpcLanguages();
 
 // Récupérer les compétences du PNJ
 $npcSkills = $npc->getNpcSkills();
-
-if (!empty($allCapabilities)) {
-    error_log("Debug view_npc.php - First capability: " . print_r($allCapabilities[0], true));
-}
 
 // Séparer les capacités par type pour l'affichage
 $classCapabilities = [];
@@ -483,6 +470,10 @@ $personality_traits = $npc->personality_traits;
 $ideals = $npc->ideals;
 $bonds = $npc->bonds;
 $flaws = $npc->flaws;
+$target_id = $npc->id;
+$target_type = 'PNJ';
+
+
 
 ?>
 <!DOCTYPE html>
@@ -611,6 +602,11 @@ $flaws = $npc->flaws;
 
 <!-- Modals existants -->
     <?php if ($canModifyHP): ?>
+        <?php 
+        // Variables pour le modal de gestion des HP
+        $npc_id = $npc->id;
+        $target_type = 'PNJ';
+        ?>
         <?php include 'templates/modal_edit_hp.php'; ?>
     <?php endif; ?>
 
@@ -629,6 +625,7 @@ $flaws = $npc->flaws;
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/jdrmj.js"></script>
+    <script src="js/hp-management.js"></script>
     
     
     <!-- Script pour l'initialisation des onglets -->

@@ -5,37 +5,35 @@
  */
 
 // Vérification que les variables nécessaires sont définies
-if (!isset($name) || !isset($hit_points_current) || !isset($hit_points_max)) {
+if (!isset($name) || !isset($hit_points_current) || !isset($hit_points_max) || !isset($target_id) || !isset($target_type)) {
     throw new Exception('Variables $name, $hit_points_current et $hit_points_max sont requises pour ce template');
 }
 ?>
 
-<div class="modal fade" id="hpModal" tabindex="-1">
+<div class="modal fade" id="hpModal" tabindex="-1" aria-labelledby="hpModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">
+                <h5 class="modal-title" id="hpModalLabel">
                     <i class="fas fa-heart me-2"></i>
                     Gestion des Points de Vie - <?php echo htmlspecialchars($name); ?>
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
             <div class="modal-body">
                 <!-- Barre de Points de Vie -->
                 <div class="mb-4">
                     <h6>Points de Vie Actuels</h6>
                     <?php
-                    $current_hp = $npc->hit_points_current;
-                    $max_hp = $npc->hit_points_max;
-                    $hp_percentage = $max_hp > 0 ? ($current_hp / $max_hp) * 100 : 100;
+                    $hp_percentage = $hit_points_max > 0 ? ($hit_points_current / $hit_points_max) * 100 : 100;
                     $hp_class = $hp_percentage > 50 ? 'bg-success' : ($hp_percentage > 25 ? 'bg-warning' : 'bg-danger');
                     ?>
                     <div class="progress mb-2 progress-bar-custom">
-                        <div class="progress-bar <?php echo $hp_class; ?>" role="progressbar" style="width: <?php echo $hp_percentage; ?>%">
-                            <?php echo $current_hp; ?>/<?php echo $max_hp; ?>
+                        <div id="hp-progress-bar" class="progress-bar <?php echo $hp_class; ?>" role="progressbar" style="width: <?php echo $hp_percentage; ?>%">
+                            <span id="hp-current-value"><?php echo $hit_points_current; ?></span>/<span id="hp-max-value"><?php echo $hit_points_max; ?></span>
                         </div>
                     </div>
-                    <small class="text-muted"><?php echo round($hp_percentage, 1); ?>% des points de vie restants</small>
+                    <small class="text-muted"><span id="hp-percentage"><?php echo round($hp_percentage, 1); ?></span>% des points de vie restants</small>
                 </div>
 
                 <!-- Actions Rapides -->
@@ -43,34 +41,32 @@ if (!isset($name) || !isset($hit_points_current) || !isset($hit_points_max)) {
                     <div class="col-md-6">
                         <h6><i class="fas fa-sword text-danger me-2"></i>Infliger des Dégâts</h6>
                         <div class="d-flex gap-2 mb-2">
-                            <button class="btn btn-outline-danger btn-sm" data-action="damage" data-amount="1" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">-1</button>
-                            <button class="btn btn-outline-danger btn-sm" data-action="damage" data-amount="5" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">-5</button>
-                            <button class="btn btn-outline-danger btn-sm" data-action="damage" data-amount="10" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">-10</button>
-                            <button class="btn btn-outline-danger btn-sm" data-action="damage" data-amount="20" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">-20</button>
+                            <button class="btn btn-outline-danger btn-sm" onclick="quickDamage(<?php echo $target_id; ?>, '<?php echo $target_type ?? 'PNJ'; ?>', 1)">-1</button>
+                            <button class="btn btn-outline-danger btn-sm" onclick="quickDamage(<?php echo $target_id; ?>, '<?php echo $target_type ?? 'PNJ'; ?>', 5)">-5</button>
+                            <button class="btn btn-outline-danger btn-sm" onclick="quickDamage(<?php echo $target_id; ?>, '<?php echo $target_type ?? 'PNJ'; ?>', 10)">-10</button>
+                            <button class="btn btn-outline-danger btn-sm" onclick="quickDamage(<?php echo $target_id; ?>, '<?php echo $target_type ?? 'PNJ'; ?>', 20)">-20</button>
                         </div>
-                        <form method="POST" class="d-flex gap-2">
-                            <input type="hidden" name="hp_action" value="damage">
-                            <input type="number" name="damage" class="form-control form-control-sm" placeholder="Dégâts" min="1" required>
-                            <button type="submit" class="btn btn-danger btn-sm">
+                        <div class="d-flex gap-2">
+                            <input type="number" id="damage_amount" class="form-control form-control-sm" placeholder="Dégâts" min="1" required>
+                            <button type="button" class="btn btn-danger btn-sm" onclick="quickDamage(<?php echo $target_id; ?>, '<?php echo $target_type ?? 'PNJ'; ?>', document.getElementById('damage_amount').value)">
                                 <i class="fas fa-minus"></i>
                             </button>
-                        </form>
+                        </div>
                     </div>
                     <div class="col-md-6">
                         <h6><i class="fas fa-heart text-success me-2"></i>Appliquer des Soins</h6>
                         <div class="d-flex gap-2 mb-2">
-                            <button class="btn btn-outline-success btn-sm" data-action="heal" data-amount="1" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">+1</button>
-                            <button class="btn btn-outline-success btn-sm" data-action="heal" data-amount="5" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">+5</button>
-                            <button class="btn btn-outline-success btn-sm" data-action="heal" data-amount="10" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">+10</button>
-                            <button class="btn btn-outline-success btn-sm" data-action="heal" data-amount="20" data-npc-name="<?php echo htmlspecialchars($npc->name); ?>">+20</button>
+                            <button class="btn btn-outline-success btn-sm" onclick="quickHeal(<?php echo $target_id; ?>, '<?php echo $target_type ?? 'PNJ'; ?>', 1)">+1</button>
+                            <button class="btn btn-outline-success btn-sm" onclick="quickHeal(<?php echo $target_id; ?>, '<?php echo $target_type ?? 'PNJ'; ?>', 5)">+5</button>
+                            <button class="btn btn-outline-success btn-sm" onclick="quickHeal(<?php echo $target_id; ?>, '<?php echo $target_type ?? 'PNJ'; ?>', 10)">+10</button>
+                            <button class="btn btn-outline-success btn-sm" onclick="quickHeal(<?php echo $target_id; ?>, '<?php echo $target_type ?? 'PNJ'; ?>', 20)">+20</button>
                         </div>
-                        <form method="POST" class="d-flex gap-2">
-                            <input type="hidden" name="hp_action" value="heal">
-                            <input type="number" name="healing" class="form-control form-control-sm" placeholder="Soins" min="1" required>
-                            <button type="submit" class="btn btn-success btn-sm">
+                        <div class="d-flex gap-2">
+                            <input type="number" id="heal_amount" class="form-control form-control-sm" placeholder="Soins" min="1" required>
+                            <button type="button" class="btn btn-success btn-sm" onclick="quickHeal(<?php echo $target_id; ?>, '<?php echo $target_type ?? 'PNJ'; ?>', document.getElementById('heal_amount').value)">
                                 <i class="fas fa-plus"></i>
                             </button>
-                        </form>
+                        </div>
                     </div>
                 </div>
 
@@ -78,29 +74,22 @@ if (!isset($name) || !isset($hit_points_current) || !isset($hit_points_max)) {
                 <div class="row">
                     <div class="col-md-6">
                         <h6><i class="fas fa-edit text-warning me-2"></i>Modifier Directement</h6>
-                        <form method="POST">
-                            <input type="hidden" name="hp_action" value="update_hp">
-                            <input type="hidden" name="max_hp" value="<?php echo $npc->hit_points_max; ?>">
-                            <div class="d-flex gap-2">
-                                <input type="number" name="current_hp" class="form-control form-control-sm" 
-                                       value="<?php echo $npc->hit_points_current; ?>" 
-                                       min="0" max="<?php echo $npc->hit_points_max; ?>" required>
-                                <button type="submit" class="btn btn-warning btn-sm">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                            </div>
-                            <small class="text-muted">Maximum : <?php echo $npc->hit_points_max; ?> PV</small>
-                        </form>
+                        <div class="d-flex gap-2">
+                            <input type="number" id="direct_hp_input" class="form-control form-control-sm" 
+                                   value="<?php echo $hit_points_current; ?>" 
+                                   min="0" max="<?php echo $hit_points_max; ?>" required>
+                            <button type="button" class="btn btn-warning btn-sm" onclick="updateHpDirect(<?php echo $target_id; ?>, '<?php echo $target_type ?? 'PNJ'; ?>', document.getElementById('direct_hp_input').value)">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted">Maximum : <?php echo $hit_points_max; ?> PV</small>
                     </div>
                     <div class="col-md-6">
                         <h6><i class="fas fa-redo text-info me-2"></i>Réinitialiser</h6>
-                        <form method="POST" class="d-inline">
-                            <input type="hidden" name="hp_action" value="reset_hp">
-                            <button type="submit" class="btn btn-info btn-sm" onclick="return confirm('Réinitialiser les points de vie au maximum ?')">
-                                <i class="fas fa-redo me-2"></i>
-                                Remettre au Maximum
-                            </button>
-                        </form>
+                        <button type="button" class="btn btn-info btn-sm" onclick="resetHp(<?php echo $target_id; ?>, '<?php echo $target_type ?? 'PNJ'; ?>')">
+                            <i class="fas fa-redo me-2"></i>
+                            Remettre au Maximum
+                        </button>
                     </div>
                 </div>
 
@@ -111,3 +100,13 @@ if (!isset($name) || !isset($hit_points_current) || !isset($hit_points_max)) {
         </div>
     </div>
 </div>
+
+<script>
+// Test de disponibilité des fonctions HP
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Modal HP chargé');
+    console.log('manageHp disponible:', typeof manageHp !== 'undefined');
+    console.log('updateHpModalDisplay disponible:', typeof updateHpModalDisplay !== 'undefined');
+    console.log('quickDamage disponible:', typeof quickDamage !== 'undefined');
+});
+</script>
