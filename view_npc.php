@@ -533,7 +533,7 @@ $speed = $npc->speed;
                     <ul class="nav nav-tabs border-0" id="npcTabs" role="tablist" data-bs-toggle="tab">
                         <li class="nav-item" role="presentation">
                             <button class="btn-txt active" id="combat-tab" data-bs-toggle="tab" data-bs-target="#combat" type="button" role="tab" aria-controls="combat" aria-selected="true">
-                                <i class="fas fa-sword me-2"></i>Combat
+                                <i class="fas fa-shield-alt me-2"></i>Combat
                         </button>
                         </li>
                         <li class="nav-item" role="presentation">

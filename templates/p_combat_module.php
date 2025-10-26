@@ -3,7 +3,7 @@
     <div class="p-4">
         <!-- Informations de combat -->
         <div class="info-section mb-4">
-            <h4><i class="fas fa-sword me-2"></i>Informations de Combat</h4>
+            <h4><i class="fas fa-shield-alt me-2"></i>Informations de Combat</h4>
             <div class="row">
                 <div class="col-md-3">
                     <div class="stat-box text-center">
@@ -63,7 +63,7 @@
                             </small>
                         </div>
                         <div class="col-md-6">
-                            <h5><i class="fas fa-sword me-2"></i>Attaques</h5>
+                            <h5><i class="fas fa-crosshairs me-2"></i>Attaques</h5>
                             <!-- Rages (pour les barbares) -->
                             <?php if ($isBarbarian && $rageData): ?>
                                 <h6><i class="fas fa-fire me-2"></i>Gestion des Rages</h6>
