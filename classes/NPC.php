@@ -47,6 +47,8 @@ class NPC
     public $flaws;
     public $starting_equipment;
     public $gold;
+    public $silver;
+    public $copper;
     public $spells;
     public $skills;
     public $languages;
@@ -119,6 +121,8 @@ class NPC
         $this->flaws = $data['flaws'] ?? null;
         $this->starting_equipment = $data['starting_equipment'] ?? null;
         $this->gold = $data['gold'] ?? 0;
+        $this->silver = $data['silver'] ?? 0;
+        $this->copper = $data['copper'] ?? 0;
         $this->spells = $data['spells'] ?? null;
         $this->skills = $data['skills'] ?? null;
         $this->languages = $data['languages'] ?? null;
@@ -178,6 +182,8 @@ class NPC
             'flaws' => $this->flaws,
             'starting_equipment' => $this->starting_equipment,
             'gold' => $this->gold,
+            'silver' => $this->silver,
+            'copper' => $this->copper,
             'spells' => $this->spells,
             'skills' => $this->skills,
             'languages' => $this->languages,
@@ -223,14 +229,14 @@ class NPC
                 strength, dexterity, constitution, intelligence, wisdom, charisma,
                 hit_points_current, hit_points_max, armor_class, speed, alignment, age, height, weight,
                 eyes, skin, hair, backstory, personality_traits, ideals, bonds, flaws,
-                starting_equipment, gold, spells, skills, languages, profile_photo,
+                starting_equipment, gold, silver, copper, spells, skills, languages, profile_photo,
                 created_by, world_id, location_id, is_active
             ) VALUES (
                 :name, :class_id, :race_id, :background_id, :archetype_id, :level, :experience,
                 :strength, :dexterity, :constitution, :intelligence, :wisdom, :charisma,
                 :hit_points_current, :hit_points_max, :armor_class, :speed, :alignment, :age, :height, :weight,
                 :eyes, :skin, :hair, :backstory, :personality_traits, :ideals, :bonds, :flaws,
-                :starting_equipment, :gold, :spells, :skills, :languages, :profile_photo,
+                :starting_equipment, :gold, :silver, :copper, :spells, :skills, :languages, :profile_photo,
                 :created_by, :world_id, :location_id, :is_active
             )";
 
@@ -267,6 +273,8 @@ class NPC
                 ':flaws' => $this->flaws,
                 ':starting_equipment' => $this->starting_equipment,
                 ':gold' => $this->gold,
+                ':silver' => $this->silver,
+                ':copper' => $this->copper,
                 ':spells' => $this->spells,
                 ':skills' => $this->skills,
                 ':languages' => $this->languages,
@@ -305,7 +313,7 @@ class NPC
                 alignment = :alignment, age = :age, height = :height, weight = :weight,
                 eyes = :eyes, skin = :skin, hair = :hair, backstory = :backstory,
                 personality_traits = :personality_traits, ideals = :ideals, bonds = :bonds, flaws = :flaws,
-                starting_equipment = :starting_equipment, gold = :gold, spells = :spells,
+                starting_equipment = :starting_equipment, gold = :gold, silver = :silver, copper = :copper, spells = :spells,
                 skills = :skills, languages = :languages, profile_photo = :profile_photo,
                 world_id = :world_id, location_id = :location_id, is_active = :is_active,
                 updated_at = CURRENT_TIMESTAMP
@@ -345,6 +353,8 @@ class NPC
                 ':flaws' => $this->flaws,
                 ':starting_equipment' => $this->starting_equipment,
                 ':gold' => $this->gold,
+                ':silver' => $this->silver,
+                ':copper' => $this->copper,
                 ':spells' => $this->spells,
                 ':skills' => $this->skills,
                 ':languages' => $this->languages,

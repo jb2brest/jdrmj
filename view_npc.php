@@ -476,7 +476,13 @@ $constitution = $npc->constitution;
 $intelligence = $npc->intelligence;
 $wisdom = $npc->wisdom;
 $charisma = $npc->charisma;
-
+$gold = $npc->gold;
+$silver = $npc->silver;
+$copper = $npc->copper;
+$personality_traits = $npc->personality_traits;
+$ideals = $npc->ideals;
+$bonds = $npc->bonds;
+$flaws = $npc->flaws;
 
 ?>
 <!DOCTYPE html>
@@ -590,13 +596,13 @@ $charisma = $npc->charisma;
 
                     <?php include 'templates/p_skills_module.php'; ?>
 
-                    <?php include 'templates/npc_languages_tab.php'; ?>
+                    <?php include 'templates/p_languages_module.php'; ?>
 
-                    <?php include 'templates/npc_treasury_tab.php'; ?>
+                    <?php include 'templates/p_treasury_module.php'; ?>
 
                     <?php include 'templates/p_equipment_module.php'; ?>
 
-                    <?php include 'templates/npc_personal_info_tab.php'; ?>
+                    <?php include 'templates/p_personal_info_module.php'; ?>
                 </div>
             </div>
                             </div>

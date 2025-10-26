@@ -1014,10 +1014,17 @@ body {
 }
 
 /* Styles pour les devises */
-.currency-display {
-    font-size: 1.5rem;
+.currency-display-gold {
     font-weight: bold;
-    color: var(--bs-success);
+    color: var(--dnd-secondary-dark);
+}
+.currency-display-silver {
+    font-weight: bold;
+    color: var(--dnd-bg-darker);
+}
+.currency-display-copper {
+    font-weight: bold;
+    color: var(--dnd-accent-dark);
 }
 
 /* Styles pour les barres de progression */
