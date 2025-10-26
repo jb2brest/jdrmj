@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.21.26
+VERSION=2.21.27
 
 # Date de déploiement
 DEPLOY_DATE=2025-10-26
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-10-26
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=6ae4d481847e7880e6ccacf8c466fd167fea3f44
+GIT_COMMIT=08b35eff274c00d4113e3590431b763b1202e76e
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251026-202921
+BUILD_ID=20251026-205603
 
 # Notes de version
-RELEASE_NOTES="view_character.php : capacités"
+RELEASE_NOTES="view_character.php : compétences"
