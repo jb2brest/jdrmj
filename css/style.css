@@ -306,10 +306,10 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--bs-primary);
+    background: var(--dnd-secondary);
     color: white;
     border: 2px solid white;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    box-shadow: 0 3px 10px rgba(214, 29, 29, 0.2);
     transition: all 0.3s ease;
 }
 

@@ -234,6 +234,10 @@ Nettoyer la classe NPC
 
 
 Faire le passage de niveau.
+Edition des traits
+Ajouter le livre d'histoire basé sur des évenements. 
+
+
 
 
 dans view_place.php zone "PNJ présents" l'image du PNJ n'est pas affichée dans la balise npc-avatar

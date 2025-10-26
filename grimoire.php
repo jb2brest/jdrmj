@@ -5,55 +5,93 @@ require_once 'includes/functions.php';
 requireLogin();
 
 $user_id = $_SESSION['user_id'];
-$character_id = (int)($_GET['id'] ?? 0);
 
-if ($character_id === 0) {
+// Récupérer les paramètres target_id et target_type (nouveau) ou id (ancien pour compatibilité)
+$target_id = (int)($_GET['target_id'] ?? $_GET['id'] ?? 0);
+$target_type = $_GET['target_type'] ?? 'PJ';
+
+if ($target_id === 0) {
     header('Location: characters.php');
     exit;
 }
 
-// Vérifier que le personnage appartient à l'utilisateur et récupérer les bonus raciaux
-$stmt = $pdo->prepare("
-    SELECT c.*, r.wisdom_bonus, r.intelligence_bonus 
-    FROM characters c 
-    JOIN races r ON c.race_id = r.id 
-    WHERE c.id = ? AND c.user_id = ?
-");
-$stmt->execute([$character_id, $user_id]);
-$character = $stmt->fetch();
-
-if (!$character) {
+// Vérifier les permissions selon le type de cible
+if ($target_type === 'PJ') {
+    // Vérifier que le personnage appartient à l'utilisateur et récupérer les bonus raciaux
+    $stmt = $pdo->prepare("
+        SELECT c.*, r.wisdom_bonus, r.intelligence_bonus 
+        FROM characters c 
+        JOIN races r ON c.race_id = r.id 
+        WHERE c.id = ? AND c.user_id = ?
+    ");
+    $stmt->execute([$target_id, $user_id]);
+    $character = $stmt->fetch();
+    
+    if (!$character) {
+        header('Location: characters.php');
+        exit;
+    }
+    
+    $character_name = $character['name'];
+    $character_class_id = $character['class_id'];
+    $character_level = $character['level'];
+    
+} elseif ($target_type === 'PNJ') {
+    // Vérifier que le PNJ appartient à l'utilisateur et récupérer les bonus raciaux
+    $stmt = $pdo->prepare("
+        SELECT n.*, r.wisdom_bonus, r.intelligence_bonus 
+        FROM npcs n 
+        JOIN races r ON n.race_id = r.id 
+        WHERE n.id = ? AND n.created_by = ?
+    ");
+    $stmt->execute([$target_id, $user_id]);
+    $character = $stmt->fetch();
+    
+    if (!$character) {
+        header('Location: characters.php');
+        exit;
+    }
+    
+    $character_name = $character['name'];
+    $character_class_id = $character['class_id'];
+    $character_level = $character['level'];
+    
+} else {
     header('Location: characters.php');
     exit;
 }
 
 // Vérifier si la classe peut lancer des sorts
-$spellcastingClasses = [2, 3, 4, 5, 7, 9, 10, 11]; // Barde, Clerc, Druide, Ensorceleur, Magicien, Occultiste, Paladin, Rôdeur
-if (!in_array($character['class_id'], $spellcastingClasses)) {
-    header('Location: view_character.php?id=' . $character_id);
+$spellcastingClasses = [2, 3, 4, 7, 9, 10, 11]; // Barde, Clerc, Druide, Magicien, Occultiste, Paladin, Rôdeur
+if (!in_array($character_class_id, $spellcastingClasses)) {
+    if ($target_type === 'PJ') {
+        header('Location: view_character.php?id=' . $target_id);
+    } else {
+        header('Location: view_npc.php?id=' . $target_id);
+    }
     exit;
 }
 
 // Récupérer les informations de la classe
 $stmt = $pdo->prepare("SELECT * FROM classes WHERE id = ?");
-$stmt->execute([$character['class_id']]);
+$stmt->execute([$character_class_id]);
 $class = $stmt->fetch();
 // Calculer les modificateurs (caractéristiques totales incluant les bonus raciaux)
 $wisdomModifier = floor(($character['wisdom'] + $character['wisdom_bonus'] - 10) / 2);
 $intelligenceModifier = floor(($character['intelligence'] + $character['intelligence_bonus'] - 10) / 2);
-$spell_capabilities = Character::getClassSpellCapabilities($character['class_id'], $character['level'], $wisdomModifier, $character['max_spells_learned'], $intelligenceModifier);
+$spell_capabilities = Character::getClassSpellCapabilities($character_class_id, $character_level, $wisdomModifier, $character['max_spells_learned'], $intelligenceModifier);
 
 // Récupérer les sorts du personnage
-$character_spells = Character::getCharacterSpells($character_id);
+$character_spells = Character::getCharacterSpells($target_id);
 
 // Récupérer les utilisations d'emplacements de sorts
-$spell_slots_usage = Character::getSpellSlotsUsageStatic($character_id);
+$spell_slots_usage = Character::getSpellSlotsUsageStatic($target_id);
 
 // Récupérer les sorts disponibles pour la classe
-$available_spells = Character::getSpellsForClass($character['class_id']);
+$available_spells = Character::getSpellsForClass($character_class_id);
 
 // Vérifier si la classe peut apprendre de nouveaux sorts (Magicien, Ensorceleur, etc.)
-$canLearnSpells = in_array($character['class_id'], [7, 5]); // 7 = Magicien, 5 = Ensorceleur
+$canLearnSpells = in_array($character_class_id, [7, 5]); // 7 = Magicien, 5 = Ensorceleur
 
 // Grouper les sorts par niveau
 $spells_by_level = [];
@@ -82,7 +120,7 @@ foreach ($character_spells as $spell) {
     }
 }
 
-$page_title = "Grimoire - " . $character['name'];
+$page_title = "Grimoire - " . $character_name;
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -99,12 +137,13 @@ $page_title = "Grimoire - " . $character['name'];
 // Debug: Afficher des informations de débogage
 if (isset($_GET['debug'])) {
     echo "<!-- DEBUG INFO -->\n";
-    echo "<!-- Character ID: " . $character_id . " -->\n";
+    echo "<!-- Character ID: " . $target_id . " -->\n";
+    echo "<!-- Target Type: " . $target_type . " -->\n";
     echo "<!-- User ID: " . $user_id . " -->\n";
-    echo "<!-- Character Name: " . $character['name'] . " -->\n";
-    echo "<!-- Class ID: " . $character['class_id'] . " -->\n";
-    echo "<!-- Level: " . $character['level'] . " -->\n";
-    echo "<!-- Can Cast Spells: " . (Character::canCastSpells($character['class_id']) ? 'YES' : 'NO') . " -->\n";
+    echo "<!-- Character Name: " . $character_name . " -->\n";
+    echo "<!-- Class ID: " . $character_class_id . " -->\n";
+    echo "<!-- Level: " . $character_level . " -->\n";
+    echo "<!-- Can Cast Spells: " . (Character::canCastSpells($character_class_id) ? 'YES' : 'NO') . " -->\n";
     echo "<!-- Available Spells Count: " . count($available_spells) . " -->\n";
     echo "<!-- Character Spells Count: " . count($character_spells) . " -->\n";
     echo "<!-- END DEBUG INFO -->\n";
@@ -770,9 +809,13 @@ if (isset($_GET['debug'])) {
         <div class="grimoire-book">
             <!-- En-tête du grimoire -->
             <div class="grimoire-header">
-                <h1><i class="fas fa-book-open me-2"></i>Grimoire de <?php echo htmlspecialchars($character['name']); ?></h1>
+                <h1><i class="fas fa-book-open me-2"></i>Grimoire de <?php echo htmlspecialchars($character_name); ?></h1>
                 <div class="mt-3">
-                    <a href="view_character.php?id=<?php echo $character_id; ?>" class="btn btn-light">
+                    <?php if ($target_type === 'PJ'): ?>
+                        <a href="view_character.php?id=<?php echo $target_id; ?>" class="btn btn-light">
+                    <?php else: ?>
+                        <a href="view_npc.php?id=<?php echo $target_id; ?>" class="btn btn-light">
+                    <?php endif; ?>
                         <i class="fas fa-arrow-left me-1"></i>Retour au personnage
                     </a>
                 </div>

@@ -350,6 +350,11 @@ $error_message = null;
                 </div>
 
                 <div class="tab-content tab-content" id="npcTabContent">
+                    <?php 
+                    // Variables pour le module de combat
+                    $spellcastingClasses = [2, 3, 4, 7, 9, 10, 11]; // Barde, Clerc, Druide, Magicien, Occultiste, Paladin, Rôdeur
+                    $canCastSpells = in_array($character->class_id, $spellcastingClasses);
+                    ?>
                     <?php include 'templates/p_combat_module.php'; ?>
 
                     <?php include 'templates/p_characteristics_module.php'; ?>
