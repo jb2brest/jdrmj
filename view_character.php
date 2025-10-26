@@ -62,7 +62,7 @@ if ($character->class_archetype_id) {
 $equipment = Character::getCharacterEquipment($character_id);
 
 // Récupérer les capacités du personnage
-$capabilities = Character::getCharacterCapabilities($character_id);
+$allCapabilities = $character->getCapabilities();
 
 // Les données de bourse sont directement disponibles via les propriétés de l'objet Character
 

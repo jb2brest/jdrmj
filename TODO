@@ -232,6 +232,10 @@ Dans la zone "Combat", il faut ajouter les zones "Classe d'armure" et "Attaques"
 Supprimer l'ID 13 de la classe armor
 Nettoyer la classe NPC
 
+
+Faire le passage de niveau.
+
+
 dans view_place.php zone "PNJ présents" l'image du PNJ n'est pas affichée dans la balise npc-avatar
 
 Ok alors il faut réorganiser les choses comme il suit :

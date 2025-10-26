@@ -37,8 +37,8 @@
                     <?php else: ?>
                         <div class="text-center py-4">
                             <i class="fas fa-star text-muted fa-3x mb-3"></i>
-                            <p class="text-muted">Aucune capacité assignée à ce PNJ.</p>
-                            <small class="text-muted">Les capacités peuvent être ajoutées via la gestion des PNJ.</small>
+                            <p class="text-muted">Aucune capacité assignée à ce personnage.</p>
+                            <small class="text-muted">Les capacités peuvent être ajoutées via la gestion des personnages.</small>
                         </div>
                     <?php endif; ?>
                 </div>

@@ -10,7 +10,8 @@
  * @return array Liste des capacités avec leurs détails
  */
 function getCharacterCapabilities($character_id) {
-    global $pdo;
+    require_once 'includes/functions.php';
+    $pdo = getPDO();
     
     // Debug temporaire
     error_log("Debug getCharacterCapabilities - Character ID: " . $character_id);
@@ -58,7 +59,8 @@ function getCharacterCapabilities($character_id) {
  * @return array Liste des capacités de classe
  */
 function getClassCapabilities($class_id, $level) {
-    global $pdo;
+    require_once 'includes/functions.php';
+    $pdo = getPDO();
     
     $stmt = $pdo->prepare("
         SELECT 
@@ -88,7 +90,8 @@ function getClassCapabilities($class_id, $level) {
  * @return array Liste des capacités raciales
  */
 function getRaceCapabilities($race_id) {
-    global $pdo;
+    require_once 'includes/functions.php';
+    $pdo = getPDO();
     
     $stmt = $pdo->prepare("
         SELECT 
@@ -116,7 +119,8 @@ function getRaceCapabilities($race_id) {
  * @return array Liste des capacités d'historique
  */
 function getBackgroundCapabilities($background_id) {
-    global $pdo;
+    require_once 'includes/functions.php';
+    $pdo = getPDO();
     
     $stmt = $pdo->prepare("
         SELECT 
@@ -146,7 +150,8 @@ function getBackgroundCapabilities($background_id) {
  * @return bool Succès de l'opération
  */
 function addCharacterCapability($character_id, $capability_id, $notes = '') {
-    global $pdo;
+    require_once 'includes/functions.php';
+    $pdo = getPDO();
     
     try {
         $stmt = $pdo->prepare("
@@ -171,7 +176,8 @@ function addCharacterCapability($character_id, $capability_id, $notes = '') {
  * @return bool Succès de l'opération
  */
 function removeCharacterCapability($character_id, $capability_id) {
-    global $pdo;
+    require_once 'includes/functions.php';
+    $pdo = getPDO();
     
     try {
         $stmt = $pdo->prepare("
@@ -193,7 +199,8 @@ function removeCharacterCapability($character_id, $capability_id) {
  * @return bool Succès de l'opération
  */
 function updateCharacterCapabilities($character_id) {
-    global $pdo;
+    require_once 'includes/functions.php';
+    $pdo = getPDO();
     
     try {
         // Récupérer les informations du personnage
@@ -249,7 +256,8 @@ function updateCharacterCapabilities($character_id) {
  * @return array Liste des capacités groupées par type
  */
 function getAllCapabilitiesByType() {
-    global $pdo;
+    require_once 'includes/functions.php';
+    $pdo = getPDO();
     
     $stmt = $pdo->prepare("
         SELECT 
@@ -286,7 +294,8 @@ function getAllCapabilitiesByType() {
  * @return array Liste des capacités correspondantes
  */
 function searchCapabilities($search) {
-    global $pdo;
+    require_once 'includes/functions.php';
+    $pdo = getPDO();
     
     $stmt = $pdo->prepare("
         SELECT 

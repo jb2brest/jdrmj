@@ -1110,6 +1110,19 @@ if (!function_exists('finalizeCharacterCreation')) {
             if ($result) {
                 $characterId = $pdo->lastInsertId();
                 error_log("Personnage créé avec succès - ID: $characterId");
+                
+                // Ajouter les capacités de base du personnage
+                if (function_exists('updateCharacterCapabilities')) {
+                    $capabilitiesResult = updateCharacterCapabilities($characterId);
+                    if ($capabilitiesResult) {
+                        error_log("Capacités de base ajoutées avec succès pour le personnage ID: $characterId");
+                    } else {
+                        error_log("Erreur lors de l'ajout des capacités de base pour le personnage ID: $characterId");
+                    }
+                } else {
+                    error_log("Fonction updateCharacterCapabilities non disponible");
+                }
+                
                 return $characterId;
             } else {
                 error_log("Erreur lors de l'insertion du personnage");

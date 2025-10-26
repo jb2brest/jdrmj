@@ -2045,18 +2045,93 @@ class Character
     {
         try {
             $stmt = $this->pdo->prepare("
-                SELECT cc.*, c.name, c.description, c.type
+                SELECT cc.*, c.name, c.description, c.type_id, c.source_type, ct.name as type_name
                 FROM character_capabilities cc
                 JOIN capabilities c ON cc.capability_id = c.id
+                LEFT JOIN capability_types ct ON c.type_id = ct.id
                 WHERE cc.character_id = ?
                 ORDER BY c.name
             ");
             $stmt->execute([$this->id]);
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            // Si aucune capacité n'est assignée, générer automatiquement les capacités de base
+            if (empty($result)) {
+                return $this->generateBaseCapabilities();
+            }
+            
+            return $result;
             
         } catch (PDOException $e) {
             error_log("Erreur lors de la récupération des capacités: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Générer automatiquement les capacités de base du personnage
+     * 
+     * @return array Liste des capacités générées
+     */
+    private function generateBaseCapabilities()
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        $capabilities = [];
+        
+        try {
+            // Récupérer les capacités de classe
+            $stmt = $pdo->prepare("
+                SELECT c.name, c.description, c.source_type, ct.name as type_name
+                FROM capabilities c
+                LEFT JOIN capability_types ct ON c.type_id = ct.id
+                WHERE c.source_type = 'class' AND c.source_id = ? AND c.level_requirement <= ?
+                ORDER BY c.level_requirement, c.name
+            ");
+            $stmt->execute([$this->class_id, $this->level]);
+            $classCapabilities = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Récupérer les capacités raciales
+            $stmt = $pdo->prepare("
+                SELECT c.name, c.description, c.source_type, ct.name as type_name
+                FROM capabilities c
+                LEFT JOIN capability_types ct ON c.type_id = ct.id
+                WHERE c.source_type = 'race' AND c.source_id = ?
+                ORDER BY c.name
+            ");
+            $stmt->execute([$this->race_id]);
+            $raceCapabilities = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Combiner toutes les capacités
+            $capabilities = array_merge($classCapabilities, $raceCapabilities);
+            
+            // Ajouter les capacités d'historique si disponible
+            if ($this->background_id) {
+                $stmt = $pdo->prepare("
+                    SELECT c.name, c.description, c.source_type, ct.name as type_name
+                    FROM capabilities c
+                    LEFT JOIN capability_types ct ON c.type_id = ct.id
+                    WHERE c.source_type = 'background' AND c.source_id = ?
+                    ORDER BY c.name
+                ");
+                $stmt->execute([$this->background_id]);
+                $backgroundCapabilities = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                $capabilities = array_merge($capabilities, $backgroundCapabilities);
+            }
+            
+            // Ajouter les métadonnées manquantes
+            foreach ($capabilities as &$capability) {
+                $capability['is_active'] = 1;
+                $capability['learned_at'] = date('Y-m-d H:i:s');
+                // S'assurer que le champ source est défini
+                if (!isset($capability['source'])) {
+                    $capability['source'] = $capability['source_type'];
+                }
+            }
+            
+            return $capabilities;
+            
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la génération des capacités de base du personnage: " . $e->getMessage());
             return [];
         }
     }
