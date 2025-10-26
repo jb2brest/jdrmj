@@ -41,13 +41,13 @@
                         </tr>
                         <!-- Bonus de niveau -->
                         <tr>
-                            <td><strong>Bonus de niveau (<?php echo $remainingPoints; ?> pts restants)</strong></td>
-                            <td><span class="text-warning"><?php echo ($abilityImprovementsArray['strength'] > 0 ? '+' : '') . $abilityImprovementsArray['strength']; ?></span></td>
-                            <td><span class="text-warning"><?php echo ($abilityImprovementsArray['dexterity'] > 0 ? '+' : '') . $abilityImprovementsArray['dexterity']; ?></span></td>
-                            <td><span class="text-warning"><?php echo ($abilityImprovementsArray['constitution'] > 0 ? '+' : '') . $abilityImprovementsArray['constitution']; ?></span></td>
-                            <td><span class="text-warning"><?php echo ($abilityImprovementsArray['intelligence'] > 0 ? '+' : '') . $abilityImprovementsArray['intelligence']; ?></span></td>
-                            <td><span class="text-warning"><?php echo ($abilityImprovementsArray['wisdom'] > 0 ? '+' : '') . $abilityImprovementsArray['wisdom']; ?></span></td>
-                            <td><span class="text-warning"><?php echo ($abilityImprovementsArray['charisma'] > 0 ? '+' : '') . $abilityImprovementsArray['charisma']; ?></span></td>
+                            <td><strong>Bonus de niveau (<?php echo $remainingPoints ?? 0; ?> pts restants)</strong></td>
+                            <td><span class="text-warning"><?php echo ($abilityImprovementsArray['strength'] ?? 0) > 0 ? '+' . ($abilityImprovementsArray['strength'] ?? 0) : ($abilityImprovementsArray['strength'] ?? 0); ?></span></td>
+                            <td><span class="text-warning"><?php echo ($abilityImprovementsArray['dexterity'] ?? 0) > 0 ? '+' . ($abilityImprovementsArray['dexterity'] ?? 0) : ($abilityImprovementsArray['dexterity'] ?? 0); ?></span></td>
+                            <td><span class="text-warning"><?php echo ($abilityImprovementsArray['constitution'] ?? 0) > 0 ? '+' . ($abilityImprovementsArray['constitution'] ?? 0) : ($abilityImprovementsArray['constitution'] ?? 0); ?></span></td>
+                            <td><span class="text-warning"><?php echo ($abilityImprovementsArray['intelligence'] ?? 0) > 0 ? '+' . ($abilityImprovementsArray['intelligence'] ?? 0) : ($abilityImprovementsArray['intelligence'] ?? 0); ?></span></td>
+                            <td><span class="text-warning"><?php echo ($abilityImprovementsArray['wisdom'] ?? 0) > 0 ? '+' . ($abilityImprovementsArray['wisdom'] ?? 0) : ($abilityImprovementsArray['wisdom'] ?? 0); ?></span></td>
+                            <td><span class="text-warning"><?php echo ($abilityImprovementsArray['charisma'] ?? 0) > 0 ? '+' . ($abilityImprovementsArray['charisma'] ?? 0) : ($abilityImprovementsArray['charisma'] ?? 0); ?></span></td>
                         </tr>
                         <!-- Bonus d'équipements -->
                         <tr>

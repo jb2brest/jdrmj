@@ -49,9 +49,9 @@ class Character
     
     // Équipement et trésor
     public $equipment;
-    public $money_gold;
-    public $money_silver;
-    public $money_copper;
+    public $gold;
+    public $silver;
+    public $copper;
     
     // Informations personnelles
     public $background;
@@ -121,7 +121,7 @@ class Character
                     strength, dexterity, constitution, intelligence, wisdom, charisma,
                     armor_class, initiative, speed, hit_points_max, hit_points_current,
                     proficiency_bonus, saving_throws, skills, languages,
-                    equipment, money_gold, money_silver, money_copper,
+                    equipment, gold, silver, copper,
                     background, alignment, personality_traits, ideals, bonds, flaws,
                     spells_known, spell_slots, profile_photo,
                     is_equipped, equipment_locked, character_locked
@@ -2355,9 +2355,9 @@ class Character
             'skills' => $this->skills,
             'languages' => $this->languages,
             'equipment' => $this->equipment,
-            'money_gold' => $this->money_gold,
-            'money_silver' => $this->money_silver,
-            'money_copper' => $this->money_copper,
+            'gold' => $this->gold,
+            'silver' => $this->silver,
+            'copper' => $this->copper,
             'background' => $this->background,
             'alignment' => $this->alignment,
             'personality_traits' => $this->personality_traits,
@@ -3175,6 +3175,21 @@ class Character
         } catch (PDOException $e) {
             error_log("Erreur lors de la récupération des attaques: " . $e->getMessage());
             return [];
+        }
+    }
+
+    /**
+     * Mettre à jour la photo de profil d'un personnage
+     */
+    public static function updateProfilePhoto($characterId, $photoPath) {
+        $pdo = getPDO();
+        
+        try {
+            $stmt = $pdo->prepare("UPDATE characters SET profile_photo = ? WHERE id = ?");
+            return $stmt->execute([$photoPath, $characterId]);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la mise à jour de la photo de profil: " . $e->getMessage());
+            return false;
         }
     }
 

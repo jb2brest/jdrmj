@@ -5,8 +5,11 @@
  */
 
 // Vérification que les variables nécessaires sont définies
-if (!isset($npc_id)) {
-    throw new Exception('Variable $npc_id est requise pour ce template');
+if (!isset($target_id)) {
+    throw new Exception('Variable $target_id est requise pour ce template');
+}
+if (!isset($target_type)) {
+    throw new Exception('Variable $target_type est requise pour ce template');
 }
 ?>
 
@@ -23,6 +26,8 @@ if (!isset($npc_id)) {
             <div class="modal-body">
                 <form id="photoForm" method="POST" enctype="multipart/form-data">
                     <input type="hidden" name="action" value="upload_photo">
+                    <input type="hidden" name="target_id" value="<?php echo $target_id; ?>">
+                    <input type="hidden" name="target_type" value="<?php echo $target_type; ?>">
                     
                     <div class="mb-3">
                         <label for="profile_photo" class="form-label">Sélectionner une nouvelle photo :</label>
@@ -42,7 +47,7 @@ if (!isset($npc_id)) {
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                <button type="button" class="btn btn-primary" data-action="upload-photo" data-npc-id="<?php echo $npc_id; ?>" data-entity-type="PNJ">
+                <button type="button" class="btn btn-primary" data-action="upload-photo" data-target-id="<?php echo $target_id; ?>" data-target-type="<?php echo $target_type; ?>">
                     <i class="fas fa-upload me-1"></i>Uploader
                 </button>
             </div>

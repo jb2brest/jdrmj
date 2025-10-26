@@ -5,8 +5,20 @@
  */
 
 // Vérification que les variables nécessaires sont définies
-if (!isset($name) || !isset($hit_points_current) || !isset($hit_points_max) || !isset($target_id) || !isset($target_type)) {
-    throw new Exception('Variables $name, $hit_points_current et $hit_points_max sont requises pour ce template');
+if (!isset($name)) {
+    throw new Exception('Variable $name est requise pour ce template');
+}
+if (!isset($hit_points_current)) {
+    throw new Exception('Variable $hit_points_current est requise pour ce template');
+}
+if (!isset($hit_points_max)) {
+    throw new Exception('Variable $hit_points_max est requise pour ce template');
+}
+if (!isset($target_id)) {
+    throw new Exception('Variable $target_id est requise pour ce template');
+}
+if (!isset($target_type)) {
+    throw new Exception('Variable $target_type est requise pour ce template');
 }
 ?>
 

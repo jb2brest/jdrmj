@@ -69,9 +69,9 @@ if ($file['size'] > $maxSize) {
 }
 
 // Créer le dossier de destination s'il n'existe pas
-$uploadDir = 'uploads/character_photos/';
+$uploadDir = dirname(__DIR__) . '/uploads/character_photos/';
 if (!is_dir($uploadDir)) {
-    mkdir($uploadDir, 0755, true);
+    mkdir($uploadDir, 0777, true);
 }
 
 // Générer un nom de fichier unique
@@ -81,14 +81,17 @@ $uploadPath = $uploadDir . $filename;
 
 // Déplacer le fichier
 if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
+    // Chemin relatif pour la base de données
+    $relativePath = 'uploads/character_photos/' . $filename;
+    
     // Mettre à jour la base de données
-    $success = Character::updateProfilePhoto($characterId, $uploadPath);
+    $success = Character::updateProfilePhoto($characterId, $relativePath);
     
     if ($success) {
         echo json_encode([
             'success' => true, 
             'message' => 'Photo de profil mise à jour avec succès',
-            'photo_path' => $uploadPath
+            'image_url' => $relativePath
         ]);
     } else {
         // Supprimer le fichier si la mise à jour en base a échoué

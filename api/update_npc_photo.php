@@ -52,9 +52,9 @@ try {
     }
 
     // Créer le répertoire d'upload s'il n'existe pas
-    $uploadDir = '../uploads/npcs/';
+    $uploadDir = dirname(__DIR__) . '/uploads/npcs/';
     if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0755, true);
+        mkdir($uploadDir, 0777, true);
     }
 
     // Générer un nom de fichier unique
@@ -69,7 +69,7 @@ try {
             echo json_encode([
                 'success' => true, 
                 'message' => 'Photo de profil mise à jour avec succès',
-                'photo_path' => 'uploads/npcs/' . $filename
+                'image_url' => 'uploads/npcs/' . $filename
             ]);
         } else {
             // Supprimer le fichier si la mise à jour en base échoue

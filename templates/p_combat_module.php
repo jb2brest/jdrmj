@@ -86,12 +86,12 @@
                                 <?php 
                                 // Classes qui peuvent lancer des sorts
                                 $spellcastingClasses = [2, 3, 4, 5, 7, 9, 10, 11]; // Barde, Clerc, Druide, Ensorceleur, Magicien, Occultiste, Paladin, Rôdeur
-                                $canCastSpells = in_array($npc->class_id, $spellcastingClasses);
+                                $canCastSpells = in_array($character->class_id, $spellcastingClasses);
                                 ?>
                                 <?php if ($canCastSpells): ?>
                                 <div class="info-section">
                                     <div class="d-flex justify-content-center">
-                                        <a href="grimoire_npc.php?id=<?php echo $npc_id; ?>" class="btn btn-primary btn-lg">
+                                        <a href="grimoire.php?id=<?php echo $character->id; ?>" class="btn btn-primary btn-lg">
                                             <i class="fas fa-book-open me-2"></i>Grimoire
                                         </a>
                                     </div>

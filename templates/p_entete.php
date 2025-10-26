@@ -5,12 +5,33 @@
  */
 
 // Vérification que les variables nécessaires sont définies
-if (!isset($npc) || !isset($name) || !isset($level) || !isset($hit_points_current) || !isset($hit_points_max) || !isset($experience)) {
-    throw new Exception('Variables $npc, $name, $level, $hit_points_current, $hit_points_max et $experience sont requises pour ce template');
+if (!isset($target_id)) {
+    throw new Exception('Variable $target_id est requise pour ce template');
+}
+if (!isset($name)) {
+    throw new Exception('Variable $name est requise pour ce template');
+}
+if (!isset($level)) {
+    throw new Exception('Variable $level est requise pour ce template');
+}
+if (!isset($hit_points_current)) {
+    throw new Exception('Variable $hit_points_current est requise pour ce template');
+}
+if (!isset($hit_points_max)) {
+    throw new Exception('Variable $hit_points_max est requise pour ce template');
+}
+if (!isset($experience)) {
+    throw new Exception('Variable $experience est requise pour ce template');
 }
 
-if (!isset($raceObject) || !isset($classObject) || !isset($armorClass)) {
-    throw new Exception('Variables $raceObject, $classObject et $armorClass sont requises pour ce template');
+if (!isset($raceObject)) {
+    throw new Exception('Variable $raceObject est requise pour ce template');
+}
+if (!isset($classObject)) {
+    throw new Exception('Variable $classObject est requise pour ce template');
+}
+if (!isset($armorClass)) {
+    throw new Exception('Variable $armorClass est requise pour ce template');
 }
 
 // $backgroundObject peut être null, on le gère avec une valeur par défaut
@@ -29,7 +50,7 @@ if (!isset($canModifyHP)) {
         <div class="d-flex align-items-start">
             <div class="me-3 position-relative">
                 <?php if (!empty($profile_photo )): ?>
-                    <img id="npc-profile-photo" src="<?php echo htmlspecialchars($profile_photo); ?>" alt="Photo de <?php echo htmlspecialchars($name); ?>" class="profile-photo">
+                    <img id="profile-photo" src="<?php echo htmlspecialchars($profile_photo); ?>" alt="Photo de <?php echo htmlspecialchars($name); ?>" class="profile-photo">
                 <?php else: ?>
                     <div class="profile-placeholder">
                         <i class="fas fa-user"></i>
@@ -56,7 +77,7 @@ if (!isset($canModifyHP)) {
                 </p>
                 <p>
                     <i class="fas fa-book me-1"></i>
-                    <strong>Historique:</strong> <?php echo htmlspecialchars($backgroundObject->name); ?>
+                    <strong>Historique:</strong> <?php echo $backgroundObject ? htmlspecialchars($backgroundObject->name) : 'Non défini'; ?>
                 </p>
                 <p>
                     <i class="fas fa-balance-scale me-1"></i>
@@ -70,9 +91,15 @@ if (!isset($canModifyHP)) {
                 <?php endif; ?>
             </div>
             <div class="col-md-4">
-                <button class="btn btn-warning" data-npc-id="<?php echo $npc_id; ?>" data-action="reset">
-                    <i class="fas fa-moon me-1"></i>Long repos
-                </button>
+                <?php if ($canModifyHP): ?>
+                    <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#longRestModal">
+                        <i class="fas fa-moon me-1"></i>Long repos
+                    </button>
+                <?php else: ?>
+                    <button class="btn btn-warning" disabled title="Permissions insuffisantes">
+                        <i class="fas fa-moon me-1"></i>Long repos
+                    </button>
+                <?php endif; ?>
             </div>
         </div>
     </div>

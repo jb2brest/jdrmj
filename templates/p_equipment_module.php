@@ -55,7 +55,10 @@
                     <tbody>
                         <?php 
                         // Combiner tous les objets du personnage
-                        $allCharacterItems = array_merge($allMagicalEquipment, $allPoisons);
+                        $allCharacterItems = array_merge(
+                            $allMagicalEquipment ?? [], 
+                            $allPoisons ?? []
+                        );
                         
                         // Fonction pour vérifier si un objet existe déjà
                         function itemExists($items, $name, $type) {

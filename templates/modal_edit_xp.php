@@ -5,8 +5,17 @@
  */
 
 // Vérification que les variables nécessaires sont définies
-if (!isset($npc) || !isset($npc->name) || !isset($npc->level) || !isset($target_id) || !isset($target_type)) {
-    throw new Exception('Variables $npc, $npc->name, $npc->level, $target_id et $target_type sont requises pour ce template');
+if (!isset($name)) {
+    throw new Exception('Variable $name est requise pour ce template');
+}
+if (!isset($level)) {
+    throw new Exception('Variable $level est requise pour ce template');
+}
+if (!isset($target_id)) {
+    throw new Exception('Variable $target_id est requise pour ce template');
+}
+if (!isset($target_type)) {
+    throw new Exception('Variable $target_type est requise pour ce template');
 }
 ?>
 

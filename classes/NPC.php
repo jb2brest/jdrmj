@@ -2808,5 +2808,20 @@ class NPC
             return ['success' => false, 'message' => 'Erreur lors du déséquipement: ' . $e->getMessage()];
         }
     }
+
+    /**
+     * Mettre à jour la photo de profil d'un PNJ
+     */
+    public static function updateProfilePhoto($npcId, $photoPath) {
+        $pdo = getPDO();
+        
+        try {
+            $stmt = $pdo->prepare("UPDATE npcs SET profile_photo = ? WHERE id = ?");
+            return $stmt->execute([$photoPath, $npcId]);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la mise à jour de la photo de profil du PNJ: " . $e->getMessage());
+            return false;
+        }
+    }
 }
 ?>

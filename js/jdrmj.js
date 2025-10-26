@@ -3523,10 +3523,20 @@ function confirmTransfer() {
 }
 
 /**
- * Uploader une photo de NPC
+ * Mettre à jour l'image de profil affichée
  */
-function uploadPhoto(npcId, entityType) {
-    const fileInput = document.getElementById('photoFile');
+function updateProfileImage(imageUrl) {
+    const profileImage = document.getElementById('profile-photo');
+    if (profileImage) {
+        profileImage.src = imageUrl;
+    }
+}
+
+/**
+ * Uploader une photo de profil (PJ ou PNJ)
+ */
+function uploadPhoto(targetId, targetType) {
+    const fileInput = document.getElementById('profile_photo');
     const file = fileInput.files[0];
     
     if (!file) {
@@ -3535,11 +3545,19 @@ function uploadPhoto(npcId, entityType) {
     }
     
     const formData = new FormData();
-    formData.append('photo', file);
-    formData.append('npc_id', npcId);
-    formData.append('entity_type', entityType);
     
-    fetch('api/update_npc_photo.php', {
+    if (targetType === 'PJ') {
+        formData.append('photo', file);
+        formData.append('character_id', targetId);
+    } else {
+        formData.append('profile_photo', file);
+        formData.append('npc_id', targetId);
+    }
+    
+    // Utiliser l'API appropriée selon le type de cible
+    const apiEndpoint = targetType === 'PJ' ? 'api/upload_character_photo.php' : 'api/update_npc_photo.php';
+    
+    fetch(apiEndpoint, {
         method: 'POST',
         body: formData
     })
@@ -3655,9 +3673,9 @@ function initializeNpcEventHandlers() {
         
         if (e.target.closest('[data-action="upload-photo"]')) {
             const element = e.target.closest('[data-action="upload-photo"]');
-            const npcId = element.dataset.npcId;
-            const entityType = element.dataset.entityType;
-            uploadPhoto(npcId, entityType);
+            const targetId = element.dataset.targetId;
+            const targetType = element.dataset.targetType;
+            uploadPhoto(targetId, targetType);
         }
     });
 }

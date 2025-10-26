@@ -578,7 +578,7 @@ $target_type = 'PNJ';
                     </ul>
                 </div>
 
-                <div class="tab-content npc-tab-content" id="npcTabContent">
+                <div class="tab-content tab-content" id="npcTabContent">
                     <?php include 'templates/p_combat_module.php'; ?>
 
                     <?php include 'templates/p_characteristics_module.php'; ?>
@@ -620,6 +620,17 @@ $target_type = 'PNJ';
         <?php include 'templates/modal_edit_xp.php'; ?>
     <?php endif; ?>
 
+    <!-- Modal pour Long Repos -->
+    <?php if ($canModifyHP): ?>
+        <?php
+        // Variables pour le modal de gestion des longs repos
+        $target_id = $npc->id;
+        $target_type = 'PNJ';
+        $name = $npc->name;
+        ?>
+        <?php include 'templates/modal_long_rest.php'; ?>
+    <?php endif; ?>
+
     <!-- Modal pour Transfert d'Objets -->
     <?php include 'templates/modal_transfert_object.php'; ?>
 
@@ -632,6 +643,7 @@ $target_type = 'PNJ';
     <script src="js/jdrmj.js"></script>
     <script src="js/hp-management.js"></script>
     <script src="js/xp-management.js"></script>
+    <script src="js/long-rest-management.js"></script>
     
     
     <!-- Script pour l'initialisation des onglets -->

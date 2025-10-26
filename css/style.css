@@ -1045,15 +1045,6 @@ body {
 }
 
 /* Styles pour les symboles de rage */
-.npc-profile-photo {
-    width: 100px;
-    height: 100px;
-    object-fit: cover;
-    border-radius: 50%;
-    border: 3px solid white;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-}
-
 .npc-profile-placeholder {
     width: 100px;
     height: 100px;
@@ -1076,17 +1067,17 @@ body {
     transition: all 0.3s ease;
 }
 
-.npc-tabs-header {
+.tabs-header {
     background: linear-gradient(135deg, var(--dnd-primary-darker) 0%, var(--dnd-secondary-darker) 100%);
 }
 
-.npc-tab-link {
+.tab-link {
     background: transparent;
     border: none;
     color: var(--dnd-neutral-light);
 }
 
-.npc-tab-content {
+.tab-content {
     background: linear-gradient(135deg, var(--dnd-bg-light) 0%, var(--dnd-bg) 100%);
 }
 
