@@ -51,23 +51,23 @@ body {
 }
 
 .capability-item {
-    background: white;
-    border-radius: 8px;
-    padding: 20px;
-    border-left: 4px solid #8B4513;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    background: var(--dnd-bg-light);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid var(--dnd-primary);
+    box-shadow: 0 2px 4px var(--dnd-primary-darker);
     transition: all 0.3s ease;
-    margin-bottom: 15px;
 }
 
 .capability-item:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    border-left-color: #2D1810;
+    box-shadow: 0 4px 8px var(--dnd-primary-darker);
+    border-left-color: var(--dnd-primary);
 }
 
 .capability-item .text-primary {
-    color: #2D1810 !important;
+    color: var(--dnd-primary) !important;
     font-size: 1.1rem;
 }
 
@@ -77,7 +77,7 @@ body {
 }
 
 .capability-item .text-muted {
-    color: #5D4037 !important;
+    color: var(--dnd-primary-darker) !important;
     line-height: 1.4;
 }
 
@@ -570,11 +570,6 @@ body {
     min-width: 80px;
 }
 
-.capability-item:hover {
-    background: #e9ecef;
-    transform: translateX(5px);
-}
-
 .capability-header h6 {
     font-weight: 600;
     margin-bottom: 8px;
@@ -582,18 +577,6 @@ body {
 
 .capability-description {
     line-height: 1.5;
-}
-
-.capability-item .text-primary {
-    color: #007bff !important;
-}
-
-.capability-item .text-success {
-    color: #28a745 !important;
-}
-
-.capability-item .text-warning {
-    color: #ffc107 !important;
 }
 
 /* Styles pour les compétences */
@@ -836,25 +819,6 @@ body {
     overflow-y: auto;
 }
 
-.capability-item {
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 15px;
-    border-left: 4px solid #007bff;
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
-
-.capability-item:hover {
-    background: #e9ecef;
-    transform: translateX(5px);
-}
-
-.capability-item.active {
-    background: #e3f2fd;
-    border-left-color: #2196f3;
-}
-
 .capability-header h6 {
     margin: 0;
     color: #495057;
@@ -862,18 +826,6 @@ body {
 
 .capability-description {
     line-height: 1.5;
-}
-
-.capability-item .text-primary {
-    color: #007bff !important;
-}
-
-.capability-item .text-success {
-    color: #28a745 !important;
-}
-
-.capability-item .text-warning {
-    color: #ffc107 !important;
 }
 
 /* Styles pour les compétences */
@@ -1426,25 +1378,6 @@ body {
     overflow-y: auto;
 }
 
-.capability-item {
-    background: #f8f9fa;
-    border-radius: 10px;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    border-left: 4px solid #667eea;
-}
-
-.capability-item strong {
-    color: #495057;
-    display: block;
-    margin-bottom: 0.5rem;
-}
-
-.capability-item p {
-    color: #6c757d;
-    margin-bottom: 0;
-    font-size: 0.9rem;
-}
 
 /* Styles pour les listes de compétences */
 .skills-list, .tools-list, .languages-list {
