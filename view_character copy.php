@@ -93,9 +93,9 @@ $capabilities = Character::getCharacterCapabilities($character_id);
 
 // Récupérer les données de bourse du personnage
 $moneyData = [
-    'gold' => $character['money_gold'] ?? 0,
-    'silver' => $character['money_silver'] ?? 0,
-    'copper' => $character['money_copper'] ?? 0
+    'gold' => $character['gold'] ?? 0,
+    'silver' => $character['silver'] ?? 0,
+    'copper' => $character['copper'] ?? 0
 ];
 
 // Récupérer les compétences et langues du personnage

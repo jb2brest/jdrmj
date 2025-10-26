@@ -132,26 +132,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-    // Générer l'équipement final avec la nouvelle table starting_equipment
-    $equipmentData = generateFinalEquipmentNew($data['class_id'], $data['background_id'], $data['race_id'], [
-        'class' => $class_equipment,
-        'background' => $background_equipment,
-        'selected_weapons' => $selectedWeapons,
-        'selected_instruments' => $selectedInstruments
-    ]);
-    
-    $finalEquipment = implode("\n", $equipmentData['equipment']);
-    $totalGold = $equipmentData['gold'];
-    
-    // Sauvegarder les données
+    // Sauvegarder les données (méthode simplifiée)
     $stepData = [
-        'starting_equipment' => $finalEquipment,
-        'money_gold' => $totalGold, // Utiliser 'money_gold' pour correspondre à finalizeCharacterCreation
-        'class_equipment_choices' => $class_equipment,
-        'class_weapon_choices' => $class_weapon_choices,
-        'background_equipment_choices' => $background_equipment,
-        'background_weapon_choices' => $background_weapon_choices,
-        'tool_choices' => $tool_choices
+        'class_equipment' => $class_equipment,
+        'selected_weapons' => $selectedWeapons,
+        'selected_instruments' => $selectedInstruments,
+        'gold' => 0, // L'argent sera géré par l'historique
+        'silver' => 0,
+        'copper' => 0
     ];
     
     if (saveCharacterCreationStep($user_id, $session_id, 9, $stepData)) {
@@ -159,10 +147,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $characterId = finalizeCharacterCreation($user_id, $session_id);
         
         if ($characterId) {
-            // Ajouter l'équipement de départ au personnage
-            if (!empty($finalEquipment)) {
-                addStartingEquipmentToCharacterNew($characterId, ['equipment' => $finalEquipment, 'gold' => $totalGold]);
-            }
+            // Ajouter l'équipement de départ au personnage (méthode simplifiée)
+            require_once 'includes/simple_equipment_functions.php';
+            
+            $equipmentChoices = [
+                'class' => $class_equipment,
+                'selected_weapons' => $selectedWeapons,
+                'selected_instruments' => $selectedInstruments
+            ];
+            
+            createSimpleStartingEquipment($characterId, $equipmentChoices, $data['background_id']);
             
             // Marquer le personnage comme équipé et verrouiller les modifications
             $stmt = $pdo->prepare("UPDATE characters SET is_equipped = 1, equipment_locked = 1, character_locked = 1 WHERE id = ?");
@@ -219,7 +213,7 @@ if (!empty($classEquipmentDetailed)) {
     $classChoices = structureStartingEquipmentByChoices($classEquipmentDetailed);
 } else {
     // Fallback sur l'ancien système si pas de données dans starting_equipment
-    $classEquipment = getClassStartingEquipment($selectedClassId);
+    $classEquipment = getClassStartingEquipmentNew($selectedClassId);
     $classChoices = $classEquipment;
 }
 
@@ -614,6 +608,10 @@ if (isset($_GET['debug'])) {
                     </div>
                     <div class="card-body">
                         <form method="POST" id="step9Form">
+                            <input type="hidden" name="session_id" value="<?php echo htmlspecialchars($session_id); ?>">
+                            <input type="hidden" name="step" value="9">
+                            
+                            <?php if (!empty($classChoices) || !empty($backgroundChoices)): ?>
                 <div class="row">
                     <!-- Équipement de classe -->
                     <div class="col-md-6">
@@ -916,30 +914,13 @@ if (isset($_GET['debug'])) {
         </div>
     </div>
 
-    <!-- Message si aucun équipement -->
-    <?php if (empty($classChoices) && empty($backgroundChoices)): ?>
-        <div class="row">
-            <div class="col-12">
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i>
-                    <strong>Aucun équipement de départ :</strong> Votre classe et votre historique ne vous accordent pas d'équipement de départ spécifique. Vous pouvez continuer avec l'équipement de base.
-                </div>
-            </div>
-        </div>
-    <?php endif; ?>
-
-    <!-- Contenu de fallback si aucun équipement -->
-    <?php if (empty($classChoices) && empty($backgroundChoices)): ?>
-        <div class="row">
-            <div class="col-12">
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i>
-                    <strong>Aucun équipement de départ :</strong> Votre classe et votre historique ne vous accordent pas d'équipement de départ spécifique. Vous pouvez continuer avec l'équipement de base.
-                </div>
-            </div>
-        </div>
-    <?php endif; ?>
-
+                            
+                            <?php else: ?>
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>Aucun équipement de départ :</strong> Votre classe et votre historique ne vous accordent pas d'équipement de départ spécifique. Vous pouvez continuer avec l'équipement de base.
+                                </div>
+                            <?php endif; ?>
                         </form>
                     </div>
                 </div>

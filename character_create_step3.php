@@ -193,8 +193,8 @@ if ($selectedRaceId) {
                                                     <?php if ($background['languages']): ?>
                                                         <small><i class="fas fa-language me-1"></i>Langues : <?php echo htmlspecialchars($background['languages']); ?></small><br>
                                                     <?php endif; ?>
-                                                    <?php if ($background['money_gold']): ?>
-                                                        <small><i class="fas fa-coins me-1"></i><?php echo $background['money_gold']; ?> po</small>
+                                                    <?php if ($background['gold']): ?>
+                                                        <small><i class="fas fa-coins me-1"></i><?php echo $background['gold']; ?> po</small>
                                                     <?php endif; ?>
                                                 </div>
                                             </div>

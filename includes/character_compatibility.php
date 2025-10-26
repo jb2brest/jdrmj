@@ -1072,7 +1072,7 @@ if (!function_exists('finalizeCharacterCreation')) {
                     user_id, name, race_id, class_id, class_archetype_id, level, experience_points,
                     strength, dexterity, constitution, intelligence, wisdom, charisma,
                     armor_class, initiative, speed, hit_points_max, hit_points_current,
-                    proficiency_bonus, money_gold, background, alignment,
+                    proficiency_bonus, gold, silver, copper, background, alignment,
                     personality_traits, ideals, bonds, flaws,
                     skills, languages,
                     created_at, updated_at
@@ -1080,7 +1080,7 @@ if (!function_exists('finalizeCharacterCreation')) {
                     ?, ?, ?, ?, ?, 1, 0,
                     ?, ?, ?, ?, ?, ?,
                     10, 0, 30, ?, ?,
-                    2, 0, ?, ?,
+                    2, ?, ?, ?, ?, ?,
                     ?, ?, ?, ?,
                     ?, ?,
                     NOW(), NOW()
@@ -1139,6 +1139,9 @@ if (!function_exists('finalizeCharacterCreation')) {
                 $data['charisma'] ?? 10,
                 $maxHitPoints,
                 $maxHitPoints, // PV actuels = PV max au début
+                $data['gold'] ?? 0, // gold
+                $data['silver'] ?? 0, // silver  
+                $data['copper'] ?? 0, // copper
                 $data['background'] ?? null,
                 $data['alignment'] ?? null,
                 $data['personality_traits'] ?? null,

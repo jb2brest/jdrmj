@@ -181,9 +181,9 @@ class Character
                 $skills,
                 $languages,
                 $data['equipment'] ?? null,
-                $data['money_gold'] ?? 0,
-                $data['money_silver'] ?? 0,
-                $data['money_copper'] ?? 0,
+                $data['gold'] ?? 0,
+                $data['silver'] ?? 0,
+                $data['copper'] ?? 0,
                 $data['background'] ?? null,
                 $data['alignment'] ?? 'Neutre',
                 $data['personality_traits'] ?? null,
@@ -365,8 +365,8 @@ class Character
         try {
             $this->pdo->beginTransaction();
             
-            // 1. Supprimer l'équipement du personnage
-            $stmt = $this->pdo->prepare("DELETE FROM character_equipment WHERE character_id = ?");
+            // 1. Supprimer l'équipement du personnage (table items)
+            $stmt = $this->pdo->prepare("DELETE FROM items WHERE owner_type = 'player' AND owner_id = ?");
             $stmt->execute([$this->id]);
             
             // 2. Supprimer les sorts appris
@@ -385,19 +385,39 @@ class Character
             $stmt = $this->pdo->prepare("DELETE FROM character_rage_usage WHERE character_id = ?");
             $stmt->execute([$this->id]);
             
-            // 6. Supprimer les sessions de création
-            $stmt = $this->pdo->prepare("DELETE FROM character_creation_sessions WHERE character_id = ?");
+            // 6. Supprimer les compétences du personnage
+            $stmt = $this->pdo->prepare("DELETE FROM character_skills WHERE character_id = ?");
             $stmt->execute([$this->id]);
             
-            // 7. Retirer le personnage de tous les lieux
+            // 7. Supprimer les langues du personnage
+            $stmt = $this->pdo->prepare("DELETE FROM character_languages WHERE character_id = ?");
+            $stmt->execute([$this->id]);
+            
+            // 8. Supprimer les sessions de création (utilise user_id)
+            $stmt = $this->pdo->prepare("DELETE FROM character_creation_sessions WHERE user_id = ?");
+            $stmt->execute([$this->user_id]);
+            
+            // 9. Supprimer l'utilisation des emplacements de sorts
+            $stmt = $this->pdo->prepare("DELETE FROM spell_slots_usage WHERE character_id = ?");
+            $stmt->execute([$this->id]);
+            
+            // 10. Supprimer l'utilisation de rage (table générale)
+            $stmt = $this->pdo->prepare("DELETE FROM rage_usage WHERE character_id = ?");
+            $stmt->execute([$this->id]);
+            
+            // 11. Supprimer les candidatures aux campagnes
+            $stmt = $this->pdo->prepare("DELETE FROM campaign_applications WHERE character_id = ?");
+            $stmt->execute([$this->id]);
+            
+            // 12. Retirer le personnage de tous les lieux
             $stmt = $this->pdo->prepare("DELETE FROM place_players WHERE character_id = ?");
             $stmt->execute([$this->id]);
             
-            // 8. Retirer le personnage de tous les groupes
+            // 13. Retirer le personnage de tous les groupes
             $stmt = $this->pdo->prepare("DELETE FROM groupe_membres WHERE member_id = ? AND member_type = 'pj'");
             $stmt->execute([$this->id]);
             
-            // 9. Supprimer le personnage lui-même
+            // 14. Supprimer le personnage lui-même
             $stmt = $this->pdo->prepare("DELETE FROM characters WHERE id = ? AND user_id = ?");
             $stmt->execute([$this->id, $this->user_id]);
             
@@ -3640,5 +3660,21 @@ class Character
         
         // Supprimer les doublons
         return array_unique($languageChoices);
+    }
+
+    /**
+     * Récupérer l'équipement du personnage (méthode d'instance)
+     */
+    public function getMyEquipment()
+    {
+        return self::getCharacterEquipment($this->id);
+    }
+
+    /**
+     * Récupérer les poisons du personnage (méthode d'instance)
+     */
+    public function getMyCharacterPoisons()
+    {
+        return self::getCharacterPoisons($this->id);
     }
 }

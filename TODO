@@ -236,9 +236,17 @@ Nettoyer la classe NPC
 Faire le passage de niveau.
 Edition des traits
 Ajouter le livre d'histoire basé sur des évenements. 
+Supprimer les méthodes statique de characters.php
 
 
-
+http://localhost/jdrmj/view_character.php?id=87&created=1 => l'équipeent n'est pas bon . Il devrait y avoir :
+Une cotte de maille (Choisie par le joueur)
+Une épée longue et un bouclier (Choisis par le joueur)
+Arbalète légère + Carreaux (x20) (Choisis par le joueur)
+Insigne de grade (Obligatoire)
+Trophée pris sur un ennemi mort (Obligatoire)
+Vêtements communs (Obligatoire)
+Jeu de dés en os
 
 dans view_place.php zone "PNJ présents" l'image du PNJ n'est pas affichée dans la balise npc-avatar
 

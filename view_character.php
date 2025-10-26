@@ -235,9 +235,22 @@ $equippedShield = null;
 // Variables pour les améliorations de caractéristiques (initialisées à null par défaut)
 $abilityImprovementsArray = $abilityImprovements;
 
-// Variables pour l'équipement magique et poisons (initialisées à null par défaut)
-$allMagicalEquipment = null;
-$allPoisons = null;
+// Récupérer l'équipement du personnage via la classe Character (comme pour les NPC)
+$magicalEquipment = [];
+$characterPoisons = $character->getMyCharacterPoisons();
+
+// Récupérer l'équipement du personnage via la méthode d'instance
+$characterItems = $character->getMyEquipment();
+
+// Traiter les équipements du personnage
+foreach ($characterItems as $item) {
+    // Utiliser la vraie valeur de is_equipped depuis la base de données
+    $magicalEquipment[] = $item;
+}
+
+// Variables pour l'équipement magique et poisons (comme pour les NPC)
+$allMagicalEquipment = $magicalEquipment;
+$allPoisons = $characterPoisons;
 
 // Objet background
 $backgroundObject = Background::findById($character->background_id);

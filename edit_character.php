@@ -433,7 +433,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     strength = ?, dexterity = ?, constitution = ?, intelligence = ?, wisdom = ?, charisma = ?,
                     armor_class = ?, speed = ?, hit_points_max = ?, hit_points_current = ?, proficiency_bonus = ?,
                     alignment = ?, personality_traits = ?, ideals = ?, bonds = ?, flaws = ?,
-                    skills = ?, languages = ?, equipment = ?, money_gold = ?, max_spells_learned = ?, profile_photo = ?
+                    skills = ?, languages = ?, equipment = ?, gold = ?, max_spells_learned = ?, profile_photo = ?
                 WHERE id = ? AND user_id = ?
             ");
             

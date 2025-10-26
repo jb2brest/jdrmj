@@ -76,9 +76,9 @@ CREATE TABLE characters (
     
     -- Équipement et trésor
     equipment TEXT,
-    money_gold INT DEFAULT 0,
-    money_silver INT DEFAULT 0,
-    money_copper INT DEFAULT 0,
+    gold INT DEFAULT 0,
+    silver INT DEFAULT 0,
+    copper INT DEFAULT 0,
     
     -- Informations personnelles
     background VARCHAR(100),

@@ -93,9 +93,9 @@ $character = [
     'background_id' => null,
     'user_id' => $monster->getCreatedBy(),
     'experience_points' => 0,
-    'money_gold' => 0,
-    'money_silver' => 0,
-    'money_copper' => 0,
+    'gold' => 0,
+    'silver' => 0,
+    'copper' => 0,
     'personality_traits' => '',
     'ideals' => '',
     'bonds' => '',
@@ -738,9 +738,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                                 'background_id' => null,
                                 'user_id' => $monster->getCreatedBy(),
                                 'experience_points' => 0,
-                                'money_gold' => 0,
-                                'money_silver' => 0,
-                                'money_copper' => 0,
+                                'gold' => 0,
+                                'silver' => 0,
+                                'copper' => 0,
                                 'personality_traits' => '',
                                 'ideals' => '',
                                 'bonds' => '',
@@ -1817,21 +1817,21 @@ $initiative = $dexterityMod;
                                 <div class="row text-center">
                                     <div class="col-4">
                                         <div class="border rounded p-3 bg-warning bg-opacity-10">
-                                            <h4 class="text-warning mb-1"><?php echo $character['money_gold']; ?></h4>
+                                            <h4 class="text-warning mb-1"><?php echo $character['gold']; ?></h4>
                                             <small class="text-muted">PO</small>
                                             <br><small>Pièces d'or</small>
                                         </div>
                                     </div>
                                     <div class="col-4">
                                         <div class="border rounded p-3 bg-secondary bg-opacity-10">
-                                            <h4 class="text-secondary mb-1"><?php echo $character['money_silver']; ?></h4>
+                                            <h4 class="text-secondary mb-1"><?php echo $character['silver']; ?></h4>
                                             <small class="text-muted">PA</small>
                                             <br><small>Pièces d'argent</small>
                                         </div>
                                     </div>
                                     <div class="col-4">
                                         <div class="border rounded p-3 bg-danger bg-opacity-10">
-                                            <h4 class="text-danger mb-1"><?php echo $character['money_copper']; ?></h4>
+                                            <h4 class="text-danger mb-1"><?php echo $character['copper']; ?></h4>
                                             <small class="text-muted">PC</small>
                                             <br><small>Pièces de cuivre</small>
                                         </div>
@@ -1845,7 +1845,7 @@ $initiative = $dexterityMod;
                             <div class="card-body">
                                 <h5 class="card-title"><i class="fas fa-calculator me-2"></i>Valeur totale</h5>
                                 <?php 
-                                $totalCopper = ($character['money_gold'] * 100) + ($character['money_silver'] * 10) + $character['money_copper'];
+                                $totalCopper = ($character['gold'] * 100) + ($character['silver'] * 10) + $character['copper'];
                                 $totalGold = floor($totalCopper / 100);
                                 $remainingSilver = floor(($totalCopper % 100) / 10);
                                 $remainingCopper = $totalCopper % 10;

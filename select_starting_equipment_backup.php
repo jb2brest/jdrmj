@@ -91,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     
     // Mettre à jour l'argent du personnage
     if ($backgroundGold > 0) {
-        $characterObject->update(['money_gold' => $characterObject->money_gold + $backgroundGold]);
+        $characterObject->update(['gold' => $characterObject->gold + $backgroundGold]);
     }
     
     // Marquer le personnage comme équipé et verrouiller les modifications
@@ -355,9 +355,9 @@ if ($character['background_name']) {
                             <div class="card-body">
                                 <p><strong>Argent actuel :</strong></p>
                                 <ul class="list-unstyled">
-                                    <li><?php echo $character['money_gold']; ?> PO (pièces d'or)</li>
-                                    <li><?php echo $character['money_silver']; ?> PA (pièces d'argent)</li>
-                                    <li><?php echo $character['money_copper']; ?> PC (pièces de cuivre)</li>
+                                    <li><?php echo $character['gold']; ?> PO (pièces d'or)</li>
+                                    <li><?php echo $character['silver']; ?> PA (pièces d'argent)</li>
+                                    <li><?php echo $character['copper']; ?> PC (pièces de cuivre)</li>
                                 </ul>
                             </div>
                         </div>
