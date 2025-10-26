@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.21.21
+VERSION=2.21.22
 
 # Date de déploiement
 DEPLOY_DATE=2025-10-26
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-10-26
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=670b2347fecbbcb00d80703fb8a156f42c6287ad
+GIT_COMMIT=e0214328d3102b3356b918bd2e97656f1e4dc6ea
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251026-164942
+BUILD_ID=20251026-171639
 
 # Notes de version
-RELEASE_NOTES="view_NPC.php : style"
+RELEASE_NOTES="view_NPC.php : modale HP"
