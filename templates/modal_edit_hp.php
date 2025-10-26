@@ -5,8 +5,8 @@
  */
 
 // Vérification que les variables nécessaires sont définies
-if (!isset($npc) || !isset($npc->name) || !isset($npc->hit_points_current) || !isset($npc->hit_points_max)) {
-    throw new Exception('Variables $npc, $npc->name, $npc->hit_points_current et $npc->hit_points_max sont requises pour ce template');
+if (!isset($name) || !isset($hit_points_current) || !isset($hit_points_max)) {
+    throw new Exception('Variables $name, $hit_points_current et $hit_points_max sont requises pour ce template');
 }
 ?>
 
@@ -16,7 +16,7 @@ if (!isset($npc) || !isset($npc->name) || !isset($npc->hit_points_current) || !i
             <div class="modal-header">
                 <h5 class="modal-title">
                     <i class="fas fa-heart me-2"></i>
-                    Gestion des Points de Vie - <?php echo htmlspecialchars($npc->name); ?>
+                    Gestion des Points de Vie - <?php echo htmlspecialchars($name); ?>
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
