@@ -34,10 +34,7 @@ if (!$pers) {
 }
 
 // Récupérer les données nécessaires via les méthodes d'instance
-$equipment = $pers->getMyEquipment();
-$characterItems = $pers->getMyEquipment();
-$allMagicalEquipment = $equipment; // Utiliser directement l'équipement
-$allPoisons = $pers->getMyCharacterPoisons();
+$equipment = $pers->getEquipment();
 ?>
 
 <!-- Onglet Équipement -->
@@ -94,40 +91,17 @@ $allPoisons = $pers->getMyCharacterPoisons();
                         </tr>
                     </thead>
                     <tbody>
-                        <?php 
-                        // Combiner tous les objets du personnage
-                        $allCharacterItems = array_merge(
-                            $allMagicalEquipment ?? [], 
-                            $allPoisons ?? []
-                        );
-                        
-                        // Fonction pour vérifier si un objet existe déjà
-                        function itemExists($items, $name, $type) {
-                            foreach ($items as $item) {
-                                if (($item['item_name'] ?? '') === $name && ($item['item_type'] ?? '') === $type) {
-                                    return true;
-                                }
-                            }
-                            return false;
-                        }
-                        
-                        foreach ($allCharacterItems as $item): 
-                            // Utiliser les champs standardisés
-                            $itemName = $item['item_name'] ?? $item['display_name'] ?? 'Objet inconnu';
-                            $itemType = $item['item_type'] ?? $item['object_type'] ?? 'unknown';
-                            $displayName = htmlspecialchars($itemName);
-                            $typeLabel = ucfirst(str_replace('_', ' ', $itemType));
-                        ?>
-                        <tr data-type="<?php echo $itemType; ?>" data-equipped="<?php echo ($item['equipped'] ?? false) ? 'equipped' : 'unequipped'; ?>">
+                        <?php foreach ($equipment as $item): ?>
+                        <tr data-type="<?php echo $item->type; ?>" data-equipped="<?php echo $item->equipped ? 'equipped' : 'unequipped'; ?>">
                             <td>
-                                <strong><?php echo $displayName; ?></strong>
-                                <?php if (($item['quantity'] ?? 1) > 1): ?>
-                                    <span class="badge bg-info ms-1">x<?php echo $item['quantity']; ?></span>
+                                <strong><?php echo htmlspecialchars($item->name); ?></strong>
+                                <?php if ($item->quantity > 1): ?>
+                                    <span class="badge bg-info ms-1">x<?php echo $item->quantity; ?></span>
                                 <?php endif; ?>
                             </td>
                             <td>
                                 <span class="badge bg-<?php 
-                                    echo match($itemType) {
+                                    echo match($item->type) {
                                         'weapon' => 'danger',
                                         'armor' => 'primary', 
                                         'shield' => 'info',
@@ -141,17 +115,16 @@ $allPoisons = $pers->getMyCharacterPoisons();
                                         default => 'light text-dark'
                                     };
                                 ?>">
-                                    <?php echo $typeLabel; ?>
+                                    <?php echo ucfirst(str_replace('_', ' ', $item->type)); ?>
                                 </span>
                             </td>
                             <td>
-                                <small class="text-muted"><?php echo htmlspecialchars($item['item_description'] ?? $item['description'] ?? ''); ?></small>
+                                <small class="text-muted"><?php echo htmlspecialchars($item->description); ?></small>
                             </td>
                             <td>
-                                <?php if ($item['equipped'] ?? false): ?>
+                                <?php if ($item->equipped): ?>
                                     <?php 
-                                    $equippedSlot = $item['equipped_slot'] ?? null;
-                                    $slotName = $equippedSlot ? SlotManager::getSlotDisplayName($equippedSlot) : 'Équipé';
+                                    $slotName = $item->equipped_slot ? SlotManager::getSlotDisplayName($item->equipped_slot) : 'Équipé';
                                     ?>
                                     <span class="badge bg-success">
                                         <i class="fas fa-check-circle me-1"></i><?php echo $slotName; ?>
@@ -163,19 +136,14 @@ $allPoisons = $pers->getMyCharacterPoisons();
                                 <?php endif; ?>
                             </td>
                             <td style="min-width: 300px; white-space: nowrap; overflow: visible;">
-                                <?php if ($itemType === 'weapon' || $itemType === 'armor' || $itemType === 'shield'): ?>
-                                    <?php if ($item['equipped'] ?? false): ?>
-                                        <button class="btn btn-warning btn-sm" onclick="unequipItem(<?php echo $item['id'] ?? 0; ?>)"
+                                <?php if ($item->type === 'weapon' || $item->type === 'armor' || $item->type === 'shield'): ?>
+                                    <?php if ($item->equipped): ?>
+                                        <button class="btn btn-warning btn-sm" onclick="unequipItem(<?php echo $item->id; ?>)"
                                                 style="white-space: nowrap; min-width: 80px;">
                                             <i class="fas fa-hand-paper me-1"></i>Déséquiper
                                         </button>
                                     <?php else: ?>
-                                        <?php 
-                                        // Utiliser le système de slots automatique
-                                        require_once 'classes/SlotManager.php';
-                                        $slot = SlotManager::getSlotForObjectType($itemType, $itemName);
-                                        ?>
-                                        <button class="btn btn-success btn-sm" onclick="equipItem(<?php echo $item['id'] ?? 0; ?>)"
+                                        <button class="btn btn-success btn-sm" onclick="equipItem(<?php echo $item->id; ?>)"
                                                 style="white-space: nowrap; min-width: 80px;">
                                             <i class="fas fa-hand-rock me-1"></i>Équiper
                                         </button>
@@ -184,20 +152,20 @@ $allPoisons = $pers->getMyCharacterPoisons();
                                     <span class="text-muted">Non équipable</span>
                                 <?php endif; ?>
                                 
-                                <?php if ($canModifyHP && !str_starts_with($item['id'] ?? '', 'base_')): ?>
+                                <?php if ($canModifyHP && !str_starts_with($item->id, 'base_')): ?>
                                     <button type="button" class="btn btn-outline-primary btn-sm ms-1" 
                                             data-bs-toggle="modal" 
                                             data-bs-target="#transferModal" 
-                                            data-item-id="<?php echo $item['id'] ?? ''; ?>"
-                                            data-item-name="<?php echo htmlspecialchars($itemName); ?>"
-                                            data-item-type="<?php echo htmlspecialchars($itemType); ?>"
+                                            data-item-id="<?php echo $item->id; ?>"
+                                            data-item-name="<?php echo htmlspecialchars($item->name); ?>"
+                                            data-item-type="<?php echo htmlspecialchars($item->type); ?>"
                                             data-source="character_equipment"
                                             style="white-space: nowrap; min-width: 80px;">
                                         <i class="fas fa-exchange-alt me-1"></i>Transférer
                                     </button>
-                                    <?php if (!($item['is_equipped'] ?? $item['equipped'] ?? false)): ?>
+                                    <?php if (!$item->equipped): ?>
                                         <button type="button" class="btn btn-outline-warning btn-sm ms-1" 
-                                                onclick="dropItem(<?php echo $item['id'] ?? 0; ?>, '<?php echo addslashes($item['item_name'] ?? ''); ?>')"
+                                                onclick="dropItem(<?php echo $item->id; ?>, '<?php echo addslashes($item->name); ?>')"
                                                 title="Déposer l'objet dans le lieu actuel"
                                                 style="white-space: nowrap; min-width: 80px;">
                                             <i class="fas fa-hand-holding me-1"></i>Déposer
@@ -208,7 +176,7 @@ $allPoisons = $pers->getMyCharacterPoisons();
                         </tr>
                         <?php endforeach; ?>
                         
-                        <?php if (empty($allCharacterItems)): ?>
+                        <?php if (empty($equipment)): ?>
                         <tr>
                             <td colspan="5" class="text-center text-muted">
                                 <i class="fas fa-inbox fa-2x mb-2"></i><br>

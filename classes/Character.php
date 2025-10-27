@@ -3633,6 +3633,99 @@ class Character
     }
 
     /**
+     * Récupérer l'équipement du personnage sous forme d'objets Item (méthode d'instance)
+     */
+    public function getEquipment()
+    {
+        $pdo = \Database::getInstance()->getPdo();
+        $items = [];
+        
+        try {
+            $stmt = $pdo->prepare("
+                SELECT 
+                    i.id,
+                    i.display_name as name,
+                    i.object_type as type,
+                    i.type_precis as subtype,
+                    i.description,
+                    i.is_equipped as equipped,
+                    i.equipped_slot,
+                    i.quantity,
+                    i.notes,
+                    i.armor_id,
+                    i.weapon_id,
+                    i.shield_id,
+                    i.magical_item_id,
+                    i.poison_id,
+                    a.name as armor_name,
+                    a.ac_formula as armor_ac_formula,
+                    w.name as weapon_name,
+                    w.damage as weapon_damage,
+                    w.properties as weapon_properties,
+                    s.name as shield_name,
+                    s.ac_formula as shield_ac_formula,
+                    mi.nom as magical_item_name,
+                    mi.description as magical_item_description,
+                    p.nom as poison_name,
+                    p.description as poison_description
+                FROM items i
+                LEFT JOIN armor a ON i.armor_id = a.id
+                LEFT JOIN weapons w ON i.weapon_id = w.id
+                LEFT JOIN shields s ON i.shield_id = s.id
+                LEFT JOIN magical_items mi ON i.magical_item_id = mi.id
+                LEFT JOIN poisons p ON i.poison_id = p.id
+                WHERE i.owner_type = 'player' AND i.owner_id = ?
+                ORDER BY i.created_at ASC
+            ");
+            
+            $stmt->execute([$this->id]);
+            
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $item = new stdClass();
+                $item->id = $row['id'];
+                $item->name = $row['name'];
+                $item->type = $row['type'];
+                $item->subtype = $row['subtype'];
+                $item->description = $row['description'];
+                $item->equipped = (bool)$row['equipped'];
+                $item->equipped_slot = $row['equipped_slot'];
+                $item->quantity = $row['quantity'];
+                $item->notes = $row['notes'];
+                
+                // Ajouter les détails spécifiques selon le type
+                if ($row['armor_id']) {
+                    $item->armor_name = $row['armor_name'];
+                    $item->armor_ac_formula = $row['armor_ac_formula'];
+                }
+                if ($row['weapon_id']) {
+                    $item->weapon_name = $row['weapon_name'];
+                    $item->weapon_damage = $row['weapon_damage'];
+                    $item->weapon_properties = $row['weapon_properties'];
+                }
+                if ($row['shield_id']) {
+                    $item->shield_name = $row['shield_name'];
+                    $item->shield_ac_formula = $row['shield_ac_formula'];
+                }
+                if ($row['magical_item_id']) {
+                    $item->magical_item_name = $row['magical_item_name'];
+                    $item->magical_item_description = $row['magical_item_description'];
+                }
+                if ($row['poison_id']) {
+                    $item->poison_name = $row['poison_name'];
+                    $item->poison_description = $row['poison_description'];
+                }
+                
+                $items[] = $item;
+            }
+            
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération de l'équipement: " . $e->getMessage());
+        }
+        
+        return $items;
+    }
+
+    /**
      * Récupérer l'équipement du personnage (méthode d'instance)
      */
     public function getMyEquipment()
