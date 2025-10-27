@@ -2949,13 +2949,56 @@ class NPC
      */
     public function getMyEquippedArmor()
     {
-        $equipment = $this->getMyEquipment();
-        foreach ($equipment as $item) {
-            if ($item['equipped'] && $item['item_type'] === 'armor') {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            $stmt = $pdo->prepare("
+                SELECT 
+                    i.id,
+                    i.display_name as item_name,
+                    i.object_type as item_type,
+                    i.type_precis as item_subtype,
+                    i.description as item_description,
+                    i.is_equipped as equipped,
+                    i.equipped_slot,
+                    i.quantity,
+                    i.notes,
+                    a.name as armor_name,
+                    a.ac_formula as armor_ac_formula
+                FROM items i
+                LEFT JOIN armor a ON i.armor_id = a.id
+                WHERE i.owner_type = 'player' 
+                AND i.owner_id = ? 
+                AND i.object_type = 'armor' 
+                AND i.is_equipped = 1
+                LIMIT 1
+            ");
+            
+            $stmt->execute([$this->id]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($result) {
+                $item = new stdClass();
+                $item->id = $result['id'];
+                $item->name = $result['item_name'];
+                $item->type = $result['item_type'];
+                $item->subtype = $result['item_subtype'];
+                $item->description = $result['item_description'];
+                $item->equipped = (bool)$result['equipped'];
+                $item->equipped_slot = $result['equipped_slot'];
+                $item->quantity = $result['quantity'];
+                $item->notes = $result['notes'];
+                $item->armor_name = $result['armor_name'];
+                $item->armor_ac_formula = $result['armor_ac_formula'];
                 return $item;
             }
+            
+            return null;
+            
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération de l'armure équipée du NPC: " . $e->getMessage());
+            return null;
         }
-        return null;
     }
 
     /**
@@ -3000,13 +3043,56 @@ class NPC
      */
     public function getMyEquippedShield()
     {
-        $equipment = $this->getMyEquipment();
-        foreach ($equipment as $item) {
-            if ($item['equipped'] && $item['item_type'] === 'shield') {
+        $pdo = \Database::getInstance()->getPdo();
+        
+        try {
+            $stmt = $pdo->prepare("
+                SELECT 
+                    i.id,
+                    i.display_name as item_name,
+                    i.object_type as item_type,
+                    i.type_precis as item_subtype,
+                    i.description as item_description,
+                    i.is_equipped as equipped,
+                    i.equipped_slot,
+                    i.quantity,
+                    i.notes,
+                    s.name as shield_name,
+                    s.ac_formula as shield_ac_formula
+                FROM items i
+                LEFT JOIN shields s ON i.shield_id = s.id
+                WHERE i.owner_type = 'player' 
+                AND i.owner_id = ? 
+                AND i.object_type = 'shield' 
+                AND i.is_equipped = 1
+                LIMIT 1
+            ");
+            
+            $stmt->execute([$this->id]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($result) {
+                $item = new stdClass();
+                $item->id = $result['id'];
+                $item->name = $result['item_name'];
+                $item->type = $result['item_type'];
+                $item->subtype = $result['item_subtype'];
+                $item->description = $result['item_description'];
+                $item->equipped = (bool)$result['equipped'];
+                $item->equipped_slot = $result['equipped_slot'];
+                $item->quantity = $result['quantity'];
+                $item->notes = $result['notes'];
+                $item->shield_name = $result['shield_name'];
+                $item->shield_ac_formula = $result['shield_ac_formula'];
                 return $item;
             }
+            
+            return null;
+            
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération du bouclier équipé du NPC: " . $e->getMessage());
+            return null;
         }
-        return null;
     }
 }
 ?>

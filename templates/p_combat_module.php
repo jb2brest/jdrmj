@@ -90,7 +90,7 @@ $characterAttacks = $pers->calculateMyCharacterAttacks();
                         <h5><i class="fas fa-shield-alt me-2"></i>Classe d'armure</h5>
                             <small class="text-muted">
                                 <?php if ($equippedArmor): ?>
-                                    <strong>Armure:</strong> <?php echo $equippedArmor['name']; ?> (<?php echo $equippedArmor['ac_formula']; ?>)<br>
+                                    <strong>Armure:</strong> <?php echo $equippedArmor->name; ?> (<?php echo $equippedArmor->armor_ac_formula; ?>)<br>
                                 <?php else: ?>
                                     <?php if ($isBarbarian): ?>
                                         <strong>Armure:</strong> Aucune (10 + modificateur de Dextérité + modificateur de Constitution)<br>
@@ -100,7 +100,7 @@ $characterAttacks = $pers->calculateMyCharacterAttacks();
                                 <?php endif; ?>
                                 
                                 <?php if ($equippedShield): ?>
-                                    <strong>Bouclier:</strong> <?php echo $equippedShield['name']; ?> (+<?php echo $equippedShield['ac_formula'] ?? '2'; ?>)<br>
+                                    <strong>Bouclier:</strong> <?php echo $equippedShield->name; ?> (+<?php echo $equippedShield->shield_ac_formula ?? '2'; ?>)<br>
                                 <?php else: ?>
                                     <strong>Bouclier:</strong> Aucun<br>
                                 <?php endif; ?>
