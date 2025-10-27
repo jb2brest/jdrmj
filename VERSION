@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.21.30
+VERSION=2.21.31
 
 # Date de déploiement
 DEPLOY_DATE=2025-10-27
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-10-27
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=b37ecad0502110b50299556e5f7f6e15731aaadc
+GIT_COMMIT=53e53e08c54c143c70f07bb435a8d0c770eb6b89
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251027-103243
+BUILD_ID=20251027-131113
 
 # Notes de version
-RELEASE_NOTES="view_character.php : bug rage"
+RELEASE_NOTES="view_character.php : bug onglet"
