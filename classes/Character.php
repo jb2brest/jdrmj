@@ -269,29 +269,6 @@ class Character
         }
     }
     
-    /**
-     * Trouver tous les personnages d'un utilisateur (version simplifiée - juste id et name)
-     */
-    public static function findSimpleByUserId($userId, PDO $pdo = null)
-    {
-        $pdo = $pdo ?: getPDO();
-        
-        try {
-            $stmt = $pdo->prepare("
-                SELECT id, name 
-                FROM characters 
-                WHERE user_id = ? 
-                ORDER BY created_at DESC
-            ");
-            $stmt->execute([$userId]);
-            
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-        } catch (PDOException $e) {
-            error_log("Erreur lors de la recherche des personnages simplifiés: " . $e->getMessage());
-            return [];
-        }
-    }
     
     /**
      * Mettre à jour le personnage
@@ -540,20 +517,6 @@ class Character
         ];
     }
 
-    /**
-     * Obtenir toutes les compétences (y compris armure, armes, outils)
-     * 
-     * @return array Tableau de toutes les compétences
-     */
-    public static function getAllSkills()
-    {
-        $skills = self::getSkills();
-        $armor = \Item::getArmorProficiencies();
-        $weapons = \Item::getWeaponProficiencies();
-        $tools = \Item::getToolProficiencies();
-        
-        return array_merge($skills, $armor, $weapons, $tools);
-    }
 
     /**
      * Obtenir les compétences par catégorie
@@ -656,38 +619,7 @@ class Character
         ];
     }
 
-    /**
-     * Calculer la classe d'armure avec armure spécifique
-     * 
-     * @param int $dexterityModifier Modificateur de dextérité
-     * @param string|null $armor Type d'armure
-     * @return int Classe d'armure
-     */
-    public static function calculateArmorClassStatic($dexterityModifier, $armor = null)
-    {
-        $baseAC = 10 + $dexterityModifier;
-        
-        if ($armor) {
-            // Logique pour différents types d'armure
-            switch ($armor) {
-                case 'armure de cuir':
-                    $baseAC = 11 + $dexterityModifier;
-                    break;
-                case 'armure de cuir clouté':
-                    $baseAC = 12 + $dexterityModifier;
-                    break;
-                case 'cotte de mailles':
-                    $baseAC = 16;
-                    $baseAC = min($baseAC, 16); // Max 16 avec Dextérité
-                    break;
-                case 'armure de plates':
-                    $baseAC = 18;
-                    break;
-            }
-        }
-        
-        return $baseAC;
-    }
+ 
 
     /**
      * Calculer le niveau basé sur les points d'expérience

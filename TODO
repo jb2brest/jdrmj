@@ -220,6 +220,14 @@ Il faut créer une méthode load_tab_data(module_php_a_charger,target_id, target
 Ensuite la methode javascript appelle la module_php_a_charger en lui transmettant le target_id, target_type
 Un loader load_pers.php chargera les données nécessaire pour chaque module en récupérant soit les données du PJ soit les données du PNJ.
 
+On va simplifier.
+Je vais te donner les ordres progressivement. 
+Supprime le fichier load_pers.php. 
+Ajoute en début de module p_combat_module.php la récupération de target_id et target_type.
+En fonction du target_type et du target_id récupère dans une variable $pers, un objet Character ou un objet NPC. 
+Nous utiliserons ensuite l'objet $pers dans le module pour récupérer par des méthodes d'instance, les données nécessaires.
+
+il faut rajouter des méthodes d'instance dans les classe NPC et Character
 
 Il faut revoir le code de view_npc.php
 Rappel des règles à appliquer : 
