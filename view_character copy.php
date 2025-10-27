@@ -48,7 +48,7 @@ $character = $characterObject->toArray();
 // Récupérer les détails de la race, classe et background
 $raceObject = Race::findById($character['race_id']);
 $classObject = Classe::findById($character['class_id']);
-$backgroundDetails = $character['background_id'] ? Character::getBackgroundById($character['background_id']) : null;
+$backgroundDetails = $character['background_id'] ? Background::getBackgroundById($character['background_id']) : null;
 
 $raceDetails = $raceObject ? $raceObject->toArray() : [];
 $classDetails = $classObject ? $classObject->toArray() : [];

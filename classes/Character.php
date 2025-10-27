@@ -678,32 +678,6 @@ class Character
     }
 
     /**
-     * Obtenir les points d'expérience requis pour le niveau suivant
-     * 
-     * @param int $currentLevel Niveau actuel
-     * @return int|null Points d'expérience requis
-     */
-    public static function getExperienceRequiredForNextLevel($currentLevel)
-    {
-        $pdo = \Database::getInstance()->getPdo();
-        
-        try {
-            $nextLevel = $currentLevel + 1;
-            $stmt = $pdo->prepare("
-                SELECT experience_points_required 
-                FROM experience_levels 
-                WHERE level = ?
-            ");
-            $stmt->execute([$nextLevel]);
-            $result = $stmt->fetch();
-            
-            return $result ? $result['experience_points_required'] : null;
-        } catch (\PDOException $e) {
-            return null;
-        }
-    }
-
-    /**
      * Mettre à jour le niveau et le bonus de maîtrise d'un personnage
      * 
      * @param int $characterId ID du personnage
@@ -755,42 +729,7 @@ class Character
         return $stmt->fetchAll();
     }
 
-    /**
-     * Obtenir un historique par ID
-     * 
-     * @param int $backgroundId ID de l'historique
-     * @return array|null Données de l'historique
-     */
-    public static function getBackgroundById($backgroundId)
-    {
-        $pdo = \Database::getInstance()->getPdo();
-        $stmt = $pdo->prepare("SELECT * FROM backgrounds WHERE id = ?");
-        $stmt->execute([$backgroundId]);
-        return $stmt->fetch();
-    }
 
-    /**
-     * Obtenir les compétences d'un historique
-     * 
-     * @param int $backgroundId ID de l'historique
-     * @return array Tableau des compétences de l'historique
-     */
-    public static function getBackgroundProficiencies($backgroundId)
-    {
-        $pdo = \Database::getInstance()->getPdo();
-        $stmt = $pdo->prepare("SELECT skill_proficiencies, tool_proficiencies FROM backgrounds WHERE id = ?");
-        $stmt->execute([$backgroundId]);
-        $result = $stmt->fetch();
-        
-        if (!$result) {
-            return ['skills' => [], 'tools' => []];
-        }
-        
-        return [
-            'skills' => json_decode($result['skill_proficiencies'], true) ?? [],
-            'tools' => json_decode($result['tool_proficiencies'], true) ?? []
-        ];
-    }
 
     /**
      * Obtenir toutes les langues
@@ -827,25 +766,6 @@ class Character
         return $result;
     }
 
-    /**
-     * Obtenir les langues d'un historique
-     * 
-     * @param int $backgroundId ID de l'historique
-     * @return array Tableau des langues de l'historique
-     */
-    public static function getBackgroundLanguages($backgroundId)
-    {
-        $pdo = \Database::getInstance()->getPdo();
-        $stmt = $pdo->prepare("SELECT languages FROM backgrounds WHERE id = ?");
-        $stmt->execute([$backgroundId]);
-        $result = $stmt->fetch();
-        
-        if (!$result || !$result['languages']) {
-            return [];
-        }
-        
-        return json_decode($result['languages'], true) ?? [];
-    }
 
 
     /**

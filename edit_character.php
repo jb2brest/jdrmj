@@ -352,7 +352,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $backgroundSkills = [];
     $backgroundTools = [];
     if ($background_id > 0) {
-        $backgroundProficiencies = Character::getBackgroundProficiencies($background_id);
+        $backgroundProficiencies = Background::getBackgroundProficiencies($background_id);
         $backgroundSkills = $backgroundProficiencies['skills'];
         $backgroundTools = $backgroundProficiencies['tools'];
     }
@@ -364,7 +364,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Ajouter automatiquement les langues d'historique
     $backgroundLanguages = [];
     if ($background_id > 0) {
-        $backgroundLanguages = Character::getBackgroundLanguages($background_id);
+        $backgroundLanguages = Background::getBackgroundLanguages($background_id);
     }
     
     // Fusionner toutes les langues
@@ -1526,7 +1526,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     // Récupérer les compétences d'historique
                     $backgroundProficiencies = ['skills' => [], 'tools' => []];
                     if ($backgroundId) {
-                        $backgroundProficiencies = Character::getBackgroundProficiencies($backgroundId);
+                        $backgroundProficiencies = Background::getBackgroundProficiencies($backgroundId);
                     }
                     
                     // Debug: Afficher les compétences de classe pour debug
@@ -2331,7 +2331,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             });
             
             // Récupérer les langues d'historique
-            const backgroundLanguages = <?php echo json_encode(Character::getBackgroundLanguages($backgroundId ?? 0)); ?>;
+            const backgroundLanguages = <?php echo json_encode(Background::getBackgroundLanguages($backgroundId ?? 0)); ?>;
             const hasBackgroundChoice = backgroundLanguages.length > 0;
             
             // Calculer le nombre maximum de langues

@@ -48,7 +48,7 @@ $character = $characterObject;
 // Récupérer les détails de la race, classe et background
 $raceObject = Race::findById($character->race_id);
 $classObject = Classe::findById($character->class_id);
-$backgroundDetails = $character->background_id ? Character::getBackgroundById($character->background_id) : null;
+$backgroundDetails = $character->background_id ? Background::getBackgroundById($character->background_id) : null;
 
 // Récupérer les détails de l'archétype
 $archetypeDetails = null;
@@ -360,7 +360,7 @@ $error_message = null;
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="btn-txt tab-button" data-module="personal-info" type="button">
+                            <button class="btn-txt tab-button" data-module="personal_info" type="button">
                                 <i class="fas fa-user-edit me-2"></i>Info perso.
                             </button>
                         </li>
