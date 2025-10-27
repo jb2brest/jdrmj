@@ -2,19 +2,19 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.21.29
+VERSION=2.21.30
 
 # Date de déploiement
-DEPLOY_DATE=2025-10-26
+DEPLOY_DATE=2025-10-27
 
 # Environnement
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=8a4bc3cc08066bcd4c86af3c3e90064259764d27
+GIT_COMMIT=b37ecad0502110b50299556e5f7f6e15731aaadc
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251026-235640
+BUILD_ID=20251027-103243
 
 # Notes de version
-RELEASE_NOTES="view_character.php : equipement"
+RELEASE_NOTES="view_character.php : bug rage"
