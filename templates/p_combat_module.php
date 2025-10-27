@@ -73,7 +73,7 @@
                                             <div class="rage-symbols">
                                                 <?php for ($i = 1; $i <= $rageData['max']; $i++): ?>
                                                     <div class="rage-symbol <?php echo $i <= $rageData['used'] ? 'used' : 'available'; ?>" 
-                                                        data-rage="<?php echo $i; ?>" data-npc-id="<?php echo $npc_id; ?>" data-action="toggle"
+                                                        data-rage="<?php echo $i; ?>" data-target-id="<?php echo $target_id; ?>" data-target-type="<?php echo $target_type; ?>" data-action="toggle"
                                                         title="<?php echo $i <= $rageData['used'] ? 'Rage utilisée' : 'Rage disponible'; ?>">
                                                         <i class="fas fa-fire"></i>
                                                     </div>

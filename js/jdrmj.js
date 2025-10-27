@@ -3280,14 +3280,15 @@ function showMessage(message, type) {
 /**
  * Basculer l'état de rage d'un NPC
  */
-function toggleRage(npcId, rageIndex) {
+function toggleRage(targetId, targetType, rageIndex) {
     fetch('api/toggle_rage.php', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            npc_id: npcId,
+            target_id: targetId,
+            target_type: targetType,
             rage_index: parseInt(rageIndex)
         })
     })
@@ -3295,7 +3296,7 @@ function toggleRage(npcId, rageIndex) {
     .then(data => {
         if (data.success) {
             // Mettre à jour l'affichage de la rage
-            updateRageDisplay(npcId, data.used_rages, data.total_rages);
+            updateRageDisplay(targetId, data.used_rages, data.total_rages);
         } else {
             showMessage(data.message || 'Erreur lors de la gestion de la rage', 'error');
         }
@@ -3590,9 +3591,10 @@ function initializeNpcEventHandlers() {
     document.addEventListener('click', function(e) {
         if (e.target.closest('[data-action="toggle"]')) {
             const element = e.target.closest('[data-action="toggle"]');
-            const npcId = element.dataset.npcId;
+            const targetId = element.dataset.targetId;
+            const targetType = element.dataset.targetType;
             const rageIndex = element.dataset.rage;
-            toggleRage(npcId, rageIndex);
+            toggleRage(targetId, targetType, rageIndex);
         }
         
         if (e.target.closest('[data-action="reset"]')) {

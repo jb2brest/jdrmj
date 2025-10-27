@@ -26,26 +26,30 @@ $input = file_get_contents('php://input');
 $data = json_decode($input, true);
 
 // Si les données JSON ne sont pas disponibles, essayer $_POST
-if (!$data && isset($_POST['character_id'])) {
+if (!$data && isset($_POST['target_id'])) {
     $data = $_POST;
 }
 
-$characterId = $data['character_id'] ?? null;
-$npcId = $data['npc_id'] ?? null;
+$targetId = $data['target_id'] ?? null;
+$targetType = $data['target_type'] ?? null;
 $rageIndex = $data['rage_index'] ?? null;
 
-// Déterminer le type d'entité
+// Déterminer le type d'entité basé sur target_type
 $entityType = null;
-$entityId = null;
+$entityId = $targetId;
 
-if ($characterId) {
+if ($targetType === 'PJ') {
     $entityType = 'character';
-    $entityId = $characterId;
-} elseif ($npcId) {
+} elseif ($targetType === 'PNJ') {
     $entityType = 'npc';
-    $entityId = $npcId;
 } else {
-    $response['message'] = 'Character ID or NPC ID is missing.';
+    $response['message'] = 'Invalid target type. Must be "PJ" or "PNJ".';
+    echo json_encode($response);
+    exit();
+}
+
+if (!$entityId) {
+    $response['message'] = 'Target ID is required.';
     echo json_encode($response);
     exit();
 }
