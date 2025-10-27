@@ -1,8 +1,53 @@
-<!-- Onglet Info perso. -->
-<div class="tab-pane fade" id="personal-info" role="tabpanel" aria-labelledby="personal-info-tab">
-    <div class="p-4">
-        <div class="info-section">
-            <h4><i class="fas fa-book me-2"></i>Histoire du Personnage</h4>
+<?php
+/**
+ * Module Informations Personnelles - Peut être appelé directement ou via AJAX
+ */
+
+// Inclure les classes nécessaires
+require_once '../classes/init.php';
+require_once '../includes/functions.php';
+
+// Si appelé via AJAX, récupérer les données depuis $_POST
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $target_id = $_POST['target_id'] ?? null;
+    $target_type = $_POST['target_type'] ?? null;
+} else {
+    // Si appelé directement, utiliser les variables globales
+    $target_id = $target_id ?? null;
+    $target_type = $target_type ?? null;
+}
+
+// Charger l'objet personnage selon le type
+$pers = null;
+if ($target_id && $target_type) {
+    if ($target_type === 'PJ') {
+        $pers = Character::findById($target_id);
+    } elseif ($target_type === 'PNJ') {
+        $pers = NPC::findById($target_id);
+    }
+}
+
+// Si aucun personnage trouvé, afficher un message d'erreur
+if (!$pers) {
+    echo '<div class="alert alert-danger">Personnage non trouvé</div>';
+    return;
+}
+
+// Récupérer les données nécessaires via les méthodes d'instance
+$name = $pers->name;
+$level = $pers->level;
+$alignment = $pers->alignment;
+$personality_traits = $pers->personality_traits;
+$ideals = $pers->ideals;
+$bonds = $pers->bonds;
+$flaws = $pers->flaws;
+$profile_photo = $pers->profile_photo;
+?>
+
+<!-- Onglet Informations Personnelles -->
+<div class="p-4">
+    <div class="info-section">
+        <h4><i class="fas fa-user-edit me-2"></i>Informations Personnelles</h4>
             <div class="row">
                 <div class="col-md-6">
                     <h5><i class="fas fa-heart me-2"></i>Traits de personnalité</h5>

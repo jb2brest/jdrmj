@@ -1,8 +1,49 @@
-<!-- Onglet Equipement -->
-<div class="tab-pane fade" id="equipment" role="tabpanel" aria-labelledby="equipment-tab">
-    <div class="p-4">
-        <div class="info-section">
-            <h4><i class="fas fa-backpack me-2"></i>Équipement</h4>
+<?php
+/**
+ * Module Équipement - Peut être appelé directement ou via AJAX
+ */
+
+// Inclure les classes nécessaires
+require_once '../classes/init.php';
+require_once '../includes/functions.php';
+
+// Si appelé via AJAX, récupérer les données depuis $_POST
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $target_id = $_POST['target_id'] ?? null;
+    $target_type = $_POST['target_type'] ?? null;
+} else {
+    // Si appelé directement, utiliser les variables globales
+    $target_id = $target_id ?? null;
+    $target_type = $target_type ?? null;
+}
+
+// Charger l'objet personnage selon le type
+$pers = null;
+if ($target_id && $target_type) {
+    if ($target_type === 'PJ') {
+        $pers = Character::findById($target_id);
+    } elseif ($target_type === 'PNJ') {
+        $pers = NPC::findById($target_id);
+    }
+}
+
+// Si aucun personnage trouvé, afficher un message d'erreur
+if (!$pers) {
+    echo '<div class="alert alert-danger">Personnage non trouvé</div>';
+    return;
+}
+
+// Récupérer les données nécessaires via les méthodes d'instance
+$equipment = $pers->getMyEquipment();
+$characterItems = $pers->getMyEquipment();
+$allMagicalEquipment = $equipment; // Utiliser directement l'équipement
+$allPoisons = $pers->getMyCharacterPoisons();
+?>
+
+<!-- Onglet Équipement -->
+<div class="p-4">
+    <div class="info-section">
+        <h4><i class="fas fa-backpack me-2"></i>Équipement</h4>
             
             <!-- Filtres et contrôles -->
             <div class="row mb-3">
@@ -77,7 +118,7 @@
                             $displayName = htmlspecialchars($itemName);
                             $typeLabel = ucfirst(str_replace('_', ' ', $itemType));
                         ?>
-                        <tr data-type="<?php echo $itemType; ?>" data-equipped="<?php echo ($item['is_equipped'] ?? $item['equipped'] ?? false) ? 'equipped' : 'unequipped'; ?>">
+                        <tr data-type="<?php echo $itemType; ?>" data-equipped="<?php echo ($item['equipped'] ?? false) ? 'equipped' : 'unequipped'; ?>">
                             <td>
                                 <strong><?php echo $displayName; ?></strong>
                                 <?php if (($item['quantity'] ?? 1) > 1): ?>
@@ -107,7 +148,7 @@
                                 <small class="text-muted"><?php echo htmlspecialchars($item['item_description'] ?? $item['description'] ?? ''); ?></small>
                             </td>
                             <td>
-                                <?php if ($item['is_equipped'] ?? $item['equipped'] ?? false): ?>
+                                <?php if ($item['equipped'] ?? false): ?>
                                     <?php 
                                     $equippedSlot = $item['equipped_slot'] ?? null;
                                     $slotName = $equippedSlot ? SlotManager::getSlotDisplayName($equippedSlot) : 'Équipé';
@@ -123,7 +164,7 @@
                             </td>
                             <td style="min-width: 300px; white-space: nowrap; overflow: visible;">
                                 <?php if ($itemType === 'weapon' || $itemType === 'armor' || $itemType === 'shield'): ?>
-                                    <?php if ($item['is_equipped'] ?? $item['equipped'] ?? false): ?>
+                                    <?php if ($item['equipped'] ?? false): ?>
                                         <button class="btn btn-warning btn-sm" onclick="unequipItem(<?php echo $item['id'] ?? 0; ?>)"
                                                 style="white-space: nowrap; min-width: 80px;">
                                             <i class="fas fa-hand-paper me-1"></i>Déséquiper

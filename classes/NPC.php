@@ -2823,5 +2823,97 @@ class NPC
             return false;
         }
     }
+
+    /**
+     * Récupérer la race du NPC (méthode d'instance)
+     */
+    public function getRace()
+    {
+        return Race::findById($this->race_id);
+    }
+
+    /**
+     * Récupérer la classe du NPC (méthode d'instance)
+     */
+    public function getClass()
+    {
+        return Classe::findById($this->class_id);
+    }
+
+    /**
+     * Récupérer l'archétype du NPC (méthode d'instance)
+     */
+    public function getArchetype()
+    {
+        if ($this->archetype_id) {
+            return Character::getArchetypeById($this->archetype_id);
+        }
+        return null;
+    }
+
+    /**
+     * Récupérer l'armure équipée du NPC (méthode d'instance)
+     */
+    public function getMyEquippedArmor()
+    {
+        $equipment = $this->getMyEquipment();
+        foreach ($equipment as $item) {
+            if ($item['equipped'] && $item['item_type'] === 'armor') {
+                return $item;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Vérifier si le NPC est un barbare (méthode d'instance)
+     */
+    public function isBarbarian()
+    {
+        $classObject = Classe::findById($this->class_id);
+        return $classObject && strpos(strtolower($classObject->name), 'barbare') !== false;
+    }
+
+    /**
+     * Récupérer les données de rage du NPC (méthode d'instance)
+     */
+    public function getMyRageData()
+    {
+        if (!$this->isBarbarian()) {
+            return null;
+        }
+
+        $maxRages = Character::getMaxRages($this->class_id, $this->level);
+        $rageUsage = Character::getRageUsageStatic($this->id);
+        $usedRages = is_array($rageUsage) ? $rageUsage['used'] : $rageUsage;
+
+        return [
+            'max' => $maxRages,
+            'used' => $usedRages,
+            'available' => $maxRages - $usedRages
+        ];
+    }
+
+    /**
+     * Vérifier si le NPC peut lancer des sorts (méthode d'instance)
+     */
+    public function canCastSpells()
+    {
+        return Character::canCastSpells($this->class_id);
+    }
+
+    /**
+     * Récupérer le bouclier équipé du NPC (méthode d'instance)
+     */
+    public function getMyEquippedShield()
+    {
+        $equipment = $this->getMyEquipment();
+        foreach ($equipment as $item) {
+            if ($item['equipped'] && $item['item_type'] === 'shield') {
+                return $item;
+            }
+        }
+        return null;
+    }
 }
 ?>

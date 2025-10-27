@@ -3682,6 +3682,84 @@ function initializeNpcEventHandlers() {
     });
 }
 
+// ===== SYSTÈME D'ONGLETS AJAX SIMPLIFIÉ =====
+
+/**
+ * Charge les données d'un personnage (PJ ou PNJ) et affiche un module
+ * @param {string} module_php_a_charger - Le nom du module PHP à charger (ex: 'combat', 'characteristics')
+ * @param {number} target_id - L'ID du personnage
+ * @param {string} target_type - Le type de personnage ('PJ' ou 'PNJ')
+ */
+function load_tab_data(module_php_a_charger, target_id, target_type) {
+    const tabContent = document.getElementById('tab-content');
+    const tabButtons = document.querySelectorAll('.tab-button');
+    
+    // Désactiver tous les boutons d'onglets
+    tabButtons.forEach(button => {
+        button.classList.remove('active');
+        button.disabled = true;
+    });
+    
+    // Activer le bouton de l'onglet sélectionné
+    const activeButton = document.querySelector(`[data-module="${module_php_a_charger}"]`);
+    if (activeButton) {
+        activeButton.classList.add('active');
+    }
+    
+    // Afficher un indicateur de chargement
+    tabContent.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x"></i><br>Chargement...</div>';
+    
+    // Charger directement le module avec les paramètres
+    const formData = new FormData();
+    formData.append('target_id', target_id);
+    formData.append('target_type', target_type);
+    
+    fetch(`templates/p_${module_php_a_charger}_module.php`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.text())
+    .then(content => {
+        tabContent.innerHTML = content;
+    })
+    .catch(error => {
+        console.error('Erreur lors du chargement:', error);
+        tabContent.innerHTML = `<div class="alert alert-danger">Erreur lors du chargement du module</div>`;
+    })
+    .finally(() => {
+        // Réactiver tous les boutons d'onglets
+        tabButtons.forEach(button => {
+            button.disabled = false;
+        });
+    });
+}
+
+/**
+ * Initialiser le système d'onglets modulaire
+ * @param {number} target_id - L'ID du personnage
+ * @param {string} target_type - Le type de personnage ('PJ' ou 'PNJ')
+ */
+function initializeModularTabs(target_id, target_type) {
+    const tabButtons = document.querySelectorAll('.tab-button');
+    
+    tabButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const moduleName = this.getAttribute('data-module');
+            if (moduleName) {
+                load_tab_data(moduleName, target_id, target_type);
+            }
+        });
+    });
+    
+    // Charger le premier onglet par défaut
+    const firstTab = document.querySelector('.tab-button[data-module]');
+    if (firstTab) {
+        const firstModuleName = firstTab.getAttribute('data-module');
+        load_tab_data(firstModuleName, target_id, target_type);
+    }
+}
+
 // Initialisation au chargement de la page
 document.addEventListener('DOMContentLoaded', function() {
     initializeTransferModal();

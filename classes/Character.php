@@ -915,36 +915,6 @@ class Character
         return json_decode($result['languages'], true) ?? [];
     }
 
-    /**
-     * Vérifier si une classe peut lancer des sorts
-     * 
-     * @param int $classId ID de la classe
-     * @return bool True si la classe peut lancer des sorts
-     */
-    public static function canCastSpells($classId)
-    {
-        $pdo = \Database::getInstance()->getPdo();
-        $stmt = $pdo->prepare("
-            SELECT COUNT(*) as count 
-            FROM class_evolution 
-            WHERE class_id = ? AND (
-                cantrips_known > 0 OR 
-                spells_known > 0 OR 
-                spell_slots_1st > 0 OR 
-                spell_slots_2nd > 0 OR 
-                spell_slots_3rd > 0 OR 
-                spell_slots_4th > 0 OR 
-                spell_slots_5th > 0 OR 
-                spell_slots_6th > 0 OR 
-                spell_slots_7th > 0 OR 
-                spell_slots_8th > 0 OR 
-                spell_slots_9th > 0
-            )
-        ");
-        $stmt->execute([$classId]);
-        $result = $stmt->fetch();
-        return $result['count'] > 0;
-    }
 
     /**
      * Obtenir les capacités de sorts d'une classe à un niveau donné
@@ -3668,6 +3638,125 @@ class Character
     public function getMyEquipment()
     {
         return self::getCharacterEquipment($this->id);
+    }
+
+    /**
+     * Récupérer l'armure équipée du personnage (méthode d'instance)
+     */
+    public function getMyEquippedArmor()
+    {
+        $equipment = $this->getMyEquipment();
+        foreach ($equipment as $item) {
+            if ($item['equipped'] && $item['item_type'] === 'armor') {
+                return $item;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Récupérer le bouclier équipé du personnage (méthode d'instance)
+     */
+    public function getMyEquippedShield()
+    {
+        $equipment = $this->getMyEquipment();
+        foreach ($equipment as $item) {
+            if ($item['equipped'] && $item['item_type'] === 'shield') {
+                return $item;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Récupérer la race du personnage (méthode d'instance)
+     */
+    public function getRace()
+    {
+        return Race::findById($this->race_id);
+    }
+
+    /**
+     * Récupérer la classe du personnage (méthode d'instance)
+     */
+    public function getClass()
+    {
+        return Classe::findById($this->class_id);
+    }
+
+
+    /**
+     * Calculer les attaques du personnage (méthode d'instance)
+     */
+    public function calculateMyCharacterAttacks()
+    {
+        return self::getCharacterAttacks($this->id);
+    }
+
+    /**
+     * Calculer la classe d'armure du personnage (méthode d'instance)
+     */
+    public function calculateMyArmorClass()
+    {
+        return $this->calculateArmorClass();
+    }
+
+    /**
+     * Vérifier si le personnage est un barbare (méthode d'instance)
+     */
+    public function isBarbarian()
+    {
+        $classObject = Classe::findById($this->class_id);
+        return $classObject && strpos(strtolower($classObject->name), 'barbare') !== false;
+    }
+
+    /**
+     * Récupérer les données de rage du personnage (méthode d'instance)
+     */
+    public function getMyRageData()
+    {
+        if (!$this->isBarbarian()) {
+            return null;
+        }
+
+        $maxRages = self::getMaxRages($this->class_id, $this->level);
+        $rageUsage = self::getRageUsageStatic($this->id);
+        $usedRages = is_array($rageUsage) ? $rageUsage['used'] : $rageUsage;
+
+        return [
+            'max' => $maxRages,
+            'used' => $usedRages,
+            'available' => $maxRages - $usedRages
+        ];
+    }
+
+    /**
+     * Vérifier si le personnage peut lancer des sorts (méthode d'instance)
+     */
+    public function canCastSpells()
+    {
+        
+        $pdo = \Database::getInstance()->getPdo();
+        $stmt = $pdo->prepare("
+            SELECT COUNT(*) as count 
+            FROM class_evolution 
+            WHERE class_id = ? AND (
+                cantrips_known > 0 OR 
+                spells_known > 0 OR 
+                spell_slots_1st > 0 OR 
+                spell_slots_2nd > 0 OR 
+                spell_slots_3rd > 0 OR 
+                spell_slots_4th > 0 OR 
+                spell_slots_5th > 0 OR 
+                spell_slots_6th > 0 OR 
+                spell_slots_7th > 0 OR 
+                spell_slots_8th > 0 OR 
+                spell_slots_9th > 0
+            )
+        ");
+        $stmt->execute([$this->class_id]);
+        $result = $stmt->fetch();
+        return $result['count'] > 0;
     }
 
     /**

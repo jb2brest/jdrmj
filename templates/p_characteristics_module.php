@@ -1,8 +1,66 @@
+<?php
+/**
+ * Module Caractéristiques - Peut être appelé directement ou via AJAX
+ */
+
+// Inclure les classes nécessaires
+require_once '../classes/init.php';
+require_once '../includes/functions.php';
+
+// Si appelé via AJAX, récupérer les données depuis $_POST
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $target_id = $_POST['target_id'] ?? null;
+    $target_type = $_POST['target_type'] ?? null;
+} else {
+    // Si appelé directement, utiliser les variables globales
+    $target_id = $target_id ?? null;
+    $target_type = $target_type ?? null;
+}
+
+// Charger l'objet personnage selon le type
+$pers = null;
+if ($target_id && $target_type) {
+    if ($target_type === 'PJ') {
+        $pers = Character::findById($target_id);
+    } elseif ($target_type === 'PNJ') {
+        $pers = NPC::findById($target_id);
+    }
+}
+
+// Si aucun personnage trouvé, afficher un message d'erreur
+if (!$pers) {
+    echo '<div class="alert alert-danger">Personnage non trouvé</div>';
+    return;
+}
+
+// Récupérer les données nécessaires via les méthodes d'instance
+$strength = $pers->strength;
+$dexterity = $pers->dexterity;
+$constitution = $pers->constitution;
+$intelligence = $pers->intelligence;
+$wisdom = $pers->wisdom;
+$charisma = $pers->charisma;
+$abilityModifiers = $pers->getMyAbilityModifiers();
+$totalAbilities = $pers->getMyTotalAbilities();
+$equipmentBonuses = $pers->getMyEquipmentBonuses();
+$temporaryBonuses = $pers->getMyTemporaryBonuses();
+$raceObject = $pers->getRace();
+$classObject = $pers->getClass();
+$archetypeDetails = $pers->getArchetype();
+
+// Extraire les modificateurs individuels
+$strengthModifier = $abilityModifiers['strength'];
+$dexterityModifier = $abilityModifiers['dexterity'];
+$constitutionModifier = $abilityModifiers['constitution'];
+$intelligenceModifier = $abilityModifiers['intelligence'];
+$wisdomModifier = $abilityModifiers['wisdom'];
+$charismaModifier = $abilityModifiers['charisma'];
+?>
+
 <!-- Onglet Caractéristiques -->
-<div class="tab-pane fade" id="characteristics" role="tabpanel" aria-labelledby="characteristics-tab">
-    <div class="p-4">
-        <div class="info-section">
-            <h4><i class="fas fa-dumbbell me-2"></i>Caractéristiques</h4>
+<div class="p-4">
+    <div class="info-section">
+        <h4><i class="fas fa-dumbbell me-2"></i>Caractéristiques</h4>
 
             <!-- Tableau des caractéristiques -->
             <div class="table-responsive">

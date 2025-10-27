@@ -1,9 +1,58 @@
+<?php
+/**
+ * Module Combat - Peut être appelé directement ou via AJAX
+ */
+
+// Inclure les classes nécessaires
+require_once '../classes/init.php';
+require_once '../includes/functions.php';
+
+// Si appelé via AJAX, récupérer les données depuis $_POST
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $target_id = $_POST['target_id'] ?? null;
+    $target_type = $_POST['target_type'] ?? null;
+} else {
+    // Si appelé directement, utiliser les variables globales
+    $target_id = $target_id ?? null;
+    $target_type = $target_type ?? null;
+}
+
+// Charger l'objet personnage selon le type
+$pers = null;
+if ($target_id && $target_type) {
+    if ($target_type === 'PJ') {
+        $pers = Character::findById($target_id);
+    } elseif ($target_type === 'PNJ') {
+        $pers = NPC::findById($target_id);
+    }
+}
+
+// Si aucun personnage trouvé, afficher un message d'erreur
+if (!$pers) {
+    echo '<div class="alert alert-danger">Personnage non trouvé</div>';
+    return;
+}
+
+// Récupérer les données nécessaires via les méthodes d'instance
+$level = $pers->level;
+$speed = $pers->speed;
+$initiative = $pers->getMyAbilityModifiers()['dexterity'];
+$armorClass = $pers->calculateMyArmorClass();
+$dexterityModifier = $pers->getMyAbilityModifiers()['dexterity'];
+$constitutionModifier = $pers->getMyAbilityModifiers()['constitution'];
+$equippedArmor = $pers->getMyEquippedArmor();
+$equippedShield = $pers->getMyEquippedShield();
+$isBarbarian = $pers->isBarbarian();
+$rageData = $pers->getMyRageData();
+$canCastSpells = $pers->canCastSpells();
+$characterAttacks = $pers->calculateMyCharacterAttacks();
+?>
+
 <!-- Onglet Combat -->
-<div class="tab-pane fade show active" id="combat" role="tabpanel" aria-labelledby="combat-tab">
-    <div class="p-4">
-        <!-- Informations de combat -->
-        <div class="info-section mb-4">
-            <h4><i class="fas fa-shield-alt me-2"></i>Informations de Combat</h4>
+<div class="p-4">
+    <!-- Informations de combat -->
+    <div class="info-section mb-4">
+        <h4><i class="fas fa-shield-alt me-2"></i>Informations de Combat</h4>
             <div class="row">
                 <div class="col-md-3">
                     <div class="stat-box text-center">
@@ -138,4 +187,3 @@
         
 
     </div>
-</div>
