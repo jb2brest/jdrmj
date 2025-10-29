@@ -210,6 +210,11 @@ Créer un nouveau bouton "Nouveau personnage" dans characters.php et dans manage
 Ce bouton permet d'arriver sur un écran commun de sélection de la classe du personnage. 
 Toutes les données nécessaires sur les classes à cette étapes sont dans la tables "classes"
 
+
+Il faut maintenant mettre en place l'étape 2 : sélection de la race.
+Toutes les données nécessaires sur les races à cette étapes sont dans la tables "races"
+
+
 renomme character_class_selection.php en cc01_class_selection.php (pour create character étape 01) 
 
 
@@ -244,6 +249,7 @@ En fonction du target_type et du target_id récupère dans une variable $pers, u
 Nous utiliserons ensuite l'objet $pers dans le module pour récupérer par des méthodes d'instance, les données nécessaires.
 
 il faut rajouter des méthodes d'instance dans les classe NPC et Character
+
 
 Il faut revoir le code de view_npc.php
 Rappel des règles à appliquer : 

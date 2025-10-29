@@ -96,6 +96,103 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+/**
+ * Gestion de la sélection de race pour la création de personnage
+ */
+class RaceSelectionManager {
+    constructor() {
+        this.raceCards = document.querySelectorAll('.class-card[data-race-id]');
+        this.selectedRaceIdInput = document.getElementById('selected_race_id');
+        this.continueBtn = document.getElementById('continueBtn');
+        this.characterType = this.getCharacterType();
+        this.ptId = this.getPTId();
+        
+        this.init();
+    }
+    
+    init() {
+        if (this.raceCards.length === 0) return;
+        
+        this.raceCards.forEach(card => {
+            card.addEventListener('click', () => this.selectRace(card));
+        });
+    }
+    
+    getCharacterType() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('type') || 'player';
+    }
+    
+    getPTId() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('pt_id') || 0;
+    }
+    
+    selectRace(card) {
+        // Désélectionner toutes les cartes
+        this.raceCards.forEach(c => c.classList.remove('selected'));
+        
+        // Sélectionner la carte cliquée
+        card.classList.add('selected');
+        
+        // Mettre à jour l'input caché
+        const raceId = card.dataset.raceId;
+        this.selectedRaceIdInput.value = raceId;
+        
+        // Activer le bouton continuer
+        this.continueBtn.disabled = false;
+    }
+    
+    async updatePTRace(raceId) {
+        try {
+            const response = await fetch('api/update_pt_race.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    pt_id: this.ptId,
+                    race_id: raceId
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Rediriger vers l'étape suivante
+                window.location.href = `cc03_background_selection.php?pt_id=${this.ptId}&type=${this.characterType}`;
+            } else {
+                // Rediriger vers la même page avec un message d'erreur
+                window.location.href = `cc02_race_selection.php?pt_id=${this.ptId}&type=${this.characterType}&error=${encodeURIComponent(data.message)}`;
+            }
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour de la race:', error);
+            // Rediriger vers la même page avec un message d'erreur
+            window.location.href = `cc02_race_selection.php?pt_id=${this.ptId}&type=${this.characterType}&error=${encodeURIComponent('Erreur de connexion')}`;
+        }
+    }
+}
+
+// Initialiser la gestion de sélection de race
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.querySelector('.class-card[data-race-id]')) {
+        window.raceSelectionManager = new RaceSelectionManager();
+        
+        // Gérer la soumission du formulaire
+        const form = document.getElementById('raceForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const raceId = document.getElementById('selected_race_id').value;
+                if (raceId) {
+                    window.raceSelectionManager.updatePTRace(raceId);
+                }
+            });
+        }
+    }
+});
+
 // ===== GESTION DES NPCs =====
 
 /**

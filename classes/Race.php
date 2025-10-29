@@ -5,10 +5,10 @@
  * 
  * Cette classe encapsule toutes les fonctionnalités liées aux races :
  * - Création, lecture, mise à jour, suppression
- * - Gestion des bonus de caractéristiques
+ * - Gestion des bonus raciaux
  * - Gestion des traits raciaux
- * - Gestion des langues raciales
  */
+
 class Race
 {
     private $pdo;
@@ -17,14 +17,18 @@ class Race
     public $id;
     public $name;
     public $description;
+    public $image;
     public $strength_bonus;
     public $dexterity_bonus;
     public $constitution_bonus;
     public $intelligence_bonus;
     public $wisdom_bonus;
     public $charisma_bonus;
-    public $traits;
+    public $size;
+    public $speed;
+    public $vision;
     public $languages;
+    public $traits;
     public $created_at;
     public $updated_at;
     
@@ -42,8 +46,6 @@ class Race
     
     /**
      * Obtenir l'instance PDO
-     * 
-     * @return PDO
      */
     private function getPdo()
     {
@@ -65,42 +67,56 @@ class Race
     /**
      * Créer une nouvelle race
      */
-    public static function create(array $data, PDO $pdo = null)
+    public function create()
     {
-        $pdo = $pdo ?: getPDO();
+        $pdo = $this->getPdo();
         
         try {
+            $pdo->beginTransaction();
+            
             $stmt = $pdo->prepare("
-                INSERT INTO races (
-                    name, description, strength_bonus, dexterity_bonus, constitution_bonus,
-                    intelligence_bonus, wisdom_bonus, charisma_bonus, traits, languages
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO races 
+                (name, description, image, strength_bonus, dexterity_bonus, constitution_bonus, 
+                 intelligence_bonus, wisdom_bonus, charisma_bonus, size, speed, vision, 
+                 languages, traits, created_at, updated_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
             ");
             
-            $stmt->execute([
-                $data['name'],
-                $data['description'] ?? null,
-                $data['strength_bonus'] ?? 0,
-                $data['dexterity_bonus'] ?? 0,
-                $data['constitution_bonus'] ?? 0,
-                $data['intelligence_bonus'] ?? 0,
-                $data['wisdom_bonus'] ?? 0,
-                $data['charisma_bonus'] ?? 0,
-                $data['traits'] ?? null,
-                $data['languages'] ?? null
+            $result = $stmt->execute([
+                $this->name,
+                $this->description,
+                $this->image,
+                $this->strength_bonus,
+                $this->dexterity_bonus,
+                $this->constitution_bonus,
+                $this->intelligence_bonus,
+                $this->wisdom_bonus,
+                $this->charisma_bonus,
+                $this->size,
+                $this->speed,
+                $this->vision,
+                $this->languages,
+                $this->traits
             ]);
             
-            $raceId = $pdo->lastInsertId();
-            return self::findById($raceId, $pdo);
+            if ($result) {
+                $this->id = $pdo->lastInsertId();
+                $pdo->commit();
+                return true;
+            }
+            
+            $pdo->rollBack();
+            return false;
             
         } catch (PDOException $e) {
-            error_log("Erreur lors de la création de la race: " . $e->getMessage());
+            $pdo->rollBack();
+            error_log("Erreur création Race: " . $e->getMessage());
             return false;
         }
     }
     
     /**
-     * Trouver une race par son ID
+     * Trouver une race par ID
      */
     public static function findById($id, PDO $pdo = null)
     {
@@ -118,7 +134,7 @@ class Race
             return null;
             
         } catch (PDOException $e) {
-            error_log("Erreur lors de la recherche de la race: " . $e->getMessage());
+            error_log("Erreur recherche Race: " . $e->getMessage());
             return null;
         }
     }
@@ -126,9 +142,9 @@ class Race
     /**
      * Trouver toutes les races
      */
-    public static function getAll(PDO $pdo = null)
+    public function getAll()
     {
-        $pdo = $pdo ?: getPDO();
+        $pdo = $this->getPdo();
         
         try {
             $stmt = $pdo->query("SELECT * FROM races ORDER BY name ASC");
@@ -142,7 +158,7 @@ class Race
             return $races;
             
         } catch (PDOException $e) {
-            error_log("Erreur lors de la récupération des races: " . $e->getMessage());
+            error_log("Erreur récupération races: " . $e->getMessage());
             return [];
         }
     }
@@ -155,12 +171,8 @@ class Race
         $pdo = $pdo ?: getPDO();
         
         try {
-            $stmt = $pdo->prepare("
-                SELECT * FROM races 
-                WHERE name LIKE ? 
-                ORDER BY name ASC
-            ");
-            $stmt->execute(['%' . $name . '%']);
+            $stmt = $pdo->prepare("SELECT * FROM races WHERE name LIKE ? ORDER BY name ASC");
+            $stmt->execute(["%$name%"]);
             $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
             $races = [];
@@ -171,7 +183,7 @@ class Race
             return $races;
             
         } catch (PDOException $e) {
-            error_log("Erreur lors de la recherche des races: " . $e->getMessage());
+            error_log("Erreur recherche races par nom: " . $e->getMessage());
             return [];
         }
     }
@@ -179,46 +191,50 @@ class Race
     /**
      * Mettre à jour la race
      */
-    public function update(array $data)
+    public function update()
     {
+        $pdo = $this->getPdo();
+        
         try {
-            $fields = [];
-            $values = [];
+            $pdo->beginTransaction();
             
-            foreach ($data as $key => $value) {
-                if (property_exists($this, $key) && $key !== 'id') {
-                    $fields[] = "$key = ?";
-                    $values[] = $value;
-                }
-            }
-            
-            if (empty($fields)) {
-                return false;
-            }
-            
-            $values[] = $this->id;
-            
-            $stmt = $this->pdo->prepare("
+            $stmt = $pdo->prepare("
                 UPDATE races 
-                SET " . implode(', ', $fields) . ", updated_at = CURRENT_TIMESTAMP
+                SET name = ?, description = ?, image = ?, strength_bonus = ?, dexterity_bonus = ?, 
+                    constitution_bonus = ?, intelligence_bonus = ?, wisdom_bonus = ?, charisma_bonus = ?, 
+                    size = ?, speed = ?, vision = ?, languages = ?, traits = ?, updated_at = NOW()
                 WHERE id = ?
             ");
             
-            $result = $stmt->execute($values);
+            $result = $stmt->execute([
+                $this->name,
+                $this->description,
+                $this->image,
+                $this->strength_bonus,
+                $this->dexterity_bonus,
+                $this->constitution_bonus,
+                $this->intelligence_bonus,
+                $this->wisdom_bonus,
+                $this->charisma_bonus,
+                $this->size,
+                $this->speed,
+                $this->vision,
+                $this->languages,
+                $this->traits,
+                $this->id
+            ]);
             
             if ($result) {
-                // Mettre à jour les propriétés de l'objet
-                foreach ($data as $key => $value) {
-                    if (property_exists($this, $key)) {
-                        $this->$key = $value;
-                    }
-                }
+                $pdo->commit();
+                return true;
             }
             
-            return $result;
+            $pdo->rollBack();
+            return false;
             
         } catch (PDOException $e) {
-            error_log("Erreur lors de la mise à jour de la race: " . $e->getMessage());
+            $pdo->rollBack();
+            error_log("Erreur mise à jour Race: " . $e->getMessage());
             return false;
         }
     }
@@ -228,65 +244,31 @@ class Race
      */
     public function delete()
     {
+        $pdo = $this->getPdo();
+        
         try {
-            $stmt = $this->pdo->prepare("DELETE FROM races WHERE id = ?");
-            return $stmt->execute([$this->id]);
+            $pdo->beginTransaction();
+            
+            $stmt = $pdo->prepare("DELETE FROM races WHERE id = ?");
+            $result = $stmt->execute([$this->id]);
+            
+            if ($result) {
+                $pdo->commit();
+                return true;
+            }
+            
+            $pdo->rollBack();
+            return false;
             
         } catch (PDOException $e) {
-            error_log("Erreur lors de la suppression de la race: " . $e->getMessage());
+            $pdo->rollBack();
+            error_log("Erreur suppression Race: " . $e->getMessage());
             return false;
         }
     }
     
     /**
-     * Obtenir le nom de la race
-     */
-    public function getName()
-    {
-        return $this->name ?: '';
-    }
-    
-    /**
-     * Obtenir la description de la race
-     */
-    public function getDescription()
-    {
-        return $this->description ?: '';
-    }
-    
-    /**
-     * Obtenir tous les bonus de caractéristiques
-     */
-    public function getAbilityBonuses()
-    {
-        return [
-            'strength' => $this->strength_bonus ?: 0,
-            'dexterity' => $this->dexterity_bonus ?: 0,
-            'constitution' => $this->constitution_bonus ?: 0,
-            'intelligence' => $this->intelligence_bonus ?: 0,
-            'wisdom' => $this->wisdom_bonus ?: 0,
-            'charisma' => $this->charisma_bonus ?: 0
-        ];
-    }
-    
-    /**
-     * Obtenir les traits raciaux
-     */
-    public function getTraits()
-    {
-        return $this->traits ?: '';
-    }
-    
-    /**
-     * Obtenir les langues raciales
-     */
-    public function getLanguages()
-    {
-        return $this->languages ?: '';
-    }
-    
-    /**
-     * Convertir en tableau pour l'affichage
+     * Convertir en tableau
      */
     public function toArray()
     {
@@ -294,16 +276,21 @@ class Race
             'id' => $this->id,
             'name' => $this->name,
             'description' => $this->description,
+            'image' => $this->image,
             'strength_bonus' => $this->strength_bonus,
             'dexterity_bonus' => $this->dexterity_bonus,
             'constitution_bonus' => $this->constitution_bonus,
             'intelligence_bonus' => $this->intelligence_bonus,
             'wisdom_bonus' => $this->wisdom_bonus,
             'charisma_bonus' => $this->charisma_bonus,
-            'traits' => $this->traits,
+            'size' => $this->size,
+            'speed' => $this->speed,
+            'vision' => $this->vision,
             'languages' => $this->languages,
+            'traits' => $this->traits,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at
         ];
     }
 }
+?>
