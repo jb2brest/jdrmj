@@ -65,34 +65,14 @@ class ClassSelectionManager {
                 // Rediriger vers l'étape suivante
                 window.location.href = `cc02_race_selection.php?pt_id=${data.pt_character_id}&type=${this.characterType}`;
             } else {
-                this.showMessage(data.message, 'error');
+                // Rediriger vers la même page avec un message d'erreur
+                window.location.href = `cc01_class_selection.php?type=${this.characterType}&error=${encodeURIComponent(data.message)}`;
             }
         } catch (error) {
             console.error('Erreur lors de la création du personnage temporaire:', error);
-            this.showMessage('Erreur de connexion', 'error');
+            // Rediriger vers la même page avec un message d'erreur
+            window.location.href = `cc01_class_selection.php?type=${this.characterType}&error=${encodeURIComponent('Erreur de connexion')}`;
         }
-    }
-    
-    showMessage(message, type) {
-        // Créer une alerte Bootstrap
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type === 'error' ? 'danger' : 'success'} alert-dismissible fade show`;
-        alertDiv.innerHTML = `
-            <i class="fas fa-${type === 'error' ? 'exclamation-triangle' : 'check-circle'} me-2"></i>
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        
-        // Insérer au début du container
-        const container = document.querySelector('.container');
-        container.insertBefore(alertDiv, container.firstChild);
-        
-        // Auto-supprimer après 5 secondes
-        setTimeout(() => {
-            if (alertDiv.parentNode) {
-                alertDiv.remove();
-            }
-        }, 5000);
     }
 }
 

@@ -27,6 +27,18 @@ if ($character_type === 'npc' && !User::isDMOrAdmin()) {
 // Récupérer toutes les classes
 $classeManager = new Classe();
 $classes = $classeManager->getAll();
+
+// Gérer les messages passés en paramètre URL
+$error_message = '';
+$success_message = '';
+
+if (isset($_GET['error']) && !empty($_GET['error'])) {
+    $error_message = htmlspecialchars($_GET['error']);
+}
+
+if (isset($_GET['success']) && !empty($_GET['success'])) {
+    $success_message = htmlspecialchars($_GET['success']);
+}
 ?>
 
 <!DOCTYPE html>
@@ -65,7 +77,13 @@ $classes = $classeManager->getAll();
     </div>
 
     <div class="container">
-        <?php echo $message; ?>
+        <?php if (!empty($success_message)): ?>
+            <?php echo displayMessage($success_message, 'success'); ?>
+        <?php endif; ?>
+        
+        <?php if (!empty($error_message)): ?>
+            <?php echo displayMessage($error_message, 'error'); ?>
+        <?php endif; ?>
         
         <!-- Badge du type de personnage -->
         <div class="row mb-4">
