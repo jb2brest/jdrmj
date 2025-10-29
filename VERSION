@@ -2,19 +2,19 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.21.35
+VERSION=2.21.36
 
 # Date de déploiement
-DEPLOY_DATE=2025-10-27
+DEPLOY_DATE=2025-10-29
 
 # Environnement
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=cb00c4190d64eb46992548e7341b77e7640ed398
+GIT_COMMIT=3362f08121954574c23e5f2753bdd9d75282e8b3
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251027-142058
+BUILD_ID=20251029-203036
 
 # Notes de version
-RELEASE_NOTES="Nettoyage class Character"
+RELEASE_NOTES="Avant refonte création"
