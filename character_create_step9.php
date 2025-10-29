@@ -61,14 +61,11 @@ if ($selectedBackgroundId) {
 // Traitement du formulaire
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $class_equipment = $_POST['class_equipment'] ?? [];
-    $class_weapon_choices = $_POST['class_weapon_choices'] ?? [];
-    $class_weapon_choice = $_POST['class_weapon_choice'] ?? []; // Nouveaux menus déroulants
-    $class_instrument_choice = $_POST['class_instrument_choice'] ?? []; // Choix d'instruments
+    $class_weapon_choice = $_POST['class_weapon_choice'] ?? [];
+    $class_instrument_choice = $_POST['class_instrument_choice'] ?? [];
     $background_equipment = $_POST['background_equipment'] ?? [];
-    $background_weapon_choices = $_POST['background_weapon_choices'] ?? [];
-    $background_weapon_choice = $_POST['background_weapon_choice'] ?? []; // Nouveaux menus déroulants
-    $background_instrument_choice = $_POST['background_instrument_choice'] ?? []; // Choix d'instruments
-    $tool_choices = $_POST['tool_choices'] ?? [];
+    $background_weapon_choice = $_POST['background_weapon_choice'] ?? [];
+    $background_instrument_choice = $_POST['background_instrument_choice'] ?? [];
     
     // Traiter les sélections d'armes et d'instruments
     $selectedWeapons = [];
@@ -209,26 +206,20 @@ $backgroundEquipmentDetailed = getBackgroundStartingEquipment($selectedBackgroun
 $raceEquipmentDetailed = getRaceStartingEquipment($selectedRaceId);
 
 // Structurer l'équipement par choix
+$classChoices = [];
+$backgroundChoices = [];
+$raceChoices = [];
+
 if (!empty($classEquipmentDetailed)) {
     $classChoices = structureStartingEquipmentByChoices($classEquipmentDetailed);
-} else {
-    // Fallback sur l'ancien système si pas de données dans starting_equipment
-    $classEquipment = getClassStartingEquipmentNew($selectedClassId);
-    $classChoices = $classEquipment;
 }
 
 if (!empty($backgroundEquipmentDetailed)) {
     $backgroundChoices = structureStartingEquipmentByChoices($backgroundEquipmentDetailed);
-} else {
-    // Pas de données dans starting_equipment - aucun équipement de background
-    // La colonne equipment a été supprimée de la table backgrounds
-    $backgroundChoices = [];
 }
 
 if (!empty($raceEquipmentDetailed)) {
     $raceChoices = structureStartingEquipmentByChoices($raceEquipmentDetailed);
-} else {
-    $raceChoices = [];
 }
 
 // Récupérer les outils disponibles (simplifié pour la nouvelle table)
@@ -284,6 +275,44 @@ function getItemDetails($type, $typeId) {
     $stmt = $pdo->prepare("SELECT * FROM Object WHERE id = ?");
     $stmt->execute([$typeId]);
     return $stmt->fetch();
+}
+
+// Fonction helper pour récupérer les détails d'un équipement
+function getEquipmentDetails($type, $typeId) {
+    global $pdo;
+    
+    if (!$typeId) {
+        return null;
+    }
+    
+    try {
+        switch ($type) {
+            case 'weapon':
+                $stmt = $pdo->prepare("SELECT * FROM weapons WHERE id = ?");
+                break;
+            case 'armor':
+                $stmt = $pdo->prepare("SELECT * FROM armor WHERE id = ?");
+                break;
+            case 'bouclier':
+                $stmt = $pdo->prepare("SELECT * FROM armor WHERE id = ? AND type = 'Bouclier'");
+                break;
+            case 'outils':
+            case 'sac':
+            case 'nourriture':
+            case 'accessoire':
+            case 'instrument':
+                $stmt = $pdo->prepare("SELECT * FROM Object WHERE id = ?");
+                break;
+            default:
+                return null;
+        }
+        
+        $stmt->execute([$typeId]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Erreur getEquipmentDetails: " . $e->getMessage());
+        return null;
+    }
 }
 
 // Fonction helper pour afficher un choix d'équipement avec support des instruments

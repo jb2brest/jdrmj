@@ -3043,86 +3043,6 @@ class Character
         }
     }
 
-    /**
-     * Récupérer les attaques d'un personnage (attaques personnalisées + attaques des objets équipés)
-     */
-    public static function getCharacterAttacks($characterId)
-    {
-        $pdo = \Database::getInstance()->getPdo();
-        $attacks = [];
-        
-        try {
-            // 1. Récupérer les attaques personnalisées du personnage
-            $stmt = $pdo->query("SHOW TABLES LIKE 'character_attacks'");
-            if ($stmt->rowCount() > 0) {
-                $stmt = $pdo->prepare("
-                    SELECT 
-                        id,
-                        name as attack_name,
-                        attack_type,
-                        range_type,
-                        range_value,
-                        damage_dice,
-                        damage_type,
-                        attack_bonus,
-                        damage_bonus,
-                        description,
-                        is_proficient,
-                        'custom' as source_type
-                    FROM character_attacks 
-                    WHERE character_id = ? 
-                    ORDER BY name ASC
-                ");
-                $stmt->execute([$characterId]);
-                $customAttacks = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                $attacks = array_merge($attacks, $customAttacks);
-            }
-            
-            // 2. Récupérer les attaques des objets équipés (armes)
-            $stmt = $pdo->prepare("
-                SELECT 
-                    i.id as item_id,
-                    i.display_name as attack_name,
-                    w.type as attack_type,
-                    CASE 
-                        WHEN w.properties LIKE '%lancer%' OR w.properties LIKE '%portée%' THEN 'ranged'
-                        ELSE 'melee'
-                    END as range_type,
-                    CASE 
-                        WHEN w.properties LIKE '%lancer%' THEN '20/60'
-                        ELSE '5'
-                    END as range_value,
-                    w.damage as damage_dice,
-                    CASE 
-                        WHEN w.damage LIKE '%contondant%' THEN 'Contondant'
-                        WHEN w.damage LIKE '%perforant%' THEN 'Perforant'
-                        WHEN w.damage LIKE '%tranchant%' THEN 'Tranchant'
-                        ELSE 'Contondant'
-                    END as damage_type,
-                    '0' as attack_bonus,
-                    '0' as damage_bonus,
-                    i.description,
-                    '1' as is_proficient,
-                    'equipped' as source_type
-                FROM items i
-                LEFT JOIN weapons w ON i.weapon_id = w.id
-                WHERE i.owner_type = 'player' 
-                AND i.owner_id = ? 
-                AND i.is_equipped = 1
-                AND i.object_type = 'weapon'
-                AND w.id IS NOT NULL
-                ORDER BY i.display_name ASC
-            ");
-            $stmt->execute([$characterId]);
-            $equippedAttacks = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            $attacks = array_merge($attacks, $equippedAttacks);
-            
-            return $attacks;
-        } catch (PDOException $e) {
-            error_log("Erreur lors de la récupération des attaques: " . $e->getMessage());
-            return [];
-        }
-    }
 
     /**
      * Mettre à jour la photo de profil d'un personnage
@@ -3721,7 +3641,80 @@ class Character
      */
     public function calculateMyCharacterAttacks()
     {
-        return self::getCharacterAttacks($this->id);
+        $pdo = \Database::getInstance()->getPdo();
+        $attacks = [];
+        
+        try {
+            // 1. Récupérer les attaques personnalisées du personnage
+            $stmt = $pdo->query("SHOW TABLES LIKE 'character_attacks'");
+            if ($stmt->rowCount() > 0) {
+                $stmt = $pdo->prepare("
+                    SELECT 
+                        id,
+                        name as attack_name,
+                        attack_type,
+                        range_type,
+                        range_value,
+                        damage_dice,
+                        damage_type,
+                        attack_bonus,
+                        damage_bonus,
+                        description,
+                        is_proficient,
+                        'custom' as source_type
+                    FROM character_attacks 
+                    WHERE character_id = ? 
+                    ORDER BY name ASC
+                ");
+                $stmt->execute([$this->id]);
+                $customAttacks = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                $attacks = array_merge($attacks, $customAttacks);
+            }
+            
+            // 2. Récupérer les attaques des objets équipés (armes)
+            $stmt = $pdo->prepare("
+                SELECT 
+                    i.id as item_id,
+                    i.display_name as attack_name,
+                    w.type as attack_type,
+                    CASE 
+                        WHEN w.properties LIKE '%lancer%' OR w.properties LIKE '%portée%' THEN 'ranged'
+                        ELSE 'melee'
+                    END as range_type,
+                    CASE 
+                        WHEN w.properties LIKE '%lancer%' THEN '20/60'
+                        ELSE '5'
+                    END as range_value,
+                    w.damage as damage_dice,
+                    CASE 
+                        WHEN w.damage LIKE '%contondant%' THEN 'Contondant'
+                        WHEN w.damage LIKE '%perforant%' THEN 'Perforant'
+                        WHEN w.damage LIKE '%tranchant%' THEN 'Tranchant'
+                        ELSE 'Contondant'
+                    END as damage_type,
+                    '0' as attack_bonus,
+                    '0' as damage_bonus,
+                    i.description,
+                    '1' as is_proficient,
+                    'equipped' as source_type
+                FROM items i
+                LEFT JOIN weapons w ON i.weapon_id = w.id
+                WHERE i.owner_type = 'player' 
+                AND i.owner_id = ? 
+                AND i.is_equipped = 1
+                AND i.object_type = 'weapon'
+                AND w.id IS NOT NULL
+                ORDER BY i.display_name ASC
+            ");
+            $stmt->execute([$this->id]);
+            $equippedAttacks = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $attacks = array_merge($attacks, $equippedAttacks);
+            
+            return $attacks;
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération des attaques: " . $e->getMessage());
+            return [];
+        }
     }
 
     /**

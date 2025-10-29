@@ -163,8 +163,7 @@ $charismaModifier = $abilityModifiers['charisma'];
 $armorClass = 10 + $dexterityModifier;
 
 // Récupérer les attaques du personnage
-$attacks = Character::getCharacterAttacks($character_id);
-$characterAttacks = $attacks; // Alias pour compatibilité avec les templates
+$characterAttacks = $characterObject->calculateMyCharacterAttacks();
 
 // Vérifier les permissions de modification
 $canModifyHP = ($character->user_id == $_SESSION['user_id']);

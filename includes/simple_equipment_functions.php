@@ -25,7 +25,7 @@ function createSimpleStartingEquipment($characterId, $equipmentChoices, $backgro
         $allEquipment = []; // Pour éviter les doublons
         
         // 1. Équipement de classe (traité directement)
-        if (isset($equipmentChoices['class'])) {
+        if (isset($equipmentChoices['class']) && is_array($equipmentChoices['class'])) {
             error_log("DEBUG Processing class equipment: " . json_encode($equipmentChoices['class']));
             foreach ($equipmentChoices['class'] as $choiceIndex => $selectedOption) {
                 $equipment = getClassEquipmentByChoice($choiceIndex, $selectedOption);
@@ -37,7 +37,7 @@ function createSimpleStartingEquipment($characterId, $equipmentChoices, $backgro
         }
         
         // 2. Armes sélectionnées par le joueur (éviter les doublons)
-        if (isset($equipmentChoices['selected_weapons'])) {
+        if (isset($equipmentChoices['selected_weapons']) && is_array($equipmentChoices['selected_weapons'])) {
             error_log("DEBUG Processing selected weapons: " . json_encode($equipmentChoices['selected_weapons']));
             foreach ($equipmentChoices['selected_weapons'] as $weaponName) {
                 if (!empty($weaponName)) {

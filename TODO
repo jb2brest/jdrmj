@@ -197,6 +197,19 @@ onglets actions, il faut ajouter trois boutons
 - Load user : permet d'importer un fichier générer avec "Save user"
 
 
+Liste des choix possibles : 
+SELECT * FROM `starting_equipment_choix` where src="class" and src_id=1;
+
+
+On va revoir complètement la création de personnage par step. 
+Le système doit être compatible pour la création de PJ et de PNJ (Attention il faut conserver la possibilitée de créer un PNJ de façon automatique.) 
+Les données vont être enregistrée dans des tables préfixée par PT_ (Pour temporaire personnage) 
+Nous allons procéder par étape et je vais te guider.
+Première étape : 
+Créer un nouveau bouton "Nouveau personnage" dans characters.php et dans manage_npcs.php
+
+
+
 Dans characters.php, un MJ (ou un admin), il faut ajouter la possibilité de créer un PNJ de façon automatique via un bouton "Creation Automatique" 
 Le MJ sélectionne la race, la classe et le niveau du personnage. 
 Pour les charactéristiques sont sélectionnées en fonction des recommandations du jeu DnD.
