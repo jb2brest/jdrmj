@@ -1321,3 +1321,68 @@ body {
 .progress-bar.hp-critical {
     background-color: #dc3545 !important; /* Rouge pour HP critiques */
 }
+
+/* ===== GESTION DES CARTES DE CARACTÉRISTIQUES ===== */
+
+.stat-card {
+    border: 2px solid var(--dnd-light);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, var(--dnd-light) 0%, #ffffff 100%);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    height: 100%;
+}
+
+.stat-card:hover {
+    border-color: var(--dnd-primary);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+}
+
+.stat-card .card-title {
+    color: var(--dnd-primary-dark);
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.stat-input-group {
+    position: relative;
+    margin-bottom: 0.5rem;
+}
+
+.stat-input {
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-align: center;
+    border: 2px solid var(--dnd-light);
+    border-radius: 8px;
+    padding: 0.75rem;
+    background: white;
+    transition: all 0.3s ease;
+}
+
+.stat-input:focus {
+    border-color: var(--dnd-primary);
+    box-shadow: 0 0 0 0.2rem rgba(139, 69, 19, 0.25);
+    outline: none;
+}
+
+.stat-modifier {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    background: var(--dnd-primary);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    min-width: 40px;
+    text-align: center;
+}
+
+.stat-card .text-muted {
+    font-size: 0.8rem;
+    color: var(--dnd-secondary-dark) !important;
+}

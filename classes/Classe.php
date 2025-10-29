@@ -27,6 +27,12 @@ class Classe
     public $starting_equipment;
     public $class_features;
     public $spellcasting_ability;
+    public $recommended_strength;
+    public $recommended_dexterity;
+    public $recommended_constitution;
+    public $recommended_intelligence;
+    public $recommended_wisdom;
+    public $recommended_charisma;
     public $created_at;
     public $updated_at;
     

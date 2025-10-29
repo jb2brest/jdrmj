@@ -215,6 +215,14 @@ Il faut maintenant mettre en place l'étape 2 : sélection de la race.
 Toutes les données nécessaires sur les races à cette étapes sont dans la tables "races"
 
 
+Il faut maintenant mettre en place l'étape 4 : sélection des charactéristiques.
+L'utilisateur peut choisir les valeurs de chaque caractéristiques
+Un bouton "Appliquer les préconisation D&D" précharge les valeurs recommandées. 
+Au chargement de la page, les valeurs recommandées sont préchargées.
+
+
+
+
 renomme character_class_selection.php en cc01_class_selection.php (pour create character étape 01) 
 
 
@@ -223,6 +231,8 @@ Le MJ sélectionne la race, la classe et le niveau du personnage.
 Pour les charactéristiques sont sélectionnées en fonction des recommandations du jeu DnD.
 Le reste est sélectionné de façon aléatoire. 
 
+il faut ajouter 6 colonnes pour enregistrer dans la table classe, les caractéristiques recommandées. 
+Voici les valeurs à enregistrer : 
 Barbare : FOR 15 DEX 13 CON 14 SAG 12 INT 8 CHA 10
 Barde : FOR 8 DEX 14 CON 13 SAG 10 INT 12 CHA 15
 Clerc : FOR 13 DEX 12 CON 14 SAG 15 INT 8 CHA 10

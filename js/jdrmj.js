@@ -193,6 +193,228 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+/**
+ * Gestion de la sélection d'historique pour la création de personnage
+ */
+class BackgroundSelectionManager {
+    constructor() {
+        this.backgroundCards = document.querySelectorAll('.class-card[data-background-id]');
+        this.selectedBackgroundIdInput = document.getElementById('selected_background_id');
+        this.continueBtn = document.getElementById('continueBtn');
+        this.characterType = this.getCharacterType();
+        this.ptId = this.getPTId();
+        
+        this.init();
+    }
+    
+    init() {
+        if (this.backgroundCards.length === 0) return;
+        
+        this.backgroundCards.forEach(card => {
+            card.addEventListener('click', () => this.selectBackground(card));
+        });
+    }
+    
+    getCharacterType() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('type') || 'player';
+    }
+    
+    getPTId() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('pt_id') || 0;
+    }
+    
+    selectBackground(card) {
+        // Désélectionner toutes les cartes
+        this.backgroundCards.forEach(c => c.classList.remove('selected'));
+        
+        // Sélectionner la carte cliquée
+        card.classList.add('selected');
+        
+        // Mettre à jour l'input caché
+        const backgroundId = card.dataset.backgroundId;
+        this.selectedBackgroundIdInput.value = backgroundId;
+        
+        // Activer le bouton continuer
+        this.continueBtn.disabled = false;
+    }
+    
+    async updatePTBackground(backgroundId) {
+        try {
+            const response = await fetch('api/update_pt_background.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    pt_id: this.ptId,
+                    background_id: backgroundId
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Rediriger vers l'étape suivante
+                window.location.href = `cc04_characteristics.php?pt_id=${this.ptId}&type=${this.characterType}`;
+            } else {
+                // Rediriger vers la même page avec un message d'erreur
+                window.location.href = `cc03_background_selection.php?pt_id=${this.ptId}&type=${this.characterType}&error=${encodeURIComponent(data.message)}`;
+            }
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour de l\'historique:', error);
+            // Rediriger vers la même page avec un message d'erreur
+            window.location.href = `cc03_background_selection.php?pt_id=${this.ptId}&type=${this.characterType}&error=${encodeURIComponent('Erreur de connexion')}`;
+        }
+    }
+}
+
+// Initialiser la gestion de sélection d'historique
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.querySelector('.class-card[data-background-id]')) {
+        window.backgroundSelectionManager = new BackgroundSelectionManager();
+        
+        // Gérer la soumission du formulaire
+        const form = document.getElementById('backgroundForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const backgroundId = document.getElementById('selected_background_id').value;
+                if (backgroundId) {
+                    window.backgroundSelectionManager.updatePTBackground(backgroundId);
+                }
+            });
+        }
+    }
+});
+
+/**
+ * Gestion des caractéristiques pour la création de personnage
+ */
+class CharacteristicsManager {
+    constructor() {
+        this.statInputs = document.querySelectorAll('.stat-input');
+        this.applyRecommendedBtn = document.getElementById('applyRecommendedBtn');
+        this.continueBtn = document.getElementById('continueBtn');
+        this.characterType = this.getCharacterType();
+        this.ptId = this.getPTId();
+        
+        this.init();
+    }
+    
+    init() {
+        if (this.statInputs.length === 0) return;
+        
+        // Gérer les changements de valeurs
+        this.statInputs.forEach(input => {
+            input.addEventListener('input', () => this.updateModifier(input));
+            input.addEventListener('change', () => this.updateModifier(input));
+        });
+        
+        // Gérer le bouton de préconisations
+        if (this.applyRecommendedBtn) {
+            this.applyRecommendedBtn.addEventListener('click', () => this.applyRecommendedValues());
+        }
+        
+        // Gérer la soumission du formulaire
+        const form = document.getElementById('characteristicsForm');
+        if (form) {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.updateCharacteristics();
+            });
+        }
+    }
+    
+    getCharacterType() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('type') || 'player';
+    }
+    
+    getPTId() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('pt_id') || 0;
+    }
+    
+    updateModifier(input) {
+        const value = parseInt(input.value) || 0;
+        const modifier = Math.floor((value - 10) / 2);
+        const modifierText = modifier >= 0 ? `+${modifier}` : `${modifier}`;
+        
+        const statName = input.id;
+        const modifierElement = document.getElementById(`${statName}_modifier`);
+        
+        if (modifierElement) {
+            modifierElement.textContent = modifierText;
+        }
+    }
+    
+    applyRecommendedValues() {
+        this.statInputs.forEach(input => {
+            const recommendedValue = input.dataset.recommended;
+            if (recommendedValue) {
+                input.value = recommendedValue;
+                this.updateModifier(input);
+            }
+        });
+        
+        // Animation de confirmation
+        this.applyRecommendedBtn.innerHTML = '<i class="fas fa-check me-2"></i>Valeurs appliquées !';
+        this.applyRecommendedBtn.classList.remove('btn-outline-primary');
+        this.applyRecommendedBtn.classList.add('btn-success');
+        
+        setTimeout(() => {
+            this.applyRecommendedBtn.innerHTML = '<i class="fas fa-magic me-2"></i>Appliquer les préconisations D&D';
+            this.applyRecommendedBtn.classList.remove('btn-success');
+            this.applyRecommendedBtn.classList.add('btn-outline-primary');
+        }, 2000);
+    }
+    
+    async updateCharacteristics() {
+        const characteristics = {};
+        
+        this.statInputs.forEach(input => {
+            characteristics[input.name] = parseInt(input.value) || 0;
+        });
+        
+        try {
+            const response = await fetch('api/update_pt_characteristics.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    pt_id: this.ptId,
+                    ...characteristics
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Rediriger vers l'étape suivante
+                window.location.href = `cc05_class_specialization.php?pt_id=${this.ptId}&type=${this.characterType}`;
+            } else {
+                // Rediriger vers la même page avec un message d'erreur
+                window.location.href = `cc04_characteristics.php?pt_id=${this.ptId}&type=${this.characterType}&error=${encodeURIComponent(data.message)}`;
+            }
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour des caractéristiques:', error);
+            // Rediriger vers la même page avec un message d'erreur
+            window.location.href = `cc04_characteristics.php?pt_id=${this.ptId}&type=${this.characterType}&error=${encodeURIComponent('Erreur de connexion')}`;
+        }
+    }
+}
+
+// Initialiser la gestion des caractéristiques
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.querySelector('.stat-input')) {
+        window.characteristicsManager = new CharacteristicsManager();
+    }
+});
+
 // ===== GESTION DES NPCs =====
 
 /**

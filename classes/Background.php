@@ -1,155 +1,258 @@
 <?php
 
-require_once 'Database.php';
+/**
+ * Classe Background - Gestion des historiques D&D
+ * 
+ * Cette classe encapsule toutes les fonctionnalités liées aux historiques :
+ * - Création, lecture, mise à jour, suppression
+ * - Gestion des compétences d'historique
+ * - Gestion des équipements de départ
+ */
 
-class Background {
+class Background
+{
+    private $pdo;
+    
+    // Propriétés de l'historique
     public $id;
     public $name;
     public $description;
     public $skill_proficiencies;
     public $tool_proficiencies;
     public $languages;
+    public $equipment;
     public $feature;
-    
-    public function __construct($data = null) {
-        if ($data) {
-            $this->id = $data['id'] ?? null;
-            $this->name = $data['name'] ?? '';
-            $this->description = $data['description'] ?? '';
-            $this->skill_proficiencies = $data['skill_proficiencies'] ?? '';
-            $this->tool_proficiencies = $data['tool_proficiencies'] ?? '';
-            $this->languages = $data['languages'] ?? '';
-            $this->feature = $data['feature'] ?? '';
-        }
-    }
+    public $suggested_characteristics;
+    public $created_at;
+    public $updated_at;
     
     /**
-     * Obtenir un historique par ID (retourne un tableau)
-     * 
-     * @param int $backgroundId ID de l'historique
-     * @return array|null Données de l'historique
+     * Constructeur
      */
-    public static function getBackgroundById($backgroundId)
+    public function __construct(PDO $pdo = null, array $data = [])
     {
-        $pdo = \Database::getInstance()->getPdo();
-        $stmt = $pdo->prepare("SELECT * FROM backgrounds WHERE id = ?");
-        $stmt->execute([$backgroundId]);
-        return $stmt->fetch();
+        $this->pdo = $pdo ?: getPDO();
+        
+        if (!empty($data)) {
+            $this->hydrate($data);
+        }
     }
-
+    
     /**
-     * Obtenir les compétences d'un historique
-     * 
-     * @param int $backgroundId ID de l'historique
-     * @return array Tableau des compétences de l'historique
+     * Obtenir l'instance PDO
      */
-    public static function getBackgroundProficiencies($backgroundId)
+    private function getPdo()
     {
-        $pdo = \Database::getInstance()->getPdo();
-        $stmt = $pdo->prepare("SELECT skill_proficiencies, tool_proficiencies FROM backgrounds WHERE id = ?");
-        $stmt->execute([$backgroundId]);
-        $result = $stmt->fetch();
-        
-        if (!$result) {
-            return ['skills' => [], 'tools' => []];
-        }
-        
-        return [
-            'skills' => json_decode($result['skill_proficiencies'], true) ?? [],
-            'tools' => json_decode($result['tool_proficiencies'], true) ?? []
-        ];
+        return $this->pdo ?: \Database::getInstance()->getPdo();
     }
-
+    
     /**
-     * Obtenir les langues d'un historique
-     * 
-     * @param int $backgroundId ID de l'historique
-     * @return array Tableau des langues de l'historique
+     * Hydratation de l'objet avec les données
      */
-    public static function getBackgroundLanguages($backgroundId)
+    private function hydrate(array $data)
     {
-        $pdo = \Database::getInstance()->getPdo();
-        $stmt = $pdo->prepare("SELECT languages FROM backgrounds WHERE id = ?");
-        $stmt->execute([$backgroundId]);
-        $result = $stmt->fetch();
-        
-        if (!$result || !$result['languages']) {
-            return [];
+        foreach ($data as $key => $value) {
+            if (property_exists($this, $key)) {
+                $this->$key = $value;
+            }
         }
-        
-        return json_decode($result['languages'], true) ?? [];
-    }
-
-    /**
-     * Trouve un background par son ID
-     */
-    public static function findById($id) {
-        if (!$id) {
-            return null;
-        }
-        
-        $pdo = Database::getInstance()->getPdo();
-        $stmt = $pdo->prepare("
-            SELECT id, name, description, skill_proficiencies, 
-                   tool_proficiencies, languages, feature
-            FROM backgrounds 
-            WHERE id = ?
-        ");
-        $stmt->execute([$id]);
-        $data = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        return $data ? new self($data) : null;
     }
     
     /**
-     * Récupère les compétences de maîtrise du background
+     * Créer un nouvel historique
      */
-    public function getSkillProficiencies() {
-        if ($this->skill_proficiencies) {
-            return json_decode($this->skill_proficiencies, true) ?: [];
-        }
-        return [];
-    }
-    
-    /**
-     * Récupère les outils de maîtrise du background
-     */
-    public function getToolProficiencies() {
-        if ($this->tool_proficiencies) {
-            return json_decode($this->tool_proficiencies, true) ?: [];
-        }
-        return [];
-    }
-    
-    /**
-     * Récupère les langues du background
-     */
-    public function getLanguages() {
-        if ($this->languages) {
-            $languages = json_decode($this->languages, true) ?: [];
+    public function create()
+    {
+        $pdo = $this->getPdo();
+        
+        try {
+            $pdo->beginTransaction();
             
-            // Traiter les descriptions génériques
-            $processedLanguages = [];
-            foreach ($languages as $lang) {
-                if ($lang === 'deux de votre choix') {
-                    $processedLanguages[] = 'Nain';
-                    $processedLanguages[] = 'Halfelin';
-                } elseif ($lang === 'une langue de votre choix') {
-                    $processedLanguages[] = 'Elfique';
-                } else {
-                    $processedLanguages[] = $lang;
-                }
+            $stmt = $pdo->prepare("
+                INSERT INTO backgrounds 
+                (name, description, skill_proficiencies, tool_proficiencies, languages, 
+                 equipment, feature, suggested_characteristics, created_at, updated_at) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+            ");
+            
+            $result = $stmt->execute([
+                $this->name,
+                $this->description,
+                $this->skill_proficiencies,
+                $this->tool_proficiencies,
+                $this->languages,
+                $this->equipment,
+                $this->feature,
+                $this->suggested_characteristics
+            ]);
+            
+            if ($result) {
+                $this->id = $pdo->lastInsertId();
+                $pdo->commit();
+                return true;
             }
             
-            return $processedLanguages;
+            $pdo->rollBack();
+            return false;
+            
+        } catch (PDOException $e) {
+            $pdo->rollBack();
+            error_log("Erreur création Background: " . $e->getMessage());
+            return false;
         }
-        return [];
     }
     
     /**
-     * Convertit l'objet en tableau
+     * Trouver un historique par ID
      */
-    public function toArray() {
+    public static function findById($id, PDO $pdo = null)
+    {
+        $pdo = $pdo ?: getPDO();
+        
+        try {
+            $stmt = $pdo->prepare("SELECT * FROM backgrounds WHERE id = ?");
+            $stmt->execute([$id]);
+            $data = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($data) {
+                return new self($pdo, $data);
+            }
+            
+            return null;
+            
+        } catch (PDOException $e) {
+            error_log("Erreur recherche Background: " . $e->getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Trouver tous les historiques
+     */
+    public function getAll()
+    {
+        $pdo = $this->getPdo();
+        
+        try {
+            $stmt = $pdo->query("SELECT * FROM backgrounds ORDER BY name ASC");
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $backgrounds = [];
+            foreach ($results as $data) {
+                $backgrounds[] = new self($pdo, $data);
+            }
+            
+            return $backgrounds;
+            
+        } catch (PDOException $e) {
+            error_log("Erreur récupération backgrounds: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Rechercher des historiques par nom
+     */
+    public static function searchByName($name, PDO $pdo = null)
+    {
+        $pdo = $pdo ?: getPDO();
+        
+        try {
+            $stmt = $pdo->prepare("SELECT * FROM backgrounds WHERE name LIKE ? ORDER BY name ASC");
+            $stmt->execute(["%$name%"]);
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $backgrounds = [];
+            foreach ($results as $data) {
+                $backgrounds[] = new self($pdo, $data);
+            }
+            
+            return $backgrounds;
+            
+        } catch (PDOException $e) {
+            error_log("Erreur recherche backgrounds par nom: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Mettre à jour l'historique
+     */
+    public function update()
+    {
+        $pdo = $this->getPdo();
+        
+        try {
+            $pdo->beginTransaction();
+            
+            $stmt = $pdo->prepare("
+                UPDATE backgrounds 
+                SET name = ?, description = ?, skill_proficiencies = ?, tool_proficiencies = ?, 
+                    languages = ?, equipment = ?, feature = ?, suggested_characteristics = ?, 
+                    updated_at = NOW()
+                WHERE id = ?
+            ");
+            
+            $result = $stmt->execute([
+                $this->name,
+                $this->description,
+                $this->skill_proficiencies,
+                $this->tool_proficiencies,
+                $this->languages,
+                $this->equipment,
+                $this->feature,
+                $this->suggested_characteristics,
+                $this->id
+            ]);
+            
+            if ($result) {
+                $pdo->commit();
+                return true;
+            }
+            
+            $pdo->rollBack();
+            return false;
+            
+        } catch (PDOException $e) {
+            $pdo->rollBack();
+            error_log("Erreur mise à jour Background: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Supprimer l'historique
+     */
+    public function delete()
+    {
+        $pdo = $this->getPdo();
+        
+        try {
+            $pdo->beginTransaction();
+            
+            $stmt = $pdo->prepare("DELETE FROM backgrounds WHERE id = ?");
+            $result = $stmt->execute([$this->id]);
+            
+            if ($result) {
+                $pdo->commit();
+                return true;
+            }
+            
+            $pdo->rollBack();
+            return false;
+            
+        } catch (PDOException $e) {
+            $pdo->rollBack();
+            error_log("Erreur suppression Background: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Convertir en tableau
+     */
+    public function toArray()
+    {
         return [
             'id' => $this->id,
             'name' => $this->name,
@@ -157,7 +260,12 @@ class Background {
             'skill_proficiencies' => $this->skill_proficiencies,
             'tool_proficiencies' => $this->tool_proficiencies,
             'languages' => $this->languages,
-            'feature' => $this->feature
+            'equipment' => $this->equipment,
+            'feature' => $this->feature,
+            'suggested_characteristics' => $this->suggested_characteristics,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at
         ];
     }
 }
+?>
