@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.22.1
+VERSION=2.22.2
 
 # Date de déploiement
 DEPLOY_DATE=2025-10-29
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-10-29
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=dc1b1e3a56a63e206f6676f861eb98d14f0f1546
+GIT_COMMIT=b4576187dd42540f76adf3473069649750374bfc
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251029-213322
+BUILD_ID=20251029-213814
 
 # Notes de version
-RELEASE_NOTES="CC01 : gestion des erreurs"
+RELEASE_NOTES="CC01 : OK"
