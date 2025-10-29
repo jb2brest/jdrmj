@@ -207,7 +207,10 @@ Les données vont être enregistrée dans des tables préfixée par PT_ (Pour te
 Nous allons procéder par étape et je vais te guider.
 Première étape : 
 Créer un nouveau bouton "Nouveau personnage" dans characters.php et dans manage_npcs.php
+Ce bouton permet d'arriver sur un écran commun de sélection de la classe du personnage. 
+Toutes les données nécessaires sur les classes à cette étapes sont dans la tables "classes"
 
+renomme character_class_selection.php en cc01_class_selection.php (pour create character étape 01) 
 
 
 Dans characters.php, un MJ (ou un admin), il faut ajouter la possibilité de créer un PNJ de façon automatique via un bouton "Creation Automatique" 
@@ -246,7 +249,7 @@ Il faut revoir le code de view_npc.php
 Rappel des règles à appliquer : 
 - le SQL doit être géré dans des méthodes de classes 
 - le javascript doit être mis dans le fichier jdrmj.js
-- les css dans le fichier style.css
+- les css doit être dans le fichier style.css et utiliser uniquement les couleurs du thème custom-theme.css
 - les appels à des modification en base doivent être codé en ajax et faire un appel à un endpoint en php codé dans un répertoire api. 
 - utilisation de méthode d'instance et non de méthode static
 

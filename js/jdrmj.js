@@ -5,6 +5,117 @@
 
 // ===== GESTION DES PERSONNAGES =====
 
+/**
+ * Gestion de la sélection de classe pour la création de personnage
+ */
+class ClassSelectionManager {
+    constructor() {
+        this.classCards = document.querySelectorAll('.class-card');
+        this.selectedClassIdInput = document.getElementById('selected_class_id');
+        this.continueBtn = document.getElementById('continueBtn');
+        this.characterType = this.getCharacterType();
+        
+        this.init();
+    }
+    
+    init() {
+        if (this.classCards.length === 0) return;
+        
+        this.classCards.forEach(card => {
+            card.addEventListener('click', () => this.selectClass(card));
+        });
+    }
+    
+    getCharacterType() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('type') || 'player';
+    }
+    
+    selectClass(card) {
+        // Désélectionner toutes les cartes
+        this.classCards.forEach(c => c.classList.remove('selected'));
+        
+        // Sélectionner la carte cliquée
+        card.classList.add('selected');
+        
+        // Mettre à jour l'input caché
+        const classId = card.dataset.classId;
+        this.selectedClassIdInput.value = classId;
+        
+        // Activer le bouton continuer
+        this.continueBtn.disabled = false;
+    }
+    
+    async createPTCharacter(classId) {
+        try {
+            const response = await fetch('api/create_pt_character.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    class_id: classId,
+                    character_type: this.characterType
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Rediriger vers l'étape suivante
+                window.location.href = `cc02_race_selection.php?pt_id=${data.pt_character_id}&type=${this.characterType}`;
+            } else {
+                this.showMessage(data.message, 'error');
+            }
+        } catch (error) {
+            console.error('Erreur lors de la création du personnage temporaire:', error);
+            this.showMessage('Erreur de connexion', 'error');
+        }
+    }
+    
+    showMessage(message, type) {
+        // Créer une alerte Bootstrap
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type === 'error' ? 'danger' : 'success'} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            <i class="fas fa-${type === 'error' ? 'exclamation-triangle' : 'check-circle'} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        // Insérer au début du container
+        const container = document.querySelector('.container');
+        container.insertBefore(alertDiv, container.firstChild);
+        
+        // Auto-supprimer après 5 secondes
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+}
+
+// Initialiser la gestion de sélection de classe
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.querySelector('.class-card')) {
+        window.classSelectionManager = new ClassSelectionManager();
+        
+        // Gérer la soumission du formulaire
+        const form = document.getElementById('classForm');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const classId = document.getElementById('selected_class_id').value;
+                if (classId) {
+                    window.classSelectionManager.createPTCharacter(classId);
+                }
+            });
+        }
+    }
+});
+
 // ===== GESTION DES NPCs =====
 
 /**

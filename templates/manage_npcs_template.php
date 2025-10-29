@@ -1,4 +1,4 @@
-<?php
+    <?php
 /**
  * Template pour manage_npcs.php
  */
@@ -40,11 +40,11 @@ extract($template_vars ?? []);
                 </h1>
                 <div>
                     <div class="btn-group me-2" role="group">
-                        <a href="npc_create_step1.php" class="btn btn-primary">
-                            <i class="fas fa-plus me-1"></i> Créer un PNJ mode complet
+                        <a href="cc01_class_selection.php?type=npc" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i> Nouveau Personnage
                         </a>
                         <a href="npc_create_automatic.php" class="btn btn-outline-primary">
-                            <i class="fas fa-bolt me-1"></i> Créer un PNJ mode rapide
+                            <i class="fas fa-bolt me-1"></i> Création Automatique
                         </a>
                     </div>
                     <a href="monster_create_automatic.php" class="btn btn-success">

@@ -110,8 +110,8 @@ $current_page = "characters";
                 </p>
             </div>
             <div class="btn-group" role="group">
-                <a href="character_create_step1.php" class="btn btn-dnd">
-                    <i class="fas fa-plus me-2"></i>Créer un Personnage
+                <a href="cc01_class_selection.php?type=player" class="btn btn-dnd">
+                    <i class="fas fa-plus me-2"></i>Nouveau Personnage
                 </a>
             </div>
         </div>
@@ -132,8 +132,8 @@ $current_page = "characters";
                 <h3>Aucun personnage créé</h3>
                 <p class="lead">Vous n'avez pas encore créé de personnage. Commencez votre aventure !</p>
                 <div class="btn-group" role="group">
-                    <a href="character_create_step1.php" class="btn btn-dnd btn-lg">
-                        <i class="fas fa-plus me-2"></i>Créer votre premier personnage
+                    <a href="cc01_class_selection.php?type=player" class="btn btn-dnd btn-lg">
+                        <i class="fas fa-plus me-2"></i>Nouveau Personnage
                     </a>
                     <?php if (User::isDMOrAdmin()): ?>
                         <a href="create_npc_automatic.php" class="btn btn-outline-primary btn-lg">

@@ -131,9 +131,9 @@ class Classe
     /**
      * Trouver toutes les classes
      */
-    public static function getAll(PDO $pdo = null)
+    public function getAll()
     {
-        $pdo = $pdo ?: getPDO();
+        $pdo = $this->getPdo();
         
         try {
             $stmt = $pdo->query("SELECT * FROM classes ORDER BY name ASC");
