@@ -225,6 +225,42 @@ Dans characters.php et dans manage_npcs.php, il faut pouvoir visualiser les pers
 Il faut maintenant mettre en place l'étape 5 de création de ersonnage : Choix de la spécialisation de la classe. 
 Toutes les données nécessaires sont dans la tables "class_archetypes"
 
+Il faut maintenant mettre en place l'étape 5 de création de ersonnage : Choix de la spécialisation de la classe. 
+Toutes les données nécessaires sont dans la tables "class_archetypes"
+
+Il faut maintenant mettre en place l'étape 6 de création de personnage : Choix des compétences et langues.
+Toutes les données nécessaires sont dans la tables "class_archetypes"
+
+Il faut maintenant mettre en place l'étape 7 de création de personnage : Choix de l'alignement et de la photo de profil
+
+Il faut maintenant mettre en place l'étape 8 de création de personnage : Choix du nom, de l'apparence physique, des traits de caractères et de l'histoire du personnage
+
+
+Il faut maintenant mettre en place l'étape 9 de création de personnage : Choix de l'équipement de départ. 
+Il est foncton de la classe et de l'historique sélectionnés. 
+La table "starting_equipment_choix" donne la liste des choix pour chaque classe et historique.
+LA table "starting_equipment_options" donne la liste des options pour chaque choix. 
+Dans les options : 
+- Si la colonne filter est vide ou null : alors la colonne type_id donne l'id de l'équipement dans la table correspondant à la valeur de la colonne "type"
+- Sinon il faut proposer un menu déroulant pour les armes contenues avec le contenu de la colonne filter sur la colonne type de la table "weapons"
+
+Ce n'est pas bon. 
+Procédons par étape, prenons un exemple. 
+Pour obetnir la liste des choix à faire pour un barbare il faut passer la requête :
+SELECT * FROM `starting_equipment_choix` Where src="class" and src_id=1;
+On peut y voir :
+- trois choix avec un numéro choix à 0 . Cela signifie que ces trois objets sont obligatoires.
+	Pour savoir de quels équipements il s'agit, il faut passer la requête suivante pour chaque ligne : 
+	SELECT * FROM `starting_equipment_options` where `starting_equipment_choix_id` = <id_de_la_requete_précédente>;
+- deux choix avec un numéro choix à 1 
+	Pour savoir de quels équipements il s'agit, il faut passer la requête suivante pour chaque ligne : 
+	SELECT * FROM `starting_equipment_options` where `starting_equipment_choix_id` = <id_de_la_requete_précédente>;
+- trois choix avec un numéro choix à 2 
+	Pour savoir de quels équipements il s'agit, il faut passer la requête suivante pour chaque ligne : 
+	SELECT * FROM `starting_equipment_options` where `starting_equipment_choix_id` = <id_de_la_requete_précédente>;
+
+Pour chaque choix il peut y avoir un ou plusieurs items d'équipement rétourné.
+
 
 renomme character_class_selection.php en cc01_class_selection.php (pour create character étape 01) 
 

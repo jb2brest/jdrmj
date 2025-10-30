@@ -155,27 +155,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $availableLanguageNames = array_map(function($l){ return $l['name']; }, $availableLanguages);
         $validLanguages = array_values(array_intersect($languages, $availableLanguageNames));
 
-        if (count($validSkills) > $maxSkillChoices) {
-            $validSkills = array_slice($validSkills, 0, $maxSkillChoices);
+        // Vérifier que le nombre exact est respecté
+        if (count($validSkills) !== (int)$maxSkillChoices) {
+            $message = displayMessage("Vous devez choisir exactement {$maxSkillChoices} compétence(s) de classe.", 'error');
         }
-        if (count($validLanguages) > $maxLanguageChoices) {
-            $validLanguages = array_slice($validLanguages, 0, $maxLanguageChoices);
+        if (empty($message) && count($validLanguages) !== (int)$maxLanguageChoices) {
+            $message = displayMessage("Vous devez choisir exactement {$maxLanguageChoices} langue(s) supplémentaire(s).", 'error');
         }
 
-        // Enrichir: inclure automatiquement les fixes (union)
-        $finalSkills = array_values(array_unique(array_merge($fixedSkills, $validSkills)));
-        $finalLanguages = array_values(array_unique(array_merge($fixedLanguages, $validLanguages)));
+        if (empty($message)) {
+            // Enrichir: inclure automatiquement les fixes (union)
+            $finalSkills = array_values(array_unique(array_merge($fixedSkills, $validSkills)));
+            $finalLanguages = array_values(array_unique(array_merge($fixedLanguages, $validLanguages)));
 
-        // Sauvegarder dans PT_characters
-        $ptCharacter->selected_skills = json_encode($finalSkills, JSON_UNESCAPED_UNICODE);
-        $ptCharacter->selected_languages = json_encode($finalLanguages, JSON_UNESCAPED_UNICODE);
-        if ((int)$ptCharacter->step < 7) { $ptCharacter->step = 7; }
+            // Sauvegarder dans PT_characters
+            $ptCharacter->selected_skills = json_encode($finalSkills, JSON_UNESCAPED_UNICODE);
+            $ptCharacter->selected_languages = json_encode($finalLanguages, JSON_UNESCAPED_UNICODE);
+            if ((int)$ptCharacter->step < 7) { $ptCharacter->step = 7; }
 
-        if ($ptCharacter->update()) {
-            header('Location: cc07_starting_equipment.php?pt_id=' . $pt_id . '&type=' . $character_type);
-            exit();
-        } else {
-            $message = displayMessage("Erreur lors de l'enregistrement des sélections.", 'error');
+            if ($ptCharacter->update()) {
+                header('Location: cc07_alignment_profile.php?pt_id=' . $pt_id . '&type=' . $character_type);
+                exit();
+            } else {
+                $message = displayMessage("Erreur lors de l'enregistrement des sélections.", 'error');
+            }
         }
     } elseif ($action === 'go_back') {
         header('Location: cc05_class_specialization.php?pt_id=' . $pt_id . '&type=' . $character_type);
@@ -334,6 +337,7 @@ $checkedLanguages = array_fill_keys($selected_languages, true);
         const maxLangs = <?php echo (int)$maxLanguageChoices; ?>;
         const skillBoxes = document.querySelectorAll('.skill-checkbox');
         const langBoxes = document.querySelectorAll('.language-checkbox');
+        const continueBtn = document.getElementById('continueBtn');
 
         function enforceLimit(boxes, limit) {
             const checked = Array.from(boxes).filter(b => b.checked && !b.hasAttribute('data-fixed'));
@@ -344,8 +348,19 @@ $checkedLanguages = array_fill_keys($selected_languages, true);
             }
         }
 
-        skillBoxes.forEach(b => b.addEventListener('change', () => enforceLimit(skillBoxes, maxSkills)));
-        langBoxes.forEach(b => b.addEventListener('change', () => enforceLimit(langBoxes, maxLangs)));
+        function updateContinueState() {
+            const skillsSelected = Array.from(skillBoxes).filter(b => b.checked && !b.hasAttribute('data-fixed')).length;
+            const langsSelected = Array.from(langBoxes).filter(b => b.checked).length;
+            if (continueBtn) {
+                continueBtn.disabled = !(skillsSelected === maxSkills && langsSelected === maxLangs);
+            }
+        }
+
+        skillBoxes.forEach(b => b.addEventListener('change', () => { enforceLimit(skillBoxes, maxSkills); updateContinueState(); }));
+        langBoxes.forEach(b => b.addEventListener('change', () => { enforceLimit(langBoxes, maxLangs); updateContinueState(); }));
+
+        // init
+        updateContinueState();
     });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
