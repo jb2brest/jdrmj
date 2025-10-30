@@ -114,19 +114,6 @@ if (isset($_GET['success']) && !empty($_GET['success'])) {
             <?php echo displayMessage($error_message, 'error'); ?>
         <?php endif; ?>
         
-        <!-- Badge du type de personnage -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="alert-character-type d-flex align-items-center">
-                    <i class="fas fa-<?php echo $character_type === 'npc' ? 'robot' : 'user'; ?> me-2"></i>
-                    <strong>Type de personnage :</strong>
-                    <span class="badge bg-<?php echo $character_type === 'npc' ? 'warning' : 'primary'; ?> ms-2">
-                        <?php echo $character_type === 'npc' ? 'PNJ' : 'Personnage Joueur'; ?>
-                    </span>
-                </div>
-            </div>
-        </div>
-        
         <!-- Informations sur les sélections précédentes -->
         <div class="info-card">
             <div class="row align-items-center">
