@@ -674,10 +674,13 @@ function addStartingEquipmentToCharacterNew($characterId, $equipmentData) {
             $stmt->execute([$displayName, $itemType, $itemType, $characterId, $quantity, $weaponId, $armorId]);
         }
         
-        // Mettre à jour l'argent du personnage
-        if ($equipmentData['gold'] > 0) {
-            $stmt = $pdo->prepare("UPDATE characters SET gold = gold + ? WHERE id = ?");
-            $stmt->execute([$equipmentData['gold'], $characterId]);
+        // Mettre à jour l'argent du personnage (valeurs par défaut si non définies)
+        $gold = isset($equipmentData['gold']) ? (int)$equipmentData['gold'] : 0;
+        $silver = isset($equipmentData['silver']) ? (int)$equipmentData['silver'] : 0;
+        $copper = isset($equipmentData['copper']) ? (int)$equipmentData['copper'] : 0;
+        if ($gold !== 0 || $silver !== 0 || $copper !== 0) {
+            $stmt = $pdo->prepare("UPDATE characters SET gold = gold + ?, silver = silver + ?, copper = copper + ? WHERE id = ?");
+            $stmt->execute([$gold, $silver, $copper, $characterId]);
         }
         
         $pdo->commit();

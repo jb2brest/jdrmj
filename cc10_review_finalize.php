@@ -1,6 +1,7 @@
 <?php
 require_once 'classes/init.php';
 require_once 'includes/functions.php';
+require_once 'includes/starting_equipment_functions.php';
 
 requireLogin();
 
@@ -140,8 +141,210 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: cc09_starting_equipment.php?pt_id=' . $pt_id . '&type=' . $character_type);
         exit();
     } elseif ($action === 'confirm_create') {
-        // À implémenter: création finale à partir des tables PT_
-        $message = displayMessage("Validation reçue. La création finale sera implémentée ensuite.", 'success');
+        try {
+            if (!$ptCharacter) {
+                $message = displayMessage("Brouillon introuvable.", 'error');
+            } else if ($character_type === 'player') {
+                // Création d'un PJ
+                $skillsArr = $selectedSkills;
+                $languagesArr = $selectedLanguages;
+                $char = Character::create([
+                    'user_id' => $_SESSION['user_id'],
+                    'name' => $ptCharacter->name ?: 'Nouveau Personnage',
+                    'race_id' => $ptCharacter->race_id,
+                    'class_id' => $ptCharacter->class_id,
+                    'background_id' => $ptCharacter->background_id,
+                    'level' => $ptCharacter->level ?: 1,
+                    'experience_points' => $ptCharacter->experience ?: 0,
+                    'strength' => $ptCharacter->strength ?: 10,
+                    'dexterity' => $ptCharacter->dexterity ?: 10,
+                    'constitution' => $ptCharacter->constitution ?: 10,
+                    'intelligence' => $ptCharacter->intelligence ?: 10,
+                    'wisdom' => $ptCharacter->wisdom ?: 10,
+                    'charisma' => $ptCharacter->charisma ?: 10,
+                    'armor_class' => $ptCharacter->armor_class ?: 10,
+                    'initiative' => 0,
+                    'speed' => $ptCharacter->speed ?: 30,
+                    'hit_points_max' => $ptCharacter->hit_points_max ?: 8,
+                    'hit_points_current' => $ptCharacter->hit_points_current ?: ($ptCharacter->hit_points_max ?: 8),
+                    'proficiency_bonus' => $ptCharacter->proficiency_bonus ?: 2,
+                    'alignment' => $ptCharacter->alignment ?: 'Neutre',
+                    'personality_traits' => $ptCharacter->personality_traits ?: null,
+                    'ideals' => $ptCharacter->ideals ?: null,
+                    'bonds' => $ptCharacter->bonds ?: null,
+                    'flaws' => $ptCharacter->flaws ?: null,
+                    'profile_photo' => $ptCharacter->profile_photo ?: null,
+                    'selected_skills' => $skillsArr,
+                    'selected_languages' => $languagesArr,
+                ], $pdo);
+
+                if ($char && isset($char->id)) {
+                    // Récupérer les pièces d'or du background
+                    $backgroundGold = 0;
+                    if ($ptCharacter->background_id) {
+                        try {
+                            $stmtGold = $pdo->prepare("SELECT money_gold FROM backgrounds WHERE id = ?");
+                            $stmtGold->execute([$ptCharacter->background_id]);
+                            $resultGold = $stmtGold->fetch(PDO::FETCH_ASSOC);
+                            if ($resultGold && isset($resultGold['money_gold'])) {
+                                $backgroundGold = (int)$resultGold['money_gold'];
+                            }
+                        } catch (PDOException $e) {
+                            error_log('Erreur récupération pièces d\'or background: ' . $e->getMessage());
+                        }
+                    }
+                    // Ajouter les pièces d'or au personnage
+                    if ($backgroundGold > 0) {
+                        try {
+                            $stmtUpdateGold = $pdo->prepare("UPDATE characters SET gold = gold + ? WHERE id = ?");
+                            $stmtUpdateGold->execute([$backgroundGold, $char->id]);
+                        } catch (PDOException $e) {
+                            error_log('Erreur ajout pièces d\'or: ' . $e->getMessage());
+                        }
+                    }
+
+                    // Persister l'équipement de départ depuis PT_equipment_choices
+                    try {
+                        $stmt = $pdo->prepare("SELECT * FROM PT_equipment_choices WHERE pt_character_id = ? ORDER BY choice_type, choice_index");
+                        $stmt->execute([$pt_id]);
+                        $ptChoices = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                        $itemsAgg = [];
+                        foreach ($ptChoices as $chc) {
+                            $rowId = (int)$chc['selected_option'];
+                            if ($rowId <= 0) continue;
+                            $stmt2 = $pdo->prepare("SELECT * FROM starting_equipment_options WHERE starting_equipment_choix_id = ? ORDER BY id");
+                            $stmt2->execute([$rowId]);
+                            $opts = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+                            foreach ($opts as $o) {
+                                $type = strtolower($o['type'] ?? '');
+                                $qty = (int)($o['nb'] ?? 1);
+                                $name = $o['label'] ?? null;
+                                // Cas armes avec filtre: utiliser selected_weapons
+                                $filterVal = $o['filter'] ?? ($o['type_filter'] ?? null);
+                                $weaponId = null;
+                                if (!empty($filterVal) && ($type === 'weapons' || $type === 'weapon')) {
+                                    if (!empty($chc['selected_weapons'])) {
+                                        $w = json_decode($chc['selected_weapons'], true);
+                                        if (json_last_error() === JSON_ERROR_NONE && !empty($w['weapon_id'])) { $weaponId = (int)$w['weapon_id']; }
+                                    }
+                                    if ($weaponId) {
+                                        $weaponName = resolveEquipmentNameForReview($pdo, 'weapons', $weaponId);
+                                        $name = $weaponName ?: ('Arme (' . $filterVal . ')');
+                                    } else {
+                                        $name = 'Arme (' . $filterVal . ')';
+                                    }
+                                }
+                                // Résoudre par type_id sinon
+                                if (!$name && !empty($o['type_id'])) {
+                                    $name = resolveEquipmentNameForReview($pdo, $type, (int)$o['type_id']);
+                                }
+                                if (!$name && $type) { $name = strtoupper($type); }
+                                if (!$name) { continue; }
+
+                                // Clé d'agrégation pour éviter les doublons
+                                if ($weaponId) {
+                                    $key = 'weapon_id#' . $weaponId;
+                                } elseif (!empty($o['type_id'])) {
+                                    $key = 'id#' . (int)$o['type_id'] . '#type#' . $type;
+                                } elseif (!empty($o['label'])) {
+                                    $key = 'label#' . mb_strtolower(trim($o['label']));
+                                } else {
+                                    $key = 'type#' . mb_strtolower(trim($type));
+                                }
+
+                                // Si obligatoire (choice_index == 0), prendre la quantité max, sinon additionner
+                                if ((int)($chc['choice_index'] ?? 0) === 0) {
+                                    if (!isset($itemsAgg[$key])) {
+                                        $itemsAgg[$key] = ['name' => $name, 'quantity' => max(1, $qty)];
+                                    } else {
+                                        $itemsAgg[$key]['quantity'] = max($itemsAgg[$key]['quantity'], max(1, $qty));
+                                    }
+                                } else {
+                                    if (!isset($itemsAgg[$key])) {
+                                        $itemsAgg[$key] = ['name' => $name, 'quantity' => 0];
+                                    }
+                                    $itemsAgg[$key]['quantity'] += max(1, $qty);
+                                }
+                            }
+                        }
+                        $items = array_values($itemsAgg);
+                        if (!empty($items)) {
+                            addStartingEquipmentToCharacterNew($char->id, ['equipment' => ['items' => $items]]);
+                        }
+                    } catch (Exception $e) {
+                        error_log('Erreur ajout équipement de départ: ' . $e->getMessage());
+                    }
+                    header('Location: view_character.php?id=' . $char->id);
+                    exit();
+                } else {
+                    $message = displayMessage("Erreur lors de la création du personnage.", 'error');
+                }
+            } else {
+                // Création d'un PNJ
+                // Récupérer les pièces d'or du background
+                $backgroundGoldNpc = 0;
+                if ($ptCharacter->background_id) {
+                    try {
+                        $stmtGoldNpc = $pdo->prepare("SELECT money_gold FROM backgrounds WHERE id = ?");
+                        $stmtGoldNpc->execute([$ptCharacter->background_id]);
+                        $resultGoldNpc = $stmtGoldNpc->fetch(PDO::FETCH_ASSOC);
+                        if ($resultGoldNpc && isset($resultGoldNpc['money_gold'])) {
+                            $backgroundGoldNpc = (int)$resultGoldNpc['money_gold'];
+                        }
+                    } catch (PDOException $e) {
+                        error_log('Erreur récupération pièces d\'or background PNJ: ' . $e->getMessage());
+                    }
+                }
+
+                $npc = new NPC($pdo, [
+                    'name' => $ptCharacter->name ?: 'Nouveau PNJ',
+                    'class_id' => $ptCharacter->class_id,
+                    'race_id' => $ptCharacter->race_id,
+                    'background_id' => $ptCharacter->background_id,
+                    'level' => $ptCharacter->level ?: 1,
+                    'experience' => $ptCharacter->experience ?: 0,
+                    'strength' => $ptCharacter->strength ?: 10,
+                    'dexterity' => $ptCharacter->dexterity ?: 10,
+                    'constitution' => $ptCharacter->constitution ?: 10,
+                    'intelligence' => $ptCharacter->intelligence ?: 10,
+                    'wisdom' => $ptCharacter->wisdom ?: 10,
+                    'charisma' => $ptCharacter->charisma ?: 10,
+                    'hit_points_max' => $ptCharacter->hit_points_max ?: 8,
+                    'hit_points_current' => $ptCharacter->hit_points_current ?: ($ptCharacter->hit_points_max ?: 8),
+                    'armor_class' => $ptCharacter->armor_class ?: 10,
+                    'speed' => $ptCharacter->speed ?: 30,
+                    'alignment' => $ptCharacter->alignment ?: 'Neutre',
+                    'age' => $ptCharacter->age ?: null,
+                    'height' => $ptCharacter->height ?: null,
+                    'weight' => $ptCharacter->weight ?: null,
+                    'eyes' => $ptCharacter->eyes ?: null,
+                    'skin' => $ptCharacter->skin ?: null,
+                    'hair' => $ptCharacter->hair ?: null,
+                    'backstory' => $ptCharacter->backstory ?: null,
+                    'personality_traits' => $ptCharacter->personality_traits ?: null,
+                    'ideals' => $ptCharacter->ideals ?: null,
+                    'bonds' => $ptCharacter->bonds ?: null,
+                    'flaws' => $ptCharacter->flaws ?: null,
+                    'gold' => $backgroundGoldNpc + ($ptCharacter->gold ?: 0),
+                    'silver' => $ptCharacter->silver ?: 0,
+                    'copper' => $ptCharacter->copper ?: 0,
+                    'skills' => json_encode($selectedSkills),
+                    'languages' => json_encode($selectedLanguages),
+                    'profile_photo' => $ptCharacter->profile_photo ?: null,
+                    'created_by' => $_SESSION['user_id'],
+                    'is_active' => 1
+                ]);
+                if ($npc->create()) {
+                    header('Location: view_npc.php?id=' . $npc->id);
+                    exit();
+                } else {
+                    $message = displayMessage("Erreur lors de la création du PNJ.", 'error');
+                }
+            }
+        } catch (Exception $e) {
+            error_log('Erreur finalisation: ' . $e->getMessage());
+            $message = displayMessage("Erreur lors de la finalisation.", 'error');
+        }
     }
 }
 ?>

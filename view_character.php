@@ -48,7 +48,7 @@ $character = $characterObject;
 // Récupérer les détails de la race, classe et background
 $raceObject = Race::findById($character->race_id);
 $classObject = Classe::findById($character->class_id);
-$backgroundDetails = $character->background_id ? Background::getBackgroundById($character->background_id) : null;
+$backgroundDetails = $character->background_id ? Background::findById($character->background_id) : null;
 
 // Récupérer les détails de l'archétype
 $archetypeDetails = null;
@@ -81,8 +81,8 @@ if (empty($characterLanguages)) {
 }
 
 // Parser les données de l'historique
-$backgroundSkills = $backgroundDetails && isset($backgroundDetails['skill_proficiencies']) ? json_decode($backgroundDetails['skill_proficiencies'], true) : [];
-$backgroundLanguages = $backgroundDetails && isset($backgroundDetails['languages']) ? json_decode($backgroundDetails['languages'], true) : [];
+$backgroundSkills = $backgroundDetails && isset($backgroundDetails->skill_proficiencies) ? json_decode($backgroundDetails->skill_proficiencies, true) : [];
+$backgroundLanguages = $backgroundDetails && isset($backgroundDetails->languages) ? json_decode($backgroundDetails->languages, true) : [];
 
 // Parser les données de la classe
 $classSkills = $classObject && $classObject->skill_proficiencies ? json_decode($classObject->skill_proficiencies, true) : [];
