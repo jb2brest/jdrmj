@@ -23,6 +23,13 @@ if (!$ptCharacter || $ptCharacter->user_id != $_SESSION['user_id']) { header('Lo
 
 $pdo = getPDO();
 
+// Helper: identifier les types d'armes
+function isWeaponType($type)
+{
+    $t = strtolower((string)$type);
+    return $t === 'weapons' || $t === 'weapon';
+}
+
 // Résolution de nom d'item par type/type_id et exposition de la requête exécutée
 function resolveEquipment(PDO $pdo, string $type, $typeId)
 {
@@ -155,7 +162,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     $pt_id,
                                     $c['src'] ?? 'class',
                                     0,
-                                    'fixed_row_' . (int)$c['id'],
+                                    (string)((int)$c['id']),
                                     null
                                 ]);
                             }
@@ -167,7 +174,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         // Si la ligne sélectionnée contient un filtre armes
                         $optionsOfSelectedRow = $choiceIdToOptions[$selectedRowId] ?? [];
                         foreach ($optionsOfSelectedRow as $o) {
-                            if (!empty($o['type_filter']) && strtolower($o['type']) === 'weapons') {
+                            $typeFilter = $o['filter'] ?? ($o['type_filter'] ?? null);
+                            if (!empty($typeFilter) && isWeaponType($o['type'] ?? '')) {
                                 $weaponSel = $postedWeaponSelects[$idxKey] ?? '';
                                 if ($weaponSel !== '') {
                                     $selectedWeapons = json_encode([ 'weapon_id' => (int)$weaponSel ], JSON_UNESCAPED_UNICODE);
@@ -290,16 +298,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                             $info = resolveEquipment($pdo, $type, (int)$o['type_id']);
                                             $resolvedName = $info['name'];
                                         }
-                                        $display = $resolvedName ?: ($o['label'] ?? (strtoupper($type)));
-                                        $key = $display;
-                                        if (!isset($agg[$key])) { $agg[$key] = 0; }
-                                        $agg[$key] += max(1, $qty);
+                                        $label = $o['label'] ?? null;
+                                        $display = $resolvedName ?: ($label ?? (strtoupper($type)));
+                                        // Clé d'agrégation robuste: privilégier type_id quand présent
+                                        if (!empty($o['type_id'])) {
+                                            $key = 'id#' . (int)$o['type_id'] . '#type#' . $type;
+                                        } elseif (!empty($label)) {
+                                            $key = 'label#' . mb_strtolower(trim($label));
+                                        } else {
+                                            $key = 'type#' . mb_strtolower(trim($type));
+                                        }
+                                        if (!isset($agg[$key])) {
+                                            $agg[$key] = ['name' => $display, 'qty' => 0];
+                                        }
+                                        $agg[$key]['qty'] += max(1, $qty);
                                     }
                                 }
                                 if (!empty($agg)) {
                                     echo '<ul class="mb-0">';
-                                    foreach ($agg as $name => $totalQty) {
-                                        echo '<li>' . htmlspecialchars($name) . ' x' . (int)$totalQty . '</li>';
+                                    foreach ($agg as $entry) {
+                                        $pretty = $entry['name'];
+                                        echo '<li>' . htmlspecialchars($pretty) . ' x' . (int)$entry['qty'] . '</li>';
                                     }
                                     echo '</ul>';
                                 }
@@ -322,8 +341,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     foreach ($options as $o) {
                                         $type = strtolower($o['type'] ?? '');
                                         $qty = (int)($o['nb'] ?? 1);
-                                        $typeFilter = $o['type_filter'] ?? null;
-                                        if (!empty($typeFilter) && $type === 'weapons') {
+                                        $typeFilter = $o['filter'] ?? ($o['type_filter'] ?? null);
+                                        if (!empty($typeFilter) && isWeaponType($type)) {
                                             $needsWeaponSelect = true;
                                             $weaponFilter = $typeFilter;
                                             $items[] = 'Arme (' . htmlspecialchars($typeFilter) . ') x' . max(1,$qty);
@@ -375,7 +394,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <a href="cc08_identity_story.php?pt_id=<?php echo $pt_id; ?>&type=<?php echo $character_type; ?>" class="btn btn-outline-secondary me-3">
                             <i class="fas fa-arrow-left me-2"></i>Retour
                         </a>
-                        <button type="submit" class="btn btn-continue btn-lg" <?php echo empty($choices) ? 'disabled' : ''; ?>>
+                        <button type="submit" class="btn btn-continue btn-lg" <?php echo (empty($classChoices) && empty($backgroundChoices)) ? 'disabled' : ''; ?>>
                             <i class="fas fa-check me-2"></i>Enregistrer et finaliser
                         </button>
                     </div>
