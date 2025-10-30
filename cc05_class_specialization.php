@@ -101,9 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($isValid) {
             try {
-                $pdo->beginTransaction();
-
-                // Nettoyer l'ancienne sélection
+                // Nettoyer l'ancienne sélection (pas de transaction globale pour éviter les conflits)
                 $del = $pdo->prepare("DELETE FROM PT_capabilities WHERE pt_character_id = ? AND capability_type = 'class_archetype'");
                 $del->execute([$pt_id]);
 
@@ -126,12 +124,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $ptCharacter->update();
                 }
 
-                $pdo->commit();
-
-                header('Location: cc06_starting_equipment.php?pt_id=' . $pt_id . '&type=' . $character_type);
+                header('Location: cc06_skills_languages.php?pt_id=' . $pt_id . '&type=' . $character_type);
                 exit();
             } catch (Exception $e) {
-                $pdo->rollBack();
                 error_log('Erreur sauvegarde archétype: ' . $e->getMessage());
                 $message = displayMessage("Erreur lors de la sauvegarde du choix.", 'error');
             }
