@@ -29,6 +29,12 @@ $characters = [];
 foreach ($characterObjects as $character) {
     $characters[] = $character->toArray();
 }
+
+// Récupérer les personnages temporaires (créations en cours) de type PJ
+$ptCharactersAll = PTCharacter::findByUserId($_SESSION['user_id']);
+$ptPlayerDrafts = array_values(array_filter($ptCharactersAll, function ($pt) {
+    return isset($pt->character_type) && $pt->character_type === 'player';
+}));
 ?>
 <?php
 $page_title = "Mes Personnages Joueurs (PJ)";
@@ -115,6 +121,83 @@ $current_page = "characters";
                 </a>
             </div>
         </div>
+
+        <!-- Créations en cours (PJ) -->
+        <?php if (!empty($ptPlayerDrafts)): ?>
+            <div class="mb-4">
+                <h4 class="mb-3"><i class="fas fa-hourglass-half me-2"></i>Créations en cours</h4>
+                <div class="row g-4">
+                    <?php foreach ($ptPlayerDrafts as $ptc): ?>
+                        <?php 
+                            $className = '';
+                            $raceName = '';
+                            if (!empty($ptc->class_id)) {
+                                $cls = Classe::findById($ptc->class_id);
+                                $className = $cls ? $cls->name : '';
+                            }
+                            if (!empty($ptc->race_id)) {
+                                $rc = Race::findById($ptc->race_id);
+                                $raceName = $rc ? $rc->name : '';
+                            }
+                            $step = (int)($ptc->step ?? 1);
+                            // Déterminer l'URL pour reprendre
+                            if ($step <= 1 || empty($ptc->class_id)) {
+                                $resumeUrl = 'cc01_class_selection.php?type=player';
+                            } elseif ($step === 2) {
+                                $resumeUrl = 'cc02_race_selection.php?pt_id=' . $ptc->id . '&type=player';
+                            } elseif ($step === 3) {
+                                $resumeUrl = 'cc03_background_selection.php?pt_id=' . $ptc->id . '&type=player';
+                            } else {
+                                $resumeUrl = 'cc04_characteristics.php?pt_id=' . $ptc->id . '&type=player';
+                            }
+                        ?>
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card character-card h-100">
+                                <div class="card-body d-flex flex-column">
+                                    <div class="d-flex align-items-start mb-3">
+                                        <div class="me-3">
+                                            <?php if (!empty($ptc->profile_photo)): ?>
+                                                <img src="<?php echo htmlspecialchars($ptc->profile_photo); ?>" alt="Photo" class="rounded" style="width: 60px; height: 60px; object-fit: cover;">
+                                            <?php else: ?>
+                                                <div class="bg-secondary rounded d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                                    <i class="fas fa-user-plus text-white" style="font-size: 1.5rem;"></i>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <h5 class="card-title mb-0">
+                                                    <?php echo htmlspecialchars($ptc->name ?: 'Sans nom'); ?>
+                                                </h5>
+                                                <span class="badge bg-warning text-dark">Étape <?php echo max(1, $step); ?>/9</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <p class="card-text text-muted mb-3">
+                                        <?php if ($raceName): ?>
+                                            <i class="fas fa-dragon me-1"></i><?php echo htmlspecialchars($raceName); ?>
+                                        <?php endif; ?>
+                                        <?php if ($className): ?>
+                                            <i class="fas fa-shield-alt me-2 ms-2"></i><?php echo htmlspecialchars($className); ?>
+                                        <?php endif; ?>
+                                    </p>
+
+                                    <div class="mt-auto d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">
+                                            <i class="fas fa-calendar me-1"></i>Modifié le <?php echo date('d/m/Y', strtotime($ptc->updated_at ?: $ptc->created_at)); ?>
+                                        </small>
+                                        <a href="<?php echo $resumeUrl; ?>" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-play me-1"></i>Reprendre
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        <?php endif; ?>
 
         <!-- Messages d'alerte -->
         <?php if (isset($success_message)): ?>

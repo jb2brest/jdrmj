@@ -52,6 +52,16 @@ if ($selectedBackgroundId) {
     $selectedBackground = $stmt->fetch();
 }
 
+// Utilitaire local pour décoder des JSON d'historique comme dans C04
+function decodeBackgroundData($jsonData) {
+    if (empty($jsonData)) return '';
+    $decoded = json_decode($jsonData, true);
+    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+        return implode(', ', $decoded);
+    }
+    return $jsonData;
+}
+
 // Récupérer les options disponibles selon la classe
 $classOptions = [];
 $optionType = '';
@@ -187,52 +197,26 @@ $selectedOptionId = $sessionData['data']['class_option_id'] ?? null;
     <div class="container">
         <?php echo $message; ?>
         
-        <!-- Récapitulatif des étapes précédentes -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <?php if ($selectedClass): ?>
-                    <div class="card summary-card">
-                        <div class="card-body py-2">
-                            <small class="text-muted">
-                                <i class="fas fa-shield-alt me-1"></i>
-                                <strong>Classe :</strong> <?php echo htmlspecialchars($selectedClass['name']); ?>
-                            </small>
-                        </div>
-                    </div>
-                <?php endif; ?>
-            </div>
-            <div class="col-md-3">
-                <?php if ($selectedRace): ?>
-                    <div class="card summary-card">
-                        <div class="card-body py-2">
-                            <small class="text-muted">
-                                <i class="fas fa-users me-1"></i>
-                                <strong>Race :</strong> <?php echo htmlspecialchars($selectedRace['name']); ?>
-                            </small>
-                        </div>
-                    </div>
-                <?php endif; ?>
-            </div>
-            <div class="col-md-3">
-                <?php if ($selectedBackground): ?>
-                    <div class="card summary-card">
-                        <div class="card-body py-2">
-                            <small class="text-muted">
-                                <i class="fas fa-scroll me-1"></i>
-                                <strong>Historique :</strong> <?php echo htmlspecialchars($selectedBackground['name']); ?>
-                            </small>
-                        </div>
-                    </div>
-                <?php endif; ?>
-            </div>
-            <div class="col-md-3">
-                <div class="card summary-card">
-                    <div class="card-body py-2">
-                        <small class="text-muted">
-                            <i class="fas fa-dice-d20 me-1"></i>
-                            <strong>Caractéristiques :</strong> Définies
-                        </small>
-                    </div>
+        <!-- Récapitulatif des étapes précédentes (même bandeau que C04) -->
+        <div class="info-card">
+            <div class="row align-items-center">
+                <div class="col-md-4">
+                    <?php if ($selectedClass): ?>
+                        <h4><i class="fas fa-shield-alt me-2"></i>Classe : <?php echo htmlspecialchars($selectedClass['name']); ?></h4>
+                        <small>Dé de vie : d<?php echo $selectedClass['hit_dice']; ?></small>
+                    <?php endif; ?>
+                </div>
+                <div class="col-md-4">
+                    <?php if ($selectedRace): ?>
+                        <h4><i class="fas fa-users me-2"></i>Race : <?php echo htmlspecialchars($selectedRace['name']); ?></h4>
+                        <small>Vitesse : <?php echo $selectedRace['speed']; ?> pieds | Taille : <?php echo htmlspecialchars($selectedRace['size']); ?></small>
+                    <?php endif; ?>
+                </div>
+                <div class="col-md-4">
+                    <?php if ($selectedBackground): ?>
+                        <h4><i class="fas fa-scroll me-2"></i>Historique : <?php echo htmlspecialchars($selectedBackground['name']); ?></h4>
+                        <small>Compétences : <?php echo htmlspecialchars(decodeBackgroundData($selectedBackground['skill_proficiencies'] ?? '')); ?></small>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

@@ -220,7 +220,10 @@ L'utilisateur peut choisir les valeurs de chaque caractéristiques
 Un bouton "Appliquer les préconisation D&D" précharge les valeurs recommandées. 
 Au chargement de la page, les valeurs recommandées sont préchargées.
 
+Dans characters.php et dans manage_npcs.php, il faut pouvoir visualiser les personnages ou PNJ en cours de créations.
 
+Il faut maintenant mettre en place l'étape 5 de création de ersonnage : Choix de la spécialisation de la classe. 
+Toutes les données nécessaires sont dans la tables "class_archetypes"
 
 
 renomme character_class_selection.php en cc01_class_selection.php (pour create character étape 01) 

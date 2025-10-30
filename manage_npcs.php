@@ -105,6 +105,49 @@ $template_vars = [
     'error_message' => $error_message
 ];
 
+// Récupérer les créations PNJ en cours (PT_characters type npc)
+$ptDraftsAll = PTCharacter::findByUserId($user_id);
+$ptNpcDrafts = array_values(array_filter($ptDraftsAll, function ($pt) {
+    return isset($pt->character_type) && $pt->character_type === 'npc';
+}));
+
+// Enrichir pour le template (nom de classe/race et URL de reprise)
+$ptNpcDraftCards = [];
+foreach ($ptNpcDrafts as $ptc) {
+    $className = '';
+    $raceName = '';
+    if (!empty($ptc->class_id)) {
+        $cls = Classe::findById($ptc->class_id);
+        $className = $cls ? $cls->name : '';
+    }
+    if (!empty($ptc->race_id)) {
+        $rc = Race::findById($ptc->race_id);
+        $raceName = $rc ? $rc->name : '';
+    }
+    $step = (int)($ptc->step ?? 1);
+    if ($step <= 1 || empty($ptc->class_id)) {
+        $resumeUrl = 'cc01_class_selection.php?type=npc';
+    } elseif ($step === 2) {
+        $resumeUrl = 'cc02_race_selection.php?pt_id=' . $ptc->id . '&type=npc';
+    } elseif ($step === 3) {
+        $resumeUrl = 'cc03_background_selection.php?pt_id=' . $ptc->id . '&type=npc';
+    } else {
+        $resumeUrl = 'cc04_characteristics.php?pt_id=' . $ptc->id . '&type=npc';
+    }
+    $ptNpcDraftCards[] = [
+        'id' => $ptc->id,
+        'name' => $ptc->name ?: 'Sans nom',
+        'class_name' => $className,
+        'race_name' => $raceName,
+        'step' => max(1, $step),
+        'profile_photo' => $ptc->profile_photo,
+        'updated_at' => $ptc->updated_at ?: $ptc->created_at,
+        'resume_url' => $resumeUrl
+    ];
+}
+
+$template_vars['pt_npc_drafts'] = $ptNpcDraftCards;
+
 // Inclure le template
 include 'templates/manage_npcs_template.php';
 ?>

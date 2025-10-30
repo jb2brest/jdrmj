@@ -148,6 +148,61 @@ extract($template_vars ?? []);
                 </div>
             </div>
 
+            <!-- Créations PNJ en cours -->
+            <?php if (!empty($pt_npc_drafts)): ?>
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-hourglass-half me-2"></i>Créations PNJ en cours
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-4">
+                            <?php foreach ($pt_npc_drafts as $draft): ?>
+                                <div class="col-md-6 col-lg-4">
+                                    <div class="card h-100">
+                                        <div class="card-body d-flex flex-column">
+                                            <div class="d-flex align-items-start mb-3">
+                                                <div class="me-3">
+                                                    <?php if (!empty($draft['profile_photo'])): ?>
+                                                        <img src="<?php echo htmlspecialchars($draft['profile_photo']); ?>" alt="Photo" class="rounded" style="width: 48px; height: 48px; object-fit: cover;">
+                                                    <?php else: ?>
+                                                        <div class="bg-secondary rounded d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                                            <i class="fas fa-user-plus text-white"></i>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="d-flex justify-content-between align-items-start">
+                                                        <h6 class="mb-0"><?php echo htmlspecialchars($draft['name']); ?></h6>
+                                                        <span class="badge bg-warning text-dark">Étape <?php echo (int)$draft['step']; ?>/9</span>
+                                                    </div>
+                                                    <small class="text-muted">
+                                                        <?php if (!empty($draft['race_name'])): ?>
+                                                            <i class="fas fa-dragon me-1"></i><?php echo htmlspecialchars($draft['race_name']); ?>
+                                                        <?php endif; ?>
+                                                        <?php if (!empty($draft['class_name'])): ?>
+                                                            <i class="fas fa-shield-alt me-2 ms-2"></i><?php echo htmlspecialchars($draft['class_name']); ?>
+                                                        <?php endif; ?>
+                                                    </small>
+                                                </div>
+                                            </div>
+
+                                            <div class="mt-auto d-flex justify-content-between align-items-center">
+                                                <small class="text-muted"><i class="fas fa-calendar me-1"></i>Modifié le <?php echo date('d/m/Y', strtotime($draft['updated_at'])); ?></small>
+                                                <a href="<?php echo $draft['resume_url']; ?>" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-play me-1"></i>Reprendre
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <!-- Liste des entités -->
             <div id="entitiesContainer">
                 <?php if (empty($entities)): ?>
