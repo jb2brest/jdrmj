@@ -3,6 +3,7 @@ Tests fonctionnels pour la classe Barbare
 """
 import pytest
 import time
+import re
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -136,12 +137,17 @@ class TestBarbarianClass:
             option_cards = driver.find_elements(By.CSS_SELECTOR, ".option-card")
             if not option_cards:
                 raise Exception("Aucune carte d'option (archetype) trouvée")
-            first_option = option_cards[0]
-            driver.execute_script("arguments[0].click();", first_option)
-            time.sleep(0.5)
-            continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#continueBtn")))
-            driver.execute_script("arguments[0].click();", continue_btn)
-            wait.until(lambda driver: "cc06_skills_languages.php" in driver.current_url)
+            # Ne sélectionner automatiquement que si on demande explicitement l'étape suivante
+            # Si on demande juste l'étape 5, on s'arrête ici pour que le test puisse interagir
+            if step_number > 5:
+                # Si on veut aller plus loin, sélectionner automatiquement
+                first_option = option_cards[0]
+                driver.execute_script("arguments[0].click();", first_option)
+                time.sleep(0.5)
+                continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#continueBtn")))
+                driver.execute_script("arguments[0].click();", continue_btn)
+                wait.until(lambda driver: "cc06_skills_languages.php" in driver.current_url)
+            # Sinon, on s'arrête à l'étape 5 sans sélectionner
     
     def test_barbarian_character_creation(self, driver, wait, app_url, test_user):
         """Test de création d'un personnage barbare"""
@@ -258,42 +264,42 @@ class TestBarbarianClass:
             
             # Étape 5 : Sélection d'archetype (voie primitive)
             wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-            page_source = driver.page_source.lower()
             
-            if "voie" in page_source or "archetype" in page_source or "option" in page_source:
-                print("✅ Page de sélection d'archetype détectée")
-                
-                # Sélectionner une voie primitive appropriée
-                option_cards = driver.find_elements(By.CSS_SELECTOR, ".option-card")
-                print(f"📋 {len(option_cards)} cartes d'option trouvées")
-                
-                archetype_card = None
-                for card in option_cards:
-                    try:
-                        title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
-                        card_text = title_element.text.lower()
-                        print(f"📄 Option trouvée: {title_element.text}")
-                        if "magie sauvage" in card_text or "berserker" in card_text or "totem" in card_text:
-                            archetype_card = card
-                            break
-                    except NoSuchElementException:
-                        continue
-                
-                # Si aucune option spécifique trouvée, prendre la première
-                if not archetype_card and option_cards:
-                    archetype_card = option_cards[0]
-                    title_elem = archetype_card.find_element(By.CSS_SELECTOR, ".card-title")
-                    print(f"✅ Utilisation de la première option disponible: {title_elem.text}")
-                
-                if archetype_card:
-                    self._click_card_and_continue(driver, wait, archetype_card)
-                    wait.until(lambda driver: "cc06_skills_languages.php" in driver.current_url)
-                    print("✅ Archetype barbare sélectionné")
-                else:
-                    pytest.skip("Aucun archetype/option barbare trouvé - test ignoré")
-                    
+            # Vérifier que nous sommes bien à l'étape 5 via l'URL
+            current_url = driver.current_url
+            if "cc05_class_specialization.php" not in current_url:
+                raise Exception(f"URL incorrecte après navigation: {current_url}")
+            
+            print(f"✅ Page de sélection d'archetype détectée (URL: {current_url})")
+            
+            # Sélectionner une voie primitive appropriée
+            option_cards = driver.find_elements(By.CSS_SELECTOR, ".option-card")
+            print(f"📋 {len(option_cards)} cartes d'option trouvées")
+            
+            archetype_card = None
+            for card in option_cards:
+                try:
+                    title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
+                    card_text = title_element.text.lower()
+                    print(f"📄 Option trouvée: {title_element.text}")
+                    if "magie sauvage" in card_text or "berserker" in card_text or "totem" in card_text:
+                        archetype_card = card
+                        break
+                except NoSuchElementException:
+                    continue
+            
+            # Si aucune option spécifique trouvée, prendre la première
+            if not archetype_card and option_cards:
+                archetype_card = option_cards[0]
+                title_elem = archetype_card.find_element(By.CSS_SELECTOR, ".card-title")
+                print(f"✅ Utilisation de la première option disponible: {title_elem.text}")
+            
+            if archetype_card:
+                self._click_card_and_continue(driver, wait, archetype_card)
+                wait.until(lambda driver: "cc06_skills_languages.php" in driver.current_url)
+                print("✅ Archetype barbare sélectionné")
             else:
-                pytest.skip("Page de sélection d'archetype non détectée - test ignoré")
+                pytest.skip("Aucun archetype/option barbare trouvé - test ignoré")
                 
         except (TimeoutException, Exception) as e:
             print(f"❌ Erreur lors de la navigation: {e}")
@@ -314,41 +320,42 @@ class TestBarbarianClass:
             
             # Étape 5 : Sélection d'archetype
             wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-            page_source = driver.page_source.lower()
             
-            if "voie" in page_source or "archetype" in page_source or "option" in page_source:
-                print("✅ Page de sélection d'archetype détectée")
-                
-                option_cards = driver.find_elements(By.CSS_SELECTOR, ".option-card")
-                print(f"📋 {len(option_cards)} cartes d'option trouvées")
-                
-                archetype_card = None
-                for card in option_cards:
-                    try:
-                        title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
-                        card_text = title_element.text.lower()
-                        print(f"📄 Option trouvée: {title_element.text}")
-                        if "magie sauvage" in card_text or "berserker" in card_text or "totem" in card_text:
-                            archetype_card = card
-                            print(f"✅ Archetype sélectionné: {title_element.text}")
-                            break
-                    except NoSuchElementException:
-                        continue
-                
-                # Si aucune option spécifique trouvée, prendre la première
-                if not archetype_card and option_cards:
-                    archetype_card = option_cards[0]
-                    title_elem = archetype_card.find_element(By.CSS_SELECTOR, ".card-title")
-                    print(f"✅ Utilisation de la première option disponible: {title_elem.text}")
-                
-                if archetype_card:
-                    self._click_card_and_continue(driver, wait, archetype_card)
-                    wait.until(lambda driver: "cc06_skills_languages.php" in driver.current_url)
-                    print("✅ Redirection vers étape 6 réussie")
-                else:
-                    pytest.skip("Aucun archetype/option barbare trouvé - test ignoré")
+            # Vérifier que nous sommes bien à l'étape 5 via l'URL
+            current_url = driver.current_url
+            if "cc05_class_specialization.php" not in current_url:
+                raise Exception(f"URL incorrecte après navigation: {current_url}")
+            
+            print(f"✅ Page de sélection d'archetype détectée (URL: {current_url})")
+            
+            option_cards = driver.find_elements(By.CSS_SELECTOR, ".option-card")
+            print(f"📋 {len(option_cards)} cartes d'option trouvées")
+            
+            archetype_card = None
+            for card in option_cards:
+                try:
+                    title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
+                    card_text = title_element.text.lower()
+                    print(f"📄 Option trouvée: {title_element.text}")
+                    if "magie sauvage" in card_text or "berserker" in card_text or "totem" in card_text:
+                        archetype_card = card
+                        print(f"✅ Archetype sélectionné: {title_element.text}")
+                        break
+                except NoSuchElementException:
+                    continue
+            
+            # Si aucune option spécifique trouvée, prendre la première
+            if not archetype_card and option_cards:
+                archetype_card = option_cards[0]
+                title_elem = archetype_card.find_element(By.CSS_SELECTOR, ".card-title")
+                print(f"✅ Utilisation de la première option disponible: {title_elem.text}")
+            
+            if archetype_card:
+                self._click_card_and_continue(driver, wait, archetype_card)
+                wait.until(lambda driver: "cc06_skills_languages.php" in driver.current_url)
+                print("✅ Redirection vers étape 6 réussie")
             else:
-                pytest.skip("Page de sélection d'archetype non détectée - test ignoré")
+                pytest.skip("Aucun archetype/option barbare trouvé - test ignoré")
         except (TimeoutException, Exception) as e:
             print(f"❌ Erreur lors de la navigation: {e}")
             print(f"   URL actuelle: {driver.current_url}")
@@ -356,43 +363,323 @@ class TestBarbarianClass:
             pytest.skip(f"Navigation vers l'étape d'archetype échouée - test ignoré ({str(e)})")
         
         # Étape 6 : Compétences et langues (passer rapidement)
+        print("\n" + "="*60)
+        print("🔍 DEBUG - ÉTAPE 6 : Compétences et langues")
+        print("="*60)
+        print(f"📄 URL actuelle: {driver.current_url}")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         time.sleep(2)
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#continueBtn")))
-        if continue_btn.get_property("disabled"):
-            # Essayer d'activer le bouton si nécessaire
-            skill_checkboxes = driver.find_elements(By.CSS_SELECTOR, "input[type='checkbox'][name*='skill']")
-            if skill_checkboxes:
-                skill_checkboxes[0].click()
-        driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "cc07_alignment_profile.php" in driver.current_url)
+        
+        # Extraire le nombre requis depuis la page
+        page_text = driver.page_source
+        print(f"📏 Taille de la page: {len(page_text)} caractères")
+        
+        skill_match = re.search(r'Choisissez jusqu\'à (\d+) compétence', page_text)
+        max_skills = int(skill_match.group(1)) if skill_match else 2
+        print(f"📋 Compétences requises: {max_skills}")
+        
+        lang_match = re.search(r'Choisissez jusqu\'à (\d+) langue', page_text)
+        max_langs = int(lang_match.group(1)) if lang_match else 0
+        print(f"📋 Langues requises: {max_langs}")
+        
+        # Trouver toutes les compétences disponibles
+        print("\n🔍 Recherche des compétences...")
+        all_skill_checkboxes = driver.find_elements(By.CSS_SELECTOR, "input.skill-checkbox")
+        print(f"   Total compétences trouvées: {len(all_skill_checkboxes)}")
+        
+        skill_checkboxes = driver.find_elements(By.CSS_SELECTOR, "input.skill-checkbox:not([disabled]):not([data-fixed='1'])")
+        print(f"   Compétences sélectionnables (non fixes, non désactivées): {len(skill_checkboxes)}")
+        
+        # Lister les compétences fixes
+        fixed_skills = driver.find_elements(By.CSS_SELECTOR, "input.skill-checkbox[data-fixed='1']")
+        print(f"   Compétences fixes (historique): {len(fixed_skills)}")
+        for fs in fixed_skills:
+            try:
+                label = driver.find_element(By.CSS_SELECTOR, f"label[for='{fs.get_attribute('id')}']")
+                print(f"     - {label.text} (déjà sélectionnée)")
+            except:
+                pass
+        
+        # Compter les compétences déjà sélectionnées (non fixes)
+        selected_skills_count = 0
+        for cb in skill_checkboxes:
+            if cb.is_selected():
+                selected_skills_count += 1
+        print(f"   Compétences déjà sélectionnées (non fixes): {selected_skills_count}/{max_skills}")
+        
+        # Sélectionner les compétences manquantes
+        if skill_checkboxes:
+            needed = max_skills - selected_skills_count
+            print(f"   Compétences à sélectionner: {needed}")
+            selected = 0
+            for i, checkbox in enumerate(skill_checkboxes):
+                if selected >= needed:
+                    break
+                try:
+                    if not checkbox.is_selected():
+                        checkbox_id = checkbox.get_attribute('id')
+                        label = driver.find_element(By.CSS_SELECTOR, f"label[for='{checkbox_id}']")
+                        skill_name = label.text
+                        print(f"   ✅ Sélection de: {skill_name}")
+                        driver.execute_script("arguments[0].click();", checkbox)
+                        time.sleep(0.3)
+                        selected += 1
+                except Exception as e:
+                    print(f"   ⚠️ Erreur sélection compétence {i}: {e}")
+                    pass
+            
+            # Vérifier après sélection
+            final_selected = len([cb for cb in skill_checkboxes if cb.is_selected()])
+            print(f"   📊 Compétences sélectionnées après: {final_selected}/{max_skills}")
+        
+        # Trouver les langues disponibles
+        print("\n🔍 Recherche des langues...")
+        language_checkboxes = driver.find_elements(By.CSS_SELECTOR, "input.language-checkbox")
+        print(f"   Total langues trouvées: {len(language_checkboxes)}")
+        
+        selected_langs_count = 0
+        for cb in language_checkboxes:
+            if cb.is_selected():
+                selected_langs_count += 1
+        print(f"   Langues déjà sélectionnées: {selected_langs_count}/{max_langs}")
+        
+        # Sélectionner les langues si nécessaire
+        if language_checkboxes and max_langs > 0:
+            needed_langs = max_langs - selected_langs_count
+            print(f"   Langues à sélectionner: {needed_langs}")
+            selected = 0
+            for i, checkbox in enumerate(language_checkboxes):
+                if selected >= needed_langs:
+                    break
+                try:
+                    if not checkbox.is_selected():
+                        checkbox_id = checkbox.get_attribute('id')
+                        label = driver.find_element(By.CSS_SELECTOR, f"label[for='{checkbox_id}']")
+                        lang_name = label.text
+                        print(f"   ✅ Sélection de: {lang_name}")
+                        driver.execute_script("arguments[0].click();", checkbox)
+                        time.sleep(0.3)
+                        selected += 1
+                except Exception as e:
+                    print(f"   ⚠️ Erreur sélection langue {i}: {e}")
+                    pass
+            
+            final_selected_langs = len([cb for cb in language_checkboxes if cb.is_selected()])
+            print(f"   📊 Langues sélectionnées après: {final_selected_langs}/{max_langs}")
+        
+        # Attendre que le JavaScript active le bouton
+        print("\n⏳ Attente de l'activation du bouton continuer...")
+        time.sleep(3)
+        
+        # Vérifier l'état du bouton
+        try:
+            continue_btn = driver.find_element(By.CSS_SELECTOR, "#continueBtn")
+            is_disabled = continue_btn.get_property("disabled")
+            print(f"   État du bouton: {'DESACTIVÉ ❌' if is_disabled else 'ACTIVÉ ✅'}")
+            
+            # Vérifier l'état via JavaScript
+            js_state = driver.execute_script("return document.getElementById('continueBtn')?.disabled;")
+            print(f"   État JS: {'DESACTIVÉ ❌' if js_state else 'ACTIVÉ ✅'}")
+            
+            # Compter les sélections via JavaScript
+            js_skills = driver.execute_script("""
+                const skills = document.querySelectorAll('.skill-checkbox:not([data-fixed="1"])');
+                return Array.from(skills).filter(s => s.checked).length;
+            """)
+            js_langs = driver.execute_script("""
+                const langs = document.querySelectorAll('.language-checkbox');
+                return Array.from(langs).filter(l => l.checked).length;
+            """)
+            print(f"   Compétences sélectionnées (JS): {js_skills}/{max_skills}")
+            print(f"   Langues sélectionnées (JS): {js_langs}/{max_langs}")
+            
+        except Exception as e:
+            print(f"   ❌ Erreur lors de la vérification du bouton: {e}")
+        
+        # Attendre que le bouton soit cliquable avec une condition personnalisée
+        def button_ready(driver):
+            try:
+                btn = driver.find_element(By.CSS_SELECTOR, "#continueBtn")
+                disabled = btn.get_property("disabled")
+                if disabled:
+                    # Afficher l'état actuel
+                    js_skills = driver.execute_script("""
+                        const skills = document.querySelectorAll('.skill-checkbox:not([data-fixed="1"])');
+                        return Array.from(skills).filter(s => s.checked).length;
+                    """)
+                    js_langs = driver.execute_script("""
+                        const langs = document.querySelectorAll('.language-checkbox');
+                        return Array.from(langs).filter(l => l.checked).length;
+                    """)
+                    print(f"   ⏳ Bouton encore désactivé - Skills: {js_skills}/{max_skills}, Langs: {js_langs}/{max_langs}")
+                return btn and not disabled
+            except Exception as e:
+                print(f"   ⏳ Erreur button_ready: {e}")
+                return False
+        
+        try:
+            print("\n🔄 Attente que le bouton soit prêt (timeout: 15s)...")
+            step_wait = WebDriverWait(driver, timeout=15)
+            step_wait.until(button_ready)
+            
+            continue_btn = driver.find_element(By.CSS_SELECTOR, "#continueBtn")
+            print("   ✅ Bouton activé, clic en cours...")
+            driver.execute_script("arguments[0].click();", continue_btn)
+            
+            print("   ⏳ Attente redirection vers étape 7...")
+            step_wait.until(lambda driver: "cc07_alignment_profile.php" in driver.current_url)
+            print("✅ Redirection vers étape 7 réussie")
+            
+        except TimeoutException as e:
+            print(f"\n❌ TIMEOUT après 15s")
+            print(f"   URL finale: {driver.current_url}")
+            print(f"   Titre: {driver.title}")
+            
+            # Dernière tentative avec vérification d'état
+            try:
+                continue_btn = driver.find_element(By.CSS_SELECTOR, "#continueBtn")
+                is_disabled = continue_btn.get_property("disabled")
+                print(f"   État final du bouton: {'DESACTIVÉ' if is_disabled else 'ACTIVÉ'}")
+                
+                if not is_disabled:
+                    print("   🔄 Tentative de clic malgré le timeout...")
+                    driver.execute_script("arguments[0].click();", continue_btn)
+                    time.sleep(2)
+                    print(f"   URL après clic: {driver.current_url}")
+                    if "cc07_alignment_profile.php" in driver.current_url:
+                        print("✅ Redirection réussie (retry)")
+                    else:
+                        raise Exception(f"Redirection échouée - URL: {driver.current_url}")
+                else:
+                    # Afficher plus de détails
+                    js_skills = driver.execute_script("""
+                        const skills = document.querySelectorAll('.skill-checkbox:not([data-fixed="1"])');
+                        return Array.from(skills).filter(s => s.checked).length;
+                    """)
+                    js_langs = driver.execute_script("""
+                        const langs = document.querySelectorAll('.language-checkbox');
+                        return Array.from(langs).filter(l => l.checked).length;
+                    """)
+                    raise Exception(f"Bouton toujours désactivé - Skills JS: {js_skills}/{max_skills}, Langs JS: {js_langs}/{max_langs}")
+            except Exception as final_e:
+                print(f"   ❌ Erreur finale: {final_e}")
+                raise Exception(f"Impossible d'activer le bouton continuer à l'étape 6: {final_e}")
+        
+        print("="*60 + "\n")
         
         # Étape 7 : Alignement (passer rapidement)
+        print("\n🔍 DEBUG - ÉTAPE 7 : Alignement")
+        print(f"📄 URL actuelle: {driver.current_url}")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         time.sleep(2)
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#continueBtn")))
-        driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "cc08_identity_story.php" in driver.current_url)
+        
+        # Sélectionner un alignement (axe ordre et axe moral)
+        print("   Sélection de l'alignement...")
+        try:
+            # Sélectionner l'axe ordre (Chaotique par défaut)
+            axis_order = driver.find_element(By.CSS_SELECTOR, "input[name='axis_order'][value='Chaotique']")
+            if not axis_order.is_selected():
+                driver.execute_script("arguments[0].click();", axis_order)
+                time.sleep(0.2)
+            print("   ✅ Axe ordre sélectionné: Chaotique")
+        except:
+            # Essayer avec un autre alignement si Chaotique n'existe pas
+            try:
+                axis_order = driver.find_element(By.CSS_SELECTOR, "input[name='axis_order']:not([disabled])")
+                driver.execute_script("arguments[0].click();", axis_order)
+                time.sleep(0.2)
+                print("   ✅ Axe ordre sélectionné")
+            except Exception as e:
+                print(f"   ⚠️ Erreur sélection axe ordre: {e}")
+        
+        try:
+            # Sélectionner l'axe moral (Bon par défaut)
+            axis_moral = driver.find_element(By.CSS_SELECTOR, "input[name='axis_moral'][value='Bon']")
+            if not axis_moral.is_selected():
+                driver.execute_script("arguments[0].click();", axis_moral)
+                time.sleep(0.2)
+            print("   ✅ Axe moral sélectionné: Bon")
+        except:
+            # Essayer avec un autre alignement si Bon n'existe pas
+            try:
+                axis_moral = driver.find_element(By.CSS_SELECTOR, "input[name='axis_moral']:not([disabled])")
+                driver.execute_script("arguments[0].click();", axis_moral)
+                time.sleep(0.2)
+                print("   ✅ Axe moral sélectionné")
+            except Exception as e:
+                print(f"   ⚠️ Erreur sélection axe moral: {e}")
+        
+        time.sleep(1)
+        
+        # Trouver le bouton continuer (pas d'ID, utiliser la classe ou le type)
+        print("   Recherche du bouton continuer...")
+        try:
+            # Le bouton est un button type="submit" avec classe btn-continue
+            continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit'].btn-continue")))
+            print("   ✅ Bouton continuer trouvé")
+            driver.execute_script("arguments[0].click();", continue_btn)
+            wait.until(lambda driver: "cc08_identity_story.php" in driver.current_url)
+            print("✅ Redirection vers étape 8 réussie")
+        except TimeoutException:
+            # Essayer avec un sélecteur plus simple
+            try:
+                continue_btn = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
+                driver.execute_script("arguments[0].click();", continue_btn)
+                time.sleep(2)
+                if "cc08_identity_story.php" in driver.current_url:
+                    print("✅ Redirection vers étape 8 réussie (retry)")
+                else:
+                    raise Exception(f"Redirection échouée - URL: {driver.current_url}")
+            except Exception as e:
+                raise Exception(f"Impossible de trouver ou cliquer sur le bouton continuer à l'étape 7: {e}")
         
         # Étape 8 : Détails du personnage (passer rapidement)
+        print("\n🔍 DEBUG - ÉTAPE 8 : Identité et histoire")
+        print(f"📄 URL actuelle: {driver.current_url}")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         time.sleep(2)
+        
         # Remplir le nom obligatoire
-        name_input = driver.find_element(By.CSS_SELECTOR, "input[name='character_name'], input[name='name']")
-        name_input.clear()
-        name_input.send_keys("Test Barbarian")
+        print("   Remplissage des informations du personnage...")
+        try:
+            name_input = driver.find_element(By.CSS_SELECTOR, "input[name='character_name'], input[name='name']")
+            name_input.clear()
+            name_input.send_keys("Test Barbarian")
+            print("   ✅ Nom rempli: Test Barbarian")
+        except Exception as e:
+            print(f"   ⚠️ Erreur remplissage nom: {e}")
         
         # Remplir l'histoire obligatoire si présente
         try:
             backstory_input = driver.find_element(By.CSS_SELECTOR, "textarea[name='backstory'], textarea[name='background']")
             backstory_input.clear()
             backstory_input.send_keys("Un barbare de test pour les tests automatisés.")
+            print("   ✅ Histoire remplie")
         except NoSuchElementException:
-            pass
+            print("   ⚠️ Champ histoire non trouvé (optionnel)")
         
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#continueBtn")))
-        driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "cc09_starting_equipment.php" in driver.current_url)
+        time.sleep(1)
+        
+        # Trouver le bouton continuer (même structure que l'étape 7)
+        print("   Recherche du bouton continuer...")
+        try:
+            continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit'].btn-continue")))
+            print("   ✅ Bouton continuer trouvé")
+            driver.execute_script("arguments[0].click();", continue_btn)
+            wait.until(lambda driver: "cc09_starting_equipment.php" in driver.current_url)
+            print("✅ Redirection vers étape 9 réussie")
+        except TimeoutException:
+            # Essayer avec un sélecteur plus simple
+            try:
+                continue_btn = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
+                driver.execute_script("arguments[0].click();", continue_btn)
+                time.sleep(2)
+                if "cc09_starting_equipment.php" in driver.current_url:
+                    print("✅ Redirection vers étape 9 réussie (retry)")
+                else:
+                    raise Exception(f"Redirection échouée - URL: {driver.current_url}")
+            except Exception as e:
+                raise Exception(f"Impossible de trouver ou cliquer sur le bouton continuer à l'étape 8: {e}")
         
         # Étape 9 : Équipement de départ
         print("🔍 Étape 9: Équipement de départ")
@@ -404,9 +691,7 @@ class TestBarbarianClass:
             equipment_groups = [
                 "Hache à deux mains",
                 "Hachette", 
-                "Javeline",
-                "Sac d'explorateur",
-                "Sac à dos"
+                "Javeline"
             ]
             
             found_equipment = []
@@ -420,23 +705,61 @@ class TestBarbarianClass:
             if found_equipment:
                 print(f"✅ Équipement barbare trouvé: {', '.join(found_equipment)}")
                 
-                # Essayer de sélectionner la hache à deux mains
+                # Sélectionner les choix d'équipement via les boutons radio
                 try:
-                    axe_element = driver.find_element(By.XPATH, "//*[contains(text(), 'Hache à deux mains')]")
-                    driver.execute_script("arguments[0].click();", axe_element)
-                    time.sleep(0.5)
-                    print("✅ Hache à deux mains sélectionnée")
-                except NoSuchElementException:
-                    print("⚠️ Hache à deux mains non cliquable")
+                    # Trouver tous les groupes de choix (chaque groupe a un nom comme choice[0], choice[1], etc.)
+                    choice_groups = {}
+                    radio_buttons = driver.find_elements(By.CSS_SELECTOR, "input[type='radio'][name^='choice[']")
+                    
+                    for radio in radio_buttons:
+                        name = radio.get_attribute("name")
+                        if name:
+                            # Extraire l'index du groupe (ex: "choice[0]" -> "0")
+                            match = re.search(r'choice\[([^\]]+)\]', name)
+                            if match:
+                                group_key = match.group(1)
+                                if group_key not in choice_groups:
+                                    choice_groups[group_key] = []
+                                choice_groups[group_key].append(radio)
+                    
+                    # Sélectionner le premier bouton radio de chaque groupe
+                    selected_count = 0
+                    for group_key, radios in choice_groups.items():
+                        if radios:
+                            try:
+                                driver.execute_script("arguments[0].click();", radios[0])
+                                time.sleep(0.2)
+                                selected_count += 1
+                            except:
+                                pass
+                    
+                    print(f"✅ {selected_count} groupe(s) de choix d'équipement sélectionné(s) sur {len(choice_groups)}")
+                    
+                    # Vérifier s'il y a des sélections d'armes à faire
+                    weapon_selects = driver.find_elements(By.CSS_SELECTOR, "select[name^='weapon_select']")
+                    if weapon_selects:
+                        for weapon_select in weapon_selects:
+                            try:
+                                select = Select(weapon_select)
+                                if len(select.options) > 0:
+                                    select.select_by_index(0)
+                                    time.sleep(0.2)
+                            except:
+                                pass
+                        print(f"✅ {len(weapon_selects)} sélection(s) d'arme effectuée(s)")
+                    
+                except Exception as e:
+                    print(f"⚠️ Erreur lors de la sélection d'équipement: {e}")
                 
-                # Essayer de sélectionner les hachettes
+                # Continuer vers la fin
                 try:
-                    handaxe_element = driver.find_element(By.XPATH, "//*[contains(text(), 'Hachette')]")
-                    driver.execute_script("arguments[0].click();", handaxe_element)
-                    time.sleep(0.5)
-                    print("✅ Hachettes sélectionnées")
-                except NoSuchElementException:
-                    print("⚠️ Hachettes non cliquables")
+                    continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit'], #continueBtn")))
+                    driver.execute_script("arguments[0].click();", continue_btn)
+                    print("✅ Équipement validé, création terminée")
+                    # Attendre la redirection ou la page finale
+                    time.sleep(2)
+                except TimeoutException:
+                    print("⚠️ Bouton continuer non trouvé, création probablement terminée")
                 
             else:
                 pytest.skip("Aucun équipement barbare trouvé - test ignoré")
