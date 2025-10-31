@@ -2,19 +2,19 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.22.10
+VERSION=2.22.11
 
 # Date de déploiement
-DEPLOY_DATE=2025-10-30
+DEPLOY_DATE=2025-10-31
 
 # Environnement
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=77c17426f3459cad3736df92e3efff076aa86731
+GIT_COMMIT=a0a9777fb39b40f3b4e42b9a268bb3a14c8923bb
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251030-224833
+BUILD_ID=20251031-081959
 
 # Notes de version
-RELEASE_NOTES="CC10 apres filtre arme ok"
+RELEASE_NOTES="Correction CA Barbare"
