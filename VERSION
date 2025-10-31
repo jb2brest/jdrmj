@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.23.1
+VERSION=2.23.2
 
 # Date de déploiement
 DEPLOY_DATE=2025-10-31
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-10-31
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=3548463b6473519ea567a873c70475cf75254888
+GIT_COMMIT=efcda648df4311d0242325e3fabf2b5cdaf92887
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251031-100634
+BUILD_ID=20251031-105654
 
 # Notes de version
 RELEASE_NOTES="Réécriture tests Barbare"
