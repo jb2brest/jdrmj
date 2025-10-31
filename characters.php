@@ -22,13 +22,7 @@ if (isset($_POST['delete_character']) && isset($_POST['character_id'])) {
 }
 
 // Récupération des personnages de l'utilisateur
-$characterObjects = Character::findByUserId($_SESSION['user_id']);
-
-// Convertir les objets Character en tableaux pour la compatibilité avec le code HTML
-$characters = [];
-foreach ($characterObjects as $character) {
-    $characters[] = $character->toArray();
-}
+$characters = Character::findByUserId($_SESSION['user_id']);
 
 // Récupérer les personnages temporaires (créations en cours) de type PJ
 $ptCharactersAll = PTCharacter::findByUserId($_SESSION['user_id']);
@@ -229,12 +223,12 @@ $current_page = "characters";
             <div class="row g-4">
                 <?php foreach ($characters as $character): ?>
                     <div class="col-md-6 col-lg-4">
-                        <div class="card character-card h-100 <?php echo (!empty($character['campaign_id']) && $character['campaign_status'] === 'approved') ? 'border-success' : ''; ?>">
+                        <div class="card character-card h-100 <?php echo $character->isApprovedInCampaign() ? 'border-success' : ''; ?>">
                             <div class="card-body">
                                 <div class="d-flex align-items-start mb-3">
                                     <div class="me-3">
-                                        <?php if (!empty($character['profile_photo'])): ?>
-                                            <img src="<?php echo htmlspecialchars($character['profile_photo']); ?>" alt="Photo de <?php echo htmlspecialchars($character['name']); ?>" class="rounded" style="width: 60px; height: 60px; object-fit: cover;">
+                                        <?php if (!empty($character->profile_photo)): ?>
+                                            <img src="<?php echo htmlspecialchars($character->profile_photo); ?>" alt="Photo de <?php echo htmlspecialchars($character->name); ?>" class="rounded" style="width: 60px; height: 60px; object-fit: cover;">
                                         <?php else: ?>
                                             <div class="bg-secondary rounded d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
                                                 <i class="fas fa-user text-white" style="font-size: 1.5rem;"></i>
@@ -244,23 +238,23 @@ $current_page = "characters";
                                     <div class="flex-grow-1">
                                         <div class="d-flex justify-content-between align-items-start">
                                             <h5 class="card-title mb-0">
-                                                <?php echo htmlspecialchars($character['name']); ?>
+                                                <?php echo htmlspecialchars($character->name); ?>
                                             </h5>
-                                            <span class="badge level-badge">Niv. <?php echo $character['level']; ?></span>
+                                            <span class="badge level-badge">Niv. <?php echo $character->level; ?></span>
                                         </div>
                                     </div>
                                 </div>
                                 
                                 <p class="card-text text-muted mb-3">
-                                    <i class="fas fa-dragon me-1"></i><?php echo htmlspecialchars($character['race_name']); ?> 
-                                    <i class="fas fa-shield-alt me-2 ms-2"></i><?php echo htmlspecialchars($character['class_name']); ?>
+                                    <i class="fas fa-dragon me-1"></i><?php echo htmlspecialchars($character->race_name); ?> 
+                                    <i class="fas fa-shield-alt me-2 ms-2"></i><?php echo htmlspecialchars($character->class_name); ?>
                                 </p>
                                 
-                                <?php if (!empty($character['campaign_id']) && $character['campaign_status'] === 'approved'): ?>
+                                <?php if ($character->isApprovedInCampaign()): ?>
                                     <div class="mb-3">
-                                        <a href="view_campaign_player.php?id=<?php echo $character['campaign_id']; ?>" class="text-decoration-none">
+                                        <a href="view_campaign_player.php?id=<?php echo $character->campaign_id; ?>" class="text-decoration-none">
                                             <span class="badge bg-success">
-                                                <i class="fas fa-crown me-1"></i><?php echo htmlspecialchars($character['campaign_title']); ?>
+                                                <i class="fas fa-crown me-1"></i><?php echo htmlspecialchars($character->campaign_title); ?>
                                             </span>
                                         </a>
                                     </div>
@@ -270,42 +264,39 @@ $current_page = "characters";
                                     <div class="col-4 text-center">
                                         <div class="stat-badge rounded p-2">
                                             <div class="small">PV</div>
-                                            <strong><?php echo $character['hit_points_current']; ?>/<?php echo $character['hit_points_max']; ?></strong>
+                                            <strong><?php echo $character->hit_points_current; ?>/<?php echo $character->hit_points_max; ?></strong>
                                         </div>
                                     </div>
                                     <div class="col-4 text-center">
                                         <div class="stat-badge rounded p-2">
                                             <div class="small">CA</div>
-                                            <strong><?php echo $character['armor_class']; ?></strong>
+                                            <strong><?php echo $character->armor_class; ?></strong>
                                         </div>
                                     </div>
                                     <div class="col-4 text-center">
                                         <div class="stat-badge rounded p-2">
                                             <div class="small">XP</div>
-                                            <strong><?php echo number_format($character['experience_points']); ?></strong>
+                                            <strong><?php echo number_format($character->experience_points); ?></strong>
                                         </div>
                                     </div>
                                 </div>
                                 
-                                <?php if ($character['background']): ?>
+                                <?php if ($character->background): ?>
                                     <p class="card-text small text-muted">
-                                        <i class="fas fa-scroll me-1"></i><?php echo htmlspecialchars(substr($character['background'], 0, 100)) . (strlen($character['background']) > 100 ? '...' : ''); ?>
+                                        <i class="fas fa-scroll me-1"></i><?php echo htmlspecialchars(substr($character->background, 0, 100)) . (strlen($character->background) > 100 ? '...' : ''); ?>
                                     </p>
                                 <?php endif; ?>
                                 
                                 <div class="d-flex justify-content-between align-items-center mt-auto">
                                     <small class="text-muted">
-                                        <i class="fas fa-calendar me-1"></i>Créé le <?php echo date('d/m/Y', strtotime($character['created_at'])); ?>
+                                        <i class="fas fa-calendar me-1"></i>Créé le <?php echo date('d/m/Y', strtotime($character->created_at)); ?>
                                     </small>
                                     <div class="btn-group" role="group">
-                                        <a href="view_character.php?id=<?php echo $character['id']; ?>" class="btn btn-sm btn-outline-primary" title="Voir">
+                                        <a href="view_character.php?id=<?php echo $character->id; ?>" class="btn btn-sm btn-outline-primary" title="Voir">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        <a href="edit_character.php?id=<?php echo $character['id']; ?>" class="btn btn-sm btn-outline-warning" title="Modifier">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
                                         <button type="button" class="btn btn-sm btn-outline-danger" title="Supprimer" 
-                                                onclick="confirmDelete(<?php echo $character['id']; ?>, '<?php echo htmlspecialchars($character['name']); ?>')">
+                                                onclick="confirmDelete(<?php echo $character->id; ?>, '<?php echo htmlspecialchars($character->name); ?>')">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
@@ -332,7 +323,7 @@ $current_page = "characters";
                                 <div class="col-md-3">
                                     <h4 class="text-success">
                                         <?php 
-                                        $totalLevel = array_sum(array_column($characters, 'level'));
+                                        $totalLevel = array_sum(array_map(function($character) { return $character->level; }, $characters));
                                         echo $totalLevel;
                                         ?>
                                     </h4>
@@ -341,7 +332,7 @@ $current_page = "characters";
                                 <div class="col-md-3">
                                     <h4 class="text-warning">
                                         <?php 
-                                        $totalXP = array_sum(array_column($characters, 'experience_points'));
+                                        $totalXP = array_sum(array_map(function($character) { return $character->experience_points; }, $characters));
                                         echo number_format($totalXP);
                                         ?>
                                     </h4>

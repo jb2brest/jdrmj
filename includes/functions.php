@@ -7,7 +7,6 @@ if (session_status() === PHP_SESSION_NONE) {
 // Inclure les fichiers de compatibilité
 require_once __DIR__ . '/user_compatibility.php';
 require_once __DIR__ . '/campaign_compatibility.php';
-require_once __DIR__ . '/character_compatibility.php';
 
 
 
