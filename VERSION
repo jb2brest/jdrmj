@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.23.3
+VERSION=2.23.4
 
 # Date de déploiement
 DEPLOY_DATE=2025-10-31
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-10-31
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=8698a2b088958a96dbaa00a96d1108cd12609f4b
+GIT_COMMIT=de3740ffdaab86c72c7d826a1d4de0036d418e30
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251031-183323
+BUILD_ID=20251031-184329
 
 # Notes de version
-RELEASE_NOTES="Réécriture tests classe OK"
+RELEASE_NOTES="Réécriture tests race OK"
