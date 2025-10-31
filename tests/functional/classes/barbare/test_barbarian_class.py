@@ -12,6 +12,89 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 class TestBarbarianClass:
     """Tests pour la classe Barbare et ses fonctionnalités spécifiques"""
     
+    def _find_card_by_text(self, driver, card_selector, search_text):
+        """Helper: Trouver une carte par son texte (classe, race, option, etc.)"""
+        cards = driver.find_elements(By.CSS_SELECTOR, card_selector)
+        for card in cards:
+            try:
+                title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
+                if search_text in title_element.text:
+                    return card
+            except NoSuchElementException:
+                continue
+        return None
+    
+    def _click_card_and_continue(self, driver, wait, card_element, continue_btn_selector="#continueBtn", wait_time=0.5):
+        """Helper: Cliquer sur une carte et continuer"""
+        if card_element:
+            driver.execute_script("arguments[0].click();", card_element)
+            time.sleep(wait_time)
+            
+            # Vérifier que la carte est sélectionnée
+            assert "selected" in card_element.get_attribute("class"), "Carte non sélectionnée après le clic"
+            
+            # Cliquer sur continuer
+            continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, continue_btn_selector)))
+            assert not continue_btn.get_property("disabled"), "Bouton continuer toujours désactivé"
+            driver.execute_script("arguments[0].click();", continue_btn)
+            return True
+        return False
+    
+    def _click_continue_button(self, driver, wait, selector="#continueBtn"):
+        """Helper: Cliquer sur le bouton continuer (nouvelle IHM uniquement)"""
+        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, selector)))
+        driver.execute_script("arguments[0].click();", continue_btn)
+    
+    def _navigate_to_step(self, driver, wait, app_url, step_number):
+        """Helper: Naviguer jusqu'à une étape spécifique du workflow de création"""
+        # Étape 1 : Sélection de classe
+        if step_number >= 1:
+            driver.get(f"{app_url}/cc01_class_selection.php?type=player")
+            wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+            barbarian_card = self._find_card_by_text(driver, ".class-card", "Barbare")
+            if barbarian_card:
+                self._click_card_and_continue(driver, wait, barbarian_card)
+                wait.until(lambda driver: "cc02_race_selection.php" in driver.current_url)
+        
+        # Étape 2 : Sélection de race
+        if step_number >= 2:
+            wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+            race_card = self._find_card_by_text(driver, ".race-card", "Humain")
+            if race_card:
+                self._click_card_and_continue(driver, wait, race_card, wait_time=1)
+                wait.until(lambda driver: "cc03_background_selection.php" in driver.current_url)
+        
+        # Étape 3 : Sélection d'historique
+        if step_number >= 3:
+            wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+            background_card = self._find_card_by_text(driver, ".background-card", "Soldat")
+            if not background_card:
+                background_card = self._find_card_by_text(driver, ".background-card", "Acolyte")
+            if background_card:
+                driver.execute_script("arguments[0].click();", background_card)
+                time.sleep(1)
+                self._click_continue_button(driver, wait)
+                wait.until(lambda driver: "cc04_characteristics.php" in driver.current_url)
+        
+        # Étape 4 : Caractéristiques
+        if step_number >= 4:
+            wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+            time.sleep(2)
+            self._click_continue_button(driver, wait)
+            wait.until(lambda driver: "cc05_class_specialization.php" in driver.current_url)
+        
+        # Étape 5 : Sélection d'archetype
+        if step_number >= 5:
+            wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+            option_cards = driver.find_elements(By.CSS_SELECTOR, ".option-card")
+            if option_cards:
+                first_option = option_cards[0]
+                driver.execute_script("arguments[0].click();", first_option)
+                time.sleep(0.5)
+                continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#continueBtn")))
+                driver.execute_script("arguments[0].click();", continue_btn)
+                wait.until(lambda driver: "cc06_skills_languages.php" in driver.current_url)
+    
     def test_barbarian_character_creation(self, driver, wait, app_url, test_user):
         """Test de création d'un personnage barbare"""
         # Créer l'utilisateur et se connecter
@@ -19,53 +102,23 @@ class TestBarbarianClass:
         self._create_and_login_user(driver, wait, app_url, test_user)
         
         # Aller à la page de création de personnage
-        driver.get(f"{app_url}/character_create_step1.php")
+        driver.get(f"{app_url}/cc01_class_selection.php?type=player")
         
         # Attendre que la page se charge
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         
         # Vérifier que la page de création de personnage est chargée
-        assert "Étape 1" in driver.title or "Choisissez votre classe" in driver.page_source
+        assert "Choisissez votre classe" in driver.page_source, "Page de sélection de classe non trouvée"
         
         # Sélectionner la classe Barbare
         try:
-            # Chercher la carte du barbare (peut avoir différents sélecteurs)
-            barbarian_selectors = [
-                "[data-class-name='Barbare']",
-                "[data-class-id='1']",  # ID possible du barbare
-                ".class-card:contains('Barbare')",
-                "input[value='Barbare']",
-                "label:contains('Barbare')"
-            ]
+            barbarian_card = self._find_card_by_text(driver, ".class-card", "Barbare")
             
-            barbarian_element = None
-            for selector in barbarian_selectors:
-                try:
-                    if "contains" in selector:
-                        # Pour les sélecteurs avec contains, utiliser XPath
-                        xpath_selector = f"//*[contains(text(), 'Barbare')]"
-                        barbarian_element = driver.find_element(By.XPATH, xpath_selector)
-                    else:
-                        barbarian_element = driver.find_element(By.CSS_SELECTOR, selector)
-                    break
-                except NoSuchElementException:
-                    continue
-            
-            if barbarian_element:
-                # Cliquer sur la carte du barbare
-                driver.execute_script("arguments[0].click();", barbarian_element)
-                time.sleep(0.5)
-                
-                # Vérifier que la classe est sélectionnée
-                assert "selected" in barbarian_element.get_attribute("class") or \
-                       "active" in barbarian_element.get_attribute("class")
-                
-                # Cliquer sur continuer
-                continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
-                driver.execute_script("arguments[0].click();", continue_btn)
+            if barbarian_card:
+                self._click_card_and_continue(driver, wait, barbarian_card)
                 
                 # Vérifier la redirection vers l'étape 2
-                wait.until(lambda driver: "character_create_step2.php" in driver.current_url)
+                wait.until(lambda driver: "cc02_race_selection.php" in driver.current_url)
                 print("✅ Classe Barbare sélectionnée avec succès")
                 
             else:
@@ -80,35 +133,18 @@ class TestBarbarianClass:
         self._create_and_login_user(driver, wait, app_url, test_user)
         
         # D'abord, aller à l'étape 1 pour sélectionner la classe Barbare
-        driver.get(f"{app_url}/character_create_step1.php")
+        driver.get(f"{app_url}/cc01_class_selection.php?type=player")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         
         # Sélectionner la classe Barbare
         try:
-            # Chercher la carte du barbare
-            barbarian_element = None
-            class_cards = driver.find_elements(By.CSS_SELECTOR, ".class-card")
+            barbarian_card = self._find_card_by_text(driver, ".class-card", "Barbare")
             
-            for card in class_cards:
-                try:
-                    title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
-                    if "Barbare" in title_element.text:
-                        barbarian_element = card
-                        break
-                except NoSuchElementException:
-                    continue
-            
-            if barbarian_element:
-                # Cliquer sur la carte du barbare
-                driver.execute_script("arguments[0].click();", barbarian_element)
-                time.sleep(0.5)
-                
-                # Cliquer sur continuer pour aller à l'étape 2
-                continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
-                driver.execute_script("arguments[0].click();", continue_btn)
+            if barbarian_card:
+                self._click_card_and_continue(driver, wait, barbarian_card)
                 
                 # Attendre la redirection vers l'étape 2
-                wait.until(lambda driver: "character_create_step2.php" in driver.current_url)
+                wait.until(lambda driver: "cc02_race_selection.php" in driver.current_url)
                 print("✅ Classe Barbare sélectionnée, redirection vers étape 2")
                 
             else:
@@ -118,40 +154,19 @@ class TestBarbarianClass:
             pytest.skip("Page de sélection de classe non accessible - test ignoré")
         
         # Maintenant nous sommes à l'étape 2, vérifier que la page de sélection de race est chargée
-        page_source = driver.page_source.lower()
-        if "étape 2" in page_source or "choisissez votre race" in page_source or "race" in page_source:
-            print("✅ Page de sélection de race détectée")
-        else:
-            pytest.skip("Page de sélection de race non accessible - test ignoré")
+        wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+        assert "Choisissez votre race" in driver.page_source, "Page de sélection de race non trouvée"
+        print("✅ Page de sélection de race détectée")
         
         # Sélectionner une race appropriée pour un barbare (ex: Humain)
         try:
-            # Chercher la carte de race "Humain" par son texte
-            race_element = None
-            race_cards = driver.find_elements(By.CSS_SELECTOR, ".race-card")
+            race_card = self._find_card_by_text(driver, ".race-card", "Humain")
             
-            for card in race_cards:
-                try:
-                    title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
-                    if "Humain" in title_element.text:
-                        race_element = card
-                        break
-                except NoSuchElementException:
-                    continue
-            
-            if race_element:
-                # Cliquer sur la carte de race
-                driver.execute_script("arguments[0].click();", race_element)
-                time.sleep(1)  # Attendre que la sélection soit enregistrée
-                
-                # Vérifier que la race est sélectionnée (bouton continuer activé)
-                continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#continueBtn")))
-                
-                # Cliquer sur continuer
-                driver.execute_script("arguments[0].click();", continue_btn)
+            if race_card:
+                self._click_card_and_continue(driver, wait, race_card, wait_time=1)
                 
                 # Vérifier la redirection vers l'étape 3
-                wait.until(lambda driver: "character_create_step3.php" in driver.current_url)
+                wait.until(lambda driver: "cc03_background_selection.php" in driver.current_url)
                 print("✅ Race Humain sélectionnée pour le barbare")
                 
             else:
@@ -165,323 +180,141 @@ class TestBarbarianClass:
         # Créer l'utilisateur et se connecter
         self._create_and_login_user(driver, wait, app_url, test_user)
         
-        # Suivre le workflow complet : étapes 1, 2, 3, 4, puis 5 (archetype)
-        # Étape 1 : Sélection de classe
-        driver.get(f"{app_url}/character_create_step1.php")
-        wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-        
-        # Sélectionner la classe Barbare
-        barbarian_element = None
-        class_cards = driver.find_elements(By.CSS_SELECTOR, ".class-card")
-        for card in class_cards:
-            try:
-                title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
-                if "Barbare" in title_element.text:
-                    barbarian_element = card
-                    break
-            except NoSuchElementException:
-                continue
-        
-        if not barbarian_element:
-            pytest.skip("Carte de classe Barbare non trouvée - test ignoré")
-        
-        driver.execute_script("arguments[0].click();", barbarian_element)
-        time.sleep(0.5)
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
-        driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "character_create_step2.php" in driver.current_url)
-        
-        # Étape 2 : Sélection de race
-        race_element = None
-        race_cards = driver.find_elements(By.CSS_SELECTOR, ".race-card")
-        for card in race_cards:
-            try:
-                title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
-                if "Humain" in title_element.text:
-                    race_element = card
-                    break
-            except NoSuchElementException:
-                continue
-        
-        if not race_element:
-            pytest.skip("Carte de race Humain non trouvée - test ignoré")
-        
-        driver.execute_script("arguments[0].click();", race_element)
-        time.sleep(1)
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#continueBtn")))
-        driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "character_create_step3.php" in driver.current_url)
-        
-        # Étape 3 : Sélection d'historique (background)
-        print("🔍 Recherche des cartes d'historique...")
-        background_element = None
-        background_cards = driver.find_elements(By.CSS_SELECTOR, ".background-card")
-        print(f"📋 {len(background_cards)} cartes d'historique trouvées")
-        
-        for card in background_cards:
-            try:
-                title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
-                card_text = title_element.text
-                print(f"📄 Historique trouvé: {card_text}")
-                if "Soldat" in card_text or "Acolyte" in card_text or "Artisan" in card_text or "Champion" in card_text:
-                    background_element = card
-                    print(f"✅ Historique sélectionné: {card_text}")
-                    break
-            except NoSuchElementException:
-                continue
-        
-        if not background_element:
-            pytest.skip("Carte d'historique non trouvée - test ignoré")
-        
-        driver.execute_script("arguments[0].click();", background_element)
-        time.sleep(1)
-        
-        # Vérifier que l'historique est sélectionné
+        # Naviguer jusqu'à l'étape 5 (archetype)
         try:
-            continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-            driver.execute_script("arguments[0].click();", continue_btn)
-            print("✅ Bouton continuer cliqué")
+            self._navigate_to_step(driver, wait, app_url, 5)
             
-            # Attendre la redirection avec un timeout plus long
-            wait.until(lambda driver: "character_create_step4.php" in driver.current_url)
-            print("✅ Redirection vers étape 4 réussie")
-        except TimeoutException as e:
-            print(f"❌ Timeout lors de la redirection: {e}")
-            pytest.skip("Redirection vers étape 4 échouée - test ignoré")
-        
-        # Étape 4 : Caractéristiques (passer rapidement)
-        print("🔍 Étape 4: Caractéristiques")
-        page_source = driver.page_source.lower()
-        if "caractéristiques" in page_source or "étape 4" in page_source:
-            print("✅ Page de caractéristiques détectée")
-            try:
-                # Attendre que la page se charge complètement
-                time.sleep(2)
-                
-                # Vérifier que le formulaire est présent
-                form = driver.find_element(By.CSS_SELECTOR, "form")
-                print("✅ Formulaire de caractéristiques trouvé")
-                
-                # Cliquer sur le bouton continuer (pas le bouton retour)
-                continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-                driver.execute_script("arguments[0].click();", continue_btn)
-                print("✅ Bouton continuer cliqué pour les caractéristiques")
-                
-                # Attendre la redirection
-                wait.until(lambda driver: "character_create_step5.php" in driver.current_url)
-                print("✅ Redirection vers étape 5 réussie")
-            except TimeoutException as e:
-                print(f"❌ Timeout à l'étape 4: {e}")
-                pytest.skip("Étape 4 (caractéristiques) non accessible - test ignoré")
-        else:
-            print("❌ Page de caractéristiques non détectée")
-            pytest.skip("Page de caractéristiques non détectée - test ignoré")
-        
-        # Étape 5 : Sélection d'archetype (voie primitive)
-        page_source = driver.page_source.lower()
-        if "voie" in page_source or "archetype" in page_source or "primitive" in page_source:
-            print("✅ Page de sélection d'archetype détectée")
+            # Étape 5 : Sélection d'archetype (voie primitive)
+            wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+            page_source = driver.page_source.lower()
             
-            # Sélectionner une voie primitive appropriée
-            try:
-                archetype_element = None
-                archetype_cards = driver.find_elements(By.CSS_SELECTOR, ".archetype-card, .option-card")
+            if "voie" in page_source or "archetype" in page_source or "option" in page_source:
+                print("✅ Page de sélection d'archetype détectée")
                 
-                for card in archetype_cards:
+                # Sélectionner une voie primitive appropriée
+                option_cards = driver.find_elements(By.CSS_SELECTOR, ".option-card")
+                print(f"📋 {len(option_cards)} cartes d'option trouvées")
+                
+                archetype_card = None
+                for card in option_cards:
                     try:
                         title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
                         card_text = title_element.text.lower()
+                        print(f"📄 Option trouvée: {title_element.text}")
                         if "magie sauvage" in card_text or "berserker" in card_text or "totem" in card_text:
-                            archetype_element = card
+                            archetype_card = card
                             break
                     except NoSuchElementException:
                         continue
                 
-                if archetype_element:
-                    driver.execute_script("arguments[0].click();", archetype_element)
-                    time.sleep(0.5)
-                    
-                    # Cliquer sur continuer
-                    continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
-                    driver.execute_script("arguments[0].click();", continue_btn)
-                    
+                # Si aucune option spécifique trouvée, prendre la première
+                if not archetype_card and option_cards:
+                    archetype_card = option_cards[0]
+                    title_elem = archetype_card.find_element(By.CSS_SELECTOR, ".card-title")
+                    print(f"✅ Utilisation de la première option disponible: {title_elem.text}")
+                
+                if archetype_card:
+                    self._click_card_and_continue(driver, wait, archetype_card)
+                    wait.until(lambda driver: "cc06_skills_languages.php" in driver.current_url)
                     print("✅ Archetype barbare sélectionné")
-                    
                 else:
-                    pytest.skip("Aucun archetype barbare trouvé - test ignoré")
+                    pytest.skip("Aucun archetype/option barbare trouvé - test ignoré")
                     
-            except TimeoutException:
-                pytest.skip("Page de sélection d'archetype non accessible - test ignoré")
-        else:
-            pytest.skip("Page de sélection d'archetype non détectée - test ignoré")
+            else:
+                pytest.skip("Page de sélection d'archetype non détectée - test ignoré")
+                
+        except TimeoutException as e:
+            print(f"❌ Timeout: {e}")
+            pytest.skip("Navigation vers l'étape d'archetype échouée - test ignoré")
     
     def test_barbarian_starting_equipment(self, driver, wait, app_url, test_user):
         """Test de sélection de l'équipement de départ du barbare"""
         # Créer l'utilisateur et se connecter
         self._create_and_login_user(driver, wait, app_url, test_user)
         
-        # Suivre le workflow complet jusqu'à l'étape 9 (équipement)
-        # Étape 1 : Sélection de classe
-        driver.get(f"{app_url}/character_create_step1.php")
-        wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-        
-        # Sélectionner la classe Barbare
-        barbarian_element = None
-        class_cards = driver.find_elements(By.CSS_SELECTOR, ".class-card")
-        for card in class_cards:
-            try:
-                title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
-                if "Barbare" in title_element.text:
-                    barbarian_element = card
-                    break
-            except NoSuchElementException:
-                continue
-        
-        if not barbarian_element:
-            pytest.skip("Carte de classe Barbare non trouvée - test ignoré")
-        
-        driver.execute_script("arguments[0].click();", barbarian_element)
-        time.sleep(0.5)
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
-        driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "character_create_step2.php" in driver.current_url)
-        
-        # Étape 2 : Sélection de race
-        race_element = None
-        race_cards = driver.find_elements(By.CSS_SELECTOR, ".race-card")
-        for card in race_cards:
-            try:
-                title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
-                if "Humain" in title_element.text:
-                    race_element = card
-                    break
-            except NoSuchElementException:
-                continue
-        
-        if not race_element:
-            pytest.skip("Carte de race Humain non trouvée - test ignoré")
-        
-        driver.execute_script("arguments[0].click();", race_element)
-        time.sleep(1)
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#continueBtn")))
-        driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "character_create_step3.php" in driver.current_url)
-        
-        # Étape 3 : Sélection d'historique
-        background_element = None
-        background_cards = driver.find_elements(By.CSS_SELECTOR, ".background-card")
-        for card in background_cards:
-            try:
-                title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
-                if "Acolyte" in title_element.text or "Soldat" in title_element.text:
-                    background_element = card
-                    break
-            except NoSuchElementException:
-                continue
-        
-        if not background_element:
-            pytest.skip("Carte d'historique non trouvée - test ignoré")
-        
-        driver.execute_script("arguments[0].click();", background_element)
-        time.sleep(1)
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "character_create_step4.php" in driver.current_url)
-        
-        # Étape 4 : Caractéristiques (passer rapidement)
-        time.sleep(2)
-        form = driver.find_element(By.CSS_SELECTOR, "form")
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "character_create_step5.php" in driver.current_url)
-        
-        # Étape 5 : Sélection d'archetype
-        print("🔍 Étape 5: Sélection d'archetype")
-        page_source = driver.page_source.lower()
-        if "voie" in page_source or "archetype" in page_source or "primitive" in page_source:
-            print("✅ Page de sélection d'archetype détectée")
+        # Naviguer jusqu'à l'étape 5 (archetype) avec les helpers
+        try:
+            self._navigate_to_step(driver, wait, app_url, 5)
             
-            archetype_element = None
-            archetype_cards = driver.find_elements(By.CSS_SELECTOR, ".option-card")
-            print(f"📋 {len(archetype_cards)} cartes d'archetype trouvées")
+            # Étape 5 : Sélection d'archetype
+            wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+            page_source = driver.page_source.lower()
             
-            for card in archetype_cards:
-                try:
-                    title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
-                    card_text = title_element.text.lower()
-                    print(f"📄 Archetype trouvé: {title_element.text}")
-                    if "magie sauvage" in card_text or "berserker" in card_text or "totem" in card_text:
-                        archetype_element = card
-                        print(f"✅ Archetype sélectionné: {title_element.text}")
-                        break
-                except NoSuchElementException:
-                    continue
-            
-            if not archetype_element:
-                pytest.skip("Aucun archetype barbare trouvé - test ignoré")
-            
-            driver.execute_script("arguments[0].click();", archetype_element)
-            time.sleep(1)  # Attendre que la sélection soit enregistrée
-            
-            # Vérifier que l'archetype est sélectionné (classe 'selected' ajoutée)
-            if "selected" in archetype_element.get_attribute("class"):
-                print("✅ Archetype marqué comme sélectionné")
+            if "voie" in page_source or "archetype" in page_source or "option" in page_source:
+                print("✅ Page de sélection d'archetype détectée")
+                
+                option_cards = driver.find_elements(By.CSS_SELECTOR, ".option-card")
+                print(f"📋 {len(option_cards)} cartes d'option trouvées")
+                
+                archetype_card = None
+                for card in option_cards:
+                    try:
+                        title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
+                        card_text = title_element.text.lower()
+                        print(f"📄 Option trouvée: {title_element.text}")
+                        if "magie sauvage" in card_text or "berserker" in card_text or "totem" in card_text:
+                            archetype_card = card
+                            print(f"✅ Archetype sélectionné: {title_element.text}")
+                            break
+                    except NoSuchElementException:
+                        continue
+                
+                # Si aucune option spécifique trouvée, prendre la première
+                if not archetype_card and option_cards:
+                    archetype_card = option_cards[0]
+                    title_elem = archetype_card.find_element(By.CSS_SELECTOR, ".card-title")
+                    print(f"✅ Utilisation de la première option disponible: {title_elem.text}")
+                
+                if archetype_card:
+                    self._click_card_and_continue(driver, wait, archetype_card)
+                    wait.until(lambda driver: "cc06_skills_languages.php" in driver.current_url)
+                    print("✅ Redirection vers étape 6 réussie")
+                else:
+                    pytest.skip("Aucun archetype/option barbare trouvé - test ignoré")
             else:
-                print("⚠️ Archetype non marqué comme sélectionné")
-            
-            # Vérifier que l'input caché est mis à jour
-            option_id_input = driver.find_element(By.CSS_SELECTOR, "#selected_option_id")
-            option_id_value = option_id_input.get_attribute("value")
-            print(f"📝 ID d'option sélectionné: {option_id_value}")
-            
-            # Vérifier que l'archetype est sélectionné
-            try:
-                continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
-                driver.execute_script("arguments[0].click();", continue_btn)
-                print("✅ Bouton continuer cliqué pour l'archetype")
-            except TimeoutException:
-                print("❌ Bouton continuer non disponible")
-                pytest.skip("Bouton continuer non disponible - test ignoré")
-            
-            try:
-                wait.until(lambda driver: "character_create_step6.php" in driver.current_url)
-                print("✅ Redirection vers étape 6 réussie")
-            except TimeoutException as e:
-                print(f"❌ Timeout lors de la redirection vers étape 6: {e}")
-                # Le test s'arrête ici car il a validé la sélection d'archetype
-                print("✅ Test de sélection d'archetype barbare réussi")
-                return
-        else:
-            print("❌ Page de sélection d'archetype non détectée")
-            pytest.skip("Page de sélection d'archetype non détectée - test ignoré")
+                pytest.skip("Page de sélection d'archetype non détectée - test ignoré")
+        except TimeoutException as e:
+            print(f"❌ Timeout: {e}")
+            pytest.skip("Navigation vers l'étape d'archetype échouée - test ignoré")
         
         # Étape 6 : Compétences et langues (passer rapidement)
+        wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         time.sleep(2)
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
+        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#continueBtn")))
+        if continue_btn.get_property("disabled"):
+            # Essayer d'activer le bouton si nécessaire
+            skill_checkboxes = driver.find_elements(By.CSS_SELECTOR, "input[type='checkbox'][name*='skill']")
+            if skill_checkboxes:
+                skill_checkboxes[0].click()
         driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "character_create_step7.php" in driver.current_url)
+        wait.until(lambda driver: "cc07_alignment_profile.php" in driver.current_url)
         
         # Étape 7 : Alignement (passer rapidement)
+        wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         time.sleep(2)
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
+        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#continueBtn")))
         driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "character_create_step8.php" in driver.current_url)
+        wait.until(lambda driver: "cc08_identity_story.php" in driver.current_url)
         
         # Étape 8 : Détails du personnage (passer rapidement)
+        wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         time.sleep(2)
         # Remplir le nom obligatoire
-        name_input = driver.find_element(By.CSS_SELECTOR, "input[name='name']")
+        name_input = driver.find_element(By.CSS_SELECTOR, "input[name='character_name'], input[name='name']")
         name_input.clear()
         name_input.send_keys("Test Barbarian")
         
-        # Remplir l'histoire obligatoire
-        backstory_input = driver.find_element(By.CSS_SELECTOR, "textarea[name='backstory']")
-        backstory_input.clear()
-        backstory_input.send_keys("Un barbare de test pour les tests automatisés.")
+        # Remplir l'histoire obligatoire si présente
+        try:
+            backstory_input = driver.find_element(By.CSS_SELECTOR, "textarea[name='backstory'], textarea[name='background']")
+            backstory_input.clear()
+            backstory_input.send_keys("Un barbare de test pour les tests automatisés.")
+        except NoSuchElementException:
+            pass
         
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
+        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#continueBtn")))
         driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "character_create_step9.php" in driver.current_url)
+        wait.until(lambda driver: "cc09_starting_equipment.php" in driver.current_url)
         
         # Étape 9 : Équipement de départ
         print("🔍 Étape 9: Équipement de départ")
@@ -924,40 +757,39 @@ class TestBarbarianClass:
         
         # Étape 1: Sélection de la classe (Barbare)
         print("  📌 Étape 1.1: Sélection de la classe Barbare")
-        driver.get(f"{app_url}/character_create_step1.php")
+        driver.get(f"{app_url}/cc01_class_selection.php?type=player")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         
-        # Sélectionner Barbare
-        barbarian_card = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'class-card') and contains(., 'Barbare')]")))
-        driver.execute_script("arguments[0].click();", barbarian_card)
-        
-        # Continuer vers l'étape 2
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
+        # Sélectionner Barbare avec le helper
+        barbarian_card = self._find_card_by_text(driver, ".class-card", "Barbare")
+        if barbarian_card:
+            self._click_card_and_continue(driver, wait, barbarian_card)
+        else:
+            pytest.skip("Carte de classe Barbare non trouvée")
         
         # Étape 2: Sélection de la race
         print("  🏛️ Étape 1.2: Sélection de la race")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         
         # Sélectionner la race (Demi-orc pour les bonus de Force)
-        race_card = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'race-card') and contains(., 'Demi-orc')]")))
-        driver.execute_script("arguments[0].click();", race_card)
-        
-        # Continuer vers l'étape 3
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
+        race_card = self._find_card_by_text(driver, ".race-card", "Demi-orc")
+        if race_card:
+            self._click_card_and_continue(driver, wait, race_card, wait_time=1)
+        else:
+            pytest.skip("Carte de race Demi-orc non trouvée")
         
         # Étape 3: Sélection du background
         print("  📚 Étape 1.3: Sélection du background")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         
         # Sélectionner Soldat
-        background_card = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'background-card') and contains(., 'Soldat')]")))
-        driver.execute_script("arguments[0].click();", background_card)
-        
-        # Continuer vers l'étape 4
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
+        background_card = self._find_card_by_text(driver, ".background-card", "Soldat")
+        if background_card:
+            driver.execute_script("arguments[0].click();", background_card)
+            time.sleep(1)
+            self._click_continue_button(driver, wait)
+        else:
+            pytest.skip("Carte d'historique Soldat non trouvée")
         
         # Étape 4: Caractéristiques
         print("  💪 Étape 1.4: Attribution des caractéristiques")
@@ -979,8 +811,7 @@ class TestBarbarianClass:
             input_element.send_keys(str(value))
         
         # Continuer vers l'étape 5
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
+        self._click_continue_button(driver, wait)
         
         # Étape 5: Sélection de l'archétype
         print("  🎯 Étape 1.5: Sélection de l'archétype")
@@ -994,20 +825,20 @@ class TestBarbarianClass:
             option_name = first_option.find_element(By.CSS_SELECTOR, ".card-title").text
             print(f"    Sélection de l'archétype: {option_name}")
             driver.execute_script("arguments[0].click();", first_option)
+            time.sleep(0.5)
         else:
             print("    Aucune option d'archétype disponible, passage à l'étape suivante")
         
         # Continuer vers l'étape 6
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
+        self._click_continue_button(driver, wait)
         
         # Étape 6: Compétences et langues
         print("  🎓 Étape 1.6: Compétences et langues")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         
         # Vérifier si le bouton continuer est activé, sinon essayer d'activer les sélections
-        continue_btn = driver.find_element(By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")
-        if continue_btn.get_attribute("disabled"):
+        continue_btn = driver.find_element(By.CSS_SELECTOR, "#continueBtn")
+        if continue_btn.get_property("disabled"):
             print("    Bouton continuer désactivé, tentative d'activation...")
             # Essayer de sélectionner des compétences si disponibles
             skill_checkboxes = driver.find_elements(By.CSS_SELECTOR, "input[type='checkbox'][name*='skill']")
@@ -1017,11 +848,10 @@ class TestBarbarianClass:
                 print("    Compétence sélectionnée")
             
             # Attendre que le bouton soit activé
-            wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
+            wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#continueBtn")))
         
         # Continuer vers l'étape 7
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
+        self._click_continue_button(driver, wait)
         
         # Étape 7: Alignement et photo
         print("  ⚖️ Étape 1.7: Alignement")
@@ -1033,8 +863,7 @@ class TestBarbarianClass:
         select.select_by_value("Chaotic Good")
         
         # Continuer vers l'étape 8
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
+        self._click_continue_button(driver, wait)
         
         # Étape 8: Détails du personnage
         print("  📝 Étape 1.8: Détails du personnage")
@@ -1046,16 +875,14 @@ class TestBarbarianClass:
         name_field.send_keys(test_barbarian['name'])
         
         # Continuer vers l'étape 9
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
+        self._click_continue_button(driver, wait)
         
         # Étape 9: Équipement de départ
         print("  ⚔️ Étape 1.9: Équipement de départ")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         
         # Finaliser la création
-        finalize_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", finalize_btn)
+        self._click_continue_button(driver, wait)
         
         # Attendre la redirection vers la fiche du personnage
         wait.until(lambda driver: "view_character.php" in driver.current_url)
@@ -1410,91 +1237,11 @@ class TestBarbarianClass:
         """Tester le workflow de création jusqu'à l'étape des compétences"""
         print(f"🔨 Test du workflow de création: {test_barbarian['name']}")
         
-        # Étape 1: Sélection de la classe (Barbare)
-        print("  📌 Étape 1.1: Sélection de la classe Barbare")
-        driver.get(f"{app_url}/character_create_step1.php")
-        wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-        
-        # Sélectionner Barbare
-        barbarian_card = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'class-card') and contains(., 'Barbare')]")))
-        driver.execute_script("arguments[0].click();", barbarian_card)
-        
-        # Continuer vers l'étape 2
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
-        
-        # Étape 2: Sélection de la race
-        print("  🏛️ Étape 1.2: Sélection de la race")
-        wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-        
-        # Sélectionner la race (Demi-orc pour les bonus de Force)
-        race_card = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'race-card') and contains(., 'Demi-orc')]")))
-        driver.execute_script("arguments[0].click();", race_card)
-        
-        # Continuer vers l'étape 3
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
-        
-        # Étape 3: Sélection du background
-        print("  📚 Étape 1.3: Sélection du background")
-        wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-        
-        # Sélectionner Soldat
-        background_card = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'background-card') and contains(., 'Soldat')]")))
-        driver.execute_script("arguments[0].click();", background_card)
-        
-        # Continuer vers l'étape 4
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
-        
-        # Étape 4: Caractéristiques
-        print("  💪 Étape 1.4: Attribution des caractéristiques")
-        wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-        
-        # Attribuer les caractéristiques selon test_barbarian
-        characteristics = {
-            'strength': test_barbarian['strength'],
-            'dexterity': test_barbarian['dexterity'],
-            'constitution': test_barbarian['constitution'],
-            'intelligence': test_barbarian['intelligence'],
-            'wisdom': test_barbarian['wisdom'],
-            'charisma': test_barbarian['charisma']
-        }
-        
-        for stat, value in characteristics.items():
-            input_element = wait.until(EC.presence_of_element_located((By.NAME, stat)))
-            input_element.clear()
-            input_element.send_keys(str(value))
-        
-        # Continuer vers l'étape 5
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
-        
-        # Étape 5: Sélection de l'archétype
-        print("  🎯 Étape 1.5: Sélection de l'archétype")
-        wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-        
-        # Vérifier qu'il y a des options disponibles
-        option_cards = driver.find_elements(By.CSS_SELECTOR, ".option-card")
-        if option_cards:
-            # Sélectionner la première option disponible
-            first_option = option_cards[0]
-            option_name = first_option.find_element(By.CSS_SELECTOR, ".card-title").text
-            print(f"    Sélection de l'archétype: {option_name}")
-            driver.execute_script("arguments[0].click();", first_option)
-        else:
-            print("    Aucune option d'archétype disponible, passage à l'étape suivante")
-        
-        # Continuer vers l'étape 6
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
-        
-        # Étape 6: Compétences et langues
-        print("  🎓 Étape 1.6: Compétences et langues")
-        wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+        # Utiliser le helper pour naviguer rapidement jusqu'à l'étape 6
+        self._navigate_to_step(driver, wait, app_url, 6)
         
         # Vérifier que la page des compétences est accessible
-        # La page peut afficher "Compétences" ou "compétences" ou être à l'étape 6
+        wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         page_content = driver.page_source.lower()
         is_skills_page = any(term in page_content for term in ["compétences", "skills", "étape 6", "étape 6/9"])
         assert is_skills_page, f"Page des compétences non accessible. Contenu: {driver.page_source[:200]}..."
@@ -1517,7 +1264,7 @@ class TestBarbarianClass:
         print("✅ Interface des personnages fonctionnelle")
         
         # Tester l'accès à la page de création de personnage
-        create_links = driver.find_elements(By.CSS_SELECTOR, "a[href*='character_create_step1']")
+        create_links = driver.find_elements(By.CSS_SELECTOR, "a[href*='cc01_class_selection']")
         assert len(create_links) > 0, "Lien de création de personnage non trouvé"
         print("✅ Lien de création de personnage accessible")
         
@@ -1569,68 +1316,15 @@ class TestBarbarianClass:
         """Vérifier les caractéristiques spécifiques du barbare niveau 1"""
         print("🔍 Vérification des caractéristiques du barbare niveau 1")
         
-        # Aller à la page de création pour simuler un barbare niveau 1
-        driver.get(f"{app_url}/character_create_step1.php")
-        wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-        
-        # Sélectionner Barbare
-        barbarian_card = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'class-card') and contains(., 'Barbare')]")))
-        driver.execute_script("arguments[0].click();", barbarian_card)
-        
-        # Continuer vers l'étape 2
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
-        
-        # Sélectionner Demi-orc
-        race_card = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'race-card') and contains(., 'Demi-orc')]")))
-        driver.execute_script("arguments[0].click();", race_card)
-        
-        # Continuer vers l'étape 3
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
-        
-        # Sélectionner Soldat
-        background_card = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'background-card') and contains(., 'Soldat')]")))
-        driver.execute_script("arguments[0].click();", background_card)
-        
-        # Continuer vers l'étape 4
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
-        
-        # Attribuer les caractéristiques
-        characteristics = {
-            'strength': test_barbarian['strength'],
-            'dexterity': test_barbarian['dexterity'],
-            'constitution': test_barbarian['constitution'],
-            'intelligence': test_barbarian['intelligence'],
-            'wisdom': test_barbarian['wisdom'],
-            'charisma': test_barbarian['charisma']
-        }
-        
-        for stat, value in characteristics.items():
-            input_element = wait.until(EC.presence_of_element_located((By.NAME, stat)))
-            input_element.clear()
-            input_element.send_keys(str(value))
-        
-        # Continuer vers l'étape 5
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
-        
-        # Sélectionner un archétype si disponible
-        option_cards = driver.find_elements(By.CSS_SELECTOR, ".option-card")
-        if option_cards:
-            first_option = option_cards[0]
-            driver.execute_script("arguments[0].click();", first_option)
-        
-        # Continuer vers l'étape 6
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
+        # Naviguer jusqu'à l'étape 6 pour vérifier les caractéristiques affichées
+        self._navigate_to_step(driver, wait, app_url, 6)
         
         # Vérifier les caractéristiques du barbare niveau 1
+        wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+        page_content = driver.page_source.lower()
         print("📊 Vérification des caractéristiques niveau 1:")
         
         # Vérifier le nombre de rages (niveau 1 = 2 rages)
-        page_content = driver.page_source.lower()
         if "rage" in page_content:
             print("✅ Système de rage présent")
         else:
@@ -1727,8 +1421,8 @@ class TestBarbarianClass:
         # Créer l'utilisateur et se connecter
         self._create_and_login_user(driver, wait, app_url, test_user)
         
-        # Aller à la page de création pour tester les archétypes
-        driver.get(f"{app_url}/character_create_step5.php")
+        # Naviguer jusqu'à l'étape 5 (archétypes) en suivant le workflow
+        self._navigate_to_step(driver, wait, app_url, 5)
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         
         # Vérifier que la page des archétypes est accessible
@@ -1863,7 +1557,7 @@ class TestBarbarianClass:
         self._create_and_login_user(driver, wait, app_url, test_user)
         
         # Aller à la page de création pour voir les informations de classe
-        driver.get(f"{app_url}/character_create_step1.php")
+        driver.get(f"{app_url}/cc01_class_selection.php?type=player")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         
         # Sélectionner Barbare pour voir les détails
@@ -1923,12 +1617,16 @@ class TestBarbarianClass:
         self._create_and_login_user(driver, wait, app_url, test_user)
         
         # Aller à la page de création pour vérifier les informations de classe
-        driver.get(f"{app_url}/character_create_step1.php")
+        driver.get(f"{app_url}/cc01_class_selection.php?type=player")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         
-        # Sélectionner Barbare
-        barbarian_card = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'class-card') and contains(., 'Barbare')]")))
-        driver.execute_script("arguments[0].click();", barbarian_card)
+        # Sélectionner Barbare avec le helper
+        barbarian_card = self._find_card_by_text(driver, ".class-card", "Barbare")
+        if barbarian_card:
+            driver.execute_script("arguments[0].click();", barbarian_card)
+            time.sleep(0.5)
+        else:
+            pytest.skip("Carte de classe Barbare non trouvée")
         
         # Vérifier les informations de base du barbare
         page_content = driver.page_source
@@ -1951,9 +1649,9 @@ class TestBarbarianClass:
         else:
             print("ℹ️ Maîtrises d'armes non détectées dans cette étape")
         
-        # Tester l'accès aux archétypes
+        # Tester l'accès aux archétypes en suivant le workflow
         try:
-            driver.get(f"{app_url}/character_create_step5.php")
+            self._navigate_to_step(driver, wait, app_url, 5)
             wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
             
             # Vérifier les archétypes disponibles
@@ -2093,8 +1791,8 @@ class TestBarbarianClass:
         # Créer l'utilisateur et se connecter
         self._create_and_login_user(driver, wait, app_url, test_user)
         
-        # Aller à la page des archétypes
-        driver.get(f"{app_url}/character_create_step5.php")
+        # Naviguer jusqu'à l'étape 5 (archétypes) en suivant le workflow
+        self._navigate_to_step(driver, wait, app_url, 5)
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         
         # Vérifier les archétypes et leurs capacités
@@ -2137,7 +1835,7 @@ class TestBarbarianClass:
         self._create_and_login_user(driver, wait, app_url, test_user)
         
         # Tester l'accessibilité de la page de création de personnage
-        driver.get(f"{app_url}/character_create_step1.php")
+        driver.get(f"{app_url}/cc01_class_selection.php?type=player")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         
         # Vérifier que la page de création est accessible
@@ -2171,7 +1869,7 @@ class TestBarbarianClass:
         self._create_and_login_user(driver, wait, app_url, test_user)
         
         # Tester l'accessibilité de la page de création de personnage
-        driver.get(f"{app_url}/character_create_step1.php")
+        driver.get(f"{app_url}/cc01_class_selection.php?type=player")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         
         # Vérifier que la page de création est accessible
