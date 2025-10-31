@@ -14,6 +14,60 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException,
 class TestSorcererClass:
     """Tests pour la classe Ensorceleur"""
 
+    def _find_card_by_text(self, driver, card_selector, search_text):
+        """Helper: Trouver une carte par son texte (classe, race, option, etc.)"""
+        cards = driver.find_elements(By.CSS_SELECTOR, card_selector)
+        for card in cards:
+            try:
+                title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
+                if search_text in title_element.text:
+                    return card
+            except NoSuchElementException:
+                continue
+        return None
+    
+    def _click_card_and_continue(self, driver, wait, card_element, continue_btn_selector="#continueBtn", wait_time=0.5):
+        """Helper: Cliquer sur une carte et continuer"""
+        if card_element:
+            try:
+                driver.execute_script("arguments[0].click();", card_element)
+                time.sleep(wait_time)
+                
+                # Vérifier que la carte est sélectionnée (avec gestion des éléments obsolètes)
+                try:
+                    card_class = card_element.get_attribute("class")
+                    if card_class and "selected" not in card_class:
+                        # Réessayer en cherchant la carte à nouveau
+                        time.sleep(0.5)
+                except StaleElementReferenceException:
+                    # Si l'élément est obsolète, on continue quand même
+                    pass
+                
+                # Cliquer sur continuer
+                continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, continue_btn_selector)))
+                if continue_btn.get_property("disabled"):
+                    # Attendre un peu plus si le bouton est désactivé
+                    time.sleep(1)
+                    continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, continue_btn_selector)))
+                driver.execute_script("arguments[0].click();", continue_btn)
+                return True
+            except (StaleElementReferenceException, TimeoutException) as e:
+                # En cas d'erreur, on essaie de continuer quand même
+                try:
+                    continue_btn = driver.find_element(By.CSS_SELECTOR, continue_btn_selector)
+                    if not continue_btn.get_property("disabled"):
+                        driver.execute_script("arguments[0].click();", continue_btn)
+                        return True
+                except:
+                    pass
+                raise
+        return False
+    
+    def _click_continue_button(self, driver, wait, selector="#continueBtn"):
+        """Helper: Cliquer sur le bouton continuer (nouvelle IHM uniquement)"""
+        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, selector)))
+        driver.execute_script("arguments[0].click();", continue_btn)
+
     def test_sorcerer_character_creation(self, driver, wait, app_url, test_user):
         """Test de création d'un personnage ensorceleur"""
         print(f"🔧 Test de création de personnage ensorceleur")
@@ -23,8 +77,10 @@ class TestSorcererClass:
         print("✅ Utilisateur créé et connecté")
         
         # Aller à la page de création de personnage
-        driver.get(f"{app_url}/character_create_step1.php")
+        driver.get(f"{app_url}/cc01_class_selection.php?type=player")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".class-card")))
+        time.sleep(0.5)
         print("✅ Page de création chargée")
         
         # Sélectionner la classe Ensorceleur
@@ -97,7 +153,7 @@ class TestSorcererClass:
             current_url = driver.current_url
             print(f"🔍 URL actuelle après clic: {current_url}")
             
-            if "character_create_step2.php" in current_url:
+            if "cc02_race_selection.php" in current_url:
                 print("✅ Classe Ensorceleur sélectionnée, redirection vers étape 2")
             else:
                 print(f"⚠️ Redirection non détectée, URL actuelle: {current_url}")
@@ -115,8 +171,10 @@ class TestSorcererClass:
         print("✅ Utilisateur créé et connecté")
         
         # Aller à la page de création de personnage
-        driver.get(f"{app_url}/character_create_step1.php")
+        driver.get(f"{app_url}/cc01_class_selection.php?type=player")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".class-card")))
+        time.sleep(0.5)
         print("✅ Page de création chargée")
         
         # Sélectionner la classe Ensorceleur
@@ -138,13 +196,13 @@ class TestSorcererClass:
         time.sleep(1)
         continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
         driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "character_create_step2.php" in driver.current_url)
+        wait.until(lambda driver: "cc02_race_selection.php" in driver.current_url)
         print("✅ Classe Ensorceleur sélectionnée, redirection vers étape 2")
         
         # Sélectionner une race appropriée pour un ensorceleur (ex: Dragonborn, Tiefling, Humain)
         try:
             race_element = None
-            race_cards = driver.find_elements(By.CSS_SELECTOR, ".race-card")
+            race_cards = driver.find_elements(By.CSS_SELECTOR, ".class-card[data-race-id]")
             for card in race_cards:
                 try:
                     title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
@@ -159,7 +217,7 @@ class TestSorcererClass:
                 time.sleep(1)  # Attendre que la sélection soit enregistrée
                 continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#continueBtn")))
                 driver.execute_script("arguments[0].click();", continue_btn)
-                wait.until(lambda driver: "character_create_step3.php" in driver.current_url)
+                wait.until(lambda driver: "cc03_background_selection.php" in driver.current_url)
                 print("✅ Race sélectionnée pour l'ensorceleur")
             else:
                 pytest.skip("Carte de race appropriée non trouvée - test ignoré")
@@ -673,8 +731,10 @@ class TestSorcererClass:
         print("🔧 Helper: Navigation vers sélection d'origine")
         
         # Étape 1: Sélection de classe
-        driver.get(f"{app_url}/character_create_step1.php")
+        driver.get(f"{app_url}/cc01_class_selection.php?type=player")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".class-card")))
+        time.sleep(0.5)
         
         sorcerer_element = None
         class_cards = driver.find_elements(By.CSS_SELECTOR, ".class-card")
@@ -694,12 +754,12 @@ class TestSorcererClass:
         time.sleep(1)
         continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
         driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "character_create_step2.php" in driver.current_url)
+        wait.until(lambda driver: "cc02_race_selection.php" in driver.current_url)
         print("✅ Étape 1: Classe Ensorceleur sélectionnée")
         
         # Étape 2: Sélection de race
         race_element = None
-        race_cards = driver.find_elements(By.CSS_SELECTOR, ".race-card")
+        race_cards = driver.find_elements(By.CSS_SELECTOR, ".class-card[data-race-id]")
         for card in race_cards:
             try:
                 title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
@@ -716,12 +776,12 @@ class TestSorcererClass:
         time.sleep(1)
         continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#continueBtn")))
         driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "character_create_step3.php" in driver.current_url)
+        wait.until(lambda driver: "cc03_background_selection.php" in driver.current_url)
         print("✅ Étape 2: Race sélectionnée")
         
         # Étape 3: Sélection d'historique
         background_element = None
-        background_cards = driver.find_elements(By.CSS_SELECTOR, ".background-card")
+        background_cards = driver.find_elements(By.CSS_SELECTOR, ".class-card[data-background-id]")
         for card in background_cards:
             try:
                 title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
@@ -738,14 +798,14 @@ class TestSorcererClass:
         time.sleep(1)
         continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
         driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "character_create_step4.php" in driver.current_url)
+        wait.until(lambda driver: "cc04_characteristics.php" in driver.current_url)
         print("✅ Étape 3: Historique sélectionné")
         
         # Étape 4: Caractéristiques (passer rapidement)
         time.sleep(2)
         continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
         driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "character_create_step5.php" in driver.current_url)
+        wait.until(lambda driver: "cc05_class_specialization.php" in driver.current_url)
         print("✅ Étape 4: Caractéristiques validées")
 
     def _create_complete_sorcerer(self, driver, wait, app_url):
@@ -754,8 +814,10 @@ class TestSorcererClass:
 
         # Suivre le workflow complet jusqu'à la fin
         # Étape 1 : Sélection de classe
-        driver.get(f"{app_url}/character_create_step1.php")
+        driver.get(f"{app_url}/cc01_class_selection.php?type=player")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".class-card")))
+        time.sleep(0.5)
         print("✅ Étape 1: Page de création chargée")
 
         # Sélectionner la classe Ensorceleur
@@ -777,12 +839,12 @@ class TestSorcererClass:
         time.sleep(1)
         continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
         driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "character_create_step2.php" in driver.current_url)
+        wait.until(lambda driver: "cc02_race_selection.php" in driver.current_url)
         print("✅ Étape 1: Classe Ensorceleur sélectionnée, redirection vers étape 2")
 
         # Étape 2 : Sélection de race
         race_element = None
-        race_cards = driver.find_elements(By.CSS_SELECTOR, ".race-card")
+        race_cards = driver.find_elements(By.CSS_SELECTOR, ".class-card[data-race-id]")
         for card in race_cards:
             try:
                 title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
@@ -799,12 +861,12 @@ class TestSorcererClass:
         time.sleep(1)
         continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#continueBtn")))
         driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "character_create_step3.php" in driver.current_url)
+        wait.until(lambda driver: "cc03_background_selection.php" in driver.current_url)
         print("✅ Étape 2: Race sélectionnée, redirection vers étape 3")
 
         # Étape 3 : Sélection d'historique
         background_element = None
-        background_cards = driver.find_elements(By.CSS_SELECTOR, ".background-card")
+        background_cards = driver.find_elements(By.CSS_SELECTOR, ".class-card[data-background-id]")
         for card in background_cards:
             try:
                 title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
@@ -821,7 +883,7 @@ class TestSorcererClass:
         time.sleep(1)
         continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
         driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "character_create_step4.php" in driver.current_url)
+        wait.until(lambda driver: "cc04_characteristics.php" in driver.current_url)
         print("✅ Étape 3: Historique sélectionné, redirection vers étape 4")
 
         # Étape 4 : Caractéristiques (passer rapidement)
@@ -829,7 +891,7 @@ class TestSorcererClass:
         form = driver.find_element(By.CSS_SELECTOR, "form")
         continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
         driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "character_create_step5.php" in driver.current_url)
+        wait.until(lambda driver: "cc05_class_specialization.php" in driver.current_url)
         print("✅ Étape 4: Caractéristiques validées, redirection vers étape 5")
 
         # Étape 5 : Sélection d'origine (si disponible)
@@ -873,11 +935,11 @@ class TestSorcererClass:
         try:
             continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
             driver.execute_script("arguments[0].click();", continue_btn)
-            wait.until(lambda driver: "character_create_step7.php" in driver.current_url)
+            wait.until(lambda driver: "cc07_alignment_profile.php" in driver.current_url)
             print("✅ Étape 6: Compétences validées, redirection vers étape 7")
         except TimeoutException:
             print("⚠️ Étape 6: Redirection vers étape 7 échouée, navigation directe")
-            driver.get(f"{app_url}/character_create_step7.php")
+            driver.get(f"{app_url}/cc07_alignment_profile.php")
             wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
             print("✅ Navigation directe vers étape 7")
 
@@ -886,11 +948,11 @@ class TestSorcererClass:
         try:
             continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
             driver.execute_script("arguments[0].click();", continue_btn)
-            wait.until(lambda driver: "character_create_step8.php" in driver.current_url)
+            wait.until(lambda driver: "cc08_identity_story.php" in driver.current_url)
             print("✅ Étape 7: Alignement validé, redirection vers étape 8")
         except TimeoutException:
             print("⚠️ Étape 7: Redirection vers étape 8 échouée, navigation directe")
-            driver.get(f"{app_url}/character_create_step8.php")
+            driver.get(f"{app_url}/cc08_identity_story.php")
             wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
             print("✅ Navigation directe vers étape 8")
 
@@ -909,11 +971,11 @@ class TestSorcererClass:
 
             continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
             driver.execute_script("arguments[0].click();", continue_btn)
-            wait.until(lambda driver: "character_create_step9.php" in driver.current_url)
+            wait.until(lambda driver: "cc09_starting_equipment.php" in driver.current_url)
             print("✅ Étape 8: Détails validés, redirection vers étape 9")
         except (TimeoutException, NoSuchElementException):
             print("⚠️ Étape 8: Champs non trouvés ou redirection échouée, navigation directe vers étape 9")
-            driver.get(f"{app_url}/character_create_step9.php")
+            driver.get(f"{app_url}/cc09_starting_equipment.php")
             wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
             print("✅ Navigation directe vers étape 9")
 
@@ -964,32 +1026,68 @@ class TestSorcererClass:
         print("🔍 Vérification des caractéristiques de l'ensorceleur niveau 1")
         
         # Aller à la page de création pour simuler un ensorceleur niveau 1
-        driver.get(f"{app_url}/character_create_step1.php")
+        driver.get(f"{app_url}/cc01_class_selection.php?type=player")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".class-card")))
+        time.sleep(0.5)
         
         # Sélectionner Ensorceleur
-        sorcerer_card = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'class-card') and (contains(., 'Ensorceleur') or contains(., 'Sorcerer'))]")))
-        driver.execute_script("arguments[0].click();", sorcerer_card)
+        ensorceleur_card = self._find_card_by_text(driver, ".class-card", "Ensorceleur")
+        if not ensorceleur_card:
+            # Réessayer en cherchant directement
+            all_class_cards = driver.find_elements(By.CSS_SELECTOR, ".class-card")
+            for card in all_class_cards:
+                try:
+                    title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
+                    if "Ensorceleur" in title_element.text:
+                        ensorceleur_card = card
+                        break
+                except (NoSuchElementException, StaleElementReferenceException):
+                    continue
+            if not ensorceleur_card:
+                raise Exception("Carte de classe Ensorceleur non trouvée")
+        self._click_card_and_continue(driver, wait, ensorceleur_card)
+        wait.until(lambda driver: "cc02_race_selection.php" in driver.current_url)
         
-        # Continuer vers l'étape 2
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
+        # Sélectionner Humain
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".class-card[data-race-id]")))
+        time.sleep(0.5)
+        all_race_cards = driver.find_elements(By.CSS_SELECTOR, ".class-card[data-race-id]")
+        race_card = None
+        for card in all_race_cards:
+            try:
+                title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
+                if "Humain" in title_element.text:
+                    race_card = card
+                    break
+            except NoSuchElementException:
+                continue
         
-        # Sélectionner Humain (race plus commune)
-        race_card = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'race-card') and contains(., 'Humain')]")))
-        driver.execute_script("arguments[0].click();", race_card)
+        if not race_card:
+            raise Exception("Carte de race Humain non trouvée")
         
-        # Continuer vers l'étape 3
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
+        self._click_card_and_continue(driver, wait, race_card, wait_time=1)
+        wait.until(lambda driver: "cc03_background_selection.php" in driver.current_url)
         
-        # Sélectionner Acolyte (historique plus commun)
-        background_card = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'background-card') and contains(., 'Acolyte')]")))
-        driver.execute_script("arguments[0].click();", background_card)
+        # Sélectionner Acolyte
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".class-card[data-background-id]")))
+        time.sleep(0.5)
+        all_background_cards = driver.find_elements(By.CSS_SELECTOR, ".class-card[data-background-id]")
+        background_card = None
+        for card in all_background_cards:
+            try:
+                title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
+                if "Acolyte" in title_element.text:
+                    background_card = card
+                    break
+            except NoSuchElementException:
+                continue
         
-        # Continuer vers l'étape 4
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
+        if not background_card:
+            raise Exception("Carte d'historique Acolyte non trouvée")
+        
+        self._click_card_and_continue(driver, wait, background_card, wait_time=1)
+        wait.until(lambda driver: "cc04_characteristics.php" in driver.current_url)
         
         # Attribuer les caractéristiques
         characteristics = {
@@ -1007,18 +1105,20 @@ class TestSorcererClass:
             input_element.send_keys(str(value))
         
         # Continuer vers l'étape 5
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
+        self._click_continue_button(driver, wait)
+        wait.until(lambda driver: "cc05_class_specialization.php" in driver.current_url)
         
         # Sélectionner une origine si disponible
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".option-card")))
+        time.sleep(0.5)
         option_cards = driver.find_elements(By.CSS_SELECTOR, ".option-card")
         if option_cards:
             first_option = option_cards[0]
             driver.execute_script("arguments[0].click();", first_option)
-        
-        # Continuer vers l'étape 6
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
+            time.sleep(0.5)
+            continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#continueBtn")))
+            driver.execute_script("arguments[0].click();", continue_btn)
+            wait.until(lambda driver: "cc06_skills_languages.php" in driver.current_url)
         
         # Vérifier les caractéristiques de l'ensorceleur niveau 1
         print("📊 Vérification des caractéristiques niveau 1:")

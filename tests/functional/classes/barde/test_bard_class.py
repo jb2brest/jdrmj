@@ -3,6 +3,7 @@ Tests fonctionnels pour la classe Barde
 """
 import pytest
 import time
+import re
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -11,6 +12,60 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException,
 
 class TestBardClass:
     """Tests pour la classe Barde et ses fonctionnalités spécifiques"""
+    
+    def _find_card_by_text(self, driver, card_selector, search_text):
+        """Helper: Trouver une carte par son texte (classe, race, option, etc.)"""
+        cards = driver.find_elements(By.CSS_SELECTOR, card_selector)
+        for card in cards:
+            try:
+                title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
+                if search_text in title_element.text:
+                    return card
+            except NoSuchElementException:
+                continue
+        return None
+    
+    def _click_card_and_continue(self, driver, wait, card_element, continue_btn_selector="#continueBtn", wait_time=0.5):
+        """Helper: Cliquer sur une carte et continuer"""
+        if card_element:
+            try:
+                driver.execute_script("arguments[0].click();", card_element)
+                time.sleep(wait_time)
+                
+                # Vérifier que la carte est sélectionnée (avec gestion des éléments obsolètes)
+                try:
+                    card_class = card_element.get_attribute("class")
+                    if card_class and "selected" not in card_class:
+                        # Réessayer en cherchant la carte à nouveau
+                        time.sleep(0.5)
+                except StaleElementReferenceException:
+                    # Si l'élément est obsolète, on continue quand même
+                    pass
+                
+                # Cliquer sur continuer
+                continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, continue_btn_selector)))
+                if continue_btn.get_property("disabled"):
+                    # Attendre un peu plus si le bouton est désactivé
+                    time.sleep(1)
+                    continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, continue_btn_selector)))
+                driver.execute_script("arguments[0].click();", continue_btn)
+                return True
+            except (StaleElementReferenceException, TimeoutException) as e:
+                # En cas d'erreur, on essaie de continuer quand même
+                try:
+                    continue_btn = driver.find_element(By.CSS_SELECTOR, continue_btn_selector)
+                    if not continue_btn.get_property("disabled"):
+                        driver.execute_script("arguments[0].click();", continue_btn)
+                        return True
+                except:
+                    pass
+                raise
+        return False
+    
+    def _click_continue_button(self, driver, wait, selector="#continueBtn"):
+        """Helper: Cliquer sur le bouton continuer (nouvelle IHM uniquement)"""
+        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, selector)))
+        driver.execute_script("arguments[0].click();", continue_btn)
     
     def test_bard_character_creation(self, driver, wait, app_url, test_user):
         """Test de création d'un personnage barde"""
@@ -21,12 +76,12 @@ class TestBardClass:
         print("✅ Utilisateur créé et connecté")
         
         # Aller à la page de création de personnage
-        driver.get(f"{app_url}/character_create_step1.php")
+        driver.get(f"{app_url}/cc01_class_selection.php?type=player")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         print("✅ Page de création de personnage chargée")
         
         # Vérifier que la page de création de personnage est chargée
-        assert "Étape 1" in driver.title or "Choisissez votre classe" in driver.page_source
+        assert "Choisissez la classe" in driver.page_source
         
         # Sélectionner la classe Barde
         try:
@@ -80,7 +135,7 @@ class TestBardClass:
                     
                     # Vérifier la redirection vers l'étape 2
                     try:
-                        wait.until(lambda driver: "character_create_step2.php" in driver.current_url)
+                        wait.until(lambda driver: "cc02_race_selection.php" in driver.current_url)
                         print("✅ Classe Barde sélectionnée avec succès - redirection vers étape 2")
                     except TimeoutException:
                         print("❌ Timeout lors de la redirection vers l'étape 2")
@@ -107,7 +162,7 @@ class TestBardClass:
         print("✅ Utilisateur créé et connecté")
         
         # D'abord, aller à l'étape 1 pour sélectionner la classe Barde
-        driver.get(f"{app_url}/character_create_step1.php")
+        driver.get(f"{app_url}/cc01_class_selection.php?type=player")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         print("✅ Page de création de personnage chargée")
         
@@ -166,7 +221,7 @@ class TestBardClass:
                 
                 # Attendre l'étape 2
                 try:
-                    wait.until(lambda driver: "character_create_step2.php" in driver.current_url)
+                    wait.until(lambda driver: "cc02_race_selection.php" in driver.current_url)
                     print("✅ Redirection vers l'étape 2 réussie")
                 except TimeoutException:
                     print("❌ Timeout lors de la redirection vers l'étape 2")
@@ -182,7 +237,7 @@ class TestBardClass:
                     pytest.skip("Page de sélection de race non accessible - test ignoré")
                 
                 # Sélectionner une race appropriée pour un barde (essayer plusieurs races)
-                race_cards = driver.find_elements(By.CSS_SELECTOR, ".race-card")
+                race_cards = driver.find_elements(By.CSS_SELECTOR, ".class-card[data-race-id]")
                 print(f"🔍 {len(race_cards)} cartes de race trouvées")
                 
                 race_selected = False
@@ -242,7 +297,7 @@ class TestBardClass:
                         
                         # Vérifier la redirection vers l'étape 3
                         try:
-                            wait.until(lambda driver: "character_create_step3.php" in driver.current_url)
+                            wait.until(lambda driver: "cc03_background_selection.php" in driver.current_url)
                             print(f"✅ Race {selected_race} sélectionnée pour le barde - redirection vers étape 3 réussie")
                         except TimeoutException:
                             print("❌ Timeout lors de la redirection vers l'étape 3")
@@ -273,7 +328,7 @@ class TestBardClass:
         
         # Suivre le workflow complet : étapes 1, 2, 3, 4, puis 5 (archétype)
         # Étape 1 : Sélection de classe
-        driver.get(f"{app_url}/character_create_step1.php")
+        driver.get(f"{app_url}/cc01_class_selection.php?type=player")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         print("✅ Étape 1: Page de création chargée")
         
@@ -296,12 +351,12 @@ class TestBardClass:
         time.sleep(1)
         continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
         driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "character_create_step2.php" in driver.current_url)
+        wait.until(lambda driver: "cc02_race_selection.php" in driver.current_url)
         print("✅ Étape 1: Classe Barde sélectionnée, redirection vers étape 2")
         
         # Étape 2 : Sélection de race
         race_element = None
-        race_cards = driver.find_elements(By.CSS_SELECTOR, ".race-card")
+        race_cards = driver.find_elements(By.CSS_SELECTOR, ".class-card[data-race-id]")
         for card in race_cards:
             try:
                 title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
@@ -318,12 +373,12 @@ class TestBardClass:
         time.sleep(1)
         continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#continueBtn")))
         driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "character_create_step3.php" in driver.current_url)
+        wait.until(lambda driver: "cc03_background_selection.php" in driver.current_url)
         print("✅ Étape 2: Race sélectionnée, redirection vers étape 3")
         
         # Étape 3 : Sélection d'historique
         background_element = None
-        background_cards = driver.find_elements(By.CSS_SELECTOR, ".background-card")
+        background_cards = driver.find_elements(By.CSS_SELECTOR, ".class-card[data-background-id]")
         for card in background_cards:
             try:
                 title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
@@ -340,7 +395,7 @@ class TestBardClass:
         time.sleep(1)
         continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#continueBtn")))
         driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "character_create_step4.php" in driver.current_url)
+        wait.until(lambda driver: "cc04_characteristics.php" in driver.current_url)
         print("✅ Étape 3: Historique sélectionné, redirection vers étape 4")
         
         # Étape 4 : Caractéristiques
@@ -372,24 +427,24 @@ class TestBardClass:
                     
                     # Attendre la redirection vers l'étape 5
                     try:
-                        wait.until(lambda driver: "character_create_step5.php" in driver.current_url)
+                        wait.until(lambda driver: "cc05_class_specialization.php" in driver.current_url)
                         print("✅ Étape 4: Caractéristiques validées, redirection vers étape 5")
                     except TimeoutException:
                         print("⚠️ Étape 4: Redirection vers étape 5 échouée, continuons quand même")
                         # Essayer de naviguer directement vers l'étape 5
-                        driver.get(f"{app_url}/character_create_step5.php")
+                        driver.get(f"{app_url}/cc05_class_specialization.php")
                         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
                         print("✅ Navigation directe vers étape 5")
                 else:
                     print("❌ Aucun bouton continuer trouvé pour les caractéristiques")
                     # Essayer de naviguer directement vers l'étape 5
-                    driver.get(f"{app_url}/character_create_step5.php")
+                    driver.get(f"{app_url}/cc05_class_specialization.php")
                     wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
                     print("✅ Navigation directe vers étape 5")
             except TimeoutException:
                 print("⚠️ Étape 4: Redirection vers étape 5 échouée, continuons quand même")
                 # Essayer de naviguer directement vers l'étape 5
-                driver.get(f"{app_url}/character_create_step5.php")
+                driver.get(f"{app_url}/cc05_class_specialization.php")
                 wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
                 print("✅ Navigation directe vers étape 5")
         
@@ -774,32 +829,55 @@ class TestBardClass:
         print("🔍 Vérification des caractéristiques du barde niveau 1")
         
         # Aller à la page de création pour simuler un barde niveau 1
-        driver.get(f"{app_url}/character_create_step1.php")
+        driver.get(f"{app_url}/cc01_class_selection.php?type=player")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         
         # Sélectionner Barde
-        bard_card = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'class-card') and contains(., 'Barde')]")))
-        driver.execute_script("arguments[0].click();", bard_card)
-        
-        # Continuer vers l'étape 2
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
+        bard_card = self._find_card_by_text(driver, ".class-card", "Barde")
+        if not bard_card:
+            raise Exception("Carte de classe Barde non trouvée")
+        self._click_card_and_continue(driver, wait, bard_card)
+        wait.until(lambda driver: "cc02_race_selection.php" in driver.current_url)
         
         # Sélectionner Elfe
-        race_card = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'race-card') and contains(., 'Elfe')]")))
-        driver.execute_script("arguments[0].click();", race_card)
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".class-card[data-race-id]")))
+        time.sleep(0.5)
+        all_race_cards = driver.find_elements(By.CSS_SELECTOR, ".class-card[data-race-id]")
+        race_card = None
+        for card in all_race_cards:
+            try:
+                title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
+                if "Elfe" in title_element.text:
+                    race_card = card
+                    break
+            except NoSuchElementException:
+                continue
         
-        # Continuer vers l'étape 3
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
+        if not race_card:
+            raise Exception("Carte de race Elfe non trouvée")
+        
+        self._click_card_and_continue(driver, wait, race_card, wait_time=1)
+        wait.until(lambda driver: "cc03_background_selection.php" in driver.current_url)
         
         # Sélectionner Artiste
-        background_card = wait.until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'background-card') and contains(., 'Artiste')]")))
-        driver.execute_script("arguments[0].click();", background_card)
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".class-card[data-background-id]")))
+        time.sleep(0.5)
+        all_background_cards = driver.find_elements(By.CSS_SELECTOR, ".class-card[data-background-id]")
+        background_card = None
+        for card in all_background_cards:
+            try:
+                title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
+                if "Artiste" in title_element.text:
+                    background_card = card
+                    break
+            except NoSuchElementException:
+                continue
         
-        # Continuer vers l'étape 4
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
+        if not background_card:
+            raise Exception("Carte d'historique Artiste non trouvée")
+        
+        self._click_card_and_continue(driver, wait, background_card, wait_time=1)
+        wait.until(lambda driver: "cc04_characteristics.php" in driver.current_url)
         
         # Attribuer les caractéristiques
         characteristics = {
@@ -817,18 +895,20 @@ class TestBardClass:
             input_element.send_keys(str(value))
         
         # Continuer vers l'étape 5
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
+        self._click_continue_button(driver, wait)
+        wait.until(lambda driver: "cc05_class_specialization.php" in driver.current_url)
         
         # Sélectionner un archétype si disponible
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".option-card")))
+        time.sleep(0.5)
         option_cards = driver.find_elements(By.CSS_SELECTOR, ".option-card")
         if option_cards:
             first_option = option_cards[0]
             driver.execute_script("arguments[0].click();", first_option)
-        
-        # Continuer vers l'étape 6
-        continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
-        driver.execute_script("arguments[0].click();", continue_btn)
+            time.sleep(0.5)
+            continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#continueBtn")))
+            driver.execute_script("arguments[0].click();", continue_btn)
+            wait.until(lambda driver: "cc06_skills_languages.php" in driver.current_url)
         
         # Vérifier les caractéristiques du barde niveau 1
         print("📊 Vérification des caractéristiques niveau 1:")
@@ -1060,7 +1140,11 @@ class TestBardClass:
         submit_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
         driver.execute_script("arguments[0].click();", submit_button)
         
-        # Attendre un peu pour que l'inscription se termine
+        # Attendre que l'inscription se termine (redirection ou message de succès)
+        try:
+            wait.until(lambda driver: "login.php" in driver.current_url or "register.php" not in driver.current_url or "succès" in driver.page_source.lower() or "success" in driver.page_source.lower())
+        except TimeoutException:
+            pass  # Continuer même si pas de redirection claire
         time.sleep(1)
         
         # Se connecter
@@ -1105,24 +1189,65 @@ class TestBardClass:
                 print("🔍 Bouton de connexion cliqué")
             except StaleElementReferenceException:
                 print("⚠️ Élément obsolète, re-trouver le bouton")
+                # Attendre un peu pour que la page se stabilise
+                time.sleep(1)
                 # Re-trouver le bouton juste avant de cliquer
-                submit_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
-                driver.execute_script("arguments[0].click();", submit_button)
-                print("🔍 Bouton de connexion cliqué (après re-trouvaille)")
+                try:
+                    submit_button = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
+                    driver.execute_script("arguments[0].click();", submit_button)
+                    print("🔍 Bouton de connexion cliqué (après re-trouvaille)")
+                except TimeoutException:
+                    # Essayer avec un sélecteur plus simple
+                    try:
+                        submit_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
+                        driver.execute_script("arguments[0].click();", submit_button)
+                        print("🔍 Bouton de connexion cliqué (sélecteur direct)")
+                    except Exception as e:
+                        print(f"❌ Erreur lors du clic: {e}")
+                        raise
         else:
             print("❌ Aucun bouton de connexion trouvé")
-            raise TimeoutException("Bouton de connexion non trouvé")
+            # Dernière tentative avec sélecteur direct
+            try:
+                submit_button = driver.find_element(By.CSS_SELECTOR, "button[type='submit']")
+                driver.execute_script("arguments[0].click();", submit_button)
+                print("🔍 Bouton de connexion trouvé et cliqué (tentative finale)")
+            except NoSuchElementException:
+                raise TimeoutException("Bouton de connexion non trouvé")
         
-        # Attendre la connexion
+        # Attendre la connexion avec un timeout plus long
         try:
-            wait.until(lambda driver: "index.php" in driver.current_url or "characters.php" in driver.current_url)
+            # Utiliser un WebDriverWait avec timeout plus long pour la connexion
+            login_wait = WebDriverWait(driver, timeout=10)
+            login_wait.until(lambda driver: "index.php" in driver.current_url or "characters.php" in driver.current_url or "dashboard" in driver.current_url.lower())
             print(f"✅ Connexion réussie, URL: {driver.current_url}")
         except TimeoutException:
             print(f"❌ Connexion échouée, URL actuelle: {driver.current_url}")
             # Vérifier s'il y a des messages d'erreur
             page_source = driver.page_source.lower()
+            print(f"📄 Contenu de la page (premiers 500 caractères): {page_source[:500]}")
             if "erreur" in page_source or "error" in page_source:
                 print("❌ Message d'erreur détecté sur la page")
+                # Afficher les messages d'erreur potentiels
+                try:
+                    error_elements = driver.find_elements(By.CSS_SELECTOR, ".alert-danger, .error, .message-error")
+                    for elem in error_elements:
+                        print(f"   Erreur: {elem.text}")
+                except:
+                    pass
+            # Vérifier si on est toujours sur la page de login (problème de credentials)
+            if "login.php" in driver.current_url:
+                print("⚠️ Toujours sur la page de login - vérifier les credentials ou la redirection")
+                # Peut-être que la connexion a fonctionné mais la redirection est différente
+                # Essayer de naviguer directement vers characters.php
+                try:
+                    driver.get(f"{app_url}/characters.php")
+                    time.sleep(1)
+                    if "characters.php" in driver.current_url and "login" not in driver.current_url.lower():
+                        print("✅ Accès à la page personnages réussi (redirection manuelle)")
+                        return
+                except:
+                    pass
             raise
     
     def _navigate_to_archetype_selection(self, driver, wait, app_url):
@@ -1130,7 +1255,7 @@ class TestBardClass:
         print("🔧 Helper: Navigation vers sélection d'archétype")
         
         # Étape 1: Sélectionner la classe Barde
-        driver.get(f"{app_url}/character_create_step1.php")
+        driver.get(f"{app_url}/cc01_class_selection.php?type=player")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         print("✅ Étape 1: Page de création chargée")
         
@@ -1173,11 +1298,11 @@ class TestBardClass:
             
             if continue_btn:
                 driver.execute_script("arguments[0].click();", continue_btn)
-                wait.until(lambda driver: "character_create_step2.php" in driver.current_url)
+                wait.until(lambda driver: "cc02_race_selection.php" in driver.current_url)
                 print("✅ Étape 1: Redirection vers étape 2 réussie")
         
         # Étape 2: Sélectionner une race
-        race_cards = driver.find_elements(By.CSS_SELECTOR, ".race-card")
+        race_cards = driver.find_elements(By.CSS_SELECTOR, ".class-card[data-race-id]")
         print(f"🔍 Étape 2: {len(race_cards)} races trouvées")
         race_selected = False
         
@@ -1224,7 +1349,7 @@ class TestBardClass:
             if continue_btn:
                 driver.execute_script("arguments[0].click();", continue_btn)
                 print("✅ Étape 2: Bouton continuer cliqué")
-                wait.until(lambda driver: "character_create_step3.php" in driver.current_url)
+                wait.until(lambda driver: "cc03_background_selection.php" in driver.current_url)
                 print("✅ Étape 2: Redirection vers étape 3 réussie")
             else:
                 print("❌ Étape 2: Aucun bouton continuer trouvé")
@@ -1237,7 +1362,7 @@ class TestBardClass:
         
         # Suivre le workflow complet : étapes 1, 2, 3, 4, puis 5 (archétype), puis 6 (équipement)
         # Étape 1 : Sélection de classe
-        driver.get(f"{app_url}/character_create_step1.php")
+        driver.get(f"{app_url}/cc01_class_selection.php?type=player")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         print("✅ Étape 1: Page de création chargée")
         
@@ -1260,12 +1385,12 @@ class TestBardClass:
         time.sleep(1)
         continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
         driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "character_create_step2.php" in driver.current_url)
+        wait.until(lambda driver: "cc02_race_selection.php" in driver.current_url)
         print("✅ Étape 1: Classe Barde sélectionnée, redirection vers étape 2")
         
         # Étape 2 : Sélection de race
         race_element = None
-        race_cards = driver.find_elements(By.CSS_SELECTOR, ".race-card")
+        race_cards = driver.find_elements(By.CSS_SELECTOR, ".class-card[data-race-id]")
         for card in race_cards:
             try:
                 title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
@@ -1282,12 +1407,12 @@ class TestBardClass:
         time.sleep(1)
         continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#continueBtn")))
         driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "character_create_step3.php" in driver.current_url)
+        wait.until(lambda driver: "cc03_background_selection.php" in driver.current_url)
         print("✅ Étape 2: Race sélectionnée, redirection vers étape 3")
         
         # Étape 3 : Sélection d'historique
         background_element = None
-        background_cards = driver.find_elements(By.CSS_SELECTOR, ".background-card")
+        background_cards = driver.find_elements(By.CSS_SELECTOR, ".class-card[data-background-id]")
         for card in background_cards:
             try:
                 title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
@@ -1304,7 +1429,7 @@ class TestBardClass:
         time.sleep(1)
         continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#continueBtn")))
         driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "character_create_step4.php" in driver.current_url)
+        wait.until(lambda driver: "cc04_characteristics.php" in driver.current_url)
         print("✅ Étape 3: Historique sélectionné, redirection vers étape 4")
         
         # Étape 4 : Caractéristiques
@@ -1336,24 +1461,24 @@ class TestBardClass:
                     
                     # Attendre la redirection vers l'étape 5
                     try:
-                        wait.until(lambda driver: "character_create_step5.php" in driver.current_url)
+                        wait.until(lambda driver: "cc05_class_specialization.php" in driver.current_url)
                         print("✅ Étape 4: Caractéristiques validées, redirection vers étape 5")
                     except TimeoutException:
                         print("⚠️ Étape 4: Redirection vers étape 5 échouée, continuons quand même")
                         # Essayer de naviguer directement vers l'étape 5
-                        driver.get(f"{app_url}/character_create_step5.php")
+                        driver.get(f"{app_url}/cc05_class_specialization.php")
                         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
                         print("✅ Navigation directe vers étape 5")
                 else:
                     print("❌ Aucun bouton continuer trouvé pour les caractéristiques")
                     # Essayer de naviguer directement vers l'étape 5
-                    driver.get(f"{app_url}/character_create_step5.php")
+                    driver.get(f"{app_url}/cc05_class_specialization.php")
                     wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
                     print("✅ Navigation directe vers étape 5")
             except TimeoutException:
                 print("⚠️ Étape 4: Redirection vers étape 5 échouée, continuons quand même")
                 # Essayer de naviguer directement vers l'étape 5
-                driver.get(f"{app_url}/character_create_step5.php")
+                driver.get(f"{app_url}/cc05_class_specialization.php")
                 wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
                 print("✅ Navigation directe vers étape 5")
         
@@ -1382,7 +1507,12 @@ class TestBardClass:
         # Essayer de naviguer vers l'étape d'équipement (peut être étape 6, 7, 8, ou 9)
         for step in [6, 7, 8, 9]:
             try:
-                driver.get(f"{app_url}/character_create_step{step}.php")
+                # Nouvelle URL pour l'étape
+                step_urls = {6: 'cc06_skills_languages.php', 7: 'cc07_alignment_profile.php', 8: 'cc08_identity_story.php', 9: 'cc09_starting_equipment.php'}
+                if step in step_urls:
+                    driver.get(f"{app_url}/{step_urls[step]}")
+                else:
+                    driver.get(f"{app_url}/cc09_starting_equipment.php")
                 wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
                 page_source = driver.page_source.lower()
                 print(f"🔍 Étape {step}: Contenu (premiers 200 caractères): {page_source[:200]}")
@@ -1418,7 +1548,7 @@ class TestBardClass:
         
         # Suivre le workflow complet jusqu'à la fin - comme test_bard_starting_equipment
         # Étape 1 : Sélection de classe
-        driver.get(f"{app_url}/character_create_step1.php")
+        driver.get(f"{app_url}/cc01_class_selection.php?type=player")
         wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         print("✅ Étape 1: Page de création chargée")
         
@@ -1441,12 +1571,12 @@ class TestBardClass:
         time.sleep(1)
         continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
         driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "character_create_step2.php" in driver.current_url)
+        wait.until(lambda driver: "cc02_race_selection.php" in driver.current_url)
         print("✅ Étape 1: Classe Barde sélectionnée, redirection vers étape 2")
         
         # Étape 2 : Sélection de race
         race_element = None
-        race_cards = driver.find_elements(By.CSS_SELECTOR, ".race-card")
+        race_cards = driver.find_elements(By.CSS_SELECTOR, ".class-card[data-race-id]")
         for card in race_cards:
             try:
                 title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
@@ -1463,12 +1593,12 @@ class TestBardClass:
         time.sleep(1)
         continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#continueBtn")))
         driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "character_create_step3.php" in driver.current_url)
+        wait.until(lambda driver: "cc03_background_selection.php" in driver.current_url)
         print("✅ Étape 2: Race sélectionnée, redirection vers étape 3")
         
         # Étape 3 : Sélection d'historique
         background_element = None
-        background_cards = driver.find_elements(By.CSS_SELECTOR, ".background-card")
+        background_cards = driver.find_elements(By.CSS_SELECTOR, ".class-card[data-background-id]")
         for card in background_cards:
             try:
                 title_element = card.find_element(By.CSS_SELECTOR, ".card-title")
@@ -1485,7 +1615,7 @@ class TestBardClass:
         time.sleep(1)
         continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
         driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "character_create_step4.php" in driver.current_url)
+        wait.until(lambda driver: "cc04_characteristics.php" in driver.current_url)
         print("✅ Étape 3: Historique sélectionné, redirection vers étape 4")
         
         # Étape 4 : Caractéristiques (passer rapidement)
@@ -1493,7 +1623,7 @@ class TestBardClass:
         form = driver.find_element(By.CSS_SELECTOR, "form")
         continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']:not([name='action'][value='go_back'])")))
         driver.execute_script("arguments[0].click();", continue_btn)
-        wait.until(lambda driver: "character_create_step5.php" in driver.current_url)
+        wait.until(lambda driver: "cc05_class_specialization.php" in driver.current_url)
         print("✅ Étape 4: Caractéristiques validées, redirection vers étape 5")
         
         # Étape 5 : Sélection d'archétype (si disponible)
@@ -1537,11 +1667,11 @@ class TestBardClass:
         try:
             continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
             driver.execute_script("arguments[0].click();", continue_btn)
-            wait.until(lambda driver: "character_create_step7.php" in driver.current_url)
+            wait.until(lambda driver: "cc07_alignment_profile.php" in driver.current_url)
             print("✅ Étape 6: Compétences validées, redirection vers étape 7")
         except TimeoutException:
             print("⚠️ Étape 6: Redirection vers étape 7 échouée, navigation directe")
-            driver.get(f"{app_url}/character_create_step7.php")
+            driver.get(f"{app_url}/cc07_alignment_profile.php")
             wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
             print("✅ Navigation directe vers étape 7")
         
@@ -1550,11 +1680,11 @@ class TestBardClass:
         try:
             continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
             driver.execute_script("arguments[0].click();", continue_btn)
-            wait.until(lambda driver: "character_create_step8.php" in driver.current_url)
+            wait.until(lambda driver: "cc08_identity_story.php" in driver.current_url)
             print("✅ Étape 7: Alignement validé, redirection vers étape 8")
         except TimeoutException:
             print("⚠️ Étape 7: Redirection vers étape 8 échouée, navigation directe")
-            driver.get(f"{app_url}/character_create_step8.php")
+            driver.get(f"{app_url}/cc08_identity_story.php")
             wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
             print("✅ Navigation directe vers étape 8")
         
@@ -1573,11 +1703,11 @@ class TestBardClass:
             
             continue_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']")))
             driver.execute_script("arguments[0].click();", continue_btn)
-            wait.until(lambda driver: "character_create_step9.php" in driver.current_url)
+            wait.until(lambda driver: "cc09_starting_equipment.php" in driver.current_url)
             print("✅ Étape 8: Détails validés, redirection vers étape 9")
         except (TimeoutException, NoSuchElementException):
             print("⚠️ Étape 8: Champs non trouvés ou redirection échouée, navigation directe vers étape 9")
-            driver.get(f"{app_url}/character_create_step9.php")
+            driver.get(f"{app_url}/cc09_starting_equipment.php")
             wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
             print("✅ Navigation directe vers étape 9")
         
@@ -1676,7 +1806,7 @@ class TestBardClass:
         print("✅ Interface des personnages fonctionnelle")
         
         # Tester l'accès à la page de création de personnage
-        create_links = driver.find_elements(By.CSS_SELECTOR, "a[href*='character_create_step1']")
+        create_links = driver.find_elements(By.CSS_SELECTOR, "a[href*='cc01_class_selection']")
         assert len(create_links) > 0, "Lien de création de personnage non trouvé"
         print("✅ Lien de création de personnage accessible")
         
