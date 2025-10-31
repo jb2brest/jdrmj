@@ -408,7 +408,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['hp_ac
             }
             
             // Mettre à jour les points de vie actuels
-            Character::updateHitPoints($character_id, $new_hp);
+            $characterObj = Character::findById($character_id);
+            if ($characterObj) {
+                $characterObj->updateHitPoints($new_hp);
+            }
             
             $success_message = "Points de vie mis à jour : {$new_hp}/{$max_hp}";
             break;
@@ -417,7 +420,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['hp_ac
             $damage = (int)$_POST['damage'];
             if ($damage > 0) {
                 $new_hp = max(0, $character['hit_points_current'] - $damage);
-                Character::updateHitPoints($character_id, $new_hp);
+                $characterObj = Character::findById($character_id);
+                if ($characterObj) {
+                    $characterObj->updateHitPoints($new_hp);
+                }
                 
                 $success_message = "Dégâts infligés : {$damage} PV. Points de vie restants : {$new_hp}";
             }
@@ -427,14 +433,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['hp_ac
             $healing = (int)$_POST['healing'];
             if ($healing > 0) {
                 $new_hp = min($character['hit_points_max'], $character['hit_points_current'] + $healing);
-                Character::updateHitPoints($character_id, $new_hp);
+                $characterObj = Character::findById($character_id);
+                if ($characterObj) {
+                    $characterObj->updateHitPoints($new_hp);
+                }
                 
                 $success_message = "Soins appliqués : {$healing} PV. Points de vie actuels : {$new_hp}";
             }
             break;
             
         case 'reset_hp':
-            Character::updateHitPoints($character_id, $character['hit_points_max']);
+            $characterObj = Character::findById($character_id);
+            if ($characterObj) {
+                $characterObj->updateHitPoints($character['hit_points_max']);
+            }
             
             $success_message = "Points de vie réinitialisés au maximum : {$character['hit_points_max']}";
             break;

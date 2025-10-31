@@ -2240,7 +2240,7 @@ class NPC
     /**
      * Calcule la classe d'armure du NPC (méthode d'instance)
      */
-    public function calculateMyArmorClass() {
+    public function getCA() {
         $pdo = \Database::getInstance()->getPdo();
         $ac = 10; // Base par défaut
         

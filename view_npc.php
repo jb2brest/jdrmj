@@ -342,7 +342,7 @@ $charismaModifier = $abilityModifiers['charisma'];
 
 // Calculer les attaques du personnage
 $characterAttacks = $npc->calculateMyCharacterAttacks();
-$armorClass = $npc->calculateMyArmorClass();
+$armorClass = $npc->getCA();
 
 
 // Contrôle d'accès: propriétaire OU MJ

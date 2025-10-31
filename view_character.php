@@ -110,7 +110,7 @@ $isBarbarian = $classObject && strpos(strtolower($classObject->name), 'barbare')
 $rageData = null;
 if ($isBarbarian) {
     $maxRages = Character::getMaxRages($character->class_id, $character->level);
-    $rageUsage = Character::getRageUsageStatic($character_id);
+    $rageUsage = $character->getRageUsage();
     $usedRages = is_array($rageUsage) ? $rageUsage['used'] : $rageUsage;
     
     $rageData = [

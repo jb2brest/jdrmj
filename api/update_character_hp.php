@@ -54,7 +54,7 @@ if (!$isOwner && !$isDM && !$isAdmin) {
 }
 
 // Mettre à jour les points de vie
-$success = Character::updateHitPoints($characterId, $newHp);
+$success = $character->updateHitPoints($newHp);
 
 if ($success) {
     echo json_encode([

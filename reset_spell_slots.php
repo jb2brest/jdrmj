@@ -23,23 +23,22 @@ if (!$input || !isset($input['character_id'])) {
 $character_id = (int)$input['character_id'];
 
 // Vérifier que le personnage appartient à l'utilisateur
-$stmt = $pdo->prepare("SELECT * FROM characters WHERE id = ? AND user_id = ?");
-$stmt->execute([$character_id, $user_id]);
-$character = $stmt->fetch();
+require_once 'classes/init.php';
+$character = Character::findById($character_id);
 
-if (!$character) {
+if (!$character || $character->user_id != $user_id) {
     echo json_encode(['success' => false, 'message' => 'Personnage non trouvé']);
     exit;
 }
 
 // Vérifier que la classe peut lancer des sorts
-if (!Character::canCastSpells($character['class_id'])) {
+if (!Character::canCastSpells($character->class_id)) {
     echo json_encode(['success' => false, 'message' => 'Cette classe ne peut pas lancer de sorts']);
     exit;
 }
 
 try {
-    if (Character::resetSpellSlotsUsageStatic($character_id)) {
+    if ($character->resetSpellSlotsUsage()) {
         echo json_encode(['success' => true, 'message' => 'Long repos effectué avec succès']);
     } else {
         echo json_encode(['success' => false, 'message' => 'Erreur lors du long repos']);

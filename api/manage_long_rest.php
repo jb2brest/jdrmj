@@ -137,7 +137,7 @@ function handleCharacterLongRest($character_id) {
 
     // 1. Restaurer les points de vie au maximum
     if ($character->hit_points_max > 0) {
-        $success = Character::updateHitPoints($character_id, $character->hit_points_max);
+        $success = $character->updateHitPoints($character->hit_points_max);
         if ($success) {
             $actions_performed[] = 'Points de vie restaurés au maximum';
         }
@@ -145,7 +145,7 @@ function handleCharacterLongRest($character_id) {
 
     // 2. Restaurer les emplacements de sorts
     if (Character::canCastSpells($character->class_id)) {
-        if (Character::resetSpellSlotsUsageStatic($character_id)) {
+        if ($character->resetSpellSlotsUsage()) {
             $actions_performed[] = 'Emplacements de sorts restaurés';
         }
     }

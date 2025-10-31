@@ -1,6 +1,7 @@
 <?php
 require_once 'config/database.php';
 require_once 'includes/functions.php';
+require_once 'classes/init.php';
 
 requireLogin();
 
@@ -25,11 +26,8 @@ $action = $input['action'];
 $level = (int)$input['level'];
 
 // Vérifier que le personnage appartient à l'utilisateur
-$stmt = $pdo->prepare("SELECT id FROM characters WHERE id = ? AND user_id = ?");
-$stmt->execute([$character_id, $user_id]);
-$character = $stmt->fetch();
-
-if (!$character) {
+$character = Character::findById($character_id);
+if (!$character || $character->user_id != $user_id) {
     echo json_encode(['success' => false, 'message' => 'Personnage non trouvé ou non autorisé']);
     exit;
 }
@@ -37,14 +35,14 @@ if (!$character) {
 try {
     if ($action === 'use') {
         // Utiliser un emplacement de sort
-        if (Character::useSpellSlotStatic($character_id, $level)) {
+        if ($character->useSpellSlot($level)) {
             echo json_encode(['success' => true, 'message' => 'Emplacement de sort utilisé']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Impossible d\'utiliser l\'emplacement de sort']);
         }
     } elseif ($action === 'free') {
         // Libérer un emplacement de sort
-        if (Character::freeSpellSlotStatic($character_id, $level)) {
+        if ($character->freeSpellSlot($level)) {
             echo json_encode(['success' => true, 'message' => 'Emplacement de sort libéré']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Impossible de libérer l\'emplacement de sort']);

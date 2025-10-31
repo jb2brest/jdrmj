@@ -208,23 +208,23 @@ function handleCharacterHp($character_id, $action, $amount, $new_hp) {
         case 'update':
             if ($new_hp < 0) $new_hp = 0;
             if ($new_hp > $max_hp) $new_hp = $max_hp;
-            Character::updateHitPoints($character_id, $new_hp);
+            $character->updateHitPoints($new_hp);
             $final_hp = $new_hp;
             break;
             
         case 'damage':
             $final_hp = max(0, $current_hp - $amount);
-            Character::updateHitPoints($character_id, $final_hp);
+            $character->updateHitPoints($final_hp);
             break;
             
         case 'heal':
             $final_hp = min($max_hp, $current_hp + $amount);
-            Character::updateHitPoints($character_id, $final_hp);
+            $character->updateHitPoints($final_hp);
             break;
             
         case 'reset':
             $final_hp = $max_hp;
-            Character::updateHitPoints($character_id, $final_hp);
+            $character->updateHitPoints($final_hp);
             break;
             
         default:

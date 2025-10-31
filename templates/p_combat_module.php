@@ -37,7 +37,7 @@ if (!$pers) {
 $level = $pers->level;
 $speed = $pers->speed;
 $initiative = $pers->getMyAbilityModifiers()['dexterity'];
-$armorClass = $pers->calculateMyArmorClass();
+$armorClass = $pers->getCA();
 $dexterityModifier = $pers->getMyAbilityModifiers()['dexterity'];
 $constitutionModifier = $pers->getMyAbilityModifiers()['constitution'];
 $equippedArmor = $pers->getMyEquippedArmor();

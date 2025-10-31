@@ -25,11 +25,10 @@ $action = $input['action'];
 
 try {
     // Vérifier que le personnage appartient à l'utilisateur
-    $stmt = $pdo->prepare("SELECT user_id FROM characters WHERE id = ?");
-    $stmt->execute([$characterId]);
-    $character = $stmt->fetch();
+    require_once 'classes/init.php';
+    $character = Character::findById($characterId);
     
-    if (!$character || $character['user_id'] != $_SESSION['user_id']) {
+    if (!$character || $character->user_id != $_SESSION['user_id']) {
         http_response_code(403);
         echo json_encode(['success' => false, 'message' => 'Accès refusé']);
         exit;
@@ -37,7 +36,7 @@ try {
     
     switch ($action) {
         case 'use':
-            $success = Character::useRageStatic($characterId);
+            $success = $character->useRage();
             if ($success) {
                 echo json_encode(['success' => true, 'message' => 'Rage utilisée']);
             } else {
@@ -46,7 +45,7 @@ try {
             break;
             
         case 'free':
-            $success = Character::freeRageStatic($characterId);
+            $success = $character->freeRage();
             if ($success) {
                 echo json_encode(['success' => true, 'message' => 'Rage libérée']);
             } else {
@@ -55,7 +54,7 @@ try {
             break;
             
         case 'reset':
-            $success = Character::resetRageUsageStatic($characterId);
+            $success = $character->resetRageUsage();
             if ($success) {
                 echo json_encode(['success' => true, 'message' => 'Rages réinitialisées']);
             } else {

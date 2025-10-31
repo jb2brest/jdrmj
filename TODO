@@ -363,66 +363,11 @@ Dessine moi un gnome ensorceleur de niveau 4
 Dans un univers D&D.
 L'image doit être carrée.
 
-############################# Dés ################################
-Je voudrais que tu me génères une image contenant un set de dés :
-- 4 faces,
-- 6 faces, 
-- 8 faces, 
-- 10 faces, 
-- 12 faces, 
-- 20 faces,
-Chacun dans une case de même dimension. Il y a donc 6 cases.
-Les dés sont marbrés gris très clair et bleu sans valeurs marquées dessus
-Le fond de l'image est transparent.
-
-- 10 faces dont les faces contiennent les nombres 00, 10, 20, 30, 40, 50, 60, 70, 80, 90) . 
-Les chiffres sont écrit en doré.
-Ils sont générés dans une grille aux cases de taille identique. 
-Chaque ligne correspond à un des dés. 
-Dans chaque case de chaque ligne, la valeur de la face la plus visible change. 
-Si toutes les valeurs du dé de la ligne sont représentées, alors les cases suivantes restent vides.
-
-Je voudrais que tu me génères une image : 
-L'image est découpée en grille aux cases de taille identique.
-Dans chaque case est dessinée un dé 8 faces avec une valeur différente. 
-Les cases contiendront alors les valeurs de 1 à 8.
-Le dés est marbré gris très clair et bleu. Les chiffres sont écrit en doré.
-
-Dans un univers DnD, dessine une image carrée de nain des montagnes clerc de niveau 1 sans texte
-
-On va ajouter la possibiliter d'ajouter des "accès" qui permettent de passer d'un lieu à un autre. 
-Ces accès peuvent être : 
-- Visible des joueurs ou pas.
-- Ouvert ou pas.
-- piégé ou pas. 
-
-Un accès s'ajoute depuis la page de création d'un lieu.
+remplacer par une méthode d'instance. Mettre à jours tous les appels 
 
 
-Dans un univers médiéval fantastique. Dessine moi le plan d'une entrée dans une foret de cyprès 
-En vue de dessus. 
-En noir et blanc. Avec un cadrillage. Sans texte.
+############################# A revoir ################################
 
 
 
-<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <radialGradient id="flameGradient" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="orange" />
-      <stop offset="100%" stop-color="red" />
-    </radialGradient>
-    <filter id="flameGlow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="2" />
-    </filter>
-  </defs>
 
-  <!-- Dragon head (simplified silhouette) -->
-  <path d="M100,50 C120,40 140,60 130,80 C140,70 150,90 140,100 C150,100 160,120 140,130 C130,140 110,130 100,120 Z"
-        fill="gold" stroke="darkred" stroke-width="2"/>
-
-  <!-- Animated flame -->
-  <circle id="flame" cx="130" cy="80" r="10" fill="url(#flameGradient)" filter="url(#flameGlow)">
-    <animate attributeName="r" values="8;12;8" dur="1s" repeatCount="indefinite" />
-    <animate attributeName="opacity" values="1;0.6;1" dur="1s" repeatCount="indefinite" />
-  </circle>
-</svg>

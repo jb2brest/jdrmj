@@ -771,7 +771,7 @@ class Character
      * @param array|object|null $equippedShield Bouclier équipé (optionnel, récupéré automatiquement si non fourni)
      * @return int Classe d'armure calculée
      */
-    public function calculateArmorClass()
+    public function getCA()
     {
         // Récupérer automatiquement l'armure et le bouclier équipés si non fournis
         $equippedArmor = $this->getMyEquippedArmor();
@@ -847,14 +847,6 @@ class Character
     }
     
 
-    /**
-     * Obtenir la classe d'armure (alias pour calculateArmorClass)
-     * @return int Classe d'armure
-     */
-    public function getCA()
-    {
-        return $this->calculateArmorClass();
-    }
     
     /**
      * Calculer les points de vie maximum
@@ -1505,245 +1497,33 @@ class Character
     {
         return !empty($this->campaign_id) && $this->campaign_status === 'approved';
     }
-    
-    /**
-     * Convertir en tableau pour l'affichage
-     */
-    public function toArray()
-    {
-        return [
-            'id' => $this->id,
-            'user_id' => $this->user_id,
-            'name' => $this->name,
-            'race_id' => $this->race_id,
-            'class_id' => $this->class_id,
-            'class_archetype_id' => $this->class_archetype_id,
-            'background_id' => $this->background_id,
-            'level' => $this->level,
-            'experience_points' => $this->experience_points,
-            'strength' => $this->strength,
-            'dexterity' => $this->dexterity,
-            'constitution' => $this->constitution,
-            'intelligence' => $this->intelligence,
-            'wisdom' => $this->wisdom,
-            'charisma' => $this->charisma,
-            'armor_class' => $this->armor_class,
-            'initiative' => $this->initiative,
-            'speed' => $this->speed,
-            'hit_points_max' => $this->hit_points_max,
-            'hit_points_current' => $this->hit_points_current,
-            'proficiency_bonus' => $this->proficiency_bonus,
-            'saving_throws' => $this->saving_throws,
-            'skills' => $this->skills,
-            'languages' => $this->languages,
-            'equipment' => $this->equipment,
-            'gold' => $this->gold,
-            'silver' => $this->silver,
-            'copper' => $this->copper,
-            'background' => $this->background,
-            'alignment' => $this->alignment,
-            'personality_traits' => $this->personality_traits,
-            'ideals' => $this->ideals,
-            'bonds' => $this->bonds,
-            'flaws' => $this->flaws,
-            'spells_known' => $this->spells_known,
-            'spell_slots' => $this->spell_slots,
-            'profile_photo' => $this->profile_photo,
-            'is_equipped' => $this->is_equipped,
-            'equipment_locked' => $this->equipment_locked,
-            'character_locked' => $this->character_locked,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
-            'race_name' => $this->race_name,
-            'class_name' => $this->class_name,
-            'background_name' => $this->background_name,
-            'campaign_id' => $this->campaign_id,
-            'campaign_status' => $this->campaign_status,
-            'campaign_title' => $this->campaign_title
-        ];
-    }
-    
-    /**
-     * Vérifier si le personnage a déjà choisi son équipement de départ
-     * 
-     * @return bool True si l'équipement de départ a déjà été choisi, false sinon
-     */
-    public function hasStartingEquipment()
-    {
-        try {
-            $stmt = $this->pdo->prepare("
-                SELECT COUNT(*) as count 
-                FROM character_equipment 
-                WHERE character_id = ? 
-                AND obtained_from = 'Équipement de départ'
-            ");
-            $stmt->execute([$this->id]);
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            return $result['count'] > 0;
-            
-        } catch (PDOException $e) {
-            error_log("Erreur lors de la vérification de l'équipement de départ: " . $e->getMessage());
-            return false;
-        }
-    }
+      
 
-    /**
-     * Utiliser un emplacement de sort (version statique)
-     * 
-     * @param int $characterId ID du personnage
-     * @param int $level Niveau du sort
-     * @return bool Succès de l'opération
-     */
-    public static function useSpellSlotStatic($characterId, $level)
-    {
-        $character = self::findById($characterId);
-        if (!$character) {
-            return false;
-        }
-        return $character->useSpellSlot($level);
-    }
 
-    /**
-     * Libérer un emplacement de sort (version statique)
-     * 
-     * @param int $characterId ID du personnage
-     * @param int $level Niveau du sort
-     * @return bool Succès de l'opération
-     */
-    public static function freeSpellSlotStatic($characterId, $level)
-    {
-        $character = self::findById($characterId);
-        if (!$character) {
-            return false;
-        }
-        return $character->freeSpellSlot($level);
-    }
 
-    /**
-     * Réinitialiser tous les emplacements de sorts utilisés (version statique)
-     * 
-     * @param int $characterId ID du personnage
-     * @return bool Succès de l'opération
-     */
-    public static function resetSpellSlotsUsageStatic($characterId)
-    {
-        $character = self::findById($characterId);
-        if (!$character) {
-            return false;
-        }
-        return $character->resetSpellSlotsUsage();
-    }
 
-    /**
-     * Obtenir l'utilisation des rages d'un personnage (version statique)
-     * 
-     * @param int $characterId ID du personnage
-     * @return int Nombre de rages utilisées
-     */
-    public static function getRageUsageStatic($characterId)
-    {
-        $character = self::findById($characterId);
-        if (!$character) {
-            return 0;
-        }
-        return $character->getRageUsage();
-    }
 
-    /**
-     * Utiliser une rage (version statique)
-     * 
-     * @param int $characterId ID du personnage
-     * @return bool Succès de l'opération
-     */
-    public static function useRageStatic($characterId)
-    {
-        $character = self::findById($characterId);
-        if (!$character) {
-            return false;
-        }
-        return $character->useRage();
-    }
 
-    /**
-     * Libérer une rage (version statique)
-     * 
-     * @param int $characterId ID du personnage
-     * @return bool Succès de l'opération
-     */
-    public static function freeRageStatic($characterId)
-    {
-        $character = self::findById($characterId);
-        if (!$character) {
-            return false;
-        }
-        return $character->freeRage();
-    }
 
-    /**
-     * Réinitialiser toutes les rages utilisées (version statique)
-     * 
-     * @param int $characterId ID du personnage
-     * @return bool Succès de l'opération
-     */
-    public static function resetRageUsageStatic($characterId)
-    {
-        $character = self::findById($characterId);
-        if (!$character) {
-            return false;
-        }
-        return $character->resetRageUsage();
-    }
-
-    /**
-     * Équiper un objet (version statique)
-     * 
-     * @param int $characterId ID du personnage
-     * @param string $itemName Nom de l'objet
-     * @param string $itemType Type de l'objet
-     * @param string $slot Emplacement
-     * @return bool Succès de l'opération
-     */
-    public static function equipItemStatic($characterId, $itemName, $itemType, $slot)
-    {
-        $character = self::findById($characterId);
-        if (!$character) {
-            return false;
-        }
-        return $character->equipItem($itemName, $itemType, $slot);
-    }
-
-    /**
-     * Déséquiper un objet (version statique)
-     * 
-     * @param int $characterId ID du personnage
-     * @param string $itemName Nom de l'objet
-     * @return bool Succès de l'opération
-     */
-    public static function unequipItemStatic($characterId, $itemName)
-    {
-        $character = self::findById($characterId);
-        if (!$character) {
-            return false;
-        }
-        return $character->unequipItem($itemName);
-    }
 
     /**
      * Mettre à jour les points de vie actuels d'un personnage
      * 
-     * @param int $characterId ID du personnage
      * @param int $newHitPoints Nouveaux points de vie actuels
      * @return bool Succès de l'opération
      */
-    public static function updateHitPoints($characterId, $newHitPoints)
+    public function updateHitPoints($newHitPoints)
     {
-        $pdo = \Database::getInstance()->getPdo();
-        
         try {
-            $stmt = $pdo->prepare("UPDATE characters SET hit_points_current = ? WHERE id = ?");
-            return $stmt->execute([$newHitPoints, $characterId]);
-        } catch (\PDOException $e) {
+            $stmt = $this->pdo->prepare("UPDATE characters SET hit_points_current = ? WHERE id = ?");
+            $success = $stmt->execute([$newHitPoints, $this->id]);
+            
+            if ($success) {
+                $this->hit_points_current = $newHitPoints;
+            }
+            
+            return $success;
+        } catch (PDOException $e) {
             error_log("Erreur lors de la mise à jour des points de vie: " . $e->getMessage());
             return false;
         }
@@ -2155,44 +1935,9 @@ class Character
         return $this->user_id;
     }
     
-    public function getName()
-    {
-        return $this->name;
-    }
-    
-    public function getLevel()
-    {
-        return $this->level;
-    }
-    
     public function getClassId()
     {
         return $this->class_id;
-    }
-    
-    public function getRaceId()
-    {
-        return $this->race_id;
-    }
-    
-    public function getBackgroundId()
-    {
-        return $this->background_id;
-    }
-    
-    public function getExperiencePoints()
-    {
-        return $this->experience_points;
-    }
-    
-    public function getHitPointsMax()
-    {
-        return $this->hit_points_max;
-    }
-    
-    public function getHitPointsCurrent()
-    {
-        return $this->hit_points_current;
     }
     
     public function getIsEquipped()
@@ -2953,13 +2698,6 @@ class Character
         }
     }
 
-    /**
-     * Calculer la classe d'armure du personnage (méthode d'instance)
-     */
-    public function calculateMyArmorClass()
-    {
-        return $this->calculateArmorClass();
-    }
 
     /**
      * Vérifier si le personnage est un barbare (méthode d'instance)
@@ -2980,7 +2718,7 @@ class Character
         }
 
         $maxRages = self::getMaxRages($this->class_id, $this->level);
-        $rageUsage = self::getRageUsageStatic($this->id);
+        $rageUsage = $this->getRageUsage();
         $usedRages = is_array($rageUsage) ? $rageUsage['used'] : $rageUsage;
 
         return [
