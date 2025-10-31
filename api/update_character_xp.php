@@ -54,7 +54,7 @@ if (!$isOwner && !$isDM && !$isAdmin) {
 }
 
 // Mettre à jour l'expérience
-$success = Character::updateExperiencePoints($characterId, $newXp);
+$success = $character->updateExperiencePoints($newXp);
 
 if ($success) {
     echo json_encode([

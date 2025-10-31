@@ -35,9 +35,6 @@ if (!$pers) {
 
 // Récupérer les données nécessaires via les méthodes d'instance
 $characterSkills = $pers->skills ? json_decode($pers->skills, true) : [];
-if (empty($characterSkills)) {
-    $characterSkills = $pers->generateBaseSkills();
-}
 $allSkills = $characterSkills;
 ?>
 

@@ -59,7 +59,7 @@ if ($character->class_archetype_id) {
 // Les modificateurs seront calculés plus tard à partir des totaux
 
 // Récupérer l'équipement du personnage
-$equipment = Character::getCharacterEquipment($character_id);
+$equipment = $character->getCharacterEquipment();
 
 // Récupérer les capacités du personnage
 $allCapabilities = $character->getCapabilities();
@@ -70,15 +70,7 @@ $allCapabilities = $character->getCapabilities();
 $characterSkills = $character->skills ? json_decode($character->skills, true) : [];
 $characterLanguages = $character->languages ? json_decode($character->languages, true) : [];
 
-// Si les compétences ne sont pas définies dans la base de données, les générer automatiquement
-if (empty($characterSkills)) {
-    $characterSkills = $character->generateBaseSkills();
-}
 
-// Si les langues ne sont pas définies dans la base de données, les générer automatiquement
-if (empty($characterLanguages)) {
-    $characterLanguages = $character->generateBaseLanguages();
-}
 
 // Parser les données de l'historique
 $backgroundSkills = $backgroundDetails && isset($backgroundDetails->skill_proficiencies) ? json_decode($backgroundDetails->skill_proficiencies, true) : [];
@@ -244,7 +236,7 @@ $magicalEquipment = [];
 $characterPoisons = $character->getMyCharacterPoisons();
 
 // Récupérer l'équipement du personnage via la méthode d'instance
-$characterItems = $character->getMyEquipment();
+$characterItems = $character->getCharacterEquipment();
 
 // Traiter les équipements du personnage
 foreach ($characterItems as $item) {

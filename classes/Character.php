@@ -128,11 +128,7 @@ class Character
                 
                 if ($skills === null) {
                     // Utiliser les compétences choisies par le joueur si disponibles
-                    if (isset($data['selected_skills']) && !empty($data['selected_skills'])) {
-                        $skills = json_encode($data['selected_skills']);
-                    } else {
-                        $skills = json_encode($tempCharacter->generateBaseSkills());
-                    }
+                    $skills = json_encode($data['selected_skills']);
                 }
                 if ($languages === null) {
                     // Utiliser les langues choisies par le joueur si disponibles
@@ -867,41 +863,7 @@ class Character
         return max(1, $hp);
     }
     
-    /**
-     * Ajouter de l'expérience
-     */
-    public function addExperience($amount)
-    {
-        $this->experience_points += $amount;
-        $this->updateLevelFromExperience();
-        return $this->update(['experience_points' => $this->experience_points]);
-    }
-    
-    /**
-     * Mettre à jour le niveau basé sur l'expérience
-     */
-    public function updateLevelFromExperience()
-    {
-        $newLevel = $this->calculateLevelFromExperience($this->experience_points);
-        
-        if ($newLevel != $this->level) {
-            $this->level = $newLevel;
-            $this->proficiency_bonus = $this->getProficiencyBonus();
-            $this->hit_points_max = $this->calculateMaxHitPoints();
-            
-            // Si le personnage a plus de PV actuels que maximum, ajuster
-            if ($this->hit_points_current > $this->hit_points_max) {
-                $this->hit_points_current = $this->hit_points_max;
-            }
-            
-            $this->update([
-                'level' => $this->level,
-                'proficiency_bonus' => $this->proficiency_bonus,
-                'hit_points_max' => $this->hit_points_max,
-                'hit_points_current' => $this->hit_points_current
-            ]);
-        }
-    }
+
     
     /**
      * Calculer le niveau basé sur l'expérience
@@ -1532,18 +1494,21 @@ class Character
     /**
      * Mettre à jour les points d'expérience d'un personnage
      * 
-     * @param int $characterId ID du personnage
      * @param int $newExperiencePoints Nouveaux points d'expérience
      * @return bool Succès de l'opération
      */
-    public static function updateExperiencePoints($characterId, $newExperiencePoints)
+    public function updateExperiencePoints($newExperiencePoints)
     {
-        $pdo = \Database::getInstance()->getPdo();
-        
         try {
-            $stmt = $pdo->prepare("UPDATE characters SET experience_points = ? WHERE id = ?");
-            return $stmt->execute([$newExperiencePoints, $characterId]);
-        } catch (\PDOException $e) {
+            $stmt = $this->pdo->prepare("UPDATE characters SET experience_points = ? WHERE id = ?");
+            $success = $stmt->execute([$newExperiencePoints, $this->id]);
+            
+            if ($success) {
+                $this->experience_points = $newExperiencePoints;
+            }
+            
+            return $success;
+        } catch (PDOException $e) {
             error_log("Erreur lors de la mise à jour des points d'expérience: " . $e->getMessage());
             return false;
         }
@@ -1571,80 +1536,7 @@ class Character
         }
     }
 
-    /**
-     * Récupérer l'équipement magique complet d'un personnage
-     * 
-     * @param int $characterId ID du personnage
-     * @return array Liste de l'équipement magique
-     */
-    public static function getCharacterMagicalEquipment($characterId)
-    {
-        $pdo = \Database::getInstance()->getPdo();
-        
-        try {
-            $stmt = $pdo->prepare("
-                SELECT 
-                    i.*,
-                    mi.nom as magical_item_nom, 
-                    mi.type as magical_item_type, 
-                    mi.description as magical_item_description, 
-                    mi.source as magical_item_source,
-                    i.display_name as item_name,
-                    i.object_type as item_type
-                FROM items i
-                LEFT JOIN magical_items mi ON i.magical_item_id = mi.csv_id
-                WHERE i.owner_type = 'player' AND i.owner_id = ? 
-                AND (i.magical_item_id IS NULL OR i.magical_item_id NOT IN (SELECT csv_id FROM poisons))
-                ORDER BY i.obtained_at DESC
-            ");
-            $stmt->execute([$characterId]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (\PDOException $e) {
-            error_log("Erreur lors de la récupération de l'équipement magique: " . $e->getMessage());
-            return [];
-        }
-    }
 
-    /**
-     * Récupérer l'équipement d'un personnage depuis la table items
-     * 
-     * @param int $characterId ID du personnage
-     * @return array Liste de l'équipement
-     */
-    public static function getCharacterItems($characterId)
-    {
-        $pdo = \Database::getInstance()->getPdo();
-        
-        try {
-            $stmt = $pdo->prepare("
-                SELECT 
-                    id,
-                    display_name as item_name,
-                    object_type as item_type,
-                    type_precis,
-                    description as item_description,
-                    is_equipped as equipped,
-                    item_source,
-                    quantity,
-                    equipped_slot,
-                    notes,
-                    obtained_at,
-                    obtained_from,
-                    magical_item_id,
-                    weapon_id,
-                    armor_id,
-                    poison_id
-                FROM items 
-                WHERE owner_type = 'player' AND owner_id = ?
-                ORDER BY obtained_at DESC
-            ");
-            $stmt->execute([$characterId]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (\PDOException $e) {
-            error_log("Erreur lors de la récupération des objets du personnage: " . $e->getMessage());
-            return [];
-        }
-    }
 
     /**
      * Récupérer les informations d'un poison par son ID CSV
@@ -1662,26 +1554,6 @@ class Character
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (\PDOException $e) {
             error_log("Erreur lors de la récupération des informations du poison: " . $e->getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * Récupérer les informations d'un objet magique par son ID CSV
-     * 
-     * @param int $csvId ID CSV de l'objet magique
-     * @return array|null Informations de l'objet magique ou null si non trouvé
-     */
-    public static function getMagicalItemInfo($csvId)
-    {
-        $pdo = \Database::getInstance()->getPdo();
-        
-        try {
-            $stmt = $pdo->prepare("SELECT nom, type, description, source FROM magical_items WHERE csv_id = ?");
-            $stmt->execute([$csvId]);
-            return $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (\PDOException $e) {
-            error_log("Erreur lors de la récupération des informations de l'objet magique: " . $e->getMessage());
             return null;
         }
     }
@@ -1791,15 +1663,12 @@ class Character
     /**
      * Récupérer l'équipement d'un personnage
      * 
-     * @param int $characterId ID du personnage
      * @return array Liste de l'équipement
      */
-    public static function getCharacterEquipment($characterId)
+    public function getCharacterEquipment()
     {
-        $pdo = \Database::getInstance()->getPdo();
-        
         try {
-            $stmt = $pdo->prepare("
+            $stmt = $this->pdo->prepare("
                 SELECT 
                     id,
                     display_name as item_name,
@@ -1816,7 +1685,7 @@ class Character
                 WHERE owner_type = 'player' AND owner_id = ? 
                 ORDER BY display_name ASC
             ");
-            $stmt->execute([$characterId]);
+            $stmt->execute([$this->id]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             error_log("Erreur lors de la récupération de l'équipement: " . $e->getMessage());
@@ -2110,55 +1979,7 @@ class Character
         ];
     }
 
-    /**
-     * Génère les compétences de base selon la classe et la race
-     */
-    public function generateBaseSkills() {
-        $skills = [];
-        
-        // Compétences de classe selon les règles D&D
-        $classSkills = [
-            1 => ['Athlétisme'], // Barbare
-            2 => ['Histoire', 'Perspicacité'], // Barde
-            3 => ['Religion'], // Clerc
-            4 => ['Survie'], // Druide
-            5 => ['Athlétisme', 'Intimidation'], // Guerrier
-            6 => ['Athlétisme', 'Survie'], // Moine
-            7 => ['Arcane', 'Histoire'], // Magicien
-            8 => ['Athlétisme', 'Intimidation'], // Paladin
-            9 => ['Survie', 'Discrétion'], // Rôdeur
-            10 => ['Escamotage', 'Perspicacité'], // Roublard
-            11 => ['Persuasion', 'Intimidation'], // Sorcier
-            12 => ['Arcane', 'Religion'] // Ensorceleur
-        ];
-        
-        // Compétences de race selon les règles D&D
-        $raceSkills = [
-            1 => ['Athlétisme'], // Humain
-            2 => ['Athlétisme'], // Nain
-            3 => ['Athlétisme'], // Elfe
-            4 => ['Athlétisme'], // Halfelin
-            5 => ['Athlétisme'], // Dragonné
-            6 => ['Perception'], // Haut-elfe
-            7 => ['Athlétisme'], // Demi-orc
-            8 => ['Athlétisme'], // Tieffelin
-            9 => ['Athlétisme'], // Gnome
-            10 => ['Athlétisme'] // Demi-elfe
-        ];
-        
-        // Ajouter les compétences de classe
-        if (isset($classSkills[$this->class_id])) {
-            $skills = array_merge($skills, $classSkills[$this->class_id]);
-        }
-        
-        // Ajouter les compétences de race
-        if (isset($raceSkills[$this->race_id])) {
-            $skills = array_merge($skills, $raceSkills[$this->race_id]);
-        }
-        
-        // Supprimer les doublons
-        return array_unique($skills);
-    }
+   
 
     /**
      * Génère les compétences obligatoires (fixes) selon la classe et la race
@@ -2476,14 +2297,6 @@ class Character
         }
         
         return $items;
-    }
-
-    /**
-     * Récupérer l'équipement du personnage (méthode d'instance)
-     */
-    public function getMyEquipment()
-    {
-        return self::getCharacterEquipment($this->id);
     }
 
     /**

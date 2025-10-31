@@ -182,23 +182,43 @@ try {
         
         if ($occupiedItem) {
             // Déséquiper l'objet qui occupe ce slot
-            $stmt = $pdo->prepare("
-                UPDATE items 
-                SET is_equipped = 0, equipped_slot = NULL 
-                WHERE id = ?
-            ");
-            $stmt->execute([$occupiedItem['id']]);
+            if ($ownerType === 'player') {
+                // Pour les personnages, utiliser la méthode unequipItem si possible
+                $character = Character::findById($ownerId);
+                if ($character) {
+                    $character->unequipItem($occupiedItem['display_name']);
+                }
+            } else {
+                // Pour les PNJ et monstres, utiliser SQL direct
+                $stmt = $pdo->prepare("
+                    UPDATE items 
+                    SET is_equipped = 0, equipped_slot = NULL 
+                    WHERE id = ?
+                ");
+                $stmt->execute([$occupiedItem['id']]);
+            }
             $freedItems[] = $occupiedItem;
         }
     }
     
     // Équiper le nouvel objet
-    $stmt = $pdo->prepare("
-        UPDATE items 
-        SET is_equipped = 1, equipped_slot = ? 
-        WHERE id = ?
-    ");
-    $result = $stmt->execute([$slot, $itemId]);
+    if ($ownerType === 'player') {
+        // Pour les personnages, utiliser la méthode d'instance equipItem()
+        $character = Character::findById($ownerId);
+        if ($character) {
+            $result = $character->equipItem($item['display_name'], $item['object_type'], $slot);
+        } else {
+            $result = false;
+        }
+    } else {
+        // Pour les PNJ et monstres, utiliser SQL direct
+        $stmt = $pdo->prepare("
+            UPDATE items 
+            SET is_equipped = 1, equipped_slot = ? 
+            WHERE id = ?
+        ");
+        $result = $stmt->execute([$slot, $itemId]);
+    }
     
     if ($result) {
         $slotName = SlotManager::getSlotDisplayName($slot);

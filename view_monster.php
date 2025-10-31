@@ -471,7 +471,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['xp_ac
             $xp_amount = (int)$_POST['xp_amount'];
             if ($xp_amount > 0) {
                 $new_xp = $character['experience_points'] + $xp_amount;
-                Character::updateExperiencePoints($character_id, $new_xp);
+                $characterObj = Character::findById($character_id);
+                if ($characterObj) {
+                    $characterObj->updateExperiencePoints($new_xp);
+                }
                 
                 $success_message = "Points d'expérience ajoutés : +{$xp_amount} XP. Total : " . number_format($new_xp) . " XP";
             }
@@ -481,7 +484,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['xp_ac
             $xp_amount = (int)$_POST['xp_amount'];
             if ($xp_amount > 0) {
                 $new_xp = max(0, $character['experience_points'] - $xp_amount);
-                Character::updateExperiencePoints($character_id, $new_xp);
+                $characterObj = Character::findById($character_id);
+                if ($characterObj) {
+                    $characterObj->updateExperiencePoints($new_xp);
+                }
                 
                 $success_message = "Points d'expérience retirés : -{$xp_amount} XP. Total : " . number_format($new_xp) . " XP";
             }
@@ -490,7 +496,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['xp_ac
         case 'set':
             $xp_amount = (int)$_POST['xp_amount'];
             if ($xp_amount >= 0) {
-                Character::updateExperiencePoints($character_id, $xp_amount);
+                $characterObj = Character::findById($character_id);
+                if ($characterObj) {
+                    $characterObj->updateExperiencePoints($xp_amount);
+                }
                 
                 $success_message = "Points d'expérience définis à : " . number_format($xp_amount) . " XP";
             }
