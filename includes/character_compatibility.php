@@ -116,9 +116,9 @@ if (!function_exists('calculateArmorClassExtended')) {
         if (is_array($character)) {
             // Convertir le tableau en objet Character
             $characterObj = new Character(null, $character);
-            return $characterObj->calculateArmorClass();
+            return $characterObj->calculateArmorClassExtended($character, $equippedArmor, $equippedShield);
         } elseif ($character instanceof Character) {
-            return $character->calculateArmorClass();
+            return $character->calculateArmorClassExtended(null, $equippedArmor, $equippedShield);
         }
         return 10;
     }

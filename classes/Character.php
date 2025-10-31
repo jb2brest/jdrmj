@@ -1312,61 +1312,59 @@ class Character
     /**
      * Calculer la classe d'armure d'un personnage (version étendue)
      * 
-     * @param array $character Données du personnage
-     * @param array|null $equippedArmor Armure équipée
-     * @param array|null $equippedShield Bouclier équipé
+     * @param array|null $character Données du personnage (optionnel, utilise $this si non fourni)
+     * @param array|object|null $equippedArmor Armure équipée (optionnel, récupéré automatiquement si non fourni)
+     * @param array|object|null $equippedShield Bouclier équipé (optionnel, récupéré automatiquement si non fourni)
      * @return int Classe d'armure calculée
      */
-    public static function calculateArmorClassExtended($character, $equippedArmor = null, $equippedShield = null)
+    public function calculateArmorClass()
     {
-        // Utiliser le modificateur de Dextérité déjà calculé dans la zone "Caractéristiques"
-        $dexterityModifier = $character['dexterity_modifier'];
+        // Récupérer automatiquement l'armure et le bouclier équipés si non fournis
+        $equippedArmor = $this->getMyEquippedArmor();
+        $equippedShield = $this->getMyEquippedShield();
+        $dexterityModifier = $this->getDexterityModifier();
+        $class_id = $this->class_id;
+        $race_id = $this->race_id;
+        $constitution = $this->constitution;
         
         // Récupérer le nom de la classe pour vérifier si c'est un barbare
         $pdo = \Database::getInstance()->getPdo();
         $stmt = $pdo->prepare("SELECT name FROM classes WHERE id = ?");
-        $stmt->execute([$character['class_id']]);
+        $stmt->execute([$class_id]);
         $class = $stmt->fetch();
         $isBarbarian = $class && strpos(strtolower($class['name']), 'barbare') !== false;
         
         if ($equippedArmor) {
             // CA basée sur l'armure équipée
-            $acFormula = $equippedArmor['ac_formula'];
+            // Gérer à la fois les objets et les tableaux
+            $acFormula = is_object($equippedArmor) ? $equippedArmor->armor_ac_formula : $equippedArmor['ac_formula'];
             
-            // Parser la formule de CA
-            if (preg_match('/(\d+)\s*\+\s*Mod\.Dex(?: \(max \+(\d+)\))?/', $acFormula, $matches)) {
-                $baseAC = (int)$matches[1];
-                $maxDexBonus = isset($matches[2]) ? (int)$matches[2] : null;
-                
-                $dexBonus = $dexterityModifier;
-                if ($maxDexBonus !== null) {
-                    $dexBonus = min($dexBonus, $maxDexBonus);
+            if ($acFormula) {
+                // Parser la formule de CA
+                if (preg_match('/(\d+)\s*\+\s*Mod\.Dex(?: \(max \+(\d+)\))?/', $acFormula, $matches)) {
+                    $baseAC = (int)$matches[1];
+                    $maxDexBonus = isset($matches[2]) ? (int)$matches[2] : null;
+                    
+                    $dexBonus = $dexterityModifier;
+                    if ($maxDexBonus !== null) {
+                        $dexBonus = min($dexBonus, $maxDexBonus);
+                    }
+                    
+                    $ac = $baseAC + $dexBonus;
+                } else {
+                    // CA fixe (armures lourdes)
+                    $ac = (int)$acFormula;
                 }
-                
-                $ac = $baseAC + $dexBonus;
             } else {
-                // CA fixe (armures lourdes)
-                $ac = (int)$acFormula;
+                // Pas de formule, AC de base
+                $ac = 10 + $dexterityModifier;
             }
         } else {
             // Pas d'armure
             if ($isBarbarian) {
                 // Pour les barbares sans armure : CA = 10 + modificateur de Dextérité + modificateur de Constitution
-                // Récupérer le bonus racial de constitution
-                $constitutionBonus = 0;
-                if (isset($character['race_id'])) {
-                    $pdo = getPDO();
-                    $stmt = $pdo->prepare("SELECT constitution_bonus FROM races WHERE id = ?");
-                    $stmt->execute([$character['race_id']]);
-                    $raceData = $stmt->fetch();
-                    if ($raceData) {
-                        $constitutionBonus = (int)$raceData['constitution_bonus'];
-                    }
-                }
                 
-                $tempChar = new Character();
-                $tempChar->constitution = $character['constitution'] + $constitutionBonus;
-                $constitutionModifier = $tempChar->getAbilityModifier('constitution');
+                $constitutionModifier = $this->getAbilityModifier('constitution');
                 $ac = 10 + $dexterityModifier + $constitutionModifier;
             } else {
                 // Pour les autres classes : CA = 10 + modificateur de Dextérité
@@ -1376,7 +1374,19 @@ class Character
         
         // Ajouter le bonus de bouclier si équipé
         if ($equippedShield) {
-            $ac += $equippedShield['ac_bonus'];
+            // Gérer à la fois les objets et les tableaux
+            $shieldFormula = is_object($equippedShield) ? $equippedShield->shield_ac_formula : (isset($equippedShield['ac_bonus']) ? $equippedShield['ac_bonus'] : $equippedShield['ac_formula']);
+            
+            if ($shieldFormula) {
+                // Parser le bonus du bouclier (ex: "2" -> 2)
+                if (preg_match('/^(\d+)/', $shieldFormula, $matches)) {
+                    $shieldBonus = (int)$matches[1];
+                    $ac += $shieldBonus;
+                } elseif (is_numeric($shieldFormula)) {
+                    // Si c'est déjà un nombre direct
+                    $ac += (int)$shieldFormula;
+                }
+            }
         }
         
         return $ac;
@@ -1531,19 +1541,13 @@ class Character
         return true;
     }
 
-    
     /**
-     * Calculer la classe d'armure
+     * Obtenir la classe d'armure (alias pour calculateArmorClass)
+     * @return int Classe d'armure
      */
-    public function calculateArmorClass()
+    public function getCA()
     {
-        // Classe d'armure de base
-        $ac = 10 + $this->getDexterityModifier();
-        
-        // TODO: Ajouter les bonus d'armure, bouclier, etc.
-        // Cette logique sera implémentée plus tard avec la gestion de l'équipement
-        
-        return $ac;
+        return $this->calculateArmorClass();
     }
     
     /**

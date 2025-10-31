@@ -261,6 +261,20 @@ On peut y voir :
 
 Pour chaque choix il peut y avoir un ou plusieurs items d'équipement rétourné.
 
+Il faut simplier la récupération des noms exacts des équipements. 
+Pour chaque type de la table starting_equipment_options, voici la table à utiliser pour récupérer le nom exact. 
+armor : armor
+bouclier : shields
+instrument : Object
+nourriture : Object
+outils : Object
+sac : Object
+weapon : weapons
+
+Il manque la gestion des cas ou la colonne filter de la table starting_equipment_options n'est pas vide. 
+Dans ce cas, il faut proposer un menu déroulant pour les armes contenues avec le contenu de la colonne filter sur la colonne type de la table "weapons"
+
+
 
 renomme character_class_selection.php en cc01_class_selection.php (pour create character étape 01) 
 

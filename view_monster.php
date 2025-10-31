@@ -378,7 +378,9 @@ $character['charisma_modifier'] = $charismaMod;
 
 // Calculer les attaques du personnage
 $characterAttacks = Character::calculateCharacterAttacks($character_id, $character);
-$armorClass = Character::calculateArmorClassExtended($character, $equippedArmor, $equippedShield);
+// Créer un objet Character temporaire pour utiliser la méthode d'instance
+$tempCharacterObj = new Character(null, $character);
+$armorClass = $tempCharacterObj->calculateArmorClassExtended($character, $equippedArmor, $equippedShield);
 
 
 // Contrôle d'accès: les monstres sont visibles par tous les DM

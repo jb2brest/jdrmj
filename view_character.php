@@ -160,7 +160,7 @@ $wisdomModifier = $abilityModifiers['wisdom'];
 $charismaModifier = $abilityModifiers['charisma'];
 
 // Calculer la classe d'armure (base AC + modificateur de dextérité)
-$armorClass = 10 + $dexterityModifier;
+$armorClass = $character->getCA();
 
 // Récupérer les attaques du personnage
 $characterAttacks = $characterObject->calculateMyCharacterAttacks();

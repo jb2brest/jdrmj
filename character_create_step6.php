@@ -406,6 +406,22 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
                                 <div class="col-md-6">
                                     <h5><i class="fas fa-tasks me-2"></i>Compétences</h5>
                                     
+                                    <!-- Compétences fixes (déjà acquises) -->
+                                    <?php if (!empty($fixedSkills)): ?>
+                                        <div class="mb-4">
+                                            <h6 class="text-success"><i class="fas fa-check-circle me-2"></i>Compétences acquises automatiquement</h6>
+                                            <div class="alert alert-success">
+                                                <?php foreach ($fixedSkills as $skill): ?>
+                                                    <div class="d-flex align-items-center mb-2">
+                                                        <i class="fas fa-check text-success me-2"></i>
+                                                        <strong><?php echo htmlspecialchars($skill); ?></strong>
+                                                        <span class="skill-ability ms-2">(<?php echo $allSkills[$skill] ?? 'Inconnue'; ?>)</span>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        </div>
+                                    <?php endif; ?>
+                                    
                                     <!-- Compétences de classe au choix -->
                                     <?php if ($classSkillCount > 0): ?>
                                         <div class="mb-4">
@@ -413,22 +429,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
                                             <p class="text-muted">Choisissez <?php echo $classSkillCount; ?> compétence(s) parmi :</p>
                                             
                                             <?php foreach ($classSkillChoices as $skill): ?>
-                                                <?php 
-                                                    $isBackgroundProvided = in_array($skill, $backgroundSkills, true);
-                                                    $inputId = 'skill_' . strtolower(str_replace(' ', '_', $skill));
-                                                ?>
-                                                <div class="skill-card<?php echo $isBackgroundProvided ? ' selected' : ''; ?>" data-skill="<?php echo htmlspecialchars($skill); ?>">
+                                                <div class="skill-card" data-skill="<?php echo htmlspecialchars($skill); ?>">
                                                     <div class="form-check">
-                    								<input class="form-check-input" type="checkbox" 
+                                                        <input class="form-check-input" type="checkbox" 
                                                                name="skills[]" 
                                                                value="<?php echo htmlspecialchars($skill); ?>" 
-                                                               id="<?php echo $inputId; ?>"
-                                                               <?php echo $isBackgroundProvided ? 'checked disabled data-fixed="1"' : ''; ?>>
-                                                        <label class="form-check-label" for="<?php echo $inputId; ?>">
+                                                               id="skill_<?php echo strtolower(str_replace(' ', '_', $skill)); ?>">
+                                                        <label class="form-check-label" for="skill_<?php echo strtolower(str_replace(' ', '_', $skill)); ?>">
                                                             <strong><?php echo htmlspecialchars($skill); ?></strong>
-                                                            <?php if ($isBackgroundProvided): ?>
-                                                                <span class="ms-1 text-muted">(historique)</span>
-                                                            <?php endif; ?>
                                                             <div class="skill-ability">(<?php echo $allSkills[$skill] ?? 'Inconnue'; ?>)</div>
                                                         </label>
                                                     </div>
@@ -522,7 +530,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
             const languagesTotal = <?php echo $choiceLanguageCount; ?>;
             
             function updateCounters() {
-                const skillsSelected = document.querySelectorAll('input[name="skills[]"]:checked:not([data-fixed="1"])').length;
+                const skillsSelected = document.querySelectorAll('input[name="skills[]"]:checked').length;
                 const languagesSelected = document.querySelectorAll('input[name="languages[]"]:checked').length;
                 
                 document.getElementById('skills-selected').textContent = skillsSelected;
@@ -556,7 +564,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
             skillCards.forEach(card => {
                 card.addEventListener('click', function() {
                     const checkbox = this.querySelector('input[type="checkbox"]');
-                    if (checkbox.disabled) { return; }
                     const currentSelected = document.querySelectorAll('input[name="skills[]"]:checked').length;
                     
                     if (checkbox.checked) {
