@@ -106,6 +106,15 @@ function updateXpModalDisplay(currentXp) {
     if (profileXpDisplay) {
         profileXpDisplay.textContent = number_format(currentXp) + ' XP';
     }
+    
+    // Mettre à jour l'affichage dans l'entête (classes .xp-display)
+    const headerXpDisplays = document.querySelectorAll('.xp-display');
+    headerXpDisplays.forEach(element => {
+        // Ne pas mettre à jour les éléments qui sont dans le modal
+        if (!element.closest('.modal')) {
+            element.textContent = number_format(currentXp);
+        }
+    });
 }
 
 /**

@@ -197,12 +197,12 @@ function handleCharacterXp($character_id, $action, $amount, $new_xp) {
         throw new Exception('Permissions insuffisantes pour modifier ce personnage');
     }
 
-    $current_xp = $character->experience ?? 0;
+    $current_xp = $character->experience_points ?? 0;
 
     switch ($action) {
         case 'update':
             if ($new_xp < 0) $new_xp = 0;
-            $final_xp = $new_xp;
+            $final_xp = $current_xp + $new_xp; // Ajouter au lieu de remplacer
             break;
 
         case 'add':
@@ -231,7 +231,7 @@ function handleCharacterXp($character_id, $action, $amount, $new_xp) {
     }
 
     // Mettre à jour dans la base de données
-    $success = Character::updateExperience($character_id, $final_xp);
+    $success = $character->updateExperiencePoints($final_xp);
 
     if (!$success) {
         throw new Exception('Erreur lors de la mise à jour des points d\'expérience du personnage');
