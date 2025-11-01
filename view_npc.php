@@ -393,7 +393,7 @@ foreach ($npcItems as $item) {
 }
 
 // Récupérer les poisons du personnage via la classe NPC
-$characterPoisons = $npc->getMyCharacterPoisons();
+$characterPoisons = $npc->getCharacterPoisons();
 
 // Récupérer l'équipement de ce NPC via la méthode d'instance
 $npcEquipment = $npc->getMyNpcEquipment();

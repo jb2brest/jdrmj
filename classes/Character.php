@@ -132,11 +132,7 @@ class Character
                 }
                 if ($languages === null) {
                     // Utiliser les langues choisies par le joueur si disponibles
-                    if (isset($data['selected_languages']) && !empty($data['selected_languages'])) {
-                        $languages = json_encode($data['selected_languages']);
-                    } else {
-                        $languages = json_encode($tempCharacter->generateBaseLanguages());
-                    }
+                    $languages = json_encode($data['selected_languages']);
                 }
             }
             
@@ -769,29 +765,6 @@ class Character
         } catch (PDOException $e) {
             error_log("Erreur lors de la réinitialisation des emplacements de sorts: " . $e->getMessage());
             return false;
-        }
-    }
-    
-    /**
-     * Obtenir l'équipement équipé du personnage
-     */
-    public function getEquippedItems()
-    {
-        try {
-            $stmt = $this->pdo->prepare("
-                SELECT ce.*, e.name, e.type, e.description, e.rarity
-                FROM character_equipment ce
-                JOIN equipment e ON ce.equipment_id = e.id
-                WHERE ce.character_id = ? AND ce.equipped = 1
-                ORDER BY ce.slot
-            ");
-            $stmt->execute([$this->id]);
-            
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-        } catch (PDOException $e) {
-            error_log("Erreur lors de la récupération de l'équipement: " . $e->getMessage());
-            return [];
         }
     }
     
@@ -1546,82 +1519,6 @@ class Character
     }
 
    
-
-    /**
-     * Génère les compétences obligatoires (fixes) selon la classe et la race
-     */
-    public function generateFixedSkills() {
-        $fixedSkills = [];
-        
-        // Compétences obligatoires de classe selon les règles D&D
-        $classFixedSkills = [
-            1 => [], // Barbare - pas de compétences fixes
-            2 => [], // Barde - pas de compétences fixes
-            3 => [], // Clerc - pas de compétences fixes
-            4 => [], // Druide - pas de compétences fixes
-            5 => [], // Guerrier - pas de compétences fixes
-            6 => [], // Moine - pas de compétences fixes
-            7 => [], // Magicien - pas de compétences fixes
-            8 => [], // Paladin - pas de compétences fixes
-            9 => [], // Rôdeur - pas de compétences fixes
-            10 => [], // Roublard - pas de compétences fixes
-            11 => [], // Sorcier - pas de compétences fixes
-            12 => [] // Ensorceleur - pas de compétences fixes
-        ];
-        
-        // Compétences obligatoires de race selon les règles D&D
-        $raceFixedSkills = [
-            1 => [], // Humain - pas de compétences fixes
-            2 => [], // Nain - pas de compétences fixes
-            3 => [], // Elfe - pas de compétences fixes
-            4 => [], // Halfelin - pas de compétences fixes
-            5 => [], // Dragonné - pas de compétences fixes
-            6 => ['Perception'], // Haut-elfe - Perception obligatoire
-            7 => [], // Demi-orc - pas de compétences fixes
-            8 => [], // Tieffelin - pas de compétences fixes
-            9 => [], // Gnome - pas de compétences fixes
-            10 => [] // Demi-elfe - pas de compétences fixes
-        ];
-        
-        // Ajouter les compétences obligatoires de classe
-        if (isset($classFixedSkills[$this->class_id])) {
-            $fixedSkills = array_merge($fixedSkills, $classFixedSkills[$this->class_id]);
-        }
-        
-        // Ajouter les compétences obligatoires de race
-        if (isset($raceFixedSkills[$this->race_id])) {
-            $fixedSkills = array_merge($fixedSkills, $raceFixedSkills[$this->race_id]);
-        }
-        
-        // Supprimer les doublons
-        return array_unique($fixedSkills);
-    }
-
-    /**
-     * Génère les compétences au choix selon la classe
-     */
-    public function generateSkillChoices() {
-        $skillChoices = [];
-        
-        // Compétences au choix de classe selon les règles D&D
-        $classSkillChoices = [
-            1 => ['Athlétisme', 'Intimidation', 'Nature', 'Perception', 'Survie'], // Barbare - 2 au choix
-            2 => ['Acrobaties', 'Animaux', 'Arcane', 'Athlétisme', 'Escamotage', 'Histoire', 'Intuition', 'Intimidation', 'Investigation', 'Médecine', 'Nature', 'Perception', 'Perspicacité', 'Religion', 'Représentation'], // Barde - 3 au choix
-            3 => ['Histoire', 'Médecine', 'Perspicacité', 'Religion'], // Clerc - 2 au choix
-            4 => ['Animaux', 'Arcane', 'Athlétisme', 'Intuition', 'Médecine', 'Nature', 'Perception', 'Religion', 'Survie'], // Druide - 2 au choix
-            5 => ['Acrobaties', 'Animaux', 'Athlétisme', 'Histoire', 'Intimidation', 'Perception', 'Survie'], // Guerrier - 2 au choix
-            6 => ['Acrobaties', 'Athlétisme', 'Histoire', 'Intuition', 'Religion', 'Stealth'], // Moine - 2 au choix
-            7 => ['Arcane', 'Histoire', 'Investigation', 'Médecine'], // Magicien - 2 au choix
-            8 => ['Athlétisme', 'Intimidation', 'Médecine', 'Perspicacité', 'Religion'], // Paladin - 2 au choix
-            9 => ['Animaux', 'Athlétisme', 'Intuition', 'Investigation', 'Nature', 'Perception', 'Survie', 'Stealth'], // Rôdeur - 3 au choix
-            10 => ['Acrobaties', 'Athlétisme', 'Escamotage', 'Intimidation', 'Investigation', 'Perception', 'Perspicacité', 'Représentation'], // Roublard - 4 au choix
-            11 => ['Arcane', 'Intimidation', 'Investigation', 'Religion', 'Perspicacité'], // Sorcier - 2 au choix
-            12 => ['Arcane', 'Religion', 'Intuition', 'Médecine'] // Ensorceleur - 2 au choix
-        ];
-        
-        return $classSkillChoices[$this->class_id] ?? [];
-    }
-
     /**
      * Récupérer l'équipement du personnage sous forme d'objets Item (méthode d'instance)
      */
@@ -1988,11 +1885,4 @@ class Character
         return $result['count'] > 0;
     }
 
-    /**
-     * Récupérer les poisons du personnage (méthode d'instance)
-     */
-    public function getMyCharacterPoisons()
-    {
-        return $this->getCharacterPoisons();
-    }
 }

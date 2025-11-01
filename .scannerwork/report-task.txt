@@ -1,0 +1,6 @@
+projectKey=jdrmj_test
+serverUrl=http://localhost:9000
+serverVersion=25.9.0.112764
+dashboardUrl=http://localhost:9000/dashboard?id=jdrmj_test
+ceTaskId=8daad3d3-c963-405c-a7ea-d7db819dd0ab
+ceTaskUrl=http://localhost:9000/api/ce/task?id=8daad3d3-c963-405c-a7ea-d7db819dd0ab

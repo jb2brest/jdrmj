@@ -1858,11 +1858,27 @@ class NPC
     }
     
     /**
-     * Récupère les poisons du NPC (méthode d'instance)
+     * Récupérer tous les poisons de ce NPC depuis la table items
+     * 
+     * @return array Liste des poisons du NPC
      */
-    public function getMyCharacterPoisons() {
-        // Table npc_poisons n'existe pas encore, retourner un tableau vide
-        return [];
+    public function getCharacterPoisons()
+    {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT i.*, p.nom as poison_nom, p.type as poison_type, p.description as poison_description, p.source as poison_source
+                FROM items i
+                JOIN poisons p ON i.poison_id = p.csv_id
+                WHERE i.owner_type = 'npc' AND i.owner_id = ? 
+                AND i.poison_id IS NOT NULL
+                ORDER BY i.obtained_at DESC
+            ");
+            $stmt->execute([$this->id]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (\PDOException $e) {
+            error_log("Erreur lors de la récupération des poisons du NPC: " . $e->getMessage());
+            return [];
+        }
     }
     
     /**

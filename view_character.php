@@ -233,7 +233,7 @@ $abilityImprovementsArray = $abilityImprovements;
 
 // Récupérer l'équipement du personnage via la classe Character (comme pour les NPC)
 $magicalEquipment = [];
-$characterPoisons = $character->getMyCharacterPoisons();
+$characterPoisons = $character->getCharacterPoisons();
 
 // Récupérer l'équipement du personnage via la méthode d'instance
 $characterItems = $character->getCharacterEquipment();
