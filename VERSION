@@ -2,19 +2,19 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.24.2
+VERSION=2.24.6
 
 # Date de déploiement
-DEPLOY_DATE=2025-10-31
+DEPLOY_DATE=2025-11-01
 
 # Environnement
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=7445437af0132ef549d6d9625a8479addf876ff8
+GIT_COMMIT=e50e7ab63c121442e39abe36b33260b46127abe8
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251031-224126
+BUILD_ID=20251101-143652
 
 # Notes de version
 RELEASE_NOTES="Nettoyage Character"
