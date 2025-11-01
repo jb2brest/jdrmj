@@ -693,6 +693,188 @@ function addStartingEquipmentToCharacterNew($characterId, $equipmentData) {
 }
 
 /**
+ * Ajouter l'équipement de départ à un NPC (version pour NPC)
+ * 
+ * @param int $npcId ID du NPC
+ * @param array $equipmentData Données de l'équipement (même format que pour les PJ)
+ * @return bool Succès de l'opération
+ */
+function addStartingEquipmentToNpcNew($npcId, $equipmentData) {
+    $pdo = getPDO();
+    
+    try {
+        $pdo->beginTransaction();
+        
+        // Parser l'équipement final (même logique que pour les PJ)
+        $equipmentItems = [];
+        
+        if (is_array($equipmentData['equipment'])) {
+            // Nouveau format : tableau d'objets
+            if (isset($equipmentData['equipment']['items'])) {
+                $equipmentItems = $equipmentData['equipment']['items'];
+            } else {
+                $equipmentItems = $equipmentData['equipment'];
+            }
+        } else {
+            // Ancien format : chaîne de caractères avec lignes séparées par \n
+            $equipmentLines = explode("\n", $equipmentData['equipment']);
+            foreach ($equipmentLines as $line) {
+                $line = trim($line);
+                if (empty($line)) continue;
+                $equipmentItems[] = ['name' => $line, 'type' => 'outil', 'quantity' => 1];
+            }
+        }
+        
+        foreach ($equipmentItems as $item) {
+            // Si c'est un tableau avec les clés name, type, quantity
+            if (is_array($item) && isset($item['name'])) {
+                $displayName = $item['name'];
+                $itemType = $item['type'] ?? 'outil';
+                $quantity = $item['quantity'] ?? 1;
+                $weaponId = null;
+                $armorId = null;
+                $shieldId = null;
+            } else {
+                // Ancien format : chaîne simple
+                $line = is_string($item) ? $item : '';
+                $displayName = $line;
+                $itemType = 'other'; // Default type
+                $weaponId = null;
+                $armorId = null;
+                $shieldId = null;
+                $quantity = 1; // Default quantity
+            }
+
+            // Si c'est un ID numérique, récupérer le vrai nom et le type depuis starting_equipment
+            if (is_numeric($displayName)) {
+                $stmt = $pdo->prepare("SELECT * FROM starting_equipment WHERE id = ?");
+                $stmt->execute([$displayName]);
+                $starting_equipment = $stmt->fetch();
+                
+                if ($starting_equipment) {
+                    // Récupérer la quantité spécifiée
+                    $quantity = $starting_equipment['nb'] ?? 1;
+                    
+                    // Determine display name (même logique que pour les PJ)
+                    switch ($starting_equipment['type']) {
+                        case 'weapon':
+                            if ($starting_equipment['type_id']) {
+                                $stmt2 = $pdo->prepare("SELECT name FROM weapons WHERE id = ?");
+                                $stmt2->execute([$starting_equipment['type_id']]);
+                                $displayName = $stmt2->fetchColumn() ?: 'Arme';
+                                $weaponId = $starting_equipment['type_id'];
+                            } else {
+                                $displayName = 'Arme';
+                                $weaponId = null;
+                            }
+                            $itemType = 'weapon';
+                            break;
+                            
+                        case 'armor':
+                            if ($starting_equipment['type_id']) {
+                                $stmt2 = $pdo->prepare("SELECT name FROM armor WHERE id = ?");
+                                $stmt2->execute([$starting_equipment['type_id']]);
+                                $displayName = $stmt2->fetchColumn() ?: 'Armure';
+                                $armorId = $starting_equipment['type_id'];
+                            } else {
+                                $displayName = 'Armure';
+                                $armorId = null;
+                            }
+                            $itemType = 'armor';
+                            break;
+                            
+                        case 'bouclier':
+                            if ($starting_equipment['type_id']) {
+                                $stmt2 = $pdo->prepare("SELECT name FROM armor WHERE id = ?");
+                                $stmt2->execute([$starting_equipment['type_id']]);
+                                $displayName = $stmt2->fetchColumn() ?: 'Bouclier';
+                                $shieldId = $starting_equipment['type_id'];
+                            } else {
+                                $displayName = 'Bouclier';
+                                $shieldId = null;
+                            }
+                            $itemType = 'armor';
+                            break;
+                            
+                        case 'sac':
+                            if ($starting_equipment['type_id']) {
+                                $stmt2 = $pdo->prepare("SELECT nom FROM Object WHERE id = ?");
+                                $stmt2->execute([$starting_equipment['type_id']]);
+                                $displayName = $stmt2->fetchColumn() ?: 'Sac';
+                            } else {
+                                $displayName = 'Sac';
+                            }
+                            $itemType = 'bourse';
+                            break;
+                            
+                        case 'outils':
+                            if ($starting_equipment['type_id']) {
+                                $stmt2 = $pdo->prepare("SELECT nom FROM Object WHERE id = ?");
+                                $stmt2->execute([$starting_equipment['type_id']]);
+                                $displayName = $stmt2->fetchColumn() ?: 'Outils';
+                            } else {
+                                $displayName = 'Outils';
+                            }
+                            $itemType = 'outil';
+                            break;
+                            
+                        case 'nourriture':
+                            if ($starting_equipment['type_id']) {
+                                $stmt2 = $pdo->prepare("SELECT nom FROM Object WHERE id = ?");
+                                $stmt2->execute([$starting_equipment['type_id']]);
+                                $displayName = $stmt2->fetchColumn() ?: 'Nourriture';
+                            } else {
+                                $displayName = 'Nourriture';
+                            }
+                            $itemType = 'bourse';
+                            break;
+                            
+                        default:
+                            $displayName = ucfirst($starting_equipment['type']);
+                            $itemType = 'outil';
+                            break;
+                    }
+                }
+            } else {
+                // Existing logic for non-numeric lines (direct names)
+                // Déterminer le type d'équipement
+                $itemType = detectEquipmentType($displayName);
+            }
+            
+            // Insérer dans la table items avec owner_type = 'npc'
+            $stmt = $pdo->prepare("
+                INSERT INTO items 
+                (place_id, display_name, object_type, type_precis, description, 
+                 is_identified, is_visible, is_equipped, position_x, position_y, 
+                 is_on_map, owner_type, owner_id, item_source, quantity, 
+                 equipped_slot, notes, obtained_at, obtained_from, weapon_id, armor_id, poison_id, shield_id) 
+                VALUES (NULL, ?, ?, ?, NULL, 
+                        1, 0, 0, 0, 0, 
+                        0, 'npc', ?, 'Équipement de départ', ?, 
+                        NULL, 'Équipement de départ', NOW(), 'Équipement de départ', ?, ?, NULL, ?)
+            ");
+            $stmt->execute([$displayName, $itemType, $itemType, $npcId, $quantity, $weaponId, $armorId, $shieldId]);
+        }
+        
+        // Mettre à jour l'argent du NPC (valeurs par défaut si non définies)
+        $gold = isset($equipmentData['gold']) ? (int)$equipmentData['gold'] : 0;
+        $silver = isset($equipmentData['silver']) ? (int)$equipmentData['silver'] : 0;
+        $copper = isset($equipmentData['copper']) ? (int)$equipmentData['copper'] : 0;
+        if ($gold !== 0 || $silver !== 0 || $copper !== 0) {
+            $stmt = $pdo->prepare("UPDATE npcs SET gold = gold + ?, silver = silver + ?, copper = copper + ? WHERE id = ?");
+            $stmt->execute([$gold, $silver, $copper, $npcId]);
+        }
+        
+        $pdo->commit();
+        return true;
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        error_log("Erreur addStartingEquipmentToNpcNew: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
  * Vérifie si un personnage a déjà son équipement de départ
  */
 function hasStartingEquipment($characterId) {

@@ -234,7 +234,9 @@ class PTCharacter
     }
     
     /**
-     * Supprimer le personnage temporaire
+     * Supprimer le personnage temporaire et toutes ses données associées
+     * 
+     * @return bool True si succès, false sinon
      */
     public function delete()
     {
@@ -243,18 +245,28 @@ class PTCharacter
         try {
             $pdo->beginTransaction();
             
-            $stmt = $pdo->prepare("DELETE FROM PT_characters WHERE id = ?");
-            $result = $stmt->execute([$this->id]);
+            // 1. Supprimer les choix d'équipement temporaires
+            $stmt = $pdo->prepare("DELETE FROM PT_equipment_choices WHERE pt_character_id = ?");
+            $stmt->execute([$this->id]);
             
-            if ($result) {
-                $pdo->commit();
-                return true;
+            // 2. Supprimer les capacités temporaires
+            $stmt = $pdo->prepare("DELETE FROM PT_capabilities WHERE pt_character_id = ?");
+            $stmt->execute([$this->id]);
+            
+            // 3. Supprimer le personnage temporaire lui-même
+            // (Les clés étrangères avec ON DELETE CASCADE devraient supprimer automatiquement 
+            // PT_equipment_choices et PT_capabilities, mais on les supprime explicitement pour être sûr)
+            $stmt = $pdo->prepare("DELETE FROM PT_characters WHERE id = ? AND user_id = ?");
+            $stmt->execute([$this->id, $this->user_id]);
+            
+            if ($stmt->rowCount() === 0) {
+                throw new Exception("Personnage temporaire non trouvé ou permissions insuffisantes");
             }
             
-            $pdo->rollBack();
-            return false;
+            $pdo->commit();
+            return true;
             
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
             $pdo->rollBack();
             error_log("Erreur suppression PTCharacter: " . $e->getMessage());
             return false;

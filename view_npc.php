@@ -534,75 +534,59 @@ $target_type = 'PNJ';
         <!-- Zone des onglets -->
         <div class="tabs-section">
             <div class="card border-0 shadow">
-                <div class="card-header p-0 npc-tabs-header">
-                    <ul class="nav nav-tabs border-0" id="npcTabs" role="tablist" data-bs-toggle="tab">
+                <div class="card-header p-0 tabs-header">
+                    <ul class="nav nav-tabs border-0" id="npcTabs" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="btn-txt active" id="combat-tab" data-bs-toggle="tab" data-bs-target="#combat" type="button" role="tab" aria-controls="combat" aria-selected="true">
+                            <button class="btn-txt tab-button" data-module="combat" type="button">
                                 <i class="fas fa-shield-alt me-2"></i>Combat
-                        </button>
+                            </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="btn-txt " id="characteristics-tab" data-bs-toggle="tab" data-bs-target="#characteristics" type="button" role="tab" aria-controls="characteristics" aria-selected="false">
+                            <button class="btn-txt tab-button" data-module="characteristics" type="button">
                                 <i class="fas fa-dumbbell me-2"></i>Caractéristiques
-                        </button>
+                            </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="btn-txt " id="capabilities-tab" data-bs-toggle="tab" data-bs-target="#capabilities" type="button" role="tab" aria-controls="capabilities" aria-selected="false">
+                            <button class="btn-txt tab-button" data-module="capabilities" type="button">
                                 <i class="fas fa-star me-2"></i>Capacités
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="btn-txt " id="skills-tab" data-bs-toggle="tab" data-bs-target="#skills" type="button" role="tab" aria-controls="skills" aria-selected="false">
+                            <button class="btn-txt tab-button" data-module="skills" type="button">
                                 <i class="fas fa-dice me-2"></i>Compétences
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="btn-txt " id="languages-tab" data-bs-toggle="tab" data-bs-target="#languages" type="button" role="tab" aria-controls="languages" aria-selected="false">
+                            <button class="btn-txt tab-button" data-module="languages" type="button">
                                 <i class="fas fa-language me-2"></i>Langues
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="btn-txt " id="treasury-tab" data-bs-toggle="tab" data-bs-target="#treasury" type="button" role="tab" aria-controls="treasury" aria-selected="false">
+                            <button class="btn-txt tab-button" data-module="treasury" type="button">
                                 <i class="fas fa-coins me-2"></i>Bourse
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="btn-txt " id="equipment-tab" data-bs-toggle="tab" data-bs-target="#equipment" type="button" role="tab" aria-controls="equipment" aria-selected="false">
+                            <button class="btn-txt tab-button" data-module="equipment" type="button">
                                 <i class="fas fa-backpack me-2"></i>Equipement
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="btn-txt " id="personal-info-tab" data-bs-toggle="tab" data-bs-target="#personal-info" type="button" role="tab" aria-controls="personal-info" aria-selected="false">
+                            <button class="btn-txt tab-button" data-module="personal_info" type="button">
                                 <i class="fas fa-user-edit me-2"></i>Info perso.
                             </button>
                         </li>
                     </ul>
                 </div>
 
-                <div class="tab-content tab-content" id="npcTabContent">
-                    <?php 
-                    // Variables pour le module de combat
-                    $spellcastingClasses = [2, 3, 4, 7, 9, 10, 11]; // Barde, Clerc, Druide, Magicien, Occultiste, Paladin, Rôdeur
-                    $canCastSpells = in_array($npc->class_id, $spellcastingClasses);
-                    ?>
-                    <?php include_once 'templates/p_combat_module.php'; ?>
-
-                    <?php include_once 'templates/p_characteristics_module.php'; ?>
-
-                    <?php include_once 'templates/p_capabilities_module.php'; ?>
-
-                    <?php include_once 'templates/p_skills_module.php'; ?>
-
-                    <?php include_once 'templates/p_languages_module.php'; ?>
-
-                    <?php include_once 'templates/p_treasury_module.php'; ?>
-
-                    <?php include_once 'templates/p_equipment_module.php'; ?>
-
-                    <?php include_once 'templates/p_personal_info_module.php'; ?>
+                <div class="tab-content" id="tab-content">
+                    <!-- Le contenu sera chargé via AJAX -->
+                    <div class="text-center p-4">
+                        <i class="fas fa-spinner fa-spin fa-2x"></i><br>
+                        Chargement...
+                    </div>
                 </div>
             </div>
-                            </div>
         </div>
     </div>
 
@@ -652,45 +636,17 @@ $target_type = 'PNJ';
     <script src="js/long-rest-management.js"></script>
     
     
-    <!-- Script pour l'initialisation des onglets -->
+    <!-- Script pour l'initialisation des onglets modulaires -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialiser les onglets Bootstrap
-            var tabTriggerList = [].slice.call(document.querySelectorAll('#npcTabs button'));
+            // Initialiser le système d'onglets modulaire
+            initializeModularTabs(<?php echo $npc->id; ?>, 'PNJ');
             
-            tabTriggerList.forEach(function (triggerEl) {
-                triggerEl.addEventListener('click', function (event) {
-                    event.preventDefault();
-                    
-                    // Désactiver tous les onglets
-                    var allTabs = document.querySelectorAll('#npcTabs .nav-link');
-                    allTabs.forEach(function(tab) {
-                        tab.classList.remove('active');
-                        tab.setAttribute('aria-selected', 'false');
-                    });
-                    
-                    // Masquer tous les contenus
-                    var allPanes = document.querySelectorAll('#npcTabContent .tab-pane');
-                    allPanes.forEach(function(pane) {
-                        pane.classList.remove('show', 'active');
-                    });
-                    
-                    // Activer l'onglet cliqué
-                    triggerEl.classList.add('active');
-                    triggerEl.setAttribute('aria-selected', 'true');
-                    
-                    // Afficher le contenu correspondant
-                    var targetId = triggerEl.getAttribute('data-bs-target');
-                    var targetPane = document.querySelector(targetId);
-                    if (targetPane) {
-                        targetPane.classList.add('show', 'active');
-                    }
-                });
-            });
+            // Initialiser les gestionnaires d'événements pour les NPCs
+            if (typeof initializeNpcEventHandlers === 'function') {
+                initializeNpcEventHandlers();
+            }
         });
-        
-        // Initialiser les gestionnaires d'événements pour les NPCs
-        initializeNpcEventHandlers();
     </script>
 </body>
 </html>

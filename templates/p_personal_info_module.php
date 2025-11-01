@@ -3,9 +3,14 @@
  * Module Informations Personnelles - Peut être appelé directement ou via AJAX
  */
 
-// Inclure les classes nécessaires
-require_once '../classes/init.php';
-require_once '../includes/functions.php';
+// Inclure les classes nécessaires (chemin depuis la racine du projet)
+$rootPath = dirname(__DIR__);
+if (!class_exists('Character') && !class_exists('NPC')) {
+    require_once $rootPath . '/classes/init.php';
+}
+if (!function_exists('requireLogin')) {
+    require_once $rootPath . '/includes/functions.php';
+}
 
 // Si appelé via AJAX, récupérer les données depuis $_POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

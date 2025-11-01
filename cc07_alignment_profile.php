@@ -90,16 +90,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $allowed = ['jpg','jpeg','png','gif','webp'];
             if (in_array($ext, $allowed, true)) {
                 $targetDir = __DIR__ . '/uploads/profile_photos';
-                if (!is_dir($targetDir)) {
-                    @mkdir($targetDir, 0775, true);
+                
+                // Vérifier/créer le dossier parent uploads d'abord
+                $parentDir = dirname($targetDir);
+                if (!is_dir($parentDir)) {
+                    @mkdir($parentDir, 0777, true);
                 }
-                $safeName = 'pt_' . $ptCharacter->id . '_' . time() . '.' . $ext;
-                $absPath = $targetDir . '/' . $safeName;
-                if (move_uploaded_file($tmpName, $absPath)) {
-                    // Chemin relatif depuis la racine web (suppose dossier accessible)
-                    $photoPath = 'uploads/profile_photos/' . $safeName;
-                } else {
-                    $message = displayMessage("Échec de l'upload de la photo.", 'error');
+                @chmod($parentDir, 0777);
+                
+                // Créer le dossier avec permissions permettant l'écriture par Apache
+                if (!is_dir($targetDir)) {
+                    if (!@mkdir($targetDir, 0777, true)) {
+                        $message = displayMessage("Impossible de créer le dossier d'upload. Vérifiez les permissions.", 'error');
+                    }
+                }
+                
+                // S'assurer que les permissions sont correctes (777 pour permettre l'écriture par www-data)
+                if (empty($message)) {
+                    @chmod($targetDir, 0777);
+                    
+                    // Vérifier que le dossier est accessible en écriture
+                    if (!is_writable($targetDir)) {
+                        $currentPerms = substr(sprintf('%o', fileperms($targetDir)), -4);
+                        $message = displayMessage("Le dossier d'upload n'est pas accessible en écriture (permissions: $currentPerms). Contactez l'administrateur ou exécutez: sudo chmod 777 $targetDir", 'error');
+                        error_log("Upload error: Cannot write to $targetDir. Permissions: $currentPerms. Owner: " . fileowner($targetDir));
+                    }
+                }
+                
+                if (empty($message)) {
+                    $safeName = 'pt_' . $ptCharacter->id . '_' . time() . '.' . $ext;
+                    $absPath = $targetDir . '/' . $safeName;
+                    if (move_uploaded_file($tmpName, $absPath)) {
+                        // Définir les permissions du fichier créé
+                        @chmod($absPath, 0664);
+                        // Chemin relatif depuis la racine web
+                        $photoPath = 'uploads/profile_photos/' . $safeName;
+                    } else {
+                        $errorMsg = "Échec de l'upload de la photo.";
+                        $uploadError = $_FILES['profile_photo']['error'];
+                        if ($uploadError !== UPLOAD_ERR_OK) {
+                            $errorMsg .= " Erreur PHP: " . $uploadError;
+                        }
+                        $message = displayMessage($errorMsg, 'error');
+                        error_log("Upload error: Failed to move uploaded file from $tmpName to $absPath. Error code: $uploadError");
+                    }
                 }
             } else {
                 $message = displayMessage("Format d'image non supporté.", 'error');

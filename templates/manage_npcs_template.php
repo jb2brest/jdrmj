@@ -190,9 +190,16 @@ extract($template_vars ?? []);
 
                                             <div class="mt-auto d-flex justify-content-between align-items-center">
                                                 <small class="text-muted"><i class="fas fa-calendar me-1"></i>Modifié le <?php echo date('d/m/Y', strtotime($draft['updated_at'])); ?></small>
-                                                <a href="<?php echo $draft['resume_url']; ?>" class="btn btn-sm btn-outline-primary">
-                                                    <i class="fas fa-play me-1"></i>Reprendre
-                                                </a>
+                                                <div class="btn-group" role="group">
+                                                    <a href="<?php echo $draft['resume_url']; ?>" class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-play me-1"></i>Reprendre
+                                                    </a>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                            title="Supprimer" 
+                                                            onclick="deleteCharacterInProgress(<?php echo $draft['id']; ?>, '<?php echo htmlspecialchars(addslashes($draft['name'])); ?>', event)">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -356,5 +363,59 @@ window.filterData = {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/jdrmj.js"></script>
+    <script>
+        /**
+         * Supprimer un personnage en cours de création (PTCharacter)
+         */
+        function deleteCharacterInProgress(ptCharacterId, characterName, event) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer le personnage en cours de création "' + characterName + '" ?\n\nCette action est irréversible et supprimera toutes les données associées.')) {
+                return;
+            }
+            
+            // Désactiver le bouton pendant le traitement
+            const btn = (event || window.event).target.closest('button');
+            const originalContent = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            
+            fetch('api/delete_character_in_progress.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    pt_character_id: ptCharacterId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Afficher un message de succès
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                    alertDiv.innerHTML = '<i class="fas fa-check-circle me-2"></i>' + data.message + 
+                                         '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+                    
+                    const container = document.querySelector('.container-fluid');
+                    container.insertBefore(alertDiv, container.firstChild);
+                    
+                    // Recharger la page après un court délai
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    alert('Erreur: ' + (data.message || 'Erreur lors de la suppression'));
+                    btn.disabled = false;
+                    btn.innerHTML = originalContent;
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la communication avec le serveur');
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+            });
+        }
+    </script>
 </body>
 </html>

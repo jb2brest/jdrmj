@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_once 'classes/NPC.php';
     
     // Créer d'abord le PNJ dans la table npcs
-    $npc = new NPC($pdo);
+    $npc = new NPC([]);
     $npcData = [
         'name' => $npc_name,
         'class_id' => null, // Pas de classe pour un monstre

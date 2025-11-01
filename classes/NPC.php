@@ -385,6 +385,62 @@ class NPC
             return false;
         }
     }
+    
+    /**
+     * Supprimer complètement le NPC avec toutes ses données associées
+     * 
+     * @return bool True si succès, false sinon
+     */
+    public function deleteCompletely()
+    {
+        try {
+            $this->pdo->beginTransaction();
+            
+            // 1. Supprimer l'équipement du NPC (table items)
+            $stmt = $this->pdo->prepare("DELETE FROM items WHERE owner_type = 'npc' AND owner_id = ?");
+            $stmt->execute([$this->id]);
+            
+            // 2. Supprimer l'équipement du NPC (table npc_equipment)
+            $stmt = $this->pdo->prepare("DELETE FROM npc_equipment WHERE npc_id = ?");
+            $stmt->execute([$this->id]);
+            
+            // 3. Supprimer les sorts du NPC
+            $stmt = $this->pdo->prepare("DELETE FROM npc_spells WHERE npc_id = ?");
+            $stmt->execute([$this->id]);
+            
+            // 4. Supprimer l'utilisation des emplacements de sorts
+            $stmt = $this->pdo->prepare("DELETE FROM npc_spell_slots_usage WHERE npc_id = ?");
+            $stmt->execute([$this->id]);
+            
+            // 5. Retirer le NPC de tous les lieux (place_npcs)
+            $stmt = $this->pdo->prepare("DELETE FROM place_npcs WHERE npc_character_id = ?");
+            $stmt->execute([$this->id]);
+            
+            // 6. Retirer le NPC de toutes les scènes (scene_npcs)
+            $stmt = $this->pdo->prepare("DELETE FROM scene_npcs WHERE npc_character_id = ?");
+            $stmt->execute([$this->id]);
+            
+            // 7. Retirer le NPC de tous les groupes
+            $stmt = $this->pdo->prepare("DELETE FROM groupe_membres WHERE member_id = ? AND member_type = 'pnj'");
+            $stmt->execute([$this->id]);
+            
+            // 8. Supprimer le NPC lui-même
+            $stmt = $this->pdo->prepare("DELETE FROM npcs WHERE id = ? AND created_by = ?");
+            $stmt->execute([$this->id, $this->created_by]);
+            
+            if ($stmt->rowCount() === 0) {
+                throw new Exception("NPC non trouvé ou permissions insuffisantes");
+            }
+            
+            $this->pdo->commit();
+            return true;
+            
+        } catch (Exception $e) {
+            $this->pdo->rollBack();
+            error_log("Erreur lors de la suppression complète du NPC: " . $e->getMessage());
+            return false;
+        }
+    }
 
     /**
      * Trouver un NPC par son ID
@@ -2961,6 +3017,29 @@ class NPC
         return $classObject && strpos(strtolower($classObject->name), 'barbare') !== false;
     }
 
+
+    /**
+     * Obtenir l'utilisation de la rage (pour les barbares)
+     */
+    public function getRageUsage()
+    {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT used, max_uses
+                FROM npc_rage_usage
+                WHERE npc_id = ?
+            ");
+            $stmt->execute([$this->id]);
+            
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $result ?: ['used' => 0, 'max_uses' => 0];
+            
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération de l'utilisation de la rage: " . $e->getMessage());
+            return ['used' => 0, 'max_uses' => 0];
+        }
+    }
+
     /**
      * Récupérer les données de rage du NPC (méthode d'instance)
      */
@@ -2973,7 +3052,7 @@ class NPC
         require_once 'Classe.php';
         $classObj = Classe::findById($this->class_id);
         $maxRages = $classObj ? $classObj->getMaxRages($this->level) : 0;
-        $rageUsage = Character::getRageUsageStatic($this->id);
+        $rageUsage = $this->getRageUsage();
         $usedRages = is_array($rageUsage) ? $rageUsage['used'] : $rageUsage;
 
         return [
@@ -2988,7 +3067,28 @@ class NPC
      */
     public function canCastSpells()
     {
-        return Character::canCastSpells($this->class_id);
+        
+        $pdo = \Database::getInstance()->getPdo();
+        $stmt = $pdo->prepare("
+            SELECT COUNT(*) as count 
+            FROM class_evolution 
+            WHERE class_id = ? AND (
+                cantrips_known > 0 OR 
+                spells_known > 0 OR 
+                spell_slots_1st > 0 OR 
+                spell_slots_2nd > 0 OR 
+                spell_slots_3rd > 0 OR 
+                spell_slots_4th > 0 OR 
+                spell_slots_5th > 0 OR 
+                spell_slots_6th > 0 OR 
+                spell_slots_7th > 0 OR 
+                spell_slots_8th > 0 OR 
+                spell_slots_9th > 0
+            )
+        ");
+        $stmt->execute([$this->class_id]);
+        $result = $stmt->fetch();
+        return $result['count'] > 0;
     }
 
     /**

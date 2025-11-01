@@ -366,9 +366,16 @@ class Character
             $stmt = $this->pdo->prepare("DELETE FROM character_creation_sessions WHERE user_id = ?");
             $stmt->execute([$this->user_id]);
             
-            // 9. Supprimer l'utilisation des emplacements de sorts
+            // 9. Supprimer l'utilisation des emplacements de sorts (table générale)
             $stmt = $this->pdo->prepare("DELETE FROM spell_slots_usage WHERE character_id = ?");
             $stmt->execute([$this->id]);
+            
+            // 9b. Supprimer l'utilisation des emplacements de sorts (table character_spell_slots_usage)
+            $stmt = $this->pdo->query("SHOW TABLES LIKE 'character_spell_slots_usage'");
+            if ($stmt->rowCount() > 0) {
+                $stmt = $this->pdo->prepare("DELETE FROM character_spell_slots_usage WHERE character_id = ?");
+                $stmt->execute([$this->id]);
+            }
             
             // 10. Supprimer l'utilisation de rage (table générale)
             $stmt = $this->pdo->prepare("DELETE FROM rage_usage WHERE character_id = ?");
@@ -382,11 +389,26 @@ class Character
             $stmt = $this->pdo->prepare("DELETE FROM place_players WHERE character_id = ?");
             $stmt->execute([$this->id]);
             
-            // 13. Retirer le personnage de tous les groupes
+            // 13. Retirer le personnage de toutes les scènes (scene_players)
+            $stmt = $this->pdo->prepare("DELETE FROM scene_players WHERE character_id = ?");
+            $stmt->execute([$this->id]);
+            
+            // 14. Retirer le personnage des sessions de jeu (session_registrations)
+            $stmt = $this->pdo->prepare("DELETE FROM session_registrations WHERE character_id = ?");
+            $stmt->execute([$this->id]);
+            
+            // 15. Supprimer les attaques personnalisées du personnage
+            $stmt = $this->pdo->query("SHOW TABLES LIKE 'character_attacks'");
+            if ($stmt->rowCount() > 0) {
+                $stmt = $this->pdo->prepare("DELETE FROM character_attacks WHERE character_id = ?");
+                $stmt->execute([$this->id]);
+            }
+            
+            // 16. Retirer le personnage de tous les groupes
             $stmt = $this->pdo->prepare("DELETE FROM groupe_membres WHERE member_id = ? AND member_type = 'pj'");
             $stmt->execute([$this->id]);
             
-            // 14. Supprimer le personnage lui-même
+            // 17. Supprimer le personnage lui-même
             $stmt = $this->pdo->prepare("DELETE FROM characters WHERE id = ? AND user_id = ?");
             $stmt->execute([$this->id, $this->user_id]);
             

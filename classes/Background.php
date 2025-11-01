@@ -249,6 +249,81 @@ class Background
     }
     
     /**
+     * Obtenir les compétences de l'historique
+     * 
+     * @return string|array Les compétences (chaîne ou tableau selon le format stocké)
+     */
+    public function getSkillProficiencies()
+    {
+        if (empty($this->skill_proficiencies)) {
+            return [];
+        }
+        
+        // Si c'est du JSON, le décoder
+        $decoded = json_decode($this->skill_proficiencies, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            return $decoded;
+        }
+        
+        // Sinon, retourner comme chaîne ou tableau si séparé par virgule
+        if (strpos($this->skill_proficiencies, ',') !== false) {
+            return array_map('trim', explode(',', $this->skill_proficiencies));
+        }
+        
+        return $this->skill_proficiencies ?: '';
+    }
+    
+    /**
+     * Obtenir les outils/instruments de l'historique
+     * 
+     * @return string|array Les outils (chaîne ou tableau selon le format stocké)
+     */
+    public function getToolProficiencies()
+    {
+        if (empty($this->tool_proficiencies)) {
+            return [];
+        }
+        
+        // Si c'est du JSON, le décoder
+        $decoded = json_decode($this->tool_proficiencies, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            return $decoded;
+        }
+        
+        // Sinon, retourner comme chaîne ou tableau si séparé par virgule
+        if (strpos($this->tool_proficiencies, ',') !== false) {
+            return array_map('trim', explode(',', $this->tool_proficiencies));
+        }
+        
+        return $this->tool_proficiencies ?: '';
+    }
+    
+    /**
+     * Obtenir les langues de l'historique
+     * 
+     * @return string|array Les langues (chaîne ou tableau selon le format stocké)
+     */
+    public function getLanguages()
+    {
+        if (empty($this->languages)) {
+            return [];
+        }
+        
+        // Si c'est du JSON, le décoder
+        $decoded = json_decode($this->languages, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            return $decoded;
+        }
+        
+        // Sinon, retourner comme chaîne ou tableau si séparé par virgule
+        if (strpos($this->languages, ',') !== false) {
+            return array_map('trim', explode(',', $this->languages));
+        }
+        
+        return $this->languages ?: '';
+    }
+    
+    /**
      * Convertir en tableau
      */
     public function toArray()

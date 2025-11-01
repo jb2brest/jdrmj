@@ -296,7 +296,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
 
-                $npc = new NPC($pdo, [
+                // Récupérer un world_id par défaut (premier monde de l'utilisateur ou monde par défaut)
+                $world_id = null;
+                try {
+                    $stmtWorld = $pdo->prepare("SELECT id FROM worlds WHERE created_by = ? ORDER BY id ASC LIMIT 1");
+                    $stmtWorld->execute([$_SESSION['user_id']]);
+                    $worldResult = $stmtWorld->fetch(PDO::FETCH_ASSOC);
+                    if ($worldResult && isset($worldResult['id'])) {
+                        $world_id = (int)$worldResult['id'];
+                    } else {
+                        // Si aucun monde créé par l'utilisateur, utiliser le monde par défaut (Aeridon = 307) ou le premier monde disponible
+                        $stmtDefaultWorld = $pdo->prepare("SELECT id FROM worlds ORDER BY id ASC LIMIT 1");
+                        $stmtDefaultWorld->execute();
+                        $defaultWorldResult = $stmtDefaultWorld->fetch(PDO::FETCH_ASSOC);
+                        $world_id = $defaultWorldResult ? (int)$defaultWorldResult['id'] : 307;
+                    }
+                } catch (PDOException $e) {
+                    error_log('Erreur récupération world_id: ' . $e->getMessage());
+                    $world_id = 307; // Monde par défaut en cas d'erreur
+                }
+
+                $npc = new NPC([
                     'name' => $ptCharacter->name ?: 'Nouveau PNJ',
                     'class_id' => $ptCharacter->class_id,
                     'race_id' => $ptCharacter->race_id,
@@ -332,9 +352,84 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'languages' => json_encode($selectedLanguages),
                     'profile_photo' => $ptCharacter->profile_photo ?: null,
                     'created_by' => $_SESSION['user_id'],
+                    'world_id' => $world_id,
+                    'location_id' => null,
                     'is_active' => 1
                 ]);
                 if ($npc->create()) {
+                    // Persister l'équipement de départ depuis PT_equipment_choices (même logique que pour les PJ)
+                    try {
+                        $stmt = $pdo->prepare("SELECT * FROM PT_equipment_choices WHERE pt_character_id = ? ORDER BY choice_type, choice_index");
+                        $stmt->execute([$pt_id]);
+                        $ptChoices = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                        $itemsAgg = [];
+                        foreach ($ptChoices as $chc) {
+                            $rowId = (int)$chc['selected_option'];
+                            if ($rowId <= 0) continue;
+                            $stmt2 = $pdo->prepare("SELECT * FROM starting_equipment_options WHERE starting_equipment_choix_id = ? ORDER BY id");
+                            $stmt2->execute([$rowId]);
+                            $opts = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+                            foreach ($opts as $o) {
+                                $type = strtolower($o['type'] ?? '');
+                                $qty = (int)($o['nb'] ?? 1);
+                                $name = $o['label'] ?? null;
+                                // Cas armes avec filtre: utiliser selected_weapons
+                                $filterVal = $o['filter'] ?? ($o['type_filter'] ?? null);
+                                $weaponId = null;
+                                if (!empty($filterVal) && ($type === 'weapons' || $type === 'weapon')) {
+                                    if (!empty($chc['selected_weapons'])) {
+                                        $w = json_decode($chc['selected_weapons'], true);
+                                        if (json_last_error() === JSON_ERROR_NONE && !empty($w['weapon_id'])) { $weaponId = (int)$w['weapon_id']; }
+                                    }
+                                    if ($weaponId) {
+                                        $weaponName = resolveEquipmentNameForReview($pdo, 'weapons', $weaponId);
+                                        $name = $weaponName ?: ('Arme (' . $filterVal . ')');
+                                    } else {
+                                        $name = 'Arme (' . $filterVal . ')';
+                                    }
+                                }
+                                // Résoudre par type_id sinon
+                                if (!$name && !empty($o['type_id'])) {
+                                    $name = resolveEquipmentNameForReview($pdo, $type, (int)$o['type_id']);
+                                }
+                                if (!$name && $type) { $name = strtoupper($type); }
+                                if (!$name) { continue; }
+
+                                // Clé d'agrégation pour éviter les doublons
+                                if ($weaponId) {
+                                    $key = 'weapon_id#' . $weaponId;
+                                } elseif (!empty($o['type_id'])) {
+                                    $key = 'id#' . (int)$o['type_id'] . '#type#' . $type;
+                                } elseif (!empty($o['label'])) {
+                                    $key = 'label#' . mb_strtolower(trim($o['label']));
+                                } else {
+                                    $key = 'type#' . mb_strtolower(trim($type));
+                                }
+
+                                // Si obligatoire (choice_index == 0), prendre la quantité max, sinon additionner
+                                if ((int)($chc['choice_index'] ?? 0) === 0) {
+                                    if (!isset($itemsAgg[$key])) {
+                                        $itemsAgg[$key] = ['name' => $name, 'quantity' => max(1, $qty)];
+                                    } else {
+                                        $itemsAgg[$key]['quantity'] = max($itemsAgg[$key]['quantity'], max(1, $qty));
+                                    }
+                                } else {
+                                    if (!isset($itemsAgg[$key])) {
+                                        $itemsAgg[$key] = ['name' => $name, 'quantity' => 0];
+                                    }
+                                    $itemsAgg[$key]['quantity'] += max(1, $qty);
+                                }
+                            }
+                        }
+                        $items = array_values($itemsAgg);
+                        if (!empty($items)) {
+                            // Ajouter l'équipement au NPC (même logique que pour les PJ mais avec owner_type = 'npc')
+                            addStartingEquipmentToNpcNew($npc->id, ['equipment' => ['items' => $items]]);
+                        }
+                    } catch (Exception $e) {
+                        error_log('Erreur ajout équipement de départ PNJ: ' . $e->getMessage());
+                    }
+                    
                     header('Location: view_npc.php?id=' . $npc->id);
                     exit();
                 } else {
