@@ -158,7 +158,11 @@ $characterAttacks = $pers->calculateMyCharacterAttacks();
                                                             </small>
                                                         </div>
                                                         <div class="text-end">
-                                                            <span class="badge bg-<?php echo $attack['type'] === 'À distance' ? 'info' : 'success'; ?> fs-6">
+                                                            <?php 
+                                                            $rangeType = $attack['range_type'] ?? 'melee';
+                                                            $isRanged = ($rangeType === 'ranged' || $attack['type'] === 'À distance' || strpos(strtolower($attack['attack_type'] ?? ''), 'distance') !== false);
+                                                            ?>
+                                                            <span class="badge bg-<?php echo $isRanged ? 'info' : 'success'; ?> fs-6">
                                                                 <?php echo (($attack['bonus'] ?? 0) >= 0 ? '+' : '') . ($attack['bonus'] ?? 0); ?>
                                                             </span>
                                                         </div>

@@ -35,6 +35,26 @@ if (!$pers) {
 
 // Récupérer les données nécessaires via les méthodes d'instance
 $equipment = $pers->getEquipment();
+
+// Initialiser $canModifyHP si non défini (cas où le module est appelé directement)
+if (!isset($canModifyHP)) {
+    $canModifyHP = false; // Valeur par défaut
+    
+    // Vérifier les permissions seulement si la session est active et le personnage est chargé
+    if ($pers && session_status() === PHP_SESSION_ACTIVE && isset($_SESSION['user_id'])) {
+        // Vérifier les permissions selon le type de personnage
+        if ($target_type === 'PJ' && isset($pers->user_id)) {
+            $canModifyHP = ($pers->user_id == $_SESSION['user_id']);
+        } elseif ($target_type === 'PNJ' && isset($pers->created_by)) {
+            $canModifyHP = ($pers->created_by == $_SESSION['user_id']);
+        }
+        
+        // Les MJ et admins peuvent modifier
+        if (!$canModifyHP && class_exists('User') && User::isDMOrAdmin()) {
+            $canModifyHP = true;
+        }
+    }
+}
 ?>
 
 <!-- Onglet Équipement -->

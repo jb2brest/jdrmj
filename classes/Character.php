@@ -1783,41 +1783,66 @@ class Character
                 SELECT 
                     i.id as item_id,
                     i.display_name as attack_name,
-                    w.type as attack_type,
+                    COALESCE(w.type, 'Arme de mêlée') as attack_type,
                     CASE 
                         WHEN w.properties LIKE '%lancer%' OR w.properties LIKE '%portée%' THEN 'ranged'
+                        WHEN i.display_name LIKE '%arc%' OR i.display_name LIKE '%arbalète%' OR i.display_name LIKE '%fronde%' THEN 'ranged'
                         ELSE 'melee'
                     END as range_type,
                     CASE 
                         WHEN w.properties LIKE '%lancer%' THEN '20/60'
+                        WHEN i.display_name LIKE '%arc%' OR i.display_name LIKE '%arbalète%' THEN '80/320'
+                        WHEN i.display_name LIKE '%fronde%' THEN '30/120'
                         ELSE '5'
                     END as range_value,
-                    w.damage as damage_dice,
+                    COALESCE(w.damage, '1d6') as damage_dice,
                     CASE 
-                        WHEN w.damage LIKE '%contondant%' THEN 'Contondant'
-                        WHEN w.damage LIKE '%perforant%' THEN 'Perforant'
-                        WHEN w.damage LIKE '%tranchant%' THEN 'Tranchant'
+                        WHEN w.damage LIKE '%contondant%' OR i.display_name LIKE '%marteau%' OR i.display_name LIKE '%masse%' OR i.display_name LIKE '%massue%' THEN 'Contondant'
+                        WHEN w.damage LIKE '%perforant%' OR i.display_name LIKE '%dague%' OR i.display_name LIKE '%épée%' OR i.display_name LIKE '%lance%' OR i.display_name LIKE '%pique%' THEN 'Perforant'
+                        WHEN w.damage LIKE '%tranchant%' OR i.display_name LIKE '%épée%' OR i.display_name LIKE '%hache%' OR i.display_name LIKE '%glaive%' OR i.display_name LIKE '%sabre%' THEN 'Tranchant'
                         ELSE 'Contondant'
                     END as damage_type,
                     '0' as attack_bonus,
                     '0' as damage_bonus,
-                    i.description,
+                    COALESCE(i.description, '') as description,
                     '1' as is_proficient,
                     'equipped' as source_type
                 FROM items i
                 LEFT JOIN weapons w ON i.weapon_id = w.id
                 WHERE i.owner_type = 'player' 
                 AND i.owner_id = ? 
-                AND i.is_equipped = 1
+                AND (i.is_equipped = 1 OR i.equipped_slot IS NOT NULL)
                 AND i.object_type = 'weapon'
-                AND w.id IS NOT NULL
                 ORDER BY i.display_name ASC
             ");
             $stmt->execute([$this->id]);
             $equippedAttacks = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $attacks = array_merge($attacks, $equippedAttacks);
             
-            return $attacks;
+            // Normaliser les clés pour la compatibilité avec les templates
+            $normalizedAttacks = [];
+            foreach ($attacks as $attack) {
+                $normalizedAttacks[] = [
+                    'name' => $attack['attack_name'] ?? '',
+                    'attack_name' => $attack['attack_name'] ?? '',
+                    'type' => $attack['attack_type'] ?? '',
+                    'attack_type' => $attack['attack_type'] ?? '',
+                    'range_type' => $attack['range_type'] ?? 'melee',
+                    'range_value' => $attack['range_value'] ?? '5',
+                    'damage' => $attack['damage_dice'] ?? '',
+                    'damage_dice' => $attack['damage_dice'] ?? '',
+                    'damage_type' => $attack['damage_type'] ?? '',
+                    'bonus' => (int)($attack['attack_bonus'] ?? 0),
+                    'attack_bonus' => (int)($attack['attack_bonus'] ?? 0),
+                    'damage_bonus' => (int)($attack['damage_bonus'] ?? 0),
+                    'properties' => $attack['description'] ?? '',
+                    'description' => $attack['description'] ?? '',
+                    'is_proficient' => $attack['is_proficient'] ?? 1,
+                    'source_type' => $attack['source_type'] ?? 'custom'
+                ];
+            }
+            
+            return $normalizedAttacks;
         } catch (PDOException $e) {
             error_log("Erreur lors de la récupération des attaques: " . $e->getMessage());
             return [];
