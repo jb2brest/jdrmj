@@ -35,7 +35,9 @@ $wisdomModifier = floor(($character['wisdom'] - 10) / 2);
 $intelligenceModifier = floor(($character['intelligence'] - 10) / 2);
 
 // Récupérer les capacités de sorts de la classe
-$spell_capabilities = NPC::getClassSpellCapabilities($character['class_id'], $character['level'], $wisdomModifier, $intelligenceModifier);
+require_once 'classes/Classe.php';
+$classObj = Classe::findById($character['class_id']);
+$spell_capabilities = $classObj ? $classObj->getSpellCapabilities($character['level'], $wisdomModifier, null, $intelligenceModifier) : null;
 
 // Récupérer les sorts du NPC
 $character_spells = NPC::getNpcSpells($npc_id);
@@ -77,7 +79,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         
                         if ($npc) {
                             // Calculer les capacités de sorts
-                            $capabilities = NPC::getClassSpellCapabilities($npc['class_id'], $npc['level'], 0, 0);
+                            $npcClassObj = Classe::findById($npc['class_id']);
+                            $capabilities = $npcClassObj ? $npcClassObj->getSpellCapabilities($npc['level'], 0, null, 0) : null;
                             $maxCantrips = $capabilities['cantrips_known'] ?? 0;
                             $maxPrepared = $capabilities['spells_known'] ?? 0;
                             
@@ -185,7 +188,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             
                             if ($npc) {
                                 // Calculer les capacités de sorts
-                                $capabilities = NPC::getClassSpellCapabilities($npc['class_id'], $npc['level'], 0, 0);
+                                $npcClassObj = Classe::findById($npc['class_id']);
+                                $capabilities = $npcClassObj ? $npcClassObj->getSpellCapabilities($npc['level'], 0, null, 0) : null;
                                 
                                 // Compter les sorts préparés actuels
                                 $preparedCount = 0;
@@ -262,7 +266,7 @@ foreach ($character_spells as $spell) {
 }
 
 // Calculer les limites de sorts préparés
-$spell_capabilities = NPC::getClassSpellCapabilities($character['class_id'], $character['level'], 0, 0);
+$spell_capabilities = $classObj ? $classObj->getSpellCapabilities($character['level'], 0, null, 0) : null;
 $max_prepared_spells = $spell_capabilities['spells_known'] ?? 0;
 $can_prepare_more = $prepared_spells_count < $max_prepared_spells;
 

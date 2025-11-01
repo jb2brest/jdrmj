@@ -53,7 +53,7 @@ $backgroundDetails = $character->background_id ? Background::findById($character
 // Récupérer les détails de l'archétype
 $archetypeDetails = null;
 if ($character->class_archetype_id) {
-    $archetypeDetails = Character::getArchetypeById($character->class_archetype_id);
+    $archetypeDetails = Classe::getArchetypeById($character->class_archetype_id);
 }
 
 // Les modificateurs seront calculés plus tard à partir des totaux
@@ -101,7 +101,7 @@ $allTools = [];
 $isBarbarian = $classObject && strpos(strtolower($classObject->name), 'barbare') !== false;
 $rageData = null;
 if ($isBarbarian) {
-    $maxRages = Character::getMaxRages($character->class_id, $character->level);
+    $maxRages = $classObject ? $classObject->getMaxRages($character->level) : 0;
     $rageUsage = $character->getRageUsage();
     $usedRages = is_array($rageUsage) ? $rageUsage['used'] : $rageUsage;
     

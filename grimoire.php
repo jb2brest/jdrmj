@@ -73,22 +73,27 @@ if (!in_array($character_class_id, $spellcastingClasses)) {
 }
 
 // Récupérer les informations de la classe
-$stmt = $pdo->prepare("SELECT * FROM classes WHERE id = ?");
-$stmt->execute([$character_class_id]);
-$class = $stmt->fetch();
+require_once 'classes/Classe.php';
+$classObj = Classe::findById($character_class_id);
 // Calculer les modificateurs (caractéristiques totales incluant les bonus raciaux)
 $wisdomModifier = floor(($character['wisdom'] + $character['wisdom_bonus'] - 10) / 2);
 $intelligenceModifier = floor(($character['intelligence'] + $character['intelligence_bonus'] - 10) / 2);
-$spell_capabilities = Character::getClassSpellCapabilities($character_class_id, $character_level, $wisdomModifier, $character['max_spells_learned'], $intelligenceModifier);
+$spell_capabilities = $classObj ? $classObj->getSpellCapabilities($character_level, $wisdomModifier, $character['max_spells_learned'], $intelligenceModifier) : null;
 
 // Récupérer les sorts du personnage
-$character_spells = Character::getCharacterSpells($target_id);
+require_once 'classes/init.php';
+$characterObj = Character::findById($target_id);
+$character_spells = $characterObj ? $characterObj->getCharacterSpells() : [];
 
 // Récupérer les utilisations d'emplacements de sorts
-$spell_slots_usage = Character::getSpellSlotsUsageStatic($target_id);
+$spell_slots_usage = $classObj ? $classObj->getSpellSlotsUsage($target_id) : [
+    'level_1_used' => 0, 'level_2_used' => 0, 'level_3_used' => 0,
+    'level_4_used' => 0, 'level_5_used' => 0, 'level_6_used' => 0,
+    'level_7_used' => 0, 'level_8_used' => 0, 'level_9_used' => 0
+];
 
 // Récupérer les sorts disponibles pour la classe
-$available_spells = Character::getSpellsForClass($character_class_id);
+$available_spells = $classObj ? $classObj->getSpells() : [];
 
 // Vérifier si la classe peut apprendre de nouveaux sorts (Magicien, Ensorceleur, etc.)
 $canLearnSpells = in_array($character_class_id, [7, 5]); // 7 = Magicien, 5 = Ensorceleur

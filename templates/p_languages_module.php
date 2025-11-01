@@ -35,10 +35,6 @@ if (!$pers) {
 
 // Récupérer les données nécessaires via les méthodes d'instance
 $characterLanguages = $pers->languages ? json_decode($pers->languages, true) : [];
-if (empty($characterLanguages)) {
-    $characterLanguages = $pers->generateBaseLanguages();
-}
-$allLanguages = $characterLanguages;
 ?>
 
 <!-- Onglet Langues -->

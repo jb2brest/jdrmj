@@ -192,7 +192,9 @@ $isRogue = strpos(strtolower($characterDetails['class_name']), 'roublard') !== f
 $rageData = null;
 if ($isBarbarian) {
     // Récupérer le nombre maximum de rages pour ce niveau
-    $maxRages = Character::getMaxRages($character['class_id'], $character['level']);
+    require_once 'classes/Classe.php';
+    $classObj = Classe::findById($character['class_id']);
+    $maxRages = $classObj ? $classObj->getMaxRages($character['level']) : 0;
     
     // Récupérer le nombre de rages utilisées
     $rageUsage = Character::getRageUsageStatic($character_id);
@@ -790,7 +792,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
 // $magicalEquipment est déjà défini plus haut
 
 // Récupérer les poisons du personnage via la classe Character
-$characterPoisons = Character::getCharacterPoisons($character_id);
+require_once 'classes/init.php';
+$characterObjForPoisons = Character::findById($character_id);
+$characterPoisons = $characterObjForPoisons ? $characterObjForPoisons->getCharacterPoisons() : [];
 
 // Récupérer l'équipement attribué aux PNJ associés à ce personnage via la classe PNJ
 $npcEquipment = NPC::getNpcEquipmentByCharacter($character_id);
@@ -801,7 +805,9 @@ $npcPoisons = [];
 
 foreach ($npcEquipment as $item) {
     // Vérifier d'abord si c'est un poison
-    $poison_info = Character::getPoisonInfo($item['magical_item_id']);
+    require_once 'classes/Item.php';
+    $itemObj = new Item($pdo, $item);
+    $poison_info = $itemObj->getPoisonInfo($item['magical_item_id']);
     
     if ($poison_info) {
         // C'est un poison

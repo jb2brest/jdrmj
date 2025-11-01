@@ -158,7 +158,8 @@ if ($npc->archetype_id) {
         error_log("ERREUR: Classe Character non trouvée - " . date('Y-m-d H:i:s'));
         throw new Exception("Classe Character non trouvée");
     }
-    $characterArchetype = Character::getArchetypeById($npc->archetype_id);
+    require_once 'classes/Classe.php';
+    $characterArchetype = Classe::getArchetypeById($npc->archetype_id);
 }
 
 // Définir les variables d'archetype pour la compatibilité avec le code HTML existant

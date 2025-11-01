@@ -484,280 +484,28 @@ class Character
         return $this->getAbilityModifier('charisma');
     }
 
-    /**
-     * Obtenir les capacités de sorts d'une classe à un niveau donné
-     * 
-     * @param int $classId ID de la classe
-     * @param int $level Niveau du personnage
-     * @param int $wisdomModifier Modificateur de sagesse
-     * @param int|null $maxSpellsLearned Nombre maximum de sorts appris
-     * @param int $intelligenceModifier Modificateur d'intelligence
-     * @return array|null Capacités de sorts
-     */
-    public static function getClassSpellCapabilities($classId, $level, $wisdomModifier = 0, $maxSpellsLearned = null, $intelligenceModifier = 0)
-    {
-        $pdo = \Database::getInstance()->getPdo();
-        $stmt = $pdo->prepare("
-            SELECT cantrips_known, spells_known, 
-                   spell_slots_1st, spell_slots_2nd, spell_slots_3rd, 
-                   spell_slots_4th, spell_slots_5th, spell_slots_6th, 
-                   spell_slots_7th, spell_slots_8th, spell_slots_9th
-            FROM class_evolution 
-            WHERE class_id = ? AND level = ?
-        ");
-        $stmt->execute([$classId, $level]);
-        $capabilities = $stmt->fetch();
-        
-        if ($capabilities) {
-            // Récupérer le nom de la classe
-            $stmt = $pdo->prepare("SELECT name FROM classes WHERE id = ?");
-            $stmt->execute([$classId]);
-            $class = $stmt->fetch();
-            
-            // Sorts appris : utiliser le champ personnalisé ou la valeur par défaut
-            $spellsLearned = $maxSpellsLearned !== null ? $maxSpellsLearned : $capabilities['spells_known'];
-            
-            // Calculer les sorts préparés selon la classe
-            $spellsPrepared = $capabilities['spells_known']; // Valeur par défaut
-            
-            if ($class) {
-                $className = strtolower($class['name']);
-                
-                // Pour les clercs, les sorts préparés = niveau + modificateur de Sagesse
-                if (strpos($className, 'clerc') !== false) {
-                    $spellsPrepared = $level + $wisdomModifier;
-                }
-                // Pour les druides, les sorts préparés = niveau + modificateur de Sagesse (comme le Clerc)
-                elseif (strpos($className, 'druide') !== false) {
-                    $spellsPrepared = $level + $wisdomModifier;
-                }
-                // Pour les mages, les sorts préparés = niveau + modificateur d'Intelligence
-                elseif (strpos($className, 'magicien') !== false) {
-                    $spellsPrepared = $level + $intelligenceModifier;
-                }
-                // Pour les ensorceleurs, les sorts préparés = nombre de sorts appris (ils sont automatiquement préparés)
-                elseif (strpos($className, 'ensorceleur') !== false) {
-                    $spellsPrepared = $spellsLearned; // Tous les sorts appris sont automatiquement préparés
-                }
-                // Pour les bardes, les sorts préparés = nombre de sorts appris (ils sont automatiquement préparés)
-                elseif (strpos($className, 'barde') !== false) {
-                    $spellsPrepared = $spellsLearned; // Tous les sorts appris sont automatiquement préparés
-                }
-            }
-            
-            // Ajouter les deux valeurs au tableau de retour
-            $capabilities['spells_learned'] = $spellsLearned;
-            $capabilities['spells_prepared'] = $spellsPrepared;
-        }
-        
-        return $capabilities;
-    }
 
     /**
-     * Obtenir les sorts disponibles pour une classe
+     * Obtenir les sorts de ce personnage
      * 
-     * @param int $classId ID de la classe
-     * @return array Tableau des sorts disponibles
-     */
-    public static function getSpellsForClass($classId)
-    {
-        $pdo = \Database::getInstance()->getPdo();
-        
-        // Récupérer le nom de la classe
-        $stmt = $pdo->prepare("SELECT name FROM classes WHERE id = ?");
-        $stmt->execute([$classId]);
-        $class = $stmt->fetch();
-        
-        if (!$class) {
-            return [];
-        }
-        
-        $className = $class['name'];
-        
-        // Rechercher les sorts qui contiennent le nom de la classe
-        $stmt = $pdo->prepare("
-            SELECT * FROM spells 
-            WHERE classes LIKE ?
-            ORDER BY level, name
-        ");
-        
-        $stmt->execute(["%$className%"]);
-        return $stmt->fetchAll();
-    }
-
-    /**
-     * Obtenir les sorts d'un personnage
-     * 
-     * @param int $characterId ID du personnage
      * @return array Tableau des sorts du personnage
      */
-    public static function getCharacterSpells($characterId)
+    public function getCharacterSpells()
     {
-        $pdo = \Database::getInstance()->getPdo();
-        $stmt = $pdo->prepare("
+        $stmt = $this->pdo->prepare("
             SELECT s.*, cs.prepared 
             FROM character_spells cs
             JOIN spells s ON cs.spell_id = s.id
             WHERE cs.character_id = ?
             ORDER BY s.level, s.name
         ");
-        $stmt->execute([$characterId]);
-        return $stmt->fetchAll();
+        $stmt->execute([$this->id]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Ajouter un sort à un personnage
-     * 
-     * @param int $characterId ID du personnage
-     * @param int $spellId ID du sort
-     * @param bool $prepared Si le sort est préparé
-     * @return bool Succès de l'opération
-     */
-    public static function addSpellToCharacter($characterId, $spellId, $prepared = false)
-    {
-        $pdo = \Database::getInstance()->getPdo();
-        try {
-            // Récupérer la classe du personnage pour déterminer si c'est un barde
-            $stmt = $pdo->prepare("
-                SELECT c.class_id, cl.name as class_name 
-                FROM characters c 
-                JOIN classes cl ON c.class_id = cl.id 
-                WHERE c.id = ?
-            ");
-            $stmt->execute([$characterId]);
-            $character = $stmt->fetch();
-            
-            // Pour les bardes, tous les sorts sont automatiquement préparés
-            if ($character && strpos(strtolower($character['class_name']), 'barde') !== false) {
-                $prepared = true;
-            }
-            
-            // S'assurer que $prepared est un entier (0 ou 1)
-            $prepared = $prepared ? 1 : 0;
-            
-            $stmt = $pdo->prepare("
-                INSERT INTO character_spells (character_id, spell_id, prepared) 
-                VALUES (?, ?, ?)
-                ON DUPLICATE KEY UPDATE prepared = ?
-            ");
-            $stmt->execute([$characterId, $spellId, $prepared, $prepared]);
-            return true;
-        } catch (\PDOException $e) {
-            error_log("Erreur addSpellToCharacter: " . $e->getMessage());
-            return false;
-        }
-    }
 
-    /**
-     * Retirer un sort d'un personnage
-     * 
-     * @param int $characterId ID du personnage
-     * @param int $spellId ID du sort
-     * @return bool Succès de l'opération
-     */
-    public static function removeSpellFromCharacter($characterId, $spellId)
-    {
-        $pdo = \Database::getInstance()->getPdo();
-        try {
-            $stmt = $pdo->prepare("
-                DELETE FROM character_spells 
-                WHERE character_id = ? AND spell_id = ?
-            ");
-            $stmt->execute([$characterId, $spellId]);
-            return true;
-        } catch (\PDOException $e) {
-            return false;
-        }
-    }
 
-    /**
-     * Mettre à jour l'état préparé d'un sort
-     * 
-     * @param int $characterId ID du personnage
-     * @param int $spellId ID du sort
-     * @param bool $prepared Si le sort est préparé
-     * @return bool Succès de l'opération
-     */
-    public static function updateSpellPrepared($characterId, $spellId, $prepared)
-    {
-        $pdo = \Database::getInstance()->getPdo();
-        try {
-            // Récupérer la classe du personnage pour déterminer si c'est un barde
-            $stmt = $pdo->prepare("
-                SELECT c.class_id, cl.name as class_name 
-                FROM characters c 
-                JOIN classes cl ON c.class_id = cl.id 
-                WHERE c.id = ?
-            ");
-            $stmt->execute([$characterId]);
-            $character = $stmt->fetch();
-            
-            // Pour les bardes, les sorts ne peuvent pas être dépréparés
-            if ($character && strpos(strtolower($character['class_name']), 'barde') !== false && !$prepared) {
-                return false; // Empêcher la dépréparation pour les bardes
-            }
-            
-            // S'assurer que $prepared est un entier (0 ou 1)
-            $prepared = $prepared ? 1 : 0;
-            
-            $stmt = $pdo->prepare("
-                UPDATE character_spells 
-                SET prepared = ? 
-                WHERE character_id = ? AND spell_id = ?
-            ");
-            $stmt->execute([$prepared, $characterId, $spellId]);
-            
-            // Vérifier si une ligne a été mise à jour
-            return $stmt->rowCount() > 0;
-        } catch (\PDOException $e) {
-            error_log("Erreur updateSpellPrepared: " . $e->getMessage());
-            return false;
-        }
-    }
 
-    /**
-     * Récupérer les utilisations d'emplacements de sorts (méthode statique)
-     * 
-     * @param int $characterId ID du personnage
-     * @return array Utilisation des emplacements de sorts
-     */
-    public static function getSpellSlotsUsageStatic($characterId)
-    {
-        $pdo = \Database::getInstance()->getPdo();
-        try {
-            $stmt = $pdo->prepare("
-                SELECT level_1_used, level_2_used, level_3_used, level_4_used, level_5_used,
-                       level_6_used, level_7_used, level_8_used, level_9_used
-                FROM spell_slots_usage 
-                WHERE character_id = ?
-            ");
-            $stmt->execute([$characterId]);
-            $usage = $stmt->fetch();
-            
-            if (!$usage) {
-                // Créer un enregistrement vide si il n'existe pas
-                $stmt = $pdo->prepare("
-                    INSERT INTO spell_slots_usage (character_id) VALUES (?)
-                ");
-                $stmt->execute([$characterId]);
-                
-                return [
-                    'level_1_used' => 0, 'level_2_used' => 0, 'level_3_used' => 0,
-                    'level_4_used' => 0, 'level_5_used' => 0, 'level_6_used' => 0,
-                    'level_7_used' => 0, 'level_8_used' => 0, 'level_9_used' => 0
-                ];
-            }
-            
-            return $usage;
-        } catch (\PDOException $e) {
-            error_log("Erreur getSpellSlotsUsageStatic: " . $e->getMessage());
-            return [
-                'level_1_used' => 0, 'level_2_used' => 0, 'level_3_used' => 0,
-                'level_4_used' => 0, 'level_5_used' => 0, 'level_6_used' => 0,
-                'level_7_used' => 0, 'level_8_used' => 0, 'level_9_used' => 0
-            ];
-        }
-    }
 
     /**
      * Calculer la classe d'armure d'un personnage (version étendue)
@@ -1514,62 +1262,19 @@ class Character
         }
     }
 
-    /**
-     * Récupérer le nombre maximum de rages pour une classe et un niveau
-     * 
-     * @param int $classId ID de la classe
-     * @param int $level Niveau du personnage
-     * @return int Nombre maximum de rages
-     */
-    public static function getMaxRages($classId, $level)
-    {
-        $pdo = \Database::getInstance()->getPdo();
-        
-        try {
-            $stmt = $pdo->prepare("SELECT rages FROM class_evolution WHERE class_id = ? AND level = ?");
-            $stmt->execute([$classId, $level]);
-            $evolution = $stmt->fetch();
-            return $evolution ? (int)$evolution['rages'] : 0;
-        } catch (\PDOException $e) {
-            error_log("Erreur lors de la récupération du nombre maximum de rages: " . $e->getMessage());
-            return 0;
-        }
-    }
+
 
 
 
     /**
-     * Récupérer les informations d'un poison par son ID CSV
+     * Récupérer tous les poisons de ce personnage depuis la table items
      * 
-     * @param int $csvId ID CSV du poison
-     * @return array|null Informations du poison ou null si non trouvé
-     */
-    public static function getPoisonInfo($csvId)
-    {
-        $pdo = \Database::getInstance()->getPdo();
-        
-        try {
-            $stmt = $pdo->prepare("SELECT nom, type, description, source FROM poisons WHERE csv_id = ?");
-            $stmt->execute([$csvId]);
-            return $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (\PDOException $e) {
-            error_log("Erreur lors de la récupération des informations du poison: " . $e->getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * Récupérer tous les poisons d'un personnage depuis la table items
-     * 
-     * @param int $characterId ID du personnage
      * @return array Liste des poisons du personnage
      */
-    public static function getCharacterPoisons($characterId)
+    public function getCharacterPoisons()
     {
-        $pdo = \Database::getInstance()->getPdo();
-        
         try {
-            $stmt = $pdo->prepare("
+            $stmt = $this->pdo->prepare("
                 SELECT i.*, p.nom as poison_nom, p.type as poison_type, p.description as poison_description, p.source as poison_source
                 FROM items i
                 JOIN poisons p ON i.poison_id = p.csv_id
@@ -1577,7 +1282,7 @@ class Character
                 AND i.poison_id IS NOT NULL
                 ORDER BY i.obtained_at DESC
             ");
-            $stmt->execute([$characterId]);
+            $stmt->execute([$this->id]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (\PDOException $e) {
             error_log("Erreur lors de la récupération des poisons du personnage: " . $e->getMessage());
@@ -1614,24 +1319,20 @@ class Character
     }
 
     /**
-     * Vérifier si l'équipement de départ a été choisi pour un personnage
+     * Vérifier si l'équipement de départ a été choisi pour ce personnage
      * 
-     * @param int $characterId ID du personnage
-     * @param PDO|null $pdo Instance PDO (optionnelle)
      * @return int Nombre d'objets d'équipement de départ
      */
-    public static function getStartingEquipmentCount($characterId, PDO $pdo = null)
+    public function getStartingEquipmentCount()
     {
-        $pdo = $pdo ?: getPDO();
-        
         try {
-            $stmt = $pdo->prepare("
+            $stmt = $this->pdo->prepare("
                 SELECT COUNT(*) as count 
                 FROM items 
                 WHERE owner_type = 'player' AND owner_id = ? 
                 AND obtained_from = 'Équipement de départ'
             ");
-            $stmt->execute([$characterId]);
+            $stmt->execute([$this->id]);
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
             return (int)$result['count'];
         } catch (PDOException $e) {
@@ -1641,24 +1342,6 @@ class Character
     }
 
 
-    /**
-     * Supprimer un objet du personnage
-     * 
-     * @param int $itemId ID de l'objet
-     * @return bool Succès de l'opération
-     */
-    public static function deleteItem($itemId)
-    {
-        $pdo = \Database::getInstance()->getPdo();
-        
-        try {
-            $stmt = $pdo->prepare("DELETE FROM items WHERE id = ?");
-            return $stmt->execute([$itemId]);
-        } catch (PDOException $e) {
-            error_log("Erreur lors de la suppression de l'objet: " . $e->getMessage());
-            return false;
-        }
-    }
 
     /**
      * Récupérer l'équipement d'un personnage
@@ -1693,103 +1376,6 @@ class Character
         }
     }
 
-    /**
-     * Récupérer les capacités d'un personnage
-     * 
-     * @param int $characterId ID du personnage
-     * @return array Liste des capacités
-     */
-    public static function getCharacterCapabilities($characterId)
-    {
-        $pdo = \Database::getInstance()->getPdo();
-        
-        // Debug temporaire
-        error_log("Debug Character::getCharacterCapabilities - Character ID: " . $characterId);
-        
-        try {
-            $stmt = $pdo->prepare("
-                SELECT cc.*, c.name, c.description 
-                FROM character_capabilities cc
-                LEFT JOIN capabilities c ON cc.capability_id = c.id
-                WHERE cc.character_id = ? 
-                ORDER BY c.name ASC
-            ");
-            $stmt->execute([$characterId]);
-            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            // Debug temporaire
-            error_log("Debug Character::getCharacterCapabilities - Result count: " . count($result));
-            if (empty($result)) {
-                // Vérifier si le personnage existe dans character_capabilities
-                $checkStmt = $pdo->prepare("SELECT COUNT(*) as count FROM character_capabilities WHERE character_id = ?");
-                $checkStmt->execute([$characterId]);
-                $checkResult = $checkStmt->fetch(PDO::FETCH_ASSOC);
-                error_log("Debug Character::getCharacterCapabilities - Character capabilities count in DB: " . $checkResult['count']);
-            }
-            
-            return $result;
-        } catch (PDOException $e) {
-            error_log("Erreur lors de la récupération des capacités: " . $e->getMessage());
-            return [];
-        }
-    }
-
-
-    /**
-     * Récupérer les détails d'un archétype par son ID
-     * 
-     * @param int $archetypeId ID de l'archétype
-     * @return array|null Détails de l'archétype
-     */
-    public static function getArchetypeById($archetypeId)
-    {
-        $pdo = \Database::getInstance()->getPdo();
-        
-        try {
-            $stmt = $pdo->prepare("
-                SELECT ca.*, c.name as class_name 
-                FROM class_archetypes ca 
-                JOIN classes c ON ca.class_id = c.id 
-                WHERE ca.id = ?
-            ");
-            $stmt->execute([$archetypeId]);
-            $archetype = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            if ($archetype) {
-                // Ajouter le type d'archetype selon la classe
-                $archetype['archetype_type'] = self::getArchetypeTypeStatic($archetype['class_name']);
-            }
-            
-            return $archetype;
-        } catch (PDOException $e) {
-            error_log("Erreur lors de la récupération de l'archétype: " . $e->getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * Obtenir le type d'archetype selon la classe (version statique)
-     * @param string $className Nom de la classe
-     * @return string Type d'archetype
-     */
-    private static function getArchetypeTypeStatic($className)
-    {
-        switch ($className) {
-            case 'Barbare': return 'Voie primitive';
-            case 'Paladin': return 'Serment sacré';
-            case 'Rôdeur': return 'Archétype de rôdeur';
-            case 'Roublard': return 'Archétype de roublard';
-            case 'Barde': return 'Collège bardique';
-            case 'Clerc': return 'Domaine divin';
-            case 'Druide': return 'Cercle druidique';
-            case 'Ensorceleur': return 'Origine magique';
-            case 'Guerrier': return 'Archétype martial';
-            case 'Magicien': return 'Tradition arcanique';
-            case 'Moine': return 'Tradition monastique';
-            case 'Occultiste': return 'Faveur de pacte';
-            default: return 'Spécialisation';
-        }
-    }
 
     /**
      * Getters de base pour les propriétés essentielles
@@ -1837,7 +1423,8 @@ class Character
             
             if ($archetype) {
                 // Ajouter le type d'archetype selon la classe
-                $archetype['archetype_type'] = $this->getArchetypeType($archetype['class_name']);
+                require_once 'Classe.php';
+                $archetype['archetype_type'] = Classe::getArchetypeType($archetype['class_name']);
             }
             
             return $archetype;
@@ -1848,29 +1435,6 @@ class Character
         }
     }
 
-    /**
-     * Obtenir le type d'archetype selon la classe
-     * @param string $className Nom de la classe
-     * @return string Type d'archetype
-     */
-    private function getArchetypeType($className)
-    {
-        switch ($className) {
-            case 'Barbare': return 'Voie primitive';
-            case 'Paladin': return 'Serment sacré';
-            case 'Rôdeur': return 'Archétype de rôdeur';
-            case 'Roublard': return 'Archétype de roublard';
-            case 'Barde': return 'Collège bardique';
-            case 'Clerc': return 'Domaine divin';
-            case 'Druide': return 'Cercle druidique';
-            case 'Ensorceleur': return 'Origine magique';
-            case 'Guerrier': return 'Archétype martial';
-            case 'Magicien': return 'Tradition arcanique';
-            case 'Moine': return 'Tradition monastique';
-            case 'Occultiste': return 'Faveur de pacte';
-            default: return 'Spécialisation';
-        }
-    }
 
     /**
      * Récupérer les personnages d'un utilisateur
@@ -1895,14 +1459,16 @@ class Character
 
 
     /**
-     * Mettre à jour la photo de profil d'un personnage
+     * Mettre à jour la photo de profil de ce personnage
      */
-    public static function updateProfilePhoto($characterId, $photoPath) {
-        $pdo = getPDO();
-        
+    public function updateProfilePhoto($photoPath) {
         try {
-            $stmt = $pdo->prepare("UPDATE characters SET profile_photo = ? WHERE id = ?");
-            return $stmt->execute([$photoPath, $characterId]);
+            $stmt = $this->pdo->prepare("UPDATE characters SET profile_photo = ? WHERE id = ?");
+            $success = $stmt->execute([$photoPath, $this->id]);
+            if ($success) {
+                $this->profile_photo = $photoPath;
+            }
+            return $success;
         } catch (PDOException $e) {
             error_log("Erreur lors de la mise à jour de la photo de profil: " . $e->getMessage());
             return false;
@@ -2054,156 +1620,6 @@ class Character
         ];
         
         return $classSkillChoices[$this->class_id] ?? [];
-    }
-
-    /**
-     * Génère les langues de base selon la classe et la race
-     */
-    public function generateBaseLanguages() {
-        $languages = [];
-        
-        // Langues de classe selon les règles D&D
-        $classLanguages = [
-            1 => [], // Barbare
-            2 => [], // Barde
-            3 => [], // Clerc
-            4 => [], // Druide
-            5 => [], // Guerrier
-            6 => [], // Moine
-            7 => [], // Magicien
-            8 => [], // Paladin
-            9 => [], // Rôdeur
-            10 => [], // Roublard
-            11 => [], // Sorcier
-            12 => [] // Ensorceleur
-        ];
-        
-        // Langues de race selon les règles D&D
-        $raceLanguages = [
-            1 => ['Commun'], // Humain
-            2 => ['Commun', 'Nain'], // Nain
-            3 => ['Commun', 'Elfique'], // Elfe
-            4 => ['Commun', 'Halfelin'], // Halfelin
-            5 => ['Commun', 'Draconique'], // Dragonné
-            6 => ['Commun', 'Elfique'], // Haut-elfe
-            7 => ['Commun', 'Orc'], // Demi-orc
-            8 => ['Commun', 'Infernal'], // Tieffelin
-            9 => ['Commun', 'Gnome'], // Gnome
-            10 => ['Commun', 'Elfique'] // Demi-elfe
-        ];
-        
-        // Ajouter les langues de classe
-        if (isset($classLanguages[$this->class_id])) {
-            $languages = array_merge($languages, $classLanguages[$this->class_id]);
-        }
-        
-        // Ajouter les langues de race
-        if (isset($raceLanguages[$this->race_id])) {
-            $languages = array_merge($languages, $raceLanguages[$this->race_id]);
-        }
-        
-        // Supprimer les doublons
-        return array_unique($languages);
-    }
-
-    /**
-     * Génère les langues obligatoires (fixes) selon la classe et la race
-     */
-    public function generateFixedLanguages() {
-        $fixedLanguages = [];
-        
-        // Langues obligatoires de classe selon les règles D&D
-        $classFixedLanguages = [
-            1 => [], // Barbare - pas de langues fixes
-            2 => [], // Barde - pas de langues fixes
-            3 => [], // Clerc - pas de langues fixes
-            4 => [], // Druide - pas de langues fixes
-            5 => [], // Guerrier - pas de langues fixes
-            6 => [], // Moine - pas de langues fixes
-            7 => [], // Magicien - pas de langues fixes
-            8 => [], // Paladin - pas de langues fixes
-            9 => [], // Rôdeur - pas de langues fixes
-            10 => [], // Roublard - pas de langues fixes
-            11 => [], // Sorcier - pas de langues fixes
-            12 => [] // Ensorceleur - pas de langues fixes
-        ];
-        
-        // Langues obligatoires de race selon les règles D&D
-        $raceFixedLanguages = [
-            1 => ['Commun'], // Humain - Commun obligatoire
-            2 => ['Commun', 'Nain'], // Nain - Commun et Nain obligatoires
-            3 => ['Commun', 'Elfique'], // Elfe - Commun et Elfique obligatoires
-            4 => ['Commun', 'Halfelin'], // Halfelin - Commun et Halfelin obligatoires
-            5 => ['Commun', 'Draconique'], // Dragonné - Commun et Draconique obligatoires
-            6 => ['Commun', 'Elfique'], // Haut-elfe - Commun et Elfique obligatoires
-            7 => ['Commun', 'Orc'], // Demi-orc - Commun et Orc obligatoires
-            8 => ['Commun', 'Infernal'], // Tieffelin - Commun et Infernal obligatoires
-            9 => ['Commun', 'Gnome'], // Gnome - Commun et Gnome obligatoires
-            10 => ['Commun', 'Elfique'] // Demi-elfe - Commun et Elfique obligatoires
-        ];
-        
-        // Ajouter les langues obligatoires de classe
-        if (isset($classFixedLanguages[$this->class_id])) {
-            $fixedLanguages = array_merge($fixedLanguages, $classFixedLanguages[$this->class_id]);
-        }
-        
-        // Ajouter les langues obligatoires de race
-        if (isset($raceFixedLanguages[$this->race_id])) {
-            $fixedLanguages = array_merge($fixedLanguages, $raceFixedLanguages[$this->race_id]);
-        }
-        
-        // Supprimer les doublons
-        return array_unique($fixedLanguages);
-    }
-
-    /**
-     * Génère les langues au choix selon la classe et la race
-     */
-    public function generateLanguageChoices() {
-        $languageChoices = [];
-        
-        // Langues au choix de classe selon les règles D&D
-        $classLanguageChoices = [
-            1 => [], // Barbare - pas de langues au choix
-            2 => [], // Barde - pas de langues au choix
-            3 => [], // Clerc - pas de langues au choix
-            4 => [], // Druide - pas de langues au choix
-            5 => [], // Guerrier - pas de langues au choix
-            6 => [], // Moine - pas de langues au choix
-            7 => [], // Magicien - pas de langues au choix
-            8 => [], // Paladin - pas de langues au choix
-            9 => [], // Rôdeur - pas de langues au choix
-            10 => [], // Roublard - pas de langues au choix
-            11 => [], // Sorcier - pas de langues au choix
-            12 => [] // Ensorceleur - pas de langues au choix
-        ];
-        
-        // Langues au choix de race selon les règles D&D
-        $raceLanguageChoices = [
-            1 => [], // Humain - pas de langues au choix
-            2 => [], // Nain - pas de langues au choix
-            3 => [], // Elfe - pas de langues au choix
-            4 => [], // Halfelin - pas de langues au choix
-            5 => [], // Dragonné - pas de langues au choix
-            6 => ['Une langue de votre choix'], // Haut-elfe - 1 langue au choix
-            7 => [], // Demi-orc - pas de langues au choix
-            8 => [], // Tieffelin - pas de langues au choix
-            9 => [], // Gnome - pas de langues au choix
-            10 => [] // Demi-elfe - pas de langues au choix
-        ];
-        
-        // Ajouter les langues au choix de classe
-        if (isset($classLanguageChoices[$this->class_id])) {
-            $languageChoices = array_merge($languageChoices, $classLanguageChoices[$this->class_id]);
-        }
-        
-        // Ajouter les langues au choix de race
-        if (isset($raceLanguageChoices[$this->race_id])) {
-            $languageChoices = array_merge($languageChoices, $raceLanguageChoices[$this->race_id]);
-        }
-        
-        // Supprimer les doublons
-        return array_unique($languageChoices);
     }
 
     /**
@@ -2530,7 +1946,9 @@ class Character
             return null;
         }
 
-        $maxRages = self::getMaxRages($this->class_id, $this->level);
+        require_once 'Classe.php';
+        $classObj = Classe::findById($this->class_id);
+        $maxRages = $classObj ? $classObj->getMaxRages($this->level) : 0;
         $rageUsage = $this->getRageUsage();
         $usedRages = is_array($rageUsage) ? $rageUsage['used'] : $rageUsage;
 
@@ -2575,6 +1993,6 @@ class Character
      */
     public function getMyCharacterPoisons()
     {
-        return self::getCharacterPoisons($this->id);
+        return $this->getCharacterPoisons();
     }
 }

@@ -1251,74 +1251,6 @@ class NPC
     }
     
     /**
-     * Obtenir les capacités de sorts d'une classe pour un NPC
-     * 
-     * @param int $classId ID de la classe
-     * @param int $level Niveau du NPC
-     * @param int $wisdomModifier Modificateur de sagesse
-     * @param int $intelligenceModifier Modificateur d'intelligence
-     * @return array|null Capacités de sorts
-     */
-    public static function getClassSpellCapabilities($classId, $level, $wisdomModifier = 0, $intelligenceModifier = 0)
-    {
-        $pdo = \Database::getInstance()->getPdo();
-        $stmt = $pdo->prepare("
-            SELECT cantrips_known, spells_known, 
-                   spell_slots_1st, spell_slots_2nd, spell_slots_3rd, 
-                   spell_slots_4th, spell_slots_5th, spell_slots_6th, 
-                   spell_slots_7th, spell_slots_8th, spell_slots_9th
-            FROM class_evolution 
-            WHERE class_id = ? AND level = ?
-        ");
-        $stmt->execute([$classId, $level]);
-        $capabilities = $stmt->fetch();
-        
-        if ($capabilities) {
-            // Récupérer le nom de la classe
-            $stmt = $pdo->prepare("SELECT name FROM classes WHERE id = ?");
-            $stmt->execute([$classId]);
-            $class = $stmt->fetch();
-            
-            // Calculer le modificateur de caractéristique d'incantation
-            $spellcastingAbility = 0;
-            switch ($classId) {
-                case 2: // Barde
-                case 7: // Magicien
-                case 10: // Occultiste
-                case 11: // Ensorceleur
-                    $spellcastingAbility = $intelligenceModifier;
-                    break;
-                case 3: // Clerc
-                case 4: // Druide
-                case 9: // Paladin
-                case 5: // Rôdeur
-                    $spellcastingAbility = $wisdomModifier;
-                    break;
-            }
-            
-            return [
-                'class_name' => $class['name'],
-                'cantrips_known' => $capabilities['cantrips_known'],
-                'spells_known' => $capabilities['spells_known'],
-                'spell_slots' => [
-                    1 => $capabilities['spell_slots_1st'],
-                    2 => $capabilities['spell_slots_2nd'],
-                    3 => $capabilities['spell_slots_3rd'],
-                    4 => $capabilities['spell_slots_4th'],
-                    5 => $capabilities['spell_slots_5th'],
-                    6 => $capabilities['spell_slots_6th'],
-                    7 => $capabilities['spell_slots_7th'],
-                    8 => $capabilities['spell_slots_8th'],
-                    9 => $capabilities['spell_slots_9th']
-                ],
-                'spellcasting_ability' => $spellcastingAbility
-            ];
-        }
-        
-        return null;
-    }
-    
-    /**
      * Obtenir l'utilisation des emplacements de sorts d'un NPC
      * 
      * @param int $npcId ID du NPC
@@ -1520,7 +1452,9 @@ class NPC
             $npcLevel = $npc['level'];
             
             // Calculer les capacités de sorts pour respecter les limites
-            $capabilities = self::getClassSpellCapabilities($npc['class_id'], $npcLevel, 0, 0);
+            require_once 'Classe.php';
+            $classObj = Classe::findById($npc['class_id']);
+            $capabilities = $classObj ? $classObj->getSpellCapabilities($npcLevel, 0, null, 0) : null;
             $maxCantrips = $capabilities['cantrips_known'] ?? 0;
             $maxPrepared = $capabilities['spells_known'] ?? 0;
             
@@ -2846,7 +2780,8 @@ class NPC
     public function getArchetype()
     {
         if ($this->archetype_id) {
-            return Character::getArchetypeById($this->archetype_id);
+            require_once 'Classe.php';
+            return Classe::getArchetypeById($this->archetype_id);
         }
         return null;
     }
@@ -3019,7 +2954,9 @@ class NPC
             return null;
         }
 
-        $maxRages = Character::getMaxRages($this->class_id, $this->level);
+        require_once 'Classe.php';
+        $classObj = Classe::findById($this->class_id);
+        $maxRages = $classObj ? $classObj->getMaxRages($this->level) : 0;
         $rageUsage = Character::getRageUsageStatic($this->id);
         $usedRages = is_array($rageUsage) ? $rageUsage['used'] : $rageUsage;
 

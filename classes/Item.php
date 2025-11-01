@@ -509,6 +509,24 @@ class Item
     }
 
     /**
+     * Récupérer les informations d'un poison par son ID CSV
+     * 
+     * @param int $csvId ID CSV du poison
+     * @return array|null Informations du poison ou null si non trouvé
+     */
+    public function getPoisonInfo($csvId)
+    {
+        try {
+            $stmt = $this->pdo->prepare("SELECT nom, type, description, source FROM poisons WHERE csv_id = ?");
+            $stmt->execute([$csvId]);
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (\PDOException $e) {
+            error_log("Erreur lors de la récupération des informations du poison: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
      * Obtenir le label du type d'objet en français
      * 
      * @return string Label du type

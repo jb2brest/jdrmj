@@ -85,7 +85,7 @@ if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
     $relativePath = 'uploads/character_photos/' . $filename;
     
     // Mettre à jour la base de données
-    $success = Character::updateProfilePhoto($characterId, $relativePath);
+    $success = $character->updateProfilePhoto($relativePath);
     
     if ($success) {
         echo json_encode([

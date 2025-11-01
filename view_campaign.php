@@ -569,7 +569,9 @@ if ($is_member && $user_role === 'player') {
         
         if ($is_accepted) {
             // Vérifier si l'équipement de départ a été choisi via la classe Character
-            $equipment_count = Character::getStartingEquipmentCount($char['id']);
+            require_once 'classes/init.php';
+            $characterObj = Character::findById($char['id']);
+            $equipment_count = $characterObj ? $characterObj->getStartingEquipmentCount() : 0;
             
             $characters_equipment_status[$char['id']] = [
                 'name' => $char['name'],
