@@ -20,7 +20,7 @@ $show_hero = true;
     <link href="css/custom-theme.css" rel="stylesheet">
 </head>
 <body>
-    <?php include 'includes/navbar.php'; ?>
+    <?php include_once 'includes/navbar.php'; ?>
 
     <!-- Message de confirmation de suppression de compte -->
     <?php if (isset($_GET['deleted']) && $_GET['deleted'] == '1'): ?>

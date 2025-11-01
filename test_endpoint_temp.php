@@ -25,5 +25,5 @@ function file_get_contents($filename) {
     return \file_get_contents($filename);
 }
 
-include "api/reset_rages.php";
+include_once 'api/reset_rages.php';
 ?>

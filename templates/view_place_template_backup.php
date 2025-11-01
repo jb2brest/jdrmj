@@ -73,7 +73,7 @@ extract($template_vars ?? []);
 <body>
 
 <?php if (!$isModal): ?>
-    <?php include 'includes/navbar.php'; ?>
+    <?php include_once 'includes/navbar.php'; ?>
 <?php endif; ?>
 
 <div class="container mt-4">
@@ -801,7 +801,7 @@ extract($template_vars ?? []);
 </div>
 
 <!-- Modals -->
-<?php include 'templates/view_place_modals.php'; ?>
+<?php include_once 'templates/view_place_modals.php'; ?>
 
 <!-- Scripts -->
 <?php if (!$isModal): ?>

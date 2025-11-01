@@ -328,7 +328,7 @@ $country_monsters = array_filter($all_monsters, function($monster) use ($pays) {
     </style>
 </head>
 <body>
-    <?php include 'includes/navbar.php'; ?>
+    <?php include_once 'includes/navbar.php'; ?>
 
 <div class="container mt-4">
     <?php if (!empty($success_message)) echo displayMessage($success_message, 'success'); ?>

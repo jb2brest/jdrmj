@@ -62,7 +62,7 @@ $page_title = "Supprimer mon compte";
     <link href="css/custom-theme.css" rel="stylesheet">
 </head>
 <body>
-    <?php include 'includes/navbar.php'; ?>
+    <?php include_once 'includes/navbar.php'; ?>
 
 <div class="container mt-5">
     <div class="row justify-content-center">

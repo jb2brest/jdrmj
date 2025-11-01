@@ -72,7 +72,7 @@ $types = $stmt->fetchAll(PDO::FETCH_COLUMN);
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-    <?php include 'includes/navbar.php'; ?>
+    <?php include_once 'includes/navbar.php'; ?>
 
     <div class="container mt-4">
         <div class="d-flex justify-content-between align-items-center mb-4">

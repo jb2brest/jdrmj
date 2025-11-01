@@ -341,5 +341,5 @@ $template_vars = [
 ];
 
 // Inclure le template HTML
-include 'templates/view_place_template.php';
+include_once 'templates/view_place_template.php';
 ?>

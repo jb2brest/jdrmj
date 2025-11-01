@@ -4,7 +4,7 @@
  */
 
 // Configuration de la base de données
-$config = include 'config/database.test.php';
+$config = include_once 'config/database.test.php';
 
 try {
     $pdo = new PDO(

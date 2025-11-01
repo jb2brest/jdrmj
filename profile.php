@@ -136,7 +136,7 @@ $current_page = "profile";
     </style>
 </head>
 <body>
-    <?php include 'includes/navbar.php'; ?>
+    <?php include_once 'includes/navbar.php'; ?>
 
     <!-- En-tête du profil -->
     <section class="profile-header">

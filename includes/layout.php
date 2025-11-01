@@ -25,7 +25,7 @@
 <body>
     <?php 
     // Inclure la navbar
-    include 'navbar.php'; 
+    include_once 'navbar.php'; 
     ?>
     
     <!-- Contenu principal -->

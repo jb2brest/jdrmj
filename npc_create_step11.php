@@ -141,7 +141,7 @@ $locationData = $sessionData['step_11'] ?? [];
     </style>
 </head>
 <body>
-    <?php include 'includes/navbar.php'; ?>
+    <?php include_once 'includes/navbar.php'; ?>
 
     <div class="container mt-4">
         <!-- Indicateur d'étape -->

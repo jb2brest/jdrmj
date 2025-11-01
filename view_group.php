@@ -193,7 +193,7 @@ try {
     <link href="css/style.css" rel="stylesheet">
 </head>
 <body>
-    <?php include 'includes/navbar.php'; ?>
+    <?php include_once 'includes/navbar.php'; ?>
     
     <div class="container mt-4">
         <div class="row">

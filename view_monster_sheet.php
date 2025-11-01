@@ -492,7 +492,7 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
     </style>
 </head>
 <body>
-    <?php include 'includes/navbar.php'; ?>
+    <?php include_once 'includes/navbar.php'; ?>
     
     <div class="monster-header">
         <div class="container">

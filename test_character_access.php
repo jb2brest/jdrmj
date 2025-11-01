@@ -46,7 +46,7 @@ try {
     
     // Capturer la sortie
     ob_start();
-    include 'templates/view_character_template.php';
+    include_once 'templates/view_character_template.php';
     $output = ob_get_clean();
     
     if (strlen($output) > 100) {
@@ -62,7 +62,7 @@ try {
     $_GET['id'] = $characterId;
     
     ob_start();
-    include 'view_character.php';
+    include_once 'view_character.php';
     $fullOutput = ob_get_clean();
     
     if (strlen($fullOutput) > 100) {

@@ -114,7 +114,7 @@ if ($selectedRaceId) {
     </style>
 </head>
 <body>
-    <?php include 'includes/navbar.php'; ?>
+    <?php include_once 'includes/navbar.php'; ?>
 
     <!-- Indicateur d'étape -->
     <div class="step-indicator">

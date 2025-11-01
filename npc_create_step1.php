@@ -104,7 +104,7 @@ error_log("DEBUG npc_create_step1.php - Selected Class ID: " . ($selectedClassId
     </style>
 </head>
 <body>
-    <?php include 'includes/navbar.php'; ?>
+    <?php include_once 'includes/navbar.php'; ?>
 
     <!-- Indicateur d'étape -->
     <div class="step-indicator">

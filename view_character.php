@@ -271,7 +271,7 @@ $error_message = null;
 </head>
 <body>
     <!-- Navigation -->
-    <?php include 'includes/navbar.php'; ?>
+    <?php include_once 'includes/navbar.php'; ?>
 
     <div class="container mt-4">
         
@@ -307,7 +307,7 @@ $error_message = null;
 
         <!-- Zone d'en-tête -->
         <div class="zone-d-entete">
-            <?php include 'templates/p_entete.php'; ?>
+            <?php include_once 'templates/p_entete.php'; ?>
             </div>
 
         <!-- Zone des onglets -->
@@ -371,7 +371,7 @@ $error_message = null;
 
 <!-- Modals existants -->
     <?php if ($canModifyHP): ?>
-        <?php include 'templates/modal_edit_hp.php'; ?>
+        <?php include_once 'templates/modal_edit_hp.php'; ?>
     <?php endif; ?>
 
     <!-- Modal pour Gestion des Points d'Expérience -->
@@ -381,7 +381,7 @@ $error_message = null;
         $target_id = $character->id;
         $target_type = 'PJ';
         ?>
-        <?php include 'templates/modal_edit_xp.php'; ?>
+        <?php include_once 'templates/modal_edit_xp.php'; ?>
     <?php endif; ?>
 
     <!-- Modal pour Long Repos -->
@@ -392,15 +392,15 @@ $error_message = null;
         $target_type = 'PJ';
         $name = $character->name;
         ?>
-        <?php include 'templates/modal_long_rest.php'; ?>
+        <?php include_once 'templates/modal_long_rest.php'; ?>
     <?php endif; ?>
 
     <!-- Modal pour Transfert d'Objets -->
-    <?php include 'templates/modal_transfert_object.php'; ?>
+    <?php include_once 'templates/modal_transfert_object.php'; ?>
 
     <!-- Modal pour Upload de Photo de Profil -->
     <?php if ($canModifyHP): ?>
-        <?php include 'templates/modal_change_profil_photo.php'; ?>
+        <?php include_once 'templates/modal_change_profil_photo.php'; ?>
     <?php endif; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

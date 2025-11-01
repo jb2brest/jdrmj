@@ -147,7 +147,7 @@ extract($template_vars ?? []);
 <body data-place-id="<?php echo $place['id']; ?>">
 
 <?php if (!$isModal): ?>
-    <?php include 'includes/navbar.php'; ?>
+    <?php include_once 'includes/navbar.php'; ?>
 <?php endif; ?>
 
 <div class="container-fluid">
@@ -321,7 +321,7 @@ extract($template_vars ?? []);
 <script src="js/jdrmj.js"></script>
 
 <?php if (!$isModal): ?>
-    <?php include 'templates/view_place_modals.php'; ?>
+    <?php include_once 'templates/view_place_modals.php'; ?>
     
     <script>
         // Variables JavaScript pour le template

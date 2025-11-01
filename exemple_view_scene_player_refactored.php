@@ -53,7 +53,7 @@ if ($requested_campaign_id) {
         if ($membership) {
             // Le joueur est membre mais pas assigné à un lieu, afficher un message spécifique
             $page_title = "Aucun lieu assigné dans cette campagne";
-            include 'includes/layout.php';
+            include_once 'includes/layout.php';
             ?>
             <div class="container mt-4">
                 <div class="row justify-content-center">
@@ -116,7 +116,7 @@ if ($requested_campaign_id) {
         if ($membership) {
             // Le joueur est membre mais pas assigné à un lieu
             $page_title = "Aucun lieu assigné";
-            include 'includes/layout.php';
+            include_once 'includes/layout.php';
             ?>
             <div class="container mt-4">
                 <div class="row justify-content-center">
@@ -198,7 +198,7 @@ $npcs = Database::fetchAll("
 ", [$place_id]);
 
 // Afficher la page
-include 'includes/layout.php';
+include_once 'includes/layout.php';
 ?>
 
 <div class="container mt-4">

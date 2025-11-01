@@ -149,5 +149,5 @@ foreach ($ptNpcDrafts as $ptc) {
 $template_vars['pt_npc_drafts'] = $ptNpcDraftCards;
 
 // Inclure le template
-include 'templates/manage_npcs_template.php';
+include_once 'templates/manage_npcs_template.php';
 ?>

@@ -21,7 +21,7 @@ switch ($localization['status']) {
     case 'member_no_place':
         // Le joueur est membre mais pas assigné à un lieu dans cette campagne
         $page_title = "Aucun lieu assigné dans cette campagne";
-        include 'includes/layout.php';
+        include_once 'includes/layout.php';
         ?>
         <div class="container mt-4">
             <div class="row justify-content-center">
@@ -53,7 +53,7 @@ switch ($localization['status']) {
     case 'member_no_place_any':
         // Le joueur est membre d'une campagne mais pas assigné à un lieu
         $page_title = "Aucun lieu assigné";
-        include 'includes/layout.php';
+        include_once 'includes/layout.php';
         ?>
         <div class="container mt-4">
             <div class="row justify-content-center">
@@ -80,7 +80,7 @@ switch ($localization['status']) {
     case 'no_campaigns':
         // Le joueur n'est membre d'aucune campagne
         $page_title = "Aucune campagne";
-        include 'includes/layout.php';
+        include_once 'includes/layout.php';
         ?>
         <div class="container mt-4">
             <div class="row justify-content-center">
@@ -108,7 +108,7 @@ switch ($localization['status']) {
     default:
         // Erreur lors de la localisation
         $page_title = "Erreur de localisation";
-        include 'includes/layout.php';
+        include_once 'includes/layout.php';
         ?>
         <div class="container mt-4">
             <div class="row justify-content-center">
@@ -176,7 +176,7 @@ foreach ($placeObjects as $object) {
     ];
 }
 
-include 'includes/layout.php';
+include_once 'includes/layout.php';
 ?>
 
 <style>

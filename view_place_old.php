@@ -1637,7 +1637,7 @@ foreach ($allScenes as $s) {
         </style>
 </head>
 <body>
-    <?php include 'includes/navbar.php'; ?>
+    <?php include_once 'includes/navbar.php'; ?>
 <?php endif; ?>
 
 <div class="container mt-4">

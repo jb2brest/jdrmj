@@ -94,7 +94,7 @@ $current_page = "characters";
     </style>
 </head>
 <body>
-    <?php include 'includes/navbar.php'; ?>
+    <?php include_once 'includes/navbar.php'; ?>
 
     <div class="container mt-4">
         <!-- En-tête -->

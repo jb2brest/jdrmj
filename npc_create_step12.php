@@ -302,7 +302,7 @@ if (isset($locationData['place_id']) && $locationData['place_id']) {
     </style>
 </head>
 <body>
-    <?php include 'includes/navbar.php'; ?>
+    <?php include_once 'includes/navbar.php'; ?>
 
     <div class="container mt-4">
         <!-- Indicateur d'étape -->

@@ -68,7 +68,7 @@ if (isset($_GET['success']) && !empty($_GET['success'])) {
     <link href="css/style.css" rel="stylesheet">
 </head>
 <body>
-    <?php include 'includes/navbar.php'; ?>
+    <?php include_once 'includes/navbar.php'; ?>
 
     <!-- Indicateur d'étape -->
     <div class="step-indicator">

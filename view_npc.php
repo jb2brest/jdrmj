@@ -492,7 +492,7 @@ $target_type = 'PNJ';
 </head>
 <body>
     <!-- Navigation -->
-    <?php include 'includes/navbar.php'; ?>
+    <?php include_once 'includes/navbar.php'; ?>
 
     <div class="container mt-4">
         
@@ -528,7 +528,7 @@ $target_type = 'PNJ';
 
         <!-- Zone d'en-tête -->
         <div class="zone-d-entete">
-            <?php include 'templates/p_entete.php'; ?>
+            <?php include_once 'templates/p_entete.php'; ?>
             </div>
 
         <!-- Zone des onglets -->
@@ -585,21 +585,21 @@ $target_type = 'PNJ';
                     $spellcastingClasses = [2, 3, 4, 7, 9, 10, 11]; // Barde, Clerc, Druide, Magicien, Occultiste, Paladin, Rôdeur
                     $canCastSpells = in_array($npc->class_id, $spellcastingClasses);
                     ?>
-                    <?php include 'templates/p_combat_module.php'; ?>
+                    <?php include_once 'templates/p_combat_module.php'; ?>
 
-                    <?php include 'templates/p_characteristics_module.php'; ?>
+                    <?php include_once 'templates/p_characteristics_module.php'; ?>
 
-                    <?php include 'templates/p_capabilities_module.php'; ?>
+                    <?php include_once 'templates/p_capabilities_module.php'; ?>
 
-                    <?php include 'templates/p_skills_module.php'; ?>
+                    <?php include_once 'templates/p_skills_module.php'; ?>
 
-                    <?php include 'templates/p_languages_module.php'; ?>
+                    <?php include_once 'templates/p_languages_module.php'; ?>
 
-                    <?php include 'templates/p_treasury_module.php'; ?>
+                    <?php include_once 'templates/p_treasury_module.php'; ?>
 
-                    <?php include 'templates/p_equipment_module.php'; ?>
+                    <?php include_once 'templates/p_equipment_module.php'; ?>
 
-                    <?php include 'templates/p_personal_info_module.php'; ?>
+                    <?php include_once 'templates/p_personal_info_module.php'; ?>
                 </div>
             </div>
                             </div>
@@ -613,7 +613,7 @@ $target_type = 'PNJ';
         $npc_id = $npc->id;
         $target_type = 'PNJ';
         ?>
-        <?php include 'templates/modal_edit_hp.php'; ?>
+        <?php include_once 'templates/modal_edit_hp.php'; ?>
     <?php endif; ?>
 
     <!-- Modal pour Gestion des Points d'Expérience -->
@@ -623,7 +623,7 @@ $target_type = 'PNJ';
         $target_id = $npc->id;
         $target_type = 'PNJ';
         ?>
-        <?php include 'templates/modal_edit_xp.php'; ?>
+        <?php include_once 'templates/modal_edit_xp.php'; ?>
     <?php endif; ?>
 
     <!-- Modal pour Long Repos -->
@@ -634,15 +634,15 @@ $target_type = 'PNJ';
         $target_type = 'PNJ';
         $name = $npc->name;
         ?>
-        <?php include 'templates/modal_long_rest.php'; ?>
+        <?php include_once 'templates/modal_long_rest.php'; ?>
     <?php endif; ?>
 
     <!-- Modal pour Transfert d'Objets -->
-    <?php include 'templates/modal_transfert_object.php'; ?>
+    <?php include_once 'templates/modal_transfert_object.php'; ?>
 
     <!-- Modal pour Upload de Photo de Profil -->
     <?php if ($canModifyHP): ?>
-        <?php include 'templates/modal_change_profil_photo.php'; ?>
+        <?php include_once 'templates/modal_change_profil_photo.php'; ?>
     <?php endif; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

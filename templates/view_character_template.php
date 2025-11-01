@@ -204,7 +204,7 @@
 </head>
 <body>
     <!-- Navigation -->
-    <?php include 'includes/navbar.php'; ?>
+    <?php include_once 'includes/navbar.php'; ?>
 
     <div class="container mt-4">
         <!-- Messages d'alerte -->
