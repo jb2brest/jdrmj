@@ -53,7 +53,7 @@ extract($template_vars ?? []);
     .object-token .fa-magic {
         color: #0dcaf0 !important;
     }
-    .object-token .fa-sword {
+    .object-token .fa-crosshairs {
         color: #dc3545 !important;
     }
     .object-token .fa-shield-alt {
@@ -369,8 +369,11 @@ extract($template_vars ?? []);
                                         </div>
                                     <?php endforeach; ?>
                                     
-                                    <!-- Pions des objets -->
-                                    <?php foreach ($placeObjects as $object): ?>
+                                    <!-- Pions des objets (seulement les objets visibles) -->
+                                    <?php 
+                                    // Utiliser $visibleObjectsForMap si disponible, sinon filtrer $placeObjects par is_visible
+                                    $objectsForMap = isset($visibleObjectsForMap) ? $visibleObjectsForMap : array_filter($placeObjects, function($obj) { return $obj['is_visible'] == 1; });
+                                    foreach ($objectsForMap as $object): ?>
                                         <?php 
                                         $tokenKey = 'object_' . $object['id'];
                                         $position = $tokenPositions[$tokenKey] ?? ['x' => 0, 'y' => 0, 'is_on_map' => false];
@@ -384,7 +387,7 @@ extract($template_vars ?? []);
                                             $icon_color = '#8B4513';
                                         } else {
                                             switch ($object['object_type']) {
-                                                case 'potion':
+                                                case 'poison':
                                                     $icon_class = 'fa-flask';
                                                     $icon_color = '#dc3545';
                                                     break;
@@ -393,18 +396,19 @@ extract($template_vars ?? []);
                                                     $icon_color = '#0dcaf0';
                                                     break;
                                                 case 'weapon':
-                                                    $icon_class = 'fa-sword';
+                                                    $icon_class = 'fa-crosshairs';
                                                     $icon_color = '#dc3545';
                                                     break;
                                                 case 'armor':
                                                     $icon_class = 'fa-shield-alt';
                                                     $icon_color = '#198754';
                                                     break;
-                                                case 'scroll':
+                                                case 'letter':
                                                     $icon_class = 'fa-envelope';
                                                     $icon_color = '#0d6efd';
                                                     break;
-                                                case 'treasure':
+                                                case 'coins':
+                                                case 'bourse':
                                                     $icon_class = 'fa-coins';
                                                     $icon_color = '#ffc107';
                                                     break;

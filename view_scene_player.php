@@ -287,7 +287,7 @@ include_once 'includes/layout.php';
 .object-token .fa-magic {
     color: #0dcaf0 !important;
 }
-.object-token .fa-sword {
+.object-token .fa-crosshairs {
     color: #dc3545 !important;
 }
 .object-token .fa-shield-alt {
@@ -537,7 +537,7 @@ include_once 'includes/layout.php';
                                                     $icon_color = '#0dcaf0';
                                                     break;
                                                 case 'weapon':
-                                                    $icon_class = 'fa-sword';
+                                                    $icon_class = 'fa-crosshairs';
                                                     $icon_color = '#dc3545';
                                                     break;
                                                 case 'armor':
@@ -1378,7 +1378,7 @@ function updateObjectTokenIcon(token, objectType, isIdentified) {
                 icon.style.color = '#0dcaf0';
                 break;
             case 'weapon':
-                icon.className = 'fas fa-sword';
+                icon.className = 'fas fa-crosshairs';
                 icon.style.color = '#dc3545';
                 break;
             case 'armor':

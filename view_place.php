@@ -281,10 +281,12 @@ $placePlayers = $lieu->getAllPlayersDetailed();
 $placeNpcs = $lieu->getAllNpcsDetailed();
 $placeMonsters = $lieu->getAllMonsters();
 $placeObjects = $lieu->getUnassignedObjects();
+// Récupérer uniquement les objets visibles pour l'affichage sur la carte
+$visibleObjectsForMap = $lieu->getVisibleObjects();
 $tokenPositions = $lieu->getTokenPositions();
 
 // Récupérer les positions des objets depuis place_tokens (système unifié)
-foreach ($placeObjects as $object) {
+foreach ($visibleObjectsForMap as $object) {
     $tokenKey = 'object_' . $object['id'];
     // Les positions des objets sont maintenant gérées par place_tokens
     // Elles sont déjà incluses dans $tokenPositions via $lieu->getTokenPositions()
@@ -337,7 +339,8 @@ $template_vars = [
     'placeNpcs' => $placeNpcs,
     'placeMonsters' => $placeMonsters,
     'placeAccesses' => $placeAccesses,
-    'tokenPositions' => $tokenPositions
+    'tokenPositions' => $tokenPositions,
+    'visibleObjectsForMap' => $visibleObjectsForMap  // Objets visibles pour les pions sur la carte
 ];
 
 // Inclure le template HTML
