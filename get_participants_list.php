@@ -24,25 +24,29 @@ $place_id = (int)$_GET['place_id'];
 $user_id = $_SESSION['user_id'];
 
 try {
-    // Vérifier que l'utilisateur est membre de la campagne
-    $stmt = $pdo->prepare("
-        SELECT c.id as campaign_id 
-        FROM places p 
-        JOIN campaigns c ON p.campaign_id = c.id 
-        WHERE p.id = ?
-    ");
-    $stmt->execute([$place_id]);
-    $place = $stmt->fetch();
+    require_once 'classes/init.php';
     
-    if (!$place) {
+    // Vérifier que le lieu existe et récupérer la campagne associée
+    $lieu = Lieu::findById($place_id);
+    if (!$lieu) {
         http_response_code(404);
         echo json_encode(['success' => false, 'error' => 'Lieu introuvable']);
         exit;
     }
     
+    // Récupérer les campagnes associées au lieu
+    $campaigns = $lieu->getCampaigns();
+    if (empty($campaigns)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => 'Lieu non associé à une campagne']);
+        exit;
+    }
+    
+    $campaign_id = $campaigns[0]['id'];
+    
     // Vérifier l'appartenance à la campagne
     $stmt = $pdo->prepare("SELECT 1 FROM campaign_members WHERE campaign_id = ? AND user_id = ?");
-    $stmt->execute([$place['campaign_id'], $user_id]);
+    $stmt->execute([$campaign_id, $user_id]);
     if (!$stmt->fetch()) {
         http_response_code(403);
         echo json_encode(['success' => false, 'error' => 'Accès non autorisé']);

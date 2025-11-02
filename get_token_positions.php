@@ -136,33 +136,81 @@ try {
         ];
     }
     
-    // Récupérer les positions et informations des objets (seulement ceux non attribués)
+    // Récupérer les positions des objets depuis place_tokens (système unifié)
     $stmt = $pdo->prepare("
-        SELECT id, display_name, object_type, is_visible, is_identified, position_x, position_y, is_on_map, updated_at
-        FROM items 
-        WHERE place_id = ? AND (owner_type = 'place' OR owner_type IS NULL)
-        ORDER BY updated_at DESC
+        SELECT pt.entity_id, pt.position_x, pt.position_y, pt.is_on_map, pt.updated_at,
+               i.id, i.display_name, i.object_type, i.is_visible, i.is_identified
+        FROM place_tokens pt
+        INNER JOIN items i ON pt.entity_id = i.id
+        WHERE pt.place_id = ? AND pt.token_type = 'object'
+          AND (i.owner_type = 'place' OR i.owner_type IS NULL)
+        ORDER BY pt.updated_at DESC
     ");
     $stmt->execute([$place_id]);
     
-    $objects = [];
+    $objects_from_tokens = [];
     while ($row = $stmt->fetch()) {
-        $tokenKey = 'object_' . $row['id'];
+        $tokenKey = 'object_' . $row['entity_id'];
         
-        // Ajouter la position à la liste des positions
-        $positions[$tokenKey] = [
-            'x' => (int)$row['position_x'],
-            'y' => (int)$row['position_y'],
-            'is_on_map' => (bool)$row['is_on_map']
-        ];
+        // Les positions sont déjà dans $positions depuis la requête principale place_tokens
+        // Mais on les met à jour ici pour s'assurer qu'elles sont bien présentes
+        if (!isset($positions[$tokenKey])) {
+            $positions[$tokenKey] = [
+                'x' => (int)$row['position_x'],
+                'y' => (int)$row['position_y'],
+                'is_on_map' => (bool)$row['is_on_map']
+            ];
+        }
         
         // Ajouter les informations de l'objet
-        $objects[$tokenKey] = [
+        $objects_from_tokens[$tokenKey] = [
             'name' => $row['display_name'],
             'object_type' => $row['object_type'],
             'is_visible' => (bool)$row['is_visible'],
             'is_identified' => (bool)$row['is_identified']
         ];
+        
+        // Garder la timestamp la plus récente
+        if ($latest_timestamp === null || $row['updated_at'] > $latest_timestamp) {
+            $latest_timestamp = $row['updated_at'];
+        }
+    }
+    
+    // Récupérer aussi les objets visibles qui n'ont pas encore d'entrée dans place_tokens
+    $stmt = $pdo->prepare("
+        SELECT id, display_name, object_type, is_visible, is_identified, position_x, position_y, is_on_map, updated_at
+        FROM items 
+        WHERE place_id = ? AND (owner_type = 'place' OR owner_type IS NULL) AND is_visible = 1
+          AND id NOT IN (
+              SELECT entity_id FROM place_tokens 
+              WHERE place_id = ? AND token_type = 'object'
+          )
+        ORDER BY updated_at DESC
+    ");
+    $stmt->execute([$place_id, $place_id]);
+    
+    $objects = $objects_from_tokens;
+    while ($row = $stmt->fetch()) {
+        $tokenKey = 'object_' . $row['id'];
+        
+        // Ne pas écraser si l'objet a déjà une position dans place_tokens
+        if (!isset($positions[$tokenKey])) {
+            $positions[$tokenKey] = [
+                'x' => (int)$row['position_x'],
+                'y' => (int)$row['position_y'],
+                'is_on_map' => (bool)$row['is_on_map']
+            ];
+        }
+        
+        // Ajouter les informations de l'objet si pas déjà présent
+        if (!isset($objects[$tokenKey])) {
+            $objects[$tokenKey] = [
+                'name' => $row['display_name'],
+                'object_type' => $row['object_type'],
+                'is_visible' => (bool)$row['is_visible'],
+                'is_identified' => (bool)$row['is_identified']
+            ];
+        }
         
         // Garder la timestamp la plus récente
         if ($latest_timestamp === null || $row['updated_at'] > $latest_timestamp) {

@@ -12,50 +12,9 @@ Répertoire cible : /domains/robindesbriques.fr/public_html/jdrmj
 ssh u839591438@robindesbriques.fr
 ./publish.sh "0.0.50" "Début Races"
 
-Dans view_scene.php,
-Dans view_scene_player.php
-Dans view_monster_sheet.php
 
-Le MJ dispose d'un bouton "Mondes" dans la navbar.
-Ce bouton ouvre une fenêtre de gestion des mondes. 
-Dans la fenêtre de gestion des mondes, Le MJ peut voir les mondes existants, créer, modifier et supprimer un monde. 
-Un monde possède un nom, une carte, des pays.
-
-Un pays est composé de région.
-Une région est composée de lieu.
-Le MJ doit pouvoir ajouter crée
-
-Dans view_campaign.php, à coté de la zone "Membres", ajoute une zone Monde où l'on peut déclarer dans quel monde se passe la campagne. 
-
-
-Dans view_campaign.php, remplace les boutons " Nouveau pays, nouvelle région, nouveau lieu" par un bouton "associer un lieu". 
-CE bouton permet de rechercher un lieu dans le monde où se déroule la campagne et de l'ajouter à la liste des lieux de la campagne.
-
-Il faut ajouter une catérorie PNJ. 
-Un PNJ est un Personnage crée normalement. Puis le PJ le transforme en PNJ.
-
-Dans view_region.php, il faut afficher la liste des PNJs et la liste des monstres vivant dans ce monde en dessous de la Zone "Lieux de cette région".
-La liste est triable et filtrable.
-Les critères suivants sont affichés : type (PNJ ou monstre), Nom, Classe, Race, Lieu où il se trouve. 
-
-Dans view_place.php, le MJ peux stocker des objets.
-Les objets ont une place (description en mode texte) et une description. 
-Un objet peut être, un poison, une fiole, des pièces, une lettre, une pièce d'équipement de personnage. 
-L'objet peut être visible des joueurs, dans ce cas il est réprésenté par un pion doré sur la carte, ou invisible. 
-
-Supprime le choix fiole, pour les objets.
-Remplace "équipement" par les deux choix "Arme" et "Armure"
-Ajoute le choix "Objet magique"
-Si l'objet sélectionné est "poison", il faut proposer au MJ la liste des poisons pour qu'il le sélectionne. (déjà en base de donnée)
-Si l'objet sélectionné est "Objet magique", il faut proposer au MJ la liste des objets magiques pour qu'il le sélectionne (déjà en base de donnée)
-Si l'objet sélectionné est "Arme", il faut proposer au MJ la liste des Armes
-Si l'objet sélectionné est "Armure", il faut proposer au MJ la liste des Armure 
-Si l'objet sélectionné est "lettre", il faut proposer au MJ d'écrire le contenu de la lettre et de définir si la lettre est cachetée ou pas.
-
-Si l'objet sélectionné est "pièces", il faut demander la quantité de pièces d'or, d'argent et de cuivre au MJ.
-Un objet peut être identifié ou pas. 
-
-
+Dans view_place.php et  
+dans view_scene_player.php
 Si un objet est visible, mais n'est pas identifié alors un pion carré et doré contenant un "?" est disposé sur le plan du lieu.
 Si un objet "poison" est visible et identifié alors un pion carré et doré contenant un symbole de fiole est disposé sur le plan du lieu.  
 Si un objet "Objet magique" est visible et identifié alors un pion carré et doré contenant un symbole de baguette magique est disposé sur le plan du lieu.  
@@ -63,6 +22,16 @@ Si un objet "Arme" est visible et identifié alors un pion carré et doré conte
 Si un objet "Armure" est visible et identifié alors un pion carré et doré contenant un symbole d'armure est disposé sur le plan du lieu.  
 Si un objet "lettre" est visible et identifié alors un pion carré et doré contenant un symbole de lettre est disposé sur le plan du lieu.  
 le MJ peut déplacer le pion.
+
+
+On va ajouter une fonctionnalitée "Informations" et "Themes"
+Une information contient un titre, une description et un niveau de confidentialité "Archi connu, connu, connu du milieu, confidentiel, secret"
+Un sujet à un titre, une description et est composé d'une liste d'informations
+Une information peut être connue d'un joueur ou d'un groupe. 
+Si elle est connue d'un groupe, il faut indiquer les niveaux de ce groupe qui connaissent l'information.
+Un sujet peut être connue d'un joueur ou d'un groupe. 
+Si elle est connue d'un groupe, il faut indiquer les niveaux de ce groupe qui connaissent le sujet.
+
 
 La position des pions objets n'est pas sauvegarder lorsque l'on recharge la page. 
 Les pions objets qui devraient être visible des joueurs, ne le sont pas dans view_scene_player.php

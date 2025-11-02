@@ -166,15 +166,10 @@ $placeMonsters = $lieu ? $lieu->getVisibleMonsters() : [];
 // Récupérer les objets présents dans le lieu (seulement ceux visibles et non attribués)
 $placeObjects = $lieu ? $lieu->getVisibleObjects() : [];
 
-// Récupérer les positions des objets depuis items
-foreach ($placeObjects as $object) {
-    $tokenKey = 'object_' . $object['id'];
-    $tokenPositions[$tokenKey] = [
-        'x' => (int)$object['position_x'],
-        'y' => (int)$object['position_y'],
-        'is_on_map' => (bool)$object['is_on_map']
-    ];
-}
+// Les positions des objets sont maintenant gérées par place_tokens
+// Elles sont déjà incluses dans $tokenPositions via $lieu->getTokenPositions()
+// Ne pas écraser les positions de place_tokens par celles de items
+// Les objets sans position dans place_tokens resteront dans la sidebar
 
 include_once 'includes/layout.php';
 ?>
@@ -416,8 +411,8 @@ include_once 'includes/layout.php';
                     <div class="card-body">
                         <div class="position-relative">
                             <!-- Zone du plan avec pions -->
-                            <div id="mapContainer" class="position-relative" style="display: inline-block;">
-                                <img id="mapImage" src="<?php echo htmlspecialchars($place['map_url']); ?>" class="img-fluid rounded" alt="Plan du lieu" style="max-height: 500px; cursor: crosshair;">
+                            <div id="mapContainer" class="position-relative" style="display: inline-block; position: relative;">
+                                <img id="mapImage" src="<?php echo htmlspecialchars($place['map_url']); ?>" class="img-fluid rounded" alt="Plan du lieu" style="max-height: 500px; cursor: crosshair; display: block;">
                                 
                                 <!-- Zone des pions sur le côté -->
                                 <div id="tokenSidebar" class="position-absolute" style="right: -120px; top: 0; width: 100px; height: 500px; border: 2px dashed #ccc; border-radius: 8px; background: rgba(248, 249, 250, 0.8); padding: 10px; overflow-y: auto;">
@@ -853,52 +848,114 @@ include_once 'includes/layout.php';
 </div>
 
 <script>
+// Variables globales pour le drag & drop
+let draggedToken = null;
+let isDragging = false;
+
+/**
+ * Initialisation du système de tokens (basé sur jdrmj.js)
+ */
 function initializeTokenSystem() {
-    const mapImage = document.getElementById('mapImage');
-    const tokens = document.querySelectorAll('.token');
+    console.log('🎯 Initialisation du système de tokens');
     
-    if (tokens.length === 0) return;
+    const tokens = document.querySelectorAll('.token');
+    const mapImage = document.getElementById('mapImage');
+    
+    if (!mapImage || tokens.length === 0) {
+        console.log('⚠️ Aucune carte ou token trouvé');
+        return;
+    }
+
+    // Initialiser les positions des pions
+    console.log('Initialisation du système de pions...');
+    console.log('Nombre de pions trouvés:', tokens.length);
     
     tokens.forEach(token => {
         const isOnMap = token.dataset.isOnMap === 'true';
+        const x = parseInt(token.dataset.positionX) || 0;
+        const y = parseInt(token.dataset.positionY) || 0;
         
-        if (isOnMap && mapImage) {
-            const x = parseInt(token.dataset.positionX);
-            const y = parseInt(token.dataset.positionY);
+        console.log(`Pion ${token.dataset.tokenType}_${token.dataset.entityId}: isOnMap=${isOnMap}, x=${x}, y=${y}`);
+        
+        // Positionner sur la carte si on a des positions valides
+        if (x > 0 && y > 0) {
+            console.log(`📍 Positionnement sur la carte: ${token.dataset.tokenType}_${token.dataset.entityId} à ${x}%, ${y}%`);
             positionTokenOnMap(token, x, y);
+        } else {
+            console.log(`📦 Pion ${token.dataset.tokenType}_${token.dataset.entityId} reste dans la sidebar (isOnMap=${isOnMap}, x=${x}, y=${y})`);
         }
     });
 }
 
-function positionTokenOnMap(token, x, y) {
-    // Vérifier que la carte existe
+/**
+ * Positionner un token sur la carte
+ */
+function positionTokenOnMap(token, x = null, y = null) {
     const mapContainer = document.getElementById('mapContainer');
-    if (!mapContainer) return;
+    const mapImage = document.getElementById('mapImage');
     
-    // Retirer le pion de son conteneur actuel
-    token.remove();
+    if (!mapContainer || !mapImage) {
+        console.log('⚠️ mapContainer ou mapImage non trouvé');
+        return;
+    }
     
-    // Ajouter le pion au conteneur du plan
+    // Utiliser x et y fournis, ou ceux du token
+    const posX = x !== null ? x : (parseInt(token.dataset.positionX) || 0);
+    const posY = y !== null ? y : (parseInt(token.dataset.positionY) || 0);
+    
+    if (posX <= 0 || posY <= 0) {
+        console.log(`⚠️ Position invalide pour ${token.dataset.tokenType}_${token.dataset.entityId}: x=${posX}, y=${posY}`);
+        return;
+    }
+    
+    // Retirer le token de son conteneur actuel (sidebar ou autre)
+    if (token.parentNode) {
+        token.remove();
+    }
+    
+    // Ajouter le token au conteneur de la carte
     mapContainer.appendChild(token);
     
-    // Positionner le pion (identique à view_scene.php)
+    // Positionner le token
     token.style.position = 'absolute';
-    token.style.left = x + '%';
-    token.style.top = y + '%';
+    token.style.left = posX + '%';
+    token.style.top = posY + '%';
     token.style.transform = 'translate(-50%, -50%)';
     token.style.zIndex = '1000';
     token.style.margin = '0';
     token.style.pointerEvents = 'auto';
     token.dataset.isOnMap = 'true';
-    token.dataset.positionX = x;
-    token.dataset.positionY = y;
+    token.dataset.positionX = posX;
+    token.dataset.positionY = posY;
+    
+    console.log(`✅ Token ${token.dataset.tokenType}_${token.dataset.entityId} positionné à (${posX}%, ${posY}%)`);
 }
 
-// Initialiser le système de pions après que le DOM soit complètement chargé
-document.addEventListener('DOMContentLoaded', function() {
-    initializeTokenSystem();
-    startAutoUpdate();
-});
+/**
+ * Remettre un token dans la sidebar
+ */
+function resetTokenToSidebar(token) {
+    // Retirer le pion du conteneur du plan
+    if (token.parentNode) {
+        token.remove();
+    }
+    
+    // Ajouter le pion à la sidebar
+    const tokenSidebar = document.getElementById('tokenSidebar');
+    if (!tokenSidebar) return;
+    
+    tokenSidebar.appendChild(token);
+    
+    // Réinitialiser les styles
+    token.style.position = 'static';
+    token.style.left = 'auto';
+    token.style.top = 'auto';
+    token.style.transform = 'none';
+    token.style.zIndex = 'auto';
+    token.style.margin = '2px';
+    token.style.pointerEvents = 'auto';
+    token.dataset.isOnMap = 'false';
+}
 
 // Système de mise à jour automatique des positions
 let autoUpdateInterval;
@@ -962,6 +1019,8 @@ function updateTokenPositions() {
             if (result.objects) {
                 // Comparer avec les données précédentes pour détecter les changements
                 if (JSON.stringify(result.objects) !== JSON.stringify(lastObjectsData)) {
+                    // Mettre à jour l'affichage des objets (icônes, visibilité)
+                    // MAIS ne pas repositionner - cela est géré par applyPositionUpdates()
                     updateObjectsDisplay(result.objects);
                     lastObjectsData = result.objects;
                 }
@@ -988,39 +1047,92 @@ function applyPositionUpdates(positions) {
         
         if (positions[tokenKey]) {
             const newPosition = positions[tokenKey];
-            const currentX = parseInt(token.dataset.positionX);
-            const currentY = parseInt(token.dataset.positionY);
+            const currentX = parseInt(token.dataset.positionX) || 0;
+            const currentY = parseInt(token.dataset.positionY) || 0;
             const currentIsOnMap = token.dataset.isOnMap === 'true';
             
             console.log(`📍 Position actuelle: (${currentX}, ${currentY}, on_map: ${currentIsOnMap})`);
             console.log(`📍 Nouvelle position: (${newPosition.x}, ${newPosition.y}, on_map: ${newPosition.is_on_map})`);
             
-            // Vérifier si la position a changé
-            if (newPosition.x !== currentX || newPosition.y !== currentY || newPosition.is_on_map !== currentIsOnMap) {
+            // Vérifier où le token se trouve actuellement
+            const isCurrentlyOnMap = token.parentNode && token.parentNode.id === 'mapContainer';
+            const currentStyleX = isCurrentlyOnMap ? parseFloat(token.style.left) : null;
+            const currentStyleY = isCurrentlyOnMap ? parseFloat(token.style.top) : null;
+            const newStyleX = newPosition.is_on_map && newPosition.x > 0 ? newPosition.x : null;
+            const newStyleY = newPosition.is_on_map && newPosition.y > 0 ? newPosition.y : null;
+            
+            // Pour les objets, vérifier si la position réelle (style) correspond à la nouvelle position
+            if (tokenType === 'object') {
+                const styleMatches = isCurrentlyOnMap && 
+                    newPosition.is_on_map && 
+                    newPosition.x > 0 && 
+                    newPosition.y > 0 &&
+                    Math.abs(currentStyleX - newPosition.x) < 0.1 &&
+                    Math.abs(currentStyleY - newPosition.y) < 0.1;
+                
+                if (styleMatches && currentIsOnMap === newPosition.is_on_map) {
+                    console.log(`✅ Objet ${tokenKey} déjà correctement positionné, pas de changement`);
+                    // Mettre à jour seulement les attributs data sans toucher au DOM
+                    token.dataset.positionX = newPosition.x;
+                    token.dataset.positionY = newPosition.y;
+                    token.dataset.isOnMap = newPosition.is_on_map ? 'true' : 'false';
+                    return; // Sortir de la boucle pour ce token
+                }
+            }
+            
+            // Vérifier si la position a changé (pour tous les types de tokens)
+            const positionChanged = (newPosition.x !== currentX || newPosition.y !== currentY || (newPosition.is_on_map ? 'true' : 'false') !== (currentIsOnMap ? 'true' : 'false'));
+            
+            if (positionChanged) {
                 console.log(`🔄 Mise à jour de la position pour ${tokenKey}`);
+                
+                const shouldBeOnMap = newPosition.is_on_map;
                 
                 // Mettre à jour les attributs
                 token.dataset.positionX = newPosition.x;
                 token.dataset.positionY = newPosition.y;
                 token.dataset.isOnMap = newPosition.is_on_map ? 'true' : 'false';
                 
-                // Appliquer la nouvelle position
-                if (newPosition.is_on_map) {
+                // Appliquer la nouvelle position seulement si nécessaire
+                if (shouldBeOnMap && newPosition.x > 0 && newPosition.y > 0) {
                     // Vérifier que la carte existe avant de positionner sur la carte
                     const mapContainer = document.getElementById('mapContainer');
                     if (mapContainer) {
-                        console.log(`🗺️ Positionnement sur la carte pour ${tokenKey}`);
-                        positionTokenOnMap(token, newPosition.x, newPosition.y);
+                        // Ne repositionner que si le token n'est pas déjà correctement positionné
+                        const needsReposition = !isCurrentlyOnMap || 
+                            Math.abs(currentStyleX - newPosition.x) >= 0.1 || 
+                            Math.abs(currentStyleY - newPosition.y) >= 0.1;
+                        
+                        if (needsReposition) {
+                            console.log(`🗺️ Positionnement sur la carte pour ${tokenKey}`);
+                            positionTokenOnMap(token, newPosition.x, newPosition.y);
+                        } else {
+                            console.log(`✅ Token ${tokenKey} déjà correctement positionné, pas de changement`);
+                        }
                     } else {
                         console.log(`⚠️ Pas de carte, remise dans la sidebar pour ${tokenKey}`);
                         resetTokenToSidebar(token);
                     }
                 } else {
-                    console.log(`📦 Remise dans la sidebar pour ${tokenKey}`);
-                    resetTokenToSidebar(token);
+                    if (isCurrentlyOnMap) {
+                        console.log(`📦 Remise dans la sidebar pour ${tokenKey}`);
+                        resetTokenToSidebar(token);
+                    }
                 }
             } else {
-                console.log(`✅ Position inchangée pour ${tokenKey}`);
+                // Position inchangée dans les données, mais vérifier si le style correspond
+                if (tokenType === 'object' && isCurrentlyOnMap && newPosition.is_on_map && newPosition.x > 0 && newPosition.y > 0) {
+                    const styleMatches = Math.abs(currentStyleX - newPosition.x) < 0.1 && 
+                                        Math.abs(currentStyleY - newPosition.y) < 0.1;
+                    if (!styleMatches) {
+                        console.log(`🔧 Correction de position pour ${tokenKey} (style ne correspond pas)`);
+                        positionTokenOnMap(token, newPosition.x, newPosition.y);
+                    } else {
+                        console.log(`✅ Position inchangée pour ${tokenKey}`);
+                    }
+                } else {
+                    console.log(`✅ Position inchangée pour ${tokenKey}`);
+                }
             }
         } else {
             console.log(`❌ Aucune position trouvée pour ${tokenKey}`);
@@ -1258,7 +1370,8 @@ function updateMonstersList(monsters) {
 }
 
 function updateObjectsDisplay(objects) {
-    // Mettre à jour les pions des objets
+    // Mettre à jour UNIQUEMENT l'affichage (icônes, visibilité, titre) des objets existants
+    // NE PAS toucher aux positions - elles sont gérées exclusivement par applyPositionUpdates()
     const objectTokens = document.querySelectorAll('.token[data-token-type="object"]');
     objectTokens.forEach(token => {
         const entityId = token.dataset.entityId;
@@ -1267,10 +1380,17 @@ function updateObjectsDisplay(objects) {
         
         if (objectData) {
             if (objectData.is_visible) {
-                // Objet visible : afficher le pion
-                token.style.display = 'inline-block';
+                // Objet visible : afficher le pion (seulement si dans la sidebar)
+                // Si le token est sur la carte, ne pas modifier son display
+                const isOnMap = token.parentNode && token.parentNode.id === 'mapContainer';
+                if (!isOnMap) {
+                    token.style.display = 'inline-block';
+                } else {
+                    // Sur la carte, garder le display actuel (probablement '' ou 'block')
+                    // Ne pas mettre 'none' sinon il disparaît
+                }
                 
-                // Mettre à jour l'affichage selon l'identification
+                // Mettre à jour l'affichage selon l'identification (icône et titre uniquement)
                 if (objectData.is_identified) {
                     // Objet identifié : nom réel et icône spécifique
                     token.title = objectData.name;
@@ -1288,6 +1408,7 @@ function updateObjectsDisplay(objects) {
     });
     
     // Vérifier s'il y a de nouveaux objets à ajouter ou des objets à supprimer
+    // Les positions seront appliquées par applyPositionUpdates() depuis place_tokens
     updateObjectsTokens(objects);
     
     // Mettre à jour la liste des objets
@@ -1295,6 +1416,9 @@ function updateObjectsDisplay(objects) {
 }
 
 function updateObjectsTokens(objects) {
+    // NE PAS modifier les tokens d'objets existants pour éviter de perturber leur position
+    // Les tokens d'objets sont gérés par applyPositionUpdates() qui utilise les positions de place_tokens
+    // Cette fonction ne devrait être appelée que pour ajouter de nouveaux objets qui n'existent pas encore
     const tokenSidebar = document.getElementById('tokenSidebar');
     if (!tokenSidebar) return;
     
@@ -1304,15 +1428,18 @@ function updateObjectsTokens(objects) {
         existingObjectIds.add(token.dataset.entityId);
     });
     
-    // Ajouter les nouveaux objets visibles
+    // Ajouter UNIQUEMENT les nouveaux objets visibles qui n'existent pas encore
+    // Les positions seront gérées par applyPositionUpdates() depuis place_tokens
     Object.keys(objects).forEach(objectKey => {
         const objectData = objects[objectKey];
         const entityId = objectKey.replace('object_', '');
         
         if (objectData.is_visible && !existingObjectIds.has(entityId)) {
-            // Créer un nouveau pion pour cet objet
+            // Créer un nouveau pion pour cet objet (sera positionné par applyPositionUpdates)
             const newToken = createObjectToken(entityId, objectData);
             tokenSidebar.appendChild(newToken);
+            
+            // La position sera appliquée par applyPositionUpdates() si elle existe dans place_tokens
         }
     });
     
@@ -1971,6 +2098,45 @@ function saveDiceRoll(results, total, maxResult, minResult) {
         console.error('Erreur lors de la sauvegarde du jet:', error);
     });
 }
+</script>
+
+<script>
+// Initialiser le système de pions après que le DOM soit complètement chargé
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔄 DOMContentLoaded - Initialisation des tokens');
+    
+    // Attendre que l'image de la carte soit chargée
+    const mapImage = document.getElementById('mapImage');
+    const mapContainer = document.getElementById('mapContainer');
+    
+    console.log('🖼️ mapImage:', mapImage ? 'trouvé' : 'non trouvé');
+    console.log('📦 mapContainer:', mapContainer ? 'trouvé' : 'non trouvé');
+    
+    if (mapImage && mapContainer) {
+        if (mapImage.complete) {
+            // L'image est déjà chargée
+            console.log('✅ Image déjà chargée, initialisation immédiate');
+            setTimeout(() => {
+                initializeTokenSystem();
+                startAutoUpdate();
+            }, 300);
+        } else {
+            // Attendre le chargement de l'image
+            console.log('⏳ Attente du chargement de l\'image');
+            mapImage.addEventListener('load', function() {
+                console.log('✅ Image chargée, initialisation');
+                setTimeout(() => {
+                    initializeTokenSystem();
+                    startAutoUpdate();
+                }, 300);
+            }, { once: true });
+        }
+    } else {
+        console.log('⚠️ Pas de carte, démarrage de la mise à jour uniquement');
+        // Pas de carte, juste démarrer la mise à jour
+        startAutoUpdate();
+    }
+});
 </script>
 
 </body>
