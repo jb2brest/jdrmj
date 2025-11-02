@@ -60,20 +60,23 @@ try {
     
     if (!empty($filters['world'])) {
         $filtered_countries = array_filter($countries, function($c) use ($filters) {
-            return $c['world_id'] == $filters['world'];
+            return isset($c['world_id']) && $c['world_id'] == $filters['world'];
         });
+        $filtered_countries = array_values($filtered_countries); // Réindexer pour éviter les objets JSON
     }
     
     if (!empty($filters['country'])) {
         $filtered_regions = array_filter($regions, function($r) use ($filters) {
-            return $r['country_id'] == $filters['country'];
+            return isset($r['country_id']) && $r['country_id'] == $filters['country'];
         });
+        $filtered_regions = array_values($filtered_regions);
     }
     
     if (!empty($filters['region'])) {
         $filtered_places = array_filter($places, function($p) use ($filters) {
-            return $p['region_id'] == $filters['region'];
+            return isset($p['region_id']) && $p['region_id'] == $filters['region'];
         });
+        $filtered_places = array_values($filtered_places);
     }
     
 } catch (Exception $e) {

@@ -48,33 +48,46 @@ try {
     
     $ownerType = $item['owner_type'];
     $ownerId = $item['owner_id'];
+    $userId = $_SESSION['user_id'] ?? null;
     
     // Vérifier les permissions selon le type de propriétaire
     $hasPermission = false;
     
-    if ($ownerType === 'player') {
-        // Pour les personnages
+    // D'abord, vérifier si l'owner_id correspond à un NPC (même si owner_type = 'player')
+    // Car certains items peuvent être mal enregistrés avec owner_type='player' alors qu'ils appartiennent à un NPC
+    $npc = NPC::findById($ownerId);
+    $character = null;
+    
+    // Si ce n'est pas un NPC, essayer de trouver un Character
+    if (!$npc) {
+        $character = Character::findById($ownerId);
+    }
+
+    if ($npc) {
+        // C'est un NPC (même si owner_type dit 'player')
+        $isOwner = ($npc->created_by == $userId);
+        $hasPermission = $isOwner || User::isDMOrAdmin();
+    } elseif ($character) {
+        // C'est un Character
+        $isOwner = $character->belongsToUser($userId);
+        $hasPermission = $isOwner || User::isDMOrAdmin();
+    } elseif ($ownerType === 'player') {
+        // Essayer de trouver le Character avec l'ancienne méthode
         $character = Character::findById($ownerId);
         if ($character) {
-            $isOwner = $character->belongsToUser($_SESSION['user_id']);
-            $isDM = isDM();
-            $isAdmin = User::isAdmin();
-            $hasPermission = $isOwner || $isDM || $isAdmin;
+            $isOwner = $character->belongsToUser($userId);
+            $hasPermission = $isOwner || User::isDMOrAdmin();
         }
     } elseif ($ownerType === 'npc') {
-        // Pour les PNJ
+        // Essayer de trouver le NPC avec l'ancienne méthode
         $npc = NPC::findById($ownerId);
         if ($npc) {
-            $isOwner = ($npc->created_by == $_SESSION['user_id']);
-            $isDM = isDM();
-            $isAdmin = User::isAdmin();
-            $hasPermission = $isOwner || $isDM || $isAdmin;
+            $isOwner = ($npc->created_by == $userId);
+            $hasPermission = $isOwner || User::isDMOrAdmin();
         }
     } elseif ($ownerType === 'monster') {
-        // Pour les monstres
-        $isDM = isDM();
-        $isAdmin = User::isAdmin();
-        $hasPermission = $isDM || $isAdmin;
+        // Pour les monstres, vérifier que l'utilisateur est MJ ou Admin
+        $hasPermission = User::isDMOrAdmin();
     }
     
     if (!$hasPermission) {
@@ -89,14 +102,31 @@ try {
     
     if (!$slot) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Type d\'objet non supporté pour l\'équipement']);
+        echo json_encode([
+            'success' => false, 
+            'message' => 'Type d\'objet non supporté pour l\'équipement',
+            'debug' => [
+                'object_type' => $item['object_type'],
+                'display_name' => $item['display_name'],
+                'owner_type' => $ownerType,
+                'owner_id' => $ownerId
+            ]
+        ]);
         exit();
     }
     
     // Vérifier la compatibilité du slot avec le type d'objet
     if (!SlotManager::isSlotCompatible($slot, $item['object_type'])) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Slot non compatible avec ce type d\'objet']);
+        echo json_encode([
+            'success' => false, 
+            'message' => 'Slot non compatible avec ce type d\'objet',
+            'debug' => [
+                'slot' => $slot,
+                'object_type' => $item['object_type'],
+                'display_name' => $item['display_name']
+            ]
+        ]);
         exit();
     }
     
@@ -116,9 +146,9 @@ try {
         $stmt = $pdo->prepare("
             SELECT id, display_name, object_type, equipped_slot 
             FROM items 
-            WHERE owner_type = ? AND owner_id = ? AND equipped_slot = 'main_principale' AND is_equipped = 1
+            WHERE owner_id = ? AND equipped_slot = 'main_principale' AND is_equipped = 1
         ");
-        $stmt->execute([$ownerType, $ownerId]);
+        $stmt->execute([$ownerId]);
         $existingMainHand = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if ($existingMainHand) {
@@ -143,9 +173,9 @@ try {
         $stmt = $pdo->prepare("
             SELECT id, display_name, object_type, equipped_slot 
             FROM items 
-            WHERE owner_type = ? AND owner_id = ? AND equipped_slot = 'main_principale' AND is_equipped = 1
+            WHERE owner_id = ? AND equipped_slot = 'main_principale' AND is_equipped = 1
         ");
-        $stmt->execute([$ownerType, $ownerId]);
+        $stmt->execute([$ownerId]);
         $mainHandWeapon = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if ($mainHandWeapon) {
@@ -172,22 +202,20 @@ try {
     // Libérer les objets dans les slots nécessaires
     $freedItems = [];
     foreach ($slotsToFree as $slotToFree) {
+        // Utiliser le bon owner_type pour la requête (ou chercher avec owner_id seulement)
         $stmt = $pdo->prepare("
             SELECT id, display_name, object_type, equipped_slot 
             FROM items 
-            WHERE owner_type = ? AND owner_id = ? AND equipped_slot = ? AND is_equipped = 1
+            WHERE owner_id = ? AND equipped_slot = ? AND is_equipped = 1
         ");
-        $stmt->execute([$ownerType, $ownerId, $slotToFree]);
+        $stmt->execute([$ownerId, $slotToFree]);
         $occupiedItem = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if ($occupiedItem) {
             // Déséquiper l'objet qui occupe ce slot
-            if ($ownerType === 'player') {
-                // Pour les personnages, utiliser la méthode unequipItem si possible
-                $character = Character::findById($ownerId);
-                if ($character) {
-                    $character->unequipItem($occupiedItem['display_name']);
-                }
+            if ($character && !$npc) {
+                // Pour les personnages seulement (pas les PNJ), utiliser la méthode unequipItem si possible
+                $character->unequipItem($occupiedItem['display_name']);
             } else {
                 // Pour les PNJ et monstres, utiliser SQL direct
                 $stmt = $pdo->prepare("
@@ -202,25 +230,33 @@ try {
     }
     
     // Équiper le nouvel objet
-    if ($ownerType === 'player') {
-        // Pour les personnages, utiliser la méthode d'instance equipItem()
-        $character = Character::findById($ownerId);
-        if ($character) {
-            $result = $character->equipItem($item['display_name'], $item['object_type'], $slot);
-        } else {
-            $result = false;
+    $equipResult = false;
+    
+    if ($ownerType === 'player' || $npc) {
+        // Pour les personnages ou PNJ identifiés, utiliser la méthode appropriée
+        if ($npc) {
+            // Pour les PNJ, utiliser SQL direct (même si owner_type dit 'player')
+            $stmt = $pdo->prepare("
+                UPDATE items 
+                SET is_equipped = 1, equipped_slot = ? 
+                WHERE id = ?
+            ");
+            $equipResult = $stmt->execute([$slot, $itemId]);
+        } elseif ($character) {
+            // Pour les personnages, utiliser la méthode d'instance equipItem()
+            $equipResult = $character->equipItem($item['display_name'], $item['object_type'], $slot);
         }
     } else {
-        // Pour les PNJ et monstres, utiliser SQL direct
+        // Pour les monstres et autres cas, utiliser SQL direct
         $stmt = $pdo->prepare("
             UPDATE items 
             SET is_equipped = 1, equipped_slot = ? 
             WHERE id = ?
         ");
-        $result = $stmt->execute([$slot, $itemId]);
+        $equipResult = $stmt->execute([$slot, $itemId]);
     }
     
-    if ($result) {
+    if ($equipResult) {
         $slotName = SlotManager::getSlotDisplayName($slot);
         $message = "Objet équipé avec succès dans le slot: $slotName";
         
@@ -232,16 +268,20 @@ try {
             $message .= ". Objets déséquipés: " . implode(', ', $freedNames);
         }
         
-        $result = ['success' => true, 'message' => $message];
-    } else {
-        $result = ['success' => false, 'message' => 'Erreur lors de l\'équipement'];
-    }
-    
-    if ($result['success']) {
-        echo json_encode($result);
+        echo json_encode(['success' => true, 'message' => $message]);
     } else {
         http_response_code(400);
-        echo json_encode($result);
+        echo json_encode([
+            'success' => false, 
+            'message' => 'Erreur lors de l\'équipement',
+            'debug' => [
+                'item_id' => $itemId,
+                'owner_type' => $ownerType,
+                'owner_id' => $ownerId,
+                'slot' => $slot,
+                'object_type' => $item['object_type']
+            ]
+        ]);
     }
     
 } catch (Exception $e) {

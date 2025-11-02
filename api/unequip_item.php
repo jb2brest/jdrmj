@@ -5,6 +5,12 @@
  */
 
 header('Content-Type: application/json');
+
+// Démarrer la session si elle n'est pas déjà démarrée
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 require_once '../classes/init.php';
 require_once '../includes/functions.php';
 
@@ -34,7 +40,7 @@ try {
     
     // Récupérer les informations de l'objet
     $stmt = $pdo->prepare("
-        SELECT id, display_name, object_type, owner_type, owner_id, is_equipped
+        SELECT id, display_name, object_type, owner_type, owner_id, is_equipped, equipped_slot
         FROM items 
         WHERE id = ?
     ");
@@ -54,34 +60,62 @@ try {
 
     $ownerType = $item['owner_type'];
     $ownerId = $item['owner_id'];
+    $userId = $_SESSION['user_id'] ?? null;
 
     // Vérifier les permissions selon le type de propriétaire
     $hasPermission = false;
 
-    if ($ownerType === 'player') {
-        // Pour les personnages, vérifier que l'utilisateur est le propriétaire
+    // D'abord, vérifier si l'owner_id correspond à un NPC (même si owner_type = 'player')
+    // Car certains items peuvent être mal enregistrés avec owner_type='player' alors qu'ils appartiennent à un NPC
+    $npc = NPC::findById($ownerId);
+    $character = null;
+    
+    // Si ce n'est pas un NPC, essayer de trouver un Character
+    if (!$npc) {
+        $character = Character::findById($ownerId);
+    }
+
+    if ($npc) {
+        // C'est un NPC (même si owner_type dit 'player')
+        $isOwner = ($npc->created_by == $userId);
+        $isDMOrAdmin = User::isDMOrAdmin();
+        $hasPermission = $isOwner || $isDMOrAdmin;
+        
+        // Log pour débogage
+        error_log("unequip_item.php - NPC check: ownerId=$ownerId, userId=$userId, created_by={$npc->created_by}, isOwner=" . ($isOwner ? 'true' : 'false') . ", isDMOrAdmin=" . ($isDMOrAdmin ? 'true' : 'false'));
+    } elseif ($character) {
+        // C'est un Character
+        $isOwner = $character->belongsToUser($userId);
+        $hasPermission = $isOwner || User::isDMOrAdmin();
+    } elseif ($ownerType === 'player') {
+        // Essayer de trouver le Character avec l'ancienne méthode
         $character = Character::findById($ownerId);
         if ($character) {
-            $isOwner = $character->belongsToUser($_SESSION['user_id']);
-            $isDM = isDM();
-            $isAdmin = User::isAdmin();
-            $hasPermission = $isOwner || $isDM || $isAdmin;
+            $isOwner = $character->belongsToUser($userId);
+            $hasPermission = $isOwner || User::isDMOrAdmin();
         }
     } elseif ($ownerType === 'npc') {
-        // Pour les PNJ, vérifier que l'utilisateur est MJ ou Admin
-        $isDM = isDM();
-        $isAdmin = User::isAdmin();
-        $hasPermission = $isDM || $isAdmin;
+        // Essayer de trouver le NPC avec l'ancienne méthode
+        $npc = NPC::findById($ownerId);
+        if ($npc) {
+            $isOwner = ($npc->created_by == $userId);
+            $isDMOrAdmin = User::isDMOrAdmin();
+            $hasPermission = $isOwner || $isDMOrAdmin;
+        }
     } elseif ($ownerType === 'monster') {
         // Pour les monstres, vérifier que l'utilisateur est MJ ou Admin
-        $isDM = isDM();
-        $isAdmin = User::isAdmin();
-        $hasPermission = $isDM || $isAdmin;
+        $hasPermission = User::isDMOrAdmin();
     }
 
     if (!$hasPermission) {
+        error_log("unequip_item.php - Permission denied: userId=$userId, ownerType=$ownerType, ownerId=$ownerId");
         http_response_code(403);
-        echo json_encode(['success' => false, 'message' => 'Permissions insuffisantes']);
+        echo json_encode(['success' => false, 'message' => 'Permissions insuffisantes', 'debug' => [
+            'user_id' => $userId,
+            'owner_type' => $ownerType,
+            'owner_id' => $ownerId,
+            'is_dm_or_admin' => User::isDMOrAdmin()
+        ]]);
         exit();
     }
 

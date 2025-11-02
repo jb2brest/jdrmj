@@ -1874,13 +1874,22 @@ class NPC
         $pdo = \Database::getInstance()->getPdo();
         $stmt = $pdo->prepare("
             SELECT i.*, 
-                   i.display_name as item_name,
                    i.description as item_description,
                    i.object_type as item_type,
                    i.is_equipped as equipped,
                    a.name as armor_name, a.ac_formula as armor_ac_formula,
                    w.name as weapon_name, w.damage as weapon_damage, w.properties as weapon_properties,
-                   s.name as shield_name, s.ac_formula as shield_ac_formula
+                   s.name as shield_name, s.ac_formula as shield_ac_formula,
+                   -- Utiliser le nom spécifique selon le type d'équipement, sinon display_name
+                   COALESCE(
+                       CASE 
+                           WHEN i.object_type = 'armor' THEN a.name
+                           WHEN i.object_type = 'weapon' THEN w.name
+                           WHEN i.object_type = 'shield' THEN s.name
+                           ELSE NULL
+                       END,
+                       i.display_name
+                   ) as item_name
             FROM items i
             LEFT JOIN armor a ON i.armor_id = a.id
             LEFT JOIN weapons w ON i.weapon_id = w.id
@@ -2002,11 +2011,21 @@ class NPC
         
         try {
             // Récupérer les armes équipées avec leurs détails
+            // Ne pas filtrer par owner_type car certains items peuvent être enregistrés avec owner_type='player' 
+            // alors qu'ils appartiennent à un NPC
             $stmt = $pdo->prepare("
-                SELECT i.*, w.name as weapon_name, w.damage as weapon_damage, w.properties as weapon_properties
+                SELECT 
+                    i.*, 
+                    i.display_name,
+                    w.id as weapon_table_id,
+                    w.name as weapon_name, 
+                    w.damage as weapon_damage, 
+                    w.properties as weapon_properties,
+                    w.slot_type as weapon_slot_type
                 FROM items i
                 LEFT JOIN weapons w ON i.weapon_id = w.id
-                WHERE i.owner_type = 'npc' AND i.owner_id = ? AND i.is_equipped = 1 AND i.object_type = 'weapon'
+                WHERE i.owner_id = ? AND i.is_equipped = 1 AND i.object_type = 'weapon'
+                ORDER BY i.equipped_slot, i.id
             ");
             $stmt->execute([$this->id]);
             $equippedWeapons = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -2014,7 +2033,35 @@ class NPC
             // Si des armes sont équipées, les utiliser
             if (!empty($equippedWeapons)) {
                 foreach ($equippedWeapons as $weapon) {
-                    if ($weapon['weapon_name'] && $weapon['weapon_damage']) {
+                    // Utiliser weapon_name si disponible, sinon display_name
+                    $weaponName = $weapon['weapon_name'] ?? $weapon['display_name'] ?? '';
+                    // Utiliser weapon_damage si disponible, sinon essayer de le trouver
+                    $weaponDamage = $weapon['weapon_damage'] ?? null;
+                    
+                    // Si on n'a pas de weapon_damage mais qu'on a un weapon_id, récupérer depuis la table weapons
+                    if (!$weaponDamage && !empty($weapon['weapon_id'])) {
+                        $weaponStmt = $pdo->prepare("SELECT damage FROM weapons WHERE id = ?");
+                        $weaponStmt->execute([$weapon['weapon_id']]);
+                        $weaponData = $weaponStmt->fetch(PDO::FETCH_ASSOC);
+                        if ($weaponData) {
+                            $weaponDamage = $weaponData['damage'];
+                        }
+                    }
+                    
+                    // Si on n'a toujours pas de weapon_damage, récupérer aussi weapon_properties si nécessaire
+                    if (!$weaponDamage && !empty($weapon['weapon_id'])) {
+                        $weaponStmt = $pdo->prepare("SELECT damage, properties FROM weapons WHERE id = ?");
+                        $weaponStmt->execute([$weapon['weapon_id']]);
+                        $weaponData = $weaponStmt->fetch(PDO::FETCH_ASSOC);
+                        if ($weaponData) {
+                            $weaponDamage = $weaponData['damage'] ?? $weaponDamage;
+                            if (empty($weapon['weapon_properties']) && !empty($weaponData['properties'])) {
+                                $weapon['weapon_properties'] = $weaponData['properties'];
+                            }
+                        }
+                    }
+                    
+                    if ($weaponName && $weaponDamage) {
                         // Calculer le bonus d'attaque basé sur la caractéristique appropriée
                         $attackBonus = 0;
                         $damageBonus = 0;
@@ -2026,11 +2073,12 @@ class NPC
                         
                         // Détecter si c'est une arme de jet basée sur les propriétés
                         $isRangedWeapon = false;
-                        if ($weapon['weapon_properties']) {
+                        if (!empty($weapon['weapon_properties'])) {
                             $properties = strtolower($weapon['weapon_properties']);
                             if (strpos($properties, 'jet') !== false || 
                                 strpos($properties, 'lancer') !== false || 
-                                strpos($properties, 'distance') !== false) {
+                                strpos($properties, 'distance') !== false ||
+                                strpos($properties, 'range') !== false) {
                                 $isRangedWeapon = true;
                             }
                         }
@@ -2044,7 +2092,7 @@ class NPC
                         }
                         
                         // Formater les dégâts
-                        $damage = $weapon['weapon_damage'];
+                        $damage = $weaponDamage;
                         if ($damageBonus > 0) {
                             $damage .= ' + ' . $damageBonus;
                         } elseif ($damageBonus < 0) {
@@ -2052,12 +2100,15 @@ class NPC
                         }
                         
                         $attacks[] = [
-                            'name' => $weapon['weapon_name'],
+                            'name' => $weaponName,
                             'bonus' => $attackBonus,
                             'damage' => $damage,
                             'type' => $isRangedWeapon ? 'À distance' : 'Corps à corps',
-                            'properties' => $weapon['weapon_properties']
+                            'properties' => $weapon['weapon_properties'] ?? ''
                         ];
+                    } else {
+                        // Log pour débogage
+                        error_log("NPC calculateMyCharacterAttacks - Arme ignorée: weapon_id=" . ($weapon['weapon_id'] ?? 'null') . ", weapon_name=" . ($weapon['weapon_name'] ?? 'null') . ", display_name=" . ($weapon['display_name'] ?? 'null') . ", weapon_damage=" . ($weaponDamage ?? 'null'));
                     }
                 }
             }

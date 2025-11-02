@@ -196,7 +196,9 @@ extract($template_vars ?? []);
                                                     </a>
                                                     <button type="button" class="btn btn-sm btn-outline-danger" 
                                                             title="Supprimer" 
-                                                            onclick="deleteCharacterInProgress(<?php echo $draft['id']; ?>, '<?php echo htmlspecialchars(addslashes($draft['name'])); ?>', event)">
+                                                            data-draft-id="<?php echo (int)($draft['id'] ?? 0); ?>"
+                                                            data-draft-name="<?php echo htmlspecialchars($draft['name'] ?? ''); ?>"
+                                                            onclick="deleteCharacterInProgress(parseInt(this.dataset.draftId), this.dataset.draftName, event)">
                                                         <i class="fas fa-trash"></i>
                                                     </button>
                                                 </div>
@@ -240,7 +242,16 @@ extract($template_vars ?? []);
                 <?php else: ?>
                     <div class="row" id="entitiesList">
                         <?php foreach ($entities as $entity): ?>
-                            <div class="col-md-6 col-lg-4 mb-4" data-entity-id="<?php echo $entity['id']; ?>">
+                            <div class="col-md-6 col-lg-4 mb-4" data-entity-id="<?php 
+                                // Utiliser le même ID que celui du bouton de suppression
+                                if (isset($entity['id']) && $entity['id'] > 0) {
+                                    echo (int)$entity['id'];
+                                } elseif (isset($entity['npc_character_id']) && $entity['npc_character_id'] > 0) {
+                                    echo (int)$entity['npc_character_id'];
+                                } else {
+                                    echo '';
+                                }
+                            ?>">
                                 <div class="card h-100">
                                     <div class="card-header d-flex justify-content-between align-items-center">
                                         <div class="d-flex align-items-center">
@@ -271,7 +282,22 @@ extract($template_vars ?? []);
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                             <button class="btn btn-outline-danger" 
-                                                    onclick="deleteEntity(<?php echo $entity['id']; ?>, '<?php echo htmlspecialchars($entity['name']); ?>', '<?php echo $entity['entity_type']; ?>')"
+                                                    data-entity-id="<?php 
+                                                        // Pour les PNJ dans place_npcs, utiliser pn.id
+                                                        // Pour les PNJ sans lieu (id NULL), utiliser npc_character_id
+                                                        // Pour les monstres, utiliser m.id
+                                                        if (isset($entity['id']) && $entity['id'] > 0) {
+                                                            echo (int)$entity['id'];
+                                                        } elseif (isset($entity['npc_character_id']) && $entity['npc_character_id'] > 0) {
+                                                            echo (int)$entity['npc_character_id'];
+                                                        } else {
+                                                            echo '';
+                                                        }
+                                                    ?>"
+                                                    data-entity-name="<?php echo htmlspecialchars($entity['name'] ?? ''); ?>"
+                                                    data-entity-type="<?php echo htmlspecialchars($entity['entity_type'] ?? ''); ?>"
+                                                    data-is-place-npc="<?php echo isset($entity['id']) && $entity['id'] > 0 ? '1' : '0'; ?>"
+                                                    onclick="deleteEntity(this)"
                                                     title="Supprimer">
                                                 <i class="fas fa-trash"></i>
                                             </button>
@@ -355,9 +381,9 @@ extract($template_vars ?? []);
 <script>
 // Données pour les filtres JavaScript
 window.filterData = {
-    countries: <?php echo json_encode($filtered_countries ?: $countries); ?>,
-    regions: <?php echo json_encode($filtered_regions ?: $regions); ?>,
-    places: <?php echo json_encode($filtered_places ?: $places); ?>
+    countries: <?php echo json_encode(array_values($filtered_countries ?? $countries ?? [])); ?>,
+    regions: <?php echo json_encode(array_values($filtered_regions ?? $regions ?? [])); ?>,
+    places: <?php echo json_encode(array_values($filtered_places ?? $places ?? [])); ?>
 };
 </script>
 

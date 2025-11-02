@@ -536,11 +536,25 @@ function equipItem(itemId) {
         headers: {
             'Content-Type': 'application/json',
         },
+        credentials: 'same-origin', // Important pour envoyer les cookies de session
         body: JSON.stringify({
             item_id: itemId
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        // Vérifier le statut HTTP avant de parser le JSON
+        if (!response.ok) {
+            // Si c'est une erreur, essayer de récupérer le JSON avec les infos de debug
+            return response.json().then(data => {
+                console.error('Erreur equip_item:', data);
+                if (data.debug) {
+                    console.error('Détails:', data.debug);
+                }
+                throw new Error(data.message || 'Erreur lors de l\'équipement');
+            });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             showMessage(data.message, 'success');
@@ -548,12 +562,13 @@ function equipItem(itemId) {
                 window.location.reload();
             }, 1000);
         } else {
+            console.error('Erreur equip_item:', data);
             showMessage(data.message || 'Erreur lors de l\'équipement', 'error');
         }
     })
     .catch(error => {
         console.error('Erreur:', error);
-        showMessage('Erreur lors de l\'équipement', 'error');
+        showMessage(error.message || 'Erreur lors de l\'équipement', 'error');
     });
 }
 
@@ -566,11 +581,25 @@ function unequipItem(itemId) {
         headers: {
             'Content-Type': 'application/json',
         },
+        credentials: 'same-origin', // Important pour envoyer les cookies de session
         body: JSON.stringify({
             item_id: itemId
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        // Vérifier le statut HTTP avant de parser le JSON
+        if (!response.ok) {
+            // Si c'est une erreur, essayer de récupérer le JSON avec les infos de debug
+            return response.json().then(data => {
+                console.error('Erreur unequip_item:', data);
+                if (data.debug) {
+                    console.error('Détails:', data.debug);
+                }
+                throw new Error(data.message || 'Erreur lors du déséquipement');
+            });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             showMessage(data.message, 'success');
@@ -578,12 +607,13 @@ function unequipItem(itemId) {
                 window.location.reload();
             }, 1000);
         } else {
+            console.error('Erreur unequip_item:', data);
             showMessage(data.message || 'Erreur lors du déséquipement', 'error');
         }
     })
     .catch(error => {
         console.error('Erreur:', error);
-        showMessage('Erreur lors du déséquipement', 'error');
+        showMessage(error.message || 'Erreur lors du déséquipement', 'error');
     });
 }
 
@@ -2721,7 +2751,28 @@ function initializeEntityDeletion() {
     });
     
     // Fonction globale pour supprimer une entité
-    window.deleteEntity = function(entityId, entityName, entityType) {
+    window.deleteEntity = function(button) {
+        // Support de l'ancien format (appel direct avec paramètres)
+        let entityId, entityName, entityType;
+        
+        if (typeof button === 'object' && button.nodeName === 'BUTTON') {
+            // Nouveau format : passer le bouton
+            entityId = parseInt(button.dataset.entityId || 0);
+            entityName = button.dataset.entityName || '';
+            entityType = button.dataset.entityType || '';
+        } else {
+            // Ancien format : paramètres directs
+            entityId = parseInt(button || 0);
+            entityName = arguments[1] || '';
+            entityType = arguments[2] || '';
+        }
+        
+        if (!entityId || entityId <= 0) {
+            console.error('ID d\'entité invalide:', button);
+            alert('Erreur: ID d\'entité invalide');
+            return;
+        }
+        
         entityToDelete = { id: entityId, name: entityName, type: entityType };
         entityNameSpan.textContent = entityName;
         
@@ -2753,10 +2804,23 @@ function deleteEntityConfirmed(entityId, entityName, entityType) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Supprimer l'élément de la page
-            const entityElement = document.querySelector(`[data-entity-id="${entityId}"]`);
-            if (entityElement) {
-                entityElement.remove();
+            // Supprimer l'élément de la page (trouver le bouton puis remonter au conteneur parent)
+            const deleteButton = document.querySelector(`button[data-entity-id="${entityId}"]`);
+            if (deleteButton) {
+                // Remonter jusqu'au conteneur de la carte (div.col-md-6 ou div.col-lg-4)
+                const cardContainer = deleteButton.closest('.col-md-6, .col-lg-4');
+                if (cardContainer) {
+                    cardContainer.remove();
+                } else {
+                    // Fallback : supprimer le parent le plus proche
+                    deleteButton.closest('[data-entity-id]')?.remove();
+                }
+            } else {
+                // Fallback : chercher directement le conteneur
+                const entityElement = document.querySelector(`[data-entity-id="${entityId}"]`);
+                if (entityElement && entityElement.classList.contains('col-md-6')) {
+                    entityElement.remove();
+                }
             }
             
             // Afficher un message de succès

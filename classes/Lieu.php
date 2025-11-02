@@ -1948,6 +1948,9 @@ class Lieu
         $pdo = getPDO();
         
         try {
+            $entities = [];
+            
+            // Partie 1: Récupérer les PNJ depuis place_npcs (associés à un lieu)
             $whereClause = "w.created_by = ? AND pn.monster_id IS NULL";
             $params = [$userId];
             
@@ -1996,10 +1999,78 @@ class Lieu
                 LEFT JOIN regions reg ON p.region_id = reg.id
                 JOIN worlds w ON c.world_id = w.id
                 WHERE $whereClause
-                ORDER BY w.name, c.name, p.title, pn.name
             ");
             $stmt->execute($params);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $placeNpcs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            foreach ($placeNpcs as $npc) {
+                $entities[] = $npc;
+            }
+            
+            // Partie 2: Récupérer les NPCs directement depuis npcs (pas encore associés à un lieu)
+            $whereClause2 = "n.created_by = ? AND n.is_active = 1";
+            $params2 = [$userId];
+            
+            // Vérifier si le NPC est déjà dans place_npcs (pour éviter les doublons)
+            $excludeIds = [];
+            foreach ($placeNpcs as $npc) {
+                if (!empty($npc['npc_character_id'])) {
+                    $excludeIds[] = $npc['npc_character_id'];
+                }
+            }
+            
+            if (!empty($filters['world'])) {
+                $whereClause2 .= " AND n.world_id = ?";
+                $params2[] = $filters['world'];
+            }
+            
+            // Pour les filtres country/region/place, on ne les applique que si le NPC est dans un lieu
+            // Sinon, on ignore ces filtres pour les NPCs sans lieu
+            if (empty($filters['country']) && empty($filters['region']) && empty($filters['place'])) {
+                // Pas de filtres de lieu, on récupère tous les NPCs sans lieu
+                if (!empty($excludeIds)) {
+                    $in = implode(',', array_fill(0, count($excludeIds), '?'));
+                    $whereClause2 .= " AND n.id NOT IN ($in)";
+                    $params2 = array_merge($params2, $excludeIds);
+                }
+                
+                $stmt2 = $pdo->prepare("
+                    SELECT 
+                        NULL as id,
+                        n.name,
+                        n.backstory as description,
+                        n.profile_photo,
+                        1 as is_visible,
+                        1 as is_identified,
+                        1 as quantity,
+                        n.hit_points_current as current_hit_points,
+                        n.id as npc_character_id,
+                        NULL as place_name,
+                        n.location_id as place_id,
+                        NULL as country_name,
+                        NULL as country_id,
+                        NULL as region_name,
+                        NULL as region_id,
+                        w.name as world_name,
+                        w.id as world_id
+                    FROM npcs n
+                    LEFT JOIN worlds w ON n.world_id = w.id
+                    WHERE $whereClause2
+                ");
+                $stmt2->execute($params2);
+                $directNpcs = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+                
+                foreach ($directNpcs as $npc) {
+                    $entities[] = $npc;
+                }
+            }
+            
+            // Trier par nom
+            usort($entities, function($a, $b) {
+                return strcmp($a['name'], $b['name']);
+            });
+            
+            return $entities;
             
         } catch (PDOException $e) {
             error_log("Erreur lors de la récupération des PNJ: " . $e->getMessage());
@@ -2087,7 +2158,7 @@ class Lieu
         
         try {
             if ($entityType === 'PNJ') {
-                // Supprimer un PNJ depuis place_npcs
+                // Essayer d'abord comme un PNJ dans place_npcs
                 $stmt = $pdo->prepare("
                     SELECT pn.id FROM place_npcs pn
                     JOIN places p ON pn.place_id = p.id
@@ -2098,17 +2169,36 @@ class Lieu
                 $stmt->execute([$entityId, $userId]);
                 $entity = $stmt->fetch(PDO::FETCH_ASSOC);
                 
-                if (!$entity) {
-                    return false;
+                if ($entity) {
+                    // C'est un PNJ dans place_npcs
+                    // Supprimer l'équipement du PNJ
+                    $stmt = $pdo->prepare("DELETE FROM npc_equipment WHERE npc_id = ?");
+                    $stmt->execute([$entityId]);
+                    
+                    // Supprimer le PNJ
+                    $stmt = $pdo->prepare("DELETE FROM place_npcs WHERE id = ?");
+                    $stmt->execute([$entityId]);
+                } else {
+                    // Essayer comme un PNJ direct (sans lieu) depuis la table npcs
+                    $stmt = $pdo->prepare("
+                        SELECT n.id FROM npcs n
+                        JOIN worlds w ON n.world_id = w.id
+                        WHERE n.id = ? AND n.is_active = 1 AND w.created_by = ?
+                    ");
+                    $stmt->execute([$entityId, $userId]);
+                    $entity = $stmt->fetch(PDO::FETCH_ASSOC);
+                    
+                    if (!$entity) {
+                        return false;
+                    }
+                    
+                    // Supprimer le PNJ directement depuis npcs
+                    // Note: Les PNJ sans lieu n'ont généralement pas d'équipement dans npc_equipment
+                    $stmt = $pdo->prepare("DELETE FROM npcs WHERE id = ?");
+                    $stmt->execute([$entityId]);
                 }
                 
-                // Supprimer l'équipement du PNJ
-                $stmt = $pdo->prepare("DELETE FROM npc_equipment WHERE npc_id = ?");
-                $stmt->execute([$entityId]);
-                
-                // Supprimer le PNJ
-                $stmt = $pdo->prepare("DELETE FROM place_npcs WHERE id = ?");
-                $stmt->execute([$entityId]);
+                return true;
                 
             } elseif ($entityType === 'Monstre') {
                 // Supprimer un monstre depuis monsters
@@ -2130,6 +2220,8 @@ class Lieu
                 // Supprimer le monstre
                 $stmt = $pdo->prepare("DELETE FROM monsters WHERE id = ?");
                 $stmt->execute([$entityId]);
+                
+                return true;
                 
             } else {
                 // Essayer de déterminer le type d'entité

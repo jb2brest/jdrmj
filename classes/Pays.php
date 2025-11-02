@@ -664,7 +664,7 @@ class Pays
         $pdo = $pdo ?: getPDO();
         
         try {
-            $stmt = $pdo->query("SELECT id, name FROM countries ORDER BY name");
+            $stmt = $pdo->query("SELECT id, name, world_id FROM countries ORDER BY name");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             error_log("Erreur lors de la récupération de tous les pays: " . $e->getMessage());
