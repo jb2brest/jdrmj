@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.25.8
+VERSION=2.25.9
 
 # Date de déploiement
 DEPLOY_DATE=2025-11-02
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-11-02
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=01d2b88acdad5b698dbb06be30c6169ba67da6db
+GIT_COMMIT=5f3f5d0954087d910c48ae8cb72b33bf680282ae
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251102-125957
+BUILD_ID=20251102-131221
 
 # Notes de version
-RELEASE_NOTES="Patch équipement darme à deux main"
+RELEASE_NOTES="Sélection du lieu pour NPC"
