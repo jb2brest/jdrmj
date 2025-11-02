@@ -187,131 +187,160 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($groupe->name); ?> - JDR MJ</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title><?php echo htmlspecialchars($groupe->name); ?> - JDR 4 MJ</title>
+    <link rel="icon" type="image/png" href="images/logo.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="css/custom-theme.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
+    <style>
+        .member-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .member-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .info-card {
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .clickable-badge {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .clickable-badge:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .crest-display {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+    </style>
 </head>
 <body>
     <?php include_once 'includes/navbar.php'; ?>
     
     <div class="container mt-4">
-        <div class="row">
-            <div class="col-12">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div class="d-flex align-items-center">
-                        <?php if (!empty($groupe->crest_image)): ?>
-                            <img src="<?php echo htmlspecialchars($groupe->crest_image); ?>" 
-                                 alt="Blason" class="rounded me-3" style="width: 64px; height: 64px; object-fit: cover;">
-                        <?php else: ?>
-                            <div class="rounded bg-secondary d-flex align-items-center justify-content-center me-3" 
-                                 style="width: 64px; height: 64px;">
-                                <i class="fas fa-users fa-2x text-white"></i>
-                            </div>
-                        <?php endif; ?>
-                        <div>
-                            <h1>
-                                <?php echo htmlspecialchars($groupe->name); ?>
-                                <?php if ($groupe->is_secret): ?>
-                                    <i class="fas fa-eye-slash text-warning ms-2" title="Groupe secret"></i>
-                                <?php endif; ?>
-                            </h1>
-                            <?php if ($groupe->description): ?>
-                                <p class="text-muted"><?php echo htmlspecialchars($groupe->description); ?></p>
-                            <?php endif; ?>
+        <?php if ($success_message): ?>
+            <?php echo displayMessage($success_message, 'success'); ?>
+        <?php endif; ?>
+        
+        <?php if ($error_message): ?>
+            <?php echo displayMessage($error_message, 'error'); ?>
+        <?php endif; ?>
+
+        <!-- Zone de titre -->
+        <div class="zone-de-titre">
+            <div class="zone-titre-container">
+                <div class="d-flex align-items-center">
+                    <?php if (!empty($groupe->crest_image)): ?>
+                        <img src="<?php echo htmlspecialchars($groupe->crest_image); ?>" 
+                             alt="Blason" class="crest-display me-3">
+                    <?php else: ?>
+                        <div class="bg-secondary rounded d-flex align-items-center justify-content-center me-3" 
+                             style="width: 80px; height: 80px;">
+                            <i class="fas fa-users text-white" style="font-size: 2rem;"></i>
                         </div>
-                    </div>
+                    <?php endif; ?>
                     <div>
-                        <a href="manage_groups.php" class="btn btn-light">
-                            <i class="fas fa-arrow-left me-2"></i>Retour aux Groupes
-                        </a>
-                        <a href="edit_group.php?id=<?php echo $groupe->id; ?>" class="btn btn-primary">
-                            <i class="fas fa-edit me-2"></i>Modifier
-                        </a>
+                        <h1 class="titre-zone">
+                            <i class="fas fa-users me-2"></i><?php echo htmlspecialchars($groupe->name); ?>
+                            <?php if ($groupe->is_secret): ?>
+                                <i class="fas fa-eye-slash text-warning ms-2" title="Groupe secret"></i>
+                            <?php endif; ?>
+                        </h1>
+                        <?php if ($groupe->description): ?>
+                            <p class="text-muted mb-0"><?php echo htmlspecialchars($groupe->description); ?></p>
+                        <?php endif; ?>
                     </div>
                 </div>
+                <div>
+                    <a href="manage_groups.php" class="btn-txt">
+                        <i class="fas fa-arrow-left me-2"></i>Retour
+                    </a>
+                    <a href="edit_group.php?id=<?php echo $groupe->id; ?>" class="btn-txt">
+                        <i class="fas fa-edit me-2"></i>Modifier
+                    </a>
+                </div>
+            </div>
+        </div>
                 
-                <?php if ($success_message): ?>
-                    <?php echo displayMessage($success_message, 'success'); ?>
-                <?php endif; ?>
-                
-                <?php if ($error_message): ?>
-                    <?php echo displayMessage($error_message, 'error'); ?>
-                <?php endif; ?>
-                
-                <div class="row">
-                    <!-- Informations du groupe -->
-                    <div class="col-md-4 mb-4">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="card-title mb-0">
-                                    <i class="fas fa-info-circle me-2"></i>Informations
-                                </h5>
-                            </div>
-                            <div class="card-body">
-                                <?php if ($headquarters): ?>
-                                    <div class="mb-3">
-                                        <strong>Quartier Général :</strong><br>
-                                        <i class="fas fa-map-marker-alt me-1"></i>
-                                        <?php echo htmlspecialchars($headquarters['title']); ?>
-                                        <?php if ($headquarters['country_name']): ?>
-                                            <br><small class="text-muted">
-                                                <?php echo htmlspecialchars($headquarters['country_name']); ?>
-                                                <?php if ($headquarters['region_name']): ?>
-                                                    - <?php echo htmlspecialchars($headquarters['region_name']); ?>
-                                                <?php endif; ?>
-                                            </small>
-                                        <?php endif; ?>
-                                    </div>
-                                <?php endif; ?>
-                                
-                                <?php if ($leader): ?>
-                                    <div class="mb-3">
-                                        <strong>Dirigeant :</strong><br>
-                                        <i class="fas fa-crown me-1"></i>
-                                        <?php echo htmlspecialchars($leader['member_name']); ?>
-                                        <span class="badge bg-warning ms-1">Niveau 1</span>
-                                    </div>
-                                <?php endif; ?>
-                                
-                                <div class="mb-3">
-                                    <strong>Membres :</strong><br>
-                                    <i class="fas fa-users me-1"></i>
-                                    <?php echo count($members); ?> membre(s)
-                                </div>
-                                
-                                <div>
-                                    <strong>Créé le :</strong><br>
-                                    <i class="fas fa-calendar me-1"></i>
-                                    <?php echo date('d/m/Y à H:i', strtotime($groupe->created_at)); ?>
-                                </div>
-                            </div>
+        <!-- Zone d'en-tête -->
+        <div class="zone-d-entete mb-3">
+            <div class="card border-0 shadow info-card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="mb-3">
+                                <i class="fas fa-info-circle me-2"></i>Informations
+                            </h5>
+                            <?php if ($headquarters): ?>
+                                <p class="mb-2">
+                                    <strong><i class="fas fa-map-marker-alt me-1"></i>Quartier Général :</strong><br>
+                                    <?php echo htmlspecialchars($headquarters['title']); ?>
+                                    <?php if ($headquarters['country_name']): ?>
+                                        <br><small class="text-muted">
+                                            <?php echo htmlspecialchars($headquarters['country_name']); ?>
+                                            <?php if ($headquarters['region_name']): ?>
+                                                - <?php echo htmlspecialchars($headquarters['region_name']); ?>
+                                            <?php endif; ?>
+                                        </small>
+                                    <?php endif; ?>
+                                </p>
+                            <?php endif; ?>
+                            
+                            <?php if ($leader): ?>
+                                <p class="mb-2">
+                                    <strong><i class="fas fa-crown me-1"></i>Dirigeant :</strong><br>
+                                    <?php echo htmlspecialchars($leader['member_name']); ?>
+                                    <span class="badge bg-warning ms-1">Niveau 1</span>
+                                </p>
+                            <?php endif; ?>
+                            
+                            <p class="mb-2">
+                                <strong><i class="fas fa-users me-1"></i>Membres :</strong>
+                                <?php echo count($members); ?> membre(s)
+                            </p>
+                            
+                            <p class="mb-0">
+                                <strong><i class="fas fa-calendar me-1"></i>Créé le :</strong>
+                                <?php echo date('d/m/Y à H:i', strtotime($groupe->created_at)); ?>
+                            </p>
                         </div>
                     </div>
-                    
-                    <!-- Membres du groupe -->
-                    <div class="col-md-8 mb-4">
-                        <div class="card">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h5 class="card-title mb-0">
-                                    <i class="fas fa-users me-2"></i>Membres du Groupe
-                                </h5>
-                                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addMemberModal">
-                                    <i class="fas fa-plus me-1"></i>Ajouter un Membre
-                                </button>
-                            </div>
-                            <div class="card-body">
-                                <?php if (empty($members)): ?>
-                                    <div class="text-center py-4">
-                                        <i class="fas fa-user-plus fa-2x text-muted mb-3"></i>
-                                        <p class="text-muted">Aucun membre dans ce groupe</p>
-                                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addMemberModal">
-                                            <i class="fas fa-plus me-2"></i>Ajouter le Premier Membre
-                                        </button>
-                                    </div>
-                                <?php else: ?>
-                                    <div class="table-responsive">
-                                        <table class="table table-hover">
+                </div>
+            </div>
+        </div>
+
+        <!-- Membres du groupe -->
+        <div class="card border-0 shadow mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center bg-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-users me-2"></i>Membres du Groupe
+                </h5>
+                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addMemberModal">
+                    <i class="fas fa-plus me-1"></i>Ajouter un Membre
+                </button>
+            </div>
+            <div class="card-body">
+                <?php if (empty($members)): ?>
+                    <div class="empty-state">
+                        <i class="fas fa-user-plus"></i>
+                        <h4>Aucun membre dans ce groupe</h4>
+                        <p class="lead">Ajoutez des membres pour commencer à organiser votre groupe.</p>
+                        <button class="btn btn-dnd btn-lg" data-bs-toggle="modal" data-bs-target="#addMemberModal">
+                            <i class="fas fa-plus me-2"></i>Ajouter le Premier Membre
+                        </button>
+                    </div>
+                <?php else: ?>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
                                             <thead>
                                                 <tr>
                                                     <th>Membre</th>
@@ -397,12 +426,8 @@ try {
                                                 <?php endforeach; ?>
                                             </tbody>
                                         </table>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
                     </div>
-                </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -494,15 +519,26 @@ try {
         <input type="hidden" name="hierarchy_level" id="updateHierarchyLevel">
     </form>
     
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <style>
-        .clickable-badge {
-            cursor: pointer;
-            transition: all 0.2s ease;
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #7f8c8d;
         }
-        .clickable-badge:hover {
-            transform: scale(1.05);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            color: #bdc3c7;
+        }
+        .btn-dnd {
+            background: linear-gradient(45deg, #8B4513, #D2691E);
+            border: none;
+            color: white;
+        }
+        .btn-dnd:hover {
+            background: linear-gradient(45deg, #A0522D, #CD853F);
+            color: white;
         }
     </style>
     <script>
