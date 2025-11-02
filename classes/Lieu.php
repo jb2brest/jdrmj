@@ -2171,7 +2171,19 @@ class Lieu
                 
                 if ($entity) {
                     // C'est un PNJ dans place_npcs
-                    // Supprimer l'équipement du PNJ
+                    // Récupérer le npc_character_id pour supprimer les items
+                    $stmt = $pdo->prepare("SELECT npc_character_id FROM place_npcs WHERE id = ?");
+                    $stmt->execute([$entityId]);
+                    $npcData = $stmt->fetch(PDO::FETCH_ASSOC);
+                    $npcCharacterId = $npcData['npc_character_id'] ?? null;
+                    
+                    // Supprimer les items du PNJ (table items)
+                    if ($npcCharacterId) {
+                        $stmt = $pdo->prepare("DELETE FROM items WHERE owner_type = 'npc' AND owner_id = ?");
+                        $stmt->execute([$npcCharacterId]);
+                    }
+                    
+                    // Supprimer l'équipement du PNJ (table npc_equipment - ancien système)
                     $stmt = $pdo->prepare("DELETE FROM npc_equipment WHERE npc_id = ?");
                     $stmt->execute([$entityId]);
                     
@@ -2192,8 +2204,15 @@ class Lieu
                         return false;
                     }
                     
+                    // Supprimer les items du PNJ (table items)
+                    $stmt = $pdo->prepare("DELETE FROM items WHERE owner_type = 'npc' AND owner_id = ?");
+                    $stmt->execute([$entityId]);
+                    
+                    // Supprimer l'équipement du PNJ (table npc_equipment - ancien système)
+                    $stmt = $pdo->prepare("DELETE FROM npc_equipment WHERE npc_id = ?");
+                    $stmt->execute([$entityId]);
+                    
                     // Supprimer le PNJ directement depuis npcs
-                    // Note: Les PNJ sans lieu n'ont généralement pas d'équipement dans npc_equipment
                     $stmt = $pdo->prepare("DELETE FROM npcs WHERE id = ?");
                     $stmt->execute([$entityId]);
                 }
@@ -2237,7 +2256,20 @@ class Lieu
                 $entity = $stmt->fetch(PDO::FETCH_ASSOC);
                 
                 if ($entity) {
-                    // C'est un PNJ
+                    // C'est un PNJ dans place_npcs
+                    // Récupérer le npc_character_id pour supprimer les items
+                    $stmt = $pdo->prepare("SELECT npc_character_id FROM place_npcs WHERE id = ?");
+                    $stmt->execute([$entityId]);
+                    $npcData = $stmt->fetch(PDO::FETCH_ASSOC);
+                    $npcCharacterId = $npcData['npc_character_id'] ?? null;
+                    
+                    // Supprimer les items du PNJ (table items)
+                    if ($npcCharacterId) {
+                        $stmt = $pdo->prepare("DELETE FROM items WHERE owner_type = 'npc' AND owner_id = ?");
+                        $stmt->execute([$npcCharacterId]);
+                    }
+                    
+                    // Supprimer l'équipement du PNJ (table npc_equipment - ancien système)
                     $stmt = $pdo->prepare("DELETE FROM npc_equipment WHERE npc_id = ?");
                     $stmt->execute([$entityId]);
                     

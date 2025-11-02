@@ -315,10 +315,26 @@ class Character
     public function delete()
     {
         try {
+            $this->pdo->beginTransaction();
+            
+            // Supprimer les items du personnage (table items)
+            $stmt = $this->pdo->prepare("DELETE FROM items WHERE owner_type = 'player' AND owner_id = ?");
+            $stmt->execute([$this->id]);
+            
+            // Supprimer le personnage lui-même
             $stmt = $this->pdo->prepare("DELETE FROM characters WHERE id = ? AND user_id = ?");
-            return $stmt->execute([$this->id, $this->user_id]);
+            $result = $stmt->execute([$this->id, $this->user_id]);
+            
+            if ($result) {
+                $this->pdo->commit();
+                return true;
+            } else {
+                $this->pdo->rollBack();
+                return false;
+            }
             
         } catch (PDOException $e) {
+            $this->pdo->rollBack();
             error_log("Erreur lors de la suppression du personnage: " . $e->getMessage());
             return false;
         }

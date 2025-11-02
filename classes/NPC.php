@@ -377,10 +377,26 @@ class NPC
     public function delete()
     {
         try {
+            $this->pdo->beginTransaction();
+            
+            // Supprimer les items du NPC (table items)
+            $stmt = $this->pdo->prepare("DELETE FROM items WHERE owner_type = 'npc' AND owner_id = ?");
+            $stmt->execute([$this->id]);
+            
+            // Supprimer le NPC lui-même
             $sql = "DELETE FROM npcs WHERE id = :id";
             $stmt = $this->pdo->prepare($sql);
-            return $stmt->execute([':id' => $this->id]);
+            $result = $stmt->execute([':id' => $this->id]);
+            
+            if ($result) {
+                $this->pdo->commit();
+                return true;
+            } else {
+                $this->pdo->rollBack();
+                return false;
+            }
         } catch (PDOException $e) {
+            $this->pdo->rollBack();
             error_log("Erreur lors de la suppression du NPC: " . $e->getMessage());
             return false;
         }
