@@ -1872,6 +1872,8 @@ class NPC
      */
     public function getMyEquipment() {
         $pdo = \Database::getInstance()->getPdo();
+        // Ne pas filtrer uniquement par owner_type car certains items peuvent être enregistrés avec owner_type='player'
+        // alors qu'ils appartiennent à un NPC. Utiliser uniquement owner_id et vérifier que c'est bien un NPC.
         $stmt = $pdo->prepare("
             SELECT i.*, 
                    i.description as item_description,
@@ -1894,7 +1896,7 @@ class NPC
             LEFT JOIN armor a ON i.armor_id = a.id
             LEFT JOIN weapons w ON i.weapon_id = w.id
             LEFT JOIN shields s ON i.shield_id = s.id AND i.object_type = 'shield'
-            WHERE i.owner_type = 'npc' AND i.owner_id = ?
+            WHERE i.owner_id = ? AND EXISTS (SELECT 1 FROM npcs WHERE id = i.owner_id)
             ORDER BY i.created_at ASC
         ");
         $stmt->execute([$this->id]);
@@ -2918,10 +2920,22 @@ class NPC
         $items = [];
         
         try {
+            // Ne pas filtrer uniquement par owner_type car certains items peuvent être enregistrés avec owner_type='player'
+            // alors qu'ils appartiennent à un NPC. Utiliser uniquement owner_id et vérifier que c'est bien un NPC.
             $stmt = $pdo->prepare("
                 SELECT 
                     i.id,
-                    i.display_name as name,
+                    -- Utiliser le nom spécifique selon le type d'équipement, sinon display_name
+                    COALESCE(
+                        CASE 
+                            WHEN i.object_type = 'armor' THEN a.name
+                            WHEN i.object_type = 'weapon' THEN w.name
+                            WHEN i.object_type = 'shield' THEN s.name
+                            ELSE NULL
+                        END,
+                        i.display_name
+                    ) as name,
+                    i.display_name as original_display_name,
                     i.object_type as type,
                     i.type_precis as subtype,
                     i.description,
@@ -2948,10 +2962,10 @@ class NPC
                 FROM items i
                 LEFT JOIN armor a ON i.armor_id = a.id
                 LEFT JOIN weapons w ON i.weapon_id = w.id
-                LEFT JOIN shields s ON i.shield_id = s.id
+                LEFT JOIN shields s ON i.shield_id = s.id AND i.object_type = 'shield'
                 LEFT JOIN magical_items mi ON i.magical_item_id = mi.id
                 LEFT JOIN poisons p ON i.poison_id = p.id
-                WHERE i.owner_type = 'player' AND i.owner_id = ?
+                WHERE i.owner_id = ? AND EXISTS (SELECT 1 FROM npcs WHERE id = i.owner_id)
                 ORDER BY i.created_at ASC
             ");
             

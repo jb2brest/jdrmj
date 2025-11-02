@@ -27,7 +27,7 @@ try {
     echo "</div>";
     
     // Vérifier que les tables existent
-    $tables = ['PT_characters', 'PT_equipment_choices', 'PT_capabilities'];
+    $tables = ['PT_characters', 'PT_equipment_choices', 'PT_capabilities', 'PT_items'];
     
     foreach ($tables as $table) {
         $stmt = $pdo->query("SHOW TABLES LIKE '$table'");

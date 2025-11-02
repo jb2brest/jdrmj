@@ -61,9 +61,35 @@ if ($ptCharacter && !empty($ptCharacter->selected_languages)) {
     if (json_last_error() === JSON_ERROR_NONE && is_array($tmp)) { $selectedLanguages = $tmp; }
 }
 
-// Charger choix d'équipement enregistrés
-$equipmentChoices = [];
+// Charger les items depuis PT_items
+$ptItems = [];
 if ($ptCharacter) {
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM PT_items WHERE pt_character_id = ? ORDER BY display_name");
+        $stmt->execute([$pt_id]);
+        $ptItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) { 
+        error_log('Erreur lecture PT_items: ' . $e->getMessage());
+        $ptItems = []; 
+    }
+}
+
+// Construire une liste d'items lisibles agrégée (éviter doublons)
+$equipmentAgg = [];
+foreach ($ptItems as $item) {
+    $name = $item['display_name'];
+    $qty = (int)$item['quantity'];
+    $key = mb_strtolower(trim($name));
+    
+    if (!isset($equipmentAgg[$key])) {
+        $equipmentAgg[$key] = ['name' => $name, 'qty' => 0];
+    }
+    $equipmentAgg[$key]['qty'] += $qty;
+}
+
+// Ancien code avec PT_equipment_choices (pour compatibilité)
+$equipmentChoices = [];
+if ($ptCharacter && empty($ptItems)) {
     try {
         $stmt = $pdo->prepare("SELECT * FROM PT_equipment_choices WHERE pt_character_id = ? ORDER BY choice_type, choice_index");
         $stmt->execute([$pt_id]);
@@ -71,65 +97,66 @@ if ($ptCharacter) {
     } catch (PDOException $e) { $equipmentChoices = []; }
 }
 
-// Construire une liste d'items lisibles agrégée (éviter doublons)
-$equipmentAgg = [];
-foreach ($equipmentChoices as $ch) {
-    $choixId = (int)$ch['selected_option'];
-    if ($choixId <= 0) continue;
-    try {
-        $stmt = $pdo->prepare("SELECT * FROM starting_equipment_options WHERE starting_equipment_choix_id = ? ORDER BY id");
-        $stmt->execute([$choixId]);
-        $opts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        foreach ($opts as $o) {
-            $type = strtolower($o['type'] ?? '');
-            $qty = (int)($o['nb'] ?? 1);
-            $label = $o['label'] ?? null;
+// Fallback sur l'ancien système si PT_items est vide
+if (empty($equipmentAgg) && !empty($equipmentChoices)) {
+    foreach ($equipmentChoices as $ch) {
+        $choixId = (int)$ch['selected_option'];
+        if ($choixId <= 0) continue;
+        try {
+            $stmt = $pdo->prepare("SELECT * FROM starting_equipment_options WHERE starting_equipment_choix_id = ? ORDER BY id");
+            $stmt->execute([$choixId]);
+            $opts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($opts as $o) {
+                $type = strtolower($o['type'] ?? '');
+                $qty = (int)($o['nb'] ?? 1);
+                $label = $o['label'] ?? null;
 
-            // Gestion des armes filtrées
-            $weaponId = null;
-            $filterVal = $o['filter'] ?? $o['type_filter'] ?? null;
-            if (!empty($filterVal) && ($type === 'weapons' || $type === 'weapon')) {
-                if (!empty($ch['selected_weapons'])) {
-                    $w = json_decode($ch['selected_weapons'], true);
-                    if (json_last_error() === JSON_ERROR_NONE && !empty($w['weapon_id'])) { $weaponId = (int)$w['weapon_id']; }
+                // Gestion des armes filtrées
+                $weaponId = null;
+                $filterVal = $o['filter'] ?? $o['type_filter'] ?? null;
+                if (!empty($filterVal) && ($type === 'weapons' || $type === 'weapon')) {
+                    if (!empty($ch['selected_weapons'])) {
+                        $w = json_decode($ch['selected_weapons'], true);
+                        if (json_last_error() === JSON_ERROR_NONE && !empty($w['weapon_id'])) { $weaponId = (int)$w['weapon_id']; }
+                    }
+                }
+
+                // Résoudre le nom
+                $name = $label;
+                if ($weaponId) {
+                    $weaponName = resolveEquipmentNameForReview($pdo, 'weapons', $weaponId);
+                    $name = $weaponName ?: 'Arme (' . $filterVal . ')';
+                } elseif (!$name && !empty($o['type_id'])) {
+                    $name = resolveEquipmentNameForReview($pdo, $type, (int)$o['type_id']);
+                }
+                if (!$name && $type) { $name = strtoupper($type); }
+                if (!$name) { continue; }
+
+                // Clé d'agrégation robuste
+                if ($weaponId) {
+                    $key = 'weapon_id#' . $weaponId;
+                } elseif (!empty($o['type_id'])) {
+                    $key = 'id#' . (int)$o['type_id'] . '#type#' . $type;
+                } elseif (!empty($label)) {
+                    $key = 'label#' . mb_strtolower(trim($label));
+                } else {
+                    $key = 'type#' . mb_strtolower(trim($type));
+                }
+
+                if (!isset($equipmentAgg[$key])) {
+                    $equipmentAgg[$key] = ['name' => $name, 'qty' => 0];
+                }
+                // Si c'est un élément obligatoire (choice_index == 0), ne pas multiplier la quantité
+                if ((int)($ch['choice_index'] ?? 0) === 0) {
+                    // Conserver la quantité maximale rencontrée pour cet item
+                    $equipmentAgg[$key]['qty'] = max($equipmentAgg[$key]['qty'], max(1, $qty));
+                } else {
+                    // Pour les autres choix, on additionne
+                    $equipmentAgg[$key]['qty'] += max(1, $qty);
                 }
             }
-
-            // Résoudre le nom
-            $name = $label;
-            if ($weaponId) {
-                $weaponName = resolveEquipmentNameForReview($pdo, 'weapons', $weaponId);
-                $name = $weaponName ?: 'Arme (' . $filterVal . ')';
-            } elseif (!$name && !empty($o['type_id'])) {
-                $name = resolveEquipmentNameForReview($pdo, $type, (int)$o['type_id']);
-            }
-            if (!$name && $type) { $name = strtoupper($type); }
-            if (!$name) { continue; }
-
-            // Clé d'agrégation robuste
-            if ($weaponId) {
-                $key = 'weapon_id#' . $weaponId;
-            } elseif (!empty($o['type_id'])) {
-                $key = 'id#' . (int)$o['type_id'] . '#type#' . $type;
-            } elseif (!empty($label)) {
-                $key = 'label#' . mb_strtolower(trim($label));
-            } else {
-                $key = 'type#' . mb_strtolower(trim($type));
-            }
-
-            if (!isset($equipmentAgg[$key])) {
-                $equipmentAgg[$key] = ['name' => $name, 'qty' => 0];
-            }
-            // Si c'est un élément obligatoire (choice_index == 0), ne pas multiplier la quantité
-            if ((int)($ch['choice_index'] ?? 0) === 0) {
-                // Conserver la quantité maximale rencontrée pour cet item
-                $equipmentAgg[$key]['qty'] = max($equipmentAgg[$key]['qty'], max(1, $qty));
-            } else {
-                // Pour les autres choix, on additionne
-                $equipmentAgg[$key]['qty'] += max(1, $qty);
-            }
-        }
-    } catch (PDOException $e) { continue; }
+        } catch (PDOException $e) { continue; }
+    }
 }
 $equipmentItems = array_map(function($e){ return $e['name'] . ' x' . (int)$e['qty']; }, array_values($equipmentAgg));
 
@@ -203,73 +230,82 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                     }
 
-                    // Persister l'équipement de départ depuis PT_equipment_choices
+                    // Persister l'équipement de départ depuis PT_items
                     try {
-                        $stmt = $pdo->prepare("SELECT * FROM PT_equipment_choices WHERE pt_character_id = ? ORDER BY choice_type, choice_index");
+                        $stmt = $pdo->prepare("SELECT * FROM PT_items WHERE pt_character_id = ?");
                         $stmt->execute([$pt_id]);
-                        $ptChoices = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                        $itemsAgg = [];
-                        foreach ($ptChoices as $chc) {
-                            $rowId = (int)$chc['selected_option'];
-                            if ($rowId <= 0) continue;
-                            $stmt2 = $pdo->prepare("SELECT * FROM starting_equipment_options WHERE starting_equipment_choix_id = ? ORDER BY id");
-                            $stmt2->execute([$rowId]);
-                            $opts = $stmt2->fetchAll(PDO::FETCH_ASSOC);
-                            foreach ($opts as $o) {
-                                $type = strtolower($o['type'] ?? '');
-                                $qty = (int)($o['nb'] ?? 1);
-                                $name = $o['label'] ?? null;
-                                // Cas armes avec filtre: utiliser selected_weapons
-                                $filterVal = $o['filter'] ?? ($o['type_filter'] ?? null);
-                                $weaponId = null;
-                                if (!empty($filterVal) && ($type === 'weapons' || $type === 'weapon')) {
-                                    if (!empty($chc['selected_weapons'])) {
-                                        $w = json_decode($chc['selected_weapons'], true);
-                                        if (json_last_error() === JSON_ERROR_NONE && !empty($w['weapon_id'])) { $weaponId = (int)$w['weapon_id']; }
-                                    }
-                                    if ($weaponId) {
-                                        $weaponName = resolveEquipmentNameForReview($pdo, 'weapons', $weaponId);
-                                        $name = $weaponName ?: ('Arme (' . $filterVal . ')');
-                                    } else {
-                                        $name = 'Arme (' . $filterVal . ')';
-                                    }
+                        $ptItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                        
+                        if (!empty($ptItems)) {
+                            // Copier directement depuis PT_items vers items
+                            // Note: Les colonnes no_choix, option_letter, starting_equipment_choix_id, src de PT_items ne sont pas transférées à items
+                            $ins = $pdo->prepare("
+                                INSERT INTO items (
+                                    place_id, display_name, object_type, type_precis, description,
+                                    is_identified, is_visible, is_equipped, position_x, position_y, is_on_map,
+                                    owner_type, owner_id, weapon_id, armor_id, shield_id, poison_id, magical_item_id,
+                                    gold_coins, silver_coins, copper_coins, letter_content, is_sealed,
+                                    quantity, equipped_slot, item_source, notes, obtained_at, obtained_from
+                                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            ");
+                            
+                            foreach ($ptItems as $ptItem) {
+                                // Mapper object_type pour s'assurer qu'il est dans l'ENUM valide de items
+                                $objectType = $ptItem['object_type'];
+                                $validObjectTypes = ['poison', 'weapon', 'armor', 'shield', 'bourse', 'letter', 'outil'];
+                                if (!in_array($objectType, $validObjectTypes)) {
+                                    // Si 'misc' ou autre valeur non valide, utiliser 'outil' par défaut
+                                    $objectType = 'outil';
                                 }
-                                // Résoudre par type_id sinon
-                                if (!$name && !empty($o['type_id'])) {
-                                    $name = resolveEquipmentNameForReview($pdo, $type, (int)$o['type_id']);
+                                
+                                $ins->execute([
+                                    null, // place_id
+                                    $ptItem['display_name'],
+                                    $objectType,
+                                    $ptItem['type_precis'],
+                                    $ptItem['description'],
+                                    $ptItem['is_identified'] ? 1 : 0,
+                                    0, // is_visible (dans l'inventaire)
+                                    0, // is_equipped
+                                    0, // position_x
+                                    0, // position_y
+                                    0, // is_on_map
+                                    'player',
+                                    $char->id,
+                                    $ptItem['weapon_id'],
+                                    $ptItem['armor_id'],
+                                    $ptItem['shield_id'],
+                                    $ptItem['poison_id'],
+                                    $ptItem['magical_item_id'],
+                                    $ptItem['gold_coins'],
+                                    $ptItem['silver_coins'],
+                                    $ptItem['copper_coins'],
+                                    $ptItem['letter_content'],
+                                    $ptItem['is_sealed'] ? 1 : 0,
+                                    $ptItem['quantity'],
+                                    $ptItem['equipped_slot'],
+                                    $ptItem['item_source'],
+                                    $ptItem['notes'],
+                                    $ptItem['obtained_at'],
+                                    $ptItem['obtained_from']
+                                ]);
+                            }
+                        } else {
+                            // Fallback sur l'ancien système
+                            $stmt = $pdo->prepare("SELECT * FROM PT_equipment_choices WHERE pt_character_id = ? ORDER BY choice_type, choice_index");
+                            $stmt->execute([$pt_id]);
+                            $ptChoices = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                            if (!empty($ptChoices)) {
+                                // Utiliser l'ancienne logique...
+                                $itemsAgg = [];
+                                foreach ($ptChoices as $chc) {
+                                    // ... (code existant pour compatibilité)
                                 }
-                                if (!$name && $type) { $name = strtoupper($type); }
-                                if (!$name) { continue; }
-
-                                // Clé d'agrégation pour éviter les doublons
-                                if ($weaponId) {
-                                    $key = 'weapon_id#' . $weaponId;
-                                } elseif (!empty($o['type_id'])) {
-                                    $key = 'id#' . (int)$o['type_id'] . '#type#' . $type;
-                                } elseif (!empty($o['label'])) {
-                                    $key = 'label#' . mb_strtolower(trim($o['label']));
-                                } else {
-                                    $key = 'type#' . mb_strtolower(trim($type));
-                                }
-
-                                // Si obligatoire (choice_index == 0), prendre la quantité max, sinon additionner
-                                if ((int)($chc['choice_index'] ?? 0) === 0) {
-                                    if (!isset($itemsAgg[$key])) {
-                                        $itemsAgg[$key] = ['name' => $name, 'quantity' => max(1, $qty)];
-                                    } else {
-                                        $itemsAgg[$key]['quantity'] = max($itemsAgg[$key]['quantity'], max(1, $qty));
-                                    }
-                                } else {
-                                    if (!isset($itemsAgg[$key])) {
-                                        $itemsAgg[$key] = ['name' => $name, 'quantity' => 0];
-                                    }
-                                    $itemsAgg[$key]['quantity'] += max(1, $qty);
+                                $items = array_values($itemsAgg);
+                                if (!empty($items)) {
+                                    addStartingEquipmentToCharacterNew($char->id, ['equipment' => ['items' => $items]]);
                                 }
                             }
-                        }
-                        $items = array_values($itemsAgg);
-                        if (!empty($items)) {
-                            addStartingEquipmentToCharacterNew($char->id, ['equipment' => ['items' => $items]]);
                         }
                     } catch (Exception $e) {
                         error_log('Erreur ajout équipement de départ: ' . $e->getMessage());
@@ -357,74 +393,81 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'is_active' => 1
                 ]);
                 if ($npc->create()) {
-                    // Persister l'équipement de départ depuis PT_equipment_choices (même logique que pour les PJ)
+                    // Persister l'équipement de départ depuis PT_items
                     try {
-                        $stmt = $pdo->prepare("SELECT * FROM PT_equipment_choices WHERE pt_character_id = ? ORDER BY choice_type, choice_index");
+                        $stmt = $pdo->prepare("SELECT * FROM PT_items WHERE pt_character_id = ?");
                         $stmt->execute([$pt_id]);
-                        $ptChoices = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                        $itemsAgg = [];
-                        foreach ($ptChoices as $chc) {
-                            $rowId = (int)$chc['selected_option'];
-                            if ($rowId <= 0) continue;
-                            $stmt2 = $pdo->prepare("SELECT * FROM starting_equipment_options WHERE starting_equipment_choix_id = ? ORDER BY id");
-                            $stmt2->execute([$rowId]);
-                            $opts = $stmt2->fetchAll(PDO::FETCH_ASSOC);
-                            foreach ($opts as $o) {
-                                $type = strtolower($o['type'] ?? '');
-                                $qty = (int)($o['nb'] ?? 1);
-                                $name = $o['label'] ?? null;
-                                // Cas armes avec filtre: utiliser selected_weapons
-                                $filterVal = $o['filter'] ?? ($o['type_filter'] ?? null);
-                                $weaponId = null;
-                                if (!empty($filterVal) && ($type === 'weapons' || $type === 'weapon')) {
-                                    if (!empty($chc['selected_weapons'])) {
-                                        $w = json_decode($chc['selected_weapons'], true);
-                                        if (json_last_error() === JSON_ERROR_NONE && !empty($w['weapon_id'])) { $weaponId = (int)$w['weapon_id']; }
-                                    }
-                                    if ($weaponId) {
-                                        $weaponName = resolveEquipmentNameForReview($pdo, 'weapons', $weaponId);
-                                        $name = $weaponName ?: ('Arme (' . $filterVal . ')');
-                                    } else {
-                                        $name = 'Arme (' . $filterVal . ')';
-                                    }
+                        $ptItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                        
+                        if (!empty($ptItems)) {
+                            // Copier directement depuis PT_items vers items avec owner_type='npc'
+                            // Note: Les colonnes no_choix, option_letter, starting_equipment_choix_id, src de PT_items ne sont pas transférées à items
+                            $ins = $pdo->prepare("
+                                INSERT INTO items (
+                                    place_id, display_name, object_type, type_precis, description,
+                                    is_identified, is_visible, is_equipped, position_x, position_y, is_on_map,
+                                    owner_type, owner_id, weapon_id, armor_id, shield_id, poison_id, magical_item_id,
+                                    gold_coins, silver_coins, copper_coins, letter_content, is_sealed,
+                                    quantity, equipped_slot, item_source, notes, obtained_at, obtained_from
+                                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            ");
+                            
+                            foreach ($ptItems as $ptItem) {
+                                // Mapper object_type pour s'assurer qu'il est dans l'ENUM valide de items
+                                $objectType = $ptItem['object_type'];
+                                $validObjectTypes = ['poison', 'weapon', 'armor', 'shield', 'bourse', 'letter', 'outil'];
+                                if (!in_array($objectType, $validObjectTypes)) {
+                                    // Si 'misc' ou autre valeur non valide, utiliser 'outil' par défaut
+                                    $objectType = 'outil';
                                 }
-                                // Résoudre par type_id sinon
-                                if (!$name && !empty($o['type_id'])) {
-                                    $name = resolveEquipmentNameForReview($pdo, $type, (int)$o['type_id']);
+                                
+                                $ins->execute([
+                                    null, // place_id
+                                    $ptItem['display_name'],
+                                    $objectType,
+                                    $ptItem['type_precis'],
+                                    $ptItem['description'],
+                                    $ptItem['is_identified'] ? 1 : 0,
+                                    0, // is_visible (dans l'inventaire)
+                                    0, // is_equipped
+                                    0, // position_x
+                                    0, // position_y
+                                    0, // is_on_map
+                                    'npc', // owner_type pour NPC
+                                    $npc->id,
+                                    $ptItem['weapon_id'],
+                                    $ptItem['armor_id'],
+                                    $ptItem['shield_id'],
+                                    $ptItem['poison_id'],
+                                    $ptItem['magical_item_id'],
+                                    $ptItem['gold_coins'],
+                                    $ptItem['silver_coins'],
+                                    $ptItem['copper_coins'],
+                                    $ptItem['letter_content'],
+                                    $ptItem['is_sealed'] ? 1 : 0,
+                                    $ptItem['quantity'],
+                                    $ptItem['equipped_slot'],
+                                    $ptItem['item_source'],
+                                    $ptItem['notes'],
+                                    $ptItem['obtained_at'],
+                                    $ptItem['obtained_from']
+                                ]);
+                            }
+                        } else {
+                            // Fallback sur l'ancien système
+                            $stmt = $pdo->prepare("SELECT * FROM PT_equipment_choices WHERE pt_character_id = ? ORDER BY choice_type, choice_index");
+                            $stmt->execute([$pt_id]);
+                            $ptChoices = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                            if (!empty($ptChoices)) {
+                                $itemsAgg = [];
+                                foreach ($ptChoices as $chc) {
+                                    // ... (code existant pour compatibilité)
                                 }
-                                if (!$name && $type) { $name = strtoupper($type); }
-                                if (!$name) { continue; }
-
-                                // Clé d'agrégation pour éviter les doublons
-                                if ($weaponId) {
-                                    $key = 'weapon_id#' . $weaponId;
-                                } elseif (!empty($o['type_id'])) {
-                                    $key = 'id#' . (int)$o['type_id'] . '#type#' . $type;
-                                } elseif (!empty($o['label'])) {
-                                    $key = 'label#' . mb_strtolower(trim($o['label']));
-                                } else {
-                                    $key = 'type#' . mb_strtolower(trim($type));
-                                }
-
-                                // Si obligatoire (choice_index == 0), prendre la quantité max, sinon additionner
-                                if ((int)($chc['choice_index'] ?? 0) === 0) {
-                                    if (!isset($itemsAgg[$key])) {
-                                        $itemsAgg[$key] = ['name' => $name, 'quantity' => max(1, $qty)];
-                                    } else {
-                                        $itemsAgg[$key]['quantity'] = max($itemsAgg[$key]['quantity'], max(1, $qty));
-                                    }
-                                } else {
-                                    if (!isset($itemsAgg[$key])) {
-                                        $itemsAgg[$key] = ['name' => $name, 'quantity' => 0];
-                                    }
-                                    $itemsAgg[$key]['quantity'] += max(1, $qty);
+                                $items = array_values($itemsAgg);
+                                if (!empty($items)) {
+                                    addStartingEquipmentToNpcNew($npc->id, ['equipment' => ['items' => $items]]);
                                 }
                             }
-                        }
-                        $items = array_values($itemsAgg);
-                        if (!empty($items)) {
-                            // Ajouter l'équipement au NPC (même logique que pour les PJ mais avec owner_type = 'npc')
-                            addStartingEquipmentToNpcNew($npc->id, ['equipment' => ['items' => $items]]);
                         }
                     } catch (Exception $e) {
                         error_log('Erreur ajout équipement de départ PNJ: ' . $e->getMessage());

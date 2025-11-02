@@ -274,7 +274,15 @@ weapon : weapons
 Il manque la gestion des cas ou la colonne filter de la table starting_equipment_options n'est pas vide. 
 Dans ce cas, il faut proposer un menu déroulant pour les armes contenues avec le contenu de la colonne filter sur la colonne type de la table "weapons"
 
+Il faut ajouter une methode d'instance de la classe "classe" appelée : getStartingEquipementChoix.
+cette méthode retourne la liste des Choix sous forme d'objet EquipementChoix. 
+Et chaque objet EquipementChoix à un id, un numero de choix et une liste d'option. Chaque option est stoquée sous forme d'objet EquipementOption. 
+Chaque objet EquipementOption à un id, un type, un type_id, un type_filter et un nombre.
 
+SELECT id, no_choix FROM starting_equipment_choix WHERE src = 'class' AND src_id = 1 ORDER BY no_choix ASC, id ASC;
+SELECT id, starting_equipment_choix_id, type, type_id, type_filter, nb FROM starting_equipment_options WHERE starting_equipment_choix_id IN (1,2,3,4,5,6) ORDER BY id ASC;
+SELECT id, starting_equipment_choix_id, type, type_id, type_filter, nb FROM starting_equipment_options WHERE starting_equipment_choix_id IN 
+(SELECT id FROM starting_equipment_choix WHERE src = 'class' AND src_id = 1 ORDER BY no_choix ASC, id ASC) ORDER BY id ASC;
 
 renomme character_class_selection.php en cc01_class_selection.php (pour create character étape 01) 
 

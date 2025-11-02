@@ -249,7 +249,11 @@ class PTCharacter
             $stmt = $pdo->prepare("DELETE FROM PT_equipment_choices WHERE pt_character_id = ?");
             $stmt->execute([$this->id]);
             
-            // 2. Supprimer les capacités temporaires
+            // 2. Supprimer les items temporaires
+            $stmt = $pdo->prepare("DELETE FROM PT_items WHERE pt_character_id = ?");
+            $stmt->execute([$this->id]);
+            
+            // 3. Supprimer les capacités temporaires
             $stmt = $pdo->prepare("DELETE FROM PT_capabilities WHERE pt_character_id = ?");
             $stmt->execute([$this->id]);
             

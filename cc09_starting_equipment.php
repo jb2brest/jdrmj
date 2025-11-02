@@ -2,7 +2,7 @@
 /**
  * Étape 9 - Choix de l'équipement de départ (classe + historique)
  * Tables: starting_equipment_choix, starting_equipment_options, weapons
- * Stockage temporaire: PT_equipment_choices
+ * Stockage temporaire: PT_items
  */
 
 require_once 'classes/init.php';
@@ -116,6 +116,106 @@ if (!empty($allChoices)) {
     }
 }
 
+// Charger les choix précédemment enregistrés depuis PT_items pour pré-remplir le formulaire
+$savedChoices = [];
+$savedWeaponSelects = [];
+if ($pt_id) {
+    try {
+        // Récupérer les choix distincts avec leur source, no_choix et option_letter
+        // Pour chaque no_choix, prendre le starting_equipment_choix_id le plus fréquent
+        // Utiliser directement pt.src au lieu du JOIN
+        $stmt = $pdo->prepare("
+            SELECT 
+                pt.no_choix, 
+                pt.starting_equipment_choix_id,
+                pt.option_letter,
+                pt.weapon_id,
+                pt.src,
+                MAX(pt.created_at) as latest_created_at,
+                COUNT(*) as item_count
+            FROM PT_items pt
+            WHERE pt.pt_character_id = ? 
+            AND pt.starting_equipment_choix_id IS NOT NULL
+            AND pt.no_choix > 0
+            GROUP BY pt.no_choix, pt.src, pt.starting_equipment_choix_id, pt.option_letter
+            ORDER BY pt.no_choix ASC, item_count DESC, latest_created_at DESC
+        ");
+        $stmt->execute([$pt_id]);
+        $ptItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Pour chaque no_choix, garder seulement le premier (le plus fréquent ou le plus récent)
+        $choicesByNo = [];
+        foreach ($ptItems as $item) {
+            $noChoix = (int)$item['no_choix'];
+            $src = $item['src'] ?? 'class';
+            $key = $src . '_' . $noChoix;
+            
+            // Garder seulement le premier choix pour chaque no_choix
+            if (!isset($choicesByNo[$key])) {
+                $choicesByNo[$key] = $item;
+            }
+        }
+        
+        foreach ($choicesByNo as $key => $item) {
+            $choixId = (int)$item['starting_equipment_choix_id'];
+            $noChoix = (int)$item['no_choix'];
+            $optionLetter = $item['option_letter'] ?? null;
+            
+            // Déterminer le préfixe selon la source (class ou background)
+            $prefix = ($item['src'] === 'background') ? 'bg_' : 'class_';
+            $idxKey = $prefix . (string)$noChoix;
+            
+            // Stocker le choix sélectionné avec option_letter si disponible
+            $savedChoices[$idxKey] = [
+                'starting_equipment_choix_id' => $choixId,
+                'option_letter' => $optionLetter
+            ];
+            
+            // Si c'est une arme sélectionnée, récupérer le weapon_id le plus fréquent pour ce choix
+            if (!empty($item['weapon_id'])) {
+                $savedWeaponSelects[$idxKey] = (int)$item['weapon_id'];
+            } else {
+                // Chercher le weapon_id le plus fréquent pour ce no_choix
+                try {
+                    $stmtW = $pdo->prepare("
+                        SELECT weapon_id, COUNT(*) as cnt
+                        FROM PT_items
+                        WHERE pt_character_id = ? 
+                        AND no_choix = ?
+                        AND weapon_id IS NOT NULL
+                        GROUP BY weapon_id
+                        ORDER BY cnt DESC
+                        LIMIT 1
+                    ");
+                    $stmtW->execute([$pt_id, $noChoix]);
+                    $weaponRow = $stmtW->fetch(PDO::FETCH_ASSOC);
+                    if ($weaponRow) {
+                        $savedWeaponSelects[$idxKey] = (int)$weaponRow['weapon_id'];
+                    }
+                } catch (PDOException $e) {
+                    // Ignorer
+                }
+            }
+        }
+        
+        // Debug: logger les choix sauvegardés
+        error_log('Choix sauvegardés chargés depuis PT_items: ' . json_encode([
+            'choices' => $savedChoices,
+            'weapon_selects' => $savedWeaponSelects,
+            'total_items' => count($ptItems),
+            'choices_by_no' => array_map(function($item) {
+                return [
+                    'no_choix' => $item['no_choix'],
+                    'src' => $item['src'],
+                    'starting_equipment_choix_id' => $item['starting_equipment_choix_id']
+                ];
+            }, array_values($choicesByNo))
+        ]));
+    } catch (PDOException $e) {
+        error_log('Erreur chargement choix sauvegardés: ' . $e->getMessage());
+    }
+}
+
 $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
@@ -143,54 +243,255 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (empty($message)) {
             try {
-                // Effacer les anciens choix pour ce PT
-                $del = $pdo->prepare("DELETE FROM PT_equipment_choices WHERE pt_character_id = ?");
+                // Effacer les anciens items pour ce PT
+                $del = $pdo->prepare("DELETE FROM PT_items WHERE pt_character_id = ?");
                 $del->execute([$pt_id]);
 
-                // Insérer nouveaux choix
-                $ins = $pdo->prepare("INSERT INTO PT_equipment_choices (pt_character_id, choice_type, choice_index, selected_option, selected_weapons) VALUES (?, ?, ?, ?, ?)");
-
-                foreach ([['set'=>$classChoices,'prefix'=>'class_'], ['set'=>$backgroundChoices,'prefix'=>'bg_']] as $group) {
+                // Fonction helper pour créer un item dans PT_items
+                $createPTItem = function($pdo, $ptId, $option, $weaponId = null, $noChoix = null, $optionLetter = null, $startingEquipmentChoixId = null, $src = null) {
+                    $type = strtolower($option['type'] ?? '');
+                    $qty = (int)($option['nb'] ?? 1);
+                    
+                    // Résoudre le nom de l'équipement
+                    $displayName = $option['label'] ?? null;
+                    $weapon_id = null;
+                    $armor_id = null;
+                    $shield_id = null;
+                    $poison_id = null;
+                    $magical_item_id = null;
+                    
+                    if ($weaponId) {
+                        $weaponInfo = resolveEquipment($pdo, 'weapon', $weaponId);
+                        $displayName = $weaponInfo['name'] ?: $displayName;
+                        $weapon_id = $weaponId;
+                    } elseif (!empty($option['type_id'])) {
+                        $info = resolveEquipment($pdo, $type, (int)$option['type_id']);
+                        $displayName = $info['name'] ?: $displayName;
+                        
+                        // Déterminer quel ID utiliser selon le type
+                        if ($type === 'weapon') {
+                            $weapon_id = (int)$option['type_id'];
+                        } elseif ($type === 'armor') {
+                            $armor_id = (int)$option['type_id'];
+                        } elseif ($type === 'shield' || $type === 'bouclier') {
+                            $shield_id = (int)$option['type_id'];
+                        } elseif ($type === 'poison') {
+                            $poison_id = (int)$option['type_id'];
+                        }
+                    }
+                    
+                    if (!$displayName) {
+                        $displayName = strtoupper($type);
+                    }
+                    
+                    // Mapper object_type depuis type
+                    $objectTypeMap = [
+                        'weapon' => 'weapon',
+                        'weapons' => 'weapon',
+                        'armor' => 'armor',
+                        'shield' => 'shield',
+                        'bouclier' => 'shield',
+                        'poison' => 'poison',
+                        'magical_item' => 'magical_item'
+                    ];
+                    $objectType = $objectTypeMap[$type] ?? 'misc';
+                    
+                    // Insérer dans PT_items
+                    $stmt = $pdo->prepare("
+                        INSERT INTO PT_items (
+                            pt_character_id, display_name, object_type, type_precis, description,
+                            is_identified, is_visible, is_equipped, position_x, position_y, is_on_map,
+                            weapon_id, armor_id, shield_id, poison_id, magical_item_id,
+                            gold_coins, silver_coins, copper_coins, letter_content, is_sealed,
+                            quantity, equipped_slot, item_source, notes, obtained_at, obtained_from,
+                            no_choix, option_letter, starting_equipment_choix_id, src
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ");
+                    
+                    $stmt->execute([
+                        $ptId,
+                        $displayName,
+                        $objectType,
+                        $type,
+                        $option['description'] ?? null,
+                        1, // is_identified (converti en entier)
+                        0, // is_visible (converti en entier)
+                        0, // is_equipped (converti en entier)
+                        0, // position_x
+                        0, // position_y
+                        0, // is_on_map (converti en entier)
+                        $weapon_id,
+                        $armor_id,
+                        $shield_id,
+                        $poison_id,
+                        $magical_item_id,
+                        0, // gold_coins
+                        0, // silver_coins
+                        0, // copper_coins
+                        null, // letter_content
+                        0, // is_sealed (converti en entier)
+                        $qty,
+                        null, // equipped_slot
+                        'Équipement de départ',
+                        null, // notes
+                        date('Y-m-d H:i:s'),
+                        'Équipement de départ',
+                        $noChoix, // no_choix
+                        $optionLetter, // option_letter
+                        $startingEquipmentChoixId, // starting_equipment_choix_id
+                        $src // src
+                    ]);
+                };
+                
+                // Agrégation pour éviter les doublons - utiliser le nom résolu comme clé principale
+                $itemsAgg = [];
+                
+                foreach ([['set'=>$classChoices,'prefix'=>'class_','src'=>'class'], ['set'=>$backgroundChoices,'prefix'=>'bg_','src'=>'background']] as $group) {
                     // Regrouper par no_choix
                     $byNo = [];
                     foreach ($group['set'] as $c) { $byNo[(int)($c['no_choix'] ?? 0)][] = $c; }
+                    
                     foreach ($byNo as $no => $rows) {
                         if ($no === 0) {
-                            // Obligatoires: enregistrer chaque ligne comme fixe
+                            // Obligatoires: traiter chaque ligne et résoudre les noms
                             foreach ($rows as $c) {
-                                $ins->execute([
-                                    $pt_id,
-                                    $c['src'] ?? 'class',
-                                    0,
-                                    (string)((int)$c['id']),
-                                    null
-                                ]);
-                            }
-                            continue;
-                        }
-                        $idxKey = $group['prefix'] . (string)$no;
-                        $selectedRowId = (int)$postedChoices[$idxKey];
-                        $selectedWeapons = null;
-                        // Si la ligne sélectionnée contient un filtre armes
-                        $optionsOfSelectedRow = $choiceIdToOptions[$selectedRowId] ?? [];
-                        foreach ($optionsOfSelectedRow as $o) {
-                            $typeFilter = $o['filter'] ?? ($o['type_filter'] ?? null);
-                            if (!empty($typeFilter) && isWeaponType($o['type'] ?? '')) {
-                                $weaponSel = $postedWeaponSelects[$idxKey] ?? '';
-                                if ($weaponSel !== '') {
-                                    $selectedWeapons = json_encode([ 'weapon_id' => (int)$weaponSel ], JSON_UNESCAPED_UNICODE);
+                                $options = $choiceIdToOptions[$c['id']] ?? [];
+                                foreach ($options as $o) {
+                                    $type = strtolower($o['type'] ?? '');
+                                    $qty = (int)($o['nb'] ?? 1);
+                                    
+                                    // Résoudre le nom pour l'agrégation
+                                    $resolvedName = null;
+                                    $weaponId = null;
+                                    if (!empty($o['type_id'])) {
+                                        $info = resolveEquipment($pdo, $type, (int)$o['type_id']);
+                                        $resolvedName = $info['name'];
+                                        
+                                        if ($type === 'weapon') {
+                                            $weaponId = (int)$o['type_id'];
+                                        }
+                                    }
+                                    $label = $o['label'] ?? null;
+                                    $displayName = $resolvedName ?: ($label ?? strtoupper($type));
+                                    
+                                    // Clé d'agrégation basée sur le nom résolu normalisé
+                                    if (!empty($resolvedName)) {
+                                        $normalizedName = mb_strtolower(trim($resolvedName));
+                                        $key = 'name#' . $normalizedName . '#type#' . $type;
+                                    } elseif ($weaponId) {
+                                        $key = 'weapon_id#' . $weaponId;
+                                    } elseif (!empty($o['type_id'])) {
+                                        $key = 'id#' . (int)$o['type_id'] . '#type#' . $type;
+                                    } elseif (!empty($label)) {
+                                        $key = 'label#' . mb_strtolower(trim($label));
+                                    } else {
+                                        $key = 'type#' . mb_strtolower(trim($type));
+                                    }
+                                    
+                                    if (!isset($itemsAgg[$key])) {
+                                        $itemsAgg[$key] = [
+                                            'option' => $o, 
+                                            'qty' => 0, 
+                                            'weapon_id' => $weaponId, 
+                                            'resolved_name' => $resolvedName,
+                                            'no_choix' => (int)($c['no_choix'] ?? 0),
+                                            'option_letter' => $c['option_letter'] ?? null,
+                                            'starting_equipment_choix_id' => (int)$c['id'],
+                                            'src' => $group['src']
+                                        ];
+                                    }
+                                    // Pour les obligatoires, prendre le max (éviter de compter plusieurs fois le même équipement)
+                                    $itemsAgg[$key]['qty'] = max($itemsAgg[$key]['qty'], $qty);
                                 }
-                                break;
+                            }
+                        } else {
+                            // Choix: traiter la ligne sélectionnée
+                            $idxKey = $group['prefix'] . (string)$no;
+                            $selectedRowId = (int)$postedChoices[$idxKey];
+                            $selectedWeaponId = null;
+                            
+                            // Si la ligne sélectionnée contient un filtre armes
+                            $optionsOfSelectedRow = $choiceIdToOptions[$selectedRowId] ?? [];
+                            foreach ($optionsOfSelectedRow as $o) {
+                                $type = strtolower($o['type'] ?? '');
+                                $qty = (int)($o['nb'] ?? 1);
+                                $typeFilter = $o['filter'] ?? ($o['type_filter'] ?? null);
+                                
+                                if (!empty($typeFilter) && isWeaponType($type)) {
+                                    $weaponSel = $postedWeaponSelects[$idxKey] ?? '';
+                                    if ($weaponSel !== '') {
+                                        $selectedWeaponId = (int)$weaponSel;
+                                        // Résoudre le nom de l'arme sélectionnée
+                                        $weaponInfo = resolveEquipment($pdo, 'weapon', $selectedWeaponId);
+                                        $resolvedName = $weaponInfo['name'];
+                                    }
+                                } elseif (!empty($o['type_id'])) {
+                                    $info = resolveEquipment($pdo, $type, (int)$o['type_id']);
+                                    $resolvedName = $info['name'];
+                                } else {
+                                    $resolvedName = null;
+                                }
+                                
+                                $label = $o['label'] ?? null;
+                                $displayName = $resolvedName ?: ($label ?? strtoupper($type));
+                                
+                                // Clé d'agrégation basée sur le nom résolu normalisé
+                                if ($selectedWeaponId) {
+                                    $key = 'weapon_id#' . $selectedWeaponId;
+                                } elseif (!empty($resolvedName)) {
+                                    $normalizedName = mb_strtolower(trim($resolvedName));
+                                    $key = 'name#' . $normalizedName . '#type#' . $type;
+                                } elseif (!empty($o['type_id'])) {
+                                    $key = 'id#' . (int)$o['type_id'] . '#type#' . $type;
+                                } elseif (!empty($label)) {
+                                    $key = 'label#' . mb_strtolower(trim($label));
+                                } else {
+                                    $key = 'type#' . mb_strtolower(trim($type));
+                                }
+                                
+                                // Récupérer les informations du choix sélectionné
+                                $selectedChoix = null;
+                                foreach ($rows as $row) {
+                                    if ((int)$row['id'] === $selectedRowId) {
+                                        $selectedChoix = $row;
+                                        break;
+                                    }
+                                }
+                                
+                                if (!isset($itemsAgg[$key])) {
+                                    $itemsAgg[$key] = [
+                                        'option' => $o, 
+                                        'qty' => 0, 
+                                        'weapon_id' => $selectedWeaponId, 
+                                        'resolved_name' => $resolvedName ?? null,
+                                        'no_choix' => $selectedChoix ? (int)($selectedChoix['no_choix'] ?? 0) : null,
+                                        'option_letter' => $selectedChoix ? ($selectedChoix['option_letter'] ?? null) : null,
+                                        'starting_equipment_choix_id' => $selectedRowId,
+                                        'src' => $group['src']
+                                    ];
+                                }
+                                $itemsAgg[$key]['qty'] += $qty;
+                                if ($selectedWeaponId) {
+                                    $itemsAgg[$key]['weapon_id'] = $selectedWeaponId;
+                                }
                             }
                         }
-                        $ins->execute([
-                            $pt_id,
-                            $rows[0]['src'] ?? 'class',
-                            (int)$no,
-                            (string)$selectedRowId,
-                            $selectedWeapons
-                        ]);
                     }
+                }
+                
+                // Créer les items dans PT_items en tenant compte des quantités agrégées
+                foreach ($itemsAgg as $itemData) {
+                    $option = $itemData['option'];
+                    $quantity = $itemData['qty'];
+                    $weaponId = $itemData['weapon_id'];
+                    $noChoix = $itemData['no_choix'] ?? null;
+                    $optionLetter = $itemData['option_letter'] ?? null;
+                    $startingEquipmentChoixId = $itemData['starting_equipment_choix_id'] ?? null;
+                    $src = $itemData['src'] ?? null;
+                    
+                    // Créer un seul item avec la quantité appropriée
+                    $option['nb'] = $quantity;
+                    $createPTItem($pdo, $pt_id, $option, $weaponId, $noChoix, $optionLetter, $startingEquipmentChoixId, $src);
                 }
 
                 // Avancer l'étape
@@ -199,8 +500,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 header('Location: cc10_review_finalize.php?pt_id=' . $pt_id . '&type=' . $character_type);
                 exit();
             } catch (PDOException $e) {
-                error_log('Erreur sauvegarde PT_equipment_choices: ' . $e->getMessage());
-                $message = displayMessage("Erreur lors de l'enregistrement des choix d'équipement.", 'error');
+                error_log('Erreur sauvegarde PT_items: ' . $e->getMessage());
+                $message = displayMessage("Erreur lors de l'enregistrement de l'équipement.", 'error');
             }
         }
     } elseif ($action === 'go_back') {
@@ -276,51 +577,96 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="hidden" name="action" value="save_equipment">
 
                     <?php 
-                        $renderChoiceSet = function($title, $set, $prefix) use ($choiceIdToOptions, $pdo) {
+                        $renderChoiceSet = function($title, $set, $prefix) use ($choiceIdToOptions, $pdo, $pt_id, $savedChoices, $savedWeaponSelects) {
                             if (empty($set)) return;
                             echo '<h4 class="mb-3">' . htmlspecialchars($title) . '</h4>';
                             // Regrouper par no_choix
                             $byNo = [];
                             foreach ($set as $c) { $byNo[(int)($c['no_choix'] ?? 0)][] = $c; }
 
-                            // Afficher les obligatoires (no_choix=0) agrégés (éviter doublons)
+                            // Déterminer la source à partir du préfixe
+                            $src = ($prefix === 'bg_') ? 'background' : 'class';
+
+                            // Afficher les obligatoires (no_choix=0) depuis PT_items si disponibles, sinon depuis les choix
                             if (!empty($byNo[0])) {
                                 echo '<div class="mb-4 p-3 border rounded bg-light">';
                                 echo '<h5 class="mb-3">Éléments obligatoires</h5>';
-                                $agg = [];
-                                foreach ($byNo[0] as $c) {
-                                    $options = $choiceIdToOptions[$c['id']] ?? [];
-                                    foreach ($options as $o) {
-                                        $type = strtolower($o['type'] ?? '');
-                                        $qty = (int)($o['nb'] ?? 1);
-                                        $resolvedName = null;
-                                        if (!empty($o['type_id'])) {
-                                            $info = resolveEquipment($pdo, $type, (int)$o['type_id']);
-                                            $resolvedName = $info['name'];
-                                        }
-                                        $label = $o['label'] ?? null;
-                                        $display = $resolvedName ?: ($label ?? (strtoupper($type)));
-                                        // Clé d'agrégation robuste: privilégier type_id quand présent
-                                        if (!empty($o['type_id'])) {
-                                            $key = 'id#' . (int)$o['type_id'] . '#type#' . $type;
-                                        } elseif (!empty($label)) {
-                                            $key = 'label#' . mb_strtolower(trim($label));
-                                        } else {
-                                            $key = 'type#' . mb_strtolower(trim($type));
-                                        }
+                                
+                                // Essayer de charger depuis PT_items d'abord (seulement les obligatoires : no_choix = 0 ou NULL, filtrés par src)
+                                $ptItems = [];
+                                try {
+                                    $stmtPT = $pdo->prepare("
+                                        SELECT display_name, quantity, object_type 
+                                        FROM PT_items 
+                                        WHERE pt_character_id = ? 
+                                        AND (no_choix = 0 OR no_choix IS NULL)
+                                        AND src = ?
+                                        ORDER BY display_name
+                                    ");
+                                    $stmtPT->execute([$pt_id, $src]);
+                                    $ptItemsRaw = $stmtPT->fetchAll(PDO::FETCH_ASSOC);
+                                    
+                                    // Agréger par nom
+                                    $agg = [];
+                                    foreach ($ptItemsRaw as $item) {
+                                        $key = mb_strtolower(trim($item['display_name']));
                                         if (!isset($agg[$key])) {
-                                            $agg[$key] = ['name' => $display, 'qty' => 0];
+                                            $agg[$key] = ['name' => $item['display_name'], 'qty' => 0];
                                         }
-                                        $agg[$key]['qty'] += max(1, $qty);
+                                        $agg[$key]['qty'] += (int)$item['quantity'];
                                     }
-                                }
-                                if (!empty($agg)) {
-                                    echo '<ul class="mb-0">';
-                                    foreach ($agg as $entry) {
-                                        $pretty = $entry['name'];
-                                        echo '<li>' . htmlspecialchars($pretty) . ' x' . (int)$entry['qty'] . '</li>';
+                                    
+                                    if (!empty($agg)) {
+                                        echo '<ul class="mb-0">';
+                                        foreach ($agg as $entry) {
+                                            echo '<li>' . htmlspecialchars($entry['name']) . ' x' . (int)$entry['qty'] . '</li>';
+                                        }
+                                        echo '</ul>';
+                                    } else {
+                                        // Fallback: afficher depuis les choix
+                                        $agg = [];
+                                        foreach ($byNo[0] as $c) {
+                                            $options = $choiceIdToOptions[$c['id']] ?? [];
+                                            foreach ($options as $o) {
+                                                $type = strtolower($o['type'] ?? '');
+                                                $qty = (int)($o['nb'] ?? 1);
+                                                $resolvedName = null;
+                                                if (!empty($o['type_id'])) {
+                                                    $info = resolveEquipment($pdo, $type, (int)$o['type_id']);
+                                                    $resolvedName = $info['name'];
+                                                }
+                                                $label = $o['label'] ?? null;
+                                                $display = $resolvedName ?: ($label ?? (strtoupper($type)));
+                                                
+                                                // Clé d'agrégation
+                                                if (!empty($resolvedName)) {
+                                                    $normalizedName = mb_strtolower(trim($resolvedName));
+                                                    $key = 'name#' . $normalizedName . '#type#' . $type;
+                                                } elseif (!empty($o['type_id'])) {
+                                                    $key = 'id#' . (int)$o['type_id'] . '#type#' . $type;
+                                                } elseif (!empty($label)) {
+                                                    $key = 'label#' . mb_strtolower(trim($label));
+                                                } else {
+                                                    $key = 'type#' . mb_strtolower(trim($type));
+                                                }
+                                                
+                                                if (!isset($agg[$key])) {
+                                                    $agg[$key] = ['name' => $display, 'qty' => 0];
+                                                }
+                                                $agg[$key]['qty'] += max(1, $qty);
+                                            }
+                                        }
+                                        if (!empty($agg)) {
+                                            echo '<ul class="mb-0">';
+                                            foreach ($agg as $entry) {
+                                                echo '<li>' . htmlspecialchars($entry['name']) . ' x' . (int)$entry['qty'] . '</li>';
+                                            }
+                                            echo '</ul>';
+                                        }
                                     }
-                                    echo '</ul>';
+                                } catch (PDOException $e) {
+                                    // Si PT_items n'existe pas encore, afficher depuis les choix
+                                    error_log('PT_items non disponible, utilisation des choix: ' . $e->getMessage());
                                 }
                                 echo '</div>';
                             }
@@ -331,6 +677,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 $idxKey = $prefix . (string)$no;
                                 echo '<div class="mb-4 p-3 border rounded">';
                                 echo '<h5 class="mb-3">Choix ' . (int)$no . '</h5>';
+                                // Debug: log tous les IDs disponibles pour ce no_choix
+                                $availableIds = array_map(function($r) { return (int)$r['id']; }, $rows);
+                                error_log("Groupe choix: idxKey=$idxKey, no_choix=$no, IDs disponibles: " . implode(', ', $availableIds));
                                 foreach ($rows as $c) {
                                     $rowId = (int)$c['id'];
                                     $options = $choiceIdToOptions[$rowId] ?? [];
@@ -357,8 +706,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         }
                                     }
                                     $radioId = 'choice_' . $idxKey . '_' . $rowId;
+                                    // Vérifier si ce choix a été sélectionné : comparer starting_equipment_choix_id
+                                    $isChecked = false;
+                                    if (isset($savedChoices[$idxKey])) {
+                                        $savedChoice = $savedChoices[$idxKey];
+                                        if (is_array($savedChoice)) {
+                                            // Comparer uniquement starting_equipment_choix_id (c'est l'identifiant unique)
+                                            $savedId = (int)$savedChoice['starting_equipment_choix_id'];
+                                            $isChecked = ($savedId === $rowId);
+                                            // Debug pour tous les choix de ce groupe
+                                            error_log("Comparaison choix: idxKey=$idxKey, savedId=$savedId, rowId=$rowId, isChecked=" . ($isChecked ? 'true' : 'false'));
+                                        } else {
+                                            // Ancien format (simple ID)
+                                            $isChecked = ((int)$savedChoice === $rowId);
+                                        }
+                                    } else {
+                                        error_log("Pas de choix sauvegardé pour idxKey=$idxKey, rowId=$rowId");
+                                    }
                                     echo '<div class="form-check mb-2">';
-                                    echo '<input class="form-check-input" type="radio" name="choice[' . htmlspecialchars($idxKey) . ']" id="' . htmlspecialchars($radioId) . '" value="' . $rowId . '" required>';
+                                    echo '<input class="form-check-input" type="radio" name="choice[' . htmlspecialchars($idxKey) . ']" id="' . htmlspecialchars($radioId) . '" value="' . $rowId . '"' . ($isChecked ? ' checked' : '') . ' required>';
                                     echo '<label class="form-check-label" for="' . htmlspecialchars($radioId) . '">';
                                     echo htmlspecialchars(implode(' + ', $items));
                                     echo '</label>';
@@ -371,11 +737,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                             $stmtW->execute([$weaponFilter]);
                                             $weapons = $stmtW->fetchAll(PDO::FETCH_ASSOC);
                                         } catch (PDOException $e) { error_log('Erreur lecture weapons: ' . $e->getMessage()); }
+                                        $savedWeaponId = $savedWeaponSelects[$idxKey] ?? null;
                                         echo '<div class="ms-4 mb-3">';
                                         echo '<label class="form-label">Sélectionner l\'arme (filtre: ' . htmlspecialchars($weaponFilter) . ')</label>';
                                         echo '<select class="form-select" name="weapon_select[' . htmlspecialchars($idxKey) . ']">';
                                         foreach ($weapons as $w) {
-                                            echo '<option value="' . (int)$w['id'] . '">' . htmlspecialchars($w['name']) . ' (' . htmlspecialchars($w['type']) . ')</option>';
+                                            $isSelected = $savedWeaponId && (int)$w['id'] === $savedWeaponId;
+                                            echo '<option value="' . (int)$w['id'] . '"' . ($isSelected ? ' selected' : '') . '>' . htmlspecialchars($w['name']) . ' (' . htmlspecialchars($w['type']) . ')</option>';
                                         }
                                         echo '</select>';
                                         echo '</div>';

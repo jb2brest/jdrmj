@@ -659,6 +659,86 @@ class Classe
     }
     
     /**
+     * Récupère les choix d'équipement de départ sous forme d'objets EquipementChoix
+     * 
+     * @return array Liste d'objets EquipementChoix
+     */
+    public function getStartingEquipementChoix()
+    {
+        if (!$this->id) {
+            return [];
+        }
+        
+        try {
+            // Récupérer les choix depuis starting_equipment_choix
+            $stmt = $this->pdo->prepare("
+                SELECT id, no_choix 
+                FROM starting_equipment_choix 
+                WHERE src = 'class' AND src_id = ? 
+                ORDER BY no_choix ASC, id ASC
+            ");
+            $stmt->execute([$this->id]);
+            $choixRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            if (empty($choixRows)) {
+                return [];
+            }
+            
+            // Récupérer tous les IDs de choix pour charger les options
+            $choixIds = array_column($choixRows, 'id');
+            $in = implode(',', array_fill(0, count($choixIds), '?'));
+            
+            // Charger toutes les options pour ces choix
+            $stmtOptions = $this->pdo->prepare("
+                SELECT id, starting_equipment_choix_id, type, type_id, filter, type_filter, nb 
+                FROM starting_equipment_options 
+                WHERE starting_equipment_choix_id IN ($in) 
+                ORDER BY id ASC
+            ");
+            $stmtOptions->execute($choixIds);
+            $optionsRows = $stmtOptions->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Grouper les options par starting_equipment_choix_id
+            $optionsByChoixId = [];
+            foreach ($optionsRows as $optionRow) {
+                $choixId = $optionRow['starting_equipment_choix_id'] ?? null;
+                if ($choixId) {
+                    if (!isset($optionsByChoixId[$choixId])) {
+                        $optionsByChoixId[$choixId] = [];
+                    }
+                    $optionsByChoixId[$choixId][] = new EquipementOption([
+                        'id' => $optionRow['id'],
+                        'type' => $optionRow['type'],
+                        'type_id' => $optionRow['type_id'],
+                        'filter' => $optionRow['filter'] ?? null,
+                        'type_filter' => $optionRow['type_filter'] ?? null,
+                        'nb' => $optionRow['nb'] ?? 1
+                    ]);
+                }
+            }
+            
+            // Construire les objets EquipementChoix
+            $equipementChoix = [];
+            foreach ($choixRows as $choixRow) {
+                $choixId = $choixRow['id'];
+                $options = $optionsByChoixId[$choixId] ?? [];
+                
+                $equipementChoix[] = new EquipementChoix([
+                    'id' => $choixId,
+                    'no_choix' => $choixRow['no_choix'],
+                    'options' => $options
+                ]);
+            }
+            
+            return $equipementChoix;
+            
+        } catch (PDOException $e) {
+            error_log("Erreur getStartingEquipementChoix: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
      * Convertir en tableau pour l'affichage
      */
     public function toArray()

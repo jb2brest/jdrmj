@@ -32,7 +32,11 @@ try {
         $item = $npc->getMyNpcEquipmentWithDetails($item_id);
     } else {
         // Récupérer depuis items via la classe Item
-        $itemObj = Item::findByIdAndOwner($item_id, 'player', $npc_id);
+        // Essayer d'abord avec owner_type='npc', puis avec 'player' (pour compatibilité avec les anciens items)
+        $itemObj = Item::findByIdAndOwner($item_id, 'npc', $npc_id);
+        if (!$itemObj) {
+            $itemObj = Item::findByIdAndOwner($item_id, 'player', $npc_id);
+        }
         $item = $itemObj ? $itemObj->toArray() : null;
     }
     
