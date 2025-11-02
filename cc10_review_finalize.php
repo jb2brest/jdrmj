@@ -12,9 +12,9 @@ $pt_id = (int)($_GET['pt_id'] ?? 0);
 $character_type = $_GET['type'] ?? 'player';
 if (!in_array($character_type, ['player', 'npc'])) { $character_type = 'player'; }
 
-// Charger le PTCharacter
-$ptCharacter = $pt_id ? PTCharacter::findById($pt_id) : null;
+// Charger le PTCharacter (recharger si nécessaire après une sauvegarde)
 $pdo = getPDO();
+$ptCharacter = $pt_id ? PTCharacter::findById($pt_id) : null;
 
 // Résolution nom équipements (même logique que étape 9)
 function resolveEquipmentNameForReview(PDO $pdo, string $type, $typeId) {
@@ -160,17 +160,53 @@ if (empty($equipmentAgg) && !empty($equipmentChoices)) {
 }
 $equipmentItems = array_map(function($e){ return $e['name'] . ' x' . (int)$e['qty']; }, array_values($equipmentAgg));
 
+// Initialiser la variable pour la sélection de lieu (NPC uniquement)
+// Toujours recharger ptCharacter pour avoir les dernières données (notamment place_id après sauvegarde)
+if ($pt_id) {
+    $ptCharacter = PTCharacter::findById($pt_id);
+}
+$selectedPlaceId = null;
+if ($character_type === 'npc' && $ptCharacter) {
+    $selectedPlaceId = isset($ptCharacter->place_id) ? $ptCharacter->place_id : null;
+}
+
 // Traitement formulaire
 $message = '';
+// Afficher un message de confirmation si le lieu vient d'être sauvegardé
+if (isset($_GET['place_saved']) && $_GET['place_saved'] == '1') {
+    $message = displayMessage("Lieu sélectionné avec succès.", 'success');
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     if ($action === 'go_back') {
         header('Location: cc09_starting_equipment.php?pt_id=' . $pt_id . '&type=' . $character_type);
         exit();
+    } elseif ($action === 'save_place') {
+        // Sauvegarder le lieu sélectionné pour un NPC
+        if ($character_type === 'npc' && $ptCharacter) {
+            $place_id = (int)($_POST['place_id'] ?? 0);
+            if ($place_id > 0) {
+                try {
+                    $stmt = $pdo->prepare("UPDATE PT_characters SET place_id = ? WHERE id = ?");
+                    $stmt->execute([$place_id, $pt_id]);
+                    // Rediriger pour recharger la page avec les nouvelles données
+                    header('Location: cc10_review_finalize.php?pt_id=' . $pt_id . '&type=npc&place_saved=1');
+                    exit();
+                } catch (PDOException $e) {
+                    $message = displayMessage("Erreur lors de la sauvegarde du lieu.", 'error');
+                }
+            } else {
+                $message = displayMessage("Veuillez sélectionner un lieu.", 'error');
+            }
+        }
     } elseif ($action === 'confirm_create') {
         try {
             if (!$ptCharacter) {
                 $message = displayMessage("Brouillon introuvable.", 'error');
+            } elseif ($character_type === 'npc' && !$ptCharacter->place_id) {
+                // Vérifier qu'un lieu est sélectionné pour les NPCs
+                $message = displayMessage("Veuillez sélectionner un lieu avant de créer le PNJ.", 'error');
             } else if ($character_type === 'player') {
                 // Création d'un PJ
                 $skillsArr = $selectedSkills;
@@ -389,10 +425,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'profile_photo' => $ptCharacter->profile_photo ?: null,
                     'created_by' => $_SESSION['user_id'],
                     'world_id' => $world_id,
-                    'location_id' => null,
+                    'location_id' => $ptCharacter->place_id ?? null,
                     'is_active' => 1
                 ]);
                 if ($npc->create()) {
+                    // Créer l'entrée dans place_npcs si un lieu a été sélectionné
+                    if ($ptCharacter->place_id) {
+                        try {
+                            $description = "PNJ de niveau " . ($ptCharacter->level ?: 1) . " - " . ($raceName ?: '') . " " . ($classeName ?: '');
+                            if (!empty($ptCharacter->personality_traits)) {
+                                $description .= ". " . mb_substr($ptCharacter->personality_traits, 0, 100);
+                            }
+                            $stmtPlaceNpc = $pdo->prepare("
+                                INSERT INTO place_npcs (place_id, name, description, npc_character_id, is_visible, is_identified)
+                                VALUES (?, ?, ?, ?, 1, 0)
+                            ");
+                            $stmtPlaceNpc->execute([
+                                $ptCharacter->place_id,
+                                $npc->name,
+                                $description,
+                                $npc->id
+                            ]);
+                        } catch (PDOException $e) {
+                            error_log('Erreur création entrée place_npcs: ' . $e->getMessage());
+                        }
+                    }
+                    
                     // Persister l'équipement de départ depuis PT_items
                     try {
                         $stmt = $pdo->prepare("SELECT * FROM PT_items WHERE pt_character_id = ?");
@@ -579,6 +637,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
 
+                <?php if ($character_type === 'npc'): ?>
+                    <?php
+                    // Récupérer les lieux disponibles pour l'utilisateur
+                    require_once 'classes/Lieu.php';
+                    $availablePlaces = Lieu::getAllPlaces();
+                    $selectedPlaceId = $ptCharacter->place_id ?? null;
+                    $selectedPlaceName = null;
+                    if ($selectedPlaceId) {
+                        foreach ($availablePlaces as $place) {
+                            if ($place['id'] == $selectedPlaceId) {
+                                $selectedPlaceName = $place['title'];
+                                break;
+                            }
+                        }
+                    }
+                    ?>
+                    
+                    <div class="card mb-4 border-info">
+                        <div class="card-header bg-info text-white">
+                            <h4 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>Sélection du lieu</h4>
+                        </div>
+                        <div class="card-body">
+                            <?php if ($selectedPlaceId && $selectedPlaceName): ?>
+                                <div class="alert alert-success">
+                                    <i class="fas fa-check-circle me-2"></i>
+                                    <strong>Lieu sélectionné :</strong> <?php echo htmlspecialchars($selectedPlaceName); ?>
+                                </div>
+                            <?php else: ?>
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>Attention :</strong> Vous devez sélectionner un lieu pour ce PNJ.
+                                </div>
+                            <?php endif; ?>
+                            
+                            <form method="POST" class="mb-3">
+                                <input type="hidden" name="action" value="save_place">
+                                <div class="mb-3">
+                                    <label for="place_id" class="form-label">Choisir un lieu</label>
+                                    <select class="form-select" name="place_id" id="place_id" required>
+                                        <option value="">-- Sélectionner un lieu --</option>
+                                        <?php foreach ($availablePlaces as $place): ?>
+                                            <option value="<?php echo (int)$place['id']; ?>" <?php echo ($selectedPlaceId == $place['id']) ? 'selected' : ''; ?>>
+                                                <?php echo htmlspecialchars($place['title']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Sauvegarder le lieu
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
                 <form method="POST" class="mt-4">
                     <div class="d-flex justify-content-between">
                         <a href="cc09_starting_equipment.php?pt_id=<?php echo (int)$pt_id; ?>&type=<?php echo htmlspecialchars($character_type); ?>" class="btn btn-outline-secondary">
@@ -588,9 +701,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <button type="submit" name="action" value="go_back" class="btn btn-outline-secondary me-2">
                                 Modifier
                             </button>
-                            <button type="submit" name="action" value="confirm_create" class="btn btn-continue btn-lg">
-                                <i class="fas fa-check me-2"></i>Créer le <?php echo $character_type === 'npc' ? 'PNJ' : 'Personnage'; ?>
-                            </button>
+                            <?php if ($character_type === 'npc' && !$selectedPlaceId): ?>
+                                <button type="button" class="btn btn-warning btn-lg" disabled title="Veuillez d'abord sélectionner un lieu">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Sélectionner un lieu d'abord
+                                </button>
+                            <?php else: ?>
+                                <button type="submit" name="action" value="confirm_create" class="btn btn-continue btn-lg">
+                                    <i class="fas fa-check me-2"></i>Créer le <?php echo $character_type === 'npc' ? 'PNJ' : 'Personnage'; ?>
+                                </button>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </form>

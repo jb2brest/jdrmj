@@ -57,6 +57,7 @@ class PTCharacter
     public $is_equipped;
     public $equipment_locked;
     public $character_locked;
+    public $place_id; // Pour les NPCs uniquement : ID du lieu où le PNJ sera ajouté
     public $created_at;
     public $updated_at;
     
@@ -201,7 +202,7 @@ class PTCharacter
                     hit_points_current = ?, armor_class = ?, speed = ?, proficiency_bonus = ?,
                     gold = ?, silver = ?, copper = ?, selected_skills = ?, selected_languages = ?,
                     selected_equipment = ?, is_equipped = ?, equipment_locked = ?, 
-                    character_locked = ?, updated_at = NOW()
+                    character_locked = ?, place_id = ?, updated_at = NOW()
                 WHERE id = ?
             ");
             
@@ -215,7 +216,7 @@ class PTCharacter
                 $this->hit_points_current, $this->armor_class, $this->speed, $this->proficiency_bonus,
                 $this->gold, $this->silver, $this->copper, $this->selected_skills, $this->selected_languages,
                 $this->selected_equipment, $this->is_equipped, $this->equipment_locked,
-                $this->character_locked, $this->id
+                $this->character_locked, $this->place_id, $this->id
             ]);
             
             if ($result) {
