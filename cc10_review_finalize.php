@@ -346,6 +346,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     } catch (Exception $e) {
                         error_log('Erreur ajout équipement de départ: ' . $e->getMessage());
                     }
+                    
+                    // Mettre à jour le flag is_equipped pour indiquer que le personnage a terminé sa création
+                    try {
+                        $stmt = $pdo->prepare("UPDATE characters SET is_equipped = 1 WHERE id = ?");
+                        $stmt->execute([$char->id]);
+                    } catch (Exception $e) {
+                        error_log('Erreur mise à jour is_equipped: ' . $e->getMessage());
+                    }
+                    
                     header('Location: view_character.php?id=' . $char->id);
                     exit();
                 } else {

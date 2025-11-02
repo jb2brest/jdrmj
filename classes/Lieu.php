@@ -582,18 +582,72 @@ class Lieu
     public function getAllMonsters()
     {
         try {
+            $monsters = [];
+            
+            // Partie 1: Récupérer les monstres depuis place_npcs (nouveau système)
             $stmt = $this->pdo->prepare("
-                SELECT pm.id, pm.monster_id, pm.is_visible, pm.is_identified,
-                       m.name, m.description, m.current_hit_points, m.max_hit_points, m.quantity,
-                       dt.name as type_name, dt.type, dt.size, dt.challenge_rating, dt.hit_points, dt.armor_class, dt.csv_id
+                SELECT 
+                    pn.id, 
+                    pn.monster_id, 
+                    pn.is_visible, 
+                    pn.is_identified,
+                    pn.name,
+                    pn.description,
+                    pn.current_hit_points,
+                    COALESCE(pn.current_hit_points, dt.hit_points, 1) as max_hit_points,
+                    pn.quantity,
+                    dt.name as type_name,
+                    dt.type,
+                    dt.size,
+                    dt.challenge_rating,
+                    dt.hit_points,
+                    dt.armor_class,
+                    dt.csv_id
+                FROM place_npcs pn
+                JOIN dnd_monsters dt ON pn.monster_id = dt.id
+                WHERE pn.place_id = ? AND pn.monster_id IS NOT NULL
+                ORDER BY pn.name ASC
+            ");
+            $stmt->execute([$this->id]);
+            $placeNpcMonsters = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            foreach ($placeNpcMonsters as $monster) {
+                $monsters[] = $monster;
+            }
+            
+            // Partie 2: Récupérer les monstres depuis place_monsters (ancien système - pour compatibilité)
+            $stmt2 = $this->pdo->prepare("
+                SELECT 
+                    pm.id, 
+                    pm.monster_id, 
+                    pm.is_visible, 
+                    pm.is_identified,
+                    m.name,
+                    m.description,
+                    m.current_hit_points,
+                    m.max_hit_points,
+                    m.quantity,
+                    dt.name as type_name,
+                    dt.type,
+                    dt.size,
+                    dt.challenge_rating,
+                    dt.hit_points,
+                    dt.armor_class,
+                    dt.csv_id
                 FROM place_monsters pm
                 JOIN monsters m ON pm.monster_id = m.id
                 JOIN dnd_monsters dt ON m.monster_type_id = dt.id
                 WHERE pm.place_id = ?
                 ORDER BY m.name ASC
             ");
-            $stmt->execute([$this->id]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $stmt2->execute([$this->id]);
+            $oldMonsters = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+            
+            foreach ($oldMonsters as $monster) {
+                $monsters[] = $monster;
+            }
+            
+            return $monsters;
         } catch (PDOException $e) {
             error_log("Erreur lors de la récupération de tous les monstres: " . $e->getMessage());
             return [];
@@ -2086,7 +2140,10 @@ class Lieu
         $pdo = getPDO();
         
         try {
-            $whereClause = "m.created_by = ?";
+            $entities = [];
+            
+            // Partie 1: Récupérer les monstres depuis place_npcs (avec monster_id)
+            $whereClause = "w.created_by = ? AND pn.monster_id IS NOT NULL";
             $params = [$userId];
             
             if (!empty($filters['world'])) {
@@ -2110,6 +2167,70 @@ class Lieu
             }
             
             $stmt = $pdo->prepare("
+                SELECT 
+                    pn.id,
+                    pn.name,
+                    pn.description,
+                    pn.profile_photo,
+                    pn.is_visible,
+                    pn.is_identified,
+                    pn.quantity,
+                    pn.current_hit_points,
+                    COALESCE(pn.current_hit_points, dt.hit_points, 1) as max_hit_points,
+                    pn.monster_id,
+                    dt.name as type_name,
+                    dt.type as monster_type,
+                    dt.challenge_rating,
+                    p.title as place_name,
+                    p.id as place_id,
+                    c.name as country_name,
+                    c.id as country_id,
+                    reg.name as region_name,
+                    reg.id as region_id,
+                    w.name as world_name,
+                    w.id as world_id
+                FROM place_npcs pn
+                JOIN dnd_monsters dt ON pn.monster_id = dt.id
+                JOIN places p ON pn.place_id = p.id
+                JOIN countries c ON p.country_id = c.id
+                LEFT JOIN regions reg ON p.region_id = reg.id
+                JOIN worlds w ON c.world_id = w.id
+                WHERE $whereClause
+                ORDER BY w.name, c.name, p.title, pn.name
+            ");
+            $stmt->execute($params);
+            $placeMonsters = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            foreach ($placeMonsters as $monster) {
+                $entities[] = $monster;
+            }
+            
+            // Partie 2: Récupérer les monstres depuis l'ancien système (monsters + place_monsters)
+            // (gardé pour compatibilité avec l'ancien système)
+            $whereClause2 = "m.created_by = ?";
+            $params2 = [$userId];
+            
+            if (!empty($filters['world'])) {
+                $whereClause2 .= " AND w.id = ?";
+                $params2[] = $filters['world'];
+            }
+            
+            if (!empty($filters['country'])) {
+                $whereClause2 .= " AND c.id = ?";
+                $params2[] = $filters['country'];
+            }
+            
+            if (!empty($filters['region'])) {
+                $whereClause2 .= " AND reg.id = ?";
+                $params2[] = $filters['region'];
+            }
+            
+            if (!empty($filters['place'])) {
+                $whereClause2 .= " AND p.id = ?";
+                $params2[] = $filters['place'];
+            }
+            
+            $stmt2 = $pdo->prepare("
                 SELECT 
                     m.id,
                     m.name,
@@ -2137,11 +2258,17 @@ class Lieu
                 JOIN countries c ON p.country_id = c.id
                 LEFT JOIN regions reg ON p.region_id = reg.id
                 JOIN worlds w ON c.world_id = w.id
-                WHERE $whereClause
+                WHERE $whereClause2
                 ORDER BY w.name, c.name, p.title, m.name
             ");
-            $stmt->execute($params);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $stmt2->execute($params2);
+            $oldMonsters = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+            
+            foreach ($oldMonsters as $monster) {
+                $entities[] = $monster;
+            }
+            
+            return $entities;
             
         } catch (PDOException $e) {
             error_log("Erreur lors de la récupération des monstres: " . $e->getMessage());
@@ -2220,7 +2347,26 @@ class Lieu
                 return true;
                 
             } elseif ($entityType === 'Monstre') {
-                // Supprimer un monstre depuis monsters
+                // Partie 1: Essayer de supprimer un monstre depuis place_npcs (nouveau système)
+                $stmt = $pdo->prepare("
+                    SELECT pn.id FROM place_npcs pn
+                    JOIN places p ON pn.place_id = p.id
+                    JOIN countries c ON p.country_id = c.id
+                    JOIN worlds w ON c.world_id = w.id
+                    WHERE pn.id = ? AND pn.monster_id IS NOT NULL AND w.created_by = ?
+                ");
+                $stmt->execute([$entityId, $userId]);
+                $entity = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($entity) {
+                    // C'est un monstre dans place_npcs (nouveau système)
+                    // Supprimer directement depuis place_npcs
+                    $stmt = $pdo->prepare("DELETE FROM place_npcs WHERE id = ?");
+                    $stmt->execute([$entityId]);
+                    return true;
+                }
+                
+                // Partie 2: Essayer de supprimer un monstre depuis monsters (ancien système)
                 $stmt = $pdo->prepare("
                     SELECT m.id FROM monsters m
                     WHERE m.id = ? AND m.created_by = ?
@@ -2276,22 +2422,39 @@ class Lieu
                     $stmt = $pdo->prepare("DELETE FROM place_npcs WHERE id = ?");
                     $stmt->execute([$entityId]);
                 } else {
-                    // Essayer comme un monstre
+                    // Essayer comme un monstre dans place_npcs (nouveau système)
                     $stmt = $pdo->prepare("
-                        SELECT m.id FROM monsters m
-                        WHERE m.id = ? AND m.created_by = ?
+                        SELECT pn.id FROM place_npcs pn
+                        JOIN places p ON pn.place_id = p.id
+                        JOIN countries c ON p.country_id = c.id
+                        JOIN worlds w ON c.world_id = w.id
+                        WHERE pn.id = ? AND pn.monster_id IS NOT NULL AND w.created_by = ?
                     ");
                     $stmt->execute([$entityId, $userId]);
                     $entity = $stmt->fetch(PDO::FETCH_ASSOC);
                     
                     if ($entity) {
-                        $stmt = $pdo->prepare("DELETE FROM place_monsters WHERE monster_id = ?");
-                        $stmt->execute([$entityId]);
-                        
-                        $stmt = $pdo->prepare("DELETE FROM monsters WHERE id = ?");
+                        // C'est un monstre dans place_npcs (nouveau système)
+                        $stmt = $pdo->prepare("DELETE FROM place_npcs WHERE id = ?");
                         $stmt->execute([$entityId]);
                     } else {
-                        return false;
+                        // Essayer comme un monstre depuis monsters (ancien système)
+                        $stmt = $pdo->prepare("
+                            SELECT m.id FROM monsters m
+                            WHERE m.id = ? AND m.created_by = ?
+                        ");
+                        $stmt->execute([$entityId, $userId]);
+                        $entity = $stmt->fetch(PDO::FETCH_ASSOC);
+                        
+                        if ($entity) {
+                            $stmt = $pdo->prepare("DELETE FROM place_monsters WHERE monster_id = ?");
+                            $stmt->execute([$entityId]);
+                            
+                            $stmt = $pdo->prepare("DELETE FROM monsters WHERE id = ?");
+                            $stmt->execute([$entityId]);
+                        } else {
+                            return false;
+                        }
                     }
                 }
             }

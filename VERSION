@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.25.12
+VERSION=2.25.13
 
 # Date de déploiement
 DEPLOY_DATE=2025-11-02
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-11-02
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=87422900b324d68d128b5f9d1ade1dcc9dcc5863
+GIT_COMMIT=69f964d446840c0e286ba667ebded8c4aa68f361
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251102-135149
+BUILD_ID=20251102-143722
 
 # Notes de version
-RELEASE_NOTES="groupes"
+RELEASE_NOTES="monstres"

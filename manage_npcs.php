@@ -28,6 +28,12 @@ if (isset($_GET['success'])) {
             $npc_name = $_GET['name'] ?? '';
             $success_message = "PNJ créé avec succès : " . htmlspecialchars($npc_name);
             break;
+        case 'monsters_created':
+            $count = isset($_GET['count']) ? (int)$_GET['count'] : 0;
+            $success_message = $count > 1 
+                ? "$count monstres créés avec succès !"
+                : "Monstre créé avec succès !";
+            break;
         default:
             $success_message = "Opération réussie.";
     }
