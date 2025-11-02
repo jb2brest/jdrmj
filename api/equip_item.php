@@ -133,66 +133,92 @@ try {
     // Vérifier et libérer les slots nécessaires
     $slotsToFree = [];
     
+    // D'abord, vérifier s'il y a une arme à deux mains déjà équipée (peu importe le slot cible)
+    $stmt = $pdo->prepare("
+        SELECT id, display_name, object_type, equipped_slot 
+        FROM items 
+        WHERE owner_id = ? AND equipped_slot = 'deux_mains' AND is_equipped = 1
+    ");
+    $stmt->execute([$ownerId]);
+    $twoHandedWeapon = $stmt->fetch(PDO::FETCH_ASSOC);
+    
     // Gestion spéciale pour les boucliers
     if ($item['object_type'] === 'shield') {
         // Un bouclier s'équipe toujours en main secondaire
         $slot = 'main_secondaire';
         $slotsToFree = ['main_secondaire'];
+        // Si une arme à deux mains est équipée, la déséquiper aussi
+        if ($twoHandedWeapon) {
+            $slotsToFree[] = 'deux_mains';
+        }
     } elseif ($slot === 'deux_mains') {
-        // Pour les armes à deux mains, libérer les deux mains
+        // Pour les armes à deux mains, libérer les deux mains ET toute arme à deux mains existante
         $slotsToFree = ['main_principale', 'main_secondaire'];
+        if ($twoHandedWeapon) {
+            $slotsToFree[] = 'deux_mains';
+        }
     } elseif ($slot === 'main_principale') {
-        // Pour les armes en main principale, vérifier s'il y a déjà une arme à une main
-        $stmt = $pdo->prepare("
-            SELECT id, display_name, object_type, equipped_slot 
-            FROM items 
-            WHERE owner_id = ? AND equipped_slot = 'main_principale' AND is_equipped = 1
-        ");
-        $stmt->execute([$ownerId]);
-        $existingMainHand = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if ($existingMainHand) {
-            // Vérifier si l'arme existante est à une main
-            require_once '../classes/SlotManager.php';
-            $existingSlot = SlotManager::getSlotForObjectType($existingMainHand['object_type'], $existingMainHand['display_name']);
+        // Si une arme à deux mains est équipée, la déséquiper et aussi toute arme en main_secondaire
+        if ($twoHandedWeapon) {
+            $slotsToFree = ['deux_mains', 'main_secondaire'];
+        } else {
+            // Pour les armes en main principale, vérifier s'il y a déjà une arme à une main
+            $stmt = $pdo->prepare("
+                SELECT id, display_name, object_type, equipped_slot 
+                FROM items 
+                WHERE owner_id = ? AND equipped_slot = 'main_principale' AND is_equipped = 1
+            ");
+            $stmt->execute([$ownerId]);
+            $existingMainHand = $stmt->fetch(PDO::FETCH_ASSOC);
             
-            if ($existingSlot === 'main_principale') {
-                // L'arme existante est à une main, déplacer la nouvelle arme en main secondaire
-                $slot = 'main_secondaire';
-                $slotsToFree = ['main_secondaire'];
+            if ($existingMainHand) {
+                // Vérifier si l'arme existante est à une main
+                require_once '../classes/SlotManager.php';
+                $existingSlot = SlotManager::getSlotForObjectType($existingMainHand['object_type'], $existingMainHand['display_name']);
+                
+                if ($existingSlot === 'main_principale') {
+                    // L'arme existante est à une main, déplacer la nouvelle arme en main secondaire
+                    $slot = 'main_secondaire';
+                    $slotsToFree = ['main_secondaire'];
+                } else {
+                    // L'arme existante est à deux mains, la déséquiper
+                    $slotsToFree = ['main_principale'];
+                }
             } else {
-                // L'arme existante est à deux mains, la déséquiper
+                // Pas d'arme en main principale, libérer seulement la main principale
                 $slotsToFree = ['main_principale'];
             }
-        } else {
-            // Pas d'arme en main principale, libérer seulement la main principale
-            $slotsToFree = ['main_principale'];
         }
     } elseif ($slot === 'main_secondaire') {
-        // Pour les armes en main secondaire, vérifier la compatibilité avec la main principale
-        $stmt = $pdo->prepare("
-            SELECT id, display_name, object_type, equipped_slot 
-            FROM items 
-            WHERE owner_id = ? AND equipped_slot = 'main_principale' AND is_equipped = 1
-        ");
-        $stmt->execute([$ownerId]);
-        $mainHandWeapon = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if ($mainHandWeapon) {
-            // Vérifier si l'arme en main principale est compatible avec une arme en main secondaire
-            require_once '../classes/SlotManager.php';
-            $mainHandSlot = SlotManager::getSlotForObjectType($mainHandWeapon['object_type'], $mainHandWeapon['display_name']);
+        // Si une arme à deux mains est équipée, la déséquiper et aussi toute arme en main_principale
+        if ($twoHandedWeapon) {
+            $slotsToFree = ['deux_mains', 'main_principale'];
+        } else {
+            // Pour les armes en main secondaire, vérifier la compatibilité avec la main principale
+            $stmt = $pdo->prepare("
+                SELECT id, display_name, object_type, equipped_slot 
+                FROM items 
+                WHERE owner_id = ? AND equipped_slot = 'main_principale' AND is_equipped = 1
+            ");
+            $stmt->execute([$ownerId]);
+            $mainHandWeapon = $stmt->fetch(PDO::FETCH_ASSOC);
             
-            if ($mainHandSlot === 'deux_mains') {
-                // L'arme en main principale est à deux mains, la déséquiper
-                $slotsToFree = ['main_principale'];
+            if ($mainHandWeapon) {
+                // Vérifier si l'arme en main principale est compatible avec une arme en main secondaire
+                require_once '../classes/SlotManager.php';
+                $mainHandSlot = SlotManager::getSlotForObjectType($mainHandWeapon['object_type'], $mainHandWeapon['display_name']);
+                
+                if ($mainHandSlot === 'deux_mains') {
+                    // L'arme en main principale est à deux mains, la déséquiper
+                    $slotsToFree = ['main_principale'];
+                } else {
+                    // L'arme en main principale est compatible, libérer seulement la main secondaire
+                    $slotsToFree = ['main_secondaire'];
+                }
             } else {
-                // L'arme en main principale est compatible, libérer seulement la main secondaire
+                // Pas d'arme en main principale, libérer seulement la main secondaire
                 $slotsToFree = ['main_secondaire'];
             }
-        } else {
-            // Pas d'arme en main principale, libérer seulement la main secondaire
-            $slotsToFree = ['main_secondaire'];
         }
     } else {
         // Pour les autres objets, libérer seulement le slot cible
@@ -228,6 +254,7 @@ try {
             $freedItems[] = $occupiedItem;
         }
     }
+    
     
     // Équiper le nouvel objet
     $equipResult = false;
