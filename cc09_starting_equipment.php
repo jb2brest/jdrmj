@@ -412,17 +412,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             
                             // Si la ligne sélectionnée contient un filtre armes
                             $optionsOfSelectedRow = $choiceIdToOptions[$selectedRowId] ?? [];
+                            // Récupérer les informations du choix sélectionné (une seule fois)
+                            $selectedChoix = null;
+                            foreach ($rows as $row) {
+                                if ((int)$row['id'] === $selectedRowId) {
+                                    $selectedChoix = $row;
+                                    break;
+                                }
+                            }
+                            
                             foreach ($optionsOfSelectedRow as $o) {
                                 $type = strtolower($o['type'] ?? '');
                                 $qty = (int)($o['nb'] ?? 1);
                                 $typeFilter = $o['filter'] ?? ($o['type_filter'] ?? null);
                                 
+                                // Réinitialiser selectedWeaponId pour chaque option
+                                $optionWeaponId = null;
+                                $resolvedName = null;
+                                
                                 if (!empty($typeFilter) && isWeaponType($type)) {
                                     $weaponSel = $postedWeaponSelects[$idxKey] ?? '';
                                     if ($weaponSel !== '') {
-                                        $selectedWeaponId = (int)$weaponSel;
+                                        $optionWeaponId = (int)$weaponSel;
                                         // Résoudre le nom de l'arme sélectionnée
-                                        $weaponInfo = resolveEquipment($pdo, 'weapon', $selectedWeaponId);
+                                        $weaponInfo = resolveEquipment($pdo, 'weapon', $optionWeaponId);
                                         $resolvedName = $weaponInfo['name'];
                                     }
                                 } elseif (!empty($o['type_id'])) {
@@ -435,9 +448,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 $label = $o['label'] ?? null;
                                 $displayName = $resolvedName ?: ($label ?? strtoupper($type));
                                 
-                                // Clé d'agrégation basée sur le nom résolu normalisé
-                                if ($selectedWeaponId) {
-                                    $key = 'weapon_id#' . $selectedWeaponId;
+                                // Clé d'agrégation basée sur le nom résolu normalisé (inclure le type pour distinguer armes et boucliers)
+                                if ($optionWeaponId) {
+                                    $key = 'weapon_id#' . $optionWeaponId;
                                 } elseif (!empty($resolvedName)) {
                                     $normalizedName = mb_strtolower(trim($resolvedName));
                                     $key = 'name#' . $normalizedName . '#type#' . $type;
@@ -449,20 +462,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     $key = 'type#' . mb_strtolower(trim($type));
                                 }
                                 
-                                // Récupérer les informations du choix sélectionné
-                                $selectedChoix = null;
-                                foreach ($rows as $row) {
-                                    if ((int)$row['id'] === $selectedRowId) {
-                                        $selectedChoix = $row;
-                                        break;
-                                    }
-                                }
-                                
                                 if (!isset($itemsAgg[$key])) {
                                     $itemsAgg[$key] = [
                                         'option' => $o, 
                                         'qty' => 0, 
-                                        'weapon_id' => $selectedWeaponId, 
+                                        'weapon_id' => $optionWeaponId, 
                                         'resolved_name' => $resolvedName ?? null,
                                         'no_choix' => $selectedChoix ? (int)($selectedChoix['no_choix'] ?? 0) : null,
                                         'option_letter' => $selectedChoix ? ($selectedChoix['option_letter'] ?? null) : null,
@@ -471,8 +475,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     ];
                                 }
                                 $itemsAgg[$key]['qty'] += $qty;
-                                if ($selectedWeaponId) {
-                                    $itemsAgg[$key]['weapon_id'] = $selectedWeaponId;
+                                if ($optionWeaponId) {
+                                    $itemsAgg[$key]['weapon_id'] = $optionWeaponId;
                                 }
                             }
                         }

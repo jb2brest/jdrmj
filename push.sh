@@ -780,7 +780,19 @@ deploy_to_server() {
             # Ajuster les permissions
             sudo chown -R www-data:www-data "$DEPLOY_PATH"
             sudo chmod -R 755 "$DEPLOY_PATH"
+            
+            # Créer le dossier uploads/profile_photos s'il n'existe pas
+            sudo mkdir -p "$DEPLOY_PATH/uploads/profile_photos"
+            
+            # Configurer les permissions pour uploads (écriture nécessaire)
+            sudo chown -R www-data:www-data "$DEPLOY_PATH/uploads" 2>/dev/null || true
             sudo chmod -R 777 "$DEPLOY_PATH/uploads" 2>/dev/null || true
+            
+            # Vérifier spécifiquement les permissions de profile_photos
+            if [ -d "$DEPLOY_PATH/uploads/profile_photos" ]; then
+                sudo chmod 777 "$DEPLOY_PATH/uploads/profile_photos" 2>/dev/null || true
+                log_success "Permissions configurées pour uploads/profile_photos"
+            fi
             
             # Configurer les permissions pour les rapports JSON
             if [ -d "$DEPLOY_PATH/tests/reports" ]; then
@@ -811,7 +823,19 @@ deploy_to_server() {
             
             sudo chown -R www-data:www-data "$DEPLOY_PATH"
             sudo chmod -R 755 "$DEPLOY_PATH"
+            
+            # Créer le dossier uploads/profile_photos s'il n'existe pas
+            sudo mkdir -p "$DEPLOY_PATH/uploads/profile_photos"
+            
+            # Configurer les permissions pour uploads (écriture nécessaire)
+            sudo chown -R www-data:www-data "$DEPLOY_PATH/uploads" 2>/dev/null || true
             sudo chmod -R 777 "$DEPLOY_PATH/uploads" 2>/dev/null || true
+            
+            # Vérifier spécifiquement les permissions de profile_photos
+            if [ -d "$DEPLOY_PATH/uploads/profile_photos" ]; then
+                sudo chmod 777 "$DEPLOY_PATH/uploads/profile_photos" 2>/dev/null || true
+                log_success "Permissions configurées pour uploads/profile_photos"
+            fi
             
             # Configurer les permissions pour les rapports JSON
             if [ -d "$DEPLOY_PATH/tests/reports" ]; then
