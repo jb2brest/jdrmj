@@ -2,19 +2,19 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.25.4
+VERSION=2.25.5
 
 # Date de déploiement
-DEPLOY_DATE=2025-11-01
+DEPLOY_DATE=2025-11-02
 
 # Environnement
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=16baa03d72dc1db438ec334cdf3de30b3e7209d0
+GIT_COMMIT=d0bdc753d7ee83f03e41eecf654e109c83f1700b
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251101-181328
+BUILD_ID=20251102-085926
 
 # Notes de version
 RELEASE_NOTES="Fix NPC"
