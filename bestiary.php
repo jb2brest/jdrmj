@@ -9,8 +9,9 @@ requireLogin();
 
 // Paramètres de recherche et filtrage
 $search = trim($_GET['search'] ?? '');
-$cr_min = isset($_GET['cr_min']) ? (float)$_GET['cr_min'] : null;
-$cr_max = isset($_GET['cr_max']) ? (float)$_GET['cr_max'] : null;
+$cr_min = isset($_GET['cr_min']) && $_GET['cr_min'] !== '' ? (float)$_GET['cr_min'] : null;
+// Initialiser cr_max à 20 par défaut si non spécifié
+$cr_max = isset($_GET['cr_max']) && $_GET['cr_max'] !== '' ? (float)$_GET['cr_max'] : 20;
 $type = trim($_GET['type'] ?? '');
 $size = trim($_GET['size'] ?? '');
 
@@ -19,7 +20,8 @@ $sql = "SELECT * FROM dnd_monsters WHERE 1=1";
 $params = [];
 
 if ($search !== '') {
-    $sql .= " AND (name LIKE ? OR type LIKE ? OR alignment LIKE ?)";
+    // Recherche insensible à la casse pour le nom (recherche partielle)
+    $sql .= " AND (LOWER(name) LIKE LOWER(?) OR LOWER(type) LIKE LOWER(?) OR LOWER(alignment) LIKE LOWER(?))";
     $searchParam = "%$search%";
     $params[] = $searchParam;
     $params[] = $searchParam;
@@ -31,10 +33,9 @@ if ($cr_min !== null) {
     $params[] = $cr_min;
 }
 
-if ($cr_max !== null) {
-    $sql .= " AND challenge_rating <= ?";
-    $params[] = $cr_max;
-}
+// Toujours appliquer le filtre cr_max (20 par défaut)
+$sql .= " AND challenge_rating <= ?";
+$params[] = $cr_max;
 
 if ($type !== '') {
     $sql .= " AND type = ?";
