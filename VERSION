@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.25.5
+VERSION=2.25.6
 
 # Date de déploiement
 DEPLOY_DATE=2025-11-02
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-11-02
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=d0bdc753d7ee83f03e41eecf654e109c83f1700b
+GIT_COMMIT=b815def5185cc8e9ec7fbd2d7df3681b50f738b5
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251102-085926
+BUILD_ID=20251102-125204
 
 # Notes de version
-RELEASE_NOTES="Fix NPC"
+RELEASE_NOTES="Patch équipement de départ."
