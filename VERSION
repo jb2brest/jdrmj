@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.25.9
+VERSION=2.25.10
 
 # Date de déploiement
 DEPLOY_DATE=2025-11-02
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-11-02
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=5f3f5d0954087d910c48ae8cb72b33bf680282ae
+GIT_COMMIT=5c5cc5cb7c3cc07442b571263d3670effbe222e0
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251102-131221
+BUILD_ID=20251102-132046
 
 # Notes de version
-RELEASE_NOTES="Sélection du lieu pour NPC"
+RELEASE_NOTES="suppression"
