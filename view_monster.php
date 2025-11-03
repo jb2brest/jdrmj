@@ -293,6 +293,12 @@ $monster['charisma_modifier'] = $charismaMod;
 // Les actions sont liées au type de monstre (dnd_monsters.id), pas à l'instance
 $monsterActions = $monsterObj->getActions();
 
+// Récupérer les attaques spéciales du monstre depuis la table monster_special_attacks
+$monsterSpecialAttacks = $monsterObj->getSpecialAttacks();
+
+// Récupérer les actions légendaires du monstre depuis la table monster_legendary_actions
+$monsterLegendaryActions = $monsterObj->getLegendaryActions();
+
 
 // Contrôle d'accès: les monstres sont visibles par tous les DM
 $canView = isDM(); // Seuls les DM peuvent voir les monstres
@@ -1298,6 +1304,165 @@ $armorClass = $monster['armor_class'] ?? 10;
                         </div>
                     </div>
                 </div>
+                
+                <!-- Attaques spéciales -->
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        <h5><i class="fas fa-magic me-2"></i>Attaques spéciales</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                <?php if (!empty($monsterSpecialAttacks)): ?>
+                                    <?php foreach ($monsterSpecialAttacks as $specialAttack): ?>
+                                        <div class="mb-3">
+                                            <strong><?php echo htmlspecialchars($specialAttack['name']); ?></strong>
+                                            <?php if (!empty($specialAttack['description'])): ?>
+                                                <p class="mb-0 mt-1 text-muted"><?php echo nl2br(htmlspecialchars($specialAttack['description'])); ?></p>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php if ($specialAttack !== end($monsterSpecialAttacks)): ?>
+                                            <hr class="my-2">
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <div class="text-center text-muted">
+                                        <i class="fas fa-ban fa-2x mb-2"></i>
+                                        <p>Aucune attaque spéciale disponible</p>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Actions légendaires -->
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        <h5><i class="fas fa-crown me-2"></i>Actions légendaires</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                <?php if (!empty($monsterLegendaryActions)): ?>
+                                    <?php foreach ($monsterLegendaryActions as $legendaryAction): ?>
+                                        <div class="mb-3">
+                                            <strong><?php echo htmlspecialchars($legendaryAction['name']); ?></strong>
+                                            <?php if (!empty($legendaryAction['description'])): ?>
+                                                <p class="mb-0 mt-1 text-muted"><?php echo nl2br(htmlspecialchars($legendaryAction['description'])); ?></p>
+                                            <?php endif; ?>
+                                        </div>
+                                        <?php if ($legendaryAction !== end($monsterLegendaryActions)): ?>
+                                            <hr class="my-2">
+                                        <?php endif; ?>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <div class="text-center text-muted">
+                                        <i class="fas fa-crown fa-2x mb-2"></i>
+                                        <p>Aucune action légendaire disponible</p>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Jets de sauvegarde et Compétences -->
+                <?php if (!empty($monster['saving_throws']) || !empty($monster['skills'])): ?>
+                <div class="row mt-3">
+                    <!-- Jets de sauvegarde -->
+                    <?php if (!empty($monster['saving_throws'])): ?>
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-shield-alt me-2"></i>Jets de sauvegarde</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                <p class="mb-0"><?php echo htmlspecialchars($monster['saving_throws']); ?></p>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                    
+                    <!-- Compétences -->
+                    <?php if (!empty($monster['skills'])): ?>
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-star me-2"></i>Compétences</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                <p class="mb-0"><?php echo htmlspecialchars($monster['skills']); ?></p>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
+                
+                <!-- Immunités aux dégâts et Résistances aux dégâts -->
+                <?php if (!empty($monster['damage_immunities']) || !empty($monster['damage_resistances'])): ?>
+                <div class="row mt-3">
+                    <!-- Immunités aux dégâts -->
+                    <?php if (!empty($monster['damage_immunities'])): ?>
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-shield-virus me-2"></i>Immunités aux dégâts</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                <p class="mb-0"><?php echo htmlspecialchars($monster['damage_immunities']); ?></p>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                    
+                    <!-- Résistances aux dégâts -->
+                    <?php if (!empty($monster['damage_resistances'])): ?>
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-shield-alt me-2"></i>Résistances aux dégâts</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                <p class="mb-0"><?php echo htmlspecialchars($monster['damage_resistances']); ?></p>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
+                
+                <!-- Immunités aux états et Sens -->
+                <?php if (!empty($monster['condition_immunities']) || !empty($monster['senses'])): ?>
+                <div class="row mt-3">
+                    <!-- Immunités aux états -->
+                    <?php if (!empty($monster['condition_immunities'])): ?>
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-user-shield me-2"></i>Immunités aux états</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                <p class="mb-0"><?php echo htmlspecialchars($monster['condition_immunities']); ?></p>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                    
+                    <!-- Sens -->
+                    <?php if (!empty($monster['senses'])): ?>
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-eye me-2"></i>Sens</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                <p class="mb-0"><?php echo htmlspecialchars($monster['senses']); ?></p>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
+                
+                <!-- Langues -->
+                <?php if (!empty($monster['languages'])): ?>
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        <h5><i class="fas fa-language me-2"></i>Langues</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                <p class="mb-0"><?php echo htmlspecialchars($monster['languages']); ?></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
                 
                 <!-- Bouton Grimoire pour les classes de sorts -->
                 <?php 

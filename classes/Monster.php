@@ -260,5 +260,51 @@ class Monster
             return [];
         }
     }
+
+    /**
+     * Récupère les attaques spéciales du monstre depuis la table monster_special_attacks
+     * Les attaques spéciales sont liées au type de monstre (monster_type_id), pas à l'instance
+     * 
+     * @return array Liste des attaques spéciales avec toutes les colonnes
+     */
+    public function getSpecialAttacks()
+    {
+        if ($this->monster_type_id === null) {
+            return [];
+        }
+
+        try {
+            // Les attaques spéciales sont liées au type de monstre (dnd_monsters.id), pas à l'instance
+            $stmt = $this->pdo->prepare("SELECT * FROM monster_special_attacks WHERE monster_id = ? ORDER BY name");
+            $stmt->execute([$this->monster_type_id]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération des attaques spéciales: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Récupère les actions légendaires du monstre depuis la table monster_legendary_actions
+     * Les actions légendaires sont liées au type de monstre (monster_type_id), pas à l'instance
+     * 
+     * @return array Liste des actions légendaires avec toutes les colonnes
+     */
+    public function getLegendaryActions()
+    {
+        if ($this->monster_type_id === null) {
+            return [];
+        }
+
+        try {
+            // Les actions légendaires sont liées au type de monstre (dnd_monsters.id), pas à l'instance
+            $stmt = $this->pdo->prepare("SELECT * FROM monster_legendary_actions WHERE monster_id = ? ORDER BY name");
+            $stmt->execute([$this->monster_type_id]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération des actions légendaires: " . $e->getMessage());
+            return [];
+        }
+    }
 }
 ?>
