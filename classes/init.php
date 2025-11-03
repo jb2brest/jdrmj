@@ -30,6 +30,8 @@ require_once __DIR__ . '/StartingEquipmentChoix.php';
 require_once __DIR__ . '/StartingEquipmentOption.php';
 require_once __DIR__ . '/EquipementChoix.php';
 require_once __DIR__ . '/EquipementOption.php';
+require_once __DIR__ . '/Thematique.php';
+require_once __DIR__ . '/Information.php';
 
 // Initialiser l'Univers unique
 try {

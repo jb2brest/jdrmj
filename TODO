@@ -23,14 +23,31 @@ Si un objet "Armure" est visible et identifié alors un pion carré et doré con
 Si un objet "lettre" est visible et identifié alors un pion carré et doré contenant un symbole de lettre est disposé sur le plan du lieu.  
 le MJ peut déplacer le pion.
 
+On va ajouter une fonctionnalité thématique
+Une thématique à un nom et une description. 
+La liste des thématiques est accessible depuis une page thematiques.php "Groupes" et "PNJ"
+le détail d'une thématique se voit dans une page view_thematique.php
 
-On va ajouter une fonctionnalitée "Informations" et "Themes"
-Une information contient un titre, une description et un niveau de confidentialité "Archi connu, connu, connu du milieu, confidentiel, secret"
-Un sujet à un titre, une description et est composé d'une liste d'informations
-Une information peut être connue d'un joueur ou d'un groupe. 
+
+
+
+On va ajouter une fonctionnalitée "Informations"
+Une information contient : 
+- un titre, 
+- une description 
+- un niveau de confidentialité "Archi connu, connu, connu du milieu, confidentiel, secret"
+- un statut : vraie, fausse, a vérifier. 
+- une image (uploadable)
+Une information peut être connue d'un joueur, un PNJ, un monstre ou d'un groupe. 
 Si elle est connue d'un groupe, il faut indiquer les niveaux de ce groupe qui connaissent l'information.
-Un sujet peut être connue d'un joueur ou d'un groupe. 
-Si elle est connue d'un groupe, il faut indiquer les niveaux de ce groupe qui connaissent le sujet.
+Une thématique est composées d'une liste ordonnée d'informations. 
+
+La gestion des Informations se fait depuis une page sujets.php 
+Dans cette page, seule les informations qui ne sont listées dans aucune autre informations sont listées.
+
+
+On va changer de stratégie. Supprime la notion d'information et de sujets actuelle. 
+
 
 
 La position des pions objets n'est pas sauvegarder lorsque l'on recharge la page. 

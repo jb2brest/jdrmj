@@ -54,6 +54,13 @@
                         </a>
                     </li>
                     
+                    <!-- Thématiques (uniquement pour les MJ et Admin) -->
+                    <li class="nav-item">
+                        <a class="nav-link <?php echo (isset($current_page) && $current_page === 'thematiques') ? 'active' : ''; ?>" href="thematiques.php">
+                            <i class="fas fa-palette me-1"></i>Thématiques
+                        </a>
+                    </li>
+                    
                     <!-- PNJ (uniquement pour les MJ et Admin) -->
                     <li class="nav-item">
                         <a class="nav-link <?php echo (isset($current_page) && $current_page === 'manage_npcs') ? 'active' : ''; ?>" href="manage_npcs.php">

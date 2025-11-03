@@ -2,19 +2,19 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.25.16
+VERSION=2.25.17
 
 # Date de déploiement
-DEPLOY_DATE=2025-11-02
+DEPLOY_DATE=2025-11-03
 
 # Environnement
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=b12373d884fa3fe87882007bbd4b61bf5beee54f
+GIT_COMMIT=5f3cc7e01140f3f3b55f57a81af38ac9246297a8
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251102-171635
+BUILD_ID=20251103-204907
 
 # Notes de version
-RELEASE_NOTES="immage armes"
+RELEASE_NOTES="informations"
