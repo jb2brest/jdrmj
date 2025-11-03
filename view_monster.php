@@ -13,13 +13,13 @@ if (!isset($_GET['id'])) {
 }
 
 $npc_id = (int)$_GET['id'];
-$character_id = $npc_id; // Pour la compatibilité avec le code existant
+$monster_id = $npc_id; // Pour la compatibilité avec le code existant
 $npc_created = isset($_GET['created']) && $_GET['created'] == '1';
 
 // Récupération du monstre avec ses détails depuis la table monsters
-$monster = Monster::findById($npc_id);
+$monsterObj = Monster::findById($npc_id);
 
-if (!$monster) {
+if (!$monsterObj) {
     header('Location: manage_npcs.php');
     exit();
 }
@@ -30,7 +30,7 @@ $stmt = $pdo->prepare("
     FROM dnd_monsters dt
     WHERE dt.id = ?
 ");
-$stmt->execute([$monster->getMonsterTypeId()]);
+$stmt->execute([$monsterObj->getMonsterTypeId()]);
 $monsterTypeData = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$monsterTypeData) {
@@ -48,18 +48,18 @@ if (!$isOwner && !$isDM) {
 }
 
 // Créer un tableau de caractère pour la compatibilité avec le code existant
-$character = [
-    'id' => $monster->getId(),
-    'name' => $monster->getName(),
-    'description' => $monster->getDescription(),
-    'hit_points_current' => $monster->getCurrentHitPoints(),
-    'hit_points_max' => $monster->getMaxHitPoints(),
-    'quantity' => $monster->getQuantity(),
-    'is_visible' => $monster->isVisible(),
-    'is_identified' => $monster->isIdentified(),
-    'created_by' => $monster->getCreatedBy(),
-    'created_at' => $monster->getCreatedAt(),
-    'updated_at' => $monster->getUpdatedAt(),
+$monster = [
+    'id' => $monsterObj->getId(),
+    'name' => $monsterObj->getName(),
+    'description' => $monsterObj->getDescription(),
+    'hit_points_current' => $monsterObj->getCurrentHitPoints(),
+    'hit_points_max' => $monsterObj->getMaxHitPoints(),
+    'quantity' => $monsterObj->getQuantity(),
+    'is_visible' => $monsterObj->isVisible(),
+    'is_identified' => $monsterObj->isIdentified(),
+    'created_by' => $monsterObj->getCreatedBy(),
+    'created_at' => $monsterObj->getCreatedAt(),
+    'updated_at' => $monsterObj->getUpdatedAt(),
     // Données du type de monstre
     'type' => $monsterTypeData['type'],
     'monster_type_name' => $monsterTypeData['monster_type_name'],
@@ -91,7 +91,7 @@ $character = [
     'level' => 1,
     'race_id' => null,
     'background_id' => null,
-    'user_id' => $monster->getCreatedBy(),
+    'user_id' => $monsterObj->getCreatedBy(),
     'experience_points' => 0,
     'gold' => 0,
     'silver' => 0,
@@ -99,16 +99,18 @@ $character = [
     'personality_traits' => '',
     'ideals' => '',
     'bonds' => '',
-    'flaws' => ''
+    'flaws' => '',
+    'alignment' => $monsterTypeData['alignment'] ?? '',
+    'proficiency_bonus' => $monsterTypeData['proficiency_bonus'] ?? 0
 ];
 
 // Les monstres n'ont pas de race, classe ou background comme les personnages
 // Ils ont des caractéristiques spécifiques définies dans dnd_monsters
 
-// Construire le tableau characterDetails pour la compatibilité avec le template
-$characterDetails = [
+// Construire le tableau monsterDetails pour la compatibilité avec le template
+$monsterDetails = [
     'race_name' => $monsterTypeData['type'] ?? '',
-    'race_description' => $monster->getDescription() ?? '',
+    'race_description' => $monsterObj->getDescription() ?? '',
     'strength_bonus' => 0,
     'dexterity_bonus' => 0,
     'constitution_bonus' => 0,
@@ -128,76 +130,47 @@ $characterDetails = [
     'background_feature' => ''
 ];
 
-// $characterDetails est toujours défini pour les monstres
+// $monsterDetails est toujours défini pour les monstres
 
 // Parser les données JSON du monstre
-$characterSkills = $monsterTypeData['skills'] ? json_decode($monsterTypeData['skills'], true) : [];
-$characterLanguages = $monsterTypeData['languages'] ? json_decode($monsterTypeData['languages'], true) : [];
+$monsterSkills = (!empty($monsterTypeData['skills'])) ? json_decode($monsterTypeData['skills'], true) : [];
 
-// Parser les données de l'historique depuis la table backgrounds
-$backgroundSkills = $characterDetails['background_skills'] ? json_decode($characterDetails['background_skills'], true) : [];
-$backgroundTools = $characterDetails['background_tools'] ? json_decode($characterDetails['background_tools'], true) : [];
-$backgroundLanguages = $characterDetails['background_languages'] ? json_decode($characterDetails['background_languages'], true) : [];
+// Parser les données de l'historique depuis la table backgrounds (pour compatibilité)
+$backgroundSkills = $monsterDetails['background_skills'] ? json_decode($monsterDetails['background_skills'], true) : [];
 
-// Séparer les compétences des outils/instruments
+// Traiter les compétences du monstre
 $allSkills = [];
-$allTools = [];
-
-// Liste des outils et instruments connus
-$knownTools = [
-    'Chalemie', 'Cor', 'Cornemuse', 'Flûte', 'Flûte de pan', 'Luth', 'Lyre', 'Tambour', 'Tympanon', 'Viole',
-    'Outils de forgeron', 'Outils de charpentier', 'Outils de cuisinier', 'Outils de tanneur', 'Outils de tisserand',
-    'Outils de verrier', 'Outils de potier', 'Outils de cordonnier', 'Outils de bijoutier', 'Outils de calligraphe',
-    'Outils de cartographe', 'Outils de navigateur', 'Outils de herboriste', 'Outils d\'alchimiste', 'Outils de mécanicien',
-    'Outils de voleur', 'Outils d\'artisan', 'Instruments de musique', 'Jeux', 'Véhicules'
-];
-
-// Traiter les compétences du personnage
-if (is_array($characterSkills)) {
-    foreach ($characterSkills as $skill) {
-        if (in_array($skill, $knownTools)) {
-            $allTools[] = $skill;
-        } else {
-            $allSkills[] = $skill;
-        }
+if (is_array($monsterSkills)) {
+    foreach ($monsterSkills as $skill) {
+        $allSkills[] = $skill;
     }
 }
 
-// Ajouter les outils de l'historique, mais filtrer les mentions génériques
-$filteredBackgroundTools = [];
-foreach ($backgroundTools as $tool) {
-    // Filtrer les mentions génériques qui ont été remplacées par des choix spécifiques
-    if (strpos($tool, 'un type d') === false && strpos($tool, 'n\'importe quel') === false) {
-        $filteredBackgroundTools[] = $tool;
-    }
-}
-$allTools = array_unique(array_merge($allTools, $filteredBackgroundTools));
-
-// Combiner les compétences du personnage avec celles de l'historique
+// Combiner les compétences avec celles de l'historique (pour compatibilité)
 $allSkills = array_unique(array_merge($allSkills, $backgroundSkills));
 
 // Récupérer les données de rage pour les barbares
-$isBarbarian = strpos(strtolower($characterDetails['class_name']), 'barbare') !== false;
-$isBard = strpos(strtolower($characterDetails['class_name']), 'barde') !== false;
-$isCleric = strpos(strtolower($characterDetails['class_name']), 'clerc') !== false;
-$isDruid = strpos(strtolower($characterDetails['class_name']), 'druide') !== false;
-$isSorcerer = strpos(strtolower($characterDetails['class_name']), 'ensorceleur') !== false;
-$isFighter = strpos(strtolower($characterDetails['class_name']), 'guerrier') !== false;
-$isWizard = strpos(strtolower($characterDetails['class_name']), 'magicien') !== false;
-$isMonk = strpos(strtolower($characterDetails['class_name']), 'moine') !== false;
-$isWarlock = strpos(strtolower($characterDetails['class_name']), 'occultiste') !== false;
-$isPaladin = strpos(strtolower($characterDetails['class_name']), 'paladin') !== false;
-$isRanger = strpos(strtolower($characterDetails['class_name']), 'rôdeur') !== false;
-$isRogue = strpos(strtolower($characterDetails['class_name']), 'roublard') !== false;
+$isBarbarian = strpos(strtolower($monsterDetails['class_name']), 'barbare') !== false;
+$isBard = strpos(strtolower($monsterDetails['class_name']), 'barde') !== false;
+$isCleric = strpos(strtolower($monsterDetails['class_name']), 'clerc') !== false;
+$isDruid = strpos(strtolower($monsterDetails['class_name']), 'druide') !== false;
+$isSorcerer = strpos(strtolower($monsterDetails['class_name']), 'ensorceleur') !== false;
+$isFighter = strpos(strtolower($monsterDetails['class_name']), 'guerrier') !== false;
+$isWizard = strpos(strtolower($monsterDetails['class_name']), 'magicien') !== false;
+$isMonk = strpos(strtolower($monsterDetails['class_name']), 'moine') !== false;
+$isWarlock = strpos(strtolower($monsterDetails['class_name']), 'occultiste') !== false;
+$isPaladin = strpos(strtolower($monsterDetails['class_name']), 'paladin') !== false;
+$isRanger = strpos(strtolower($monsterDetails['class_name']), 'rôdeur') !== false;
+$isRogue = strpos(strtolower($monsterDetails['class_name']), 'roublard') !== false;
 $rageData = null;
 if ($isBarbarian) {
     // Récupérer le nombre maximum de rages pour ce niveau
     require_once 'classes/Classe.php';
-    $classObj = Classe::findById($character['class_id']);
-    $maxRages = $classObj ? $classObj->getMaxRages($character['level']) : 0;
+    $classObj = Classe::findById($monster['class_id']);
+    $maxRages = $classObj ? $classObj->getMaxRages($monster['level']) : 0;
     
     // Récupérer le nombre de rages utilisées
-    $rageUsage = Character::getRageUsageStatic($character_id);
+    $rageUsage = Monster::getRageUsageStatic($monster_id);
     $usedRages = is_array($rageUsage) ? $rageUsage['used'] : $rageUsage;
     
     $rageData = [
@@ -207,8 +180,8 @@ if ($isBarbarian) {
     ];
 }
 
-// Récupérer les capacités du personnage depuis le nouveau système homogène
-$allCapabilities = getCharacterCapabilities($character_id);
+// Récupérer les capacités du monstre (les monstres n'ont pas le même système que les personnages)
+$allCapabilities = []; // Les monstres n'ont pas de capacités dans character_capabilities
 
 // Séparer les capacités par type pour l'affichage
 $classCapabilities = [];
@@ -232,7 +205,7 @@ foreach ($allCapabilities as $capability) {
 // Les capacités raciales sont maintenant récupérées depuis le nouveau système
 
 // Les monstres n'ont pas d'archetype comme les personnages
-$characterArchetype = null;
+$monsterArchetype = null;
 
 // Définir les variables d'archetype pour la compatibilité avec le code HTML existant
 $barbarianPath = null;
@@ -248,141 +221,77 @@ $wizardTradition = null;
 $monkTradition = null;
 $warlockPact = null;
 
-if ($characterArchetype) {
-    switch ($characterArchetype['class_name']) {
+if ($monsterArchetype) {
+    switch ($monsterArchetype['class_name']) {
         case 'Barbare':
-            $barbarianPath = $characterArchetype;
+            $barbarianPath = $monsterArchetype;
             break;
         case 'Paladin':
-            $paladinOath = $characterArchetype;
+            $paladinOath = $monsterArchetype;
             break;
         case 'Rôdeur':
-            $rangerArchetype = $characterArchetype;
+            $rangerArchetype = $monsterArchetype;
             break;
         case 'Roublard':
-            $rogueArchetype = $characterArchetype;
+            $rogueArchetype = $monsterArchetype;
             break;
         case 'Barde':
-            $bardCollege = $characterArchetype;
+            $bardCollege = $monsterArchetype;
             break;
         case 'Clerc':
-            $clericDomain = $characterArchetype;
+            $clericDomain = $monsterArchetype;
             break;
         case 'Druide':
-            $druidCircle = $characterArchetype;
+            $druidCircle = $monsterArchetype;
             break;
         case 'Ensorceleur':
-            $sorcererOrigin = $characterArchetype;
+            $sorcererOrigin = $monsterArchetype;
             break;
         case 'Guerrier':
-            $fighterArchetype = $characterArchetype;
+            $fighterArchetype = $monsterArchetype;
             break;
         case 'Magicien':
-            $wizardTradition = $characterArchetype;
+            $wizardTradition = $monsterArchetype;
             break;
         case 'Moine':
-            $monkTradition = $characterArchetype;
+            $monkTradition = $monsterArchetype;
             break;
         case 'Occultiste':
-            $warlockPact = $characterArchetype;
+            $warlockPact = $monsterArchetype;
             break;
     }
 }
 
-// Récupérer les améliorations de caractéristiques
-$abilityImprovements = Character::getCharacterAbilityImprovements($character_id);
-
-// Calculer les caractéristiques finales
-$finalAbilities = Character::calculateFinalAbilitiesStatic($character, $abilityImprovements);
 
 // Calculer les points d'amélioration restants (les monstres n'ont pas de niveau)
 $remainingPoints = 0; // Les monstres n'ont pas de points d'amélioration
 
-// Les langues du personnage sont déjà stockées dans le champ 'languages' 
-// et incluent toutes les langues (race + historique + choix)
-$allLanguages = $characterLanguages;
 
 // Calcul des modificateurs (nécessaire pour le calcul de la CA)
 // Utiliser les valeurs totales incluant les bonus raciaux
-$tempCharacter = new Character();
-$tempCharacter->strength = $character['strength'] + $characterDetails['strength_bonus'];
-$tempCharacter->dexterity = $character['dexterity'] + $characterDetails['dexterity_bonus'];
-$tempCharacter->constitution = $character['constitution'] + $characterDetails['constitution_bonus'];
-$tempCharacter->intelligence = $character['intelligence'] + $characterDetails['intelligence_bonus'];
-$tempCharacter->wisdom = $character['wisdom'] + $characterDetails['wisdom_bonus'];
-$tempCharacter->charisma = $character['charisma'] + $characterDetails['charisma_bonus'];
+// Calculer directement les modificateurs pour les monstres
+$strengthMod = floor((($monster['strength'] + $monsterDetails['strength_bonus']) - 10) / 2);
+$dexterityMod = floor((($monster['dexterity'] + $monsterDetails['dexterity_bonus']) - 10) / 2);
+$constitutionMod = floor((($monster['constitution'] + $monsterDetails['constitution_bonus']) - 10) / 2);
+$intelligenceMod = floor((($monster['intelligence'] + $monsterDetails['intelligence_bonus']) - 10) / 2);
+$wisdomMod = floor((($monster['wisdom'] + $monsterDetails['wisdom_bonus']) - 10) / 2);
+$charismaMod = floor((($monster['charisma'] + $monsterDetails['charisma_bonus']) - 10) / 2);
 
-$strengthMod = $tempCharacter->getAbilityModifier('strength');
-$dexterityMod = $tempCharacter->getAbilityModifier('dexterity');
-$constitutionMod = $tempCharacter->getAbilityModifier('constitution');
-$intelligenceMod = $tempCharacter->getAbilityModifier('intelligence');
-$wisdomMod = $tempCharacter->getAbilityModifier('wisdom');
-$charismaMod = $tempCharacter->getAbilityModifier('charisma');
-
-// Synchroniser l'équipement de base vers items
-Character::syncBaseEquipmentToCharacterEquipment($character_id);
-
-// Récupérer l'équipement du personnage depuis la table items
-$magicalEquipment = Character::getCharacterItems($character_id);
-
-// Récupérer l'équipement équipé du personnage
-$equippedItems = Character::getCharacterEquippedItemsStructured($character_id);
-
-// Construire le texte d'équipement à partir de character_equipment
-$equipmentText = '';
-foreach ($magicalEquipment as $item) {
-    if ($item['equipped']) {
-        $equipmentText .= $item['item_name'] . ', ';
-    }
-}
-$equipmentText = rtrim($equipmentText, ', ');
-
-// Détecter les armes, armures et boucliers dans l'équipement
-$detectedWeapons = Item::detectWeaponsInEquipment($equipmentText);
-$detectedArmor = Item::detectArmorInEquipment($equipmentText);
-$detectedShields = Item::detectShieldsInEquipment($equipmentText);
-
-// Calculer la classe d'armure
+// Les monstres n'ont pas d'équipement - utiliser la CA de base
 $equippedArmor = null;
 $equippedShield = null;
 
-// Chercher l'armure équipée dans character_equipment
-foreach ($magicalEquipment as $item) {
-    if ($item['equipped'] && ($item['item_type'] ?? '') === 'armor') {
-        foreach ($detectedArmor as $armor) {
-            if (stripos($item['item_name'], $armor['name']) !== false) {
-                $equippedArmor = $armor;
-                break 2;
-            }
-        }
-    }
-}
+// Ajouter les modificateurs de caractéristiques au tableau monster pour la fonction
+$monster['strength_modifier'] = $strengthMod;
+$monster['dexterity_modifier'] = $dexterityMod;
+$monster['constitution_modifier'] = $constitutionMod;
+$monster['intelligence_modifier'] = $intelligenceMod;
+$monster['wisdom_modifier'] = $wisdomMod;
+$monster['charisma_modifier'] = $charismaMod;
 
-// Chercher le bouclier équipé dans character_equipment
-foreach ($magicalEquipment as $item) {
-    if ($item['equipped'] && ($item['item_type'] ?? '') === 'shield') {
-        foreach ($detectedShields as $shield) {
-            if (stripos($item['item_name'], $shield['name']) !== false) {
-                $equippedShield = $shield;
-                break 2;
-            }
-        }
-    }
-}
-
-// Ajouter les modificateurs de caractéristiques au tableau character pour la fonction
-$character['strength_modifier'] = $strengthMod;
-$character['dexterity_modifier'] = $dexterityMod;
-$character['constitution_modifier'] = $constitutionMod;
-$character['intelligence_modifier'] = $intelligenceMod;
-$character['wisdom_modifier'] = $wisdomMod;
-$character['charisma_modifier'] = $charismaMod;
-
-// Calculer les attaques du personnage
-$characterAttacks = Character::calculateCharacterAttacks($character_id, $character);
-// Créer un objet Character temporaire pour utiliser la méthode d'instance
-$tempCharacterObj = new Character(null, $character);
-$armorClass = $tempCharacterObj->calculateArmorClassExtended($character, $equippedArmor, $equippedShield);
+// Récupérer les actions du monstre depuis la table monster_actions
+// Les actions sont liées au type de monstre (dnd_monsters.id), pas à l'instance
+$monsterActions = $monsterObj->getActions();
 
 
 // Contrôle d'accès: les monstres sont visibles par tous les DM
@@ -410,9 +319,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['hp_ac
             }
             
             // Mettre à jour les points de vie actuels
-            $characterObj = Character::findById($character_id);
-            if ($characterObj) {
-                $characterObj->updateHitPoints($new_hp);
+            $monsterObj = Monster::findById($monster_id);
+            if ($monsterObj) {
+                $monsterObj->updateHitPoints($new_hp);
             }
             
             $success_message = "Points de vie mis à jour : {$new_hp}/{$max_hp}";
@@ -421,10 +330,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['hp_ac
         case 'damage':
             $damage = (int)$_POST['damage'];
             if ($damage > 0) {
-                $new_hp = max(0, $character['hit_points_current'] - $damage);
-                $characterObj = Character::findById($character_id);
-                if ($characterObj) {
-                    $characterObj->updateHitPoints($new_hp);
+                $new_hp = max(0, $monster['hit_points_current'] - $damage);
+                $monsterObj = Monster::findById($monster_id);
+                if ($monsterObj) {
+                    $monsterObj->updateHitPoints($new_hp);
                 }
                 
                 $success_message = "Dégâts infligés : {$damage} PV. Points de vie restants : {$new_hp}";
@@ -434,10 +343,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['hp_ac
         case 'heal':
             $healing = (int)$_POST['healing'];
             if ($healing > 0) {
-                $new_hp = min($character['hit_points_max'], $character['hit_points_current'] + $healing);
-                $characterObj = Character::findById($character_id);
-                if ($characterObj) {
-                    $characterObj->updateHitPoints($new_hp);
+                $new_hp = min($monster['hit_points_max'], $monster['hit_points_current'] + $healing);
+                $monsterObj = Monster::findById($monster_id);
+                if ($monsterObj) {
+                    $monsterObj->updateHitPoints($new_hp);
                 }
                 
                 $success_message = "Soins appliqués : {$healing} PV. Points de vie actuels : {$new_hp}";
@@ -445,25 +354,87 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['hp_ac
             break;
             
         case 'reset_hp':
-            $characterObj = Character::findById($character_id);
-            if ($characterObj) {
-                $characterObj->updateHitPoints($character['hit_points_max']);
+            $monsterObj = Monster::findById($monster_id);
+            if ($monsterObj) {
+                $monsterObj->updateHitPoints($monster['hit_points_max']);
             }
             
-            $success_message = "Points de vie réinitialisés au maximum : {$character['hit_points_max']}";
+            $success_message = "Points de vie réinitialisés au maximum : {$monster['hit_points_max']}";
             break;
     }
     
-    // Recharger les données du personnage
-    // Récupérer les détails du personnage via la classe Character
-    $characterObj = Character::findById($character_id);
-    if (!$characterObj) {
-        header('Location: characters.php?error=character_not_found');
+    // Recharger les données du monstre
+    // Récupérer les détails du monstre via la classe Monster
+    $monsterObj = Monster::findById($monster_id);
+    if (!$monsterObj) {
+        header('Location: manage_npcs.php?error=monster_not_found');
         exit;
     }
 
-    // Convertir l'objet en tableau pour la compatibilité
-    $character = $characterObj->toArray();
+    // Reconstruire le tableau monster pour la compatibilité
+    // Recharger les données du type de monstre
+    $stmt = $pdo->prepare("
+        SELECT dt.*, dt.type as monster_type_name, dt.image_url
+        FROM dnd_monsters dt
+        WHERE dt.id = ?
+    ");
+    $stmt->execute([$monsterObj->getMonsterTypeId()]);
+    $monsterTypeData = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    // Reconstruire le tableau monster
+    $monster = [
+        'id' => $monsterObj->getId(),
+        'name' => $monsterObj->getName(),
+        'description' => $monsterObj->getDescription(),
+        'hit_points_current' => $monsterObj->getCurrentHitPoints(),
+        'hit_points_max' => $monsterObj->getMaxHitPoints(),
+        'quantity' => $monsterObj->getQuantity(),
+        'is_visible' => $monsterObj->isVisible(),
+        'is_identified' => $monsterObj->isIdentified(),
+        'created_by' => $monsterObj->getCreatedBy(),
+        'created_at' => $monsterObj->getCreatedAt(),
+        'updated_at' => $monsterObj->getUpdatedAt(),
+        'image_url' => $monsterObj->getImageUrl(),
+        'type' => $monsterTypeData['type'],
+        'monster_type_name' => $monsterTypeData['monster_type_name'],
+        'challenge_rating' => $monsterTypeData['challenge_rating'],
+        'size' => $monsterTypeData['size'],
+        'armor_class' => $monsterTypeData['armor_class'],
+        'csv_id' => $monsterTypeData['csv_id'],
+        'special_abilities' => $monsterTypeData['special_abilities'] ?? '',
+        'actions' => $monsterTypeData['actions'] ?? '',
+        'legendary_actions' => $monsterTypeData['legendary_actions'] ?? '',
+        'lair_actions' => $monsterTypeData['lair_actions'] ?? '',
+        'languages' => $monsterTypeData['languages'] ?? '',
+        'skills' => $monsterTypeData['skills'] ?? '',
+        'saving_throws' => $monsterTypeData['saving_throws'] ?? '',
+        'damage_resistances' => $monsterTypeData['damage_resistances'] ?? '',
+        'damage_immunities' => $monsterTypeData['damage_immunities'] ?? '',
+        'condition_immunities' => $monsterTypeData['condition_immunities'] ?? '',
+        'senses' => $monsterTypeData['senses'] ?? '',
+        'speed' => $monsterTypeData['speed'] ?? '',
+        'strength' => $monsterTypeData['strength'] ?? 10,
+        'dexterity' => $monsterTypeData['dexterity'] ?? 10,
+        'constitution' => $monsterTypeData['constitution'] ?? 10,
+        'intelligence' => $monsterTypeData['intelligence'] ?? 10,
+        'wisdom' => $monsterTypeData['wisdom'] ?? 10,
+        'charisma' => $monsterTypeData['charisma'] ?? 10,
+        'class_id' => null,
+        'level' => 1,
+        'race_id' => null,
+        'background_id' => null,
+        'user_id' => $monsterObj->getCreatedBy(),
+        'alignment' => $monsterTypeData['alignment'] ?? '',
+        'proficiency_bonus' => $monsterTypeData['proficiency_bonus'] ?? 0,
+        'experience_points' => 0,
+        'gold' => 0,
+        'silver' => 0,
+        'copper' => 0,
+        'personality_traits' => '',
+        'ideals' => '',
+        'bonds' => '',
+        'flaws' => ''
+    ];
 }
 
 // Traitement des actions POST pour la gestion des points d'expérience
@@ -472,10 +443,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['xp_ac
         case 'add':
             $xp_amount = (int)$_POST['xp_amount'];
             if ($xp_amount > 0) {
-                $new_xp = $character['experience_points'] + $xp_amount;
-                $characterObj = Character::findById($character_id);
-                if ($characterObj) {
-                    $characterObj->updateExperiencePoints($new_xp);
+                $new_xp = $monster['experience_points'] + $xp_amount;
+                $monsterObj = Monster::findById($monster_id);
+                if ($monsterObj) {
+                    // Les monstres n'ont pas de points d'expérience, ignorer cette action
                 }
                 
                 $success_message = "Points d'expérience ajoutés : +{$xp_amount} XP. Total : " . number_format($new_xp) . " XP";
@@ -485,10 +456,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['xp_ac
         case 'remove':
             $xp_amount = (int)$_POST['xp_amount'];
             if ($xp_amount > 0) {
-                $new_xp = max(0, $character['experience_points'] - $xp_amount);
-                $characterObj = Character::findById($character_id);
-                if ($characterObj) {
-                    $characterObj->updateExperiencePoints($new_xp);
+                $new_xp = max(0, $monster['experience_points'] - $xp_amount);
+                $monsterObj = Monster::findById($monster_id);
+                if ($monsterObj) {
+                    // Les monstres n'ont pas de points d'expérience, ignorer cette action
                 }
                 
                 $success_message = "Points d'expérience retirés : -{$xp_amount} XP. Total : " . number_format($new_xp) . " XP";
@@ -498,9 +469,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['xp_ac
         case 'set':
             $xp_amount = (int)$_POST['xp_amount'];
             if ($xp_amount >= 0) {
-                $characterObj = Character::findById($character_id);
-                if ($characterObj) {
-                    $characterObj->updateExperiencePoints($xp_amount);
+                $monsterObj = Monster::findById($monster_id);
+                if ($monsterObj) {
+                    // Les monstres n'ont pas de points d'expérience, ignorer cette action
                 }
                 
                 $success_message = "Points d'expérience définis à : " . number_format($xp_amount) . " XP";
@@ -508,13 +479,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['xp_ac
             break;
     }
     
-    // Recharger les données du personnage après modification des XP
-    if (isset($success_message)) {
-        $characterObj = Character::findById($character_id);
-        if ($characterObj) {
-            $character = $characterObj->toArray();
-        }
-    }
+    // Les monstres n'ont pas de points d'expérience, cette section est ignorée
 }
 
 // Traitement du transfert d'objets magiques
@@ -529,10 +494,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
     if ($source === 'npc_equipment') {
         // Récupérer depuis npc_equipment via le personnage associé
         // Récupérer l'équipement du PNJ via la classe PNJ
-        $item = NPC::getNpcEquipmentWithDetails($item_id, $character_id);
+        $item = NPC::getNpcEquipmentWithDetails($item_id, $monster_id);
     } else {
         // Récupérer depuis items via la classe Item
-        $itemObj = Item::findByIdAndOwner($item_id, 'player', $character_id);
+        $itemObj = Item::findByIdAndOwner($item_id, 'player', $monster_id);
         $item = $itemObj ? $itemObj->toArray() : null;
     }
     
@@ -548,9 +513,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
         $target_name = '';
         
         switch ($target_type) {
-            case 'character':
+            case 'monster':
                 // Transférer vers un autre personnage
-                $target_char_obj = Character::findById($target_id);
+                $target_char_obj = Monster::findById($target_id);
                 $target_char = $target_char_obj ? ['name' => $target_char_obj->name] : null;
                 
                 if ($target_char) {
@@ -583,7 +548,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                         'equipped_slot' => $item['equipped_slot'],
                         'notes' => $notes ?: $item['notes'],
                         'obtained_at' => $item['obtained_at'],
-                        'obtained_from' => 'Transfert depuis ' . $character['name']
+                        'obtained_from' => 'Transfert depuis ' . $monster['name']
                     ];
                     
                     Item::createExtended($itemData);
@@ -615,7 +580,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                         'quantity' => $item['quantity'],
                         'equipped' => false, // Toujours non équipé lors du transfert
                         'notes' => $notes ?: $item['notes'],
-                        'obtained_from' => 'Transfert depuis ' . $character['name']
+                        'obtained_from' => 'Transfert depuis ' . $monster['name']
                     ];
                     
                     Monstre::addMonsterEquipment($target_id, $target_monster['place_id'], $equipmentData);
@@ -647,7 +612,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                         'quantity' => $item['quantity'],
                         'equipped' => 0, // Toujours non équipé lors du transfert
                         'notes' => $notes ?: $item['notes'],
-                        'obtained_from' => 'Transfert depuis ' . $character['name']
+                        'obtained_from' => 'Transfert depuis ' . $monster['name']
                     ];
                     
                     NPC::addEquipmentToNpc($target_id, $target_npc['place_id'], $equipmentData);
@@ -672,10 +637,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
         }
     }
     
-    // Recharger les données du personnage
-    $characterObj = Character::findById($character_id);
-    if ($characterObj) {
-        $character = $characterObj->toArray();
+    // Recharger les données du monstre
+    $monsterObj = Monster::findById($monster_id);
+    if ($monsterObj) {
+        // Mettre à jour les points de vie dans le tableau monster
+        $monster['hit_points_current'] = $monsterObj->getCurrentHitPoints();
+        $monster['hit_points_max'] = $monsterObj->getMaxHitPoints();
     }
 }
 
@@ -693,46 +660,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
         if (in_array($file_extension, $allowed_extensions)) {
             $file_size = $_FILES['profile_photo']['size'];
             if ($file_size <= 10 * 1024 * 1024) { // 10MB max
-                $new_filename = 'profile_' . $character_id . '_' . time() . '_' . uniqid() . '.' . $file_extension;
+                $new_filename = 'profile_' . $monster_id . '_' . time() . '_' . uniqid() . '.' . $file_extension;
                 $upload_path = $upload_dir . $new_filename;
                 
                 if (move_uploaded_file($_FILES['profile_photo']['tmp_name'], $upload_path)) {
                     // Supprimer l'ancienne photo si elle existe
-                    if (!empty($monster->getImageUrl()) && file_exists($monster->getImageUrl())) {
-                        unlink($monster->getImageUrl());
+                    if (!empty($monsterObj->getImageUrl()) && file_exists($monsterObj->getImageUrl())) {
+                        unlink($monsterObj->getImageUrl());
                     }
                     
                     // Mettre à jour la base de données pour les monstres
                     $db = Database::getInstance();
                     $stmt = $db->prepare("UPDATE monsters SET image_url = ? WHERE id = ?");
-                    if ($stmt->execute([$upload_path, $character_id])) {
+                    if ($stmt->execute([$upload_path, $monster_id])) {
                         $success_message = "Image du monstre mise à jour avec succès.";
                         // Recharger les données du monstre
-                        $monster = Monster::findById($character_id);
-                        if ($monster) {
+                        $monsterObj = Monster::findById($monster_id);
+                        if ($monsterObj) {
                             // Recharger les données du type de monstre
                             $stmt = $pdo->prepare("
                                 SELECT dt.*, dt.type as monster_type_name, dt.image_url
                                 FROM dnd_monsters dt
                                 WHERE dt.id = ?
                             ");
-                            $stmt->execute([$monster->getMonsterTypeId()]);
+                            $stmt->execute([$monsterObj->getMonsterTypeId()]);
                             $monsterTypeData = $stmt->fetch(PDO::FETCH_ASSOC);
                             
-                            // Reconstruire le tableau character
-                            $character = [
-                                'id' => $monster->getId(),
-                                'name' => $monster->getName(),
-                                'description' => $monster->getDescription(),
-                                'hit_points_current' => $monster->getCurrentHitPoints(),
-                                'hit_points_max' => $monster->getMaxHitPoints(),
-                                'quantity' => $monster->getQuantity(),
-                                'is_visible' => $monster->isVisible(),
-                                'is_identified' => $monster->isIdentified(),
-                                'created_by' => $monster->getCreatedBy(),
-                                'created_at' => $monster->getCreatedAt(),
-                                'updated_at' => $monster->getUpdatedAt(),
-                                'image_url' => $monster->getImageUrl(),
+                            // Reconstruire le tableau monster
+                            $monster = [
+                                'id' => $monsterObj->getId(),
+                                'name' => $monsterObj->getName(),
+                                'description' => $monsterObj->getDescription(),
+                                'hit_points_current' => $monsterObj->getCurrentHitPoints(),
+                                'hit_points_max' => $monsterObj->getMaxHitPoints(),
+                                'quantity' => $monsterObj->getQuantity(),
+                                'is_visible' => $monsterObj->isVisible(),
+                                'is_identified' => $monsterObj->isIdentified(),
+                                'created_by' => $monsterObj->getCreatedBy(),
+                                'created_at' => $monsterObj->getCreatedAt(),
+                                'updated_at' => $monsterObj->getUpdatedAt(),
+                                'image_url' => $monsterObj->getImageUrl(),
                                 'type' => $monsterTypeData['type'],
                                 'monster_type_name' => $monsterTypeData['monster_type_name'],
                                 'challenge_rating' => $monsterTypeData['challenge_rating'],
@@ -761,7 +728,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
                                 'level' => 1,
                                 'race_id' => null,
                                 'background_id' => null,
-                                'user_id' => $monster->getCreatedBy(),
+                                'user_id' => $monsterObj->getCreatedBy(),
+                                'alignment' => $monsterTypeData['alignment'] ?? '',
+                                'proficiency_bonus' => $monsterTypeData['proficiency_bonus'] ?? 0,
                                 'experience_points' => 0,
                                 'gold' => 0,
                                 'silver' => 0,
@@ -789,72 +758,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canModifyHP && isset($_POST['actio
     }
 }
 
-// $magicalEquipment est déjà défini plus haut
-
-// Récupérer les poisons du personnage via la classe Character
-require_once 'classes/init.php';
-$characterObjForPoisons = Character::findById($character_id);
-$characterPoisons = $characterObjForPoisons ? $characterObjForPoisons->getCharacterPoisons() : [];
-
-// Récupérer l'équipement attribué aux PNJ associés à ce personnage via la classe PNJ
-$npcEquipment = NPC::getNpcEquipmentByCharacter($character_id);
-
-// Séparer les objets magiques et poisons des PNJ
-$npcMagicalEquipment = [];
-$npcPoisons = [];
-
-foreach ($npcEquipment as $item) {
-    // Vérifier d'abord si c'est un poison
-    require_once 'classes/Item.php';
-    $itemObj = new Item($pdo, $item);
-    $poison_info = $itemObj->getPoisonInfo($item['magical_item_id']);
-    
-    if ($poison_info) {
-        // C'est un poison
-        $item['poison_nom'] = $poison_info['nom'];
-        $item['poison_type'] = $poison_info['type'];
-        $item['poison_description'] = $poison_info['description'];
-        $item['poison_source'] = $poison_info['source'];
-        $npcPoisons[] = $item;
-    } else {
-        // Vérifier si c'est un objet magique
-        $magical_info = Character::getMagicalItemInfo($item['magical_item_id']);
-        
-        if ($magical_info) {
-            // C'est un objet magique
-            $item['magical_item_nom'] = $magical_info['nom'];
-            $item['magical_item_type'] = $magical_info['type'];
-            $item['magical_item_description'] = $magical_info['description'];
-            $item['magical_item_source'] = $magical_info['source'];
-            $npcMagicalEquipment[] = $item;
-        }
-    }
-}
-
-// Combiner les équipements du personnage et des PNJ
-$allMagicalEquipment = array_merge($magicalEquipment, $npcMagicalEquipment);
-$allPoisons = array_merge($characterPoisons, $npcPoisons);
+// Les monstres n'ont pas d'équipement ni de poisons
 
 // Les modificateurs sont déjà calculés plus haut dans le fichier
 
 // Calcul de l'initiative
 $initiative = $dexterityMod;
 
-// La classe d'armure est déjà calculée plus haut avec calculateArmorClassExtended()
-// $armorClass = $character['armor_class']; // Cette ligne écrasait le calcul correct
+// La classe d'armure n'est plus affichée, mais on peut la récupérer si nécessaire
+$armorClass = $monster['armor_class'] ?? 10;
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($character['name']); ?> - JDR 4 MJ</title>
+    <title><?php echo htmlspecialchars($monster['name']); ?> - JDR 4 MJ</title>
     <link rel="icon" type="image/png" href="images/logo.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="css/custom-theme.css" rel="stylesheet">
     <style>
-        .character-sheet {
+        .monster-sheet {
             background: #f8f9fa;
             border-radius: 15px;
             padding: 30px;
@@ -1145,7 +1070,7 @@ $initiative = $dexterityMod;
 
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1>
-                <i class="fas fa-dragon me-2"></i><?php echo htmlspecialchars($character['name']); ?>
+                <i class="fas fa-dragon me-2"></i><?php echo htmlspecialchars($monster['name']); ?>
             </h1>
             <div>
                 <?php if (isset($dm_campaign_id) && $dm_campaign_id): ?>
@@ -1160,7 +1085,7 @@ $initiative = $dexterityMod;
             </div>
         </div>
 
-        <div class="character-sheet">
+        <div class="monster-sheet">
             <!-- En-tête du personnage -->
             <div class="row mb-4">
                 <div class="col-md-6">
@@ -1171,8 +1096,8 @@ $initiative = $dexterityMod;
                             $imageUrl = 'images/default_monster.png';
                             
                             // Essayer d'abord l'image personnalisée si elle existe
-                            if (!empty($monster->getImageUrl()) && file_exists($monster->getImageUrl())) {
-                                $imageUrl = $monster->getImageUrl();
+                            if (!empty($monsterObj->getImageUrl()) && file_exists($monsterObj->getImageUrl())) {
+                                $imageUrl = $monsterObj->getImageUrl();
                             } else {
                                 // Sinon, utiliser l'image du monstre par csv_id
                                 if (isset($monsterTypeData['csv_id']) && !empty($monsterTypeData['csv_id'])) {
@@ -1189,7 +1114,7 @@ $initiative = $dexterityMod;
                                 }
                             }
                             ?>
-                            <img src="<?php echo htmlspecialchars($imageUrl); ?>?t=<?php echo time(); ?>" alt="Image de <?php echo htmlspecialchars($character['name']); ?>" class="rounded" style="width: 100px; height: 100px; object-fit: cover;">
+                            <img src="<?php echo htmlspecialchars($imageUrl); ?>?t=<?php echo time(); ?>" alt="Image de <?php echo htmlspecialchars($monster['name']); ?>" class="rounded" style="width: 100px; height: 100px; object-fit: cover;">
                             
                             <?php if ($canModifyHP): ?>
                                 <button type="button" class="btn btn-sm btn-outline-primary position-absolute" style="bottom: -5px; right: -5px;" data-bs-toggle="modal" data-bs-target="#photoModal" title="Changer la photo">
@@ -1198,21 +1123,21 @@ $initiative = $dexterityMod;
                             <?php endif; ?>
                         </div>
                         <div>
-                            <h2><?php echo htmlspecialchars($character['name']); ?></h2>
+                            <h2><?php echo htmlspecialchars($monster['name']); ?></h2>
                             <p class="text-muted">
-                                <?php echo htmlspecialchars($characterDetails['race_name']); ?> 
-                                <?php echo htmlspecialchars($characterDetails['class_name']); ?> 
-                                niveau <?php echo $character['level']; ?>
+                                <?php echo htmlspecialchars($monsterDetails['race_name']); ?> 
+                                <?php echo htmlspecialchars($monsterDetails['class_name']); ?> 
+                                niveau <?php echo $monster['level']; ?>
                             </p>
-                            <?php if ($characterDetails['background_name']): ?>
-                                <p><strong>Historique:</strong> <?php echo htmlspecialchars($characterDetails['background_name']); ?></p>
+                            <?php if ($monsterDetails['background_name']): ?>
+                                <p><strong>Historique:</strong> <?php echo htmlspecialchars($monsterDetails['background_name']); ?></p>
                             <?php endif; ?>
-                            <?php if ($character['alignment']): ?>
-                                <p><strong>Alignement:</strong> <?php echo htmlspecialchars($character['alignment']); ?></p>
+                            <?php if ($monster['alignment']): ?>
+                                <p><strong>Alignement:</strong> <?php echo htmlspecialchars($monster['alignment']); ?></p>
                             <?php endif; ?>
                             
-                            <?php if ($characterArchetype): ?>
-                                <p><strong><?php echo htmlspecialchars($characterArchetype['archetype_type']); ?>:</strong> <?php echo htmlspecialchars($characterArchetype['name']); ?></p>
+                            <?php if ($monsterArchetype): ?>
+                                <p><strong><?php echo htmlspecialchars($monsterArchetype['archetype_type']); ?>:</strong> <?php echo htmlspecialchars($monsterArchetype['name']); ?></p>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -1221,7 +1146,7 @@ $initiative = $dexterityMod;
                     <div class="row">
                         <div class="col-4">
                             <div class="stat-box">
-                                <div class="hp-display"><?php echo $character['hit_points_current']; ?>/<?php echo $character['hit_points_max']; ?></div>
+                                <div class="hp-display"><?php echo $monster['hit_points_current']; ?>/<?php echo $monster['hit_points_max']; ?></div>
                                 <div class="stat-label">Points de Vie</div>
                                 <?php if ($canModifyHP): ?>
                                     <div class="mt-2">
@@ -1271,71 +1196,31 @@ $initiative = $dexterityMod;
                             <!-- Caractéristiques de base -->
                             <tr>
                                 <td><strong>Caractéristiques de base</strong></td>
-                                <td><strong><?php echo $character['strength']; ?></strong></td>
-                                <td><strong><?php echo $character['dexterity']; ?></strong></td>
-                                <td><strong><?php echo $character['constitution']; ?></strong></td>
-                                <td><strong><?php echo $character['intelligence']; ?></strong></td>
-                                <td><strong><?php echo $character['wisdom']; ?></strong></td>
-                                <td><strong><?php echo $character['charisma']; ?></strong></td>
+                                <td><strong><?php echo $monster['strength']; ?></strong></td>
+                                <td><strong><?php echo $monster['dexterity']; ?></strong></td>
+                                <td><strong><?php echo $monster['constitution']; ?></strong></td>
+                                <td><strong><?php echo $monster['intelligence']; ?></strong></td>
+                                <td><strong><?php echo $monster['wisdom']; ?></strong></td>
+                                <td><strong><?php echo $monster['charisma']; ?></strong></td>
                             </tr>
-                            <!-- Bonus raciaux -->
-                            <tr>
-                                <td><strong>Bonus raciaux</strong></td>
-                                <td><span class="text-success"><?php echo ($characterDetails['strength_bonus'] > 0 ? '+' : '') . $characterDetails['strength_bonus']; ?></span></td>
-                                <td><span class="text-success"><?php echo ($characterDetails['dexterity_bonus'] > 0 ? '+' : '') . $characterDetails['dexterity_bonus']; ?></span></td>
-                                <td><span class="text-success"><?php echo ($characterDetails['constitution_bonus'] > 0 ? '+' : '') . $characterDetails['constitution_bonus']; ?></span></td>
-                                <td><span class="text-success"><?php echo ($characterDetails['intelligence_bonus'] > 0 ? '+' : '') . $characterDetails['intelligence_bonus']; ?></span></td>
-                                <td><span class="text-success"><?php echo ($characterDetails['wisdom_bonus'] > 0 ? '+' : '') . $characterDetails['wisdom_bonus']; ?></span></td>
-                                <td><span class="text-success"><?php echo ($characterDetails['charisma_bonus'] > 0 ? '+' : '') . $characterDetails['charisma_bonus']; ?></span></td>
-                            </tr>
-                            <!-- Bonus de niveau -->
-                            <tr>
-                                <td><strong>Bonus de niveau (<?php echo $remainingPoints; ?> pts restants)</strong></td>
-                                <td><span class="text-warning"><?php echo ($abilityImprovements['strength'] > 0 ? '+' : '') . $abilityImprovements['strength']; ?></span></td>
-                                <td><span class="text-warning"><?php echo ($abilityImprovements['dexterity'] > 0 ? '+' : '') . $abilityImprovements['dexterity']; ?></span></td>
-                                <td><span class="text-warning"><?php echo ($abilityImprovements['constitution'] > 0 ? '+' : '') . $abilityImprovements['constitution']; ?></span></td>
-                                <td><span class="text-warning"><?php echo ($abilityImprovements['intelligence'] > 0 ? '+' : '') . $abilityImprovements['intelligence']; ?></span></td>
-                                <td><span class="text-warning"><?php echo ($abilityImprovements['wisdom'] > 0 ? '+' : '') . $abilityImprovements['wisdom']; ?></span></td>
-                                <td><span class="text-warning"><?php echo ($abilityImprovements['charisma'] > 0 ? '+' : '') . $abilityImprovements['charisma']; ?></span></td>
-                            </tr>
-                            <!-- Bonus d'équipements -->
-                            <tr>
-                                <td><strong>Bonus d'équipements</strong></td>
-                                <td><span class="text-info">+0</span></td>
-                                <td><span class="text-info">+0</span></td>
-                                <td><span class="text-info">+0</span></td>
-                                <td><span class="text-info">+0</span></td>
-                                <td><span class="text-info">+0</span></td>
-                                <td><span class="text-info">+0</span></td>
-                            </tr>
-                            <!-- Bonus temporaires -->
-                            <tr>
-                                <td><strong>Bonus temporaires</strong></td>
-                                <td><span class="text-warning">+0</span></td>
-                                <td><span class="text-warning">+0</span></td>
-                                <td><span class="text-warning">+0</span></td>
-                                <td><span class="text-warning">+0</span></td>
-                                <td><span class="text-warning">+0</span></td>
-                                <td><span class="text-warning">+0</span></td>
-                            </tr>
-                            <!-- Total -->
+                            <!-- Modificateurs de caractéristiques -->
                             <tr class="table-primary">
-                                <td><strong>Total</strong></td>
+                                <td><strong>Modificateurs de caractéristiques</strong></td>
                                 <?php 
-                                $tempChar = new Character();
-                                $tempChar->strength = $finalAbilities['strength'];
-                                $tempChar->dexterity = $finalAbilities['dexterity'];
-                                $tempChar->constitution = $finalAbilities['constitution'];
-                                $tempChar->intelligence = $finalAbilities['intelligence'];
-                                $tempChar->wisdom = $finalAbilities['wisdom'];
-                                $tempChar->charisma = $finalAbilities['charisma'];
+                                // Calculer les modificateurs directement à partir des caractéristiques de base
+                                $strMod = $strengthMod;
+                                $dexMod = $dexterityMod;
+                                $conMod = $constitutionMod;
+                                $intMod = $intelligenceMod;
+                                $wisMod = $wisdomMod;
+                                $chaMod = $charismaMod;
                                 ?>
-                                <td><strong><?php echo $finalAbilities['strength']; ?> (<?php echo ($tempChar->getAbilityModifier('strength') >= 0 ? '+' : '') . $tempChar->getAbilityModifier('strength'); ?>)</strong></td>
-                                <td><strong><?php echo $finalAbilities['dexterity']; ?> (<?php echo ($tempChar->getAbilityModifier('dexterity') >= 0 ? '+' : '') . $tempChar->getAbilityModifier('dexterity'); ?>)</strong></td>
-                                <td><strong><?php echo $finalAbilities['constitution']; ?> (<?php echo ($tempChar->getAbilityModifier('constitution') >= 0 ? '+' : '') . $tempChar->getAbilityModifier('constitution'); ?>)</strong></td>
-                                <td><strong><?php echo $finalAbilities['intelligence']; ?> (<?php echo ($tempChar->getAbilityModifier('intelligence') >= 0 ? '+' : '') . $tempChar->getAbilityModifier('intelligence'); ?>)</strong></td>
-                                <td><strong><?php echo $finalAbilities['wisdom']; ?> (<?php echo ($tempChar->getAbilityModifier('wisdom') >= 0 ? '+' : '') . $tempChar->getAbilityModifier('wisdom'); ?>)</strong></td>
-                                <td><strong><?php echo $finalAbilities['charisma']; ?> (<?php echo ($tempChar->getAbilityModifier('charisma') >= 0 ? '+' : '') . $tempChar->getAbilityModifier('charisma'); ?>)</strong></td>
+                                <td><strong><?php echo ($strMod >= 0 ? '+' : '') . $strMod; ?></strong></td>
+                                <td><strong><?php echo ($dexMod >= 0 ? '+' : '') . $dexMod; ?></strong></td>
+                                <td><strong><?php echo ($conMod >= 0 ? '+' : '') . $conMod; ?></strong></td>
+                                <td><strong><?php echo ($intMod >= 0 ? '+' : '') . $intMod; ?></strong></td>
+                                <td><strong><?php echo ($wisMod >= 0 ? '+' : '') . $wisMod; ?></strong></td>
+                                <td><strong><?php echo ($chaMod >= 0 ? '+' : '') . $chaMod; ?></strong></td>
                             </tr>
                         </tbody>
                     </table>
@@ -1352,7 +1237,7 @@ $initiative = $dexterityMod;
                             <div class="rage-symbols">
                                 <?php for ($i = 1; $i <= $rageData['max']; $i++): ?>
                                     <div class="rage-symbol <?php echo $i <= $rageData['used'] ? 'used' : 'available'; ?>" 
-                                         onclick="toggleRage(<?php echo $character_id; ?>, <?php echo $i; ?>)"
+                                         onclick="toggleRage(<?php echo $monster_id; ?>, <?php echo $i; ?>)"
                                          data-rage="<?php echo $i; ?>"
                                          title="<?php echo $i <= $rageData['used'] ? 'Rage utilisée' : 'Rage disponible'; ?>">
                                         <i class="fas fa-fire"></i>
@@ -1365,7 +1250,7 @@ $initiative = $dexterityMod;
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <button class="btn btn-warning" onclick="resetRages(<?php echo $character_id; ?>)">
+                        <button class="btn btn-warning" onclick="resetRages(<?php echo $monster_id; ?>)">
                             <i class="fas fa-moon me-1"></i>Long repos
                         </button>
                     </div>
@@ -1381,81 +1266,32 @@ $initiative = $dexterityMod;
                         <strong>Initiative:</strong> &nbsp;<?php echo ($initiative >= 0 ? '+' : '') . $initiative; ?>
                     </div>
                     <div class="col-md-3">
-                        <strong>Vitesse:</strong> &nbsp;<?php echo $character['speed']; ?> pieds
-                    </div>
-                    <div class="col-md-3">
-                        <strong>Bonus de maîtrise:</strong> &nbsp;+<?php echo $character['proficiency_bonus']; ?>
+                        <strong>Bonus de maîtrise:</strong> &nbsp;+<?php echo $monster['proficiency_bonus']; ?>
                     </div>
                 </div>
                 
-                <!-- Classe d'armure et Attaques -->
+                <!-- Actions -->
                 <div class="row mt-3">
-                    <div class="col-md-6">
-                        <h5><i class="fas fa-shield-alt me-2"></i>Classe d'armure</h5>
+                    <div class="col-md-12">
+                        <h5><i class="fas fa-fist-raised me-2"></i>Actions</h5>
                         <div class="card">
                             <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <h4 class="text-primary">CA: <?php echo $armorClass; ?></h4>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <small class="text-muted">
-                                            <?php if ($equippedArmor): ?>
-                                                <strong>Armure:</strong> <?php echo $equippedArmor['name']; ?> (<?php echo $equippedArmor['ac_formula']; ?>)<br>
-                                            <?php else: ?>
-                                                <?php if ($isBarbarian): ?>
-                                                    <strong>Armure:</strong> Aucune (10 + modificateur de Dextérité + modificateur de Constitution)<br>
-                                                <?php else: ?>
-                                                    <strong>Armure:</strong> Aucune (10 + modificateur de Dextérité)<br>
-                                                <?php endif; ?>
+                                <?php if (!empty($monsterActions)): ?>
+                                    <?php foreach ($monsterActions as $action): ?>
+                                        <div class="mb-3">
+                                            <strong><?php echo htmlspecialchars($action['name']); ?></strong>
+                                            <?php if (!empty($action['description'])): ?>
+                                                <p class="mb-0 mt-1 text-muted"><?php echo nl2br(htmlspecialchars($action['description'])); ?></p>
                                             <?php endif; ?>
-                                            
-                                            <?php if ($equippedShield): ?>
-                                                <strong>Bouclier:</strong> <?php echo $equippedShield['name']; ?> (+<?php echo $equippedShield['ac_bonus']; ?>)<br>
-                                            <?php else: ?>
-                                                <strong>Bouclier:</strong> Aucun<br>
-                                            <?php endif; ?>
-                                            
-                                            <strong>Modificateur de Dextérité:</strong> <?php echo ($dexterityMod >= 0 ? '+' : '') . $dexterityMod; ?>
-                                            <?php if ($isBarbarian && !$equippedArmor): ?>
-                                                <br><strong>Modificateur de Constitution:</strong> <?php echo ($constitutionMod >= 0 ? '+' : '') . $constitutionMod; ?>
-                                            <?php endif; ?>
-                                        </small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <h5><i class="fas fa-sword me-2"></i>Attaques</h5>
-                        <div class="card">
-                            <div class="card-body">
-                                <?php if (!empty($characterAttacks)): ?>
-                                    <?php foreach ($characterAttacks as $attack): ?>
-                                        <div class="row mb-2">
-                                            <div class="col-12">
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <div>
-                                                        <strong><?php echo htmlspecialchars($attack['name']); ?></strong><br>
-                                                        <small class="text-muted"><?php echo htmlspecialchars($attack['damage']); ?></small>
-                                                    </div>
-                                                    <div class="text-end">
-                                                        <span class="badge bg-<?php echo $attack['type'] === 'two_handed' ? 'danger' : ($attack['type'] === 'main_hand' ? 'success' : 'info'); ?> fs-6">
-                                                            <?php echo ($attack['attack_bonus'] >= 0 ? '+' : '') . $attack['attack_bonus']; ?>
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
                                         </div>
-                                        <?php if ($attack !== end($characterAttacks)): ?>
+                                        <?php if ($action !== end($monsterActions)): ?>
                                             <hr class="my-2">
                                         <?php endif; ?>
                                     <?php endforeach; ?>
                                 <?php else: ?>
                                     <div class="text-center text-muted">
                                         <i class="fas fa-hand-paper fa-2x mb-2"></i>
-                                        <p>Aucune arme équipée</p>
+                                        <p>Aucune action disponible</p>
                                     </div>
                                 <?php endif; ?>
                             </div>
@@ -1467,13 +1303,13 @@ $initiative = $dexterityMod;
                 <?php 
                 // Classes qui peuvent lancer des sorts
                 $spellcastingClasses = [2, 3, 4, 5, 7, 9, 10, 11]; // Barde, Clerc, Druide, Ensorceleur, Magicien, Occultiste, Paladin, Rôdeur
-                $canCastSpells = in_array($character['class_id'], $spellcastingClasses);
+                $canCastSpells = in_array($monster['class_id'], $spellcastingClasses);
                 ?>
                 <?php if ($canCastSpells): ?>
                 <div class="row mt-3">
                     <div class="col-12">
                         <div class="d-flex justify-content-center">
-                            <a href="grimoire.php?id=<?php echo $character_id; ?>" class="btn btn-primary btn-lg">
+                            <a href="grimoire.php?id=<?php echo $monster_id; ?>" class="btn btn-primary btn-lg">
                                 <i class="fas fa-book-open me-2"></i>Grimoire
                             </a>
                         </div>
@@ -1481,48 +1317,6 @@ $initiative = $dexterityMod;
                 </div>
                 <?php endif; ?>
                 
-                <!-- Arme équipée -->
-                <?php if ($equippedItems['main_hand']): ?>
-                <div class="row mt-3">
-                    <div class="col-12">
-                        <h5><i class="fas fa-sword me-2"></i>Arme équipée</h5>
-                        <div class="card">
-                            <div class="card-body">
-                                <?php
-                                // Trouver l'arme équipée dans les armes détectées
-                                $equippedWeapon = null;
-                                foreach ($detectedWeapons as $weapon) {
-                                    if ($weapon['name'] === $equippedItems['main_hand']) {
-                                        $equippedWeapon = $weapon;
-                                        break;
-                                    }
-                                }
-                                ?>
-                                
-                                <?php if ($equippedWeapon): ?>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <h4 class="text-success"><?php echo htmlspecialchars($equippedWeapon['name']); ?></h4>
-                                        <p class="mb-1">
-                                            <strong>Dégâts:</strong> <?php echo htmlspecialchars($equippedWeapon['damage']); ?><br>
-                                            <strong>Type:</strong> <?php echo htmlspecialchars($equippedWeapon['type']); ?><br>
-                                            <strong>Mains:</strong> <?php echo $equippedWeapon['hands']; ?> main(s)
-                                        </p>
-                                        <?php if ($equippedWeapon['properties']): ?>
-                                        <p class="mb-1">
-                                            <strong>Propriétés:</strong> <?php echo htmlspecialchars($equippedWeapon['properties']); ?>
-                                        </p>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                                <?php else: ?>
-                                <p class="text-muted">Arme équipée non trouvée dans la base de données</p>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <?php endif; ?>
             </div>
 
 
@@ -1750,7 +1544,7 @@ $initiative = $dexterityMod;
                                     <?php 
                                     // Déterminer la source de la compétence
                                     $isBackgroundSkill = in_array($skill, $backgroundSkills);
-                                    $isCharacterSkill = in_array($skill, $characterSkills);
+                                    $ismonsterSkill = in_array($skill, $monsterSkills);
                                     $sourceClass = $isBackgroundSkill ? 'text-success' : 'text-primary';
                                     $sourceIcon = $isBackgroundSkill ? 'fas fa-book' : 'fas fa-user';
                                     $sourceText = $isBackgroundSkill ? 'Historique' : 'Classe/Race';
@@ -1784,54 +1578,35 @@ $initiative = $dexterityMod;
                 </div>
             </div>
 
-            <!-- Langues -->
-            <div class="info-section">
-                <h3><i class="fas fa-language me-2"></i>Langues</h3>
-                <div class="row">
-                    <div class="col-12">
-                        <h5><i class="fas fa-comments me-2"></i>Langues parlées</h5>
-                        <?php if (!empty($allLanguages)): ?>
-                            <div class="d-flex flex-wrap">
-                                <?php foreach ($allLanguages as $language): ?>
-                                    <span class="badge bg-info me-2 mb-2"><?php echo htmlspecialchars($language); ?></span>
-                                <?php endforeach; ?>
-                            </div>
-                        <?php else: ?>
-                            <p class="text-muted">Aucune langue parlée</p>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
-
             <!-- Informations de race et classe -->
             <div class="row">
                 <div class="col-md-6">
                     <div class="info-section">
-                        <h3><i class="fas fa-dragon me-2"></i>Race: <?php echo htmlspecialchars($characterDetails['race_name']); ?></h3>
-                        <p><?php echo htmlspecialchars($characterDetails['race_description']); ?></p>
+                        <h3><i class="fas fa-dragon me-2"></i>Race: <?php echo htmlspecialchars($monsterDetails['race_name']); ?></h3>
+                        <p><?php echo htmlspecialchars($monsterDetails['race_description']); ?></p>
                         <p><strong>Bonus de caractéristiques:</strong> 
-                            Force: +<?php echo $characterDetails['strength_bonus']; ?> | 
-                            Dextérité: +<?php echo $characterDetails['dexterity_bonus']; ?> | 
-                            Constitution: +<?php echo $characterDetails['constitution_bonus']; ?> | 
-                            Intelligence: +<?php echo $characterDetails['intelligence_bonus']; ?> | 
-                            Sagesse: +<?php echo $characterDetails['wisdom_bonus']; ?> | 
-                            Charisme: +<?php echo $characterDetails['charisma_bonus']; ?>
+                            Force: +<?php echo $monsterDetails['strength_bonus']; ?> | 
+                            Dextérité: +<?php echo $monsterDetails['dexterity_bonus']; ?> | 
+                            Constitution: +<?php echo $monsterDetails['constitution_bonus']; ?> | 
+                            Intelligence: +<?php echo $monsterDetails['intelligence_bonus']; ?> | 
+                            Sagesse: +<?php echo $monsterDetails['wisdom_bonus']; ?> | 
+                            Charisme: +<?php echo $monsterDetails['charisma_bonus']; ?>
                         </p>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="info-section">
-                        <h3><i class="fas fa-shield-alt me-2"></i>Classe: <?php echo htmlspecialchars($characterDetails['class_name']); ?></h3>
-                        <p><?php echo htmlspecialchars($characterDetails['class_description']); ?></p>
-                        <p><strong>Dé de vie:</strong> &nbsp;<?php echo $characterDetails['hit_dice']; ?></p>
+                        <h3><i class="fas fa-shield-alt me-2"></i>Classe: <?php echo htmlspecialchars($monsterDetails['class_name']); ?></h3>
+                        <p><?php echo htmlspecialchars($monsterDetails['class_description']); ?></p>
+                        <p><strong>Dé de vie:</strong> &nbsp;<?php echo $monsterDetails['hit_dice']; ?></p>
                     </div>
                 </div>
             </div>
 
             <!-- Historique -->
-            <?php if ($characterDetails['background_name']): ?>
+            <?php if ($monsterDetails['background_name']): ?>
             <div class="info-section">
-                <h3><i class="fas fa-book me-2"></i>Historique: <?php echo htmlspecialchars($characterDetails['background_name']); ?></h3>
+                <h3><i class="fas fa-book me-2"></i>Historique: <?php echo htmlspecialchars($monsterDetails['background_name']); ?></h3>
             </div>
             <?php endif; ?>
 
@@ -1846,21 +1621,21 @@ $initiative = $dexterityMod;
                                 <div class="row text-center">
                                     <div class="col-4">
                                         <div class="border rounded p-3 bg-warning bg-opacity-10">
-                                            <h4 class="text-warning mb-1"><?php echo $character['gold']; ?></h4>
+                                            <h4 class="text-warning mb-1"><?php echo $monster['gold']; ?></h4>
                                             <small class="text-muted">PO</small>
                                             <br><small>Pièces d'or</small>
                                         </div>
                                     </div>
                                     <div class="col-4">
                                         <div class="border rounded p-3 bg-secondary bg-opacity-10">
-                                            <h4 class="text-secondary mb-1"><?php echo $character['silver']; ?></h4>
+                                            <h4 class="text-secondary mb-1"><?php echo $monster['silver']; ?></h4>
                                             <small class="text-muted">PA</small>
                                             <br><small>Pièces d'argent</small>
                                         </div>
                                     </div>
                                     <div class="col-4">
                                         <div class="border rounded p-3 bg-danger bg-opacity-10">
-                                            <h4 class="text-danger mb-1"><?php echo $character['copper']; ?></h4>
+                                            <h4 class="text-danger mb-1"><?php echo $monster['copper']; ?></h4>
                                             <small class="text-muted">PC</small>
                                             <br><small>Pièces de cuivre</small>
                                         </div>
@@ -1874,7 +1649,7 @@ $initiative = $dexterityMod;
                             <div class="card-body">
                                 <h5 class="card-title"><i class="fas fa-calculator me-2"></i>Valeur totale</h5>
                                 <?php 
-                                $totalCopper = ($character['gold'] * 100) + ($character['silver'] * 10) + $character['copper'];
+                                $totalCopper = ($monster['gold'] * 100) + ($monster['silver'] * 10) + $monster['copper'];
                                 $totalGold = floor($totalCopper / 100);
                                 $remainingSilver = floor(($totalCopper % 100) / 10);
                                 $remainingCopper = $totalCopper % 10;
@@ -1887,320 +1662,35 @@ $initiative = $dexterityMod;
                 </div>
             </div>
 
-            <!-- Outils et Instruments -->
-            <?php if (!empty($allTools)): ?>
-            <div class="info-section">
-                <h3><i class="fas fa-tools me-2"></i>Outils et Instruments</h3>
-                <div class="row">
-                    <div class="col-12">
-                        <h5><i class="fas fa-check-circle me-2"></i>Outils maîtrisés</h5>
-                        <div class="d-flex flex-wrap">
-                            <?php foreach ($allTools as $tool): ?>
-                                <span class="badge bg-success me-2 mb-2">
-                                    <i class="fas fa-tools me-1"></i><?php echo htmlspecialchars($tool); ?>
-                                </span>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <?php endif; ?>
-
-            <!-- Équipement -->
-            <div class="info-section">
-                <h3><i class="fas fa-backpack me-2"></i>Équipement</h3>
-                
-                <!-- Filtres et tri -->
-                <div class="row mb-3">
-                    <div class="col-md-4">
-                        <input type="text" id="equipmentSearch" class="form-control" placeholder="Rechercher un objet...">
-                    </div>
-                    <div class="col-md-3">
-                        <select id="typeFilter" class="form-select">
-                            <option value="">Tous les types</option>
-                            <option value="weapon">Arme</option>
-                            <option value="armor">Armure</option>
-                            <option value="magical_item">Objet magique</option>
-                            <option value="poison">Poison</option>
-                            <option value="bourse">Bourse</option>
-                            <option value="letter">Lettre</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <select id="equippedFilter" class="form-select">
-                            <option value="">Tous</option>
-                            <option value="equipped">Équipés</option>
-                            <option value="unequipped">Non équipés</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <button class="btn btn-outline-secondary w-100" onclick="resetFilters()">
-                            <i class="fas fa-undo me-1"></i>Réinitialiser
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Tableau d'équipement -->
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover" id="equipmentTable">
-                        <thead class="table-dark">
-                            <tr>
-                                <th onclick="sortTable(0)" style="cursor: pointer;">
-                                    Nom <i class="fas fa-sort ms-1"></i>
-                                </th>
-                                <th onclick="sortTable(1)" style="cursor: pointer;">
-                                    Type <i class="fas fa-sort ms-1"></i>
-                                </th>
-                                <th onclick="sortTable(2)" style="cursor: pointer;">
-                                    Type précis <i class="fas fa-sort ms-1"></i>
-                                </th>
-                                <th>État</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php 
-                            // Combiner tous les objets du personnage
-                            $allCharacterItems = array_merge($allMagicalEquipment, $characterPoisons);
-                            
-                            // Fonction pour vérifier si un objet existe déjà
-                            function itemExists($items, $name, $type) {
-                                foreach ($items as $item) {
-                                    if (($item['item_name'] ?? '') === $name && ($item['item_type'] ?? '') === $type) {
-                                        return true;
-                                    }
-                                }
-                                return false;
-                            }
-                            
-                            // Ajouter les objets de base détectés seulement s'ils n'existent pas déjà
-                            if (!empty($detectedWeapons)) {
-                                foreach ($detectedWeapons as $weapon) {
-                                    // Vérifier si cette arme existe déjà dans les objets du personnage
-                                    if (!itemExists($allCharacterItems, $weapon['name'], 'weapon')) {
-                                        $isEquipped = false;
-                                        if ($weapon['hands'] == 2) {
-                                            $isEquipped = ($equippedItems['main_hand'] === $weapon['name'] && $equippedItems['off_hand'] === $weapon['name']);
-                                        } else {
-                                            $isEquipped = ($equippedItems['main_hand'] === $weapon['name']);
-                                        }
-                                        
-                                        $allCharacterItems[] = [
-                                            'id' => 'base_' . $weapon['name'],
-                                            'item_name' => $weapon['name'],
-                                            'item_type' => 'weapon',
-                                            'type_precis' => $weapon['name'],
-                                            'equipped' => $isEquipped,
-                                            'equipped_slot' => $isEquipped ? 'main_hand' : null,
-                                            'item_source' => 'Équipement de base',
-                                            'quantity' => 1,
-                                            'obtained_at' => date('Y-m-d H:i:s'),
-                                            'obtained_from' => 'Équipement de base',
-                                            'item_description' => "Arme: {$weapon['type']}, {$weapon['hands']} main(s), Dégâts: {$weapon['damage']}",
-                                            'notes' => null
-                                        ];
-                                    }
-                                }
-                            }
-                            
-                            if (!empty($detectedArmor)) {
-                                foreach ($detectedArmor as $armor) {
-                                    // Vérifier si cette armure existe déjà dans les objets du personnage
-                                    if (!itemExists($allCharacterItems, $armor['name'], 'armor')) {
-                                        $isEquipped = ($equippedItems['armor'] === $armor['name']);
-                                        
-                                        $allCharacterItems[] = [
-                                            'id' => 'base_' . $armor['name'],
-                                            'item_name' => $armor['name'],
-                                            'item_type' => 'armor',
-                                            'type_precis' => $armor['name'],
-                                            'equipped' => $isEquipped,
-                                            'equipped_slot' => $isEquipped ? 'armor' : null,
-                                            'item_source' => 'Équipement de base',
-                                            'quantity' => 1,
-                                            'obtained_at' => date('Y-m-d H:i:s'),
-                                            'obtained_from' => 'Équipement de base',
-                                            'item_description' => "Armure: CA {$armor['ac_formula']}, Type: {$armor['type']}",
-                                            'notes' => null
-                                        ];
-                                    }
-                                }
-                            }
-                            
-                            if (!empty($detectedShields)) {
-                                foreach ($detectedShields as $shield) {
-                                    // Vérifier si ce bouclier existe déjà dans les objets du personnage
-                                    if (!itemExists($allCharacterItems, $shield['name'], 'shield')) {
-                                        $isEquipped = ($equippedItems['shield'] === $shield['name']);
-                                        
-                                        $allCharacterItems[] = [
-                                            'id' => 'base_' . $shield['name'],
-                                            'item_name' => $shield['name'],
-                                            'item_type' => 'shield',
-                                            'type_precis' => $shield['name'],
-                                            'equipped' => $isEquipped,
-                                            'equipped_slot' => $isEquipped ? 'off_hand' : null,
-                                            'item_source' => 'Équipement de base',
-                                            'quantity' => 1,
-                                            'obtained_at' => date('Y-m-d H:i:s'),
-                                            'obtained_from' => 'Équipement de base',
-                                            'item_description' => "Bouclier: Bonus CA +{$shield['ac_bonus']}",
-                                            'notes' => null
-                                        ];
-                                    }
-                                }
-                            }
-                            
-                            foreach ($allCharacterItems as $item): 
-                                // Utiliser les champs standardisés
-                                $itemName = $item['item_name'] ?? 'Objet inconnu';
-                                $itemType = $item['item_type'] ?? 'unknown';
-                                $displayName = htmlspecialchars($itemName);
-                                $typeLabel = ucfirst(str_replace('_', ' ', $itemType));
-                            ?>
-                            <tr data-type="<?php echo $itemType; ?>" data-equipped="<?php echo $item['equipped'] ? 'equipped' : 'unequipped'; ?>">
-                                <td>
-                                    <strong><?php echo $displayName; ?></strong>
-                                    <?php if ($item['quantity'] > 1): ?>
-                                        <span class="badge bg-info ms-1">x<?php echo $item['quantity']; ?></span>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <span class="badge bg-<?php 
-                                        echo match($itemType) {
-                                            'weapon' => 'danger',
-                                            'armor' => 'primary', 
-                                            'shield' => 'info',
-                                            'magical_item' => 'success',
-                                            'poison' => 'warning',
-                                            'bag' => 'secondary',
-                                            'tool' => 'info',
-                                            'clothing' => 'light text-dark',
-                                            'consumable' => 'warning',
-                                            'misc' => 'secondary',
-                                            default => 'light text-dark'
-                                        };
-                                    ?>">
-                                        <?php echo $typeLabel; ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <small class="text-muted"><?php echo htmlspecialchars($item['item_description'] ?? ''); ?></small>
-                                </td>
-                                <td>
-                                    <?php if ($item['equipped']): ?>
-                                        <span class="badge bg-success">
-                                            <i class="fas fa-check-circle me-1"></i>Équipé
-                                        </span>
-                                        <?php if ($item['equipped_slot']): ?>
-                                            <br><small class="text-muted">
-                                                <?php 
-                                                // Gérer les slots multiples (ex: "main_hand,off_hand")
-                                                $slots = explode(',', $item['equipped_slot']);
-                                                $slotLabels = array_map(function($slot) {
-                                                    return ucfirst(str_replace('_', ' ', trim($slot)));
-                                                }, $slots);
-                                                echo implode(' + ', $slotLabels);
-                                                ?>
-                                            </small>
-                                        <?php endif; ?>
-                                    <?php else: ?>
-                                        <span class="badge bg-secondary">
-                                            <i class="fas fa-times-circle me-1"></i>Non équipé
-                                        </span>
-                                    <?php endif; ?>
-                                </td>
-                                <td style="min-width: 300px; white-space: nowrap; overflow: visible;">
-                                    <?php if ($itemType === 'weapon' || $itemType === 'armor' || $itemType === 'shield'): ?>
-                                        <?php if ($item['equipped']): ?>
-                                            <button class="btn btn-warning btn-sm" onclick="unequipItem(<?php echo $character_id; ?>, '<?php echo addslashes($itemName); ?>')"
-                                                    style="white-space: nowrap; min-width: 80px;">
-                                                <i class="fas fa-hand-paper me-1"></i>Déséquiper
-                                            </button>
-                                        <?php else: ?>
-                                            <?php 
-                                            $slot = match($itemType) {
-                                                'weapon' => 'main_hand',
-                                                'armor' => 'armor',
-                                                'shield' => 'off_hand',
-                                                default => 'main_hand'
-                                            };
-                                            ?>
-                                            <button class="btn btn-success btn-sm" onclick="equipItem(<?php echo $character_id; ?>, '<?php echo addslashes($itemName); ?>', '<?php echo $itemType; ?>', '<?php echo $slot; ?>')"
-                                                    style="white-space: nowrap; min-width: 80px;">
-                                                <i class="fas fa-hand-rock me-1"></i>Équiper
-                                            </button>
-                                        <?php endif; ?>
-                                    <?php else: ?>
-                                        <span class="text-muted">Non équipable</span>
-                                    <?php endif; ?>
-                                    
-                                    <?php if ($canModifyHP && !str_starts_with($item['id'], 'base_')): ?>
-                                        <button type="button" class="btn btn-outline-primary btn-sm ms-1" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#transferModal" 
-                                                data-item-id="<?php echo $item['id']; ?>"
-                                                data-item-name="<?php echo htmlspecialchars($itemName); ?>"
-                                                data-item-type="<?php echo htmlspecialchars($itemType); ?>"
-                                                data-source="character_equipment"
-                                                style="white-space: nowrap; min-width: 80px;">
-                                            <i class="fas fa-exchange-alt me-1"></i>Transférer
-                                        </button>
-                                        <?php if (!$item['equipped']): ?>
-                                            <button type="button" class="btn btn-outline-warning btn-sm ms-1" 
-                                                    onclick="dropItem(<?php echo $item['id']; ?>, '<?php echo addslashes($item['item_name']); ?>')"
-                                                    title="Déposer l'objet dans le lieu actuel"
-                                                    style="white-space: nowrap; min-width: 80px;">
-                                                <i class="fas fa-hand-holding me-1"></i>Déposer
-                                            </button>
-                                        <?php endif; ?>
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                            
-                            <?php if (empty($allCharacterItems)): ?>
-                            <tr>
-                                <td colspan="5" class="text-center text-muted">
-                                    <i class="fas fa-inbox fa-2x mb-2"></i><br>
-                                    Aucun objet trouvé
-                                </td>
-                            </tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-                
-            </div>
 
 
             <!-- Informations personnelles -->
-            <?php if ($character['personality_traits'] || $character['ideals'] || $character['bonds'] || $character['flaws']): ?>
+            <?php if ($monster['personality_traits'] || $monster['ideals'] || $monster['bonds'] || $monster['flaws']): ?>
                 <div class="info-section">
                     <h3><i class="fas fa-user-edit me-2"></i>Informations Personnelles</h3>
                     <div class="row">
-                        <?php if ($character['personality_traits']): ?>
+                        <?php if ($monster['personality_traits']): ?>
                             <div class="col-md-6">
                                 <p><strong>Traits de personnalité:</strong></p>
-                                <p><?php echo nl2br(htmlspecialchars($character['personality_traits'])); ?></p>
+                                <p><?php echo nl2br(htmlspecialchars($monster['personality_traits'])); ?></p>
                             </div>
                         <?php endif; ?>
-                        <?php if ($character['ideals']): ?>
+                        <?php if ($monster['ideals']): ?>
                             <div class="col-md-6">
                                 <p><strong>Idéaux:</strong></p>
-                                <p><?php echo nl2br(htmlspecialchars($character['ideals'])); ?></p>
+                                <p><?php echo nl2br(htmlspecialchars($monster['ideals'])); ?></p>
                             </div>
                         <?php endif; ?>
-                        <?php if ($character['bonds']): ?>
+                        <?php if ($monster['bonds']): ?>
                             <div class="col-md-6">
                                 <p><strong>Liens:</strong></p>
-                                <p><?php echo nl2br(htmlspecialchars($character['bonds'])); ?></p>
+                                <p><?php echo nl2br(htmlspecialchars($monster['bonds'])); ?></p>
                             </div>
                         <?php endif; ?>
-                        <?php if ($character['flaws']): ?>
+                        <?php if ($monster['flaws']): ?>
                             <div class="col-md-6">
                                 <p><strong>Défauts:</strong></p>
-                                <p><?php echo nl2br(htmlspecialchars($character['flaws'])); ?></p>
+                                <p><?php echo nl2br(htmlspecialchars($monster['flaws'])); ?></p>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -2217,7 +1707,7 @@ $initiative = $dexterityMod;
                 <div class="modal-header">
                     <h5 class="modal-title">
                         <i class="fas fa-heart me-2"></i>
-                        Gestion des Points de Vie - <?php echo htmlspecialchars($character['name']); ?>
+                        Gestion des Points de Vie - <?php echo htmlspecialchars($monster['name']); ?>
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
@@ -2226,8 +1716,8 @@ $initiative = $dexterityMod;
                     <div class="mb-4">
                         <h6>Points de Vie Actuels</h6>
                         <?php
-                        $current_hp = $character['hit_points_current'] ?? 0;
-                        $max_hp = $character['hit_points_max'] ?? 1; // Éviter la division par zéro
+                        $current_hp = $monster['hit_points_current'] ?? 0;
+                        $max_hp = $monster['hit_points_max'] ?? 1; // Éviter la division par zéro
                         $hp_percentage = $max_hp > 0 ? ($current_hp / $max_hp) * 100 : 0;
                         $hp_class = $hp_percentage > 50 ? 'bg-success' : ($hp_percentage > 25 ? 'bg-warning' : 'bg-danger');
                         ?>
@@ -2281,16 +1771,16 @@ $initiative = $dexterityMod;
                             <h6><i class="fas fa-edit text-warning me-2"></i>Modifier Directement</h6>
                             <form method="POST">
                                 <input type="hidden" name="hp_action" value="update_hp">
-                                <input type="hidden" name="max_hp" value="<?php echo $character['hit_points_max']; ?>">
+                                <input type="hidden" name="max_hp" value="<?php echo $monster['hit_points_max']; ?>">
                                 <div class="d-flex gap-2">
                                     <input type="number" name="current_hp" class="form-control form-control-sm" 
-                                           value="<?php echo $character['hit_points_current']; ?>" 
-                                           min="0" max="<?php echo $character['hit_points_max']; ?>" required>
+                                           value="<?php echo $monster['hit_points_current']; ?>" 
+                                           min="0" max="<?php echo $monster['hit_points_max']; ?>" required>
                                     <button type="submit" class="btn btn-warning btn-sm">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                 </div>
-                                <small class="text-muted">Maximum : <?php echo $character['hit_points_max']; ?> PV</small>
+                                <small class="text-muted">Maximum : <?php echo $monster['hit_points_max']; ?> PV</small>
                             </form>
                         </div>
                         <div class="col-md-6">
@@ -2407,7 +1897,7 @@ $initiative = $dexterityMod;
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function quickDamage(amount) {
-            if (confirm(`Infliger ${amount} points de dégâts à <?php echo htmlspecialchars($character['name']); ?> ?`)) {
+            if (confirm(`Infliger ${amount} points de dégâts à <?php echo htmlspecialchars($monster['name']); ?> ?`)) {
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.innerHTML = `
@@ -2420,7 +1910,7 @@ $initiative = $dexterityMod;
         }
 
         function quickHeal(amount) {
-            if (confirm(`Appliquer ${amount} points de soins à <?php echo htmlspecialchars($character['name']); ?> ?`)) {
+            if (confirm(`Appliquer ${amount} points de soins à <?php echo htmlspecialchars($monster['name']); ?> ?`)) {
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.innerHTML = `
@@ -2463,8 +1953,8 @@ $initiative = $dexterityMod;
                 
                 // Ajouter les personnages joueurs
                 select.innerHTML += '<optgroup label="Personnages Joueurs">';
-                select.innerHTML += '<option value="character_1">Hyphrédicte (Robin)</option>';
-                select.innerHTML += '<option value="character_2">Lieutenant Cameron (MJ)</option>';
+                select.innerHTML += '<option value="monster_1">Hyphrédicte (Robin)</option>';
+                select.innerHTML += '<option value="monster_2">Lieutenant Cameron (MJ)</option>';
                 select.innerHTML += '</optgroup>';
                 
                 // Ajouter les PNJ
@@ -2526,91 +2016,8 @@ $initiative = $dexterityMod;
             }
         }
 
-        // Fonctions pour l'équipement
-        function equipItem(characterId, itemName, itemType, slot) {
-            fetch('equip_item.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    character_id: characterId,
-                    item_name: itemName,
-                    item_type: itemType,
-                    slot: slot
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert('Erreur: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Erreur:', error);
-                alert('Erreur lors de l\'équipement');
-            });
-        }
-
-        function unequipItem(characterId, itemName) {
-            fetch('unequip_item.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    character_id: characterId,
-                    item_name: itemName
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert('Erreur: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Erreur:', error);
-                alert('Erreur lors du déséquipement');
-            });
-        }
-
-        function dropItem(itemId, itemName) {
-            if (!confirm(`Êtes-vous sûr de vouloir déposer "${itemName}" dans le lieu actuel ?`)) {
-                return;
-            }
-
-            fetch('drop_item.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    item_id: itemId,
-                    item_name: itemName
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Objet déposé avec succès dans le lieu actuel !');
-                    location.reload();
-                } else {
-                    alert('Erreur: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Erreur:', error);
-                alert('Erreur lors du dépôt de l\'objet');
-            });
-        }
-
         // Fonctions pour gérer les rages
-        function toggleRage(characterId, rageNumber) {
+        function toggleRage(monsterId, rageNumber) {
             const rageSymbol = document.querySelector(`[data-rage="${rageNumber}"]`);
             const isUsed = rageSymbol.classList.contains('used');
             
@@ -2622,7 +2029,7 @@ $initiative = $dexterityMod;
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    character_id: characterId,
+                    monster_id: monsterId,
                     action: action
                 })
             })
@@ -2641,7 +2048,7 @@ $initiative = $dexterityMod;
             });
         }
 
-        function resetRages(characterId) {
+        function resetRages(monsterId) {
             if (confirm('Effectuer un long repos ? Cela récupérera toutes les rages.')) {
                 fetch('manage_rage.php', {
                     method: 'POST',
@@ -2649,7 +2056,7 @@ $initiative = $dexterityMod;
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        character_id: characterId,
+                        monster_id: monsterId,
                         action: 'reset'
                     })
                 })
@@ -2673,116 +2080,6 @@ $initiative = $dexterityMod;
             // Recharger la page pour mettre à jour l'affichage
             window.location.reload();
         }
-
-        // Variables pour le tri
-        let currentSortColumn = -1;
-        let currentSortDirection = 'asc';
-
-        // Fonction de tri du tableau
-        function sortTable(columnIndex) {
-            const table = document.getElementById('equipmentTable');
-            const tbody = table.querySelector('tbody');
-            const rows = Array.from(tbody.querySelectorAll('tr'));
-            
-            // Déterminer la direction du tri
-            if (currentSortColumn === columnIndex) {
-                currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
-            } else {
-                currentSortDirection = 'asc';
-                currentSortColumn = columnIndex;
-            }
-            
-            // Trier les lignes
-            rows.sort((a, b) => {
-                const aText = a.cells[columnIndex].textContent.trim().toLowerCase();
-                const bText = b.cells[columnIndex].textContent.trim().toLowerCase();
-                
-                if (currentSortDirection === 'asc') {
-                    return aText.localeCompare(bText);
-                } else {
-                    return bText.localeCompare(aText);
-                }
-            });
-            
-            // Réorganiser les lignes dans le DOM
-            rows.forEach(row => tbody.appendChild(row));
-            
-            // Mettre à jour les icônes de tri
-            updateSortIcons(columnIndex);
-        }
-
-        // Fonction pour mettre à jour les icônes de tri
-        function updateSortIcons(activeColumn) {
-            const headers = document.querySelectorAll('#equipmentTable th');
-            headers.forEach((header, index) => {
-                const icon = header.querySelector('i');
-                if (index === activeColumn) {
-                    icon.className = currentSortDirection === 'asc' ? 'fas fa-sort-up ms-1' : 'fas fa-sort-down ms-1';
-                } else {
-                    icon.className = 'fas fa-sort ms-1';
-                }
-            });
-        }
-
-        // Fonction de filtrage
-        function filterTable() {
-            const searchTerm = document.getElementById('equipmentSearch').value.toLowerCase();
-            const typeFilter = document.getElementById('typeFilter').value;
-            const equippedFilter = document.getElementById('equippedFilter').value;
-            
-            const table = document.getElementById('equipmentTable');
-            const rows = table.querySelectorAll('tbody tr');
-            
-            rows.forEach(row => {
-                const name = row.cells[0].textContent.toLowerCase();
-                const type = row.dataset.type;
-                const equipped = row.dataset.equipped;
-                
-                let showRow = true;
-                
-                // Filtre de recherche
-                if (searchTerm && !name.includes(searchTerm)) {
-                    showRow = false;
-                }
-                
-                // Filtre de type
-                if (typeFilter && type !== typeFilter) {
-                    showRow = false;
-                }
-                
-                // Filtre d'état d'équipement
-                if (equippedFilter && equipped !== equippedFilter) {
-                    showRow = false;
-                }
-                
-                row.style.display = showRow ? '' : 'none';
-            });
-        }
-
-        // Fonction pour réinitialiser les filtres
-        function resetFilters() {
-            document.getElementById('equipmentSearch').value = '';
-            document.getElementById('typeFilter').value = '';
-            document.getElementById('equippedFilter').value = '';
-            filterTable();
-        }
-
-        // Ajouter les événements de filtrage
-        document.addEventListener('DOMContentLoaded', function() {
-            const searchInput = document.getElementById('equipmentSearch');
-            const typeSelect = document.getElementById('typeFilter');
-            const equippedSelect = document.getElementById('equippedFilter');
-            
-            if (searchInput) {
-                searchInput.addEventListener('input', filterTable);
-            }
-            if (typeSelect) {
-                typeSelect.addEventListener('change', filterTable);
-            }
-            if (equippedSelect) {
-                equippedSelect.addEventListener('change', filterTable);
-            }
-        });
 
         // Gestion des compétences
         document.addEventListener('DOMContentLoaded', function() {

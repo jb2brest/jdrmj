@@ -577,7 +577,7 @@ $external_countries = $monde->getExternalCountries();
                                                             <?php endif; ?>
                                                         <?php else: ?>
                                                             <?php if (!empty($entity['monster_id'])): ?>
-                                                                <a href="view_monster_sheet.php?id=<?php echo (int)$entity['id']; ?>" 
+                                                                <a href="view_monster.php?id=<?php echo (int)$entity['id']; ?>" 
                                                                    class="btn btn-outline-info btn-sm" title="Voir le monstre">
                                                                     <i class="fas fa-eye"></i>
                                                                 </a>

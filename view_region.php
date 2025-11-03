@@ -581,7 +581,7 @@ $region_monsters = $region->getMonsters();
                                                             <i class="fas fa-eye"></i>
                                                         </a>
                                                     <?php else: ?>
-                                                        <a href="view_monster_sheet.php?id=<?php echo (int)$entity['monster_id']; ?>" 
+                                                        <a href="view_monster.php?id=<?php echo (int)$entity['monster_id']; ?>" 
                                                            class="btn btn-outline-info btn-sm" title="Voir le monstre">
                                                             <i class="fas fa-eye"></i>
                                                         </a>

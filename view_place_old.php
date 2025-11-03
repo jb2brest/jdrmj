@@ -2403,7 +2403,7 @@ foreach ($allScenes as $s) {
                                             </div>
                                         </div>
                                         <div class="d-flex gap-1">
-                                            <a href="view_monster_sheet.php?id=<?php echo (int)$monster['id']; ?>&campaign_id=<?php echo (int)$place['campaign_id']; ?>" class="btn btn-sm btn-outline-danger" title="Voir la feuille du monstre" target="_blank">
+                                            <a href="view_monster.php?id=<?php echo (int)$monster['id']; ?>&campaign_id=<?php echo (int)$place['campaign_id']; ?>" class="btn btn-sm btn-outline-danger" title="Voir la feuille du monstre" target="_blank">
                                                 <i class="fas fa-dragon"></i>
                                             </a>
                                             <?php if ($isOwnerDM): ?>

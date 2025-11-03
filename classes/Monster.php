@@ -237,5 +237,28 @@ class Monster
             return false;
         }
     }
+
+    /**
+     * Récupère les actions du monstre depuis la table monster_actions
+     * Les actions sont liées au type de monstre (monster_type_id), pas à l'instance
+     * 
+     * @return array Liste des actions avec toutes les colonnes
+     */
+    public function getActions()
+    {
+        if ($this->monster_type_id === null) {
+            return [];
+        }
+
+        try {
+            // Les actions sont liées au type de monstre (dnd_monsters.id), pas à l'instance
+            $stmt = $this->pdo->prepare("SELECT * FROM monster_actions WHERE monster_id = ? ORDER BY name");
+            $stmt->execute([$this->monster_type_id]);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération des actions: " . $e->getMessage());
+            return [];
+        }
+    }
 }
 ?>
