@@ -464,12 +464,13 @@ try {
                         <div class="mb-3">
                             <label for="hierarchy_level" class="form-label">Niveau hiérarchique</label>
                             <select class="form-select" id="hierarchy_level" name="hierarchy_level" required>
-                                <option value="2">Niveau 2 (Membre)</option>
-                                <option value="3">Niveau 3 (Subalterne)</option>
-                                <option value="4">Niveau 4 (Recrue)</option>
-                                <option value="5">Niveau 5 (Novice)</option>
+                                <?php 
+                                $max_levels = $groupe->max_hierarchy_levels ?? 5;
+                                for ($niveau = 2; $niveau <= $max_levels; $niveau++): ?>
+                                    <option value="<?php echo $niveau; ?>">Niveau <?php echo $niveau; ?></option>
+                                <?php endfor; ?>
                             </select>
-                            <small class="form-text text-muted">Le niveau 1 est réservé au dirigeant du groupe.</small>
+                            <small class="form-text text-muted">Le niveau 1 est réservé au dirigeant du groupe. Ce groupe a <?php echo $max_levels; ?> niveau<?php echo $max_levels > 1 ? 'x' : ''; ?> hiérarchique<?php echo $max_levels > 1 ? 's' : ''; ?>.</small>
                         </div>
                         
                         <div class="mb-3">
@@ -595,8 +596,9 @@ try {
         }
         
         function updateHierarchy(memberId, memberType, currentLevel) {
-            const newLevel = prompt('Nouveau niveau hiérarchique (1-5):', currentLevel);
-            if (newLevel && newLevel >= 1 && newLevel <= 5 && newLevel != currentLevel) {
+            const maxLevels = <?php echo $groupe->max_hierarchy_levels ?? 5; ?>;
+            const newLevel = prompt('Nouveau niveau hiérarchique (1-' + maxLevels + '):', currentLevel);
+            if (newLevel && newLevel >= 1 && newLevel <= maxLevels && newLevel != currentLevel) {
                 document.getElementById('updateMemberId').value = memberId;
                 document.getElementById('updateMemberType').value = memberType;
                 document.getElementById('updateHierarchyLevel').value = newLevel;

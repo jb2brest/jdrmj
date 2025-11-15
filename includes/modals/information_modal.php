@@ -196,7 +196,9 @@ if ($is_editing) {
                                                 </button>
                                             </div>
                                             <div class="d-flex flex-wrap gap-2">
-                                                <?php for ($niveau = 1; $niveau <= 5; $niveau++): ?>
+                                                <?php 
+                                                $max_levels = isset($groupe['max_hierarchy_levels']) ? (int)$groupe['max_hierarchy_levels'] : 5;
+                                                for ($niveau = 1; $niveau <= $max_levels; $niveau++): ?>
                                                     <div class="form-check">
                                                         <input class="form-check-input group-level-checkbox" 
                                                                type="checkbox" 

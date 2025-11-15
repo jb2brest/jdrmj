@@ -19,6 +19,7 @@ class Groupe
     public $crest_image; // Image du blason
     public $is_secret; // Groupe secret ou public
     public $headquarters_place_id; // ID du lieu QG
+    public $max_hierarchy_levels; // Nombre maximum de niveaux hiérarchiques (défaut: 5)
     public $created_by; // ID de l'utilisateur créateur
     public $created_at;
     public $updated_at;
@@ -51,6 +52,7 @@ class Groupe
         $this->crest_image = $data['crest_image'] ?? null;
         $this->is_secret = $data['is_secret'] ?? false;
         $this->headquarters_place_id = $data['headquarters_place_id'] ?? null;
+        $this->max_hierarchy_levels = isset($data['max_hierarchy_levels']) ? (int)$data['max_hierarchy_levels'] : 5;
         $this->created_by = $data['created_by'] ?? null;
         $this->created_at = $data['created_at'] ?? null;
         $this->updated_at = $data['updated_at'] ?? null;
@@ -68,7 +70,7 @@ class Groupe
                 // Mise à jour
                 $stmt = $this->pdo->prepare("
                     UPDATE groupes 
-                    SET name = ?, description = ?, crest_image = ?, is_secret = ?, headquarters_place_id = ?, updated_at = NOW()
+                    SET name = ?, description = ?, crest_image = ?, is_secret = ?, headquarters_place_id = ?, max_hierarchy_levels = ?, updated_at = NOW()
                     WHERE id = ?
                 ");
                 $stmt->execute([
@@ -77,13 +79,14 @@ class Groupe
                     $this->crest_image,
                     $this->is_secret ? 1 : 0,
                     $this->headquarters_place_id,
+                    $this->max_hierarchy_levels ?? 5,
                     $this->id
                 ]);
             } else {
                 // Création
                 $stmt = $this->pdo->prepare("
-                    INSERT INTO groupes (name, description, crest_image, is_secret, headquarters_place_id, created_by, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
+                    INSERT INTO groupes (name, description, crest_image, is_secret, headquarters_place_id, max_hierarchy_levels, created_by, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
                 ");
                 $stmt->execute([
                     $this->name,
@@ -91,6 +94,7 @@ class Groupe
                     $this->crest_image,
                     $this->is_secret ? 1 : 0,
                     $this->headquarters_place_id,
+                    $this->max_hierarchy_levels ?? 5,
                     $this->created_by
                 ]);
                 $this->id = $this->pdo->lastInsertId();
@@ -141,6 +145,13 @@ class Groupe
     public function addMember($member_id, $member_type, $hierarchy_level = 2, $is_secret = null)
     {
         try {
+            // Vérifier que le niveau hiérarchique est valide
+            $max_levels = $this->max_hierarchy_levels ?? 5;
+            if ($hierarchy_level < 1 || $hierarchy_level > $max_levels) {
+                error_log("Niveau hiérarchique invalide: $hierarchy_level (max: $max_levels)");
+                return false;
+            }
+            
             // Déterminer le statut secret par défaut selon le groupe
             if ($is_secret === null) {
                 $is_secret = $this->is_secret; // Par défaut, même statut que le groupe
@@ -234,6 +245,13 @@ class Groupe
     public function updateMemberHierarchy($member_id, $member_type, $hierarchy_level)
     {
         try {
+            // Vérifier que le niveau hiérarchique est valide
+            $max_levels = $this->max_hierarchy_levels ?? 5;
+            if ($hierarchy_level < 1 || $hierarchy_level > $max_levels) {
+                error_log("Niveau hiérarchique invalide: $hierarchy_level (max: $max_levels)");
+                return false;
+            }
+            
             $stmt = $this->pdo->prepare("
                 UPDATE groupe_membres 
                 SET hierarchy_level = ?
@@ -515,6 +533,7 @@ class Groupe
             'crest_image' => $this->crest_image,
             'is_secret' => $this->is_secret,
             'headquarters_place_id' => $this->headquarters_place_id,
+            'max_hierarchy_levels' => $this->max_hierarchy_levels ?? 5,
             'created_by' => $this->created_by,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at

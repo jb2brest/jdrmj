@@ -26,6 +26,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $description = trim($_POST['description'] ?? '');
             $headquarters_place_id = (int)($_POST['headquarters_place_id'] ?? 0);
             $is_secret = isset($_POST['is_secret']) && $_POST['is_secret'] === '1';
+            $max_hierarchy_levels = (int)($_POST['max_hierarchy_levels'] ?? 5);
+            
+            // Valider le nombre de niveaux (entre 1 et 20)
+            if ($max_hierarchy_levels < 1 || $max_hierarchy_levels > 20) {
+                $max_hierarchy_levels = 5;
+            }
             
             if (empty($name)) {
                 $error_message = "Le nom du groupe est obligatoire.";
@@ -37,6 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'description' => $description,
                     'is_secret' => $is_secret,
                     'headquarters_place_id' => $headquarters_place_id,
+                    'max_hierarchy_levels' => $max_hierarchy_levels,
                     'created_by' => $user_id
                 ]);
                 
@@ -321,6 +328,13 @@ try {
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="max_hierarchy_levels" class="form-label">Nombre de niveaux hiérarchiques *</label>
+                            <input type="number" class="form-control" id="max_hierarchy_levels" name="max_hierarchy_levels" 
+                                   value="5" min="1" max="20" required>
+                            <div class="form-text">Le niveau 1 correspond au dirigeant. Nombre de niveaux disponibles pour ce groupe (entre 1 et 20).</div>
                         </div>
                     </div>
                     <div class="modal-footer">
