@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.25.28
+VERSION=2.25.29
 
 # Date de déploiement
 DEPLOY_DATE=2025-11-15
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-11-15
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=65d4a3da9e0c598ff11da8b1b7b8ee82fd4e1a68
+GIT_COMMIT=1d1e4076575cc2c07ab92e71b63c2575d2f87682
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251115-205638
+BUILD_ID=20251115-212909
 
 # Notes de version
-RELEASE_NOTES="Correction bug edition évènement"
+RELEASE_NOTES="Correction bug accès"
