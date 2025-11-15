@@ -276,7 +276,8 @@ if ($place['region_id']) {
 }
 
 // Récupérer les données du lieu via les classes
-$placeAccesses = Access::getFromPlace($place_id);
+// Récupérer tous les accès (sortants et entrants) pour ce lieu
+$placeAccesses = Access::getAllForPlace($place_id);
 $placePlayers = $lieu->getAllPlayersDetailed();
 $placeNpcs = $lieu->getAllNpcsDetailed();
 $placeMonsters = $lieu->getAllMonsters();

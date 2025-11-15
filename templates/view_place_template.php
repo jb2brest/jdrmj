@@ -733,7 +733,11 @@ extract($template_vars ?? []);
                                             </div>
                                             
                                             <p class="card-text text-muted small mb-2">
-                                                <strong>Vers:</strong> <?= htmlspecialchars($access->to_place_name) ?>
+                                                <?php if ($access->from_place_id == $place_id): ?>
+                                                    <strong>Vers:</strong> <?= htmlspecialchars($access->to_place_name) ?>
+                                                <?php else: ?>
+                                                    <strong>Depuis:</strong> <?= htmlspecialchars($access->from_place_name) ?>
+                                                <?php endif; ?>
                                             </p>
                                             
                                             <?php if ($access->description): ?>
@@ -768,32 +772,40 @@ extract($template_vars ?? []);
                                             
                                             <?php if ($canEdit): ?>
                                                 <div class="mt-3 d-flex gap-2">
-                                                    <a href="view_place.php?id=<?= $access->to_place_id ?>" class="btn btn-sm btn-outline-primary">
-                                                        <i class="fas fa-external-link-alt me-1"></i>Aller vers ce lieu
-                                                    </a>
-                                                    <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#editAccessModal"
-                                                            data-access-id="<?= $access->id ?>"
-                                                            data-access-name="<?= htmlspecialchars($access->name) ?>"
-                                                            data-access-description="<?= htmlspecialchars($access->description ?? '') ?>"
-                                                            data-access-to-place-id="<?= $access->to_place_id ?>"
-                                                            data-access-is-visible="<?= $access->is_visible ?>"
-                                                            data-access-is-open="<?= $access->is_open ?>"
-                                                            data-access-is-trapped="<?= $access->is_trapped ?>"
-                                                            data-access-trap-description="<?= htmlspecialchars($access->trap_description) ?>"
-                                                            data-access-trap-difficulty="<?= $access->trap_difficulty ?>"
-                                                            data-access-trap-damage="<?= htmlspecialchars($access->trap_damage) ?>"
-                                                            data-access-position-x="<?= $access->position_x ?>"
-                                                            data-access-position-y="<?= $access->position_y ?>"
-                                                            data-access-is-on-map="<?= $access->is_on_map ?>"
-                                                            title="Modifier l'accès">
-                                                        <i class="fas fa-edit"></i>
-                                                    </button>
-                                                    <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteAccessModal"
-                                                            data-access-id="<?= $access->id ?>"
-                                                            data-access-name="<?= htmlspecialchars($access->name) ?>"
-                                                            title="Supprimer l'accès">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
+                                                    <?php if ($access->from_place_id == $place_id): ?>
+                                                        <a href="view_place.php?id=<?= $access->to_place_id ?>" class="btn btn-sm btn-outline-primary">
+                                                            <i class="fas fa-external-link-alt me-1"></i>Aller vers ce lieu
+                                                        </a>
+                                                    <?php else: ?>
+                                                        <a href="view_place.php?id=<?= $access->from_place_id ?>" class="btn btn-sm btn-outline-primary">
+                                                            <i class="fas fa-external-link-alt me-1"></i>Aller vers ce lieu
+                                                        </a>
+                                                    <?php endif; ?>
+                                                    <?php if ($access->from_place_id == $place_id): ?>
+                                                        <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#editAccessModal"
+                                                                data-access-id="<?= $access->id ?>"
+                                                                data-access-name="<?= htmlspecialchars($access->name) ?>"
+                                                                data-access-description="<?= htmlspecialchars($access->description ?? '') ?>"
+                                                                data-access-to-place-id="<?= $access->to_place_id ?>"
+                                                                data-access-is-visible="<?= $access->is_visible ?>"
+                                                                data-access-is-open="<?= $access->is_open ?>"
+                                                                data-access-is-trapped="<?= $access->is_trapped ?>"
+                                                                data-access-trap-description="<?= htmlspecialchars($access->trap_description) ?>"
+                                                                data-access-trap-difficulty="<?= $access->trap_difficulty ?>"
+                                                                data-access-trap-damage="<?= htmlspecialchars($access->trap_damage) ?>"
+                                                                data-access-position-x="<?= $access->position_x ?>"
+                                                                data-access-position-y="<?= $access->position_y ?>"
+                                                                data-access-is-on-map="<?= $access->is_on_map ?>"
+                                                                title="Modifier l'accès">
+                                                            <i class="fas fa-edit"></i>
+                                                        </button>
+                                                        <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteAccessModal"
+                                                                data-access-id="<?= $access->id ?>"
+                                                                data-access-name="<?= htmlspecialchars($access->name) ?>"
+                                                                title="Supprimer l'accès">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    <?php endif; ?>
                                                 </div>
                                             <?php endif; ?>
                                         </div>
