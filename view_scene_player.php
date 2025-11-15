@@ -730,11 +730,17 @@ include_once 'includes/layout.php';
                     <?php endif; ?>
 
                     <!-- Objets -->
-                    <?php if (!empty($placeObjects)): ?>
+                    <?php 
+                    // Filtrer les objets visibles uniquement
+                    $visiblePlaceObjects = array_filter($placeObjects, function($object) {
+                        return !empty($object['is_visible']);
+                    });
+                    ?>
+                    <?php if (!empty($visiblePlaceObjects)): ?>
                         <div class="mb-4 objects-section">
                             <h6 class="text-warning mb-3"><i class="fas fa-box me-2"></i>Objets</h6>
                             <div class="list-group list-group-flush">
-                                <?php foreach ($placeObjects as $object): ?>
+                                <?php foreach ($visiblePlaceObjects as $object): ?>
                                     <div class="list-group-item px-0 py-2">
                                         <div class="d-flex align-items-center">
                                             <?php 
@@ -778,9 +784,9 @@ include_once 'includes/layout.php';
                                                 <i class="fas <?php echo $icon_class; ?> text-white" style="color: <?php echo $icon_color; ?> !important;"></i>
                                             </div>
                                             <div class="flex-grow-1">
-                                                <h6 class="mb-1"><?php echo htmlspecialchars($object['display_name']); ?></h6>
-                                                <small class="text-muted">
-                                                    <?php if ($object['is_identified']): ?>
+                                                <?php if ($object['is_identified']): ?>
+                                                    <h6 class="mb-1"><?php echo htmlspecialchars($object['display_name']); ?></h6>
+                                                    <small class="text-muted">
                                                         <?php 
                                                         $type_label = ucfirst($object['object_type']);
                                                         switch ($object['object_type']) {
@@ -808,10 +814,11 @@ include_once 'includes/layout.php';
                                                         }
                                                         echo $type_label;
                                                         ?>
-                                                    <?php else: ?>
-                                                        Objet mystérieux
-                                                    <?php endif; ?>
-                                                </small>
+                                                    </small>
+                                                <?php else: ?>
+                                                    <h6 class="mb-1">Objet mystérieux</h6>
+                                                    <small class="text-muted">Non identifié</small>
+                                                <?php endif; ?>
                                             </div>
                                         </div>
                                     </div>

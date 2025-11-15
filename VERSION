@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.25.26
+VERSION=2.25.27
 
 # Date de déploiement
 DEPLOY_DATE=2025-11-15
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-11-15
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=ac3954b52c04598bd157341bdea3ec1cb48b094c
+GIT_COMMIT=f1b5cfe24eb7ef5e94d0c9d84e563f165363f88d
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251115-204015
+BUILD_ID=20251115-204930
 
 # Notes de version
-RELEASE_NOTES="Zone info"
+RELEASE_NOTES="Correction bug affichage objet"
