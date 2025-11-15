@@ -1125,7 +1125,15 @@ if (isset($_GET['edit_information'])) {
                                                             </label>
                                                         </div>
                                                         <div class="ms-4" id="niveau_sub_group_<?php echo $info['id']; ?>_<?php echo $groupe['id']; ?>" style="display: none;">
-                                                            <label class="form-label small mb-1">Niveaux hiérarchiques (1 = dirigeant)</label>
+                                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                                <label class="form-label small mb-0">Niveaux hiérarchiques (1 = dirigeant)</label>
+                                                                <button type="button" class="btn btn-sm btn-outline-secondary toggle-all-levels-sub" 
+                                                                        data-modal-id="<?php echo $info['id']; ?>"
+                                                                        data-group-id="<?php echo $groupe['id']; ?>"
+                                                                        title="Cocher/Décocher tous les niveaux">
+                                                                    Tous
+                                                                </button>
+                                                            </div>
                                                             <div class="d-flex flex-wrap gap-2">
                                                                 <?php for ($niveau = 1; $niveau <= 5; $niveau++): ?>
                                                                     <div class="form-check">
@@ -1228,6 +1236,22 @@ if (isset($_GET['edit_information'])) {
                             niveauDiv.style.display = hasChecked ? 'block' : 'none';
                         }
                     }
+                });
+            });
+            
+            // Gérer le bouton "Tous" pour cocher/décocher tous les niveaux d'un groupe
+            document.querySelectorAll('#addSubInformationModal_' + modalId + ' .toggle-all-levels-sub').forEach(function(button) {
+                button.addEventListener('click', function() {
+                    var groupId = this.dataset.groupId;
+                    var levelCheckboxes = document.querySelectorAll('#addSubInformationModal_' + modalId + ' .group-level-checkbox-sub[data-group-id="' + groupId + '"]');
+                    var allChecked = Array.from(levelCheckboxes).every(function(cb) { return cb.checked; });
+                    
+                    // Si tous sont cochés, décocher tous. Sinon, cocher tous.
+                    levelCheckboxes.forEach(function(cb) {
+                        cb.checked = !allChecked;
+                        // Déclencher l'événement change pour mettre à jour la case principale
+                        cb.dispatchEvent(new Event('change'));
+                    });
                 });
             });
             
