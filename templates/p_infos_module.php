@@ -123,28 +123,30 @@ $statuts = Information::STATUTS;
                                             <i class="fas fa-file-alt me-2"></i>
                                             <?php echo htmlspecialchars($info['titre']); ?>
                                         </h6>
-                                        <div>
-                                            <?php if (isset($niveaux_confidentialite[$info['niveau_confidentialite']])): ?>
-                                                <span class="badge bg-secondary me-1">
-                                                    <?php echo htmlspecialchars($niveaux_confidentialite[$info['niveau_confidentialite']]); ?>
-                                                </span>
-                                            <?php endif; ?>
-                                            <?php if (isset($statuts[$info['statut']])): ?>
-                                                <?php
-                                                $statut_class = 'bg-info';
-                                                if ($info['statut'] === 'vraie') {
-                                                    $statut_class = 'bg-success';
-                                                } elseif ($info['statut'] === 'fausse') {
-                                                    $statut_class = 'bg-danger';
-                                                } elseif ($info['statut'] === 'a_verifier') {
-                                                    $statut_class = 'bg-warning';
-                                                }
-                                                ?>
-                                                <span class="badge <?php echo $statut_class; ?>">
-                                                    <?php echo htmlspecialchars($statuts[$info['statut']]); ?>
-                                                </span>
-                                            <?php endif; ?>
-                                        </div>
+                                        <?php if ($isDMOrAdmin): ?>
+                                            <div>
+                                                <?php if (isset($niveaux_confidentialite[$info['niveau_confidentialite']])): ?>
+                                                    <span class="badge bg-secondary me-1">
+                                                        <?php echo htmlspecialchars($niveaux_confidentialite[$info['niveau_confidentialite']]); ?>
+                                                    </span>
+                                                <?php endif; ?>
+                                                <?php if (isset($statuts[$info['statut']])): ?>
+                                                    <?php
+                                                    $statut_class = 'bg-info';
+                                                    if ($info['statut'] === 'vraie') {
+                                                        $statut_class = 'bg-success';
+                                                    } elseif ($info['statut'] === 'fausse') {
+                                                        $statut_class = 'bg-danger';
+                                                    } elseif ($info['statut'] === 'a_verifier') {
+                                                        $statut_class = 'bg-warning';
+                                                    }
+                                                    ?>
+                                                    <span class="badge <?php echo $statut_class; ?>">
+                                                        <?php echo htmlspecialchars($statuts[$info['statut']]); ?>
+                                                    </span>
+                                                <?php endif; ?>
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
                                     
                                     <?php if (!empty($info['image_path'])): ?>

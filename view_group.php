@@ -142,17 +142,17 @@ try {
     $available_npcs = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     // PJ disponibles
+    // Les MJ/Admin peuvent voir tous les PJ disponibles
     $stmt = $pdo->prepare("
         SELECT c.id, c.name, 'Personnage Joueur' as place_name
         FROM characters c
-        WHERE c.user_id = ?
-        AND c.id NOT IN (
+        WHERE c.id NOT IN (
             SELECT member_id FROM groupe_membres 
             WHERE groupe_id = ? AND member_type = 'pj'
         )
         ORDER BY c.name
     ");
-    $stmt->execute([$user_id, $groupe_id]);
+    $stmt->execute([$groupe_id]);
     $available_pjs = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     // Monstres disponibles
