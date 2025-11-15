@@ -660,6 +660,172 @@ class Information
             return false;
         }
     }
+    
+    /**
+     * Récupère toutes les informations accessibles pour un personnage/NPC/monstre
+     * 
+     * @param int $target_id ID du personnage/NPC/monstre
+     * @param string $target_type Type ('PJ', 'PNJ', ou 'Monster')
+     * @param PDO $pdo Instance PDO (optionnelle)
+     * @return array Tableau associatif organisé par thématique
+     */
+    public static function getAccessibleInformations($target_id, $target_type, PDO $pdo = null) {
+        if (!$pdo) {
+            $pdo = getPdo();
+        }
+        
+        $accessible_informations = [];
+        
+        try {
+            // 1. Récupérer les groupes du personnage/NPC/monstre avec leur niveau hiérarchique
+            $member_type = '';
+            if ($target_type === 'PJ') {
+                $member_type = 'pj';
+            } elseif ($target_type === 'PNJ') {
+                $member_type = 'pnj';
+            } elseif ($target_type === 'Monster') {
+                $member_type = 'monster';
+            }
+            
+            $group_memberships = [];
+            if ($member_type) {
+                // Pour les NPC, il faut convertir npcs.id en place_npcs.id
+                // car groupe_membres.member_id référence place_npcs.id pour les NPC
+                $target_id_for_groups = $target_id;
+                if ($target_type === 'PNJ') {
+                    $stmt = $pdo->prepare("
+                        SELECT id FROM place_npcs WHERE npc_character_id = ? LIMIT 1
+                    ");
+                    $stmt->execute([$target_id]);
+                    $place_npc = $stmt->fetch(PDO::FETCH_ASSOC);
+                    if ($place_npc) {
+                        $target_id_for_groups = $place_npc['id'];
+                    }
+                }
+                
+                $stmt = $pdo->prepare("
+                    SELECT groupe_id, hierarchy_level
+                    FROM groupe_membres
+                    WHERE member_id = ? AND member_type = ?
+                ");
+                $stmt->execute([$target_id_for_groups, $member_type]);
+                $group_memberships = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+            
+            // 2. Récupérer les informations avec accès direct
+            $direct_information_ids = [];
+            
+            if ($target_type === 'PJ') {
+                $stmt = $pdo->prepare("
+                    SELECT DISTINCT information_id
+                    FROM information_access
+                    WHERE access_type = 'player' AND player_id = ?
+                ");
+                $stmt->execute([$target_id]);
+                $direct_information_ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            } elseif ($target_type === 'PNJ') {
+                // Pour les NPC, il faut convertir npcs.id en place_npcs.id
+                // car information_access.npc_id référence place_npcs.id
+                $stmt = $pdo->prepare("
+                    SELECT DISTINCT ia.information_id
+                    FROM information_access ia
+                    INNER JOIN place_npcs pn ON ia.npc_id = pn.id
+                    WHERE ia.access_type = 'npc' AND pn.npc_character_id = ?
+                ");
+                $stmt->execute([$target_id]);
+                $direct_information_ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            } elseif ($target_type === 'Monster') {
+                $stmt = $pdo->prepare("
+                    SELECT DISTINCT information_id
+                    FROM information_access
+                    WHERE access_type = 'monster' AND npc_id = ?
+                ");
+                $stmt->execute([$target_id]);
+                $direct_information_ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            }
+            
+            // 3. Récupérer les informations avec accès via groupes
+            $group_information_ids = [];
+            if (!empty($group_memberships)) {
+                // Pour chaque groupe, récupérer les informations accessibles selon le niveau
+                foreach ($group_memberships as $membership) {
+                    $groupe_id = $membership['groupe_id'];
+                    $hierarchy_level = $membership['hierarchy_level'];
+                    
+                    $stmt = $pdo->prepare("
+                        SELECT DISTINCT information_id
+                        FROM information_access
+                        WHERE access_type = 'group' 
+                        AND groupe_id = ?
+                        AND niveau = ?
+                    ");
+                    $stmt->execute([$groupe_id, $hierarchy_level]);
+                    $group_info_ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+                    $group_information_ids = array_merge($group_information_ids, $group_info_ids);
+                }
+            }
+            
+            // 4. Combiner toutes les IDs d'informations accessibles
+            $all_information_ids = array_unique(array_merge($direct_information_ids, $group_information_ids));
+            
+            if (empty($all_information_ids)) {
+                return [];
+            }
+            
+            // 5. Récupérer les informations avec leurs thématiques
+            $placeholders = implode(',', array_fill(0, count($all_information_ids), '?'));
+            $stmt = $pdo->prepare("
+                SELECT 
+                    i.id,
+                    i.titre,
+                    i.description,
+                    i.niveau_confidentialite,
+                    i.statut,
+                    i.image_path,
+                    i.created_at,
+                    t.id as thematique_id,
+                    t.nom as thematique_nom,
+                    ti.ordre
+                FROM informations i
+                INNER JOIN thematique_informations ti ON i.id = ti.information_id
+                INNER JOIN thematiques t ON ti.thematique_id = t.id
+                WHERE i.id IN ($placeholders)
+                ORDER BY t.nom ASC, ti.ordre ASC
+            ");
+            $stmt->execute($all_information_ids);
+            $informations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // 6. Organiser par thématique
+            foreach ($informations as $info) {
+                $thematique_id = $info['thematique_id'];
+                $thematique_nom = $info['thematique_nom'];
+                
+                if (!isset($accessible_informations[$thematique_id])) {
+                    $accessible_informations[$thematique_id] = [
+                        'nom' => $thematique_nom,
+                        'informations' => []
+                    ];
+                }
+                
+                $accessible_informations[$thematique_id]['informations'][] = [
+                    'id' => $info['id'],
+                    'titre' => $info['titre'],
+                    'description' => $info['description'],
+                    'niveau_confidentialite' => $info['niveau_confidentialite'],
+                    'statut' => $info['statut'],
+                    'image_path' => $info['image_path'],
+                    'created_at' => $info['created_at'],
+                    'ordre' => $info['ordre']
+                ];
+            }
+            
+            return $accessible_informations;
+            
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération des informations accessibles: " . $e->getMessage());
+            return [];
+        }
+    }
 }
 
 

@@ -520,5 +520,72 @@ class Groupe
             'updated_at' => $this->updated_at
         ];
     }
+    
+    /**
+     * Récupère les groupes auxquels appartient un personnage/NPC/monstre avec leurs niveaux hiérarchiques
+     * 
+     * @param int $target_id ID du personnage/NPC/monstre
+     * @param string $target_type Type ('PJ', 'PNJ', ou 'Monster')
+     * @param PDO $pdo Instance PDO (optionnelle)
+     * @return array Liste des groupes avec leurs informations
+     */
+    public static function getGroupMemberships($target_id, $target_type, PDO $pdo = null) {
+        if (!$pdo) {
+            $pdo = getPdo();
+        }
+        
+        $group_memberships = [];
+        
+        try {
+            // Déterminer le type de membre
+            $member_type = '';
+            if ($target_type === 'PJ') {
+                $member_type = 'pj';
+            } elseif ($target_type === 'PNJ') {
+                $member_type = 'pnj';
+            } elseif ($target_type === 'Monster') {
+                $member_type = 'monster';
+            }
+            
+            if (!$member_type) {
+                return [];
+            }
+            
+            // Pour les NPC, il faut convertir npcs.id en place_npcs.id
+            // car groupe_membres.member_id référence place_npcs.id pour les NPC
+            $target_id_for_query = $target_id;
+            if ($target_type === 'PNJ') {
+                $stmt = $pdo->prepare("
+                    SELECT id FROM place_npcs WHERE npc_character_id = ? LIMIT 1
+                ");
+                $stmt->execute([$target_id]);
+                $place_npc = $stmt->fetch(PDO::FETCH_ASSOC);
+                if ($place_npc) {
+                    $target_id_for_query = $place_npc['id'];
+                }
+            }
+            
+            // Récupérer les groupes avec leurs informations
+            $stmt = $pdo->prepare("
+                SELECT 
+                    gm.groupe_id,
+                    gm.hierarchy_level,
+                    g.name as groupe_name,
+                    g.description as groupe_description
+                FROM groupe_membres gm
+                INNER JOIN groupes g ON gm.groupe_id = g.id
+                WHERE gm.member_id = ? AND gm.member_type = ?
+                ORDER BY g.name ASC, gm.hierarchy_level ASC
+            ");
+            $stmt->execute([$target_id_for_query, $member_type]);
+            $group_memberships = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            return $group_memberships;
+            
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération des groupes: " . $e->getMessage());
+            return [];
+        }
+    }
 }
 ?>

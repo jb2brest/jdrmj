@@ -45,10 +45,11 @@ Une thématique est composées d'une liste ordonnée d'informations.
 La gestion des Informations se fait depuis une page sujets.php 
 Dans cette page, seule les informations qui ne sont listées dans aucune autre informations sont listées.
 
+Une information est ,elle-même, composées d'une liste ordonnée d'informations.  
 
 On va changer de stratégie. Supprime la notion d'information et de sujets actuelle. 
 
-
+Pour les PJ et les PNJ 
 
 La position des pions objets n'est pas sauvegarder lorsque l'on recharge la page. 
 Les pions objets qui devraient être visible des joueurs, ne le sont pas dans view_scene_player.php

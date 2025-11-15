@@ -355,6 +355,11 @@ $error_message = null;
                                 <i class="fas fa-user-edit me-2"></i>Info perso.
                             </button>
                         </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="btn-txt tab-button" data-module="infos" type="button">
+                                <i class="fas fa-search me-2"></i>Infos
+                            </button>
+                        </li>
                     </ul>
                 </div>
 
