@@ -1086,6 +1086,17 @@ if (!empty($places)) {
                         <?php if (empty($journalEntries)): ?>
                             <p class="text-muted">Aucun événement dans le journal.</p>
                         <?php else: ?>
+                            <script type="text/javascript">
+                            // Stocker les données des événements pour l'édition
+                            window.journalEntriesData = window.journalEntriesData || {};
+                            <?php foreach ($journalEntries as $entry): ?>
+                            window.journalEntriesData[<?php echo (int)$entry['id']; ?>] = <?php echo json_encode([
+                                'id' => (int)$entry['id'],
+                                'title' => $entry['title'],
+                                'content' => $entry['content']
+                            ], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+                            <?php endforeach; ?>
+                            </script>
                             <div class="row g-3">
                                 <?php foreach ($journalEntries as $entry): ?>
                                     <div class="col-12">
@@ -1104,7 +1115,11 @@ if (!empty($places)) {
                                                             <i class="fas fa-<?php echo $entry['is_public'] ? 'eye-slash' : 'eye'; ?>"></i>
                                                         </button>
                                                     </form>
-                                                    <button class="btn btn-sm btn-outline-light" data-bs-toggle="modal" data-bs-target="#editJournalModal" onclick="editJournalEntry(<?php echo (int)$entry['id']; ?>, '<?php echo htmlspecialchars($entry['title'], ENT_QUOTES); ?>', '<?php echo htmlspecialchars($entry['content'], ENT_QUOTES); ?>')" title="Modifier">
+                                                    <button class="btn btn-sm btn-outline-light edit-journal-btn" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#editJournalModal" 
+                                                            data-entry-id="<?php echo (int)$entry['id']; ?>"
+                                                            title="Modifier">
                                                         <i class="fas fa-edit"></i>
                                                     </button>
                                                     <form method="POST" class="d-inline" onsubmit="return confirm('Supprimer cet événement ?');">
@@ -1485,6 +1500,28 @@ if (!empty($places)) {
             document.getElementById('editJournalTitle').value = title;
             document.getElementById('editJournalContent').value = content;
         };
+        
+        // Gestionnaire d'événements pour les boutons d'édition du journal
+        var editJournalModal = document.getElementById('editJournalModal');
+        if (editJournalModal) {
+            editJournalModal.addEventListener('shown.bs.modal', function(event) {
+                // Récupérer le bouton qui a déclenché le modal
+                var button = event.relatedTarget;
+                if (button && button.classList.contains('edit-journal-btn')) {
+                    var entryId = button.getAttribute('data-entry-id');
+                    
+                    // Récupérer les données depuis l'objet global
+                    if (window.journalEntriesData && window.journalEntriesData[entryId]) {
+                        var entryData = window.journalEntriesData[entryId];
+                        
+                        // Remplir le formulaire
+                        document.getElementById('editEntryId').value = entryData.id;
+                        document.getElementById('editJournalTitle').value = entryData.title;
+                        document.getElementById('editJournalContent').value = entryData.content;
+                    }
+                }
+            });
+        }
         
         // Gestion de la sélection pays/région
         document.getElementById('sceneCountry').addEventListener('change', function() {
