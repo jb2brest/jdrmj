@@ -774,7 +774,7 @@ extract($template_vars ?? []);
                                                     <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#editAccessModal"
                                                             data-access-id="<?= $access->id ?>"
                                                             data-access-name="<?= htmlspecialchars($access->name) ?>"
-                                                            data-access-description="<?= htmlspecialchars($access->description) ?>"
+                                                            data-access-description="<?= htmlspecialchars($access->description ?? '') ?>"
                                                             data-access-to-place-id="<?= $access->to_place_id ?>"
                                                             data-access-is-visible="<?= $access->is_visible ?>"
                                                             data-access-is-open="<?= $access->is_open ?>"
@@ -978,6 +978,394 @@ extract($template_vars ?? []);
                 }
             }
         });
+        
+        // Gestion du chargement des régions selon le pays sélectionné dans le modal de création d'accès
+        const createAccessCountry = document.getElementById('createAccessCountry');
+        const createAccessRegion = document.getElementById('createAccessRegion');
+        const createAccessToPlace = document.getElementById('createAccessToPlace');
+        
+        if (createAccessCountry && createAccessRegion) {
+            createAccessCountry.addEventListener('change', function() {
+                const countryId = this.value;
+                
+                // Réinitialiser la liste des régions et des lieux
+                createAccessRegion.innerHTML = '<option value="">Sélectionner une région</option>';
+                if (createAccessToPlace) {
+                    createAccessToPlace.innerHTML = '<option value="">Sélectionner un lieu</option>';
+                }
+                
+                if (!countryId) {
+                    return;
+                }
+                
+                // Charger les régions via l'API
+                fetch('api/get_regions_by_country.php?country_id=' + countryId)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.regions) {
+                            data.regions.forEach(function(region) {
+                                const option = document.createElement('option');
+                                option.value = region.id;
+                                option.textContent = region.name;
+                                createAccessRegion.appendChild(option);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors du chargement des régions:', error);
+                    });
+            });
+        }
+        
+        // Gestion du chargement des lieux selon la région sélectionnée dans le modal de création d'accès
+        if (createAccessRegion && createAccessToPlace) {
+            createAccessRegion.addEventListener('change', function() {
+                const regionId = this.value;
+                
+                // Réinitialiser la liste des lieux
+                createAccessToPlace.innerHTML = '<option value="">Sélectionner un lieu</option>';
+                
+                if (!regionId) {
+                    return;
+                }
+                
+                // Charger les lieux via l'API (exclure le lieu actuel)
+                const placeId = window.placeId;
+                fetch('api/get_places_by_region.php?region_id=' + regionId + '&exclude_place_id=' + placeId)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.places) {
+                            data.places.forEach(function(place) {
+                                const option = document.createElement('option');
+                                option.value = place.id;
+                                option.textContent = place.title;
+                                createAccessToPlace.appendChild(option);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors du chargement des lieux:', error);
+                    });
+            });
+        }
+        
+        // Gestion de la soumission du formulaire de création d'accès
+        const createAccessForm = document.getElementById('createAccessForm');
+        if (createAccessForm) {
+            createAccessForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                const submitButton = this.querySelector('button[type="submit"]');
+                const originalText = submitButton.textContent;
+                
+                // Désactiver le bouton pendant la soumission
+                submitButton.disabled = true;
+                submitButton.textContent = 'Création...';
+                
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Recharger la page pour afficher le nouvel accès
+                        window.location.reload();
+                    } else {
+                        alert('Erreur : ' + (data.error || 'Erreur inconnue'));
+                        submitButton.disabled = false;
+                        submitButton.textContent = originalText;
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    alert('Erreur lors de la création de l\'accès.');
+                    submitButton.disabled = false;
+                    submitButton.textContent = originalText;
+                });
+            });
+        }
+        
+        // Fonction pour décoder les entités HTML
+        function decodeHtmlEntities(text) {
+            if (!text) return '';
+            const textarea = document.createElement('textarea');
+            textarea.innerHTML = text;
+            return textarea.value;
+        }
+        
+        // Gestion de l'ouverture du modal d'édition d'accès
+        const editAccessModal = document.getElementById('editAccessModal');
+        if (editAccessModal) {
+            editAccessModal.addEventListener('shown.bs.modal', function(event) {
+                // Récupérer le bouton qui a déclenché le modal
+                const button = event.relatedTarget;
+                if (button) {
+                    // Récupérer les données depuis les attributs data-*
+                    const accessId = button.getAttribute('data-access-id') || '';
+                    const accessName = button.getAttribute('data-access-name') || '';
+                    // Récupérer la description (peut être null ou vide)
+                    let accessDescription = button.getAttribute('data-access-description');
+                    if (accessDescription === null || accessDescription === 'null' || accessDescription === '') {
+                        accessDescription = '';
+                    }
+                    const toPlaceId = button.getAttribute('data-access-to-place-id') || '';
+                    const isVisibleStr = button.getAttribute('data-access-is-visible') || '0';
+                    const isOpenStr = button.getAttribute('data-access-is-open') || '0';
+                    const isTrappedStr = button.getAttribute('data-access-is-trapped') || '0';
+                    const trapDescription = button.getAttribute('data-access-trap-description') || '';
+                    const trapDifficulty = button.getAttribute('data-access-trap-difficulty') || '';
+                    const trapDamage = button.getAttribute('data-access-trap-damage') || '';
+                    
+                    // Convertir les valeurs booléennes
+                    const isVisible = isVisibleStr === '1' || isVisibleStr === 1 || isVisibleStr === true;
+                    const isOpen = isOpenStr === '1' || isOpenStr === 1 || isOpenStr === true;
+                    const isTrapped = isTrappedStr === '1' || isTrappedStr === 1 || isTrappedStr === true;
+                    
+                    // Décoder les entités HTML
+                    const decodedName = decodeHtmlEntities(accessName);
+                    const decodedDescription = decodeHtmlEntities(accessDescription);
+                    const decodedTrapDescription = decodeHtmlEntities(trapDescription);
+                    const decodedTrapDamage = decodeHtmlEntities(trapDamage);
+                    
+                    // Remplir les champs de base
+                    const editAccessId = document.getElementById('editAccessId');
+                    const editAccessName = document.getElementById('editAccessName');
+                    const editAccessDescription = document.getElementById('editAccessDescription');
+                    const editAccessIsVisible = document.getElementById('editAccessIsVisible');
+                    const editAccessIsOpen = document.getElementById('editAccessIsOpen');
+                    const editAccessIsTrapped = document.getElementById('editAccessIsTrapped');
+                    const editTrapDescription = document.getElementById('editTrapDescription');
+                    const editTrapDifficulty = document.getElementById('editTrapDifficulty');
+                    const editTrapDamage = document.getElementById('editTrapDamage');
+                    
+                    if (editAccessId) editAccessId.value = accessId;
+                    if (editAccessName) editAccessName.value = decodedName;
+                    if (editAccessDescription) editAccessDescription.value = decodedDescription;
+                    if (editAccessIsVisible) editAccessIsVisible.checked = isVisible;
+                    if (editAccessIsOpen) editAccessIsOpen.checked = isOpen;
+                    if (editAccessIsTrapped) editAccessIsTrapped.checked = isTrapped;
+                    if (editTrapDescription) editTrapDescription.value = decodedTrapDescription;
+                    if (editTrapDifficulty) editTrapDifficulty.value = trapDifficulty;
+                    if (editTrapDamage) editTrapDamage.value = decodedTrapDamage;
+                    
+                    // Afficher/masquer les détails du piège
+                    const editTrapDetails = document.getElementById('editTrapDetails');
+                    if (editTrapDetails) {
+                        editTrapDetails.style.display = isTrapped ? 'block' : 'none';
+                    }
+                    
+                    // Charger les informations du lieu de destination pour pré-remplir pays/région/lieu
+                    if (toPlaceId) {
+                        fetch('api/get_place_info.php?place_id=' + toPlaceId)
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success && data.place) {
+                                    const place = data.place;
+                                    const editAccessCountry = document.getElementById('editAccessCountry');
+                                    const editAccessRegion = document.getElementById('editAccessRegion');
+                                    const editAccessToPlace = document.getElementById('editAccessToPlace');
+                                    
+                                    // Charger les régions du pays
+                                    if (place.country_id && editAccessCountry) {
+                                        editAccessCountry.value = place.country_id;
+                                        
+                                        // Déclencher le changement pour charger les régions
+                                        editAccessCountry.dispatchEvent(new Event('change'));
+                                        
+                                        // Attendre que les régions soient chargées, puis sélectionner la région
+                                        setTimeout(function() {
+                                            if (place.region_id && editAccessRegion) {
+                                                editAccessRegion.value = place.region_id;
+                                                
+                                                // Déclencher le changement pour charger les lieux
+                                                editAccessRegion.dispatchEvent(new Event('change'));
+                                                
+                                                // Attendre que les lieux soient chargés, puis sélectionner le lieu
+                                                setTimeout(function() {
+                                                    if (editAccessToPlace) {
+                                                        editAccessToPlace.value = toPlaceId;
+                                                    }
+                                                }, 300);
+                                            }
+                                        }, 300);
+                                    }
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Erreur lors du chargement des informations du lieu:', error);
+                            });
+                    }
+                }
+            });
+            
+            // Gestion de l'affichage/masquage des détails du piège
+            const editAccessIsTrapped = document.getElementById('editAccessIsTrapped');
+            const editTrapDetails = document.getElementById('editTrapDetails');
+            if (editAccessIsTrapped && editTrapDetails) {
+                editAccessIsTrapped.addEventListener('change', function() {
+                    editTrapDetails.style.display = this.checked ? 'block' : 'none';
+                });
+            }
+        }
+        
+        // Gestion du chargement des régions pour le modal d'édition
+        const editAccessCountry = document.getElementById('editAccessCountry');
+        const editAccessRegion = document.getElementById('editAccessRegion');
+        if (editAccessCountry && editAccessRegion) {
+            editAccessCountry.addEventListener('change', function() {
+                const countryId = this.value;
+                editAccessRegion.innerHTML = '<option value="">Sélectionner une région</option>';
+                if (!countryId) {
+                    return;
+                }
+                fetch('api/get_regions_by_country.php?country_id=' + countryId)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.regions) {
+                            data.regions.forEach(function(region) {
+                                const option = document.createElement('option');
+                                option.value = region.id;
+                                option.textContent = region.name;
+                                editAccessRegion.appendChild(option);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors du chargement des régions:', error);
+                    });
+            });
+        }
+        
+        // Gestion du chargement des lieux pour le modal d'édition
+        const editAccessRegionSelect = document.getElementById('editAccessRegion');
+        const editAccessToPlace = document.getElementById('editAccessToPlace');
+        if (editAccessRegionSelect && editAccessToPlace) {
+            editAccessRegionSelect.addEventListener('change', function() {
+                const regionId = this.value;
+                editAccessToPlace.innerHTML = '<option value="">Sélectionner un lieu</option>';
+                if (!regionId) {
+                    return;
+                }
+                const placeId = window.placeId;
+                fetch('api/get_places_by_region.php?region_id=' + regionId + '&exclude_place_id=' + placeId)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.places) {
+                            data.places.forEach(function(place) {
+                                const option = document.createElement('option');
+                                option.value = place.id;
+                                option.textContent = place.title;
+                                editAccessToPlace.appendChild(option);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors du chargement des lieux:', error);
+                    });
+            });
+        }
+        
+        // Gestion de la soumission du formulaire d'édition d'accès
+        const editAccessForm = document.getElementById('editAccessForm');
+        if (editAccessForm) {
+            editAccessForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                const submitButton = this.querySelector('button[type="submit"]');
+                const originalText = submitButton.textContent;
+                
+                // Désactiver le bouton pendant la soumission
+                submitButton.disabled = true;
+                submitButton.textContent = 'Modification...';
+                
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Recharger la page pour afficher les modifications
+                        window.location.reload();
+                    } else {
+                        alert('Erreur : ' + (data.error || 'Erreur inconnue'));
+                        submitButton.disabled = false;
+                        submitButton.textContent = originalText;
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    alert('Erreur lors de la modification de l\'accès.');
+                    submitButton.disabled = false;
+                    submitButton.textContent = originalText;
+                });
+            });
+        }
+        
+        // Gestion de l'ouverture du modal de suppression d'accès
+        const deleteAccessModal = document.getElementById('deleteAccessModal');
+        if (deleteAccessModal) {
+            deleteAccessModal.addEventListener('shown.bs.modal', function(event) {
+                // Récupérer le bouton qui a déclenché le modal
+                const button = event.relatedTarget;
+                if (button) {
+                    // Récupérer les données depuis les attributs data-*
+                    const accessId = button.getAttribute('data-access-id') || '';
+                    const accessName = button.getAttribute('data-access-name') || '';
+                    
+                    // Décoder les entités HTML
+                    const decodedName = decodeHtmlEntities(accessName);
+                    
+                    // Remplir le formulaire
+                    const deleteAccessId = document.getElementById('deleteAccessId');
+                    const deleteAccessName = document.getElementById('deleteAccessName');
+                    
+                    if (deleteAccessId) deleteAccessId.value = accessId;
+                    if (deleteAccessName) deleteAccessName.textContent = decodedName;
+                }
+            });
+        }
+        
+        // Gestion de la soumission du formulaire de suppression d'accès
+        const deleteAccessForm = document.getElementById('deleteAccessForm');
+        if (deleteAccessForm) {
+            deleteAccessForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                const submitButton = this.querySelector('button[type="submit"]');
+                const originalText = submitButton.textContent;
+                
+                // Désactiver le bouton pendant la soumission
+                submitButton.disabled = true;
+                submitButton.textContent = 'Suppression...';
+                
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Recharger la page pour afficher les modifications
+                        window.location.reload();
+                    } else {
+                        alert('Erreur : ' + (data.error || 'Erreur inconnue'));
+                        submitButton.disabled = false;
+                        submitButton.textContent = originalText;
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    alert('Erreur lors de la suppression de l\'accès.');
+                    submitButton.disabled = false;
+                    submitButton.textContent = originalText;
+                });
+            });
+        }
     </script>
 <?php endif; ?>
 

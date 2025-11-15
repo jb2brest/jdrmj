@@ -286,7 +286,7 @@
                 <h5 class="modal-title" id="createAccessModalLabel">Créer un accès</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form method="POST" action="api/create_access.php">
+            <form method="POST" action="api/create_access.php" id="createAccessForm">
                 <div class="modal-body">
                     <input type="hidden" name="from_place_id" value="<?php echo $place_id; ?>">
                     <div class="row">
@@ -376,6 +376,139 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
                     <button type="submit" class="btn btn-primary">Créer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<!-- Modal pour éditer un accès -->
+<?php if ($canEdit): ?>
+<div class="modal fade" id="editAccessModal" tabindex="-1" aria-labelledby="editAccessModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editAccessModalLabel">Modifier un accès</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="api/update_access.php" id="editAccessForm">
+                <div class="modal-body">
+                    <input type="hidden" name="access_id" id="editAccessId">
+                    <input type="hidden" name="from_place_id" value="<?php echo $place_id; ?>">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editAccessName" class="form-label">Nom de l'accès</label>
+                                <input type="text" class="form-control" id="editAccessName" name="name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editAccessCountry" class="form-label">Pays</label>
+                                <select class="form-control" id="editAccessCountry" name="country_id">
+                                    <option value="">Sélectionner un pays</option>
+                                    <?php foreach ($countries as $country): ?>
+                                        <option value="<?php echo $country['id']; ?>"><?php echo htmlspecialchars($country['name']); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editAccessRegion" class="form-label">Région</label>
+                                <select class="form-control" id="editAccessRegion" name="region_id">
+                                    <option value="">Sélectionner une région</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="editAccessToPlace" class="form-label">Lieu de destination</label>
+                                <select class="form-control" id="editAccessToPlace" name="to_place_id" required>
+                                    <option value="">Sélectionner un lieu</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editAccessDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="editAccessDescription" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="editAccessIsVisible" name="is_visible">
+                                <label class="form-check-label" for="editAccessIsVisible">Visible</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="editAccessIsOpen" name="is_open">
+                                <label class="form-check-label" for="editAccessIsOpen">Ouvert</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="editAccessIsTrapped" name="is_trapped">
+                                <label class="form-check-label" for="editAccessIsTrapped">Piégé</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="editTrapDetails" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="editTrapDescription" class="form-label">Description du piège</label>
+                                    <input type="text" class="form-control" id="editTrapDescription" name="trap_description">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="editTrapDifficulty" class="form-label">Difficulté</label>
+                                    <input type="number" class="form-control" id="editTrapDifficulty" name="trap_difficulty" min="0" max="30">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="editTrapDamage" class="form-label">Dégâts</label>
+                                    <input type="text" class="form-control" id="editTrapDamage" name="trap_damage">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Modifier</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<!-- Modal pour supprimer un accès -->
+<?php if ($canEdit): ?>
+<div class="modal fade" id="deleteAccessModal" tabindex="-1" aria-labelledby="deleteAccessModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteAccessModalLabel">Supprimer un accès</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="api/delete_access.php" id="deleteAccessForm">
+                <div class="modal-body">
+                    <input type="hidden" name="access_id" id="deleteAccessId">
+                    <input type="hidden" name="from_place_id" value="<?php echo $place_id; ?>">
+                    <p>Êtes-vous sûr de vouloir supprimer l'accès <strong id="deleteAccessName"></strong> ?</p>
+                    <p class="text-muted">Cette action est irréversible.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-danger">Supprimer</button>
                 </div>
             </form>
         </div>
