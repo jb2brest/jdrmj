@@ -310,6 +310,9 @@ include_once 'includes/layout.php';
                     <span class="badge bg-info">Vue Joueur</span>
                 </div>
                 <div>
+                    <a href="view_campaign_journal_player.php?campaign_id=<?php echo (int)$place['campaign_id']; ?>" class="btn btn-outline-info me-2" target="_blank">
+                        <i class="fas fa-book me-2"></i>Journal des événements
+                    </a>
                     <a href="view_campaign.php?id=<?php echo (int)$place['campaign_id']; ?>" class="btn btn-outline-primary">
                         <i class="fas fa-arrow-left me-2"></i>Retour à la campagne
                     </a>
