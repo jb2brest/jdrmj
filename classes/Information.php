@@ -772,8 +772,28 @@ class Information
                 return [];
             }
             
-            // 5. Récupérer les informations avec leurs thématiques
-            $placeholders = implode(',', array_fill(0, count($all_information_ids), '?'));
+            // 5. Récupérer toutes les sous-informations des informations accessibles
+            $sub_information_ids = [];
+            if (!empty($all_information_ids)) {
+                $placeholders = implode(',', array_fill(0, count($all_information_ids), '?'));
+                $stmt = $pdo->prepare("
+                    SELECT DISTINCT child_information_id
+                    FROM information_informations
+                    WHERE parent_information_id IN ($placeholders)
+                ");
+                $stmt->execute($all_information_ids);
+                $sub_information_ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            }
+            
+            // 6. Combiner les informations principales et leurs sous-informations
+            $all_info_ids_with_subs = array_unique(array_merge($all_information_ids, $sub_information_ids));
+            
+            if (empty($all_info_ids_with_subs)) {
+                return [];
+            }
+            
+            // 7. Récupérer les informations principales avec leurs thématiques
+            $placeholders_main = implode(',', array_fill(0, count($all_information_ids), '?'));
             $stmt = $pdo->prepare("
                 SELECT 
                     i.id,
@@ -789,14 +809,76 @@ class Information
                 FROM informations i
                 INNER JOIN thematique_informations ti ON i.id = ti.information_id
                 INNER JOIN thematiques t ON ti.thematique_id = t.id
-                WHERE i.id IN ($placeholders)
+                WHERE i.id IN ($placeholders_main)
                 ORDER BY t.nom ASC, ti.ordre ASC
             ");
             $stmt->execute($all_information_ids);
-            $informations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $informations_principales = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
-            // 6. Organiser par thématique
+            // 7b. Récupérer les sous-informations (même sans thématique)
+            $informations_sous = [];
+            if (!empty($sub_information_ids)) {
+                $placeholders_subs = implode(',', array_fill(0, count($sub_information_ids), '?'));
+                $stmt = $pdo->prepare("
+                    SELECT 
+                        i.id,
+                        i.titre,
+                        i.description,
+                        i.niveau_confidentialite,
+                        i.statut,
+                        i.image_path,
+                        i.created_at,
+                        NULL as thematique_id,
+                        NULL as thematique_nom,
+                        NULL as ordre
+                    FROM informations i
+                    WHERE i.id IN ($placeholders_subs)
+                    ORDER BY i.titre ASC
+                ");
+                $stmt->execute($sub_information_ids);
+                $informations_sous = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+            
+            // Combiner les deux listes
+            $informations = array_merge($informations_principales, $informations_sous);
+            
+            // 8. Récupérer les relations parent-enfant pour organiser les sous-informations
+            $stmt = $pdo->prepare("
+                SELECT parent_information_id, child_information_id, ordre
+                FROM information_informations
+                WHERE parent_information_id IN ($placeholders)
+                ORDER BY parent_information_id, ordre ASC
+            ");
+            $stmt->execute($all_information_ids);
+            $sub_relations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Créer un index des sous-informations par parent
+            $sub_infos_by_parent = [];
+            foreach ($sub_relations as $relation) {
+                $parent_id = $relation['parent_information_id'];
+                if (!isset($sub_infos_by_parent[$parent_id])) {
+                    $sub_infos_by_parent[$parent_id] = [];
+                }
+                $sub_infos_by_parent[$parent_id][] = [
+                    'child_id' => $relation['child_information_id'],
+                    'ordre' => $relation['ordre']
+                ];
+            }
+            
+            // Créer un index des informations par ID
+            $infos_by_id = [];
             foreach ($informations as $info) {
+                $infos_by_id[$info['id']] = $info;
+            }
+            
+            // 9. Organiser par thématique avec sous-informations
+            foreach ($informations as $info) {
+                // Ne traiter que les informations principales (celles qui ont un accès direct ou via groupe)
+                // ET qui ont une thématique (les sous-informations sans thématique sont ignorées ici)
+                if (!in_array($info['id'], $all_information_ids) || empty($info['thematique_id'])) {
+                    continue; // C'est une sous-information ou une info sans thématique, elle sera ajoutée via son parent
+                }
+                
                 $thematique_id = $info['thematique_id'];
                 $thematique_nom = $info['thematique_nom'];
                 
@@ -807,7 +889,7 @@ class Information
                     ];
                 }
                 
-                $accessible_informations[$thematique_id]['informations'][] = [
+                $info_data = [
                     'id' => $info['id'],
                     'titre' => $info['titre'],
                     'description' => $info['description'],
@@ -815,8 +897,31 @@ class Information
                     'statut' => $info['statut'],
                     'image_path' => $info['image_path'],
                     'created_at' => $info['created_at'],
-                    'ordre' => $info['ordre']
+                    'ordre' => $info['ordre'],
+                    'sous_informations' => []
                 ];
+                
+                // Ajouter les sous-informations si elles existent
+                if (isset($sub_infos_by_parent[$info['id']])) {
+                    foreach ($sub_infos_by_parent[$info['id']] as $sub_rel) {
+                        $sub_id = $sub_rel['child_id'];
+                        if (isset($infos_by_id[$sub_id])) {
+                            $sub_info = $infos_by_id[$sub_id];
+                            $info_data['sous_informations'][] = [
+                                'id' => $sub_info['id'],
+                                'titre' => $sub_info['titre'],
+                                'description' => $sub_info['description'],
+                                'niveau_confidentialite' => $sub_info['niveau_confidentialite'],
+                                'statut' => $sub_info['statut'],
+                                'image_path' => $sub_info['image_path'],
+                                'created_at' => $sub_info['created_at'],
+                                'ordre' => $sub_rel['ordre']
+                            ];
+                        }
+                    }
+                }
+                
+                $accessible_informations[$thematique_id]['informations'][] = $info_data;
             }
             
             return $accessible_informations;

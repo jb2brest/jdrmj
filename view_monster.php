@@ -1986,6 +1986,63 @@ $armorClass = $monster['armor_class'] ?? 10;
                                                     Créée le <?php echo date('d/m/Y à H:i', strtotime($info['created_at'])); ?>
                                                 </small>
                                             <?php endif; ?>
+                                            
+                                            <?php if (!empty($info['sous_informations'])): ?>
+                                                <div class="mt-3 ms-4 border-start border-3 border-secondary ps-3">
+                                                    <h6 class="small mb-2">
+                                                        <i class="fas fa-list-ul me-1"></i>Sous-informations
+                                                    </h6>
+                                                    <?php foreach ($info['sous_informations'] as $sub_info): ?>
+                                                        <div class="mb-3 pb-2 border-bottom">
+                                                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                                                <strong class="small">
+                                                                    <i class="fas fa-file-alt me-1"></i>
+                                                                    <?php echo htmlspecialchars($sub_info['titre']); ?>
+                                                                </strong>
+                                                                <?php if ($isDM): ?>
+                                                                    <div>
+                                                                        <?php if (isset(Information::NIVEAUX[$sub_info['niveau_confidentialite']])): ?>
+                                                                            <span class="badge bg-secondary me-1" style="font-size: 0.7rem;">
+                                                                                <?php echo htmlspecialchars(Information::NIVEAUX[$sub_info['niveau_confidentialite']]); ?>
+                                                                            </span>
+                                                                        <?php endif; ?>
+                                                                        <?php if (isset(Information::STATUTS[$sub_info['statut']])): ?>
+                                                                            <?php
+                                                                            $statut_class = 'bg-info';
+                                                                            if ($sub_info['statut'] === 'vraie') {
+                                                                                $statut_class = 'bg-success';
+                                                                            } elseif ($sub_info['statut'] === 'fausse') {
+                                                                                $statut_class = 'bg-danger';
+                                                                            } elseif ($sub_info['statut'] === 'a_verifier') {
+                                                                                $statut_class = 'bg-warning';
+                                                                            }
+                                                                            ?>
+                                                                            <span class="badge <?php echo $statut_class; ?>" style="font-size: 0.7rem;">
+                                                                                <?php echo htmlspecialchars(Information::STATUTS[$sub_info['statut']]); ?>
+                                                                            </span>
+                                                                        <?php endif; ?>
+                                                                    </div>
+                                                                <?php endif; ?>
+                                                            </div>
+                                                            
+                                                            <?php if (!empty($sub_info['image_path'])): ?>
+                                                                <div class="mb-2">
+                                                                    <img src="<?php echo htmlspecialchars($sub_info['image_path']); ?>" 
+                                                                         alt="<?php echo htmlspecialchars($sub_info['titre']); ?>" 
+                                                                         class="img-fluid rounded" 
+                                                                         style="max-height: 200px; object-fit: contain;">
+                                                                </div>
+                                                            <?php endif; ?>
+                                                            
+                                                            <?php if (!empty($sub_info['description'])): ?>
+                                                                <div class="text-muted small">
+                                                                    <?php echo nl2br(htmlspecialchars($sub_info['description'])); ?>
+                                                                </div>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            <?php endif; ?>
                                         </div>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
