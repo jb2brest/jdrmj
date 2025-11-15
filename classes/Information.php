@@ -772,20 +772,41 @@ class Information
                 return [];
             }
             
-            // 5. Récupérer toutes les sous-informations des informations accessibles
+            // 5. Récupérer récursivement toutes les sous-informations des informations accessibles
             $sub_information_ids = [];
+            $all_sub_ids = [];
             if (!empty($all_information_ids)) {
-                $placeholders = implode(',', array_fill(0, count($all_information_ids), '?'));
-                $stmt = $pdo->prepare("
-                    SELECT DISTINCT child_information_id
-                    FROM information_informations
-                    WHERE parent_information_id IN ($placeholders)
-                ");
-                $stmt->execute($all_information_ids);
-                $sub_information_ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+                // Récupération récursive : on commence avec les informations principales
+                $current_level_ids = $all_information_ids;
+                $processed_ids = [];
+                
+                // Boucle tant qu'on trouve de nouvelles sous-informations
+                while (!empty($current_level_ids)) {
+                    $placeholders = implode(',', array_fill(0, count($current_level_ids), '?'));
+                    $stmt = $pdo->prepare("
+                        SELECT DISTINCT child_information_id
+                        FROM information_informations
+                        WHERE parent_information_id IN ($placeholders)
+                    ");
+                    $stmt->execute($current_level_ids);
+                    $next_level_ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+                    
+                    // Filtrer les IDs déjà traités pour éviter les boucles infinies
+                    $next_level_ids = array_diff($next_level_ids, $processed_ids);
+                    
+                    if (!empty($next_level_ids)) {
+                        $all_sub_ids = array_merge($all_sub_ids, $next_level_ids);
+                        $processed_ids = array_merge($processed_ids, $current_level_ids);
+                        $current_level_ids = $next_level_ids;
+                    } else {
+                        break; // Plus de sous-informations à récupérer
+                    }
+                }
+                
+                $sub_information_ids = array_unique($all_sub_ids);
             }
             
-            // 6. Combiner les informations principales et leurs sous-informations
+            // 6. Combiner les informations principales et toutes leurs sous-informations (récursives)
             $all_info_ids_with_subs = array_unique(array_merge($all_information_ids, $sub_information_ids));
             
             if (empty($all_info_ids_with_subs)) {
@@ -842,17 +863,24 @@ class Information
             // Combiner les deux listes
             $informations = array_merge($informations_principales, $informations_sous);
             
-            // 8. Récupérer les relations parent-enfant pour organiser les sous-informations
-            $stmt = $pdo->prepare("
-                SELECT parent_information_id, child_information_id, ordre
-                FROM information_informations
-                WHERE parent_information_id IN ($placeholders)
-                ORDER BY parent_information_id, ordre ASC
-            ");
-            $stmt->execute($all_information_ids);
-            $sub_relations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            // 8. Récupérer toutes les relations parent-enfant (pour toutes les informations, pas seulement les principales)
+            // Cela permet de gérer les sous-informations récursives
+            $all_ids_for_relations = array_unique(array_merge($all_information_ids, $sub_information_ids));
+            if (!empty($all_ids_for_relations)) {
+                $placeholders_relations = implode(',', array_fill(0, count($all_ids_for_relations), '?'));
+                $stmt = $pdo->prepare("
+                    SELECT parent_information_id, child_information_id, ordre
+                    FROM information_informations
+                    WHERE parent_information_id IN ($placeholders_relations)
+                    ORDER BY parent_information_id, ordre ASC
+                ");
+                $stmt->execute($all_ids_for_relations);
+                $sub_relations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            } else {
+                $sub_relations = [];
+            }
             
-            // Créer un index des sous-informations par parent
+            // Créer un index des sous-informations par parent (pour tous les niveaux)
             $sub_infos_by_parent = [];
             foreach ($sub_relations as $relation) {
                 $parent_id = $relation['parent_information_id'];
@@ -901,25 +929,12 @@ class Information
                     'sous_informations' => []
                 ];
                 
-                // Ajouter les sous-informations si elles existent
-                if (isset($sub_infos_by_parent[$info['id']])) {
-                    foreach ($sub_infos_by_parent[$info['id']] as $sub_rel) {
-                        $sub_id = $sub_rel['child_id'];
-                        if (isset($infos_by_id[$sub_id])) {
-                            $sub_info = $infos_by_id[$sub_id];
-                            $info_data['sous_informations'][] = [
-                                'id' => $sub_info['id'],
-                                'titre' => $sub_info['titre'],
-                                'description' => $sub_info['description'],
-                                'niveau_confidentialite' => $sub_info['niveau_confidentialite'],
-                                'statut' => $sub_info['statut'],
-                                'image_path' => $sub_info['image_path'],
-                                'created_at' => $sub_info['created_at'],
-                                'ordre' => $sub_rel['ordre']
-                            ];
-                        }
-                    }
-                }
+                // Ajouter les sous-informations récursivement si elles existent
+                $info_data['sous_informations'] = self::buildSubInformationsRecursive(
+                    $info['id'],
+                    $sub_infos_by_parent,
+                    $infos_by_id
+                );
                 
                 $accessible_informations[$thematique_id]['informations'][] = $info_data;
             }
@@ -930,6 +945,60 @@ class Information
             error_log("Erreur lors de la récupération des informations accessibles: " . $e->getMessage());
             return [];
         }
+    }
+    
+    /**
+     * Construit récursivement la structure des sous-informations
+     * 
+     * @param int $parent_id ID de l'information parente
+     * @param array $sub_infos_by_parent Index des sous-informations par parent
+     * @param array $infos_by_id Index de toutes les informations par ID
+     * @return array Tableau de sous-informations avec leurs propres sous-informations
+     */
+    private static function buildSubInformationsRecursive($parent_id, $sub_infos_by_parent, $infos_by_id)
+    {
+        $result = [];
+        
+        if (!isset($sub_infos_by_parent[$parent_id])) {
+            return $result;
+        }
+        
+        // Trier par ordre
+        $sub_relations = $sub_infos_by_parent[$parent_id];
+        usort($sub_relations, function($a, $b) {
+            return $a['ordre'] <=> $b['ordre'];
+        });
+        
+        foreach ($sub_relations as $sub_rel) {
+            $sub_id = $sub_rel['child_id'];
+            if (!isset($infos_by_id[$sub_id])) {
+                continue;
+            }
+            
+            $sub_info = $infos_by_id[$sub_id];
+            $sub_info_data = [
+                'id' => $sub_info['id'],
+                'titre' => $sub_info['titre'],
+                'description' => $sub_info['description'],
+                'niveau_confidentialite' => $sub_info['niveau_confidentialite'],
+                'statut' => $sub_info['statut'],
+                'image_path' => $sub_info['image_path'],
+                'created_at' => $sub_info['created_at'],
+                'ordre' => $sub_rel['ordre'],
+                'sous_informations' => []
+            ];
+            
+            // Récursion : récupérer les sous-informations de cette sous-information
+            $sub_info_data['sous_informations'] = self::buildSubInformationsRecursive(
+                $sub_id,
+                $sub_infos_by_parent,
+                $infos_by_id
+            );
+            
+            $result[] = $sub_info_data;
+        }
+        
+        return $result;
     }
 }
 

@@ -49,6 +49,9 @@ Une information est ,elle-même, composées d'une liste ordonnée d'informations
 
 On va changer de stratégie. Supprime la notion d'information et de sujets actuelle. 
 
+Il faut ajouter au NPC, aux PJ et aux monstres un onglet "Infos" (logo une loupe).
+Cet onglet permet d'afficher par thématique toutes les information qu'ils connaissent soit directement, soit grâce à leur niveau d'appartenance à un groupe. 
+
 Pour les PJ et les PNJ 
 
 La position des pions objets n'est pas sauvegarder lorsque l'on recharge la page. 

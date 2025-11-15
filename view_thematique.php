@@ -550,6 +550,17 @@ if (isset($_GET['edit_information'])) {
             border-radius: 5px;
             margin-top: 10px;
         }
+        /* Style pour les onglets du modal "Ajouter une Sous-information" */
+        [id^="addSubInformationModal_"] .nav-tabs .nav-link {
+            color: var(--dnd-primary-darker) !important;
+        }
+        [id^="addSubInformationModal_"] .nav-tabs .nav-link.active {
+            color: var(--dnd-primary-darker) !important;
+            font-weight: 600;
+        }
+        [id^="addSubInformationModal_"] .nav-tabs .nav-link:hover {
+            color: var(--dnd-primary-darker) !important;
+        }
     </style>
 </head>
 <body>
@@ -698,20 +709,44 @@ if (isset($_GET['edit_information'])) {
                             $info_obj = Information::findById($info['id']);
                             $sub_informations = $info_obj ? $info_obj->getSubInformations() : [];
                             ?>
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-outline-secondary" 
+                                        type="button"
+                                        data-bs-toggle="collapse" 
+                                        data-bs-target="#subInformations_<?php echo $info['id']; ?>"
+                                        aria-expanded="false" 
+                                        aria-controls="subInformations_<?php echo $info['id']; ?>">
+                                    <i class="fas fa-list-ul"></i> 
+                                    <span class="sub-info-toggle-text">Afficher les Sous-informations</span>
+                                    <?php if (!empty($sub_informations)): ?>
+                                        <span class="badge bg-secondary ms-2"><?php echo count($sub_informations); ?></span>
+                                    <?php endif; ?>
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary ms-2" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#addSubInformationModal_<?php echo $info['id']; ?>">
+                                    <i class="fas fa-plus"></i> Ajouter une Sous-information
+                                </button>
+                            </div>
+                            
                             <?php if (!empty($sub_informations)): ?>
-                                <div class="mt-3 ms-4 border-start border-3 border-secondary ps-3">
+                                <div class="collapse mt-3 ms-4 border-start border-3 border-secondary ps-3" id="subInformations_<?php echo $info['id']; ?>">
                                     <h6 class="small mb-2">
                                         <i class="fas fa-list-ul"></i> Sous-informations
                                     </h6>
                                     <?php 
-                                    $total_sub = count($sub_informations);
-                                    foreach ($sub_informations as $sub_index => $sub_info): 
+                                    // Fonction récursive pour afficher les sous-informations
+                                    $renderSubInfo = function($sub_info, $parent_info_id, $sub_index, $total_sub, $thematique_id) use (&$renderSubInfo) {
                                         $is_first_sub = ($sub_index === 0);
                                         $is_last_sub = ($sub_index === $total_sub - 1);
                                         $sub_niveau_label = Information::NIVEAUX[$sub_info['niveau_confidentialite']] ?? $sub_info['niveau_confidentialite'];
                                         $sub_niveau_class = str_replace('_', '-', $sub_info['niveau_confidentialite']);
                                         $sub_statut_label = Information::STATUTS[$sub_info['statut']] ?? $sub_info['statut'];
                                         $sub_statut_class = str_replace('_', '-', $sub_info['statut']);
+                                        
+                                        // Récupérer les sous-informations de cette sous-information
+                                        $sub_info_obj = Information::findById($sub_info['id']);
+                                        $sub_sub_informations = $sub_info_obj ? $sub_info_obj->getSubInformations() : [];
                                     ?>
                                         <div class="information-item mb-2" style="margin-left: 0;">
                                             <div class="d-flex justify-content-between align-items-start mb-2">
@@ -720,7 +755,7 @@ if (isset($_GET['edit_information'])) {
                                                         <form method="POST" style="display: inline;" 
                                                               <?php if ($is_first_sub): ?>onsubmit="return false;"<?php else: ?>onsubmit="return true;"<?php endif; ?>>
                                                             <input type="hidden" name="action" value="move_sub_information_up">
-                                                            <input type="hidden" name="information_id" value="<?php echo $info['id']; ?>">
+                                                            <input type="hidden" name="information_id" value="<?php echo $parent_info_id; ?>">
                                                             <input type="hidden" name="child_information_id" value="<?php echo $sub_info['id']; ?>">
                                                             <button type="submit" class="btn btn-outline-secondary btn-sm" 
                                                                     title="Monter" 
@@ -731,7 +766,7 @@ if (isset($_GET['edit_information'])) {
                                                         <form method="POST" style="display: inline;" 
                                                               <?php if ($is_last_sub): ?>onsubmit="return false;"<?php else: ?>onsubmit="return true;"<?php endif; ?>>
                                                             <input type="hidden" name="action" value="move_sub_information_down">
-                                                            <input type="hidden" name="information_id" value="<?php echo $info['id']; ?>">
+                                                            <input type="hidden" name="information_id" value="<?php echo $parent_info_id; ?>">
                                                             <input type="hidden" name="child_information_id" value="<?php echo $sub_info['id']; ?>">
                                                             <button type="submit" class="btn btn-outline-secondary btn-sm" 
                                                                     title="Descendre" 
@@ -753,14 +788,14 @@ if (isset($_GET['edit_information'])) {
                                                     </div>
                                                 </div>
                                                 <div class="btn-group btn-group-sm">
-                                                    <a href="view_thematique.php?id=<?php echo $thematique->id; ?>&edit_information=<?php echo $sub_info['id']; ?>" 
+                                                    <a href="view_thematique.php?id=<?php echo $thematique_id; ?>&edit_information=<?php echo $sub_info['id']; ?>" 
                                                        class="btn btn-outline-warning btn-sm" title="Modifier">
                                                         <i class="fas fa-edit"></i>
                                                     </a>
                                                     <form method="POST" style="display: inline;" 
                                                           onsubmit="return confirm('Retirer cette sous-information ?');">
                                                         <input type="hidden" name="action" value="remove_sub_information">
-                                                        <input type="hidden" name="information_id" value="<?php echo $info['id']; ?>">
+                                                        <input type="hidden" name="information_id" value="<?php echo $parent_info_id; ?>">
                                                         <input type="hidden" name="child_information_id" value="<?php echo $sub_info['id']; ?>">
                                                         <button type="submit" class="btn btn-outline-danger btn-sm" title="Retirer">
                                                             <i class="fas fa-unlink"></i>
@@ -775,23 +810,51 @@ if (isset($_GET['edit_information'])) {
                                                 </div>
                                             <?php endif; ?>
                                             <p class="mb-0 small text-muted"><?php echo nl2br(htmlspecialchars($sub_info['description'] ?: 'Aucune description')); ?></p>
+                                            
+                                            <!-- Boutons pour les sous-informations de cette sous-information -->
+                                            <div class="mt-2">
+                                                <button class="btn btn-sm btn-outline-secondary" 
+                                                        type="button"
+                                                        data-bs-toggle="collapse" 
+                                                        data-bs-target="#subInformations_<?php echo $sub_info['id']; ?>"
+                                                        aria-expanded="false" 
+                                                        aria-controls="subInformations_<?php echo $sub_info['id']; ?>">
+                                                    <i class="fas fa-list-ul"></i> 
+                                                    <span class="sub-info-toggle-text">Afficher les Sous-informations</span>
+                                                    <?php if (!empty($sub_sub_informations)): ?>
+                                                        <span class="badge bg-secondary ms-2"><?php echo count($sub_sub_informations); ?></span>
+                                                    <?php endif; ?>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-primary ms-2" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#addSubInformationModal_<?php echo $sub_info['id']; ?>">
+                                                    <i class="fas fa-plus"></i> Ajouter une Sous-information
+                                                </button>
+                                            </div>
+                                            
+                                            <!-- Affichage récursif des sous-informations -->
+                                            <?php if (!empty($sub_sub_informations)): ?>
+                                                <div class="collapse mt-3 ms-4 border-start border-3 border-secondary ps-3" id="subInformations_<?php echo $sub_info['id']; ?>">
+                                                    <h6 class="small mb-2">
+                                                        <i class="fas fa-list-ul"></i> Sous-informations
+                                                    </h6>
+                                                    <?php 
+                                                    $total_sub_sub = count($sub_sub_informations);
+                                                    foreach ($sub_sub_informations as $sub_sub_index => $sub_sub_info): 
+                                                        $renderSubInfo($sub_sub_info, $sub_info['id'], $sub_sub_index, $total_sub_sub, $thematique_id);
+                                                    endforeach; 
+                                                    ?>
+                                                </div>
+                                            <?php endif; ?>
                                         </div>
-                                    <?php endforeach; ?>
-                                    <div class="mt-2">
-                                        <button class="btn btn-sm btn-outline-primary" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#addSubInformationModal_<?php echo $info['id']; ?>">
-                                            <i class="fas fa-plus"></i> Ajouter une Sous-information
-                                        </button>
-                                    </div>
-                                </div>
-                            <?php else: ?>
-                                <div class="mt-2 ms-4">
-                                    <button class="btn btn-sm btn-outline-primary" 
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#addSubInformationModal_<?php echo $info['id']; ?>">
-                                        <i class="fas fa-plus"></i> Ajouter une Sous-information
-                                    </button>
+                                    <?php
+                                    };
+                                    
+                                    $total_sub = count($sub_informations);
+                                    foreach ($sub_informations as $sub_index => $sub_info): 
+                                        $renderSubInfo($sub_info, $info['id'], $sub_index, $total_sub, $thematique->id);
+                                    endforeach; 
+                                    ?>
                                 </div>
                             <?php endif; ?>
                         </div>
@@ -863,8 +926,8 @@ if (isset($_GET['edit_information'])) {
     
     <!-- Modals pour ajouter des sous-informations -->
     <?php 
-    $thematique_informations = $thematique->getInformations();
-    foreach ($thematique_informations as $info): 
+    // Fonction récursive pour générer les modals
+    $renderSubInfoModal = function($info, $all_informations, $characters, $npcs, $monsters, $groupes) use (&$renderSubInfoModal) {
     ?>
         <div class="modal fade" id="addSubInformationModal_<?php echo $info['id']; ?>" tabindex="-1">
             <div class="modal-dialog modal-lg">
@@ -1105,6 +1168,34 @@ if (isset($_GET['edit_information'])) {
             var childSelect = document.getElementById('child_information_select_' + modalId);
             var createNewFlag = document.getElementById('create_new_flag_' + modalId);
             
+            // Gérer le texte du bouton d'affichage des sous-informations
+            var subInfoToggle = document.querySelector('[data-bs-target="#subInformations_' + modalId + '"]');
+            var subInfoCollapse = document.getElementById('subInformations_' + modalId);
+            if (subInfoToggle && subInfoCollapse) {
+                subInfoCollapse.addEventListener('show.bs.collapse', function() {
+                    var toggleText = subInfoToggle.querySelector('.sub-info-toggle-text');
+                    if (toggleText) {
+                        toggleText.textContent = 'Masquer les Sous-informations';
+                    }
+                    var icon = subInfoToggle.querySelector('i');
+                    if (icon) {
+                        icon.classList.remove('fa-list-ul');
+                        icon.classList.add('fa-chevron-up');
+                    }
+                });
+                subInfoCollapse.addEventListener('hide.bs.collapse', function() {
+                    var toggleText = subInfoToggle.querySelector('.sub-info-toggle-text');
+                    if (toggleText) {
+                        toggleText.textContent = 'Afficher les Sous-informations';
+                    }
+                    var icon = subInfoToggle.querySelector('i');
+                    if (icon) {
+                        icon.classList.remove('fa-chevron-up');
+                        icon.classList.add('fa-list-ul');
+                    }
+                });
+            }
+            
             // Gérer l'affichage des cases à cocher de niveaux pour les groupes
             document.querySelectorAll('#addSubInformationModal_' + modalId + ' .group-checkbox-sub').forEach(function(checkbox) {
                 checkbox.addEventListener('change', function() {
@@ -1165,10 +1256,64 @@ if (isset($_GET['edit_information'])) {
             // Pas besoin de traitement supplémentaire
         })();
         </script>
-    <?php endforeach; ?>
+    <?php 
+        // Récursion : générer les modals pour les sous-informations
+        $info_obj = Information::findById($info['id']);
+        $sub_informations = $info_obj ? $info_obj->getSubInformations() : [];
+        foreach ($sub_informations as $sub_info) {
+            $renderSubInfoModal($sub_info, $all_informations, $characters, $npcs, $monsters, $groupes);
+        }
+    };
+    
+    $thematique_informations = $thematique->getInformations();
+    foreach ($thematique_informations as $info): 
+        $renderSubInfoModal($info, $all_informations, $characters, $npcs, $monsters, $groupes);
+    endforeach; 
+    ?>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Gérer tous les boutons d'affichage/masquage des sous-informations (récursif)
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fonction pour gérer un bouton de toggle
+            function setupSubInfoToggle(toggleButton) {
+                var targetId = toggleButton.getAttribute('data-bs-target');
+                if (!targetId) return;
+                
+                var collapse = document.querySelector(targetId);
+                if (!collapse) return;
+                
+                collapse.addEventListener('show.bs.collapse', function() {
+                    var toggleText = toggleButton.querySelector('.sub-info-toggle-text');
+                    if (toggleText) {
+                        toggleText.textContent = 'Masquer les Sous-informations';
+                    }
+                    var icon = toggleButton.querySelector('i');
+                    if (icon) {
+                        icon.classList.remove('fa-list-ul');
+                        icon.classList.add('fa-chevron-up');
+                    }
+                });
+                
+                collapse.addEventListener('hide.bs.collapse', function() {
+                    var toggleText = toggleButton.querySelector('.sub-info-toggle-text');
+                    if (toggleText) {
+                        toggleText.textContent = 'Afficher les Sous-informations';
+                    }
+                    var icon = toggleButton.querySelector('i');
+                    if (icon) {
+                        icon.classList.remove('fa-chevron-up');
+                        icon.classList.add('fa-list-ul');
+                    }
+                });
+            }
+            
+            // Appliquer à tous les boutons de toggle
+            document.querySelectorAll('[data-bs-toggle="collapse"][data-bs-target^="#subInformations_"]').forEach(function(button) {
+                setupSubInfoToggle(button);
+            });
+        });
+        
         // Ouvrir automatiquement le modal d'édition si présent
         document.addEventListener('DOMContentLoaded', function() {
             <?php if (isset($editing_information) && $editing_information): ?>

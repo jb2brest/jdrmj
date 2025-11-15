@@ -1987,22 +1987,32 @@ $armorClass = $monster['armor_class'] ?? 10;
                                                 </small>
                                             <?php endif; ?>
                                             
-                                            <?php if (!empty($info['sous_informations'])): ?>
-                                                <div class="mt-3 ms-4 border-start border-3 border-secondary ps-3">
-                                                    <h6 class="small mb-2">
-                                                        <i class="fas fa-list-ul me-1"></i>Sous-informations
-                                                    </h6>
-                                                    <?php foreach ($info['sous_informations'] as $sub_info): ?>
+                                            <?php 
+                                            // Fonction récursive pour afficher les sous-informations
+                                            $renderSubInformations = function($sub_infos, $level = 0) use ($isDM) {
+                                                if (empty($sub_infos)) {
+                                                    return;
+                                                }
+                                                $margin_class = $level > 0 ? 'ms-4' : 'ms-4';
+                                                $font_size = $level > 0 ? '0.65rem' : '0.7rem';
+                                            ?>
+                                                <div class="mt-3 <?php echo $margin_class; ?> border-start border-3 border-secondary ps-3">
+                                                    <?php if ($level === 0): ?>
+                                                        <h6 class="small mb-2">
+                                                            <i class="fas fa-list-ul me-1"></i>Sous-informations
+                                                        </h6>
+                                                    <?php endif; ?>
+                                                    <?php foreach ($sub_infos as $sub_info): ?>
                                                         <div class="mb-3 pb-2 border-bottom">
                                                             <div class="d-flex justify-content-between align-items-start mb-1">
-                                                                <strong class="small">
+                                                                <strong class="small" style="font-size: <?php echo $font_size; ?>;">
                                                                     <i class="fas fa-file-alt me-1"></i>
                                                                     <?php echo htmlspecialchars($sub_info['titre']); ?>
                                                                 </strong>
                                                                 <?php if ($isDM): ?>
                                                                     <div>
                                                                         <?php if (isset(Information::NIVEAUX[$sub_info['niveau_confidentialite']])): ?>
-                                                                            <span class="badge bg-secondary me-1" style="font-size: 0.7rem;">
+                                                                            <span class="badge bg-secondary me-1" style="font-size: <?php echo $font_size; ?>;">
                                                                                 <?php echo htmlspecialchars(Information::NIVEAUX[$sub_info['niveau_confidentialite']]); ?>
                                                                             </span>
                                                                         <?php endif; ?>
@@ -2017,7 +2027,7 @@ $armorClass = $monster['armor_class'] ?? 10;
                                                                                 $statut_class = 'bg-warning';
                                                                             }
                                                                             ?>
-                                                                            <span class="badge <?php echo $statut_class; ?>" style="font-size: 0.7rem;">
+                                                                            <span class="badge <?php echo $statut_class; ?>" style="font-size: <?php echo $font_size; ?>;">
                                                                                 <?php echo htmlspecialchars(Information::STATUTS[$sub_info['statut']]); ?>
                                                                             </span>
                                                                         <?php endif; ?>
@@ -2035,14 +2045,27 @@ $armorClass = $monster['armor_class'] ?? 10;
                                                             <?php endif; ?>
                                                             
                                                             <?php if (!empty($sub_info['description'])): ?>
-                                                                <div class="text-muted small">
+                                                                <div class="text-muted small" style="font-size: <?php echo $font_size; ?>;">
                                                                     <?php echo nl2br(htmlspecialchars($sub_info['description'])); ?>
                                                                 </div>
                                                             <?php endif; ?>
+                                                            
+                                                            <?php 
+                                                            // Récursion : afficher les sous-informations de cette sous-information
+                                                            if (!empty($sub_info['sous_informations'])) {
+                                                                $renderSubInformations($sub_info['sous_informations'], $level + 1);
+                                                            }
+                                                            ?>
                                                         </div>
                                                     <?php endforeach; ?>
                                                 </div>
-                                            <?php endif; ?>
+                                            <?php 
+                                            };
+                                            
+                                            if (!empty($info['sous_informations'])) {
+                                                $renderSubInformations($info['sous_informations']);
+                                            }
+                                            ?>
                                         </div>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
