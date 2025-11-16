@@ -76,9 +76,13 @@ $statuts = Information::STATUTS;
                                         <small class="text-muted">
                                             Niveau hiérarchique: 
                                             <span class="badge bg-primary">
-                                                <?php echo (int)$membership['hierarchy_level']; ?>
-                                                <?php if ($membership['hierarchy_level'] == 1): ?>
-                                                    (Dirigeant)
+                                                <?php if (!empty($membership['hierarchy_level_title'])): ?>
+                                                    <?php echo htmlspecialchars($membership['hierarchy_level_title']); ?>
+                                                <?php else: ?>
+                                                    <?php echo (int)$membership['hierarchy_level']; ?>
+                                                    <?php if ($membership['hierarchy_level'] == 1): ?>
+                                                        (Dirigeant)
+                                                    <?php endif; ?>
                                                 <?php endif; ?>
                                             </span>
                                         </small>

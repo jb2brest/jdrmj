@@ -592,9 +592,11 @@ class Groupe
                     gm.groupe_id,
                     gm.hierarchy_level,
                     g.name as groupe_name,
-                    g.description as groupe_description
+                    g.description as groupe_description,
+                    ghl.title as hierarchy_level_title
                 FROM groupe_membres gm
                 INNER JOIN groupes g ON gm.groupe_id = g.id
+                LEFT JOIN groupe_hierarchy_levels ghl ON gm.groupe_id = ghl.groupe_id AND gm.hierarchy_level = ghl.level_number
                 WHERE gm.member_id = ? AND gm.member_type = ?
                 ORDER BY g.name ASC, gm.hierarchy_level ASC
             ");
