@@ -319,7 +319,8 @@ class Groupe
                         WHEN gm.member_type = 'pnj' THEN pl.title
                         WHEN gm.member_type = 'pj' THEN 'Personnage Joueur'
                         WHEN gm.member_type = 'monster' THEN pl3.title
-                    END as member_location
+                    END as member_location,
+                    ghl.title as hierarchy_level_title
                 FROM groupe_membres gm
                 LEFT JOIN place_npcs pn ON gm.member_type = 'pnj' AND gm.member_id = pn.id
                 LEFT JOIN places pl ON pn.place_id = pl.id
@@ -327,6 +328,7 @@ class Groupe
                 LEFT JOIN place_monsters pm ON gm.member_type = 'monster' AND gm.member_id = pm.id
                 LEFT JOIN dnd_monsters dm ON pm.monster_id = dm.id
                 LEFT JOIN places pl3 ON pm.place_id = pl3.id
+                LEFT JOIN groupe_hierarchy_levels ghl ON gm.groupe_id = ghl.groupe_id AND gm.hierarchy_level = ghl.level_number
                 WHERE gm.groupe_id = ?
                 ORDER BY gm.hierarchy_level ASC, gm.joined_at ASC
             ");
@@ -604,6 +606,108 @@ class Groupe
         } catch (PDOException $e) {
             error_log("Erreur lors de la récupération des groupes: " . $e->getMessage());
             return [];
+        }
+    }
+    
+    /**
+     * Récupère les configurations des niveaux hiérarchiques du groupe
+     * 
+     * @return array Liste des configurations par niveau
+     */
+    public function getHierarchyLevelsConfig()
+    {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT level_number, title, description
+                FROM groupe_hierarchy_levels
+                WHERE groupe_id = ?
+                ORDER BY level_number ASC
+            ");
+            $stmt->execute([$this->id]);
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Convertir en tableau indexé par level_number
+            $config = [];
+            foreach ($results as $row) {
+                $config[$row['level_number']] = [
+                    'title' => $row['title'],
+                    'description' => $row['description']
+                ];
+            }
+            
+            return $config;
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération des configurations de niveaux: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Récupère la configuration d'un niveau spécifique
+     * 
+     * @param int $level_number Numéro du niveau
+     * @return array|null Configuration du niveau ou null
+     */
+    public function getHierarchyLevelConfig($level_number)
+    {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT title, description
+                FROM groupe_hierarchy_levels
+                WHERE groupe_id = ? AND level_number = ?
+            ");
+            $stmt->execute([$this->id, $level_number]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            return $result ?: null;
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération de la configuration du niveau: " . $e->getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * Met à jour les configurations des niveaux hiérarchiques
+     * 
+     * @param array $levels_config Tableau associatif [level_number => ['title' => string, 'description' => string]]
+     * @return bool True si succès, false sinon
+     */
+    public function updateHierarchyLevelsConfig($levels_config)
+    {
+        try {
+            $this->pdo->beginTransaction();
+            
+            // Supprimer les configurations existantes
+            $stmt = $this->pdo->prepare("DELETE FROM groupe_hierarchy_levels WHERE groupe_id = ?");
+            $stmt->execute([$this->id]);
+            
+            // Insérer les nouvelles configurations
+            $stmt = $this->pdo->prepare("
+                INSERT INTO groupe_hierarchy_levels (groupe_id, level_number, title, description)
+                VALUES (?, ?, ?, ?)
+            ");
+            
+            foreach ($levels_config as $level_number => $config) {
+                $level_number = (int)$level_number;
+                if ($level_number >= 1 && $level_number <= $this->max_hierarchy_levels) {
+                    $title = !empty($config['title']) ? trim($config['title']) : null;
+                    $description = !empty($config['description']) ? trim($config['description']) : null;
+                    
+                    $stmt->execute([
+                        $this->id,
+                        $level_number,
+                        $title,
+                        $description
+                    ]);
+                }
+            }
+            
+            $this->pdo->commit();
+            return true;
+        } catch (PDOException $e) {
+            $this->pdo->rollBack();
+            error_log("Erreur lors de la mise à jour des configurations de niveaux: " . $e->getMessage());
+            return false;
         }
     }
 }

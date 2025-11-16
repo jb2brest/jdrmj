@@ -111,6 +111,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error_message = "Données invalides pour la mise à jour du statut du membre.";
             }
             break;
+            
+        case 'update_hierarchy_levels_config':
+            $levels_config = [];
+            $max_levels = $groupe->max_hierarchy_levels ?? 5;
+            
+            for ($i = 1; $i <= $max_levels; $i++) {
+                $title = trim($_POST["level_{$i}_title"] ?? '');
+                $description = trim($_POST["level_{$i}_description"] ?? '');
+                
+                if (!empty($title) || !empty($description)) {
+                    $levels_config[$i] = [
+                        'title' => $title,
+                        'description' => $description
+                    ];
+                }
+            }
+            
+            if ($groupe->updateHierarchyLevelsConfig($levels_config)) {
+                $success_message = "Configurations des niveaux hiérarchiques mises à jour avec succès !";
+            } else {
+                $error_message = "Erreur lors de la mise à jour des configurations des niveaux.";
+            }
+            break;
     }
 }
 
@@ -118,6 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $members = $groupe->getMembers();
 $leader = $groupe->getLeader();
 $headquarters = $groupe->getHeadquarters();
+$hierarchy_levels_config = $groupe->getHierarchyLevelsConfig();
 
 // Récupérer les PNJ, PJ et Monstres disponibles pour l'ajout
 try {
@@ -264,6 +288,9 @@ try {
                     <a href="manage_groups.php" class="btn-txt">
                         <i class="fas fa-arrow-left me-2"></i>Retour
                     </a>
+                    <button type="button" class="btn-txt" data-bs-toggle="modal" data-bs-target="#configureLevelsModal">
+                        <i class="fas fa-cog me-2"></i>Configurer les niveaux
+                    </button>
                     <a href="edit_group.php?id=<?php echo $groupe->id; ?>" class="btn-txt">
                         <i class="fas fa-edit me-2"></i>Modifier
                     </a>
@@ -347,6 +374,7 @@ try {
                                                     <th>Type</th>
                                                     <th>Localisation</th>
                                                     <th>Niveau</th>
+                                                    <th>Titre de niveau</th>
                                                     <th>Statut</th>
                                                     <th>Actions</th>
                                                 </tr>
@@ -385,6 +413,13 @@ try {
                                                         </td>
                                                         <td>
                                                             <span class="badge bg-secondary">Niveau <?php echo $member['hierarchy_level']; ?></span>
+                                                        </td>
+                                                        <td>
+                                                            <?php if (!empty($member['hierarchy_level_title'])): ?>
+                                                                <span class="badge bg-primary"><?php echo htmlspecialchars($member['hierarchy_level_title']); ?></span>
+                                                            <?php else: ?>
+                                                                <span class="text-muted">-</span>
+                                                            <?php endif; ?>
                                                         </td>
                                                         <td>
                                                             <?php if ($member['is_secret']): ?>
@@ -487,6 +522,76 @@ try {
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
                         <button type="submit" class="btn btn-primary">Ajouter</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de configuration des niveaux hiérarchiques -->
+    <div class="modal fade" id="configureLevelsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form method="POST">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Configurer les niveaux hiérarchiques</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="action" value="update_hierarchy_levels_config">
+                        <p class="text-muted mb-4">
+                            Définissez un titre et une description pour chaque niveau hiérarchique de ce groupe.
+                            Ces informations seront affichées lors de la consultation du groupe.
+                        </p>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 100px;">Niveau</th>
+                                        <th>Titre</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php 
+                                    $max_levels = $groupe->max_hierarchy_levels ?? 5;
+                                    for ($i = 1; $i <= $max_levels; $i++): 
+                                        $config = $hierarchy_levels_config[$i] ?? null;
+                                        $title = $config['title'] ?? '';
+                                        $description = $config['description'] ?? '';
+                                    ?>
+                                        <tr>
+                                            <td class="align-middle text-center">
+                                                <strong>Niveau <?php echo $i; ?></strong>
+                                                <?php if ($i == 1): ?>
+                                                    <br><span class="badge bg-warning mt-1">Dirigeant</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <input type="text" 
+                                                       class="form-control" 
+                                                       id="level_<?php echo $i; ?>_title" 
+                                                       name="level_<?php echo $i; ?>_title" 
+                                                       value="<?php echo htmlspecialchars($title); ?>"
+                                                       placeholder="Ex: Dirigeant, Lieutenant, Membre, etc.">
+                                            </td>
+                                            <td>
+                                                <textarea class="form-control" 
+                                                          id="level_<?php echo $i; ?>_description" 
+                                                          name="level_<?php echo $i; ?>_description" 
+                                                          rows="2"
+                                                          placeholder="Description des responsabilités et du rôle de ce niveau..."><?php echo htmlspecialchars($description); ?></textarea>
+                                            </td>
+                                        </tr>
+                                    <?php endfor; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Enregistrer les configurations</button>
                     </div>
                 </form>
             </div>
