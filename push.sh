@@ -425,6 +425,8 @@ chmod 755 api/
 chmod 644 api/*.php
 chmod 755 templates/
 chmod 644 templates/*.php
+chmod 755 logs/
+chmod 644 logs/*.log
 chmod 755 tests/
 chmod 755 tests/reports/
 chmod 644 tests/reports/*.json
@@ -561,6 +563,8 @@ prepare_files() {
             --include="templates/**" \
             --include="uploads/" \
             --include="uploads/**" \
+            --include="logs/" \
+            --include="logs/**" \
             --include="tests/" \
             --include="tests/**" \
             --include="launch_tests.sh" \
@@ -604,6 +608,8 @@ prepare_files() {
             --include="templates/**" \
             --include="uploads/" \
             --include="uploads/**" \
+            --include="logs/" \
+            --include="logs/**" \
             --include="tests/reports/" \
             --include="tests/reports/**" \
             --exclude="*" \
@@ -784,9 +790,16 @@ deploy_to_server() {
             # Créer le dossier uploads/profile_photos s'il n'existe pas
             sudo mkdir -p "$DEPLOY_PATH/uploads/profile_photos"
             
+            # Créer le dossier logs s'il n'existe pas
+            sudo mkdir -p "$DEPLOY_PATH/logs"
+            
             # Configurer les permissions pour uploads (écriture nécessaire)
             sudo chown -R www-data:www-data "$DEPLOY_PATH/uploads" 2>/dev/null || true
             sudo chmod -R 777 "$DEPLOY_PATH/uploads" 2>/dev/null || true
+            
+            # Configurer les permissions pour logs (écriture nécessaire)
+            sudo chown -R www-data:www-data "$DEPLOY_PATH/logs" 2>/dev/null || true
+            sudo chmod -R 777 "$DEPLOY_PATH/logs" 2>/dev/null || true
             
             # Vérifier spécifiquement les permissions de profile_photos
             if [ -d "$DEPLOY_PATH/uploads/profile_photos" ]; then
@@ -827,9 +840,16 @@ deploy_to_server() {
             # Créer le dossier uploads/profile_photos s'il n'existe pas
             sudo mkdir -p "$DEPLOY_PATH/uploads/profile_photos"
             
+            # Créer le dossier logs s'il n'existe pas
+            sudo mkdir -p "$DEPLOY_PATH/logs"
+            
             # Configurer les permissions pour uploads (écriture nécessaire)
             sudo chown -R www-data:www-data "$DEPLOY_PATH/uploads" 2>/dev/null || true
             sudo chmod -R 777 "$DEPLOY_PATH/uploads" 2>/dev/null || true
+            
+            # Configurer les permissions pour logs (écriture nécessaire)
+            sudo chown -R www-data:www-data "$DEPLOY_PATH/logs" 2>/dev/null || true
+            sudo chmod -R 777 "$DEPLOY_PATH/logs" 2>/dev/null || true
             
             # Vérifier spécifiquement les permissions de profile_photos
             if [ -d "$DEPLOY_PATH/uploads/profile_photos" ]; then

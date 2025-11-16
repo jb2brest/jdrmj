@@ -252,19 +252,19 @@ extract($template_vars ?? []);
                         <div class="collapse mb-3" id="editMapForm">
                             <div class="card card-body">
                                 <h6>Modifier le plan du lieu</h6>
-                                <form method="POST" enctype="multipart/form-data" class="row g-3">
-                                    <input type="hidden" name="action" value="update_map">
+                                <form enctype="multipart/form-data" class="row g-3" id="uploadMapForm">
+                                    <input type="hidden" name="place_id" value="<?php echo $place_id; ?>">
                                     <div class="col-12">
                                         <label class="form-label">Téléverser un plan (image)</label>
-                                        <input type="file" class="form-control" name="plan_file" accept="image/png,image/jpeg,image/webp,image/gif">
+                                        <input type="file" class="form-control" name="plan_file" accept="image/png,image/jpeg,image/webp,image/gif" id="planFileInput">
                                         <div class="form-text">Formats acceptés: JPG, PNG, GIF, WebP (max 10 Mo)</div>
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label">Notes du MJ</label>
-                                        <textarea class="form-control" name="notes" rows="3" placeholder="Notes internes sur cette lieu..."><?php echo htmlspecialchars($place['notes'] ?? ''); ?></textarea>
+                                        <textarea class="form-control" name="notes" id="placeNotes" rows="3" placeholder="Notes internes sur cette lieu..."><?php echo htmlspecialchars($place['notes'] ?? ''); ?></textarea>
                                     </div>
                                     <div class="col-12">
-                                        <button type="submit" class="btn btn-primary">
+                                        <button type="submit" class="btn btn-primary" id="uploadMapButton">
                                             <i class="fas fa-save me-1"></i>Enregistrer
                                         </button>
                                     </div>
@@ -1376,6 +1376,110 @@ extract($template_vars ?? []);
                     submitButton.disabled = false;
                     submitButton.textContent = originalText;
                 });
+            });
+        }
+        
+        // Gestion de l'upload de plan de lieu (comme pour les photos de profil NPC)
+        function initUploadMapForm() {
+            const uploadMapForm = document.getElementById('uploadMapForm');
+            if (uploadMapForm) {
+                // Vérifier si l'événement est déjà attaché
+                if (uploadMapForm.dataset.listenerAttached === 'true') {
+                    return;
+                }
+                uploadMapForm.dataset.listenerAttached = 'true';
+                uploadMapForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const fileInput = document.getElementById('planFileInput');
+                    const notesInput = document.getElementById('placeNotes');
+                    const submitButton = document.getElementById('uploadMapButton');
+                    
+                    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                        alert('Veuillez sélectionner un fichier.');
+                        return;
+                    }
+                    
+                    const file = fileInput.files[0];
+                    
+                    // Vérifier la taille du fichier (10MB max)
+                    if (file.size > 10 * 1024 * 1024) {
+                        alert('Le plan est trop volumineux (max 10MB).');
+                        return;
+                    }
+                    
+                    // Vérifier le type de fichier
+                    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+                    if (!allowedTypes.includes(file.type)) {
+                        alert('Format de fichier non supporté. Utilisez JPG, PNG, GIF ou WebP.');
+                        return;
+                    }
+                    
+                    const formData = new FormData();
+                    const placeId = uploadMapForm.querySelector('input[name="place_id"]').value;
+                    formData.append('place_id', placeId);
+                    formData.append('plan_file', file);
+                    formData.append('notes', notesInput ? notesInput.value : '');
+                    
+                    // Afficher un indicateur de chargement
+                    const originalText = submitButton.innerHTML;
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Upload en cours...';
+                    
+                    fetch('api/upload_place_map.php', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.text().then(text => {
+                                throw new Error('Erreur HTTP ' + response.status + ': ' + text);
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message);
+                            window.location.reload();
+                        } else {
+                            alert('Erreur : ' + (data.message || 'Erreur inconnue'));
+                            submitButton.disabled = false;
+                            submitButton.innerHTML = originalText;
+                        }
+                    })
+                    .catch(error => {
+                        alert('Erreur lors de l\'upload du plan: ' + error.message);
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = originalText;
+                    });
+                });
+            }
+        }
+        
+        // Essayer plusieurs fois pour s'assurer que le formulaire est chargé (même dans un collapse)
+        document.addEventListener('DOMContentLoaded', function() {
+            initUploadMapForm();
+        });
+        
+        // Également essayer après un court délai au cas où le collapse serait ouvert après
+        setTimeout(function() {
+            initUploadMapForm();
+        }, 500);
+        
+        // Écouter l'ouverture du collapse Bootstrap
+        const editMapFormCollapse = document.getElementById('editMapForm');
+        if (editMapFormCollapse) {
+            editMapFormCollapse.addEventListener('shown.bs.collapse', function() {
+                setTimeout(initUploadMapForm, 100);
+            });
+        }
+        
+        // Aussi écouter le clic sur le bouton pour ouvrir le collapse
+        const editMapButton = document.querySelector('[data-bs-target="#editMapForm"]');
+        if (editMapButton) {
+            editMapButton.addEventListener('click', function() {
+                setTimeout(initUploadMapForm, 300);
             });
         }
     </script>

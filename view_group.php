@@ -466,11 +466,11 @@ try {
                             <select class="form-select" id="hierarchy_level" name="hierarchy_level" required>
                                 <?php 
                                 $max_levels = $groupe->max_hierarchy_levels ?? 5;
-                                for ($niveau = 2; $niveau <= $max_levels; $niveau++): ?>
-                                    <option value="<?php echo $niveau; ?>">Niveau <?php echo $niveau; ?></option>
+                                for ($niveau = 1; $niveau <= $max_levels; $niveau++): ?>
+                                    <option value="<?php echo $niveau; ?>">Niveau <?php echo $niveau; ?><?php echo $niveau == 1 ? ' (Dirigeant)' : ''; ?></option>
                                 <?php endfor; ?>
                             </select>
-                            <small class="form-text text-muted">Le niveau 1 est réservé au dirigeant du groupe. Ce groupe a <?php echo $max_levels; ?> niveau<?php echo $max_levels > 1 ? 'x' : ''; ?> hiérarchique<?php echo $max_levels > 1 ? 's' : ''; ?>.</small>
+                            <small class="form-text text-muted">Le niveau 1 correspond aux dirigeants du groupe. Ce groupe a <?php echo $max_levels; ?> niveau<?php echo $max_levels > 1 ? 'x' : ''; ?> hiérarchique<?php echo $max_levels > 1 ? 's' : ''; ?>.</small>
                         </div>
                         
                         <div class="mb-3">
