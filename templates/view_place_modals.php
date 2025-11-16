@@ -557,3 +557,326 @@
     </div>
 </div>
 <?php endif; ?>
+
+<!-- Modal pour déplacer des entités -->
+<?php if ($canEdit && !empty($placeAccesses)): 
+    // Récupérer les lieux accessibles (uniquement ceux avec un accès direct)
+    $accessiblePlaces = [];
+    foreach ($placeAccesses as $access) {
+        if ($access->from_place_id == $place_id) {
+            // Accès sortant
+            $accessiblePlaces[$access->to_place_id] = $access->to_place_name;
+        } else {
+            // Accès entrant
+            $accessiblePlaces[$access->from_place_id] = $access->from_place_name;
+        }
+    }
+?>
+<div class="modal fade" id="moveEntitiesModal" tabindex="-1" aria-labelledby="moveEntitiesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="moveEntitiesModalLabel">
+                    <i class="fas fa-arrows-alt me-2"></i>Déplacer des entités
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" id="moveEntitiesForm">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="move_entities">
+                    <input type="hidden" name="from_place_id" value="<?php echo $place_id; ?>">
+                    
+                    <!-- Sélection du lieu de destination -->
+                    <div class="mb-4">
+                        <label for="moveToPlace" class="form-label">
+                            <i class="fas fa-map-marker-alt me-1"></i>Lieu de destination
+                        </label>
+                        <select class="form-select" id="moveToPlace" name="to_place_id" required>
+                            <option value="">Sélectionner un lieu accessible...</option>
+                            <?php foreach ($accessiblePlaces as $placeId => $placeName): ?>
+                                <option value="<?php echo $placeId; ?>"><?php echo htmlspecialchars($placeName); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small class="form-text text-muted">Seuls les lieux avec un accès direct sont disponibles</small>
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- Sélection des entités -->
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-users me-1"></i>Sélectionner les entités à déplacer
+                        </label>
+                        
+                        <!-- Joueurs (PJ) -->
+                        <?php if (!empty($placePlayers)): ?>
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-user me-1"></i>Joueurs (PJ)
+                                    </h6>
+                                </div>
+                                <div class="card-body" style="max-height: 200px; overflow-y: auto;">
+                                    <?php foreach ($placePlayers as $player): ?>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" 
+                                                   name="entities[]" 
+                                                   value="player_<?php echo $player['player_id']; ?>"
+                                                   id="player_<?php echo $player['player_id']; ?>"
+                                                   checked>
+                                            <label class="form-check-label" for="player_<?php echo $player['player_id']; ?>">
+                                                <?php echo htmlspecialchars($player['username'] ?? 'Joueur inconnu'); ?>
+                                                <?php if (isset($player['character_name']) && $player['character_name']): ?>
+                                                    <span class="text-muted">(<?php echo htmlspecialchars($player['character_name']); ?>)</span>
+                                                <?php endif; ?>
+                                            </label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <!-- PNJ -->
+                        <?php if (!empty($placeNpcs)): ?>
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-user-tie me-1"></i>PNJ
+                                    </h6>
+                                </div>
+                                <div class="card-body" style="max-height: 200px; overflow-y: auto;">
+                                    <?php foreach ($placeNpcs as $npc): ?>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" 
+                                                   name="entities[]" 
+                                                   value="npc_<?php echo $npc['id']; ?>"
+                                                   id="npc_<?php echo $npc['id']; ?>">
+                                            <label class="form-check-label" for="npc_<?php echo $npc['id']; ?>">
+                                                <?php echo htmlspecialchars($npc['name'] ?? 'PNJ sans nom'); ?>
+                                                <?php if (isset($npc['description']) && $npc['description']): ?>
+                                                    <span class="text-muted small">- <?php echo htmlspecialchars(strlen($npc['description']) > 50 ? substr($npc['description'], 0, 50) . '...' : $npc['description']); ?></span>
+                                                <?php endif; ?>
+                                            </label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <!-- Monstres -->
+                        <?php if (!empty($placeMonsters)): ?>
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-dragon me-1"></i>Monstres
+                                    </h6>
+                                </div>
+                                <div class="card-body" style="max-height: 200px; overflow-y: auto;">
+                                    <?php foreach ($placeMonsters as $monster): ?>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" 
+                                                   name="entities[]" 
+                                                   value="monster_<?php echo $monster['id']; ?>"
+                                                   id="monster_<?php echo $monster['id']; ?>">
+                                            <label class="form-check-label" for="monster_<?php echo $monster['id']; ?>">
+                                                <?php echo htmlspecialchars($monster['name'] ?? 'Monstre sans nom'); ?>
+                                                <?php if (isset($monster['quantity']) && $monster['quantity'] > 1): ?>
+                                                    <span class="badge bg-secondary">x<?php echo $monster['quantity']; ?></span>
+                                                <?php endif; ?>
+                                                <?php if (isset($monster['type_name'])): ?>
+                                                    <span class="text-muted small">(<?php echo htmlspecialchars($monster['type_name']); ?>)</span>
+                                                <?php endif; ?>
+                                            </label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <?php if (empty($placePlayers) && empty($placeNpcs) && empty($placeMonsters)): ?>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Aucune entité présente dans ce lieu.
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-success" id="moveEntitiesSubmitBtn">
+                        <i class="fas fa-arrows-alt me-1"></i>Déplacer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<!-- Modal pour téléporter des entités -->
+<?php if ($canEdit && !empty($worldPlaces)): ?>
+<div class="modal fade" id="teleportEntitiesModal" tabindex="-1" aria-labelledby="teleportEntitiesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="teleportEntitiesModalLabel">
+                    <i class="fas fa-magic me-2"></i>Téléporter des entités
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" id="teleportEntitiesForm">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="teleport_entities">
+                    <input type="hidden" name="from_place_id" value="<?php echo $place_id; ?>">
+                    
+                    <!-- Sélection du lieu de destination -->
+                    <div class="mb-4">
+                        <label for="teleportToPlace" class="form-label">
+                            <i class="fas fa-map-marker-alt me-1"></i>Lieu de destination
+                        </label>
+                        <select class="form-select" id="teleportToPlace" name="to_place_id" required>
+                            <option value="">Sélectionner un lieu du monde...</option>
+                            <?php 
+                            $currentCountry = '';
+                            $firstItem = true;
+                            foreach ($worldPlaces as $worldPlace): 
+                                $country = $worldPlace['country_name'] ?? '';
+                                $region = $worldPlace['region_name'] ?? '';
+                                
+                                // Afficher le pays si différent
+                                if ($country !== $currentCountry):
+                                    if (!$firstItem): ?>
+                                        </optgroup>
+                                    <?php endif;
+                                    $currentCountry = $country;
+                                    $firstItem = false;
+                            ?>
+                                    <optgroup label="<?php echo htmlspecialchars($country ?: 'Sans pays'); ?>">
+                            <?php endif; ?>
+                                        
+                                        <option value="<?php echo $worldPlace['id']; ?>">
+                                            <?php if ($region): ?>
+                                                <?php echo htmlspecialchars($region); ?> - 
+                                            <?php endif; ?>
+                                            <?php echo htmlspecialchars($worldPlace['title']); ?>
+                                        </option>
+                            <?php endforeach; 
+                            if (!$firstItem): ?>
+                                </optgroup>
+                            <?php endif; ?>
+                        </select>
+                        <small class="form-text text-muted">Tous les lieux du monde sont disponibles pour la téléportation</small>
+                    </div>
+                    
+                    <hr>
+                    
+                    <!-- Sélection des entités -->
+                    <div class="mb-3">
+                        <label class="form-label">
+                            <i class="fas fa-users me-1"></i>Sélectionner les entités à téléporter
+                        </label>
+                        
+                        <!-- Joueurs (PJ) -->
+                        <?php if (!empty($placePlayers)): ?>
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-user me-1"></i>Joueurs (PJ)
+                                    </h6>
+                                </div>
+                                <div class="card-body" style="max-height: 200px; overflow-y: auto;">
+                                    <?php foreach ($placePlayers as $player): ?>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" 
+                                                   name="entities[]" 
+                                                   value="player_<?php echo $player['player_id']; ?>"
+                                                   id="teleport_player_<?php echo $player['player_id']; ?>"
+                                                   checked>
+                                            <label class="form-check-label" for="teleport_player_<?php echo $player['player_id']; ?>">
+                                                <?php echo htmlspecialchars($player['username'] ?? 'Joueur inconnu'); ?>
+                                                <?php if (isset($player['character_name']) && $player['character_name']): ?>
+                                                    <span class="text-muted">(<?php echo htmlspecialchars($player['character_name']); ?>)</span>
+                                                <?php endif; ?>
+                                            </label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <!-- PNJ -->
+                        <?php if (!empty($placeNpcs)): ?>
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-user-tie me-1"></i>PNJ
+                                    </h6>
+                                </div>
+                                <div class="card-body" style="max-height: 200px; overflow-y: auto;">
+                                    <?php foreach ($placeNpcs as $npc): ?>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" 
+                                                   name="entities[]" 
+                                                   value="npc_<?php echo $npc['id']; ?>"
+                                                   id="teleport_npc_<?php echo $npc['id']; ?>">
+                                            <label class="form-check-label" for="teleport_npc_<?php echo $npc['id']; ?>">
+                                                <?php echo htmlspecialchars($npc['name'] ?? 'PNJ sans nom'); ?>
+                                                <?php if (isset($npc['description']) && $npc['description']): ?>
+                                                    <span class="text-muted small">- <?php echo htmlspecialchars(strlen($npc['description']) > 50 ? substr($npc['description'], 0, 50) . '...' : $npc['description']); ?></span>
+                                                <?php endif; ?>
+                                            </label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <!-- Monstres -->
+                        <?php if (!empty($placeMonsters)): ?>
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-dragon me-1"></i>Monstres
+                                    </h6>
+                                </div>
+                                <div class="card-body" style="max-height: 200px; overflow-y: auto;">
+                                    <?php foreach ($placeMonsters as $monster): ?>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" 
+                                                   name="entities[]" 
+                                                   value="monster_<?php echo $monster['id']; ?>"
+                                                   id="teleport_monster_<?php echo $monster['id']; ?>">
+                                            <label class="form-check-label" for="teleport_monster_<?php echo $monster['id']; ?>">
+                                                <?php echo htmlspecialchars($monster['name'] ?? 'Monstre sans nom'); ?>
+                                                <?php if (isset($monster['quantity']) && $monster['quantity'] > 1): ?>
+                                                    <span class="badge bg-secondary">x<?php echo $monster['quantity']; ?></span>
+                                                <?php endif; ?>
+                                                <?php if (isset($monster['type_name'])): ?>
+                                                    <span class="text-muted small">(<?php echo htmlspecialchars($monster['type_name']); ?>)</span>
+                                                <?php endif; ?>
+                                            </label>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <?php if (empty($placePlayers) && empty($placeNpcs) && empty($placeMonsters)): ?>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Aucune entité présente dans ce lieu.
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-warning" id="teleportEntitiesSubmitBtn">
+                        <i class="fas fa-magic me-1"></i>Téléporter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>

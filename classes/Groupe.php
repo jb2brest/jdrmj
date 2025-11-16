@@ -140,9 +140,10 @@ class Groupe
      * @param string $member_type Type du membre ('pnj', 'pj', 'monster')
      * @param int $hierarchy_level Niveau hiérarchique (1 = dirigeant)
      * @param bool|null $is_secret Statut secret du membre (null = défaut selon le groupe)
+     * @param string|null $comment Commentaire sur la participation du membre
      * @return bool True si succès, false sinon
      */
-    public function addMember($member_id, $member_type, $hierarchy_level = 2, $is_secret = null)
+    public function addMember($member_id, $member_type, $hierarchy_level = 2, $is_secret = null, $comment = null)
     {
         try {
             // Vérifier que le niveau hiérarchique est valide
@@ -158,10 +159,17 @@ class Groupe
             }
             
             $stmt = $this->pdo->prepare("
-                INSERT INTO groupe_membres (groupe_id, member_id, member_type, hierarchy_level, is_secret, joined_at)
-                VALUES (?, ?, ?, ?, ?, NOW())
+                INSERT INTO groupe_membres (groupe_id, member_id, member_type, hierarchy_level, is_secret, comment, joined_at)
+                VALUES (?, ?, ?, ?, ?, ?, NOW())
             ");
-            $stmt->execute([$this->id, $member_id, $member_type, $hierarchy_level, $is_secret ? 1 : 0]);
+            $stmt->execute([
+                $this->id, 
+                $member_id, 
+                $member_type, 
+                $hierarchy_level, 
+                $is_secret ? 1 : 0,
+                !empty($comment) ? trim($comment) : null
+            ]);
             return true;
         } catch (PDOException $e) {
             error_log("Erreur lors de l'ajout du membre: " . $e->getMessage());
@@ -291,6 +299,77 @@ class Groupe
     }
     
     /**
+     * Met à jour le commentaire d'un membre
+     * 
+     * @param int $member_id ID du membre
+     * @param string $member_type Type du membre
+     * @param string|null $comment Nouveau commentaire
+     * @return bool True si succès, false sinon
+     */
+    public function updateMemberComment($member_id, $member_type, $comment = null)
+    {
+        try {
+            $stmt = $this->pdo->prepare("
+                UPDATE groupe_membres 
+                SET comment = ?
+                WHERE groupe_id = ? AND member_id = ? AND member_type = ?
+            ");
+            $result = $stmt->execute([
+                !empty($comment) ? trim($comment) : null, 
+                $this->id, 
+                $member_id, 
+                $member_type
+            ]);
+            
+            return $result;
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la mise à jour du commentaire: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Met à jour toutes les propriétés d'une participation d'un membre
+     * 
+     * @param int $member_id ID du membre
+     * @param string $member_type Type du membre
+     * @param int $hierarchy_level Nouveau niveau hiérarchique
+     * @param bool $is_secret Nouveau statut secret
+     * @param string|null $comment Nouveau commentaire
+     * @return bool True si succès, false sinon
+     */
+    public function updateMemberParticipation($member_id, $member_type, $hierarchy_level, $is_secret, $comment = null)
+    {
+        try {
+            // Vérifier que le niveau hiérarchique est valide
+            $max_levels = $this->max_hierarchy_levels ?? 5;
+            if ($hierarchy_level < 1 || $hierarchy_level > $max_levels) {
+                error_log("Niveau hiérarchique invalide: $hierarchy_level (max: $max_levels)");
+                return false;
+            }
+            
+            $stmt = $this->pdo->prepare("
+                UPDATE groupe_membres 
+                SET hierarchy_level = ?, is_secret = ?, comment = ?
+                WHERE groupe_id = ? AND member_id = ? AND member_type = ?
+            ");
+            $result = $stmt->execute([
+                $hierarchy_level,
+                $is_secret ? 1 : 0,
+                !empty($comment) ? trim($comment) : null,
+                $this->id,
+                $member_id,
+                $member_type
+            ]);
+            
+            return $result;
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la mise à jour de la participation: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
      * Récupère tous les membres du groupe avec leurs informations
      * 
      * @return array Liste des membres
@@ -304,6 +383,7 @@ class Groupe
                     gm.member_type,
                     gm.hierarchy_level,
                     gm.is_secret,
+                    gm.comment,
                     gm.joined_at,
                     CASE 
                         WHEN gm.member_type = 'pnj' THEN pn.name

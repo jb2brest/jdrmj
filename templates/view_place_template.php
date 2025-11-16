@@ -699,11 +699,21 @@ extract($template_vars ?? []);
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <span><i class="fas fa-door-open me-2"></i>Accès disponibles</span>
-                    <?php if ($canEdit): ?>
-                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#createAccessModal">
-                            <i class="fas fa-plus me-1"></i>Ajouter un Accès
-                        </button>
-                    <?php endif; ?>
+                    <div class="d-flex gap-2">
+                        <?php if ($canEdit && !empty($placeAccesses)): ?>
+                            <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#moveEntitiesModal">
+                                <i class="fas fa-arrows-alt me-1"></i>Déplacer
+                            </button>
+                        <?php endif; ?>
+                        <?php if ($canEdit): ?>
+                            <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#teleportEntitiesModal">
+                                <i class="fas fa-magic me-1"></i>Téléporter
+                            </button>
+                            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#createAccessModal">
+                                <i class="fas fa-plus me-1"></i>Ajouter un Accès
+                            </button>
+                        <?php endif; ?>
+                    </div>
                 </div>
                 <div class="card-body">
                     <?php if (empty($placeAccesses)): ?>
@@ -1483,6 +1493,116 @@ extract($template_vars ?? []);
             });
         }
     </script>
+<?php endif; ?>
+
+<!-- Script pour la modale de déplacement -->
+<?php if ($canEdit && !empty($placeAccesses)): ?>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const moveEntitiesForm = document.getElementById('moveEntitiesForm');
+        const moveToPlace = document.getElementById('moveToPlace');
+        const moveEntitiesSubmitBtn = document.getElementById('moveEntitiesSubmitBtn');
+        
+        if (moveEntitiesForm && moveToPlace && moveEntitiesSubmitBtn) {
+            // Fonction pour vérifier si au moins une entité est sélectionnée
+            function checkFormValidity() {
+                const selectedEntities = moveEntitiesForm.querySelectorAll('input[name="entities[]"]:checked');
+                const hasPlace = moveToPlace.value !== '';
+                const hasEntities = selectedEntities.length > 0;
+                
+                moveEntitiesSubmitBtn.disabled = !hasPlace || !hasEntities;
+            }
+            
+            // Écouter les changements sur le sélecteur de lieu
+            moveToPlace.addEventListener('change', checkFormValidity);
+            
+            // Écouter les changements sur les checkboxes d'entités
+            const entityCheckboxes = moveEntitiesForm.querySelectorAll('input[name="entities[]"]');
+            entityCheckboxes.forEach(function(checkbox) {
+                checkbox.addEventListener('change', checkFormValidity);
+            });
+            
+            // Vérifier au chargement initial
+            checkFormValidity();
+            
+            // Gestion de la soumission du formulaire
+            moveEntitiesForm.addEventListener('submit', function(e) {
+                const selectedEntities = moveEntitiesForm.querySelectorAll('input[name="entities[]"]:checked');
+                
+                if (selectedEntities.length === 0) {
+                    e.preventDefault();
+                    alert('Veuillez sélectionner au moins une entité à déplacer.');
+                    return false;
+                }
+                
+                if (!moveToPlace.value) {
+                    e.preventDefault();
+                    alert('Veuillez sélectionner un lieu de destination.');
+                    return false;
+                }
+                
+                // Désactiver le bouton pendant la soumission
+                moveEntitiesSubmitBtn.disabled = true;
+                moveEntitiesSubmitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Déplacement en cours...';
+            });
+        }
+    });
+</script>
+<?php endif; ?>
+
+<!-- Script pour la modale de téléportation -->
+<?php if ($canEdit && !empty($worldPlaces)): ?>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const teleportEntitiesForm = document.getElementById('teleportEntitiesForm');
+        const teleportToPlace = document.getElementById('teleportToPlace');
+        const teleportEntitiesSubmitBtn = document.getElementById('teleportEntitiesSubmitBtn');
+        
+        if (teleportEntitiesForm && teleportToPlace && teleportEntitiesSubmitBtn) {
+            // Fonction pour vérifier si au moins une entité est sélectionnée
+            function checkTeleportFormValidity() {
+                const selectedEntities = teleportEntitiesForm.querySelectorAll('input[name="entities[]"]:checked');
+                const hasPlace = teleportToPlace.value !== '';
+                const hasEntities = selectedEntities.length > 0;
+                
+                teleportEntitiesSubmitBtn.disabled = !hasPlace || !hasEntities;
+            }
+            
+            // Écouter les changements sur le sélecteur de lieu
+            teleportToPlace.addEventListener('change', checkTeleportFormValidity);
+            
+            // Écouter les changements sur les checkboxes d'entités
+            const entityCheckboxes = teleportEntitiesForm.querySelectorAll('input[name="entities[]"]');
+            entityCheckboxes.forEach(function(checkbox) {
+                checkbox.addEventListener('change', checkTeleportFormValidity);
+            });
+            
+            // Vérifier au chargement initial
+            checkTeleportFormValidity();
+            
+            // Gestion de la soumission du formulaire
+            teleportEntitiesForm.addEventListener('submit', function(e) {
+                const selectedEntities = teleportEntitiesForm.querySelectorAll('input[name="entities[]"]:checked');
+                
+                if (selectedEntities.length === 0) {
+                    e.preventDefault();
+                    alert('Veuillez sélectionner au moins une entité à téléporter.');
+                    return false;
+                }
+                
+                if (!teleportToPlace.value) {
+                    e.preventDefault();
+                    alert('Veuillez sélectionner un lieu de destination.');
+                    return false;
+                }
+                
+                // Désactiver le bouton pendant la soumission
+                teleportEntitiesSubmitBtn.disabled = true;
+                teleportEntitiesSubmitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Téléportation en cours...';
+            });
+        }
+    });
+</script>
 <?php endif; ?>
 
 </body>

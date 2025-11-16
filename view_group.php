@@ -41,9 +41,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $member_type = $_POST['member_type'] ?? '';
             $hierarchy_level = (int)($_POST['hierarchy_level'] ?? 2);
             $is_secret = isset($_POST['member_is_secret']) && $_POST['member_is_secret'] === '1';
+            $comment = trim($_POST['member_comment'] ?? '');
             
             if ($member_id > 0 && in_array($member_type, ['pnj', 'pj', 'monster'])) {
-                if ($groupe->addMember($member_id, $member_type, $hierarchy_level, $is_secret)) {
+                if ($groupe->addMember($member_id, $member_type, $hierarchy_level, $is_secret, $comment)) {
                     $success_message = "Membre ajouté au groupe avec succès !";
                 } else {
                     $error_message = "Erreur lors de l'ajout du membre.";
@@ -109,6 +110,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             } else {
                 $error_message = "Données invalides pour la mise à jour du statut du membre.";
+            }
+            break;
+            
+        case 'update_member_comment':
+            $member_id = (int)($_POST['member_id'] ?? 0);
+            $member_type = $_POST['member_type'] ?? '';
+            $comment = trim($_POST['comment'] ?? '');
+            
+            if ($member_id > 0 && in_array($member_type, ['pnj', 'pj', 'monster'])) {
+                if ($groupe->updateMemberComment($member_id, $member_type, $comment)) {
+                    $success_message = "Commentaire mis à jour avec succès !";
+                } else {
+                    $error_message = "Erreur lors de la mise à jour du commentaire.";
+                }
+            } else {
+                $error_message = "Données invalides pour la mise à jour du commentaire.";
+            }
+            break;
+            
+        case 'update_member_participation':
+            $member_id = (int)($_POST['member_id'] ?? 0);
+            $member_type = $_POST['member_type'] ?? '';
+            $hierarchy_level = (int)($_POST['hierarchy_level'] ?? 2);
+            $is_secret = isset($_POST['is_secret']) && $_POST['is_secret'] === '1';
+            $comment = trim($_POST['comment'] ?? '');
+            
+            if ($member_id > 0 && in_array($member_type, ['pnj', 'pj', 'monster'])) {
+                if ($groupe->updateMemberParticipation($member_id, $member_type, $hierarchy_level, $is_secret, $comment)) {
+                    $success_message = "Participation mise à jour avec succès !";
+                } else {
+                    $error_message = "Erreur lors de la mise à jour de la participation.";
+                }
+            } else {
+                $error_message = "Données invalides pour la mise à jour de la participation.";
             }
             break;
             
@@ -375,6 +410,7 @@ try {
                                                     <th>Localisation</th>
                                                     <th>Niveau</th>
                                                     <th>Titre de niveau</th>
+                                                    <th>Commentaire</th>
                                                     <th>Statut</th>
                                                     <th>Actions</th>
                                                 </tr>
@@ -422,6 +458,15 @@ try {
                                                             <?php endif; ?>
                                                         </td>
                                                         <td>
+                                                            <?php if (!empty($member['comment'])): ?>
+                                                                <span class="text-muted" title="<?php echo htmlspecialchars($member['comment']); ?>">
+                                                                    <i class="fas fa-comment me-1"></i><?php echo htmlspecialchars(mb_substr($member['comment'], 0, 50)) . (mb_strlen($member['comment']) > 50 ? '...' : ''); ?>
+                                                                </span>
+                                                            <?php else: ?>
+                                                                <span class="text-muted">-</span>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                        <td>
                                                             <?php if ($member['is_secret']): ?>
                                                                 <span class="badge bg-warning clickable-badge" 
                                                                       onclick="toggleMemberSecret(<?php echo $member['member_id']; ?>, '<?php echo $member['member_type']; ?>', <?php echo $member['is_secret'] ? 'true' : 'false'; ?>)"
@@ -438,10 +483,10 @@ try {
                                                         </td>
                                                         <td>
                                                             <div class="btn-group btn-group-sm">
-                                                                <button class="btn btn-outline-secondary" 
-                                                                        onclick="updateHierarchy(<?php echo $member['member_id']; ?>, '<?php echo $member['member_type']; ?>', <?php echo $member['hierarchy_level']; ?>)"
-                                                                        title="Modifier le niveau">
-                                                                    <i class="fas fa-sort-numeric-up"></i>
+                                                                <button class="btn btn-outline-primary" 
+                                                                        onclick="editParticipation(<?php echo $member['member_id']; ?>, '<?php echo $member['member_type']; ?>', <?php echo $member['hierarchy_level']; ?>, <?php echo $member['is_secret'] ? 'true' : 'false'; ?>, '<?php echo htmlspecialchars(addslashes($member['comment'] ?? '')); ?>')"
+                                                                        title="Éditer la participation">
+                                                                    <i class="fas fa-edit"></i>
                                                                 </button>
                                                                 <button class="btn btn-outline-warning" 
                                                                         onclick="removeMember(<?php echo $member['member_id']; ?>, '<?php echo $member['member_type']; ?>', '<?php echo htmlspecialchars($member['member_name']); ?>')"
@@ -517,6 +562,13 @@ try {
                                 </label>
                             </div>
                             <div class="form-text">Un membre secret aura son appartenance cachée. Par défaut: <?php echo $groupe->is_secret ? 'secret' : 'public'; ?> (selon le groupe).</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="member_comment" class="form-label">Commentaire</label>
+                            <textarea class="form-control" id="member_comment" name="member_comment" rows="3" 
+                                      placeholder="Commentaire optionnel sur la participation de ce membre au groupe..."></textarea>
+                            <small class="form-text text-muted">Note optionnelle sur ce membre dans ce groupe</small>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -625,6 +677,88 @@ try {
         <input type="hidden" name="hierarchy_level" id="updateHierarchyLevel">
     </form>
     
+    <!-- Modal de modification du commentaire -->
+    <div class="modal fade" id="updateCommentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST" id="updateCommentForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Modifier le commentaire</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="action" value="update_member_comment">
+                        <input type="hidden" name="member_id" id="updateCommentMemberId">
+                        <input type="hidden" name="member_type" id="updateCommentMemberType">
+                        
+                        <div class="mb-3">
+                            <label for="updateCommentText" class="form-label">Commentaire</label>
+                            <textarea class="form-control" id="updateCommentText" name="comment" rows="4" 
+                                      placeholder="Commentaire optionnel sur la participation de ce membre au groupe..."></textarea>
+                            <small class="form-text text-muted">Note optionnelle sur ce membre dans ce groupe</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal d'édition de la participation -->
+    <div class="modal fade" id="editParticipationModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST" id="editParticipationForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Éditer la participation</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="action" value="update_member_participation">
+                        <input type="hidden" name="member_id" id="editParticipationMemberId">
+                        <input type="hidden" name="member_type" id="editParticipationMemberType">
+                        
+                        <div class="mb-3">
+                            <label for="editParticipationHierarchyLevel" class="form-label">Niveau hiérarchique</label>
+                            <select class="form-select" id="editParticipationHierarchyLevel" name="hierarchy_level" required>
+                                <?php 
+                                $max_levels = $groupe->max_hierarchy_levels ?? 5;
+                                for ($niveau = 1; $niveau <= $max_levels; $niveau++): ?>
+                                    <option value="<?php echo $niveau; ?>">Niveau <?php echo $niveau; ?><?php echo $niveau == 1 ? ' (Dirigeant)' : ''; ?></option>
+                                <?php endfor; ?>
+                            </select>
+                            <small class="form-text text-muted">Le niveau 1 correspond aux dirigeants du groupe.</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="editParticipationIsSecret" name="is_secret" value="1">
+                                <label class="form-check-label" for="editParticipationIsSecret">
+                                    <i class="fas fa-eye-slash me-1"></i>Membre secret
+                                </label>
+                            </div>
+                            <div class="form-text">Un membre secret aura son appartenance cachée.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="editParticipationComment" class="form-label">Commentaire</label>
+                            <textarea class="form-control" id="editParticipationComment" name="comment" rows="4" 
+                                      placeholder="Commentaire optionnel sur la participation de ce membre au groupe..."></textarea>
+                            <small class="form-text text-muted">Note optionnelle sur ce membre dans ce groupe</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <style>
         .empty-state {
@@ -709,6 +843,26 @@ try {
                 document.getElementById('updateHierarchyLevel').value = newLevel;
                 document.getElementById('updateHierarchyForm').submit();
             }
+        }
+        
+        function updateComment(memberId, memberType, currentComment) {
+            document.getElementById('updateCommentMemberId').value = memberId;
+            document.getElementById('updateCommentMemberType').value = memberType;
+            document.getElementById('updateCommentText').value = currentComment || '';
+            
+            const modal = new bootstrap.Modal(document.getElementById('updateCommentModal'));
+            modal.show();
+        }
+        
+        function editParticipation(memberId, memberType, hierarchyLevel, isSecret, comment) {
+            document.getElementById('editParticipationMemberId').value = memberId;
+            document.getElementById('editParticipationMemberType').value = memberType;
+            document.getElementById('editParticipationHierarchyLevel').value = hierarchyLevel;
+            document.getElementById('editParticipationIsSecret').checked = isSecret === true || isSecret === 'true' || isSecret === 1 || isSecret === '1';
+            document.getElementById('editParticipationComment').value = comment || '';
+            
+            const modal = new bootstrap.Modal(document.getElementById('editParticipationModal'));
+            modal.show();
         }
     </script>
 </body>
