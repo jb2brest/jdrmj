@@ -646,7 +646,7 @@ extract($template_vars ?? []);
                                         <small class="text-muted"><?php echo htmlspecialchars($monster['type']); ?> - CR <?php echo $monster['challenge_rating']; ?></small>
                                     </div>
                                     <div class="d-flex gap-1">
-                                        <a href="view_monster.php?id=<?php echo $monster['monster_id']; ?>" class="btn btn-sm btn-outline-primary" title="Voir la fiche">
+                                        <a href="view_monster.php?id=<?php echo isset($monster['monster_instance_id']) && $monster['monster_instance_id'] ? $monster['monster_instance_id'] : $monster['monster_id']; ?>" class="btn btn-sm btn-outline-primary" title="Voir la fiche">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                         <button class="btn btn-sm btn-outline-info" onclick="toggleMonsterVisibility(<?php echo $monster['id']; ?>)">

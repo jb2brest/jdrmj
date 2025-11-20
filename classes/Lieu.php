@@ -589,6 +589,7 @@ class Lieu
                 SELECT 
                     pn.id, 
                     pn.monster_id, 
+                    pn.monster_instance_id,
                     pn.is_visible, 
                     pn.is_identified,
                     pn.name,
@@ -848,7 +849,7 @@ class Lieu
     {
         try {
             // Récupérer les informations du type de monstre
-            $stmt = $this->pdo->prepare("SELECT name, hit_points FROM dnd_monsters WHERE id = ?");
+            $stmt = $this->pdo->prepare("SELECT name, hit_points, type, size FROM dnd_monsters WHERE id = ?");
             $stmt->execute([$monsterTypeId]);
             $monsterType = $stmt->fetch(PDO::FETCH_ASSOC);
             
@@ -856,25 +857,105 @@ class Lieu
                 return ['success' => false, 'message' => 'Type de monstre introuvable.'];
             }
             
-            // Créer l'instance de monstre
-            $monsterName = $monsterType['name'];
-            if ($quantity > 1) {
-                $monsterName .= " (x{$quantity})";
+            $createdCount = 0;
+            $errors = [];
+            
+            // Vérifier si la colonne monster_instance_id existe (une seule fois, avant la boucle)
+            $stmtCheck = $this->pdo->query("SHOW COLUMNS FROM place_npcs LIKE 'monster_instance_id'");
+            $columnExists = $stmtCheck->rowCount() > 0;
+            
+            // Si la colonne n'existe pas, la créer maintenant (une seule fois)
+            if (!$columnExists) {
+                try {
+                    $this->pdo->exec("ALTER TABLE place_npcs ADD COLUMN monster_instance_id INT NULL AFTER current_hit_points");
+                    // Vérifier à nouveau après la création
+                    $stmtCheck = $this->pdo->query("SHOW COLUMNS FROM place_npcs LIKE 'monster_instance_id'");
+                    $columnExists = $stmtCheck->rowCount() > 0;
+                } catch (PDOException $e) {
+                    error_log("Erreur lors de la création de la colonne monster_instance_id: " . $e->getMessage());
+                    // Continuer quand même, on gérera le cas sans la colonne
+                }
             }
             
-            $monster = Monster::create($monsterTypeId, $monsterName, '', $quantity);
-            
-            if (!$monster) {
-                return ['success' => false, 'message' => 'Erreur lors de la création du monstre.'];
+            // Créer une instance de monstre pour chaque quantité
+            for ($i = 0; $i < $quantity; $i++) {
+                // Générer un nom unique si plusieurs monstres
+                $monsterName = $monsterType['name'];
+                if ($quantity > 1) {
+                    $monsterName .= ' ' . ($i + 1);
+                }
+                
+                // Générer la description
+                $description = "Monstre de type " . ($monsterType['type'] ?? 'Inconnu') . " (" . ($monsterType['size'] ?? 'Moyen') . ").";
+                
+                // Utiliser les PV du type de monstre
+                $hitPoints = $monsterType['hit_points'] ?? 1;
+                
+                try {
+                    // Démarrer une transaction pour créer le monstre dans monsters ET place_npcs
+                    $this->pdo->beginTransaction();
+                    
+                    // 1. Créer l'entrée dans la table monsters (pour compatibilité avec view_monster.php)
+                    $stmt = $this->pdo->prepare("
+                        INSERT INTO monsters (
+                            monster_type_id, name, description, current_hit_points, max_hit_points, 
+                            quantity, is_visible, is_identified, created_by, image_url
+                        ) 
+                        VALUES (?, ?, ?, ?, ?, 1, 0, 0, ?, NULL)
+                    ");
+                    $userId = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null;
+                    $stmt->execute([
+                        $monsterTypeId,
+                        $monsterName,
+                        $description,
+                        $hitPoints,
+                        $hitPoints,
+                        $userId
+                    ]);
+                    $monsterInstanceId = $this->pdo->lastInsertId();
+                    
+                    // 2. Créer l'entrée dans place_npcs avec référence vers l'instance de monstre
+                    // La colonne existe maintenant (créée au début si nécessaire)
+                    $stmt = $this->pdo->prepare("
+                        INSERT INTO place_npcs (
+                            name, description, profile_photo, is_visible, is_identified, 
+                            place_id, monster_id, quantity, current_hit_points, monster_instance_id
+                        ) 
+                        VALUES (?, ?, NULL, 0, 0, ?, ?, 1, ?, ?)
+                    ");
+                    $result = $stmt->execute([
+                        $monsterName,
+                        $description,
+                        $this->id,
+                        $monsterTypeId,
+                        $hitPoints,
+                        $monsterInstanceId
+                    ]);
+                    
+                    if ($result) {
+                        $this->pdo->commit();
+                        $createdCount++;
+                    } else {
+                        $this->pdo->rollBack();
+                        $errors[] = "Erreur lors de la création du monstre " . ($i + 1);
+                    }
+                } catch (PDOException $e) {
+                    if ($this->pdo->inTransaction()) {
+                        $this->pdo->rollBack();
+                    }
+                    error_log("Erreur lors de la création du monstre " . ($i + 1) . ": " . $e->getMessage());
+                    $errors[] = "Erreur lors de la création du monstre " . ($i + 1) . ": " . $e->getMessage();
+                }
             }
             
-            // Ajouter le monstre au lieu (invisible par défaut)
-            $success = $monster->addToPlace($this->id);
-            
-            if ($success) {
-                return ['success' => true, 'message' => 'Monstre ajouté au lieu.'];
+            if ($createdCount > 0) {
+                $message = $createdCount . " monstre(s) ajouté(s) au lieu.";
+                if (count($errors) > 0) {
+                    $message .= " " . count($errors) . " erreur(s) lors de la création.";
+                }
+                return ['success' => true, 'message' => $message];
             } else {
-                return ['success' => false, 'message' => 'Erreur lors de l\'ajout du monstre au lieu.'];
+                return ['success' => false, 'message' => 'Aucun monstre n\'a pu être créé. ' . implode(' ', $errors)];
             }
             
         } catch (Exception $e) {
