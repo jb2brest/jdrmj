@@ -4,6 +4,7 @@
  */
 
 require_once __DIR__ . '/../includes/functions.php';
+require_once __DIR__ . '/../classes/User.php';
 
 header('Content-Type: application/json');
 header('X-Requested-With: XMLHttpRequest');
@@ -34,7 +35,7 @@ try {
     $stmt = $pdo->prepare("
         SELECT p.id, pc.campaign_id 
         FROM places p 
-        JOIN place_campaigns pc ON p.id = pc.place_id
+        LEFT JOIN place_campaigns pc ON p.id = pc.place_id
         WHERE p.id = ?
     ");
     $stmt->execute([$placeId]);
@@ -44,25 +45,33 @@ try {
         throw new Exception('Lieu non trouvé');
     }
     
-    // Vérifier que l'utilisateur est membre de la campagne ou est le DM
-    $stmt = $pdo->prepare("
-        SELECT role FROM campaign_members 
-        WHERE campaign_id = ? AND user_id = ?
-    ");
-    $stmt->execute([$place['campaign_id'], $_SESSION['user_id']]);
-    $membership = $stmt->fetch();
-    
-    // Si pas membre, vérifier si c'est le DM de la campagne
-    if (!$membership) {
+    // Si le lieu est associé à une campagne, vérifier les permissions
+    if ($place['campaign_id']) {
+        // Vérifier que l'utilisateur est membre de la campagne ou est le DM
         $stmt = $pdo->prepare("
-            SELECT dm_id FROM campaigns 
-            WHERE id = ? AND dm_id = ?
+            SELECT role FROM campaign_members 
+            WHERE campaign_id = ? AND user_id = ?
         ");
         $stmt->execute([$place['campaign_id'], $_SESSION['user_id']]);
-        $is_dm = $stmt->fetch();
+        $membership = $stmt->fetch();
         
-        if (!$is_dm) {
-            throw new Exception('Accès refusé - Vous devez être membre de la campagne ou le DM');
+        // Si pas membre, vérifier si c'est le DM de la campagne
+        if (!$membership) {
+            $stmt = $pdo->prepare("
+                SELECT dm_id FROM campaigns 
+                WHERE id = ? AND dm_id = ?
+            ");
+            $stmt->execute([$place['campaign_id'], $_SESSION['user_id']]);
+            $is_dm = $stmt->fetch();
+            
+            if (!$is_dm) {
+                throw new Exception('Accès refusé - Vous devez être membre de la campagne ou le DM');
+            }
+        }
+    } else {
+        // Si le lieu n'est pas associé à une campagne, vérifier si l'utilisateur est admin
+        if (!User::isAdmin()) {
+            throw new Exception('Accès refusé - Ce lieu n\'est pas associé à une campagne');
         }
     }
     

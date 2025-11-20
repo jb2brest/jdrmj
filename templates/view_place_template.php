@@ -139,6 +139,11 @@ extract($template_vars ?? []);
                     <i class="fas fa-edit me-1"></i>Modifier le lieu
                 </button>
             <?php endif; ?>
+            <?php if (!empty($place['region_id'])): ?>
+                <a href="view_region.php?id=<?php echo (int)$place['region_id']; ?>" class="btn btn-outline-info">
+                    <i class="fas fa-map-marked-alt me-1"></i>Afficher la région
+                </a>
+            <?php endif; ?>
             <a href="view_campaign.php?id=<?php echo (int)$place['campaign_id']; ?>" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left me-1"></i>Retour à la campagne
             </a>

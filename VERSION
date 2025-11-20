@@ -2,19 +2,19 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.25.34
+VERSION=2.25.35
 
 # Date de déploiement
-DEPLOY_DATE=2025-11-16
+DEPLOY_DATE=2025-11-20
 
 # Environnement
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=2afef33c0a78935775a76e25e7426322028ca1dc
+GIT_COMMIT=7720018ed9c0848bdadfa3cd433e880c5a826c24
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251116-210416
+BUILD_ID=20251120-162418
 
 # Notes de version
-RELEASE_NOTES="Déplacer et téléporter"
+RELEASE_NOTES="Bouton aller à la région"
