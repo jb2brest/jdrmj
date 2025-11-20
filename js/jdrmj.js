@@ -1756,11 +1756,33 @@ function initializeObjectDragDrop() {
 let selectedDiceSides = null;
 let currentCampaignId = 0;
 
+// Fonction pour obtenir la campagne sélectionnée
+function getSelectedCampaignId() {
+    const campaignSelect = document.getElementById('dice-campaign-select');
+    if (campaignSelect) {
+        return parseInt(campaignSelect.value) || 0;
+    }
+    return currentCampaignId || 0;
+}
+
 /**
  * Initialiser les variables globales
  */
 function initializeGlobalVariables() {
     currentCampaignId = window.campaignId ? window.campaignId : 0;
+    
+    // Si une combobox de campagne existe, utiliser sa valeur
+    const campaignSelect = document.getElementById('dice-campaign-select');
+    if (campaignSelect) {
+        currentCampaignId = parseInt(campaignSelect.value) || currentCampaignId;
+        
+        // Écouter les changements de campagne pour recharger l'historique
+        campaignSelect.addEventListener('change', function() {
+            currentCampaignId = parseInt(this.value) || 0;
+            loadDiceHistory();
+        });
+    }
+    
     console.log('🎯 Variables globales initialisées:');
     console.log('  - currentCampaignId:', currentCampaignId);
     console.log('  - window.campaignId:', window.campaignId);
@@ -1919,9 +1941,10 @@ function showFinalResults(results, total, maxResult, minResult, modifier) {
  * Sauvegarder le jet de dés
  */
 function saveDiceRoll(results, total, maxResult, minResult) {
-    if (!currentCampaignId || currentCampaignId === 0) {
-        console.error('Impossible de sauvegarder le jet de dés : aucune campagne associée à ce lieu');
-        alert('Impossible de sauvegarder le jet de dés : aucune campagne associée à ce lieu');
+    const selectedCampaignId = getSelectedCampaignId();
+    if (!selectedCampaignId || selectedCampaignId === 0) {
+        console.error('Impossible de sauvegarder le jet de dés : aucune campagne sélectionnée');
+        alert('Impossible de sauvegarder le jet de dés : veuillez sélectionner une campagne');
         return;
     }
     
@@ -1930,7 +1953,7 @@ function saveDiceRoll(results, total, maxResult, minResult) {
     const isHidden = document.getElementById('hide-dice-roll').checked;
     
     const rollData = {
-        campaign_id: currentCampaignId,
+        campaign_id: selectedCampaignId,
         dice_type: diceType,
         dice_sides: selectedDiceSides,
         quantity: quantity,
@@ -1971,13 +1994,20 @@ function saveDiceRoll(results, total, maxResult, minResult) {
  * Charger l'historique des jets de dés
  */
 function loadDiceHistory() {
-    if (!currentCampaignId || currentCampaignId === 0) {
-        console.log('⚠️ Pas de campagne associée, impossible de charger l\'historique');
+    const selectedCampaignId = getSelectedCampaignId();
+    if (!selectedCampaignId || selectedCampaignId === 0) {
+        console.log('⚠️ Pas de campagne sélectionnée, impossible de charger l\'historique');
+        document.getElementById('dice-history').innerHTML = `
+            <div class="text-muted text-center py-3">
+                <i class="fas fa-info-circle fa-lg mb-2"></i>
+                <p class="mb-0 small">Sélectionnez une campagne pour voir l'historique</p>
+            </div>
+        `;
         return;
     }
     
     const showHidden = window.isOwnerDM || false;
-    const url = `api/get_dice_rolls_history.php?campaign_id=${currentCampaignId}&show_hidden=${showHidden}`;
+    const url = `api/get_dice_rolls_history.php?campaign_id=${selectedCampaignId}&show_hidden=${showHidden}`;
     
     fetch(url)
         .then(response => response.json())

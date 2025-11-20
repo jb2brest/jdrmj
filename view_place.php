@@ -5,6 +5,7 @@
  */
 
 require_once 'includes/functions.php';
+require_once 'classes/init.php';
 require_once 'classes/Access.php';
 require_once 'classes/Lieu.php';
 
@@ -379,9 +380,22 @@ if ($isOwnerDM && hasCampaignId($place)) {
     $dmCharacters = Character::getByUserId($dm_id);
 }
 
+// Récupérer toutes les campagnes accessibles pour les lancers de dés
+$userRole = User::getCurrentUserRole();
+$accessibleCampaigns = Campaign::getAccessibleCampaigns($_SESSION['user_id'], $userRole);
+
+// Déterminer la campagne par défaut : campagne du lieu si elle existe, sinon la dernière campagne
+$defaultCampaignId = null;
+if (hasCampaignId($place) && $place['campaign_id']) {
+    $defaultCampaignId = $place['campaign_id'];
+} elseif (!empty($accessibleCampaigns)) {
+    // Prendre la dernière campagne (la plus récente)
+    $defaultCampaignId = $accessibleCampaigns[0]['id'];
+}
+
 // Récupérer l'historique des lancers de dés
 $diceRolls = [];
-if (hasCampaignId($place)) {
+if ($defaultCampaignId) {
     $diceRolls = DiceRoll::getByPlaceId($place_id);
 }
 
@@ -402,7 +416,8 @@ $js_vars = [
     'canEdit' => $canEdit,
     'isOwnerDM' => $isOwnerDM,
     'tokenPositions' => $tokenPositions,
-    'campaignId' => $place['campaign_id']
+    'campaignId' => $defaultCampaignId,
+    'defaultCampaignId' => $defaultCampaignId
 ];
 
 // Variables pour le template
@@ -413,7 +428,9 @@ $template_vars = [
     'placeAccesses' => $placeAccesses,
     'tokenPositions' => $tokenPositions,
     'visibleObjectsForMap' => $visibleObjectsForMap,  // Objets visibles pour les pions sur la carte
-    'worldPlaces' => $worldPlaces  // Lieux du monde pour la téléportation
+    'worldPlaces' => $worldPlaces,  // Lieux du monde pour la téléportation
+    'accessibleCampaigns' => $accessibleCampaigns,  // Campagnes accessibles pour les lancers de dés
+    'defaultCampaignId' => $defaultCampaignId  // Campagne par défaut
 ];
 
 // Inclure le template HTML

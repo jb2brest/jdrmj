@@ -158,6 +158,23 @@ extract($template_vars ?? []);
                     <h5 class="mb-0"><i class="fas fa-dice me-2"></i>Jets de dés</h5>
                 </div>
                 <div class="card-body">
+                    <!-- Sélection de la campagne pour les lancers de dés -->
+                    <?php if (!empty($accessibleCampaigns)): ?>
+                        <div class="mb-3">
+                            <label for="dice-campaign-select" class="form-label">
+                                <i class="fas fa-dice-d20 me-1"></i>Campagne pour les lancers de dés :
+                            </label>
+                            <select class="form-select" id="dice-campaign-select">
+                                <?php foreach ($accessibleCampaigns as $campaign): ?>
+                                    <option value="<?php echo (int)$campaign['id']; ?>" 
+                                            <?php echo ($defaultCampaignId && $campaign['id'] == $defaultCampaignId) ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($campaign['title']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    <?php endif; ?>
+                    
                     <div class="row">
                         <!-- Sélection des dés et résultats -->
                         <div class="col-md-6">
