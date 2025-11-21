@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.25.44
+VERSION=2.25.45
 
 # Date de déploiement
 DEPLOY_DATE=2025-11-21
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-11-21
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=35433114dd8bce8a0c3c657224e56e5c25b2340f
+GIT_COMMIT=ab125f4f60f01ee50df76d35bf314a0607e11c95
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251121-145442
+BUILD_ID=20251121-151743
 
 # Notes de version
-RELEASE_NOTES="Affichage PNJ dans les lieux"
+RELEASE_NOTES="Affichage carte avec mémorisation des positions"
