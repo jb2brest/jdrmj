@@ -100,6 +100,9 @@ if ($place['region_id']) {
     }
 }
 
+// Récupérer tous les accès (sortants et entrants) pour ce lieu (avant le traitement POST)
+$placeAccesses = Access::getAllForPlace($place_id);
+
 // Traitement des actions sur les accès (maintenant géré via API)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
     $action = $_POST['action'] ?? '';
@@ -177,16 +180,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
                 $_SESSION['error_message'] = "Aucune entité sélectionnée.";
             } else {
                 // Vérifier que le lieu de destination a un accès direct
-                $hasAccess = false;
+                // Construire la liste des lieux accessibles (même logique que dans le template)
+                $accessiblePlaceIds = [];
                 foreach ($placeAccesses as $access) {
-                    if (($access->from_place_id == $place_id && $access->to_place_id == $to_place_id) ||
-                        ($access->to_place_id == $place_id && $access->from_place_id == $to_place_id)) {
-                        $hasAccess = true;
-                        break;
+                    $from_id = (int)$access->from_place_id;
+                    $to_id = (int)$access->to_place_id;
+                    if ($from_id === $place_id) {
+                        // Accès sortant
+                        $accessiblePlaceIds[] = $to_id;
+                    } elseif ($to_id === $place_id) {
+                        // Accès entrant
+                        $accessiblePlaceIds[] = $from_id;
                     }
                 }
                 
-                if (!$hasAccess) {
+                if (!in_array($to_place_id, $accessiblePlaceIds, true)) {
+                    error_log("Déplacement refusé: place_id=$place_id, to_place_id=$to_place_id, accessiblePlaceIds=" . implode(',', $accessiblePlaceIds));
                     $_SESSION['error_message'] = "Le lieu de destination n'a pas d'accès direct avec ce lieu.";
                 } else {
                     $successCount = 0;
@@ -353,8 +362,6 @@ if ($current_world_id) {
 }
 
 // Récupérer les données du lieu via les classes
-// Récupérer tous les accès (sortants et entrants) pour ce lieu
-$placeAccesses = Access::getAllForPlace($place_id);
 $placePlayers = $lieu->getAllPlayersDetailed();
 $placeNpcs = $lieu->getAllNpcsDetailed();
 $placeMonsters = $lieu->getAllMonsters();
