@@ -2,19 +2,19 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.25.37
+VERSION=2.25.38
 
 # Date de déploiement
-DEPLOY_DATE=2025-11-20
+DEPLOY_DATE=2025-11-21
 
 # Environnement
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=ec4ae79aa84634143b8d9e618c439950fd20627d
+GIT_COMMIT=bfb1dc48d10769b94a01d2bef5eaa58df1ece7b7
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251120-164438
+BUILD_ID=20251121-092301
 
 # Notes de version
-RELEASE_NOTES="Ajout de monstre multiples OK."
+RELEASE_NOTES="Gestion des groupes en masse"
