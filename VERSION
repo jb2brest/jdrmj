@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.25.39
+VERSION=2.25.40
 
 # Date de déploiement
 DEPLOY_DATE=2025-11-21
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-11-21
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=e70828fae22d5651b92674e73afec1cb5cdd18ea
+GIT_COMMIT=e39a785a9eb7ce5c6776a3e71f0166c8578cb0a5
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251121-093524
+BUILD_ID=20251121-101054
 
 # Notes de version
-RELEASE_NOTES="Déplacement corrigé"
+RELEASE_NOTES="Gestion des orphelins"
