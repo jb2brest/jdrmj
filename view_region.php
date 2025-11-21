@@ -1017,8 +1017,8 @@ $region_monsters = $region->getMonsters();
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-outline-primary" onclick="generateCartography()">
-                    <i class="fas fa-sync-alt me-1"></i>Réorganiser
+                <button type="button" class="btn btn-outline-warning" onclick="resetCartographyPositions()">
+                    <i class="fas fa-sync-alt me-1"></i>Réorganiser (réinitialiser les positions)
                 </button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="fas fa-times me-1"></i>Fermer
@@ -1087,8 +1087,79 @@ function adjustPosition(newPos, existingPositions, minDistance = 80) {
     return adjustedPos;
 }
 
+// Fonction pour charger les positions sauvegardées
+async function loadSavedPositions() {
+    try {
+        const response = await fetch(`api/get_region_cartography_positions.php?region_id=${cartographyData.currentRegionId}`);
+        const data = await response.json();
+        
+        if (data.success && data.positions) {
+            return data.positions;
+        }
+    } catch (error) {
+        console.error('Erreur lors du chargement des positions:', error);
+    }
+    return {};
+}
+
+// Fonction pour sauvegarder la position d'un lieu
+async function savePlacePosition(placeId, x, y) {
+    try {
+        const response = await fetch('api/save_region_cartography_position.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                region_id: cartographyData.currentRegionId,
+                place_id: placeId,
+                position_x: x,
+                position_y: y
+            })
+        });
+        
+        const data = await response.json();
+        if (!data.success) {
+            console.error('Erreur lors de la sauvegarde:', data.error);
+        }
+    } catch (error) {
+        console.error('Erreur lors de la sauvegarde de la position:', error);
+    }
+}
+
+// Fonction pour réinitialiser les positions (réorganiser)
+async function resetCartographyPositions() {
+    if (!confirm('Voulez-vous vraiment réinitialiser toutes les positions ? Les positions actuelles seront perdues et les lieux seront réorganisés automatiquement.')) {
+        return;
+    }
+    
+    // Supprimer toutes les positions sauvegardées pour cette région
+    try {
+        const response = await fetch('api/delete_region_cartography_positions.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                region_id: cartographyData.currentRegionId
+            })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            // Régénérer la carte sans positions sauvegardées
+            await generateCartography();
+        } else {
+            alert('Erreur lors de la réinitialisation: ' + (data.error || 'Erreur inconnue'));
+        }
+    } catch (error) {
+        console.error('Erreur lors de la réinitialisation:', error);
+        alert('Erreur lors de la réinitialisation des positions');
+    }
+}
+
 // Fonction pour générer la carte
-function generateCartography() {
+async function generateCartography() {
     const canvas = document.getElementById('cartographyCanvas');
     if (!canvas || cartographyData.places.length === 0) return;
     
@@ -1101,15 +1172,27 @@ function generateCartography() {
     const availableWidth = width - (margin * 2);
     const availableHeight = height - (margin * 2);
     
+    // Charger les positions sauvegardées
+    const savedPositions = await loadSavedPositions();
+    
     // Réinitialiser les positions
     placePositions = {};
     
     // Calculer les positions des lieux de la région en cercle
     const regionPlaces = cartographyData.places;
     regionPlaces.forEach((place, index) => {
-        const angle = (index * 2 * Math.PI) / regionPlaces.length;
-        const x = margin + (availableWidth / 2) + (Math.cos(angle) * (availableWidth / 3));
-        const y = margin + (availableHeight / 2) + (Math.sin(angle) * (availableHeight / 3));
+        let x, y;
+        
+        // Utiliser la position sauvegardée si elle existe
+        if (savedPositions[place.id]) {
+            x = savedPositions[place.id].x;
+            y = savedPositions[place.id].y;
+        } else {
+            // Sinon, calculer une position en cercle
+            const angle = (index * 2 * Math.PI) / regionPlaces.length;
+            x = margin + (availableWidth / 2) + (Math.cos(angle) * (availableWidth / 3));
+            y = margin + (availableHeight / 2) + (Math.sin(angle) * (availableHeight / 3));
+        }
         
         const initialPos = { x, y };
         const adjustedPos = adjustPosition(initialPos, placePositions);
@@ -1126,9 +1209,18 @@ function generateCartography() {
     // Calculer les positions des lieux externes autour du cercle principal
     const externalPlaces = cartographyData.externalPlaces;
     externalPlaces.forEach((place, index) => {
-        const angle = (index * 2 * Math.PI) / Math.max(externalPlaces.length, 1);
-        const x = margin + (availableWidth / 2) + (Math.cos(angle) * (availableWidth / 2.2));
-        const y = margin + (availableHeight / 2) + (Math.sin(angle) * (availableHeight / 2.2));
+        let x, y;
+        
+        // Utiliser la position sauvegardée si elle existe
+        if (savedPositions[place.id]) {
+            x = savedPositions[place.id].x;
+            y = savedPositions[place.id].y;
+        } else {
+            // Sinon, calculer une position en cercle
+            const angle = (index * 2 * Math.PI) / Math.max(externalPlaces.length, 1);
+            x = margin + (availableWidth / 2) + (Math.cos(angle) * (availableWidth / 2.2));
+            y = margin + (availableHeight / 2) + (Math.sin(angle) * (availableHeight / 2.2));
+        }
         
         const initialPos = { x, y };
         const adjustedPos = adjustPosition(initialPos, placePositions);
@@ -1316,6 +1408,14 @@ function drag(event) {
 // Fonction pour arrêter le déplacement
 function stopDrag(event) {
     if (isDragging && draggedElement) {
+        const placeId = parseInt(draggedElement.dataset.placeId);
+        if (placePositions[placeId]) {
+            // Sauvegarder la position
+            const x = placePositions[placeId].x;
+            const y = placePositions[placeId].y;
+            savePlacePosition(placeId, x, y);
+        }
+        
         draggedElement.style.zIndex = '10';
         draggedElement.style.opacity = '1';
         draggedElement = null;
@@ -1325,8 +1425,8 @@ function stopDrag(event) {
 
 // Initialiser la cartographie quand le modal s'ouvre
 document.getElementById('cartographyModal').addEventListener('shown.bs.modal', function () {
-    setTimeout(() => {
-        generateCartography();
+    setTimeout(async () => {
+        await generateCartography();
         
         // Ajouter les événements de déplacement
         const canvas = document.getElementById('cartographyCanvas');
@@ -1367,9 +1467,9 @@ document.getElementById('cartographyModal').addEventListener('shown.bs.modal', f
 });
 
 // Régénérer la carte si la fenêtre est redimensionnée
-window.addEventListener('resize', function() {
+window.addEventListener('resize', async function() {
     if (document.getElementById('cartographyModal').classList.contains('show')) {
-        generateCartography();
+        await generateCartography();
     }
 });
 </script>
