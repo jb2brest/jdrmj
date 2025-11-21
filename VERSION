@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.25.45
+VERSION=2.25.46
 
 # Date de déploiement
 DEPLOY_DATE=2025-11-21
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-11-21
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=ab125f4f60f01ee50df76d35bf314a0607e11c95
+GIT_COMMIT=01b75e944212c9fe11780c895b24e1a589cd0d1e
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251121-151743
+BUILD_ID=20251121-161111
 
 # Notes de version
 RELEASE_NOTES="Affichage carte avec mémorisation des positions"
