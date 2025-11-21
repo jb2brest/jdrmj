@@ -259,10 +259,6 @@
                         <input type="text" class="form-control" id="placeTitle" name="title" value="<?php echo htmlspecialchars($place['title']); ?>" required>
                     </div>
                     <div class="mb-3">
-                        <label for="placeMapUrl" class="form-label">URL de la carte</label>
-                        <input type="url" class="form-control" id="placeMapUrl" name="map_url" value="<?php echo htmlspecialchars($place['map_url']); ?>">
-                    </div>
-                    <div class="mb-3">
                         <label for="placeNotes" class="form-label">Notes</label>
                         <textarea class="form-control" id="placeNotes" name="notes" rows="5"><?php echo htmlspecialchars($place['notes']); ?></textarea>
                     </div>

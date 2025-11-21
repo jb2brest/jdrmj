@@ -54,6 +54,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             break;
             
+        case 'add_members_bulk':
+            $members = $_POST['members'] ?? [];
+            $hierarchy_level = (int)($_POST['hierarchy_level'] ?? 2);
+            $is_secret = isset($_POST['member_is_secret']) && $_POST['member_is_secret'] === '1';
+            $comment = trim($_POST['member_comment'] ?? '');
+            
+            if (empty($members) || !is_array($members)) {
+                $error_message = "Aucun membre sélectionné.";
+                break;
+            }
+            
+            $added_count = 0;
+            $failed_count = 0;
+            $errors = [];
+            
+            foreach ($members as $member_data) {
+                $parts = explode('|', $member_data);
+                if (count($parts) !== 2) {
+                    $failed_count++;
+                    continue;
+                }
+                
+                $member_id = (int)$parts[0];
+                $member_type = $parts[1];
+                
+                if ($member_id > 0 && in_array($member_type, ['pnj', 'pj', 'monster'])) {
+                    if ($groupe->addMember($member_id, $member_type, $hierarchy_level, $is_secret, $comment)) {
+                        $added_count++;
+                    } else {
+                        $failed_count++;
+                    }
+                } else {
+                    $failed_count++;
+                }
+            }
+            
+            if ($added_count > 0) {
+                if ($failed_count > 0) {
+                    $success_message = "$added_count membre(s) ajouté(s) avec succès. $failed_count échec(s).";
+                } else {
+                    $success_message = "$added_count membre(s) ajouté(s) au groupe avec succès !";
+                }
+            } else {
+                $error_message = "Aucun membre n'a pu être ajouté.";
+            }
+            break;
+            
         case 'remove_member':
             $member_id = (int)($_POST['member_id'] ?? 0);
             $member_type = $_POST['member_type'] ?? '';
@@ -182,13 +229,14 @@ $hierarchy_levels_config = $groupe->getHierarchyLevelsConfig();
 try {
     $pdo = getPdo();
     
-    // PNJ disponibles
+    // PNJ disponibles (exclure les monstres : monster_id IS NULL)
     $stmt = $pdo->prepare("
         SELECT pn.id, pn.name, pl.title as place_name
         FROM place_npcs pn
         JOIN places pl ON pn.place_id = pl.id
         LEFT JOIN countries co ON pl.country_id = co.id
-        WHERE co.world_id IN (
+        WHERE pn.monster_id IS NULL
+        AND co.world_id IN (
             SELECT id FROM worlds WHERE created_by = ?
         )
         AND pn.id NOT IN (
@@ -214,21 +262,22 @@ try {
     $stmt->execute([$groupe_id]);
     $available_pjs = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Monstres disponibles
+    // Monstres disponibles (depuis place_npcs où monster_id IS NOT NULL)
     $stmt = $pdo->prepare("
-        SELECT pm.id, dm.name, pl.title as place_name
-        FROM place_monsters pm
-        JOIN dnd_monsters dm ON pm.monster_id = dm.id
-        JOIN places pl ON pm.place_id = pl.id
+        SELECT pn.id, COALESCE(pn.name, dm.name) as name, pl.title as place_name
+        FROM place_npcs pn
+        JOIN dnd_monsters dm ON pn.monster_id = dm.id
+        JOIN places pl ON pn.place_id = pl.id
         LEFT JOIN countries co ON pl.country_id = co.id
-        WHERE co.world_id IN (
+        WHERE pn.monster_id IS NOT NULL
+        AND co.world_id IN (
             SELECT id FROM worlds WHERE created_by = ?
         )
-        AND pm.id NOT IN (
+        AND pn.id NOT IN (
             SELECT member_id FROM groupe_membres 
             WHERE groupe_id = ? AND member_type = 'monster'
         )
-        ORDER BY dm.name
+        ORDER BY COALESCE(pn.name, dm.name)
     ");
     $stmt->execute([$user_id, $groupe_id]);
     $available_monsters = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -514,31 +563,134 @@ try {
     
     <!-- Modal d'ajout de membre -->
     <div class="modal fade" id="addMemberModal" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <form method="POST">
+                <form method="POST" id="addMemberForm">
                     <div class="modal-header">
-                        <h5 class="modal-title">Ajouter un Membre</h5>
+                        <h5 class="modal-title">Ajouter des Membres</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
-                        <input type="hidden" name="action" value="add_member">
+                        <input type="hidden" name="action" value="add_members_bulk">
                         
+                        <!-- Filtres par type -->
                         <div class="mb-3">
-                            <label for="member_type" class="form-label">Type de membre</label>
-                            <select class="form-select" id="member_type" name="member_type" onchange="updateMemberOptions()" required>
-                                <option value="">Sélectionner un type</option>
-                                <option value="pnj">PNJ</option>
-                                <option value="pj">PJ</option>
-                                <option value="monster">Monstre</option>
-                            </select>
+                            <label class="form-label">Type de membre</label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="member_type_filter" id="filter_all" value="all" checked onchange="filterMembersByType()">
+                                <label class="btn btn-outline-primary" for="filter_all">Tous</label>
+                                
+                                <input type="radio" class="btn-check" name="member_type_filter" id="filter_pj" value="pj" onchange="filterMembersByType()">
+                                <label class="btn btn-outline-success" for="filter_pj">PJ</label>
+                                
+                                <input type="radio" class="btn-check" name="member_type_filter" id="filter_pnj" value="pnj" onchange="filterMembersByType()">
+                                <label class="btn btn-outline-info" for="filter_pnj">PNJ</label>
+                                
+                                <input type="radio" class="btn-check" name="member_type_filter" id="filter_monster" value="monster" onchange="filterMembersByType()">
+                                <label class="btn btn-outline-danger" for="filter_monster">Monstres</label>
+                            </div>
                         </div>
                         
+                        <!-- Champ de recherche -->
                         <div class="mb-3">
-                            <label for="member_id" class="form-label">Membre</label>
-                            <select class="form-select" id="member_id" name="member_id" required>
-                                <option value="">Sélectionner un membre</option>
-                            </select>
+                            <label for="member_search" class="form-label">Rechercher</label>
+                            <input type="text" class="form-control" id="member_search" placeholder="Rechercher un membre par nom..." onkeyup="filterMembersByName()">
+                        </div>
+                        
+                        <!-- Liste des membres avec checkboxes -->
+                        <div class="mb-3">
+                            <label class="form-label">Sélectionner les membres à ajouter</label>
+                            <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto;" id="members_list_container">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="select_all_members" onchange="toggleSelectAll()">
+                                    <label class="form-check-label fw-bold" for="select_all_members">
+                                        Sélectionner tout
+                                    </label>
+                                </div>
+                                <hr class="my-2">
+                                
+                                <!-- PJ -->
+                                <div class="member-type-group" data-type="pj">
+                                    <?php if (!empty($available_pjs)): ?>
+                                        <div class="text-muted small mb-2">
+                                            <i class="fas fa-user me-1"></i>Personnages Joueurs (<?php echo count($available_pjs); ?>)
+                                        </div>
+                                        <?php foreach ($available_pjs as $pj): ?>
+                                            <div class="form-check mb-2 member-item" data-type="pj" data-name="<?php echo htmlspecialchars(strtolower($pj['name'])); ?>">
+                                                <input class="form-check-input member-checkbox" type="checkbox" 
+                                                       name="members[]" 
+                                                       id="member_pj_<?php echo $pj['id']; ?>"
+                                                       value="<?php echo $pj['id']; ?>|pj">
+                                                <label class="form-check-label" for="member_pj_<?php echo $pj['id']; ?>">
+                                                    <?php echo htmlspecialchars($pj['name']); ?>
+                                                </label>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <div class="text-muted small mb-2">
+                                            <i class="fas fa-user me-1"></i>Personnages Joueurs (0)
+                                        </div>
+                                        <div class="text-muted small">Aucun PJ disponible</div>
+                                    <?php endif; ?>
+                                </div>
+                                
+                                <!-- PNJ -->
+                                <div class="member-type-group" data-type="pnj">
+                                    <?php if (!empty($available_npcs)): ?>
+                                        <div class="text-muted small mb-2 mt-3">
+                                            <i class="fas fa-user-tie me-1"></i>Personnages Non-Joueurs (<?php echo count($available_npcs); ?>)
+                                        </div>
+                                        <?php foreach ($available_npcs as $npc): ?>
+                                            <div class="form-check mb-2 member-item" data-type="pnj" data-name="<?php echo htmlspecialchars(strtolower($npc['name'] . ' ' . ($npc['place_name'] ?? ''))); ?>">
+                                                <input class="form-check-input member-checkbox" type="checkbox" 
+                                                       name="members[]" 
+                                                       id="member_pnj_<?php echo $npc['id']; ?>"
+                                                       value="<?php echo $npc['id']; ?>|pnj">
+                                                <label class="form-check-label" for="member_pnj_<?php echo $npc['id']; ?>">
+                                                    <?php echo htmlspecialchars($npc['name']); ?>
+                                                    <?php if (!empty($npc['place_name'])): ?>
+                                                        <small class="text-muted">(<?php echo htmlspecialchars($npc['place_name']); ?>)</small>
+                                                    <?php endif; ?>
+                                                </label>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <div class="text-muted small mb-2 mt-3">
+                                            <i class="fas fa-user-tie me-1"></i>Personnages Non-Joueurs (0)
+                                        </div>
+                                        <div class="text-muted small">Aucun PNJ disponible</div>
+                                    <?php endif; ?>
+                                </div>
+                                
+                                <!-- Monstres -->
+                                <div class="member-type-group" data-type="monster">
+                                    <?php if (!empty($available_monsters)): ?>
+                                        <div class="text-muted small mb-2 mt-3">
+                                            <i class="fas fa-dragon me-1"></i>Monstres (<?php echo count($available_monsters); ?>)
+                                        </div>
+                                        <?php foreach ($available_monsters as $monster): ?>
+                                            <div class="form-check mb-2 member-item" data-type="monster" data-name="<?php echo htmlspecialchars(strtolower($monster['name'] . ' ' . ($monster['place_name'] ?? ''))); ?>">
+                                                <input class="form-check-input member-checkbox" type="checkbox" 
+                                                       name="members[]" 
+                                                       id="member_monster_<?php echo $monster['id']; ?>"
+                                                       value="<?php echo $monster['id']; ?>|monster">
+                                                <label class="form-check-label" for="member_monster_<?php echo $monster['id']; ?>">
+                                                    <?php echo htmlspecialchars($monster['name']); ?>
+                                                    <?php if (!empty($monster['place_name'])): ?>
+                                                        <small class="text-muted">(<?php echo htmlspecialchars($monster['place_name']); ?>)</small>
+                                                    <?php endif; ?>
+                                                </label>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <div class="text-muted small mb-2 mt-3">
+                                            <i class="fas fa-dragon me-1"></i>Monstres (0)
+                                        </div>
+                                        <div class="text-muted small">Aucun monstre disponible</div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <small class="form-text text-muted" id="selected_count">0 membre(s) sélectionné(s)</small>
                         </div>
                         
                         <div class="mb-3">
@@ -567,13 +719,13 @@ try {
                         <div class="mb-3">
                             <label for="member_comment" class="form-label">Commentaire</label>
                             <textarea class="form-control" id="member_comment" name="member_comment" rows="3" 
-                                      placeholder="Commentaire optionnel sur la participation de ce membre au groupe..."></textarea>
-                            <small class="form-text text-muted">Note optionnelle sur ce membre dans ce groupe</small>
+                                      placeholder="Commentaire optionnel sur la participation de ces membres au groupe..."></textarea>
+                            <small class="form-text text-muted">Note optionnelle qui s'appliquera à tous les membres sélectionnés</small>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-primary">Ajouter</button>
+                        <button type="submit" class="btn btn-primary" id="submitAddMembers" disabled>Ajouter les membres sélectionnés</button>
                     </div>
                 </form>
             </div>
@@ -804,6 +956,106 @@ try {
                 });
             }
         }
+        
+        function filterMembersByType() {
+            const selectedType = document.querySelector('input[name="member_type_filter"]:checked').value;
+            const memberItems = document.querySelectorAll('.member-item');
+            const memberGroups = document.querySelectorAll('.member-type-group');
+            
+            memberItems.forEach(item => {
+                const itemType = item.getAttribute('data-type');
+                if (selectedType === 'all' || itemType === selectedType) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            
+            // Afficher/masquer les groupes selon le filtre
+            memberGroups.forEach(group => {
+                const groupType = group.getAttribute('data-type');
+                const visibleItems = group.querySelectorAll('.member-item[style=""]').length;
+                const groupHeader = group.querySelector('.text-muted.small');
+                
+                if (selectedType === 'all' || groupType === selectedType) {
+                    group.style.display = '';
+                } else {
+                    group.style.display = 'none';
+                }
+            });
+            
+            // Appliquer aussi le filtre de recherche
+            filterMembersByName();
+        }
+        
+        function filterMembersByName() {
+            const searchTerm = document.getElementById('member_search').value.toLowerCase();
+            const selectedType = document.querySelector('input[name="member_type_filter"]:checked').value;
+            const memberItems = document.querySelectorAll('.member-item');
+            
+            memberItems.forEach(item => {
+                const itemType = item.getAttribute('data-type');
+                const itemName = item.getAttribute('data-name') || '';
+                const matchesType = selectedType === 'all' || itemType === selectedType;
+                const matchesSearch = searchTerm === '' || itemName.includes(searchTerm);
+                
+                if (matchesType && matchesSearch) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+        
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('select_all_members');
+            const visibleCheckboxes = document.querySelectorAll('.member-item[style=""] .member-checkbox');
+            
+            visibleCheckboxes.forEach(checkbox => {
+                checkbox.checked = selectAll.checked;
+            });
+            
+            updateSelectedCount();
+        }
+        
+        function updateSelectedCount() {
+            const checkedBoxes = document.querySelectorAll('.member-checkbox:checked');
+            const count = checkedBoxes.length;
+            document.getElementById('selected_count').textContent = count + ' membre(s) sélectionné(s)';
+            
+            const submitButton = document.getElementById('submitAddMembers');
+            if (count > 0) {
+                submitButton.disabled = false;
+            } else {
+                submitButton.disabled = true;
+            }
+        }
+        
+        // Écouter les changements sur les checkboxes
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkboxes = document.querySelectorAll('.member-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateSelectedCount);
+            });
+            
+            // Réinitialiser la modale quand elle est fermée
+            const modal = document.getElementById('addMemberModal');
+            if (modal) {
+                modal.addEventListener('hidden.bs.modal', function() {
+                    document.getElementById('addMemberForm').reset();
+                    document.getElementById('member_search').value = '';
+                    document.getElementById('filter_all').checked = true;
+                    document.querySelectorAll('.member-item').forEach(item => {
+                        item.style.display = '';
+                    });
+                    document.querySelectorAll('.member-checkbox').forEach(cb => {
+                        cb.checked = false;
+                    });
+                    document.getElementById('select_all_members').checked = false;
+                    updateSelectedCount();
+                });
+            }
+        });
         
         function removeMember(memberId, memberType, memberName) {
             if (confirm('Êtes-vous sûr de vouloir retirer "' + memberName + '" du groupe ?')) {

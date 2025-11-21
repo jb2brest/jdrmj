@@ -22,7 +22,6 @@ try {
     
     $placeId = (int)($_POST['place_id'] ?? 0);
     $title = sanitizeInput($_POST['title'] ?? '');
-    $mapUrl = sanitizeInput($_POST['map_url'] ?? '');
     $notes = sanitizeInput($_POST['notes'] ?? '');
     
     if (!$placeId || !$title) {
@@ -35,19 +34,20 @@ try {
         throw new Exception('Lieu non trouvé');
     }
     
-    // Mettre à jour le lieu
-    $result = $lieu->updateMapUrl($mapUrl, $notes);
-    if ($result['success']) {
-        $result = $lieu->updateTitle($title);
-    }
+    // Mettre à jour le lieu (conserver l'URL de la carte existante si elle existe)
+    $currentMapUrl = $lieu->getMapUrl() ?? '';
+    $resultMap = $lieu->updateMapUrl($currentMapUrl, $notes);
+    $resultTitle = $lieu->updateTitle($title);
     
-    if ($result['success']) {
-        echo json_encode([
-            'success' => true,
-            'message' => 'Lieu mis à jour avec succès'
-        ]);
+    // Si les deux mises à jour ont réussi, rediriger
+    if ($resultMap['success'] && $resultTitle['success']) {
+        // Rediriger vers la page du lieu pour recharger
+        header('Location: ../view_place.php?id=' . $placeId . '&updated=1');
+        exit();
     } else {
-        throw new Exception($result['message']);
+        // Si une mise à jour a échoué, vérifier les messages d'erreur
+        $errorMessage = !$resultTitle['success'] ? $resultTitle['message'] : ($resultMap['message'] ?? 'Erreur lors de la mise à jour');
+        throw new Exception($errorMessage);
     }
     
 } catch (Exception $e) {

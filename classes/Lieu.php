@@ -1155,12 +1155,13 @@ class Lieu
             $stmt = $this->pdo->prepare("UPDATE places SET title = ? WHERE id = ?");
             $result = $stmt->execute([$title, $this->id]);
             
-            if ($result && $stmt->rowCount() > 0) {
+            if ($result) {
                 // Mettre à jour la propriété de l'objet
                 $this->title = $title;
+                // Considérer comme succès même si aucune ligne n'a été modifiée (données déjà à jour)
                 return ['success' => true, 'message' => 'Nom du lieu mis à jour avec succès.'];
             } else {
-                return ['success' => false, 'message' => 'Aucune modification effectuée.'];
+                return ['success' => false, 'message' => 'Erreur lors de la mise à jour du titre.'];
             }
             
         } catch (PDOException $e) {

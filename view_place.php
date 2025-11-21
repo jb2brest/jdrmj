@@ -32,6 +32,11 @@ if (isset($_GET['monster_added'])) {
     $success_message = 'Monstre ajouté avec succès au lieu.';
 }
 
+// Gestion des messages de confirmation de mise à jour du lieu
+if (isset($_GET['updated'])) {
+    $success_message = 'Lieu mis à jour avec succès.';
+}
+
 // Charger le lieu et sa campagne avec hiérarchie géographique
 $lieu = Lieu::findById($place_id);
 if (!$lieu) {

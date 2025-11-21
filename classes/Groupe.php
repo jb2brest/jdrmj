@@ -388,7 +388,7 @@ class Groupe
                     CASE 
                         WHEN gm.member_type = 'pnj' THEN pn.name
                         WHEN gm.member_type = 'pj' THEN c.name
-                        WHEN gm.member_type = 'monster' THEN dm.name
+                        WHEN gm.member_type = 'monster' THEN COALESCE(pn_monster.name, dm.name)
                     END as member_name,
                     CASE 
                         WHEN gm.member_type = 'pnj' THEN pn.profile_photo
@@ -398,16 +398,16 @@ class Groupe
                     CASE 
                         WHEN gm.member_type = 'pnj' THEN pl.title
                         WHEN gm.member_type = 'pj' THEN 'Personnage Joueur'
-                        WHEN gm.member_type = 'monster' THEN pl3.title
+                        WHEN gm.member_type = 'monster' THEN pl_monster.title
                     END as member_location,
                     ghl.title as hierarchy_level_title
                 FROM groupe_membres gm
                 LEFT JOIN place_npcs pn ON gm.member_type = 'pnj' AND gm.member_id = pn.id
                 LEFT JOIN places pl ON pn.place_id = pl.id
                 LEFT JOIN characters c ON gm.member_type = 'pj' AND gm.member_id = c.id
-                LEFT JOIN place_monsters pm ON gm.member_type = 'monster' AND gm.member_id = pm.id
-                LEFT JOIN dnd_monsters dm ON pm.monster_id = dm.id
-                LEFT JOIN places pl3 ON pm.place_id = pl3.id
+                LEFT JOIN place_npcs pn_monster ON gm.member_type = 'monster' AND gm.member_id = pn_monster.id
+                LEFT JOIN dnd_monsters dm ON pn_monster.monster_id = dm.id
+                LEFT JOIN places pl_monster ON pn_monster.place_id = pl_monster.id
                 LEFT JOIN groupe_hierarchy_levels ghl ON gm.groupe_id = ghl.groupe_id AND gm.hierarchy_level = ghl.level_number
                 WHERE gm.groupe_id = ?
                 ORDER BY gm.hierarchy_level ASC, gm.joined_at ASC
