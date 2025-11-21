@@ -32,6 +32,16 @@ if (isset($_GET['monster_added'])) {
     $success_message = 'Monstre ajouté avec succès au lieu.';
 }
 
+// Gestion des messages de confirmation d'ajout de PNJ
+if (isset($_GET['npc_added'])) {
+    $success_message = 'PNJ ajouté avec succès au lieu.';
+}
+
+// Gestion des messages de confirmation d'ajout de joueur
+if (isset($_GET['player_added'])) {
+    $success_message = 'Joueur ajouté avec succès au lieu.';
+}
+
 // Gestion des messages de confirmation de mise à jour du lieu
 if (isset($_GET['updated'])) {
     $success_message = 'Lieu mis à jour avec succès.';

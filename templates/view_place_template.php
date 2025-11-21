@@ -1572,6 +1572,70 @@ extract($template_vars ?? []);
 </script>
 <?php endif; ?>
 
+<!-- Script pour charger les personnages d'un joueur -->
+<?php if ($canEdit && hasCampaignId($place)): ?>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const playerSelect = document.getElementById('playerSelect');
+        const characterSelect = document.getElementById('characterSelect');
+        
+        if (playerSelect && characterSelect) {
+            playerSelect.addEventListener('change', function() {
+                const playerId = this.value;
+                
+                // Réinitialiser le select des personnages
+                characterSelect.innerHTML = '<option value="">Chargement...</option>';
+                characterSelect.disabled = true;
+                
+                if (!playerId) {
+                    characterSelect.innerHTML = '<option value="">Sélectionner un personnage</option>';
+                    characterSelect.disabled = false;
+                    return;
+                }
+                
+                // Charger les personnages du joueur sélectionné
+                const campaignId = document.querySelector('input[name="campaign_id"]')?.value || null;
+                fetch('api/get_player_characters.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        player_id: playerId,
+                        campaign_id: campaignId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    characterSelect.innerHTML = '<option value="">Sélectionner un personnage</option>';
+                    
+                    if (data.success && data.characters && data.characters.length > 0) {
+                        data.characters.forEach(function(character) {
+                            const option = document.createElement('option');
+                            option.value = character.id;
+                            option.textContent = character.name;
+                            characterSelect.appendChild(option);
+                        });
+                    } else {
+                        const option = document.createElement('option');
+                        option.value = '';
+                        option.textContent = 'Aucun personnage disponible';
+                        characterSelect.appendChild(option);
+                    }
+                    
+                    characterSelect.disabled = false;
+                })
+                .catch(error => {
+                    console.error('Erreur lors du chargement des personnages:', error);
+                    characterSelect.innerHTML = '<option value="">Erreur lors du chargement</option>';
+                    characterSelect.disabled = false;
+                });
+            });
+        }
+    });
+</script>
+<?php endif; ?>
+
 <!-- Script pour la modale de téléportation -->
 <?php if ($canEdit && !empty($worldPlaces)): ?>
 <script>

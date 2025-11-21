@@ -960,6 +960,23 @@ $current_page = "admin";
                                 
                                 <hr>
                                 
+                                <!-- Section Outils de Maintenance -->
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <h6 class="text-danger mb-3">
+                                            <i class="fas fa-wrench"></i> Outils de Maintenance
+                                        </h6>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <a href="check_orphan_characters.php" class="btn btn-danger w-100">
+                                            <i class="fas fa-search"></i> Personnages Orphelins
+                                        </a>
+                                        <small class="text-muted d-block mt-1">Vérifier et corriger les personnages acceptés dans une campagne mais non présents dans un lieu</small>
+                                    </div>
+                                </div>
+                                
+                                <hr>
+                                
                                 <div class="row">
                                     <div class="col-12">
                                         <h6><i class="fas fa-info-circle"></i> Informations sur les onglets</h6>

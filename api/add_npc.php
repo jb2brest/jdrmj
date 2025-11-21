@@ -35,20 +35,35 @@ try {
         throw new Exception('Lieu non trouvé');
     }
     
+    // Vérifier les permissions (même logique que view_place.php)
+    require_once '../classes/User.php';
+    require_once '../classes/Campaign.php';
+    
+    $campaigns = $lieu->getCampaigns();
+    $dm_id = 0;
+    if (!empty($campaigns)) {
+        $dm_id = (int)$campaigns[0]['dm_id'];
+    }
+    
+    $isOwnerDM = User::isDMOrAdmin() && ($dm_id === 0 || $_SESSION['user_id'] === $dm_id);
+    
+    if (!$isOwnerDM) {
+        throw new Exception('Vous n\'avez pas la permission d\'ajouter un PNJ à ce lieu');
+    }
+    
     // Ajouter le PNJ
     $pdo = getPDO();
     $stmt = $pdo->prepare("
-        INSERT INTO place_npcs (place_id, name, description, npc_character_id, is_visible, is_identified)
-        VALUES (?, ?, ?, ?, 1, 0)
+        INSERT INTO place_npcs (place_id, name, description, npc_character_id, is_visible, is_identified, monster_id)
+        VALUES (?, ?, ?, ?, 1, 0, NULL)
     ");
     
     $success = $stmt->execute([$placeId, $name, $description, $characterId ?: null]);
     
     if ($success) {
-        echo json_encode([
-            'success' => true,
-            'message' => 'PNJ ajouté avec succès'
-        ]);
+        // Rediriger vers la page du lieu pour recharger
+        header('Location: ../view_place.php?id=' . $placeId . '&npc_added=1');
+        exit();
     } else {
         throw new Exception('Erreur lors de l\'ajout du PNJ');
     }

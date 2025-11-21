@@ -6,8 +6,7 @@
 require_once '../includes/functions.php';
 require_once '../classes/Lieu.php';
 
-header('Content-Type: application/json');
-header('X-Requested-With: XMLHttpRequest');
+// Ne pas définir Content-Type JSON car on va rediriger
 
 try {
     // Vérifier la méthode HTTP
@@ -35,23 +34,42 @@ try {
         throw new Exception('Lieu non trouvé');
     }
     
+    // Vérifier que le personnage est accepté dans la campagne
+    $pdo = getPDO();
+    $stmt = $pdo->prepare("
+        SELECT 1 FROM campaign_applications
+        WHERE campaign_id = ? AND player_id = ? AND character_id = ? AND status = 'approved'
+    ");
+    $stmt->execute([$campaignId, $playerId, $characterId]);
+    if (!$stmt->fetch()) {
+        throw new Exception('Ce personnage n\'est pas accepté dans cette campagne.');
+    }
+    
     // Ajouter le joueur
     $result = $lieu->addPlayer($playerId, $characterId, $campaignId);
     
     if ($result['success']) {
-        echo json_encode([
-            'success' => true,
-            'message' => $result['message']
-        ]);
+        // Rediriger vers la page du lieu pour recharger
+        header('Location: ../view_place.php?id=' . $placeId . '&player_added=1');
+        exit();
     } else {
         throw new Exception($result['message']);
     }
     
 } catch (Exception $e) {
     error_log("Erreur add_player.php: " . $e->getMessage());
-    echo json_encode([
-        'success' => false,
-        'error' => $e->getMessage()
-    ]);
+    // Rediriger vers la page du lieu avec un message d'erreur
+    $placeId = isset($_POST['place_id']) ? (int)$_POST['place_id'] : 0;
+    if ($placeId) {
+        $_SESSION['error_message'] = $e->getMessage();
+        header('Location: ../view_place.php?id=' . $placeId);
+    } else {
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => false,
+            'error' => $e->getMessage()
+        ]);
+    }
+    exit();
 }
 ?>
