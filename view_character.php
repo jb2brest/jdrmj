@@ -295,7 +295,12 @@ $error_message = null;
         <div class="zone-de-titre">
             <div class="zone-titre-container">
                 <h1 class="titre-zone">
-                <i class="fas fa-user-ninja me-2"></i><?php echo htmlspecialchars($character->name); ?>
+                <i class="fas fa-user-ninja me-2"></i><span id="characterNameDisplay"><?php echo htmlspecialchars($character->name); ?></span>
+                <?php if ($isOwner || $isDM || $isAdmin): ?>
+                    <button type="button" class="btn btn-sm btn-outline-light ms-2" data-bs-toggle="modal" data-bs-target="#renameCharacterModal" title="Renommer le personnage">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                <?php endif; ?>
             </h1>
             <div>
                     <a href="characters.php" class="btn-txt">
@@ -406,6 +411,34 @@ $error_message = null;
     <!-- Modal pour Upload de Photo de Profil -->
     <?php if ($canModifyHP): ?>
         <?php include_once 'templates/modal_change_profil_photo.php'; ?>
+        
+        <!-- Modal pour renommer le personnage -->
+        <?php if ($isOwner || $isDM || $isAdmin): ?>
+        <div class="modal fade" id="renameCharacterModal" tabindex="-1" aria-labelledby="renameCharacterModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="renameCharacterModalLabel">Renommer le personnage</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form id="renameCharacterForm">
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="newCharacterName" class="form-label">Nouveau nom</label>
+                                <input type="text" class="form-control" id="newCharacterName" name="new_name" value="<?php echo htmlspecialchars($character->name); ?>" required>
+                                <input type="hidden" name="character_id" value="<?php echo $character->id; ?>">
+                                <input type="hidden" name="character_type" value="pj">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                            <button type="submit" class="btn btn-primary">Renommer</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
     <?php endif; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

@@ -516,7 +516,12 @@ $target_type = 'PNJ';
         <div class="zone-de-titre">
             <div class="zone-titre-container">
                 <h1 class="titre-zone">
-                <i class="fas fa-user-ninja me-2"></i><?php echo htmlspecialchars($npc->name); ?>
+                <i class="fas fa-user-ninja me-2"></i><span id="npcNameDisplay"><?php echo htmlspecialchars($npc->name); ?></span>
+                <?php if ($isOwner || $isDM): ?>
+                    <button type="button" class="btn btn-sm btn-outline-light ms-2" data-bs-toggle="modal" data-bs-target="#renameNpcModal" title="Renommer le PNJ">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                <?php endif; ?>
             </h1>
             <div>
                     <a href="manage_npcs.php" class="btn-txt">
@@ -633,6 +638,34 @@ $target_type = 'PNJ';
     <?php if ($canModifyHP): ?>
         <?php include_once 'templates/modal_change_profil_photo.php'; ?>
     <?php endif; ?>
+    
+    <!-- Modal pour renommer le PNJ -->
+    <?php if ($isOwner || $isDM): ?>
+    <div class="modal fade" id="renameNpcModal" tabindex="-1" aria-labelledby="renameNpcModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="renameNpcModalLabel">Renommer le PNJ</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="renameNpcForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="newNpcName" class="form-label">Nouveau nom</label>
+                            <input type="text" class="form-control" id="newNpcName" name="new_name" value="<?php echo htmlspecialchars($npc->name); ?>" required>
+                            <input type="hidden" name="character_id" value="<?php echo $npc->id; ?>">
+                            <input type="hidden" name="character_type" value="pnj">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Renommer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/jdrmj.js"></script>
@@ -650,6 +683,50 @@ $target_type = 'PNJ';
             // Initialiser les gestionnaires d'événements pour les NPCs
             if (typeof initializeNpcEventHandlers === 'function') {
                 initializeNpcEventHandlers();
+            }
+            
+            // Gestion du renommage du PNJ
+            const renameNpcForm = document.getElementById('renameNpcForm');
+            if (renameNpcForm) {
+                renameNpcForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(renameNpcForm);
+                    const submitButton = renameNpcForm.querySelector('button[type="submit"]');
+                    const originalText = submitButton.textContent;
+                    
+                    submitButton.disabled = true;
+                    submitButton.textContent = 'Enregistrement...';
+                    
+                    fetch('api/update_character_name.php', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Mettre à jour l'affichage du nom
+                            document.getElementById('npcNameDisplay').textContent = formData.get('new_name');
+                            // Fermer le modal
+                            const modal = bootstrap.Modal.getInstance(document.getElementById('renameNpcModal'));
+                            modal.hide();
+                            // Afficher un message de succès
+                            alert('Nom du PNJ mis à jour avec succès');
+                            // Recharger la page pour mettre à jour le titre
+                            window.location.reload();
+                        } else {
+                            alert('Erreur : ' + (data.error || 'Erreur inconnue'));
+                            submitButton.disabled = false;
+                            submitButton.textContent = originalText;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur:', error);
+                        alert('Erreur lors de la mise à jour du nom');
+                        submitButton.disabled = false;
+                        submitButton.textContent = originalText;
+                    });
+                });
             }
         });
     </script>
