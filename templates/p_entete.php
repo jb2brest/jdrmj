@@ -96,6 +96,19 @@ if (!isset($canModifyHP)) {
                         <?php endif; ?>
                     </p>
                 <?php endif; ?>
+                <?php if (isset($character_place_name_for_template) && !empty($character_place_name_for_template)): ?>
+                    <p>
+                        <i class="fas fa-map-marker-alt me-1"></i>
+                        <strong>Lieu:</strong> 
+                        <?php if (isset($character_place_id_for_template) && $character_place_id_for_template): ?>
+                            <a href="view_place.php?id=<?php echo $character_place_id_for_template; ?>" class="text-decoration-none">
+                                <?php echo htmlspecialchars($character_place_name_for_template); ?>
+                            </a>
+                        <?php else: ?>
+                            <?php echo htmlspecialchars($character_place_name_for_template); ?>
+                        <?php endif; ?>
+                    </p>
+                <?php endif; ?>
                 <?php if (isset($characterArchetype) && $characterArchetype): ?>
                     <p>
                         <i class="fas fa-magic me-1"></i>

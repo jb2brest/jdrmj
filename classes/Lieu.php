@@ -1832,6 +1832,40 @@ class Lieu
         $pdo = $pdo ?: getPDO();
         
         try {
+            // Récupérer la campagne du lieu source
+            $stmt = $pdo->prepare("
+                SELECT campaign_id 
+                FROM place_campaigns 
+                WHERE place_id = ?
+                LIMIT 1
+            ");
+            $stmt->execute([$fromPlaceId]);
+            $campaign = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            // Si le lieu source est associé à une campagne, s'assurer que le lieu de destination l'est aussi
+            if ($campaign && isset($campaign['campaign_id'])) {
+                $campaignId = (int)$campaign['campaign_id'];
+                
+                // Vérifier si le lieu de destination est déjà associé à cette campagne
+                $stmt = $pdo->prepare("
+                    SELECT 1 
+                    FROM place_campaigns 
+                    WHERE place_id = ? AND campaign_id = ?
+                ");
+                $stmt->execute([$toPlaceId, $campaignId]);
+                $alreadyAssociated = $stmt->fetch();
+                
+                // Si le lieu de destination n'est pas associé à la campagne, l'associer
+                if (!$alreadyAssociated) {
+                    $stmt = $pdo->prepare("
+                        INSERT IGNORE INTO place_campaigns (place_id, campaign_id, created_at, updated_at)
+                        VALUES (?, ?, NOW(), NOW())
+                    ");
+                    $stmt->execute([$toPlaceId, $campaignId]);
+                }
+            }
+            
+            // Transférer le joueur
             $stmt = $pdo->prepare("UPDATE place_players SET place_id = ? WHERE place_id = ? AND player_id = ?");
             return $stmt->execute([$toPlaceId, $fromPlaceId, $playerId]);
         } catch (PDOException $e) {

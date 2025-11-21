@@ -97,6 +97,30 @@ $allLanguages = array_unique(array_merge($characterLanguages, $backgroundLanguag
 // Définir $allTools comme tableau vide pour l'instant
 $allTools = [];
 
+// Récupérer le lieu du personnage
+$character_place_id = null;
+$character_place_name = null;
+try {
+    $pdo = Database::getInstance()->getPdo();
+    // Chercher dans place_players avec le character_id
+    $stmt = $pdo->prepare("
+        SELECT pp.place_id, p.title as place_name
+        FROM place_players pp
+        JOIN places p ON pp.place_id = p.id
+        WHERE pp.character_id = ?
+        LIMIT 1
+    ");
+    $stmt->execute([$character_id]);
+    $placePlayer = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($placePlayer) {
+        $character_place_id = $placePlayer['place_id'];
+        $character_place_name = $placePlayer['place_name'];
+    }
+} catch (PDOException $e) {
+    error_log("Erreur lors de la récupération du lieu du personnage: " . $e->getMessage());
+}
+
 // Vérifier si c'est un barbare pour les rages
 $isBarbarian = $classObject && strpos(strtolower($classObject->name), 'barbare') !== false;
 $rageData = null;
@@ -306,13 +330,23 @@ $error_message = null;
                     <a href="characters.php" class="btn-txt">
                     <i class="fas fa-arrow-left me-2"></i>Retour
                 </a>
+                <?php if ($character_place_id): ?>
+                    <a href="view_place.php?id=<?php echo $character_place_id; ?>" class="btn-txt ms-2" title="Voir le lieu : <?php echo htmlspecialchars($character_place_name); ?>">
+                        <i class="fas fa-map-marker-alt me-2"></i>Voir le lieu
+                    </a>
+                <?php endif; ?>
                 </div>
             </div>
         </div>
 
         <!-- Zone d'en-tête -->
         <div class="zone-d-entete">
-            <?php include_once 'templates/p_entete.php'; ?>
+            <?php 
+            // Passer le nom et l'ID du lieu au template (peuvent être null)
+            $character_place_name_for_template = $character_place_name ?? null;
+            $character_place_id_for_template = $character_place_id ?? null;
+            include_once 'templates/p_entete.php'; 
+            ?>
             </div>
 
         <!-- Zone des onglets -->
