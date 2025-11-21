@@ -255,12 +255,27 @@ extract($template_vars ?? []);
                                 <div class="card h-100">
                                     <div class="card-header d-flex justify-content-between align-items-center">
                                         <div class="d-flex align-items-center">
-                                            <?php if (!empty($entity['profile_photo'])): ?>
-                                                <img src="<?php echo htmlspecialchars($entity['profile_photo']); ?>" 
-                                                     alt="Photo" class="rounded me-2" style="width: 32px; height: 32px; object-fit: cover;">
+                                            <?php 
+                                            // Pour les PNJ, utiliser profile_photo
+                                            // Pour les monstres, utiliser profile_photo si défini, sinon image_url (image du monstre D&D)
+                                            $photoUrl = null;
+                                            if ($entity['entity_type'] === 'PNJ') {
+                                                $photoUrl = $entity['profile_photo'] ?? null;
+                                            } else {
+                                                // Monstre : priorité à profile_photo (photo personnalisée), sinon image_url (image D&D)
+                                                $photoUrl = $entity['profile_photo'] ?? $entity['image_url'] ?? null;
+                                            }
+                                            ?>
+                                            <?php if (!empty($photoUrl)): ?>
+                                                <img src="<?php echo htmlspecialchars($photoUrl); ?>" 
+                                                     alt="Photo" class="rounded me-2" style="width: 32px; height: 32px; object-fit: cover;"
+                                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                                <div class="bg-secondary rounded me-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; display: none;">
+                                                    <i class="fas fa-<?php echo $entity['entity_type'] === 'PNJ' ? 'user' : 'dragon'; ?> text-white"></i>
+                                                </div>
                                             <?php else: ?>
                                                 <div class="bg-secondary rounded me-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                                                    <i class="fas fa-user text-white"></i>
+                                                    <i class="fas fa-<?php echo $entity['entity_type'] === 'PNJ' ? 'user' : 'dragon'; ?> text-white"></i>
                                                 </div>
                                             <?php endif; ?>
                                             <div>

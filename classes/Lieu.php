@@ -530,22 +530,111 @@ class Lieu
     
     /**
      * Obtenir tous les PNJ présents dans ce lieu avec informations détaillées (pour view_place.php)
+     * Inclut les PNJ dans place_npcs ET les PNJ avec location_id correspondant
      */
     public function getAllNpcsDetailed()
     {
         try {
+            // Récupérer les PNJ depuis place_npcs
             $stmt = $this->pdo->prepare("
                 SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, sn.is_visible, sn.is_identified, 
                        c.profile_photo AS character_profile_photo, c.hit_points_current, c.hit_points_max,
-                       n.profile_photo AS npc_profile_photo
+                       n.profile_photo AS npc_profile_photo, n.hit_points_current AS npc_hit_points_current, n.hit_points_max AS npc_hit_points_max
                 FROM place_npcs sn 
                 LEFT JOIN characters c ON sn.npc_character_id = c.id 
                 LEFT JOIN npcs n ON sn.npc_character_id = n.id
                 WHERE sn.place_id = ? AND sn.monster_id IS NULL 
-                ORDER BY sn.name ASC
             ");
             $stmt->execute([$this->id]);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $placeNpcs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Récupérer les PNJ depuis npcs avec location_id correspondant (mais pas déjà dans place_npcs)
+            $npcIdsInPlaceNpcs = [];
+            foreach ($placeNpcs as $npc) {
+                if (!empty($npc['npc_character_id'])) {
+                    $npcIdsInPlaceNpcs[] = (int)$npc['npc_character_id'];
+                }
+            }
+            
+            $stmt2 = null;
+            $npcsFromLocation = [];
+            if (empty($npcIdsInPlaceNpcs)) {
+                // Aucun PNJ dans place_npcs, récupérer tous ceux avec location_id
+                $stmt2 = $this->pdo->prepare("
+                    SELECT NULL as id, n.name, n.backstory as description, n.id as npc_character_id, 
+                           n.profile_photo, 1 as is_visible, 1 as is_identified,
+                           NULL AS character_profile_photo, NULL as hit_points_current, NULL as hit_points_max,
+                           n.profile_photo AS npc_profile_photo, n.hit_points_current AS npc_hit_points_current, n.hit_points_max AS npc_hit_points_max
+                    FROM npcs n
+                    WHERE n.location_id = ? AND n.is_active = 1
+                ");
+                $stmt2->execute([$this->id]);
+            } else {
+                // Exclure ceux déjà dans place_npcs
+                $placeholders = implode(',', array_fill(0, count($npcIdsInPlaceNpcs), '?'));
+                $stmt2 = $this->pdo->prepare("
+                    SELECT NULL as id, n.name, n.backstory as description, n.id as npc_character_id, 
+                           n.profile_photo, 1 as is_visible, 1 as is_identified,
+                           NULL AS character_profile_photo, NULL as hit_points_current, NULL as hit_points_max,
+                           n.profile_photo AS npc_profile_photo, n.hit_points_current AS npc_hit_points_current, n.hit_points_max AS npc_hit_points_max
+                    FROM npcs n
+                    WHERE n.location_id = ? AND n.is_active = 1 AND n.id NOT IN ($placeholders)
+                ");
+                $params = array_merge([$this->id], $npcIdsInPlaceNpcs);
+                $stmt2->execute($params);
+            }
+            $npcsFromLocation = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Créer automatiquement une entrée dans place_npcs pour les NPCs qui n'y sont pas encore
+            foreach ($npcsFromLocation as $npcFromLocation) {
+                $npcCharacterId = (int)$npcFromLocation['npc_character_id'];
+                $npcName = $npcFromLocation['name'];
+                $npcDescription = $npcFromLocation['description'] ?? '';
+                $npcProfilePhoto = $npcFromLocation['profile_photo'] ?? null;
+                
+                try {
+                    $stmtInsert = $this->pdo->prepare("
+                        INSERT INTO place_npcs (place_id, name, description, npc_character_id, profile_photo, is_visible, is_identified, monster_id)
+                        VALUES (?, ?, ?, ?, ?, 1, 1, NULL)
+                    ");
+                    $stmtInsert->execute([
+                        $this->id,
+                        $npcName,
+                        $npcDescription,
+                        $npcCharacterId,
+                        $npcProfilePhoto
+                    ]);
+                    
+                    // Récupérer l'ID créé et mettre à jour le tableau
+                    $newPlaceNpcId = $this->pdo->lastInsertId();
+                    
+                    // Récupérer les données complètes de ce nouveau PNJ
+                    $stmtNew = $this->pdo->prepare("
+                        SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, sn.is_visible, sn.is_identified, 
+                               c.profile_photo AS character_profile_photo, c.hit_points_current, c.hit_points_max,
+                               n.profile_photo AS npc_profile_photo, n.hit_points_current AS npc_hit_points_current, n.hit_points_max AS npc_hit_points_max
+                        FROM place_npcs sn 
+                        LEFT JOIN characters c ON sn.npc_character_id = c.id 
+                        LEFT JOIN npcs n ON sn.npc_character_id = n.id
+                        WHERE sn.id = ?
+                    ");
+                    $stmtNew->execute([$newPlaceNpcId]);
+                    $newPlaceNpc = $stmtNew->fetch(PDO::FETCH_ASSOC);
+                    
+                    if ($newPlaceNpc) {
+                        $placeNpcs[] = $newPlaceNpc;
+                    }
+                } catch (PDOException $e) {
+                    error_log("Erreur lors de la création automatique dans place_npcs pour NPC ID $npcCharacterId: " . $e->getMessage());
+                }
+            }
+            
+            // Trier par nom
+            usort($placeNpcs, function($a, $b) {
+                return strcmp($a['name'], $b['name']);
+            });
+            
+            return $placeNpcs;
         } catch (PDOException $e) {
             error_log("Erreur lors de la récupération des PNJ détaillés: " . $e->getMessage());
             return [];
@@ -2115,7 +2204,7 @@ class Lieu
                     pn.id,
                     pn.name,
                     pn.description,
-                    pn.profile_photo,
+                    COALESCE(pn.profile_photo, n.profile_photo) as profile_photo,
                     pn.is_visible,
                     pn.is_identified,
                     pn.quantity,
@@ -2130,6 +2219,7 @@ class Lieu
                     w.name as world_name,
                     w.id as world_id
                 FROM place_npcs pn
+                LEFT JOIN npcs n ON pn.npc_character_id = n.id
                 JOIN places p ON pn.place_id = p.id
                 JOIN countries c ON p.country_id = c.id
                 LEFT JOIN regions reg ON p.region_id = reg.id
@@ -2254,6 +2344,7 @@ class Lieu
                     pn.name,
                     pn.description,
                     pn.profile_photo,
+                    COALESCE(pn.profile_photo, dt.image_url) as image_url,
                     pn.is_visible,
                     pn.is_identified,
                     pn.quantity,
@@ -2317,6 +2408,8 @@ class Lieu
                     m.id,
                     m.name,
                     m.description,
+                    m.image_url as profile_photo,
+                    COALESCE(m.image_url, dt.image_url) as image_url,
                     m.is_visible,
                     m.is_identified,
                     m.quantity,

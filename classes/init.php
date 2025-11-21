@@ -32,6 +32,7 @@ require_once __DIR__ . '/EquipementChoix.php';
 require_once __DIR__ . '/EquipementOption.php';
 require_once __DIR__ . '/Thematique.php';
 require_once __DIR__ . '/Information.php';
+require_once __DIR__ . '/NpcNameGenerator.php';
 
 // Initialiser l'Univers unique
 try {

@@ -237,7 +237,16 @@ try {
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="custom_name" class="form-label">Nom personnalisé</label>
-                                        <input type="text" class="form-control" id="custom_name" name="custom_name" placeholder="Laissez vide pour un nom aléatoire">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="custom_name" name="custom_name" placeholder="Laissez vide pour un nom aléatoire">
+                                            <button type="button" class="btn btn-outline-primary" id="generateNameBtn" title="Générer des suggestions de noms">
+                                                <i class="fas fa-magic"></i>
+                                            </button>
+                                        </div>
+                                        <div id="nameSuggestions" class="mt-2" style="display: none;">
+                                            <small class="text-muted d-block mb-1">Suggestions :</small>
+                                            <div id="suggestionsList" class="d-flex flex-wrap gap-1"></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -360,6 +369,71 @@ try {
             regionSelect.addEventListener('change', function() {
                 updatePlaces(countrySelect.value, this.value);
             });
+            
+            // Gestion de la génération de noms
+            const generateNameBtn = document.getElementById('generateNameBtn');
+            const nameInput = document.getElementById('custom_name');
+            const suggestionsDiv = document.getElementById('nameSuggestions');
+            const suggestionsList = document.getElementById('suggestionsList');
+            const raceSelect = document.getElementById('race');
+            const classSelect = document.getElementById('class');
+            
+            if (generateNameBtn) {
+                generateNameBtn.addEventListener('click', function() {
+                    const raceId = raceSelect.value;
+                    const classId = classSelect.value;
+                    
+                    if (!raceId || !classId) {
+                        alert('Veuillez sélectionner une race et une classe');
+                        return;
+                    }
+                    
+                    // Afficher un indicateur de chargement
+                    generateNameBtn.disabled = true;
+                    generateNameBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    suggestionsList.innerHTML = '<small class="text-muted">Génération...</small>';
+                    suggestionsDiv.style.display = 'block';
+                    
+                    // Appeler l'API
+                    const formData = new FormData();
+                    formData.append('race_id', raceId);
+                    formData.append('class_id', classId);
+                    formData.append('count', 5);
+                    
+                    fetch('api/generate_npc_name.php', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        generateNameBtn.disabled = false;
+                        generateNameBtn.innerHTML = '<i class="fas fa-magic"></i>';
+                        
+                        if (data.success && data.suggestions && data.suggestions.length > 0) {
+                            suggestionsList.innerHTML = '';
+                            data.suggestions.forEach(function(suggestion) {
+                                const badge = document.createElement('button');
+                                badge.type = 'button';
+                                badge.className = 'btn btn-sm btn-outline-primary';
+                                badge.textContent = suggestion;
+                                badge.style.marginBottom = '5px';
+                                badge.addEventListener('click', function() {
+                                    nameInput.value = suggestion;
+                                });
+                                suggestionsList.appendChild(badge);
+                            });
+                        } else {
+                            suggestionsList.innerHTML = '<small class="text-danger">Aucune suggestion disponible</small>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur:', error);
+                        generateNameBtn.disabled = false;
+                        generateNameBtn.innerHTML = '<i class="fas fa-magic"></i>';
+                        suggestionsList.innerHTML = '<small class="text-danger">Erreur lors de la génération</small>';
+                    });
+                });
+            }
         });
     </script>
 </body>

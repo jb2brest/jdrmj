@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.25.42
+VERSION=2.25.43
 
 # Date de déploiement
 DEPLOY_DATE=2025-11-21
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-11-21
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=34fab7124d373ab783f727f6819b69bf4c55d53c
+GIT_COMMIT=a70496af5c477f424317f6637dc1f120e6f5e30f
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251121-104950
+BUILD_ID=20251121-144700
 
 # Notes de version
-RELEASE_NOTES="Renommage PNJ"
+RELEASE_NOTES="Affichage PNJ dans les lieux"

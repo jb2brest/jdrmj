@@ -82,7 +82,20 @@ if (!isset($canModifyHP)) {
                 <p>
                     <i class="fas fa-balance-scale me-1"></i>
                     <strong>Alignement:</strong> <?php echo htmlspecialchars($alignment); ?>
-                </p>                            
+                </p>
+                <?php if (isset($npc_place_name_for_template) && !empty($npc_place_name_for_template)): ?>
+                    <p>
+                        <i class="fas fa-map-marker-alt me-1"></i>
+                        <strong>Lieu:</strong> 
+                        <?php if (isset($npc_place_id_for_template) && $npc_place_id_for_template): ?>
+                            <a href="view_place.php?id=<?php echo $npc_place_id_for_template; ?>" class="text-decoration-none">
+                                <?php echo htmlspecialchars($npc_place_name_for_template); ?>
+                            </a>
+                        <?php else: ?>
+                            <?php echo htmlspecialchars($npc_place_name_for_template); ?>
+                        <?php endif; ?>
+                    </p>
+                <?php endif; ?>
                 <?php if (isset($characterArchetype) && $characterArchetype): ?>
                     <p>
                         <i class="fas fa-magic me-1"></i>

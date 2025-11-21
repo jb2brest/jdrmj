@@ -345,6 +345,40 @@ $charismaModifier = $abilityModifiers['charisma'];
 $characterAttacks = $npc->calculateMyCharacterAttacks();
 $armorClass = $npc->getCA();
 
+// Récupérer le lieu du PNJ
+$npc_place_id = null;
+$npc_place_name = null;
+try {
+    $pdo = Database::getInstance()->getPdo();
+    // D'abord, vérifier si le PNJ est dans place_npcs
+    $stmt = $pdo->prepare("
+        SELECT pn.place_id, p.title as place_name
+        FROM place_npcs pn
+        JOIN places p ON pn.place_id = p.id
+        WHERE pn.npc_character_id = ? AND pn.monster_id IS NULL
+        LIMIT 1
+    ");
+    $stmt->execute([$npc_id]);
+    $placeNpc = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if ($placeNpc) {
+        $npc_place_id = $placeNpc['place_id'];
+        $npc_place_name = $placeNpc['place_name'];
+    } else {
+        // Sinon, vérifier location_id dans npcs
+        if (!empty($npc->location_id)) {
+            $stmt = $pdo->prepare("SELECT id, title FROM places WHERE id = ?");
+            $stmt->execute([$npc->location_id]);
+            $place = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($place) {
+                $npc_place_id = $place['id'];
+                $npc_place_name = $place['title'];
+            }
+        }
+    }
+} catch (PDOException $e) {
+    error_log("Erreur lors de la récupération du lieu du PNJ: " . $e->getMessage());
+}
 
 // Contrôle d'accès: propriétaire OU MJ
 $canView = ($npc->created_by == $_SESSION['user_id']);
@@ -474,7 +508,9 @@ $flaws = $npc->flaws;
 $target_id = $npc->id;
 $target_type = 'PNJ';
 
-
+// Passer le nom et l'ID du lieu au template (peuvent être null)
+$npc_place_name_for_template = $npc_place_name ?? null;
+$npc_place_id_for_template = $npc_place_id ?? null;
 
 ?>
 <!DOCTYPE html>
@@ -527,6 +563,11 @@ $target_type = 'PNJ';
                     <a href="manage_npcs.php" class="btn-txt">
                     <i class="fas fa-arrow-left me-2"></i>Retour
                 </a>
+                <?php if ($npc_place_id): ?>
+                    <a href="view_place.php?id=<?php echo $npc_place_id; ?>" class="btn-txt ms-2" title="Voir le lieu : <?php echo htmlspecialchars($npc_place_name); ?>">
+                        <i class="fas fa-map-marker-alt me-2"></i>Voir le lieu
+                    </a>
+                <?php endif; ?>
                 </div>
             </div>
         </div>

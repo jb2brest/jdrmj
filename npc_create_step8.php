@@ -331,9 +331,22 @@ if ($selectedRace && isset($raceSuggestions[$selectedRace['name']])) {
                                     <div class="col-md-6">
                                         <div class="mb-3">
                                             <label for="name" class="form-label">Nom du PNJ <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control" id="name" name="name" required 
-                                                   value="<?php echo htmlspecialchars($data['name'] ?? ''); ?>"
-                                                   placeholder="Ex: Aelindra Vaelen">
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" id="name" name="name" required 
+                                                       value="<?php echo htmlspecialchars($data['name'] ?? ''); ?>"
+                                                       placeholder="Ex: Aelindra Vaelen">
+                                                <?php if ($selectedRaceId && $selectedClassId): ?>
+                                                <button type="button" class="btn btn-outline-primary" id="generateNameBtn" title="Générer des suggestions de noms">
+                                                    <i class="fas fa-magic"></i>
+                                                </button>
+                                                <?php endif; ?>
+                                            </div>
+                                            <?php if ($selectedRaceId && $selectedClassId): ?>
+                                            <div id="nameSuggestions" class="mt-2" style="display: none;">
+                                                <small class="text-muted d-block mb-1">Suggestions :</small>
+                                                <div id="suggestionsList" class="d-flex flex-wrap gap-1"></div>
+                                            </div>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -488,6 +501,73 @@ if ($selectedRace && isset($raceSuggestions[$selectedRace['name']])) {
                 if (weightInput && !weightInput.value) {
                     weightInput.placeholder = 'Ex: ' + suggestions.weight_range.split('-')[0].trim();
                 }
+            }
+            
+            // Gestion de la génération de noms
+            const generateNameBtn = document.getElementById('generateNameBtn');
+            const nameInput = document.getElementById('name');
+            const suggestionsDiv = document.getElementById('nameSuggestions');
+            const suggestionsList = document.getElementById('suggestionsList');
+            
+            if (generateNameBtn) {
+                generateNameBtn.addEventListener('click', function() {
+                    const raceId = <?php echo $selectedRaceId ?? 0; ?>;
+                    const classId = <?php echo $selectedClassId ?? 0; ?>;
+                    const backgroundId = <?php echo $selectedBackgroundId ?? 'null'; ?>;
+                    
+                    if (!raceId || !classId) {
+                        alert('Veuillez sélectionner une race et une classe');
+                        return;
+                    }
+                    
+                    // Afficher un indicateur de chargement
+                    generateNameBtn.disabled = true;
+                    generateNameBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    suggestionsList.innerHTML = '<small class="text-muted">Génération...</small>';
+                    suggestionsDiv.style.display = 'block';
+                    
+                    // Appeler l'API
+                    const formData = new FormData();
+                    formData.append('race_id', raceId);
+                    formData.append('class_id', classId);
+                    if (backgroundId) {
+                        formData.append('background_id', backgroundId);
+                    }
+                    formData.append('count', 5);
+                    
+                    fetch('api/generate_npc_name.php', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        generateNameBtn.disabled = false;
+                        generateNameBtn.innerHTML = '<i class="fas fa-magic"></i>';
+                        
+                        if (data.success && data.suggestions && data.suggestions.length > 0) {
+                            suggestionsList.innerHTML = '';
+                            data.suggestions.forEach(function(suggestion) {
+                                const badge = document.createElement('button');
+                                badge.type = 'button';
+                                badge.className = 'btn btn-sm btn-outline-primary';
+                                badge.textContent = suggestion;
+                                badge.style.marginBottom = '5px';
+                                badge.addEventListener('click', function() {
+                                    nameInput.value = suggestion;
+                                });
+                                suggestionsList.appendChild(badge);
+                            });
+                        } else {
+                            suggestionsList.innerHTML = '<small class="text-danger">Aucune suggestion disponible</small>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur:', error);
+                        generateNameBtn.disabled = false;
+                        generateNameBtn.innerHTML = '<i class="fas fa-magic"></i>';
+                        suggestionsList.innerHTML = '<small class="text-danger">Erreur lors de la génération</small>';
+                    });
+                });
             }
         });
     </script>
