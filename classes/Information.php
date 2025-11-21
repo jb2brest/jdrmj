@@ -726,14 +726,38 @@ class Information
             } elseif ($target_type === 'PNJ') {
                 // Pour les NPC, il faut convertir npcs.id en place_npcs.id
                 // car information_access.npc_id référence place_npcs.id
+                
+                // Vérifier d'abord si le PNJ a des entrées dans place_npcs
                 $stmt = $pdo->prepare("
-                    SELECT DISTINCT ia.information_id
-                    FROM information_access ia
-                    INNER JOIN place_npcs pn ON ia.npc_id = pn.id
-                    WHERE ia.access_type = 'npc' AND pn.npc_character_id = ?
+                    SELECT id FROM place_npcs WHERE npc_character_id = ? AND monster_id IS NULL
                 ");
                 $stmt->execute([$target_id]);
-                $direct_information_ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+                $place_npc_ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+                
+                // Filtrer les valeurs NULL et vides, et réindexer le tableau
+                $place_npc_ids = array_values(array_filter($place_npc_ids, function($id) {
+                    return $id !== null && $id !== '' && is_numeric($id);
+                }));
+                
+                if (empty($place_npc_ids)) {
+                    // Aucune entrée dans place_npcs, donc aucune information accessible
+                    $direct_information_ids = [];
+                } else {
+                    try {
+                        // Récupérer les informations pour tous ces place_npcs
+                        $placeholders = implode(',', array_fill(0, count($place_npc_ids), '?'));
+                        $stmt = $pdo->prepare("
+                            SELECT DISTINCT information_id
+                            FROM information_access
+                            WHERE access_type = 'npc' AND npc_id IN ($placeholders)
+                        ");
+                        $stmt->execute($place_npc_ids);
+                        $direct_information_ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+                    } catch (PDOException $e) {
+                        error_log("Erreur SQL dans getAccessibleInformations pour PNJ: " . $e->getMessage() . " - place_npc_ids: " . implode(',', $place_npc_ids));
+                        $direct_information_ids = [];
+                    }
+                }
             } elseif ($target_type === 'Monster') {
                 $stmt = $pdo->prepare("
                     SELECT DISTINCT information_id
@@ -767,6 +791,8 @@ class Information
             
             // 4. Combiner toutes les IDs d'informations accessibles
             $all_information_ids = array_unique(array_merge($direct_information_ids, $group_information_ids));
+            // Réindexer pour éviter les problèmes de clés
+            $all_information_ids = array_values($all_information_ids);
             
             if (empty($all_information_ids)) {
                 return [];
@@ -777,7 +803,7 @@ class Information
             $all_sub_ids = [];
             if (!empty($all_information_ids)) {
                 // Récupération récursive : on commence avec les informations principales
-                $current_level_ids = $all_information_ids;
+                $current_level_ids = array_values($all_information_ids);
                 $processed_ids = [];
                 
                 // Boucle tant qu'on trouve de nouvelles sous-informations
@@ -793,6 +819,8 @@ class Information
                     
                     // Filtrer les IDs déjà traités pour éviter les boucles infinies
                     $next_level_ids = array_diff($next_level_ids, $processed_ids);
+                    // Réindexer le tableau après array_diff pour éviter les problèmes de clés
+                    $next_level_ids = array_values($next_level_ids);
                     
                     if (!empty($next_level_ids)) {
                         $all_sub_ids = array_merge($all_sub_ids, $next_level_ids);
@@ -803,17 +831,22 @@ class Information
                     }
                 }
                 
-                $sub_information_ids = array_unique($all_sub_ids);
+                $sub_information_ids = array_values(array_unique($all_sub_ids));
             }
             
             // 6. Combiner les informations principales et toutes leurs sous-informations (récursives)
-            $all_info_ids_with_subs = array_unique(array_merge($all_information_ids, $sub_information_ids));
+            $all_info_ids_with_subs = array_values(array_unique(array_merge($all_information_ids, $sub_information_ids)));
             
             if (empty($all_info_ids_with_subs)) {
                 return [];
             }
             
             // 7. Récupérer les informations principales avec leurs thématiques
+            // S'assurer que $all_information_ids est bien un tableau indexé numériquement
+            $all_information_ids = array_values(array_filter($all_information_ids, 'is_numeric'));
+            if (empty($all_information_ids)) {
+                return [];
+            }
             $placeholders_main = implode(',', array_fill(0, count($all_information_ids), '?'));
             $stmt = $pdo->prepare("
                 SELECT 
@@ -839,25 +872,29 @@ class Information
             // 7b. Récupérer les sous-informations (même sans thématique)
             $informations_sous = [];
             if (!empty($sub_information_ids)) {
-                $placeholders_subs = implode(',', array_fill(0, count($sub_information_ids), '?'));
-                $stmt = $pdo->prepare("
-                    SELECT 
-                        i.id,
-                        i.titre,
-                        i.description,
-                        i.niveau_confidentialite,
-                        i.statut,
-                        i.image_path,
-                        i.created_at,
-                        NULL as thematique_id,
-                        NULL as thematique_nom,
-                        NULL as ordre
-                    FROM informations i
-                    WHERE i.id IN ($placeholders_subs)
-                    ORDER BY i.titre ASC
-                ");
-                $stmt->execute($sub_information_ids);
-                $informations_sous = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                // S'assurer que $sub_information_ids est bien un tableau indexé numériquement
+                $sub_information_ids = array_values(array_filter($sub_information_ids, 'is_numeric'));
+                if (!empty($sub_information_ids)) {
+                    $placeholders_subs = implode(',', array_fill(0, count($sub_information_ids), '?'));
+                    $stmt = $pdo->prepare("
+                        SELECT 
+                            i.id,
+                            i.titre,
+                            i.description,
+                            i.niveau_confidentialite,
+                            i.statut,
+                            i.image_path,
+                            i.created_at,
+                            NULL as thematique_id,
+                            NULL as thematique_nom,
+                            NULL as ordre
+                        FROM informations i
+                        WHERE i.id IN ($placeholders_subs)
+                        ORDER BY i.titre ASC
+                    ");
+                    $stmt->execute($sub_information_ids);
+                    $informations_sous = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                }
             }
             
             // Combiner les deux listes
@@ -865,7 +902,9 @@ class Information
             
             // 8. Récupérer toutes les relations parent-enfant (pour toutes les informations, pas seulement les principales)
             // Cela permet de gérer les sous-informations récursives
-            $all_ids_for_relations = array_unique(array_merge($all_information_ids, $sub_information_ids));
+            $all_ids_for_relations = array_values(array_unique(array_merge($all_information_ids, $sub_information_ids)));
+            // Filtrer pour ne garder que les valeurs numériques
+            $all_ids_for_relations = array_values(array_filter($all_ids_for_relations, 'is_numeric'));
             if (!empty($all_ids_for_relations)) {
                 $placeholders_relations = implode(',', array_fill(0, count($all_ids_for_relations), '?'));
                 $stmt = $pdo->prepare("
