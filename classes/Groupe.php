@@ -602,6 +602,28 @@ class Groupe
     }
 
     /**
+     * Récupère tous les groupes
+     * 
+     * @param PDO $pdo Instance PDO (optionnelle)
+     * @return array Liste des groupes
+     */
+    public static function getAll(PDO $pdo = null)
+    {
+        try {
+            if ($pdo === null) {
+                $pdo = Database::getInstance()->getPdo();
+            }
+            $stmt = $pdo->query("SELECT * FROM groupes ORDER BY name ASC");
+            $groupsData = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            return $groupsData;
+        } catch (PDOException $e) {
+            error_log("Erreur lors de la récupération de tous les groupes: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
      * Convertit l'objet en tableau associatif
      * 
      * @return array Représentation en tableau de l'objet

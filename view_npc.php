@@ -627,6 +627,11 @@ $npc_place_id_for_template = $npc_place_id ?? null;
                                 <i class="fas fa-search me-2"></i>Infos
                             </button>
                         </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="btn-txt tab-button" data-module="groups" type="button">
+                                <i class="fas fa-users me-2"></i>Groupes
+                            </button>
+                        </li>
                     </ul>
                 </div>
 
@@ -708,15 +713,47 @@ $npc_place_id_for_template = $npc_place_id ?? null;
     </div>
     <?php endif; ?>
 
+    <!-- Modal pour changer le rang -->
+    <div class="modal fade" id="editRankModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Modifier le rang</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="editRankForm">
+                    <div class="modal-body">
+                        <input type="hidden" name="group_id" id="edit_rank_group_id">
+                        <input type="hidden" name="target_id" id="edit_rank_target_id">
+                        <input type="hidden" name="target_type" id="edit_rank_target_type">
+                        
+                        <div class="mb-3">
+                            <label for="edit_hierarchy_level" class="form-label">Nouveau rang</label>
+                            <select class="form-select" id="edit_hierarchy_level" name="new_rank" required>
+                                <!-- Chargé dynamiquement -->
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/jdrmj.js"></script>
     <script src="js/hp-management.js"></script>
     <script src="js/xp-management.js"></script>
     <script src="js/long-rest-management.js"></script>
+    <script src="js/groups.js"></script>
     
     
     <!-- Script pour l'initialisation des onglets modulaires -->
     <script>
+
         document.addEventListener('DOMContentLoaded', function() {
             // Initialiser le système d'onglets modulaire
             initializeModularTabs(<?php echo $npc->id; ?>, 'PNJ');
@@ -724,6 +761,11 @@ $npc_place_id_for_template = $npc_place_id ?? null;
             // Initialiser les gestionnaires d'événements pour les NPCs
             if (typeof initializeNpcEventHandlers === 'function') {
                 initializeNpcEventHandlers();
+            }
+
+            // Initialiser les événements pour les groupes
+            if (typeof initializeGroupEvents === 'function') {
+                initializeGroupEvents(<?php echo $npc->id; ?>, 'PNJ');
             }
             
             // Gestion du renommage du PNJ
