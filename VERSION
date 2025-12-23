@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.25.49
+VERSION=2.25.51
 
 # Date de déploiement
 DEPLOY_DATE=2025-12-23
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-12-23
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=db396f98061644e679fdf75943dab9822e3b5467
+GIT_COMMIT=95615f7051083b6e590dc7d0d603828097ddf2b8
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251223-104756
+BUILD_ID=20251223-115317
 
 # Notes de version
-RELEASE_NOTES="Ajout création automatique de PNJ dans un lieu + correction suppression PNJ dans un lieu"
+RELEASE_NOTES="Ajout de l onglet groupes"
