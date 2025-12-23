@@ -915,6 +915,43 @@ class Lieu
     }
     
     /**
+     * Retirer un PNJ de ce lieu par son ID
+     */
+    public function removeNpcById($id)
+    {
+        try {
+            $this->pdo->beginTransaction();
+
+            // 1. Récupérer l'ID du personnage PNJ lié
+            $stmt = $this->pdo->prepare("SELECT npc_character_id FROM place_npcs WHERE id = ? AND place_id = ?");
+            $stmt->execute([$id, $this->id]);
+            $placeNpc = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($placeNpc && !empty($placeNpc['npc_character_id'])) {
+                // 2. Dissocier le PNJ du lieu dans la table principale 'npcs'
+                // Cela empêche la réapparition automatique via getAllNpcsDetailed()
+                $updateStmt = $this->pdo->prepare("UPDATE npcs SET location_id = NULL WHERE id = ?");
+                $updateStmt->execute([$placeNpc['npc_character_id']]);
+            }
+
+            // 3. Supprimer l'entrée dans place_npcs
+            $stmt = $this->pdo->prepare("DELETE FROM place_npcs WHERE place_id = ? AND id = ?");
+            $stmt->execute([$this->id, $id]);
+            
+            $this->pdo->commit();
+            
+            return ['success' => true, 'message' => 'PNJ retiré du lieu.'];
+            
+        } catch (PDOException $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            error_log("Erreur lors du retrait du PNJ par ID: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Erreur lors du retrait du PNJ: ' . $e->getMessage()];
+        }
+    }
+
+    /**
      * Retirer un PNJ de ce lieu
      */
     public function removeNpc($npcName)

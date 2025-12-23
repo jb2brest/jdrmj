@@ -544,9 +544,14 @@ extract($template_vars ?? []);
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-user-tie me-2"></i>PNJ présents</h5>
                     <?php if ($isOwnerDM): ?>
-                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addNpcModal">
-                            <i class="fas fa-plus me-1"></i>Ajouter
-                        </button>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addNpcModal">
+                                <i class="fas fa-plus me-1"></i>Ajouter
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#createNpcAutoModal">
+                                <i class="fas fa-magic me-1"></i>Créer (Auto)
+                            </button>
+                        </div>
                     <?php endif; ?>
                 </div>
                 <div class="card-body">
@@ -1693,4 +1698,214 @@ extract($template_vars ?? []);
 <?php endif; ?>
 
 </body>
+<!-- Modal Création Automatique PNJ -->
+<?php if ($isOwnerDM): ?>
+<div class="modal fade" id="createNpcAutoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-magic me-2"></i>Création Automatique de PNJ</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createNpcAutoForm">
+                    <input type="hidden" name="place_id" value="<?php echo $place_id; ?>">
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="auto_npc_race" class="form-label">Race *</label>
+                            <select class="form-select" id="auto_npc_race" name="race_id" required>
+                                <option value="">Choisir une race</option>
+                                <?php foreach ($races as $race): ?>
+                                    <option value="<?php echo $race['id']; ?>"><?php echo htmlspecialchars($race['name']); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="auto_npc_class" class="form-label">Classe *</label>
+                            <select class="form-select" id="auto_npc_class" name="class_id" required>
+                                <option value="">Choisir une classe</option>
+                                <?php foreach ($classes as $class): ?>
+                                    <option value="<?php echo $class['id']; ?>"><?php echo htmlspecialchars($class['name']); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="auto_npc_level" class="form-label">Niveau *</label>
+                            <select class="form-select" id="auto_npc_level" name="level" required>
+                                <?php for($i=1; $i<=20; $i++): ?>
+                                    <option value="<?php echo $i; ?>"><?php echo $i; ?></option>
+                                <?php endfor; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="auto_npc_name" class="form-label">Nom (Optionnel)</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="auto_npc_name" name="name" placeholder="Laisser vide pour aléatoire">
+                                <button class="btn btn-outline-secondary" type="button" id="generateAutoNpcName" title="Générer un nom">
+                                    <i class="fas fa-dice"></i>
+                                </button>
+                            </div>
+                            <div id="autoNpcNameSuggestions" class="mt-2 small"></div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                             <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="auto_npc_visible" name="is_visible" value="1" checked>
+                                <label class="form-check-label" for="auto_npc_visible">Visible par les joueurs</label>
+                            </div>
+                        </div>
+                         <div class="col-md-6 mb-3">
+                             <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="auto_npc_identified" name="is_identified" value="1">
+                                <label class="form-check-label" for="auto_npc_identified">Identifié par les joueurs</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-danger d-none" id="createNpcAutoError"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="submitCreateNpcAuto">
+                    <i class="fas fa-wand-magic-sparkles me-1"></i>Créer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const generateBtn = document.getElementById('generateAutoNpcName');
+    const nameInput = document.getElementById('auto_npc_name');
+    const raceSelect = document.getElementById('auto_npc_race');
+    const classSelect = document.getElementById('auto_npc_class');
+    const suggestionsDiv = document.getElementById('autoNpcNameSuggestions');
+    const submitBtn = document.getElementById('submitCreateNpcAuto');
+    const form = document.getElementById('createNpcAutoForm');
+    const errorAlert = document.getElementById('createNpcAutoError');
+
+    if (generateBtn) {
+        generateBtn.addEventListener('click', function() {
+            const raceId = raceSelect.value;
+            const classId = classSelect.value;
+            
+            const formData = new FormData();
+            if (raceId) formData.append('race_id', raceId);
+            if (classId) formData.append('class_id', classId);
+            formData.append('count', 3);
+
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            fetch('api/generate_npc_name.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = '<i class="fas fa-dice"></i>';
+                
+                if (data.success && data.suggestions) {
+                    suggestionsDiv.innerHTML = '';
+                    data.suggestions.forEach(name => {
+                        const badge = document.createElement('span');
+                        badge.className = 'badge bg-light text-dark border me-1 cursor-pointer';
+                        badge.style.cursor = 'pointer';
+                        badge.textContent = name;
+                        badge.onclick = () => nameInput.value = name;
+                        suggestionsDiv.appendChild(badge);
+                    });
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = '<i class="fas fa-dice"></i>';
+            });
+        });
+    }
+
+    if (submitBtn) {
+        submitBtn.addEventListener('click', function() {
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Création...';
+            errorAlert.classList.add('d-none');
+
+            // Force values for checkboxes (if unchecked they are missing from FormData usually, but here we read from input so it might depend)
+            // Actually Object.fromEntries only takes checked checkboxes.
+            // We should ensure is_visible/identified are handled correctly.
+            // In the API we check 'isset', so if missing it's 0. That's fine.
+
+            fetch('api/create_npc_automatic.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    location.reload(); // Simple reload to show new NPC
+                } else {
+                    errorAlert.textContent = result.message || 'Erreur inconnue';
+                    errorAlert.classList.remove('d-none');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles me-1"></i>Créer';
+                }
+            })
+            .catch(err => {
+                errorAlert.textContent = 'Erreur réseau: ' + err.message;
+                errorAlert.classList.remove('d-none');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles me-1"></i>Créer';
+            });
+        });
+    }
+});
+</script>
+<?php endif; ?>
+</body>
+<script>
+    // Fonction pour supprimer un PNJ
+    function removeNpc(npcId) {
+        if (confirm('Êtes-vous sûr de vouloir supprimer ce PNJ du lieu ?')) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = 'view_place.php?id=<?php echo $place_id; ?>';
+            
+            const actionInput = document.createElement('input');
+            actionInput.type = 'hidden';
+            actionInput.name = 'action';
+            actionInput.value = 'delete_npc';
+            
+            const idInput = document.createElement('input');
+            idInput.type = 'hidden';
+            idInput.name = 'npc_id';
+            idInput.value = npcId;
+            
+            form.appendChild(actionInput);
+            form.appendChild(idInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+</script>
 </html>

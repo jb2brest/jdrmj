@@ -1,6 +1,6 @@
 <?php
 
-require_once 'Item.php';
+require_once __DIR__ . '/Item.php';
 
 /**
  * Classe NPC - Gestion des Personnages Non-Joueurs
@@ -832,7 +832,7 @@ class NPC
             $addedSkills = 0;
             
             // Sélectionner automatiquement les compétences selon la classe
-            require_once 'classes/NPCSkills.php';
+            require_once __DIR__ . '/NPCSkills.php';
             $selectedSkills = NPCSkills::selectSkillsForNPC($npc['class_name'], $this->id);
             
             if (!empty($selectedSkills)) {

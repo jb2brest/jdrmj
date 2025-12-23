@@ -179,6 +179,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
                 $_SESSION['error_message'] = "Accès introuvable ou vous n'avez pas la permission de le supprimer.";
             }
             break;
+
+        case 'delete_npc':
+            $npc_id = (int)($_POST['npc_id'] ?? 0);
+            if ($npc_id > 0) {
+                $result = $lieu->removeNpcById($npc_id);
+                if ($result['success']) {
+                    $_SESSION['success_message'] = "PNJ supprimé avec succès.";
+                } else {
+                    $_SESSION['error_message'] = $result['message'];
+                }
+            } else {
+                $_SESSION['error_message'] = "ID du PNJ invalide.";
+            }
+            break;
             
         case 'move_entities':
             $to_place_id = (int)($_POST['to_place_id'] ?? 0);
@@ -442,17 +456,43 @@ $js_vars = [
     'defaultCampaignId' => $defaultCampaignId
 ];
 
+// Récupération des données pour la modale de création automatique de PNJ
+$races = [];
+$classes = [];
+try {
+    $pdo = getPDO(); // Ensure PDO is available
+    // Récupérer les races
+    $stmt = $pdo->query("SELECT id, name FROM races ORDER BY name");
+    $races = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Récupérer les classes
+    $stmt = $pdo->query("SELECT id, name FROM classes ORDER BY name");
+    $classes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    error_log("Erreur chargement races/classes: " . $e->getMessage());
+}
+
 // Variables pour le template
 $template_vars = [
     'placePlayers' => $placePlayers,
     'placeNpcs' => $placeNpcs,
     'placeMonsters' => $placeMonsters,
     'placeAccesses' => $placeAccesses,
+    'placeObjects' => $placeObjects, // Check if this was in the original, line 378 suggests yes, but line 446 didn't show it explicitly in my view, wait.
     'tokenPositions' => $tokenPositions,
     'visibleObjectsForMap' => $visibleObjectsForMap,  // Objets visibles pour les pions sur la carte
     'worldPlaces' => $worldPlaces,  // Lieux du monde pour la téléportation
     'accessibleCampaigns' => $accessibleCampaigns,  // Campagnes accessibles pour les lancers de dés
-    'defaultCampaignId' => $defaultCampaignId  // Campagne par défaut
+    'defaultCampaignId' => $defaultCampaignId,  // Campagne par défaut
+    'races' => $races,
+    'classes' => $classes,
+    'place' => $place, // Passing explicitly to be safe
+    'canEdit' => $canEdit,
+    'isOwnerDM' => $isOwnerDM,
+    'place_id' => $place_id,
+    'page_title' => $page_title,
+    'currentPlayer' => $currentPlayer,
+    'dmCharacters' => $dmCharacters
 ];
 
 // Inclure le template HTML

@@ -1,5 +1,7 @@
 <?php
-require_once 'classes/NPC.php';
+// Utilisation de __DIR__ pour garantir le chemin correct quel que soit le contexte d'appel
+require_once __DIR__ . '/classes/NPC.php';
+
 // ===== FONCTIONS UTILITAIRES POUR LA CRÉATION DE PNJ =====
 
 // Fonction pour récupérer le nom d'une race par ID
@@ -357,9 +359,8 @@ function createAutomaticNPC($race_id, $class_id, $level, $user_id, $custom_name,
         error_log("  [$i] = " . (is_null($sql_params[$i]) ? 'NULL' : $sql_params[$i]));
     }
     
-    // Debug direct pour le test
-    echo "DEBUG: Nombre de paramètres: " . count($sql_params) . "\n";
-    echo "DEBUG: Paramètres: " . print_r($sql_params, true) . "\n";
+    // Debug lines removed for production
+
     
     try {
         $stmt->execute($sql_params);
