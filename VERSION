@@ -2,19 +2,19 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.25.46
+VERSION=2.25.48
 
 # Date de déploiement
-DEPLOY_DATE=2025-11-21
+DEPLOY_DATE=2025-12-23
 
 # Environnement
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=01b75e944212c9fe11780c895b24e1a589cd0d1e
+GIT_COMMIT=aad202f58bc48be04f00c4b698a36751ce76c69d
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251121-161111
+BUILD_ID=20251223-094109
 
 # Notes de version
-RELEASE_NOTES="Affichage carte avec mémorisation des positions"
+RELEASE_NOTES="Refactoring view_scene_player"
