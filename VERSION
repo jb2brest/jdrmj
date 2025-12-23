@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.25.48
+VERSION=2.25.49
 
 # Date de déploiement
 DEPLOY_DATE=2025-12-23
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-12-23
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=aad202f58bc48be04f00c4b698a36751ce76c69d
+GIT_COMMIT=db396f98061644e679fdf75943dab9822e3b5467
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251223-094109
+BUILD_ID=20251223-104756
 
 # Notes de version
-RELEASE_NOTES="Refactoring view_scene_player"
+RELEASE_NOTES="Ajout création automatique de PNJ dans un lieu + correction suppression PNJ dans un lieu"
