@@ -394,6 +394,27 @@ $placeObjects = $lieu->getUnassignedObjects();
 $visibleObjectsForMap = $lieu->getVisibleObjects();
 $tokenPositions = $lieu->getTokenPositions();
 
+// Récupérer les couleurs personnalisées des pions
+$tokenColors = [];
+try {
+    $pdo = getPDO();
+    $stmt = $pdo->prepare("
+        SELECT token_type, entity_id, border_color
+        FROM token_colors
+        WHERE place_id = ?
+    ");
+    $stmt->execute([$place_id]);
+    $colors = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    foreach ($colors as $color) {
+        $key = $color['token_type'] . '_' . $color['entity_id'];
+        $tokenColors[$key] = $color['border_color'];
+    }
+} catch (PDOException $e) {
+    error_log("Erreur lors du chargement des couleurs de pions: " . $e->getMessage());
+    $tokenColors = [];
+}
+
 // Récupérer les positions des objets depuis place_tokens (système unifié)
 foreach ($visibleObjectsForMap as $object) {
     $tokenKey = 'object_' . $object['id'];
@@ -480,6 +501,7 @@ $template_vars = [
     'placeAccesses' => $placeAccesses,
     'placeObjects' => $placeObjects, // Check if this was in the original, line 378 suggests yes, but line 446 didn't show it explicitly in my view, wait.
     'tokenPositions' => $tokenPositions,
+    'tokenColors' => $tokenColors,  // Couleurs personnalisées des pions
     'visibleObjectsForMap' => $visibleObjectsForMap,  // Objets visibles pour les pions sur la carte
     'worldPlaces' => $worldPlaces,  // Lieux du monde pour la téléportation
     'accessibleCampaigns' => $accessibleCampaigns,  // Campagnes accessibles pour les lancers de dés

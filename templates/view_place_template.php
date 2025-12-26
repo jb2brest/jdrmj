@@ -314,17 +314,32 @@ extract($template_vars ?? []);
                                         $tokenKey = 'player_' . $player['player_id'];
                                         $position = $tokenPositions[$tokenKey] ?? ['x' => 0, 'y' => 0, 'is_on_map' => false];
                                         $displayName = $player['character_name'] ?: $player['username'];
+                                        $hasCustomImage = !empty($player['profile_photo']) && $player['profile_photo'] !== 'images/default_character.png';
                                         $imageUrl = !empty($player['profile_photo']) ? $player['profile_photo'] : 'images/default_character.png';
+                                        $borderColor = $tokenColors[$tokenKey] ?? '#007bff';  // Couleur par défaut: bleu
                                         ?>
-                                        <div class="token" 
-                                             data-token-type="player" 
-                                             data-entity-id="<?php echo $player['player_id']; ?>"
-                                             data-position-x="<?php echo $position['x']; ?>"
-                                             data-position-y="<?php echo $position['y']; ?>"
-                                             data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
-                                             style="width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #007bff; border-radius: 50%; background-image: url('<?php echo htmlspecialchars($imageUrl); ?>'); background-size: cover; background-position: center;"
-                                             title="<?php echo htmlspecialchars($displayName); ?>">
-                                        </div>
+                                        <?php if ($hasCustomImage): ?>
+                                            <div class="token" 
+                                                 data-token-type="player" 
+                                                 data-entity-id="<?php echo $player['player_id']; ?>"
+                                                 data-position-x="<?php echo $position['x']; ?>"
+                                                 data-position-y="<?php echo $position['y']; ?>"
+                                                 data-border-color="<?php echo $borderColor; ?>"
+                                                 style="width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid <?php echo $borderColor; ?>; border-radius: 50%; background-image: url('<?php echo htmlspecialchars($imageUrl); ?>'); background-size: cover; background-position: center;"
+                                                 title="<?php echo htmlspecialchars($displayName); ?>">
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="token" 
+                                                 data-token-type="player" 
+                                                 data-entity-id="<?php echo $player['player_id']; ?>"
+                                                 data-position-x="<?php echo $position['x']; ?>"
+                                                 data-position-y="<?php echo $position['y']; ?>"
+                                                 data-border-color="<?php echo $borderColor; ?>"
+                                                 style="width: 30px; height: 30px; margin: 2px; display: inline-flex; align-items: center; justify-content: center; cursor: move; border: 2px solid <?php echo $borderColor; ?>; border-radius: 50%; background-color: <?php echo $borderColor; ?>;"
+                                                 title="<?php echo htmlspecialchars($displayName); ?>">
+                                                <i class="fas fa-user" style="font-size: 14px; color: white;"></i>
+                                            </div>
+                                        <?php endif; ?>
                                     <?php endforeach; ?>
                                     
                                     <!-- Pions des PNJ -->
@@ -334,23 +349,41 @@ extract($template_vars ?? []);
                                         $position = $tokenPositions[$tokenKey] ?? ['x' => 0, 'y' => 0, 'is_on_map' => false];
                                         // Priorité : npcs.profile_photo, puis characters.profile_photo, puis place_npcs.profile_photo, avec vérification d'existence
                                         $imageUrl = 'images/default_npc.png';
+                                        $hasCustomImage = false;
                                         if (!empty($npc['npc_profile_photo']) && file_exists($npc['npc_profile_photo'])) {
                                             $imageUrl = $npc['npc_profile_photo'];
+                                            $hasCustomImage = true;
                                         } elseif (!empty($npc['character_profile_photo']) && file_exists($npc['character_profile_photo'])) {
                                             $imageUrl = $npc['character_profile_photo'];
+                                            $hasCustomImage = true;
                                         } elseif (!empty($npc['profile_photo']) && file_exists($npc['profile_photo'])) {
                                             $imageUrl = $npc['profile_photo'];
+                                            $hasCustomImage = true;
                                         }
+                                        $borderColor = $tokenColors[$tokenKey] ?? '#28a745';  // Couleur par défaut: vert
                                         ?>
-                                        <div class="token" 
-                                             data-token-type="npc" 
-                                             data-entity-id="<?php echo $npc['id']; ?>"
-                                             data-position-x="<?php echo $position['x']; ?>"
-                                             data-position-y="<?php echo $position['y']; ?>"
-                                             data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
-                                             style="width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #28a745; border-radius: 50%; background-image: url('<?php echo htmlspecialchars($imageUrl); ?>'); background-size: cover; background-position: center;"
-                                             title="<?php echo htmlspecialchars($npc['name']); ?>">
-                                        </div>
+                                        <?php if ($hasCustomImage): ?>
+                                            <div class="token" 
+                                                 data-token-type="npc" 
+                                                 data-entity-id="<?php echo $npc['id']; ?>"
+                                                 data-position-x="<?php echo $position['x']; ?>"
+                                                 data-position-y="<?php echo $position['y']; ?>"
+                                                 data-border-color="<?php echo $borderColor; ?>"
+                                                 style="width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid <?php echo $borderColor; ?>; border-radius: 50%; background-image: url('<?php echo htmlspecialchars($imageUrl); ?>'); background-size: cover; background-position: center;"
+                                                 title="<?php echo htmlspecialchars($npc['name']); ?>">
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="token" 
+                                                 data-token-type="npc" 
+                                                 data-entity-id="<?php echo $npc['id']; ?>"
+                                                 data-position-x="<?php echo $position['x']; ?>"
+                                                 data-position-y="<?php echo $position['y']; ?>"
+                                                 data-border-color="<?php echo $borderColor; ?>"
+                                                 style="width: 30px; height: 30px; margin: 2px; display: inline-flex; align-items: center; justify-content: center; cursor: move; border: 2px solid <?php echo $borderColor; ?>; border-radius: 50%; background-color: <?php echo $borderColor; ?>;"
+                                                 title="<?php echo htmlspecialchars($npc['name']); ?>">
+                                                <i class="fas fa-user-tie" style="font-size: 14px; color: white;"></i>
+                                            </div>
+                                        <?php endif; ?>
                                     <?php endforeach; ?>
                                     
                                     <!-- Pions des monstres -->
@@ -361,35 +394,46 @@ extract($template_vars ?? []);
                                         
                                         // Logique d'image pour les monstres (même que view_monster.php)
                                         $imageUrl = 'images/default_monster.png';
+                                        $hasCustomImage = false;
                                         
                                         // Essayer d'abord l'image personnalisée si elle existe
                                         if (!empty($monster['image_url']) && file_exists($monster['image_url'])) {
                                             $imageUrl = $monster['image_url'];
+                                            $hasCustomImage = true;
                                         } else {
                                             // Sinon, utiliser l'image du monstre par csv_id
                                             if (isset($monster['csv_id']) && $monster['csv_id'] !== null) {
                                                 $monsterImagePath = 'images/monstres/' . $monster['csv_id'] . '.jpg';
                                                 if (file_exists($monsterImagePath)) {
                                                     $imageUrl = $monsterImagePath;
-                                                } else {
-                                                    // Fallback vers l'image par défaut
-                                                    $imageUrl = 'images/default_monster.png';
+                                                    $hasCustomImage = true;
                                                 }
-                                            } else {
-                                                // Fallback vers l'image par défaut
-                                                $imageUrl = 'images/default_monster.png';
                                             }
                                         }
+                                        $borderColor = $tokenColors[$tokenKey] ?? '#dc3545';  // Couleur par défaut: rouge
                                         ?>
-                                        <div class="token" 
-                                             data-token-type="monster" 
-                                             data-entity-id="<?php echo $monster['id']; ?>"
-                                             data-position-x="<?php echo $position['x']; ?>"
-                                             data-position-y="<?php echo $position['y']; ?>"
-                                             data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
-                                             style="width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #dc3545; border-radius: 50%; background-image: url('<?php echo htmlspecialchars($imageUrl); ?>'); background-size: cover; background-position: center;"
-                                             title="<?php echo htmlspecialchars($monster['name']); ?>">
-                                        </div>
+                                        <?php if ($hasCustomImage): ?>
+                                            <div class="token" 
+                                                 data-token-type="monster" 
+                                                 data-entity-id="<?php echo $monster['id']; ?>"
+                                                 data-position-x="<?php echo $position['x']; ?>"
+                                                 data-position-y="<?php echo $position['y']; ?>"
+                                                 data-border-color="<?php echo $borderColor; ?>"
+                                                 style="width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid <?php echo $borderColor; ?>; border-radius: 50%; background-image: url('<?php echo htmlspecialchars($imageUrl); ?>'); background-size: cover; background-position: center;"
+                                                 title="<?php echo htmlspecialchars($monster['name']); ?>">
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="token" 
+                                                 data-token-type="monster" 
+                                                 data-entity-id="<?php echo $monster['id']; ?>"
+                                                 data-position-x="<?php echo $position['x']; ?>"
+                                                 data-position-y="<?php echo $position['y']; ?>"
+                                                 data-border-color="<?php echo $borderColor; ?>"
+                                                 style="width: 30px; height: 30px; margin: 2px; display: inline-flex; align-items: center; justify-content: center; cursor: move; border: 2px solid <?php echo $borderColor; ?>; border-radius: 50%; background-color: <?php echo $borderColor; ?>;"
+                                                 title="<?php echo htmlspecialchars($monster['name']); ?>">
+                                                <i class="fas fa-dragon" style="font-size: 14px; color: white;"></i>
+                                            </div>
+                                        <?php endif; ?>
                                     <?php endforeach; ?>
                                     
                                     <!-- Pions des objets (seulement les objets visibles) -->
@@ -440,6 +484,7 @@ extract($template_vars ?? []);
                                                     $icon_color = '#6c757d';
                                             }
                                         }
+                                        $borderColor = $tokenColors[$tokenKey] ?? '#FF8C00';  // Couleur par défaut: orange
                                         ?>
                                         <div class="token object-token"
                                              data-token-type="object"
@@ -450,8 +495,8 @@ extract($template_vars ?? []);
                                              data-is-identified="<?php echo $object['is_identified'] ? 'true' : 'false'; ?>"
                                              data-position-x="<?php echo $position['x']; ?>"
                                              data-position-y="<?php echo $position['y']; ?>"
-                                             data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
-                                             style="width: 24px; height: 24px; margin: 2px; display: flex; align-items: center; justify-content: center; cursor: move; border: 2px solid #FF8C00; border-radius: 4px; background: linear-gradient(45deg, #FFD700, #FFA500); box-shadow: 0 2px 4px rgba(0,0,0,0.3); font-size: 12px; color: <?php echo $icon_color; ?>; font-weight: bold;"
+                                             data-border-color="<?php echo $borderColor; ?>"
+                                             style="width: 24px; height: 24px; margin: 2px; display: flex; align-items: center; justify-content: center; cursor: move; border: 2px solid <?php echo $borderColor; ?>; border-radius: 4px; background: linear-gradient(45deg, #FFD700, #FFA500); box-shadow: 0 2px 4px rgba(0,0,0,0.3); font-size: 12px; color: <?php echo $icon_color; ?>; font-weight: bold;"
                                              title="<?php echo htmlspecialchars($object['display_name']); ?>">
                                             <i class="fas <?php echo $icon_class; ?>"></i>
                                         </div>
@@ -504,8 +549,12 @@ extract($template_vars ?? []);
                     <?php else: ?>
                         <div class="players-list">
                             <?php foreach ($placePlayers as $player): ?>
+                                <?php 
+                                $tokenKey = 'player_' . $player['player_id'];
+                                $borderColor = $tokenColors[$tokenKey] ?? '#007bff';
+                                ?>
                                 <div class="player-item d-flex align-items-center p-2 border-bottom">
-                                    <div class="player-avatar me-3">
+                                    <div class="player-avatar me-3 position-relative">
                                         <?php if ($player['character_id'] && $player['profile_photo']): ?>
                                             <img src="<?php echo htmlspecialchars($player['profile_photo']); ?>" alt="Avatar" class="rounded-circle" width="40" height="40">
                                         <?php else: ?>
@@ -513,6 +562,8 @@ extract($template_vars ?? []);
                                                 <i class="fas fa-user text-white"></i>
                                             </div>
                                         <?php endif; ?>
+                                        <!-- Badge de couleur du pion -->
+                                        <div class="position-absolute" style="bottom: -2px; right: -2px; width: 16px; height: 16px; border-radius: 50%; background: <?php echo $borderColor; ?>; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3);" title="Couleur du pion"></div>
                                     </div>
                                     <div class="player-info flex-grow-1">
                                         <div class="fw-bold"><?php echo htmlspecialchars($player['username']); ?></div>
@@ -560,8 +611,12 @@ extract($template_vars ?? []);
                     <?php else: ?>
                         <div class="npcs-list">
                             <?php foreach ($placeNpcs as $npc): ?>
+                                <?php 
+                                $tokenKey = 'npc_' . $npc['id'];
+                                $borderColor = $tokenColors[$tokenKey] ?? '#28a745';
+                                ?>
                                 <div class="npc-item d-flex align-items-center p-2 border-bottom">
-                                    <div class="npc-avatar me-3">
+                                    <div class="npc-avatar me-3 position-relative">
                                         <?php 
                                         // Priorité : npcs.profile_photo, puis characters.profile_photo, puis place_npcs.profile_photo, avec vérification d'existence
                                         $imageUrl = 'images/default_npc.png';
@@ -574,6 +629,8 @@ extract($template_vars ?? []);
                                         }
                                         ?>
                                         <img src="<?php echo htmlspecialchars($imageUrl); ?>" alt="Avatar" class="rounded-circle" width="40" height="40">
+                                        <!-- Badge de couleur du pion -->
+                                        <div class="position-absolute" style="bottom: -2px; right: -2px; width: 16px; height: 16px; border-radius: 50%; background: <?php echo $borderColor; ?>; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3);" title="Couleur du pion"></div>
                                     </div>
                                     <div class="npc-info flex-grow-1">
                                         <div class="fw-bold"><?php echo htmlspecialchars($npc['name']); ?></div>
@@ -620,8 +677,12 @@ extract($template_vars ?? []);
                     <?php else: ?>
                         <div class="monsters-list">
                             <?php foreach ($placeMonsters as $monster): ?>
+                                <?php 
+                                $tokenKey = 'monster_' . $monster['id'];
+                                $borderColor = $tokenColors[$tokenKey] ?? '#dc3545';
+                                ?>
                                 <div class="monster-item d-flex align-items-center p-2 border-bottom">
-                                    <div class="monster-avatar me-3">
+                                    <div class="monster-avatar me-3 position-relative">
                                         <?php 
                                         // Logique d'image pour les monstres (même que view_monster.php)
                                         $imageUrl = 'images/default_monster.png';
@@ -646,6 +707,8 @@ extract($template_vars ?? []);
                                         }
                                         ?>
                                         <img src="<?php echo htmlspecialchars($imageUrl); ?>" alt="Avatar" class="rounded-circle" width="40" height="40">
+                                        <!-- Badge de couleur du pion -->
+                                        <div class="position-absolute" style="bottom: -2px; right: -2px; width: 16px; height: 16px; border-radius: 50%; background: <?php echo $borderColor; ?>; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3);" title="Couleur du pion"></div>
                                     </div>
                                     <div class="monster-info flex-grow-1">
                                         <div class="fw-bold"><?php echo htmlspecialchars($monster['name']); ?></div>
@@ -857,6 +920,10 @@ extract($template_vars ?? []);
         </div>
     </div>
 </div>
+
+
+<!-- Menu contextuel pour changer la couleur des pions -->
+<?php include_once 'templates/token_color_menu.php'; ?>
 
 <!-- Modals -->
 <?php include_once 'templates/view_place_modals.php'; ?>
@@ -1908,4 +1975,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 </script>
+
+<!-- Script pour la gestion des couleurs de pions (chargé en dernier pour s'assurer que le DOM est prêt) -->
+<script src="js/token-color-menu.js"></script>
+
 </html>
