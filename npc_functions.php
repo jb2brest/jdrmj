@@ -253,11 +253,16 @@ function calculateExperiencePoints($level) {
 function createAutomaticNPC($race_id, $class_id, $level, $user_id, $custom_name, $place_id, $is_visible, $is_identified, $world_id, $country_id) {
     global $pdo;
     
+    // Convertir class_id vide ou 0 en NULL
+    if (empty($class_id) || $class_id <= 0) {
+        $class_id = null;
+    }
+    
     // DEBUG COMPLET
     error_log("=== DEBUG NPC CREATION ===");
     error_log("Variables reçues:");
     error_log("- race_id: " . $race_id);
-    error_log("- class_id: " . $class_id);
+    error_log("- class_id: " . ($class_id === null ? 'NULL' : $class_id));
     error_log("- level: " . $level);
     error_log("- user_id: " . $user_id);
     error_log("- custom_name: " . $custom_name);
@@ -277,7 +282,7 @@ function createAutomaticNPC($race_id, $class_id, $level, $user_id, $custom_name,
     
     // Récupérer les noms de race et classe
     $race_name = getRaceName($race_id);
-    $class_name = getClassName($class_id);
+    $class_name = $class_id ? getClassName($class_id) : 'Sans classe';
     error_log("- race_name: " . $race_name);
     error_log("- class_name: " . $class_name);
     
@@ -286,17 +291,32 @@ function createAutomaticNPC($race_id, $class_id, $level, $user_id, $custom_name,
     error_log("- name: " . $name);
     
     // Sélectionner un historique aléatoire
-    $background_name = selectRandomBackground($class_name);
-    $background_id = selectRandomBackgroundId($class_name);
+    $background_name = $class_id ? selectRandomBackground($class_name) : 'Commun';
+    $background_id = $class_id ? selectRandomBackgroundId($class_name) : 1;
     error_log("- background_name: " . $background_name);
     error_log("- background_id: " . $background_id);
     
     // Sélectionner un archétype aléatoire pour la classe
-    $archetype_id = selectRandomArchetypeId($class_id);
-    error_log("- archetype_id: " . $archetype_id);
+    $archetype_id = $class_id ? selectRandomArchetypeId($class_id) : null;
+    error_log("- archetype_id: " . ($archetype_id === null ? 'NULL' : $archetype_id));
     
     // Générer les caractéristiques selon les recommandations D&D
-    $stats = generateRecommendedStats($class_name);
+    if ($class_id) {
+        $stats = generateRecommendedStats($class_name);
+    } else {
+        // Valeurs par défaut si pas de classe
+        $stats = [
+            'strength' => 10,
+            'dexterity' => 10,
+            'constitution' => 10,
+            'intelligence' => 10,
+            'wisdom' => 10,
+            'charisma' => 10,
+            'hit_points' => 4,
+            'armor_class' => 10,
+            'speed' => 30
+        ];
+    }
     error_log("- stats: " . print_r($stats, true));
     
     // Générer l'alignement aléatoire
@@ -304,22 +324,22 @@ function createAutomaticNPC($race_id, $class_id, $level, $user_id, $custom_name,
     error_log("- alignment: " . $alignment);
     
     // Générer les traits de personnalité
-    $personality_traits = generatePersonalityTraits($class_name);
+    $personality_traits = $class_id ? generatePersonalityTraits($class_name) : 'Personnage ordinaire';
     $ideals = generateIdeals($alignment);
     $bonds = generateBonds($race_name, $class_name);
-    $flaws = generateFlaws($class_name);
+    $flaws = $class_id ? generateFlaws($class_name) : 'Aucun défaut notable';
     error_log("- personality_traits: " . $personality_traits);
     
     // Générer l'équipement de départ
-    $equipment = generateStartingEquipment($class_name);
+    $equipment = $class_id ? generateStartingEquipment($class_name) : 'Vêtements simples, bourse';
     error_log("- equipment: " . $equipment);
     
     // Générer l'or de départ selon la classe
-    $starting_gold = generateStartingGold($class_name);
+    $starting_gold = $class_id ? generateStartingGold($class_name) : 50;
     error_log("- starting_gold: " . $starting_gold);
     
     // Générer l'historique
-    $backstory = "PNJ de niveau $level - $race_name $class_name. " . $personality_traits;
+    $backstory = $class_id ? "PNJ de niveau $level - $race_name $class_name. " . $personality_traits : "PNJ $race_name sans classe particulière. " . $personality_traits;
     
     // Calculer les points d'expérience selon le niveau D&D
     $experience_points = calculateExperiencePoints($level);
@@ -387,9 +407,11 @@ function createAutomaticNPC($race_id, $class_id, $level, $user_id, $custom_name,
         NPC::addAbilityImprovements($npc_id);
         
         // Calculer les points de vie selon les règles D&D
-        $calculatedHp = calculateHitPoints($class_name, $stats['constitution'], $level);
-        $stmt = $pdo->prepare("UPDATE npcs SET hit_points_current = ?, hit_points_max = ? WHERE id = ?");
-        $stmt->execute([$calculatedHp, $calculatedHp, $npc_id]);
+        if ($class_id) {
+            $calculatedHp = calculateHitPoints($class_name, $stats['constitution'], $level);
+            $stmt = $pdo->prepare("UPDATE npcs SET hit_points_current = ?, hit_points_max = ? WHERE id = ?");
+            $stmt->execute([$calculatedHp, $calculatedHp, $npc_id]);
+        }
         
         // Ajouter l'équipement de départ et l'or
         $npc->addStartingEquipment($equipment, $starting_gold);

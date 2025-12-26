@@ -27,8 +27,9 @@ if (!isset($experience)) {
 if (!isset($raceObject)) {
     throw new Exception('Variable $raceObject est requise pour ce template');
 }
+// $classObject peut être null pour les NPCs sans classe
 if (!isset($classObject)) {
-    throw new Exception('Variable $classObject est requise pour ce template');
+    $classObject = null;
 }
 if (!isset($armorClass)) {
     throw new Exception('Variable $armorClass est requise pour ce template');
@@ -69,7 +70,7 @@ if (!isset($canModifyHP)) {
                 </p>
                 <p>
                     <i class="fas fa-shield-alt me-1"></i>
-                    <strong>Classe :</strong> <?php echo htmlspecialchars($classObject->name); ?>
+                    <strong>Classe :</strong> <?php echo $classObject ? htmlspecialchars($classObject->name) : 'Sans classe'; ?>
                 </p>
                 <p>
                     <i class="fas fa-star me-1"></i>

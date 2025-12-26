@@ -1722,8 +1722,8 @@ extract($template_vars ?? []);
                             </select>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="auto_npc_class" class="form-label">Classe *</label>
-                            <select class="form-select" id="auto_npc_class" name="class_id" required>
+                            <label for="auto_npc_class" class="form-label">Classe</label>
+                            <select class="form-select" id="auto_npc_class" name="class_id">
                                 <option value="">Choisir une classe</option>
                                 <?php foreach ($classes as $class): ?>
                                     <option value="<?php echo $class['id']; ?>"><?php echo htmlspecialchars($class['name']); ?></option>

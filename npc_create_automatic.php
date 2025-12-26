@@ -49,8 +49,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_npc'])) {
             $error_message = "Veuillez sélectionner un lieu.";
         } elseif ($race_id <= 0) {
             $error_message = "Veuillez sélectionner une race.";
-        } elseif ($class_id <= 0) {
-            $error_message = "Veuillez sélectionner une classe.";
         } elseif ($level < 1 || $level > 20) {
             $error_message = "Le niveau doit être entre 1 et 20.";
         } else {
@@ -212,8 +210,8 @@ try {
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label for="class" class="form-label">Classe *</label>
-                                        <select class="form-select" id="class" name="class" required>
+                                        <label for="class" class="form-label">Classe</label>
+                                        <select class="form-select" id="class" name="class">
                                             <option value="">Sélectionnez une classe</option>
                                             <?php foreach ($classes as $class): ?>
                                                 <option value="<?php echo $class['id']; ?>"><?php echo htmlspecialchars($class['name']); ?></option>

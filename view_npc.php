@@ -36,12 +36,12 @@ if (!$isOwner && !$isDM) {
 
 // Récupérer les objets directement
 $raceObject = Race::findById($npc->race_id);
-$classObject = Classe::findById($npc->class_id);
+$classObject = $npc->class_id ? Classe::findById($npc->class_id) : null;
 $backgroundObject = Background::findById($npc->background_id);
 
 
-// Vérifier que les objets essentiels existent
-if (!$raceObject || !$classObject) {
+// Vérifier que les objets essentiels existent (race est obligatoire, classe est optionnelle)
+if (!$raceObject) {
     header('Location: characters.php');
     exit();
 }
@@ -91,18 +91,18 @@ $allTools = array_unique(array_merge($allTools, $filteredBackgroundTools));
 $allSkills = array_unique(array_merge($allSkills, $backgroundSkills));
 
 // Récupérer les données de rage pour les barbares
-$isBarbarian = strpos(strtolower($classObject->name), 'barbare') !== false;
-$isBard = strpos(strtolower($classObject->name), 'barde') !== false;
-$isCleric = strpos(strtolower($classObject->name), 'clerc') !== false;
-$isDruid = strpos(strtolower($classObject->name), 'druide') !== false;
-$isSorcerer = strpos(strtolower($classObject->name), 'ensorceleur') !== false;
-$isFighter = strpos(strtolower($classObject->name), 'guerrier') !== false;
-$isWizard = strpos(strtolower($classObject->name), 'magicien') !== false;
-$isMonk = strpos(strtolower($classObject->name), 'moine') !== false;
-$isWarlock = strpos(strtolower($classObject->name), 'occultiste') !== false;
-$isPaladin = strpos(strtolower($classObject->name), 'paladin') !== false;
-$isRanger = strpos(strtolower($classObject->name), 'rôdeur') !== false;
-$isRogue = strpos(strtolower($classObject->name), 'roublard') !== false;
+$isBarbarian = $classObject && strpos(strtolower($classObject->name), 'barbare') !== false;
+$isBard = $classObject && strpos(strtolower($classObject->name), 'barde') !== false;
+$isCleric = $classObject && strpos(strtolower($classObject->name), 'clerc') !== false;
+$isDruid = $classObject && strpos(strtolower($classObject->name), 'druide') !== false;
+$isSorcerer = $classObject && strpos(strtolower($classObject->name), 'ensorceleur') !== false;
+$isFighter = $classObject && strpos(strtolower($classObject->name), 'guerrier') !== false;
+$isWizard = $classObject && strpos(strtolower($classObject->name), 'magicien') !== false;
+$isMonk = $classObject && strpos(strtolower($classObject->name), 'moine') !== false;
+$isWarlock = $classObject && strpos(strtolower($classObject->name), 'occultiste') !== false;
+$isPaladin = $classObject && strpos(strtolower($classObject->name), 'paladin') !== false;
+$isRanger = $classObject && strpos(strtolower($classObject->name), 'rôdeur') !== false;
+$isRogue = $classObject && strpos(strtolower($classObject->name), 'roublard') !== false;
 $rageData = null;
 if ($isBarbarian) {
     // Récupérer le nombre maximum de rages pour ce niveau

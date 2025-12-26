@@ -97,14 +97,23 @@ class NPC
         $this->archetype_id = $data['archetype_id'] ?? null;
         $this->level = $data['level'] ?? 1;
         $this->experience = $data['experience'] ?? 0;
+        
+        // Si le NPC n'a pas de classe (class_id est null), utiliser les valeurs par défaut
+        // pour un NPC sans niveau de classe : 4 PV et toutes les stats à 10
+        $hasClass = !empty($this->class_id);
+        
         $this->strength = $data['strength'] ?? 10;
         $this->dexterity = $data['dexterity'] ?? 10;
         $this->constitution = $data['constitution'] ?? 10;
         $this->intelligence = $data['intelligence'] ?? 10;
         $this->wisdom = $data['wisdom'] ?? 10;
         $this->charisma = $data['charisma'] ?? 10;
-        $this->hit_points_current = $data['hit_points_current'] ?? 8;
-        $this->hit_points_max = $data['hit_points_max'] ?? 8;
+        
+        // Définir les PV en fonction de la présence d'une classe
+        $defaultHP = $hasClass ? 8 : 4;
+        $this->hit_points_current = $data['hit_points_current'] ?? $defaultHP;
+        $this->hit_points_max = $data['hit_points_max'] ?? $defaultHP;
+        
         $this->armor_class = $data['armor_class'] ?? 10;
         $this->speed = $data['speed'] ?? 30;
         $this->alignment = $data['alignment'] ?? 'Neutre';

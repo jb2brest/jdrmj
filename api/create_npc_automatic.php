@@ -32,8 +32,8 @@ try {
         $data = $_POST;
     }
 
-    // Validation des données requises
-    $required_fields = ['race_id', 'class_id', 'level', 'place_id'];
+    // Validation des données requises (class_id est maintenant optionnel)
+    $required_fields = ['race_id', 'level', 'place_id'];
     foreach ($required_fields as $field) {
         if (empty($data[$field])) {
             throw new Exception("Champ manquant: $field");
@@ -65,7 +65,7 @@ try {
     
     // Paramètres pour la création
     $race_id = (int)$data['race_id'];
-    $class_id = (int)$data['class_id'];
+    $class_id = !empty($data['class_id']) ? (int)$data['class_id'] : 0; // 0 sera converti en NULL par createAutomaticNPC
     $level = (int)$data['level'];
     $custom_name = $data['name'] ?? '';
     $is_visible = isset($data['is_visible']) ? (int)$data['is_visible'] : 1;
