@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.25.52
+VERSION=2.25.53
 
 # Date de déploiement
 DEPLOY_DATE=2025-12-26
@@ -11,10 +11,10 @@ DEPLOY_DATE=2025-12-26
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=b2913edc7e9de3d01aea313b314e39dac64a823b
+GIT_COMMIT=752d9ac377b6d8252fe7aa5184bb9ae29ff9a91c
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251226-110434
+BUILD_ID=20251226-170916
 
 # Notes de version
-RELEASE_NOTES="activation des pécore sans classe"
+RELEASE_NOTES="Couleur dans view_place"
