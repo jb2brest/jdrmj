@@ -98,9 +98,12 @@ try {
     // Récupérer les informations de visibilité et identification des PNJ
     $stmt = $pdo->prepare("
         SELECT sn.id, sn.name, sn.is_visible, sn.is_identified,
-               c.profile_photo AS character_profile_photo, sn.profile_photo
+               c.profile_photo AS character_profile_photo, 
+               sn.profile_photo,
+               n.profile_photo AS npc_profile_photo
         FROM place_npcs sn 
         LEFT JOIN characters c ON sn.npc_character_id = c.id
+        LEFT JOIN npcs n ON sn.npc_character_id = n.id
         WHERE sn.place_id = ? AND sn.monster_id IS NULL
         ORDER BY sn.id ASC
     ");
@@ -108,12 +111,15 @@ try {
     
     $npcs = [];
     while ($row = $stmt->fetch()) {
+        // Priorité : photo du NPC global (npcs) > photo perso joueur (characters) > photo locale (place_npcs)
+        $photo = $row['npc_profile_photo'] ?: ($row['character_profile_photo'] ?: $row['profile_photo']);
+        
         $npcs['npc_' . $row['id']] = [
             'name' => $row['name'],
             'is_visible' => (bool)$row['is_visible'],
             'is_identified' => (bool)$row['is_identified'],
-            'character_profile_photo' => $row['character_profile_photo'],
-            'profile_photo' => $row['profile_photo']
+            'character_profile_photo' => $photo,
+            'profile_photo' => $photo
         ];
     }
     
@@ -218,12 +224,27 @@ try {
         }
     }
     
+    // Récupérer les couleurs personnalisées des pions
+    $stmt = $pdo->prepare("
+        SELECT token_type, entity_id, border_color
+        FROM token_colors
+        WHERE place_id = ?
+    ");
+    $stmt->execute([$place_id]);
+    
+    $colors = [];
+    while ($row = $stmt->fetch()) {
+        $tokenKey = $row['token_type'] . '_' . $row['entity_id'];
+        $colors[$tokenKey] = $row['border_color'];
+    }
+    
     // Pour les PNJ et monstres, on retourne toujours les données car ils n'ont pas de updated_at
     // Le JavaScript se chargera de détecter les changements en comparant les données
     
     echo json_encode([
         'success' => true,
         'positions' => $positions,
+        'colors' => $colors,
         'npcs' => $npcs,
         'monsters' => $monsters,
         'objects' => $objects,

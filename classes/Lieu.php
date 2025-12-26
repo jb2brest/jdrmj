@@ -493,9 +493,11 @@ class Lieu
     {
         try {
             $stmt = $this->pdo->prepare("
-                SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, sn.is_visible, sn.is_identified, c.profile_photo AS character_profile_photo
+                SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, sn.is_visible, sn.is_identified, 
+                       COALESCE(n.profile_photo, c.profile_photo) AS character_profile_photo
                 FROM place_npcs sn 
                 LEFT JOIN characters c ON sn.npc_character_id = c.id
+                LEFT JOIN npcs n ON sn.npc_character_id = n.id
                 WHERE sn.place_id = ? AND sn.monster_id IS NULL AND sn.is_visible = 1
                 ORDER BY sn.name ASC
             ");

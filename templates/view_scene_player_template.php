@@ -253,17 +253,32 @@
                                         $tokenKey = 'player_' . $player['player_id'];
                                         $position = $tokenPositions[$tokenKey] ?? ['x' => 0, 'y' => 0, 'is_on_map' => false];
                                         $displayName = $player['character_name'] ?: $player['username'];
+                                        $hasCustomImage = !empty($player['profile_photo']) && $player['profile_photo'] !== 'images/default_character.png';
                                         $imageUrl = !empty($player['profile_photo']) ? $player['profile_photo'] : 'images/default_character.png';
+                                        $borderColor = $tokenColors[$tokenKey] ?? '#007bff';
                                         ?>
-                                        <div class="token" 
-                                             data-token-type="player" 
-                                             data-entity-id="<?php echo $player['player_id']; ?>"
-                                             data-position-x="<?php echo $position['x']; ?>"
-                                             data-position-y="<?php echo $position['y']; ?>"
-                                             data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
-                                             style="width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #007bff; border-radius: 50%; background-image: url('<?php echo htmlspecialchars($imageUrl); ?>'); background-size: cover; background-position: center;"
-                                             title="<?php echo htmlspecialchars($displayName); ?>">
-                                        </div>
+                                        <?php if ($hasCustomImage): ?>
+                                            <div class="token" 
+                                                 data-token-type="player" 
+                                                 data-entity-id="<?php echo $player['player_id']; ?>"
+                                                 data-position-x="<?php echo $position['x']; ?>"
+                                                 data-position-y="<?php echo $position['y']; ?>"
+                                                 data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
+                                                 style="width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid <?php echo $borderColor; ?>; border-radius: 50%; background-image: url('<?php echo htmlspecialchars($imageUrl); ?>'); background-size: cover; background-position: center;"
+                                                 title="<?php echo htmlspecialchars($displayName); ?>">
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="token" 
+                                                 data-token-type="player" 
+                                                 data-entity-id="<?php echo $player['player_id']; ?>"
+                                                 data-position-x="<?php echo $position['x']; ?>"
+                                                 data-position-y="<?php echo $position['y']; ?>"
+                                                 data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
+                                                 style="width: 30px; height: 30px; margin: 2px; display: inline-flex; align-items: center; justify-content: center; cursor: move; border: 2px solid <?php echo $borderColor; ?>; border-radius: 50%; background-color: <?php echo $borderColor; ?>;"
+                                                 title="<?php echo htmlspecialchars($displayName); ?>">
+                                                <i class="fas fa-user" style="font-size: 14px; color: white;"></i>
+                                            </div>
+                                        <?php endif; ?>
                                     <?php endforeach; ?>
                                     
                                     <!-- Pions des PNJ (seulement visibles) -->
@@ -275,29 +290,43 @@
                                         // Logique d'affichage selon l'identification
                                         $imageUrl = 'images/default_npc.png';
                                         $displayName = 'PNJ inconnu';
+                                        $hasCustomImage = false;
                                         
                                         if ($npc['is_identified']) {
                                             // PNJ identifié : afficher nom et photo
                                             $displayName = $npc['name'];
                                             if (!empty($npc['character_profile_photo']) && file_exists($npc['character_profile_photo'])) {
                                                 $imageUrl = $npc['character_profile_photo'];
+                                                $hasCustomImage = true;
                                             } elseif (!empty($npc['profile_photo']) && file_exists($npc['profile_photo'])) {
                                                 $imageUrl = $npc['profile_photo'];
+                                                $hasCustomImage = true;
                                             }
-                                        } else {
-                                            // PNJ non identifié : afficher silhouette générique
-                                            $imageUrl = 'images/default_npc.png';
                                         }
+                                        $borderColor = $tokenColors[$tokenKey] ?? '#28a745';
                                         ?>
-                                        <div class="token" 
-                                             data-token-type="npc" 
-                                             data-entity-id="<?php echo $npc['id']; ?>"
-                                             data-position-x="<?php echo $position['x']; ?>"
-                                             data-position-y="<?php echo $position['y']; ?>"
-                                             data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
-                                             style="width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #28a745; border-radius: 50%; background-image: url('<?php echo htmlspecialchars($imageUrl); ?>'); background-size: cover; background-position: center;"
-                                             title="<?php echo htmlspecialchars($displayName); ?>">
-                                        </div>
+                                        <?php if ($hasCustomImage): ?>
+                                            <div class="token" 
+                                                 data-token-type="npc" 
+                                                 data-entity-id="<?php echo $npc['id']; ?>"
+                                                 data-position-x="<?php echo $position['x']; ?>"
+                                                 data-position-y="<?php echo $position['y']; ?>"
+                                                 data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
+                                                 style="width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid <?php echo $borderColor; ?>; border-radius: 50%; background-image: url('<?php echo htmlspecialchars($imageUrl); ?>'); background-size: cover; background-position: center;"
+                                                 title="<?php echo htmlspecialchars($displayName); ?>">
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="token" 
+                                                 data-token-type="npc" 
+                                                 data-entity-id="<?php echo $npc['id']; ?>"
+                                                 data-position-x="<?php echo $position['x']; ?>"
+                                                 data-position-y="<?php echo $position['y']; ?>"
+                                                 data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
+                                                 style="width: 30px; height: 30px; margin: 2px; display: inline-flex; align-items: center; justify-content: center; cursor: move; border: 2px solid <?php echo $borderColor; ?>; border-radius: 50%; background-color: <?php echo $borderColor; ?>;"
+                                                 title="<?php echo htmlspecialchars($displayName); ?>">
+                                                <i class="fas fa-user-tie" style="font-size: 14px; color: white;"></i>
+                                            </div>
+                                        <?php endif; ?>
                                     <?php endforeach; ?>
                                     
                                     <!-- Pions des monstres (seulement visibles) -->
@@ -309,6 +338,7 @@
                                         // Logique d'affichage selon l'identification
                                         $imageUrl = 'images/default_monster.png';
                                         $displayName = 'Monstre inconnu';
+                                        $hasCustomImage = false;
                                         
                                         if ($monster['is_identified']) {
                                             // Monstre identifié : afficher nom et photo
@@ -316,23 +346,33 @@
                                             $monster_image_path = "images/monstres/{$monster['csv_id']}.jpg";
                                             if (file_exists($monster_image_path)) {
                                                 $imageUrl = $monster_image_path;
-                                            } else {
-                                                $imageUrl = 'images/default_monster.png';
+                                                $hasCustomImage = true;
                                             }
-                                        } else {
-                                            // Monstre non identifié : afficher silhouette générique
-                                            $imageUrl = 'images/default_monster.png';
                                         }
+                                        $borderColor = $tokenColors[$tokenKey] ?? '#dc3545';
                                         ?>
-                                        <div class="token" 
-                                             data-token-type="monster" 
-                                             data-entity-id="<?php echo $monster['id']; ?>"
-                                             data-position-x="<?php echo $position['x']; ?>"
-                                             data-position-y="<?php echo $position['y']; ?>"
-                                             data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
-                                             style="width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #dc3545; border-radius: 50%; background-image: url('<?php echo htmlspecialchars($imageUrl); ?>'); background-size: cover; background-position: center;"
-                                             title="<?php echo htmlspecialchars($displayName); ?>">
-                                        </div>
+                                        <?php if ($hasCustomImage): ?>
+                                            <div class="token" 
+                                                 data-token-type="monster" 
+                                                 data-entity-id="<?php echo $monster['id']; ?>"
+                                                 data-position-x="<?php echo $position['x']; ?>"
+                                                 data-position-y="<?php echo $position['y']; ?>"
+                                                 data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
+                                                 style="width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid <?php echo $borderColor; ?>; border-radius: 50%; background-image: url('<?php echo htmlspecialchars($imageUrl); ?>'); background-size: cover; background-position: center;"
+                                                 title="<?php echo htmlspecialchars($displayName); ?>">
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="token" 
+                                                 data-token-type="monster" 
+                                                 data-entity-id="<?php echo $monster['id']; ?>"
+                                                 data-position-x="<?php echo $position['x']; ?>"
+                                                 data-position-y="<?php echo $position['y']; ?>"
+                                                 data-is-on-map="<?php echo $position['is_on_map'] ? 'true' : 'false'; ?>"
+                                                 style="width: 30px; height: 30px; margin: 2px; display: inline-flex; align-items: center; justify-content: center; cursor: move; border: 2px solid <?php echo $borderColor; ?>; border-radius: 50%; background-color: <?php echo $borderColor; ?>;"
+                                                 title="<?php echo htmlspecialchars($displayName); ?>">
+                                                <i class="fas fa-dragon" style="font-size: 14px; color: white;"></i>
+                                            </div>
+                                        <?php endif; ?>
                                     <?php endforeach; ?>
                                     
                                     <!-- Pions des objets (seulement visibles) -->
@@ -425,15 +465,23 @@
                             <h6 class="text-primary mb-3"><i class="fas fa-user-circle me-2"></i>Personnages Joueurs</h6>
                             <div class="list-group list-group-flush">
                                 <?php foreach ($placePlayers as $player): ?>
+                                    <?php 
+                                    $tokenKey = 'player_' . $player['player_id'];
+                                    $borderColor = $tokenColors[$tokenKey] ?? '#007bff';
+                                    ?>
                                     <div class="list-group-item px-0 py-2">
                                         <div class="d-flex align-items-center">
-                                            <?php if (!empty($player['profile_photo'])): ?>
-                                                <img src="<?php echo htmlspecialchars($player['profile_photo']); ?>" alt="Photo de <?php echo htmlspecialchars($player['character_name'] ?: $player['username']); ?>" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
-                                            <?php else: ?>
-                                                <div class="bg-primary rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                                    <i class="fas fa-user text-white"></i>
-                                                </div>
-                                            <?php endif; ?>
+                                            <div class="position-relative me-3">
+                                                <?php if (!empty($player['profile_photo'])): ?>
+                                                    <img src="<?php echo htmlspecialchars($player['profile_photo']); ?>" alt="Photo de <?php echo htmlspecialchars($player['character_name'] ?: $player['username']); ?>" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
+                                                <?php else: ?>
+                                                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                        <i class="fas fa-user text-white"></i>
+                                                    </div>
+                                                <?php endif; ?>
+                                                <!-- Badge de couleur du pion -->
+                                                <div class="position-absolute" style="bottom: -2px; right: -2px; width: 16px; height: 16px; border-radius: 50%; background: <?php echo $borderColor; ?>; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3);" title="Couleur du pion"></div>
+                                            </div>
                                             <div class="flex-grow-1">
                                                 <h6 class="mb-1"><?php echo htmlspecialchars($player['character_name'] ?: $player['username']); ?></h6>
                                                 <small class="text-muted">
@@ -471,27 +519,34 @@
                             <h6 class="text-success mb-3"><i class="fas fa-user-tie me-2"></i>PNJ</h6>
                             <div class="list-group list-group-flush">
                                 <?php foreach ($placeNpcs as $npc): ?>
+                                    <?php 
+                                    $tokenKey = 'npc_' . $npc['id'];
+                                    $borderColor = $tokenColors[$tokenKey] ?? '#28a745';
+                                    
+                                    // Logique d'affichage selon l'identification
+                                    $imageUrl = 'images/default_npc.png';
+                                    $displayName = 'Créature inconnue';
+                                    
+                                    if ($npc['is_identified']) {
+                                        // PNJ identifié : afficher nom et photo
+                                        $displayName = $npc['name'];
+                                        if (!empty($npc['character_profile_photo']) && file_exists($npc['character_profile_photo'])) {
+                                            $imageUrl = $npc['character_profile_photo'];
+                                        } elseif (!empty($npc['profile_photo']) && file_exists($npc['profile_photo'])) {
+                                            $imageUrl = $npc['profile_photo'];
+                                        }
+                                    } else {
+                                        // PNJ non identifié : afficher silhouette générique
+                                        $imageUrl = 'images/default_npc.png';
+                                    }
+                                    ?>
                                     <div class="list-group-item px-0 py-2">
                                         <div class="d-flex align-items-center">
-                                            <?php 
-                                            // Logique d'affichage selon l'identification
-                                            $imageUrl = 'images/default_npc.png';
-                                            $displayName = 'Créature inconnue';
-                                            
-                                            if ($npc['is_identified']) {
-                                                // PNJ identifié : afficher nom et photo
-                                                $displayName = $npc['name'];
-                                                if (!empty($npc['character_profile_photo']) && file_exists($npc['character_profile_photo'])) {
-                                                    $imageUrl = $npc['character_profile_photo'];
-                                                } elseif (!empty($npc['profile_photo']) && file_exists($npc['profile_photo'])) {
-                                                    $imageUrl = $npc['profile_photo'];
-                                                }
-                                            } else {
-                                                // PNJ non identifié : afficher silhouette générique
-                                                $imageUrl = 'images/default_npc.png';
-                                            }
-                                            ?>
-                                            <img src="<?php echo htmlspecialchars($imageUrl); ?>" alt="<?php echo htmlspecialchars($displayName); ?>" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                                            <div class="position-relative me-3">
+                                                <img src="<?php echo htmlspecialchars($imageUrl); ?>" alt="<?php echo htmlspecialchars($displayName); ?>" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
+                                                <!-- Badge de couleur du pion -->
+                                                <div class="position-absolute" style="bottom: -2px; right: -2px; width: 16px; height: 16px; border-radius: 50%; background: <?php echo $borderColor; ?>; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3);" title="Couleur du pion"></div>
+                                            </div>
                                             <div class="flex-grow-1">
                                                 <h6 class="mb-1"><?php echo htmlspecialchars($displayName); ?></h6>
                                                 <small class="text-muted">PNJ</small>
@@ -509,28 +564,35 @@
                             <h6 class="text-danger mb-3"><i class="fas fa-dragon me-2"></i>Monstres</h6>
                             <div class="list-group list-group-flush">
                                 <?php foreach ($placeMonsters as $monster): ?>
+                                    <?php 
+                                    $tokenKey = 'monster_' . $monster['id'];
+                                    $borderColor = $tokenColors[$tokenKey] ?? '#dc3545';
+                                    
+                                    // Logique d'affichage selon l'identification
+                                    $imageUrl = 'images/default_monster.png';
+                                    $displayName = 'Créature inconnue';
+                                    
+                                    if ($monster['is_identified']) {
+                                        // Monstre identifié : afficher nom et photo
+                                        $displayName = $monster['name'];
+                                        $monster_image_path = "images/monstres/{$monster['csv_id']}.jpg";
+                                        if (file_exists($monster_image_path)) {
+                                            $imageUrl = $monster_image_path;
+                                        } else {
+                                            $imageUrl = 'images/default_monster.png';
+                                        }
+                                    } else {
+                                        // Monstre non identifié : afficher silhouette générique
+                                        $imageUrl = 'images/default_monster.png';
+                                    }
+                                    ?>
                                     <div class="list-group-item px-0 py-2">
                                         <div class="d-flex align-items-center">
-                                            <?php 
-                                            // Logique d'affichage selon l'identification
-                                            $imageUrl = 'images/default_monster.png';
-                                            $displayName = 'Créature inconnue';
-                                            
-                                            if ($monster['is_identified']) {
-                                                // Monstre identifié : afficher nom et photo
-                                                $displayName = $monster['name'];
-                                                $monster_image_path = "images/monstres/{$monster['csv_id']}.jpg";
-                                                if (file_exists($monster_image_path)) {
-                                                    $imageUrl = $monster_image_path;
-                                                } else {
-                                                    $imageUrl = 'images/default_monster.png';
-                                                }
-                                            } else {
-                                                // Monstre non identifié : afficher silhouette générique
-                                                $imageUrl = 'images/default_monster.png';
-                                            }
-                                            ?>
-                                            <img src="<?php echo htmlspecialchars($imageUrl); ?>" alt="<?php echo htmlspecialchars($displayName); ?>" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                                            <div class="position-relative me-3">
+                                                <img src="<?php echo htmlspecialchars($imageUrl); ?>" alt="<?php echo htmlspecialchars($displayName); ?>" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
+                                                <!-- Badge de couleur du pion -->
+                                                <div class="position-absolute" style="bottom: -2px; right: -2px; width: 16px; height: 16px; border-radius: 50%; background: <?php echo $borderColor; ?>; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3);" title="Couleur du pion"></div>
+                                            </div>
                                             <div class="flex-grow-1">
                                                 <h6 class="mb-1"><?php echo htmlspecialchars($displayName); ?></h6>
                                                 <small class="text-muted">
@@ -742,6 +804,10 @@ function positionTokenOnMap(token, x = null, y = null) {
         return;
     }
     
+    // Sauvegarder les couleurs avant de manipuler le DOM
+    const savedBorderColor = token.style.borderColor;
+    const savedBackgroundColor = token.style.backgroundColor;
+    
     // Retirer le token de son conteneur actuel (sidebar ou autre)
     if (token.parentNode) {
         token.remove();
@@ -758,6 +824,15 @@ function positionTokenOnMap(token, x = null, y = null) {
     token.style.zIndex = '1000';
     token.style.margin = '0';
     token.style.pointerEvents = 'auto';
+    
+    // Restaurer les couleurs
+    if (savedBorderColor) {
+        token.style.borderColor = savedBorderColor;
+    }
+    if (savedBackgroundColor) {
+        token.style.backgroundColor = savedBackgroundColor;
+    }
+    
     token.dataset.isOnMap = 'true';
     token.dataset.positionX = posX;
     token.dataset.positionY = posY;
@@ -769,6 +844,10 @@ function positionTokenOnMap(token, x = null, y = null) {
  * Remettre un token dans la sidebar
  */
 function resetTokenToSidebar(token) {
+    // Sauvegarder les couleurs avant de manipuler le DOM
+    const savedBorderColor = token.style.borderColor;
+    const savedBackgroundColor = token.style.backgroundColor;
+    
     // Retirer le pion du conteneur du plan
     if (token.parentNode) {
         token.remove();
@@ -788,6 +867,15 @@ function resetTokenToSidebar(token) {
     token.style.zIndex = 'auto';
     token.style.margin = '2px';
     token.style.pointerEvents = 'auto';
+    
+    // Restaurer les couleurs
+    if (savedBorderColor) {
+        token.style.borderColor = savedBorderColor;
+    }
+    if (savedBackgroundColor) {
+        token.style.backgroundColor = savedBackgroundColor;
+    }
+    
     token.dataset.isOnMap = 'false';
 }
 
@@ -797,6 +885,7 @@ let lastUpdateTime = null;
 let lastNpcsData = {};
 let lastMonstersData = {};
 let lastObjectsData = {};
+let lastTokenColors = {};  // Stocker les couleurs des pions
 
 function startAutoUpdate() {
     // Mettre à jour toutes les 2 secondes
@@ -808,6 +897,97 @@ function stopAutoUpdate() {
         clearInterval(autoUpdateInterval);
         autoUpdateInterval = null;
     }
+}
+
+/**
+ * Appliquer les couleurs personnalisées aux pions
+ */
+function applyTokenColors(colors) {
+    console.log('🎨 Application des couleurs personnalisées:', colors);
+    
+    // Sauvegarder les couleurs pour les utiliser lors de la création de nouveaux pions
+    lastTokenColors = colors;
+    
+    // Parcourir tous les pions
+    const tokens = document.querySelectorAll('.token');
+    tokens.forEach(token => {
+        const tokenType = token.dataset.tokenType;
+        const entityId = token.dataset.entityId;
+        const tokenKey = `${tokenType}_${entityId}`;
+        
+        // Si une couleur est définie pour ce pion
+        if (colors[tokenKey]) {
+            const color = colors[tokenKey];
+            
+            // Appliquer la couleur de bordure
+            token.style.borderColor = color;
+            
+            // Si le pion n'a pas de background-image, appliquer la couleur de fond
+            const hasBackgroundImage = token.style.backgroundImage && token.style.backgroundImage !== 'none' && token.style.backgroundImage !== '';
+            if (!hasBackgroundImage) {
+                token.style.backgroundColor = color;
+            }
+            
+            console.log(`✅ Couleur appliquée à ${tokenKey}: ${color}`);
+        }
+    });
+}
+
+/**
+ * Rafraîchir tous les pions en les recréant complètement
+ * Cela garantit que les couleurs et styles sont toujours corrects
+ */
+function refreshAllTokens(data) {
+    console.log('🔄 Rafraîchissement complet des pions');
+    
+    // 1. Sauvegarder les couleurs
+    if (data.colors) {
+        lastTokenColors = data.colors;
+    }
+    
+    const tokenSidebar = document.getElementById('tokenSidebar');
+    if (!tokenSidebar) return;
+    
+    // 2. Supprimer TOUS les pions NPCs et monstres (sidebar ET carte)
+    // Cela garantit que les pions cachés sont bien supprimés
+    document.querySelectorAll('.token[data-token-type="npc"]').forEach(token => token.remove());
+    document.querySelectorAll('.token[data-token-type="monster"]').forEach(token => token.remove());
+    
+    // 3. Recréer les pions des NPCs visibles
+    if (data.npcs) {
+        Object.keys(data.npcs).forEach(npcKey => {
+            const npcData = data.npcs[npcKey];
+            if (npcData.is_visible) {
+                const entityId = npcKey.replace('npc_', '');
+                const token = createNpcToken(entityId, npcData);
+                tokenSidebar.appendChild(token);
+            }
+        });
+    }
+    
+    // 4. Recréer les pions des monstres visibles
+    if (data.monsters) {
+        Object.keys(data.monsters).forEach(monsterKey => {
+            const monsterData = data.monsters[monsterKey];
+            if (monsterData.is_visible) {
+                const entityId = monsterKey.replace('monster_', '');
+                const token = createMonsterToken(entityId, monsterData);
+                tokenSidebar.appendChild(token);
+            }
+        });
+    }
+    
+    // 5. Appliquer les positions
+    if (data.positions) {
+        applyPositionUpdates(data.positions);
+    }
+    
+    // 6. Appliquer les couleurs
+    if (data.colors) {
+        applyTokenColors(data.colors);
+    }
+    
+    console.log('✅ Rafraîchissement terminé');
 }
 
 function updateTokenPositions() {
@@ -829,37 +1009,13 @@ function updateTokenPositions() {
     .then(result => {
         console.log('📡 Réponse get_token_positions.php:', result);
         if (result.success) {
-            if (result.positions) {
-                console.log('📍 Positions reçues:', result.positions);
-                applyPositionUpdates(result.positions);
-            }
+            // Utiliser la nouvelle fonction qui recrée tous les pions
+            refreshAllTokens(result);
             
-            if (result.npcs) {
-                // Comparer avec les données précédentes pour détecter les changements
-                if (JSON.stringify(result.npcs) !== JSON.stringify(lastNpcsData)) {
-                    updateNpcsDisplay(result.npcs);
-                    lastNpcsData = result.npcs;
-                }
-            }
-            
-            if (result.monsters) {
-                // Comparer avec les données précédentes pour détecter les changements
-                if (JSON.stringify(result.monsters) !== JSON.stringify(lastMonstersData)) {
-                    updateMonstersDisplay(result.monsters);
-                    lastMonstersData = result.monsters;
-                }
-            }
-            
-            if (result.objects) {
-                // Comparer avec les données précédentes pour détecter les changements
-                if (JSON.stringify(result.objects) !== JSON.stringify(lastObjectsData)) {
-                    // Mettre à jour l'affichage des objets (icônes, visibilité)
-                    // MAIS ne pas repositionner - cela est géré par applyPositionUpdates()
-                    updateObjectsDisplay(result.objects);
-                    lastObjectsData = result.objects;
-                }
-            }
-            
+            // Mettre à jour les données de référence pour la prochaine comparaison
+            lastNpcsData = result.npcs || {};
+            lastMonstersData = result.monsters || {};
+            lastObjectsData = result.objects || {};
             lastUpdateTime = result.timestamp;
         }
     })
@@ -995,80 +1151,11 @@ function resetTokenToSidebar(token) {
     token.dataset.isOnMap = 'false';
 }
 
-function updateNpcsDisplay(npcs) {
-    // Mettre à jour les pions des PNJ
-    const npcTokens = document.querySelectorAll('.token[data-token-type="npc"]');
-    npcTokens.forEach(token => {
-        const entityId = token.dataset.entityId;
-        const npcKey = `npc_${entityId}`;
-        const npcData = npcs[npcKey];
-        
-        if (npcData) {
-            if (npcData.is_visible) {
-                // PNJ visible : afficher le pion
-                token.style.display = 'inline-block';
-                
-                // Mettre à jour l'affichage selon l'identification
-                if (npcData.is_identified) {
-                    // PNJ identifié : nom réel et photo
-                    token.title = npcData.name;
-                    if (npcData.character_profile_photo) {
-                        token.style.backgroundImage = `url('${npcData.character_profile_photo}')`;
-                    } else if (npcData.profile_photo) {
-                        token.style.backgroundImage = `url('${npcData.profile_photo}')`;
-                    }
-                } else {
-                    // PNJ non identifié : silhouette générique
-                    token.title = 'PNJ inconnu';
-                    token.style.backgroundImage = 'url("images/default_npc.png")';
-                }
-            } else {
-                // PNJ non visible : masquer le pion
-                token.style.display = 'none';
-            }
-        }
-    });
-    
-    // Vérifier s'il y a de nouveaux PNJ à ajouter ou des PNJ à supprimer
-    updateNpcsTokens(npcs);
-    
-    // Mettre à jour la liste des PNJ
-    updateNpcsList(npcs);
-}
+// FONCTIONS OBSOLÈTES SUPPRIMÉES :
+// - updateNpcsDisplay() : Remplacée par refreshAllTokens()
+// - updateNpcsTokens() : Remplacée par refreshAllTokens()
 
-function updateNpcsTokens(npcs) {
-    const tokenSidebar = document.getElementById('tokenSidebar');
-    if (!tokenSidebar) return;
-    
-    // Créer un ensemble des IDs de PNJ existants
-    const existingNpcIds = new Set();
-    document.querySelectorAll('.token[data-token-type="npc"]').forEach(token => {
-        existingNpcIds.add(token.dataset.entityId);
-    });
-    
-    // Ajouter les nouveaux PNJ visibles
-    Object.keys(npcs).forEach(npcKey => {
-        const npcData = npcs[npcKey];
-        const entityId = npcKey.replace('npc_', '');
-        
-        if (npcData.is_visible && !existingNpcIds.has(entityId)) {
-            // Créer un nouveau pion pour ce PNJ
-            const newToken = createNpcToken(entityId, npcData);
-            tokenSidebar.appendChild(newToken);
-        }
-    });
-    
-    // Supprimer les PNJ qui ne sont plus visibles
-    document.querySelectorAll('.token[data-token-type="npc"]').forEach(token => {
-        const entityId = token.dataset.entityId;
-        const npcKey = `npc_${entityId}`;
-        const npcData = npcs[npcKey];
-        
-        if (!npcData || !npcData.is_visible) {
-            token.remove();
-        }
-    });
-}
+
 
 function createNpcToken(entityId, npcData) {
     const token = document.createElement('div');
@@ -1079,95 +1166,48 @@ function createNpcToken(entityId, npcData) {
     token.dataset.positionY = '0';
     token.dataset.isOnMap = 'false';
     
+    // Récupérer la couleur personnalisée
+    const tokenKey = `npc_${entityId}`;
+    const borderColor = lastTokenColors[tokenKey] || '#28a745';
+    
     // Logique d'affichage selon l'identification
-    let imageUrl = 'images/default_npc.png';
+    let imageUrl = null;
+    let hasCustomImage = false;
     let displayName = 'PNJ inconnu';
+    
     
     if (npcData.is_identified) {
         displayName = npcData.name;
-        if (npcData.character_profile_photo) {
+        // Vérifier si on a une vraie image personnalisée (pas l'image par défaut)
+        if (npcData.character_profile_photo && npcData.character_profile_photo !== 'images/default_npc.png') {
             imageUrl = npcData.character_profile_photo;
-        } else if (npcData.profile_photo) {
+            hasCustomImage = true;
+        } else if (npcData.profile_photo && npcData.profile_photo !== 'images/default_npc.png') {
             imageUrl = npcData.profile_photo;
+            hasCustomImage = true;
         }
     }
     
-    token.style.cssText = 'width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #28a745; border-radius: 50%; background-image: url("' + imageUrl + '"); background-size: cover; background-position: center;';
+    // Appliquer les styles selon si on a une image ou non
+    if (hasCustomImage) {
+        token.style.cssText = `width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid ${borderColor}; border-radius: 50%; background-image: url("${imageUrl}"); background-size: cover; background-position: center;`;
+    } else {
+        // Pion sans image : fond coloré + icône
+        token.style.cssText = `width: 30px; height: 30px; margin: 2px; display: inline-flex; align-items: center; justify-content: center; cursor: move; border: 2px solid ${borderColor}; border-radius: 50%; background-color: ${borderColor};`;
+        const icon = document.createElement('i');
+        icon.className = 'fas fa-user-tie';
+        icon.style.cssText = 'font-size: 14px; color: white;';
+        token.appendChild(icon);
+    }
+    
     token.title = displayName;
     
     return token;
 }
 
-function updateMonstersDisplay(monsters) {
-    // Mettre à jour les pions des monstres
-    const monsterTokens = document.querySelectorAll('.token[data-token-type="monster"]');
-    monsterTokens.forEach(token => {
-        const entityId = token.dataset.entityId;
-        const monsterKey = `monster_${entityId}`;
-        const monsterData = monsters[monsterKey];
-        
-        if (monsterData) {
-            if (monsterData.is_visible) {
-                // Monstre visible : afficher le pion
-                token.style.display = 'inline-block';
-                
-                // Mettre à jour l'affichage selon l'identification
-                if (monsterData.is_identified) {
-                    // Monstre identifié : nom réel et photo
-                    token.title = monsterData.name;
-                    token.style.backgroundImage = `url('images/monstres/${monsterData.monster_id}.jpg')`;
-                } else {
-                    // Monstre non identifié : silhouette générique
-                    token.title = 'Monstre inconnu';
-                    token.style.backgroundImage = 'url("images/default_monster.png")';
-                }
-            } else {
-                // Monstre non visible : masquer le pion
-                token.style.display = 'none';
-            }
-        }
-    });
-    
-    // Vérifier s'il y a de nouveaux monstres à ajouter ou des monstres à supprimer
-    updateMonstersTokens(monsters);
-    
-    // Mettre à jour la liste des monstres
-    updateMonstersList(monsters);
-}
 
-function updateMonstersTokens(monsters) {
-    const tokenSidebar = document.getElementById('tokenSidebar');
-    if (!tokenSidebar) return;
-    
-    // Créer un ensemble des IDs de monstres existants
-    const existingMonsterIds = new Set();
-    document.querySelectorAll('.token[data-token-type="monster"]').forEach(token => {
-        existingMonsterIds.add(token.dataset.entityId);
-    });
-    
-    // Ajouter les nouveaux monstres visibles
-    Object.keys(monsters).forEach(monsterKey => {
-        const monsterData = monsters[monsterKey];
-        const entityId = monsterKey.replace('monster_', '');
-        
-        if (monsterData.is_visible && !existingMonsterIds.has(entityId)) {
-            // Créer un nouveau pion pour ce monstre
-            const newToken = createMonsterToken(entityId, monsterData);
-            tokenSidebar.appendChild(newToken);
-        }
-    });
-    
-    // Supprimer les monstres qui ne sont plus visibles
-    document.querySelectorAll('.token[data-token-type="monster"]').forEach(token => {
-        const entityId = token.dataset.entityId;
-        const monsterKey = `monster_${entityId}`;
-        const monsterData = monsters[monsterKey];
-        
-        if (!monsterData || !monsterData.is_visible) {
-            token.remove();
-        }
-    });
-}
+
+
 
 function createMonsterToken(entityId, monsterData) {
     const token = document.createElement('div');
@@ -1178,20 +1218,42 @@ function createMonsterToken(entityId, monsterData) {
     token.dataset.positionY = '0';
     token.dataset.isOnMap = 'false';
     
+    // Récupérer la couleur personnalisée
+    const tokenKey = `monster_${entityId}`;
+    const borderColor = lastTokenColors[tokenKey] || '#dc3545';
+    
     // Logique d'affichage selon l'identification
-    let imageUrl = 'images/default_monster.png';
+    let imageUrl = null;
+    let hasCustomImage = false;
     let displayName = 'Monstre inconnu';
     
-    if (monsterData.is_identified) {
+    if (monsterData.is_identified && monsterData.monster_id) {
         displayName = monsterData.name;
-        imageUrl = `images/monstres/${monsterData.monster_id}.jpg`;
+        const monsterImagePath = `images/monstres/${monsterData.monster_id}.jpg`;
+        // Vérifier si ce n'est pas l'image par défaut
+        if (monsterImagePath !== 'images/default_monster.png') {
+            imageUrl = monsterImagePath;
+            hasCustomImage = true;
+        }
     }
     
-    token.style.cssText = 'width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid #dc3545; border-radius: 50%; background-image: url("' + imageUrl + '"); background-size: cover; background-position: center;';
+    // Appliquer les styles selon si on a une image ou non
+    if (hasCustomImage) {
+        token.style.cssText = `width: 30px; height: 30px; margin: 2px; display: inline-block; cursor: move; border: 2px solid ${borderColor}; border-radius: 50%; background-image: url("${imageUrl}"); background-size: cover; background-position: center;`;
+    } else {
+        // Pion sans image : fond coloré + icône
+        token.style.cssText = `width: 30px; height: 30px; margin: 2px; display: inline-flex; align-items: center; justify-content: center; cursor: move; border: 2px solid ${borderColor}; border-radius: 50%; background-color: ${borderColor};`;
+        const icon = document.createElement('i');
+        icon.className = 'fas fa-dragon';
+        icon.style.cssText = 'font-size: 14px; color: white;';
+        token.appendChild(icon);
+    }
+    
     token.title = displayName;
     
     return token;
 }
+
 
 function updateNpcsList(npcs) {
     // Cette fonction pourrait être étendue pour mettre à jour dynamiquement la liste des PNJ
@@ -1405,8 +1467,8 @@ function updateParticipantsList() {
             if (data.success) {
                 updateNpcsSection(data.npcs);
                 updateMonstersSection(data.monsters);
-                updateNpcTokens(data.npcs);
-                updateMonsterTokens(data.monsters);
+                // Les pions sont mis à jour par refreshAllTokens() dans updateTokenPositions()
+                // Pas besoin de les mettre à jour ici
             }
         })
         .catch(error => {
@@ -1415,60 +1477,15 @@ function updateParticipantsList() {
 }
 
 // Fonction pour mettre à jour les pions des monstres sur la carte
-function updateMonsterTokens(monsters) {
-    // Trouver tous les pions de monstres existants
-    const existingTokens = document.querySelectorAll('.token[data-token-type="monster"]');
-    
-    existingTokens.forEach(token => {
-        const entityId = token.getAttribute('data-entity-id');
-        const monster = monsters.find(m => m.id == entityId);
-        
-        if (monster) {
-            // Mettre à jour l'image du pion
-            let imageUrl = 'images/default_monster.png';
-            if (monster.is_identified) {
-                imageUrl = `images/monstres/${monster.csv_id}.jpg`;
-            }
-            
-            // Mettre à jour le background-image
-            token.style.backgroundImage = `url('${imageUrl}')`;
-            
-            // Mettre à jour le titre
-            const displayName = monster.is_identified ? monster.name : 'Monstre inconnu';
-            token.setAttribute('title', displayName);
-        }
-    });
-}
+// FONCTION OBSOLÈTE SUPPRIMÉE :
+// - updateMonsterTokens() : Remplacée par refreshAllTokens()
 
-// Fonction pour mettre à jour les pions des PNJ sur la carte
-function updateNpcTokens(npcs) {
-    // Trouver tous les pions de PNJ existants
-    const existingTokens = document.querySelectorAll('.token[data-token-type="npc"]');
-    
-    existingTokens.forEach(token => {
-        const entityId = token.getAttribute('data-entity-id');
-        const npc = npcs.find(n => n.id == entityId);
-        
-        if (npc) {
-            // Mettre à jour l'image du pion
-            let imageUrl = 'images/default_npc.png';
-            if (npc.is_identified) {
-                if (npc.character_profile_photo) {
-                    imageUrl = npc.character_profile_photo;
-                } else if (npc.profile_photo) {
-                    imageUrl = npc.profile_photo;
-                }
-            }
-            
-            // Mettre à jour le background-image
-            token.style.backgroundImage = `url('${imageUrl}')`;
-            
-            // Mettre à jour le titre
-            const displayName = npc.is_identified ? npc.name : 'PNJ inconnu';
-            token.setAttribute('title', displayName);
-        }
-    });
-}
+
+
+// FONCTION OBSOLÈTE SUPPRIMÉE :
+// - updateNpcTokens() : Remplacée par refreshAllTokens()
+
+
 
 // Fonction pour mettre à jour la section PNJ
 function updateNpcsSection(npcs) {
@@ -1538,9 +1555,17 @@ function createNpcItem(npc) {
         }
     }
     
+    // Récupérer la couleur personnalisée
+    const tokenKey = `npc_${npc.id}`;
+    const borderColor = lastTokenColors[tokenKey] || '#28a745';
+    
     div.innerHTML = `
         <div class="d-flex align-items-center">
-            <img src="${imageUrl}" alt="${displayName}" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;" onerror="this.src='images/default_npc.png'">
+            <div class="position-relative me-3">
+                <img src="${imageUrl}" alt="${displayName}" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;" onerror="this.src='images/default_npc.png'">
+                <!-- Badge de couleur du pion -->
+                <div class="position-absolute" style="bottom: -2px; right: -2px; width: 16px; height: 16px; border-radius: 50%; background: ${borderColor}; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3);" title="Couleur du pion"></div>
+            </div>
             <div class="flex-grow-1">
                 <h6 class="mb-1">${displayName}</h6>
                 <small class="text-muted">PNJ</small>
@@ -1571,9 +1596,17 @@ function createMonsterItem(monster) {
         details = 'Créature non identifiée';
     }
     
+    // Récupérer la couleur personnalisée
+    const tokenKey = `monster_${monster.id}`;
+    const borderColor = lastTokenColors[tokenKey] || '#dc3545';
+    
     div.innerHTML = `
         <div class="d-flex align-items-center">
-            <img src="${imageUrl}" alt="${displayName}" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;" onerror="this.src='images/default_monster.png'">
+            <div class="position-relative me-3">
+                <img src="${imageUrl}" alt="${displayName}" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;" onerror="this.src='images/default_monster.png'">
+                <!-- Badge de couleur du pion -->
+                <div class="position-absolute" style="bottom: -2px; right: -2px; width: 16px; height: 16px; border-radius: 50%; background: ${borderColor}; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3);" title="Couleur du pion"></div>
+            </div>
             <div class="flex-grow-1">
                 <h6 class="mb-1">${displayName}</h6>
                 <small class="text-muted">${details}</small>

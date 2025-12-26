@@ -149,6 +149,29 @@ $player_characters = $lieu ? $lieu->getPlayerCharacters($user_id) : [];
 // Récupérer les positions de tous les pions (comme dans view_scene.php)
 $tokenPositions = $lieu ? $lieu->getTokenPositions() : [];
 
+// Récupérer les couleurs personnalisées des pions
+$tokenColors = [];
+if ($lieu) {
+    try {
+        $pdo = getPDO();
+        $stmt = $pdo->prepare("
+            SELECT token_type, entity_id, border_color
+            FROM token_colors
+            WHERE place_id = ?
+        ");
+        $stmt->execute([$place_id]);
+        $colors = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        foreach ($colors as $color) {
+            $key = $color['token_type'] . '_' . $color['entity_id'];
+            $tokenColors[$key] = $color['border_color'];
+        }
+    } catch (PDOException $e) {
+        error_log("Erreur lors du chargement des couleurs de pions: " . $e->getMessage());
+        $tokenColors = [];
+    }
+}
+
 // Récupérer TOUS les joueurs présents dans le lieu (comme dans view_scene.php)
 $placePlayers = $lieu ? $lieu->getAllPlayers() : [];
 
