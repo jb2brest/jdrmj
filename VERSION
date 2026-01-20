@@ -2,19 +2,19 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.25.54
+VERSION=2.25.55
 
 # Date de déploiement
-DEPLOY_DATE=2025-12-26
+DEPLOY_DATE=2026-01-20
 
 # Environnement
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=fcbbfef5cb95221aa53d41e68ec5c44aa8ccf812
+GIT_COMMIT=eefac4df760e161ebe3008c7481a98599eb6f2ad
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20251226-202458
+BUILD_ID=20260120-195756
 
 # Notes de version
-RELEASE_NOTES="Refonte de la mise à jours des positions et couleurs dans view_place_character"
+RELEASE_NOTES="lieux"
