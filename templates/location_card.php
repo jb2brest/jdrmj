@@ -18,6 +18,17 @@ $locRoomCount = isset($locRooms) ? count($locRooms) : (is_object($location) && m
          ondragover="allowDrop(event)"
          ondragleave="dragLeave(event)">
          
+        <?php 
+        $locMapUrl = is_object($location) ? (method_exists($location, 'getMapUrl') ? $location->getMapUrl() : null) : ($location['map_url'] ?? null);
+        if ($locMapUrl): 
+        ?>
+            <img src="<?php echo htmlspecialchars($locMapUrl); ?>" 
+                 class="card-img-top" 
+                 alt="Image de <?php echo htmlspecialchars($locName); ?>" 
+                 style="height: 150px; object-fit: cover; cursor: pointer;"
+                 onclick="window.open(this.src, '_blank')">
+        <?php endif; ?>
+
         <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
             <h5 class="card-title mb-0 text-white">
                 <i class="fas fa-map-marker-alt me-2"></i><?php echo htmlspecialchars($locName); ?>

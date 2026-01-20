@@ -14,6 +14,7 @@ class Location
     private $id;
     private $name;
     private $description;
+    private $map_url;
     private $region_id;
     private $created_at;
     private $updated_at;
@@ -41,6 +42,7 @@ class Location
         $this->id = $data['id'] ?? null;
         $this->name = $data['name'] ?? null;
         $this->description = $data['description'] ?? null;
+        $this->map_url = $data['map_url'] ?? null;
         $this->region_id = $data['region_id'] ?? null;
         $this->created_at = $data['created_at'] ?? null;
         $this->updated_at = $data['updated_at'] ?? null;
@@ -55,28 +57,30 @@ class Location
     public function getId() { return $this->id; }
     public function getName() { return $this->name; }
     public function getDescription() { return $this->description; }
+    public function getMapUrl() { return $this->map_url; }
     public function getRegionId() { return $this->region_id; }
     
+    public function setMapUrl($url) { $this->map_url = $url; }
+
     /**
      * Création d'un nouveau lieu
      */
-    public static function create($name, $regionId, $description = '', PDO $pdo = null)
+    public static function create($name, $regionId, $description = '', $mapUrl = '', PDO $pdo = null)
     {
         $pdo = $pdo ?: getPDO();
         
         try {
             $stmt = $pdo->prepare("
-                INSERT INTO locations (name, region_id, description, created_at, updated_at)
-                VALUES (?, ?, ?, NOW(), NOW())
+                INSERT INTO locations (name, region_id, description, map_url, created_at, updated_at)
+                VALUES (?, ?, ?, ?, NOW(), NOW())
             ");
-            $stmt->execute([$name, $regionId, $description]);
+            $stmt->execute([$name, $regionId, $description, $mapUrl]);
             
             $id = $pdo->lastInsertId();
             return self::findById($id, $pdo);
             
         } catch (PDOException $e) {
             $msg = $e->getMessage();
-            // Check for duplicate entry (MySQL code 1062, SQLSTATE 23000)
             if (strpos($msg, 'Duplicate entry') !== false || 
                 strpos($msg, 'unique_location_per_region') !== false ||
                 ($e->errorInfo[1] ?? 0) == 1062) {
@@ -193,10 +197,10 @@ class Location
         try {
             $stmt = $this->pdo->prepare("
                 UPDATE locations 
-                SET name = ?, description = ?, region_id = ?, updated_at = NOW()
+                SET name = ?, description = ?, map_url = ?, region_id = ?, updated_at = NOW()
                 WHERE id = ?
             ");
-            return $stmt->execute([$this->name, $this->description, $this->region_id, $this->id]);
+            return $stmt->execute([$this->name, $this->description, $this->map_url, $this->region_id, $this->id]);
         } catch (PDOException $e) {
             return false;
         }

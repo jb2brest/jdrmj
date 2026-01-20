@@ -10,20 +10,12 @@ User::requireLogin();
 
 // Récupérer l'ID du lieu
 $locationId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-// DEBUG TRACES
-error_log("DEBUG view_location: ID received = " . $locationId);
-error_log("DEBUG view_location: User ID = " . ($_SESSION['user_id'] ?? 'not set'));
-
 $location = Location::findById($locationId);
 
 if (!$location) {
-    error_log("DEBUG view_location: Location not found for ID " . $locationId);
-    // Masquer la redirection pour voir l'erreur
-    // header('Location: index.php?error=location_not_found');
-    die("DEBUG: Location not found. ID requested: " . $locationId . ". User: " . ($_SESSION['user_id'] ?? 'guest'));
+    header('Location: index.php?error=location_not_found');
     exit();
 }
-error_log("DEBUG view_location: Location found: " . $location->getName());
 
 $region = Region::findById($location->getRegionId());
 $isCreator = false;
@@ -35,6 +27,48 @@ if ($region) {
     if ($monde && $monde['created_by'] == $_SESSION['user_id']) {
         $isCreator = true;
     }
+}
+
+// Fonction helper pour l'upload d'image de lieu
+function uploadLocationImage($file) {
+    // Vérifier qu'un fichier a été uploadé
+    if (!isset($file) || $file['error'] !== UPLOAD_ERR_OK) {
+        return ['success' => false, 'error' => 'Aucun fichier uploadé ou erreur d\'upload'];
+    }
+
+    // Vérifier la taille du fichier (max 5MB)
+    $maxSize = 5 * 1024 * 1024; // 5MB
+    if ($file['size'] > $maxSize) {
+        return ['success' => false, 'error' => 'Fichier trop volumineux (max 5MB)'];
+    }
+
+    // Vérifier le type de fichier
+    $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mimeType = finfo_file($finfo, $file['tmp_name']);
+    finfo_close($finfo);
+
+    if (!in_array($mimeType, $allowedTypes)) {
+        return ['success' => false, 'error' => 'Type de fichier non autorisé. Formats acceptés: JPG, PNG, GIF, WebP'];
+    }
+
+    // Créer le dossier d'upload s'il n'existe pas
+    $uploadDir = 'uploads/locations/';
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+
+    // Générer un nom de fichier unique
+    $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+    $fileName = 'location_' . time() . '_' . uniqid() . '.' . $extension;
+    $filePath = $uploadDir . $fileName;
+
+    // Déplacer le fichier uploadé
+    if (!move_uploaded_file($file['tmp_name'], $filePath)) {
+        return ['success' => false, 'error' => 'Erreur lors de l\'enregistrement du fichier'];
+    }
+
+    return ['success' => true, 'file_path' => $filePath];
 }
 
 // Gestion des formulaires POST
@@ -50,8 +84,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isCreator) {
             // Créer la pièce (Room)
             $room = new Room();
             $room->title = $title;
-            // $room->description = $notes; // Note: Room utilise 'notes' ou 'description' ? Check Room class.
-            // Vérifions la classe Room plus tard, assumons 'notes' pour l'instant comme dans view_region
             $room->notes = $notes;
             $room->region_id = $region->getId();
             $room->location_id = $locationId;
@@ -68,6 +100,73 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isCreator) {
             }
         } else {
             $error_message = "Le titre est requis.";
+        }
+    }
+    
+    // Mise à jour du lieu
+    if ($action === 'update_location') {
+        $name = sanitizeInput($_POST['name']);
+        $description = sanitizeInput($_POST['description']);
+        
+        if (!empty($name)) {
+            // Gérer l'image
+            if (isset($_FILES['map_image']) && $_FILES['map_image']['error'] === UPLOAD_ERR_OK) {
+                $uploadResult = uploadLocationImage($_FILES['map_image']);
+                if ($uploadResult['success']) {
+                    // Supprimer l'ancienne image si elle existe
+                    $oldImage = $location->getMapUrl();
+                    if ($oldImage && file_exists($oldImage)) {
+                        unlink($oldImage);
+                    }
+                    $location->setMapUrl($uploadResult['file_path']);
+                } else {
+                    $error_message = $uploadResult['error'];
+                }
+            }
+
+            // Mettre à jour les autres champs si pas d'erreur critique
+            if (empty($error_message)) {
+                // On utilise la réflexion ou on ajoute des setters publics si besoin, 
+                // mais pour l'instant Location n'a pas de setters publics pour name/desc.
+                // Ah, Location::save() utilise les propriétés privées.
+                // Il faut hydrater l'objet avec les nouvelles données.
+                // Comme hydrate est public, on peut l'utiliser !
+                // Mais hydrate attend un tableau.
+                
+                // Hack: hydrate overwrites everything. Be careful to keep ID etc.
+                // Better approach: use Reflection or add setters in Location.php.
+                // Wait, I updated Location.php to have setMapUrl.
+                // But I didn't verify setName/setDescription setters. 
+                // Let's assume for now I need to update directly via SQL or add setters?
+                // Actually, I can use hydrate safely if I pass all current values + updates.
+                
+                /*
+                 * PROBLÈME: Location n'a pas de setters pour name/desc dans ma version vue précédemment.
+                 * JE DOIS MODIFIER Location.php pour ajouter les setters OU utiliser hydrate intelligemment.
+                 * Hydrate:
+                 * $data['id'] = $this->id...
+                 */
+                
+                // Let's do a re-hydrate with current + new values
+                $newData = [
+                    'id' => $location->getId(),
+                    'name' => $name,
+                    'description' => $description,
+                    'map_url' => $location->getMapUrl(), // Updated via setter above if changed
+                    'region_id' => $location->getRegionId(),
+                    // timestamps will be handled by save() or ignored
+                ];
+                $location->hydrate($newData);
+                
+                if ($location->save()) {
+                     header("Location: view_location.php?id=" . $locationId . "&updated=1");
+                     exit();
+                } else {
+                    $error_message = "Erreur lors de la mise à jour du lieu.";
+                }
+            }
+        } else {
+            $error_message = "Le nom du lieu est requis.";
         }
     }
 }
@@ -92,6 +191,9 @@ $rooms = $location->getRooms();
             transform: translateY(-5px);
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
+        .cursor-pointer {
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -112,6 +214,9 @@ $rooms = $location->getRooms();
         <?php if (isset($success_message)): ?>
             <div class="alert alert-success"><?php echo $success_message; ?></div>
         <?php endif; ?>
+        <?php if (isset($_GET['updated'])): ?>
+            <div class="alert alert-success">Lieu mis à jour avec succès.</div>
+        <?php endif; ?>
         <?php if (isset($error_message)): ?>
             <div class="alert alert-danger"><?php echo $error_message; ?></div>
         <?php endif; ?>
@@ -129,16 +234,29 @@ $rooms = $location->getRooms();
                                     <p class="lead text-muted mb-0"><?php echo nl2br(htmlspecialchars($location->getDescription())); ?></p>
                                 <?php endif; ?>
                             </div>
-                            <?php if ($isCreator): ?>
-                                <div>
-                                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createPlaceModal">
-                                        <i class="fas fa-plus me-1"></i>Nouvelle Pièce
-                                    </button>
-                                    <button class="btn btn-outline-secondary ms-2" title="Modifier le lieu">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                </div>
-                            <?php endif; ?>
+                            
+                            <div class="d-flex align-items-start">
+                                <?php if ($location->getMapUrl()): ?>
+                                    <div class="me-3">
+                                        <img src="<?php echo htmlspecialchars($location->getMapUrl()); ?>" 
+                                             alt="Image du lieu" 
+                                             class="img-thumbnail cursor-pointer" 
+                                             style="max-height: 150px;"
+                                             onclick="window.open(this.src, '_blank')">
+                                    </div>
+                                <?php endif; ?>
+                                
+                                <?php if ($isCreator): ?>
+                                    <div class="d-flex flex-column gap-2">
+                                        <button class="btn btn-primary text-nowrap" data-bs-toggle="modal" data-bs-target="#createPlaceModal">
+                                            <i class="fas fa-plus me-1"></i>Nouvelle Pièce
+                                        </button>
+                                        <button class="btn btn-outline-secondary text-nowrap" data-bs-toggle="modal" data-bs-target="#editLocationModal">
+                                            <i class="fas fa-edit me-1"></i>Modifier
+                                        </button>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -156,26 +274,11 @@ $rooms = $location->getRooms();
                 <?php else: ?>
                     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
                         <?php foreach ($rooms as $place): 
-                            // Convert object to array if needed for the template, or adapt template.
-                            // The Place class usually works as an object, but our template might expect array.
-                            // Let's check place_card.php expectations. It uses $place['title'].
-                            // So we need to ensure $place acts like an array or object.
-                            // If Room class does not implement ArrayAccess, we might need to convert.
-                            // For safety, let's assume we pass the object if the template handles objects, 
-                            // OR we convert to array. looking at Place Card, it uses $place['id'].
-                            // Room objects likely don't support array access unless implemented.
-                            // We should probably convert room object to array here.
-                            $placeArray = is_object($place) && method_exists($place, 'toArray') ? $place->toArray() : (array)$place;
-                            // Also need to ensure map_url, title, id, notes exist.
-                            // If toArray() is not implemented or different, we must map manually.
-                            // Let's rely on Room object properties being public or mapped.
-                            // Actually, let's mock the array structure cleanly.
                             $placeData = [
                                 'id' => $place->id,
                                 'title' => $place->title,
                                 'map_url' => $place->map_url,
                                 'notes' => $place->notes,
-                                // Add other fields if needed
                             ];
                             $place = $placeData; // Override for template
                             include 'templates/place_card.php'; 
@@ -216,18 +319,58 @@ $rooms = $location->getRooms();
             </div>
         </div>
     </div>
+    
+    <!-- Modal Édition Lieu -->
+    <div class="modal fade" id="editLocationModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="action" value="update_location">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Modifier le lieu : <?php echo htmlspecialchars($location->getName()); ?></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="edit_name" class="form-label">Nom du lieu *</label>
+                            <input type="text" class="form-control" id="edit_name" name="name" 
+                                   value="<?php echo htmlspecialchars($location->getName()); ?>" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_description" class="form-label">Description</label>
+                            <textarea class="form-control" id="edit_description" name="description" rows="3"><?php echo htmlspecialchars($location->getDescription()); ?></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="map_image" class="form-label">Image / Illustration</label>
+                            <input type="file" class="form-control" id="map_image" name="map_image" accept="image/*">
+                            <div class="form-text">Formats acceptés : JPG, PNG, GIF, WebP. Max 5 Mo.</div>
+                        </div>
+                        <?php if ($location->getMapUrl()): ?>
+                            <div class="mb-3">
+                                <label class="form-label">Image actuelle :</label>
+                                <div>
+                                    <img src="<?php echo htmlspecialchars($location->getMapUrl()); ?>" class="img-fluid rounded" style="max-height: 100px;">
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     <?php endif; ?>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
     <script>
         function openMapFullscreen(url, title) {
-            // Placeholder for map function
              window.open(url, '_blank');
         }
         function drag(ev, elem) {
-            // Placeholder to prevent errors if place_card uses it
-            // Dragging might not be needed INSIDE view_location unless we move rooms OUT?
-            // For now, no drag logic needed here.
+            // Not used here
         }
     </script>
 </body>
