@@ -104,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $pdo->prepare("SELECT id FROM places WHERE id = ?");
             $stmt->execute([$npcData['location_id']]);
             if (!$stmt->fetch()) {
-                // Si le lieu n'existe pas, ne pas spécifier de lieu
+                // Si la pièce n'existe pas, ne pas spécifier de pièce
                 $npcData['location_id'] = null;
             }
         }
@@ -387,7 +387,7 @@ if (isset($locationData['place_id']) && $locationData['place_id']) {
         <div class="recap-section">
             <h5><i class="fas fa-map-marker-alt"></i> Localisation</h5>
             <p><strong>Monde :</strong> <?php echo htmlspecialchars($worldName); ?></p>
-            <p><strong>Lieu d'affectation :</strong> <?php echo htmlspecialchars($placeName); ?></p>
+            <p><strong>Pièce d'affectation :</strong> <?php echo htmlspecialchars($placeName); ?></p>
         </div>
 
         <!-- Équipement de départ -->

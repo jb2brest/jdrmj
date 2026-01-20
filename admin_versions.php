@@ -972,7 +972,7 @@ $current_page = "admin";
                                         <a href="check_orphan_characters.php" class="btn btn-danger w-100">
                                             <i class="fas fa-search"></i> Personnages Orphelins
                                         </a>
-                                        <small class="text-muted d-block mt-1">Vérifier et corriger les personnages acceptés dans une campagne mais non présents dans un lieu</small>
+                                        <small class="text-muted d-block mt-1">Vérifier et corriger les personnages acceptés dans une campagne mais non présents dans une pièce</small>
                                     </div>
                                 </div>
                                 

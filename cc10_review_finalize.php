@@ -160,7 +160,7 @@ if (empty($equipmentAgg) && !empty($equipmentChoices)) {
 }
 $equipmentItems = array_map(function($e){ return $e['name'] . ' x' . (int)$e['qty']; }, array_values($equipmentAgg));
 
-// Initialiser la variable pour la sélection de lieu (NPC uniquement)
+// Initialiser la variable pour la sélection de pièce (NPC uniquement)
 // Toujours recharger ptCharacter pour avoir les dernières données (notamment place_id après sauvegarde)
 if ($pt_id) {
     $ptCharacter = PTCharacter::findById($pt_id);
@@ -172,9 +172,9 @@ if ($character_type === 'npc' && $ptCharacter) {
 
 // Traitement formulaire
 $message = '';
-// Afficher un message de confirmation si le lieu vient d'être sauvegardé
+// Afficher un message de confirmation si la pièce vient d'être sauvegardé
 if (isset($_GET['place_saved']) && $_GET['place_saved'] == '1') {
-    $message = displayMessage("Lieu sélectionné avec succès.", 'success');
+    $message = displayMessage("Pièce sélectionné avec succès.", 'success');
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -183,7 +183,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: cc09_starting_equipment.php?pt_id=' . $pt_id . '&type=' . $character_type);
         exit();
     } elseif ($action === 'save_place') {
-        // Sauvegarder le lieu sélectionné pour un NPC
+        // Sauvegarder la pièce sélectionné pour un NPC
         if ($character_type === 'npc' && $ptCharacter) {
             $place_id = (int)($_POST['place_id'] ?? 0);
             if ($place_id > 0) {
@@ -194,10 +194,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     header('Location: cc10_review_finalize.php?pt_id=' . $pt_id . '&type=npc&place_saved=1');
                     exit();
                 } catch (PDOException $e) {
-                    $message = displayMessage("Erreur lors de la sauvegarde du lieu.", 'error');
+                    $message = displayMessage("Erreur lors de la sauvegarde de la pièce.", 'error');
                 }
             } else {
-                $message = displayMessage("Veuillez sélectionner un lieu.", 'error');
+                $message = displayMessage("Veuillez sélectionner une pièce.", 'error');
             }
         }
     } elseif ($action === 'confirm_create') {
@@ -205,8 +205,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$ptCharacter) {
                 $message = displayMessage("Brouillon introuvable.", 'error');
             } elseif ($character_type === 'npc' && !$ptCharacter->place_id) {
-                // Vérifier qu'un lieu est sélectionné pour les NPCs
-                $message = displayMessage("Veuillez sélectionner un lieu avant de créer le PNJ.", 'error');
+                // Vérifier qu'une pièce est sélectionné pour les NPCs
+                $message = displayMessage("Veuillez sélectionner une pièce avant de créer le PNJ.", 'error');
             } else if ($character_type === 'player') {
                 // Création d'un PJ
                 $skillsArr = $selectedSkills;
@@ -438,7 +438,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'is_active' => 1
                 ]);
                 if ($npc->create()) {
-                    // Créer l'entrée dans place_npcs si un lieu a été sélectionné
+                    // Créer l'entrée dans place_npcs si une pièce a été sélectionné
                     if ($ptCharacter->place_id) {
                         try {
                             $description = "PNJ de niveau " . ($ptCharacter->level ?: 1) . " - " . ($raceName ?: '') . " " . ($classeName ?: '');
@@ -648,9 +648,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <?php if ($character_type === 'npc'): ?>
                     <?php
-                    // Récupérer les lieux disponibles pour l'utilisateur
-                    require_once 'classes/Lieu.php';
-                    $availablePlaces = Lieu::getAllPlaces();
+                    // Récupérer les pièces disponibles pour l'utilisateur
+                    require_once 'classes/Room.php';
+                    $availablePlaces = Room::getAllPlaces();
                     $selectedPlaceId = $ptCharacter->place_id ?? null;
                     $selectedPlaceName = null;
                     if ($selectedPlaceId) {
@@ -665,27 +665,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     <div class="card mb-4 border-info">
                         <div class="card-header bg-info text-white">
-                            <h4 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>Sélection du lieu</h4>
+                            <h4 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>Sélection de la pièce</h4>
                         </div>
                         <div class="card-body">
                             <?php if ($selectedPlaceId && $selectedPlaceName): ?>
                                 <div class="alert alert-success">
                                     <i class="fas fa-check-circle me-2"></i>
-                                    <strong>Lieu sélectionné :</strong> <?php echo htmlspecialchars($selectedPlaceName); ?>
+                                    <strong>Pièce sélectionné :</strong> <?php echo htmlspecialchars($selectedPlaceName); ?>
                                 </div>
                             <?php else: ?>
                                 <div class="alert alert-warning">
                                     <i class="fas fa-exclamation-triangle me-2"></i>
-                                    <strong>Attention :</strong> Vous devez sélectionner un lieu pour ce PNJ.
+                                    <strong>Attention :</strong> Vous devez sélectionner une pièce pour ce PNJ.
                                 </div>
                             <?php endif; ?>
                             
                             <form method="POST" class="mb-3">
                                 <input type="hidden" name="action" value="save_place">
                                 <div class="mb-3">
-                                    <label for="place_id" class="form-label">Choisir un lieu</label>
+                                    <label for="place_id" class="form-label">Choisir une pièce</label>
                                     <select class="form-select" name="place_id" id="place_id" required>
-                                        <option value="">-- Sélectionner un lieu --</option>
+                                        <option value="">-- Sélectionner une pièce --</option>
                                         <?php foreach ($availablePlaces as $place): ?>
                                             <option value="<?php echo (int)$place['id']; ?>" <?php echo ($selectedPlaceId == $place['id']) ? 'selected' : ''; ?>>
                                                 <?php echo htmlspecialchars($place['title']); ?>
@@ -694,7 +694,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     </select>
                                 </div>
                                 <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-save me-2"></i>Sauvegarder le lieu
+                                    <i class="fas fa-save me-2"></i>Sauvegarder la pièce
                                 </button>
                             </form>
                         </div>
@@ -711,8 +711,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 Modifier
                             </button>
                             <?php if ($character_type === 'npc' && !$selectedPlaceId): ?>
-                                <button type="button" class="btn btn-warning btn-lg" disabled title="Veuillez d'abord sélectionner un lieu">
-                                    <i class="fas fa-exclamation-triangle me-2"></i>Sélectionner un lieu d'abord
+                                <button type="button" class="btn btn-warning btn-lg" disabled title="Veuillez d'abord sélectionner une pièce">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Sélectionner une pièce d'abord
                                 </button>
                             <?php else: ?>
                                 <button type="submit" name="action" value="confirm_create" class="btn btn-continue btn-lg">

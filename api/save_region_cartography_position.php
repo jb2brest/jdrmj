@@ -1,6 +1,6 @@
 <?php
 /**
- * API Endpoint: Sauvegarder la position d'un lieu dans la cartographie de la région
+ * API Endpoint: Sauvegarder la position d'une pièce dans la cartographie de la région
  */
 
 require_once __DIR__ . '/../includes/functions.php';

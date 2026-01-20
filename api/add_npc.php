@@ -1,10 +1,10 @@
 <?php
 /**
- * API Endpoint: Ajouter un PNJ à un lieu
+ * API Endpoint: Ajouter un PNJ à une pièce
  */
 
 require_once '../includes/functions.php';
-require_once '../classes/Lieu.php';
+require_once '../classes/Room.php';
 
 header('Content-Type: application/json');
 header('X-Requested-With: XMLHttpRequest');
@@ -29,10 +29,10 @@ try {
         throw new Exception('Données manquantes');
     }
     
-    // Créer l'instance du lieu
-    $lieu = Lieu::findById($placeId);
+    // Créer l'instance de la pièce
+    $lieu = Room::findById($placeId);
     if (!$lieu) {
-        throw new Exception('Lieu non trouvé');
+        throw new Exception('Pièce non trouvé');
     }
     
     // Vérifier les permissions (même logique que view_place.php)
@@ -48,7 +48,7 @@ try {
     $isOwnerDM = User::isDMOrAdmin() && ($dm_id === 0 || $_SESSION['user_id'] === $dm_id);
     
     if (!$isOwnerDM) {
-        throw new Exception('Vous n\'avez pas la permission d\'ajouter un PNJ à ce lieu');
+        throw new Exception('Vous n\'avez pas la permission d\'ajouter un PNJ à cette pièce');
     }
     
     // Ajouter le PNJ
@@ -61,7 +61,7 @@ try {
     $success = $stmt->execute([$placeId, $name, $description, $characterId ?: null]);
     
     if ($success) {
-        // Rediriger vers la page du lieu pour recharger
+        // Rediriger vers la page de la pièce pour recharger
         header('Location: ../view_place.php?id=' . $placeId . '&npc_added=1');
         exit();
     } else {

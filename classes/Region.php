@@ -5,7 +5,7 @@
  * 
  * Cette classe encapsule toutes les fonctionnalités liées à la gestion
  * des régions dans l'application JDR MJ. Une région appartient à un pays
- * et peut contenir plusieurs lieux.
+ * et peut contenir plusieurs pièces.
  */
 class Region
 {
@@ -280,14 +280,14 @@ class Region
         try {
             $pdo = $this->getPdo();
             
-            // Vérifier s'il y a des lieux dans cette région
+            // Vérifier s'il y a des pièces dans cette région
             $sql = "SELECT COUNT(*) FROM places WHERE region_id = ?";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$this->id]);
             $place_count = $stmt->fetchColumn();
 
             if ($place_count > 0) {
-                throw new Exception("Impossible de supprimer cette région car elle contient $place_count lieu(x). Supprimez d'abord les lieux.");
+                throw new Exception("Impossible de supprimer cette région car elle contient $place_count pièce(x). Supprimez d'abord les pièces.");
             }
 
             // Supprimer la région
@@ -475,9 +475,9 @@ class Region
     }
 
     /**
-     * Récupère le nombre de lieux dans cette région
+     * Récupère le nombre de pièces dans cette région
      * 
-     * @return int Nombre de lieux
+     * @return int Nombre de pièces
      */
     public function getPlaceCount()
     {
@@ -492,14 +492,32 @@ class Region
             $stmt->execute([$this->id]);
             return (int)$stmt->fetchColumn();
         } catch (PDOException $e) {
-            throw new Exception("Erreur lors du comptage des lieux: " . $e->getMessage());
+            throw new Exception("Erreur lors du comptage des pièces: " . $e->getMessage());
         }
     }
 
     /**
-     * Récupère les lieux de cette région
+     * Récupère les pièces de cette région
      * 
-     * @return array Tableau des lieux
+     * @return array Tableau des pièces
+     */
+    /**
+     * Récupère les lieux de cette région (nouvel intermédiaire)
+     * 
+     * @return array Tableau des lieux (Location objects converted to array or objects)
+     */
+    public function getLocations()
+    {
+        if ($this->id === null) {
+            return [];
+        }
+        return Location::findByRegion($this->id, $this->getPdo());
+    }
+
+    /**
+     * Récupère les pièces de cette région
+     * 
+     * @return array Tableau des pièces
      */
     public function getPlaces()
     {
@@ -509,17 +527,18 @@ class Region
 
         try {
             $pdo = $this->getPdo();
-            $sql = "SELECT * FROM places WHERE region_id = ? ORDER BY title";
+            // On ordonne par location_id puis title pour regrouper visuellement si besoin
+            $sql = "SELECT * FROM places WHERE region_id = ? ORDER BY location_id, title";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$this->id]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            throw new Exception("Erreur lors de la récupération des lieux: " . $e->getMessage());
+            throw new Exception("Erreur lors de la récupération des pièces: " . $e->getMessage());
         }
     }
 
     /**
-     * Récupère tous les PNJs de la région (via la hiérarchie région → lieux)
+     * Récupère tous les PNJs de la région (via la hiérarchie région → pièces)
      * 
      * @return array Liste des PNJs
      * @throws Exception En cas d'erreur
@@ -562,7 +581,7 @@ class Region
     }
 
     /**
-     * Récupère tous les monstres de la région (via la hiérarchie région → lieux)
+     * Récupère tous les monstres de la région (via la hiérarchie région → pièces)
      * 
      * @return array Liste des monstres
      * @throws Exception En cas d'erreur

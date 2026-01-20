@@ -53,13 +53,13 @@ try {
 
     $pdo = getPdo();
 
-    // Vérifier que le lieu existe
+    // Vérifier que la pièce existe
     $stmt = $pdo->prepare("SELECT id FROM places WHERE id = ?");
     $stmt->execute([$place_id]);
     $place = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if (!$place) {
-        throw new Exception("Lieu non trouvé");
+        throw new Exception("Pièce non trouvé");
     }
 
     // Les admins peuvent toujours modifier

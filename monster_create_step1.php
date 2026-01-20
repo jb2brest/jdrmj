@@ -136,7 +136,7 @@ $current_page = "manage_npcs";
                                     <strong>2</strong>
                                 </div>
                                 <h6>Localisation</h6>
-                                <small class="text-muted">Pays, région, lieu</small>
+                                <small class="text-muted">Pays, région, pièce</small>
                             </div>
                             <div class="col-md-3 text-center">
                                 <div class="border rounded-circle d-inline-flex align-items-center justify-content-center mb-2" 

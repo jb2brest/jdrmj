@@ -5,7 +5,7 @@
  * 
  * Cette classe gère les groupes avec :
  * - Hiérarchie des membres (niveau 1 = dirigeant)
- * - Quartier général (QG) dans un lieu
+ * - Quartier général (QG) dans une pièce
  * - Membres de différents types (PNJ, PJ, Monstres)
  */
 class Groupe
@@ -18,7 +18,7 @@ class Groupe
     public $description;
     public $crest_image; // Image du blason
     public $is_secret; // Groupe secret ou public
-    public $headquarters_place_id; // ID du lieu QG
+    public $headquarters_place_id; // ID de la pièce QG
     public $max_hierarchy_levels; // Nombre maximum de niveaux hiérarchiques (défaut: 5)
     public $created_by; // ID de l'utilisateur créateur
     public $created_at;

@@ -1,7 +1,7 @@
 <?php
 require_once 'config/database.php';
 
-echo "<h1>Initialisation des Pions de Lieu</h1>";
+echo "<h1>Initialisation des Pions de Pièce</h1>";
 
 try {
     // Créer la table si elle n'existe pas
@@ -26,13 +26,13 @@ try {
     ");
     echo "✅ Table place_tokens créée/vérifiée<br>";
 
-    // Initialiser les pions pour toutes les lieux existantes
+    // Initialiser les pions pour toutes les pièces existantes
     $stmt = $pdo->query("SELECT id FROM places ORDER BY id");
     $places = $stmt->fetchAll();
 
     foreach ($places as $scene) {
         $place_id = $scene['id'];
-        echo "<h2>Lieu ID: $place_id</h2>";
+        echo "<h2>Pièce ID: $place_id</h2>";
 
         // Initialiser les pions des joueurs
         $stmt = $pdo->prepare("

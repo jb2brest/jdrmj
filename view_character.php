@@ -97,7 +97,7 @@ $allLanguages = array_unique(array_merge($characterLanguages, $backgroundLanguag
 // Définir $allTools comme tableau vide pour l'instant
 $allTools = [];
 
-// Récupérer le lieu du personnage
+// Récupérer la pièce du personnage
 $character_place_id = null;
 $character_place_name = null;
 try {
@@ -118,7 +118,7 @@ try {
         $character_place_name = $placePlayer['place_name'];
     }
 } catch (PDOException $e) {
-    error_log("Erreur lors de la récupération du lieu du personnage: " . $e->getMessage());
+    error_log("Erreur lors de la récupération de la pièce du personnage: " . $e->getMessage());
 }
 
 // Vérifier si c'est un barbare pour les rages
@@ -331,8 +331,8 @@ $error_message = null;
                     <i class="fas fa-arrow-left me-2"></i>Retour
                 </a>
                 <?php if ($character_place_id): ?>
-                    <a href="view_place.php?id=<?php echo $character_place_id; ?>" class="btn-txt ms-2" title="Voir le lieu : <?php echo htmlspecialchars($character_place_name); ?>">
-                        <i class="fas fa-map-marker-alt me-2"></i>Voir le lieu
+                    <a href="view_place.php?id=<?php echo $character_place_id; ?>" class="btn-txt ms-2" title="Voir la pièce : <?php echo htmlspecialchars($character_place_name); ?>">
+                        <i class="fas fa-map-marker-alt me-2"></i>Voir la pièce
                     </a>
                 <?php endif; ?>
                 </div>
@@ -342,7 +342,7 @@ $error_message = null;
         <!-- Zone d'en-tête -->
         <div class="zone-d-entete">
             <?php 
-            // Passer le nom et l'ID du lieu au template (peuvent être null)
+            // Passer le nom et l'ID de la pièce au template (peuvent être null)
             $character_place_name_for_template = $character_place_name ?? null;
             $character_place_id_for_template = $character_place_id ?? null;
             include_once 'templates/p_entete.php'; 

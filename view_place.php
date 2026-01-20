@@ -1,13 +1,14 @@
 <?php
 /**
- * Vue d'un lieu - Version refactorisée
+ * Vue d'une pièce - Version refactorisée
  * Utilise les classes et API pour une meilleure séparation des responsabilités
  */
 
 require_once 'includes/functions.php';
 require_once 'classes/init.php';
 require_once 'classes/Access.php';
-require_once 'classes/Lieu.php';
+require_once 'classes/Room.php';
+require_once 'classes/Location.php';
 
 $page_title = "Scène de Jeu";
 $current_page = "view_place";
@@ -29,26 +30,26 @@ if (isset($_GET['success'])) {
 
 // Gestion des messages de confirmation d'ajout de monstre
 if (isset($_GET['monster_added'])) {
-    $success_message = 'Monstre ajouté avec succès au lieu.';
+    $success_message = 'Monstre ajouté avec succès à la pièce.';
 }
 
 // Gestion des messages de confirmation d'ajout de PNJ
 if (isset($_GET['npc_added'])) {
-    $success_message = 'PNJ ajouté avec succès au lieu.';
+    $success_message = 'PNJ ajouté avec succès à la pièce.';
 }
 
 // Gestion des messages de confirmation d'ajout de joueur
 if (isset($_GET['player_added'])) {
-    $success_message = 'Joueur ajouté avec succès au lieu.';
+    $success_message = 'Joueur ajouté avec succès à la pièce.';
 }
 
-// Gestion des messages de confirmation de mise à jour du lieu
+// Gestion des messages de confirmation de mise à jour de la pièce
 if (isset($_GET['updated'])) {
-    $success_message = 'Lieu mis à jour avec succès.';
+    $success_message = 'Pièce mis à jour avec succès.';
 }
 
-// Charger le lieu et sa campagne avec hiérarchie géographique
-$lieu = Lieu::findById($place_id);
+// Charger la pièce et sa campagne avec hiérarchie géographique
+$lieu = Room::findById($place_id);
 if (!$lieu) {
     header('Location: index.php');
     exit();
@@ -56,7 +57,7 @@ if (!$lieu) {
 
 $place = $lieu->toArray();
 
-// Récupérer les campagnes associées à ce lieu
+// Récupérer les campagnes associées à cette pièce
 $campaigns = $lieu->getCampaigns();
 if (!empty($campaigns)) {
     $campaign = $campaigns[0];
@@ -81,7 +82,7 @@ function hasCampaignId($place) {
 $dm_id = (int)$place['dm_id'];
 $isOwnerDM = User::isDMOrAdmin() && ($dm_id === 0 || $_SESSION['user_id'] === $dm_id);
 
-// Autoriser les admins, les DM propriétaires et les membres de la campagne à voir le lieu
+// Autoriser les admins, les DM propriétaires et les membres de la campagne à voir la pièce
 $canView = User::isAdmin() || $isOwnerDM;
 if (!$canView && isset($place['campaign_id']) && $place['campaign_id']) {
     $campaign = Campaign::findById($place['campaign_id']);
@@ -90,7 +91,7 @@ if (!$canView && isset($place['campaign_id']) && $place['campaign_id']) {
     $canView = true;
 }
 
-// Seuls les admins et les DM propriétaires peuvent éditer le lieu
+// Seuls les admins et les DM propriétaires peuvent éditer la pièce
 $canEdit = User::isAdmin() || $isOwnerDM;
 
 if (!$canView) {
@@ -98,7 +99,7 @@ if (!$canView) {
     exit();
 }
 
-// Récupérer le world_id du lieu actuel pour la téléportation (avant le traitement POST)
+// Récupérer le world_id de la pièce actuelle pour la téléportation (avant le traitement POST)
 $current_world_id_for_action = null;
 if ($place['region_id']) {
     $temp_region = Region::findById($place['region_id']);
@@ -110,7 +111,7 @@ if ($place['region_id']) {
     }
 }
 
-// Récupérer tous les accès (sortants et entrants) pour ce lieu (avant le traitement POST)
+// Récupérer tous les accès (sortants et entrants) pour cette pièce (avant le traitement POST)
 $placeAccesses = Access::getAllForPlace($place_id);
 
 // Traitement des actions sur les accès (maintenant géré via API)
@@ -135,9 +136,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
             $is_on_map = isset($_POST['is_on_map']) ? 1 : 0;
 
             if (empty($name) || $to_place_id === 0) {
-                $_SESSION['error_message'] = "Le nom de l'accès et le lieu de destination sont requis.";
+                $_SESSION['error_message'] = "Le nom de l'accès et la pièce de destination sont requis.";
             } elseif (Access::existsBetween($place_id, $to_place_id, $name)) {
-                $_SESSION['error_message'] = "Un accès avec ce nom existe déjà vers ce lieu de destination.";
+                $_SESSION['error_message'] = "Un accès avec ce nom existe déjà vers cette pièce de destination.";
             } else {
                 $access = ($action === 'update_access' && $access_id) ? Access::findById($access_id) : new Access();
                 if (!$access || ($action === 'update_access' && $access->from_place_id !== $place_id)) {
@@ -199,12 +200,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
             $entities = $_POST['entities'] ?? [];
             
             if ($to_place_id === 0 || $to_place_id === $place_id) {
-                $_SESSION['error_message'] = "Lieu de destination invalide.";
+                $_SESSION['error_message'] = "Pièce de destination invalide.";
             } elseif (empty($entities)) {
                 $_SESSION['error_message'] = "Aucune entité sélectionnée.";
             } else {
-                // Vérifier que le lieu de destination a un accès direct
-                // Construire la liste des lieux accessibles (même logique que dans le template)
+                // Vérifier que la pièce de destination a un accès direct
+                // Construire la liste des pièces accessibles (même logique que dans le template)
                 $accessiblePlaceIds = [];
                 foreach ($placeAccesses as $access) {
                     $from_id = (int)$access->from_place_id;
@@ -220,7 +221,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
                 
                 if (!in_array($to_place_id, $accessiblePlaceIds, true)) {
                     error_log("Déplacement refusé: place_id=$place_id, to_place_id=$to_place_id, accessiblePlaceIds=" . implode(',', $accessiblePlaceIds));
-                    $_SESSION['error_message'] = "Le lieu de destination n'a pas d'accès direct avec ce lieu.";
+                    $_SESSION['error_message'] = "La pièce de destination n'a pas d'accès direct avec cette pièce.";
                 } else {
                     $successCount = 0;
                     $errorCount = 0;
@@ -241,7 +242,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
                             continue;
                         }
                         
-                        $result = Lieu::transferEntity($entityType, $place_id, $to_place_id, $entityId);
+                        $result = Room::transferEntity($entityType, $place_id, $to_place_id, $entityId);
                         if ($result['success']) {
                             $successCount++;
                         } else {
@@ -268,13 +269,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
             $entities = $_POST['entities'] ?? [];
             
             if ($to_place_id === 0 || $to_place_id === $place_id) {
-                $_SESSION['error_message'] = "Lieu de destination invalide.";
+                $_SESSION['error_message'] = "Pièce de destination invalide.";
             } elseif (empty($entities)) {
                 $_SESSION['error_message'] = "Aucune entité sélectionnée.";
             } elseif (!$current_world_id_for_action) {
-                $_SESSION['error_message'] = "Impossible de déterminer le monde du lieu actuel.";
+                $_SESSION['error_message'] = "Impossible de déterminer le monde de la pièce actuelle.";
             } else {
-                // Vérifier que le lieu de destination est dans le même monde
+                // Vérifier que la pièce de destination est dans le même monde
                 try {
                     $pdo = getPDO();
                     $stmt = $pdo->prepare("
@@ -287,7 +288,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
                     $destinationPlace = $stmt->fetch(PDO::FETCH_ASSOC);
                     
                     if (!$destinationPlace) {
-                        $_SESSION['error_message'] = "Le lieu de destination doit être dans le même monde que le lieu actuel.";
+                        $_SESSION['error_message'] = "La pièce de destination doit être dans le même monde que la pièce actuelle.";
                     } else {
                         $successCount = 0;
                         $errorCount = 0;
@@ -308,7 +309,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
                                 continue;
                             }
                             
-                            $result = Lieu::transferEntity($entityType, $place_id, $to_place_id, $entityId);
+                            $result = Room::transferEntity($entityType, $place_id, $to_place_id, $entityId);
                             if ($result['success']) {
                                 $successCount++;
                             } else {
@@ -328,8 +329,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
                         }
                     }
                 } catch (PDOException $e) {
-                    error_log("Erreur lors de la vérification du lieu de destination: " . $e->getMessage());
-                    $_SESSION['error_message'] = "Erreur lors de la vérification du lieu de destination.";
+                    error_log("Erreur lors de la vérification de la pièce de destination: " . $e->getMessage());
+                    $_SESSION['error_message'] = "Erreur lors de la vérification de la pièce de destination.";
                 }
             }
             break;
@@ -340,8 +341,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
 }
 
 
-// Récupérer tous les lieux pour le sélecteur "vers quel lieu"
-$all_places = Lieu::getAllPlaces();
+// Récupérer tous les pièces pour le sélecteur "vers quelle pièce"
+$all_places = Room::getAllPlaces();
 $other_places = array_filter($all_places, function($place) use ($place_id) {
     return $place['id'] != $place_id;
 });
@@ -350,7 +351,7 @@ $other_places = array_filter($all_places, function($place) use ($place_id) {
 $countries = Pays::getAllCountries();
 $regions = Region::getAllRegions();
 
-// Récupérer le pays et la région du lieu actuel
+// Récupérer le pays et la région de la pièce actuelle
 $current_region = null;
 $current_country = null;
 $current_world_id = null;
@@ -364,7 +365,42 @@ if ($place['region_id']) {
     }
 }
 
-// Récupérer tous les lieux du monde du lieu actuel pour la téléportation
+// Récupérer les lieux disponibles pour le sélecteur "Location" (Lieu)
+$availableLocations = [];
+if ($place['region_id']) {
+    $availableLocations = Location::findByRegion($place['region_id']);
+}
+
+// Construction du fil d'ariane
+$lieu->loadGeography();
+$breadcrumbs = [];
+
+// Monde (si disponible, mais pas de vue dédiée actuellement)
+if ($lieu->world_name) {
+   // $breadcrumbs[] = ['name' => $lieu->world_name, 'url' => '#']; 
+}
+
+// Pays (si disponible)
+if ($lieu->country_name) {
+    // Si on avait view_country.php, on lierait ici. Pour l'instant on laisse en texte ou lien vers index filtré?
+    // On va assumer qu'on peut aller à la région pour l'instant
+}
+
+// Région (si disponible)
+if ($lieu->region_name) {
+    $breadcrumbs[] = ['name' => $lieu->region_name, 'url' => 'view_region.php?id=' . $lieu->region_id];
+}
+
+// Lieu (Location) (si disponible)
+if ($lieu->location_name) {
+    // Lien vers la région avec anchor (à implémenter dans view_region.php si pas fait)
+    $breadcrumbs[] = ['name' => $lieu->location_name, 'url' => 'view_region.php?id=' . $lieu->region_id . '#location-' . $lieu->location_id];
+}
+
+// Pièce actuelle
+$breadcrumbs[] = ['name' => $lieu->title, 'url' => '', 'active' => true];
+
+// Récupérer tous les pièces du monde de la pièce actuelle pour la téléportation
 $worldPlaces = [];
 if ($current_world_id) {
     try {
@@ -380,12 +416,12 @@ if ($current_world_id) {
         $stmt->execute([$current_world_id, $place_id]);
         $worldPlaces = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
-        error_log("Erreur lors de la récupération des lieux du monde: " . $e->getMessage());
+        error_log("Erreur lors de la récupération des pièces du monde: " . $e->getMessage());
         $worldPlaces = [];
     }
 }
 
-// Récupérer les données du lieu via les classes
+// Récupérer les données de la pièce via les classes
 $placePlayers = $lieu->getAllPlayersDetailed();
 $placeNpcs = $lieu->getAllNpcsDetailed();
 $placeMonsters = $lieu->getAllMonsters();
@@ -441,7 +477,7 @@ if ($isOwnerDM && hasCampaignId($place)) {
 $userRole = User::getCurrentUserRole();
 $accessibleCampaigns = Campaign::getAccessibleCampaigns($_SESSION['user_id'], $userRole);
 
-// Déterminer la campagne par défaut : campagne du lieu si elle existe, sinon la dernière campagne
+// Déterminer la campagne par défaut : campagne de la pièce si elle existe, sinon la dernière campagne
 $defaultCampaignId = null;
 if (hasCampaignId($place) && $place['campaign_id']) {
     $defaultCampaignId = $place['campaign_id'];
@@ -499,11 +535,12 @@ $template_vars = [
     'placeNpcs' => $placeNpcs,
     'placeMonsters' => $placeMonsters,
     'placeAccesses' => $placeAccesses,
-    'placeObjects' => $placeObjects, // Check if this was in the original, line 378 suggests yes, but line 446 didn't show it explicitly in my view, wait.
+    'placeObjects' => $placeObjects,
+    'availableLocations' => $availableLocations, // Check if this was in the original, line 378 suggests yes, but line 446 didn't show it explicitly in my view, wait.
     'tokenPositions' => $tokenPositions,
     'tokenColors' => $tokenColors,  // Couleurs personnalisées des pions
     'visibleObjectsForMap' => $visibleObjectsForMap,  // Objets visibles pour les pions sur la carte
-    'worldPlaces' => $worldPlaces,  // Lieux du monde pour la téléportation
+    'worldPlaces' => $worldPlaces,  // Pièces du monde pour la téléportation
     'accessibleCampaigns' => $accessibleCampaigns,  // Campagnes accessibles pour les lancers de dés
     'defaultCampaignId' => $defaultCampaignId,  // Campagne par défaut
     'races' => $races,
@@ -514,7 +551,8 @@ $template_vars = [
     'place_id' => $place_id,
     'page_title' => $page_title,
     'currentPlayer' => $currentPlayer,
-    'dmCharacters' => $dmCharacters
+    'dmCharacters' => $dmCharacters,
+    'breadcrumbs' => $breadcrumbs
 ];
 
 // Inclure le template HTML

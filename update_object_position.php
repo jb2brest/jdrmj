@@ -36,7 +36,7 @@ if ($place_id <= 0 || $object_id <= 0) {
 }
 
 try {
-    // Vérifier que l'objet appartient au lieu et que l'utilisateur a les droits
+    // Vérifier que l'objet appartient à la pièce et que l'utilisateur a les droits
     $stmt = $pdo->prepare("
         SELECT po.id, c.dm_id 
         FROM items po 

@@ -28,9 +28,9 @@ if (!function_exists('generateInviteCode')) {
 }
 
 /**
- * Associe un lieu à une campagne
+ * Associe une pièce à une campagne
  * 
- * @param int $placeId ID du lieu
+ * @param int $placeId ID de la pièce
  * @param int $campaignId ID de la campagne
  * @return bool True si associé avec succès
  */
@@ -46,9 +46,9 @@ if (!function_exists('associatePlaceToCampaign')) {
 }
 
 /**
- * Dissocie un lieu d'une campagne
+ * Dissocie une pièce d'une campagne
  * 
- * @param int $placeId ID du lieu
+ * @param int $placeId ID de la pièce
  * @param int $campaignId ID de la campagne
  * @return bool True si dissocié avec succès
  */
@@ -64,9 +64,9 @@ if (!function_exists('dissociatePlaceFromCampaign')) {
 }
 
 /**
- * Obtient les campagnes associées à un lieu
+ * Obtient les campagnes associées à une pièce
  * 
- * @param int $placeId ID du lieu
+ * @param int $placeId ID de la pièce
  * @return array Liste des campagnes
  */
 if (!function_exists('getCampaignsForPlace')) {
@@ -89,10 +89,10 @@ if (!function_exists('getCampaignsForPlace')) {
 }
 
 /**
- * Obtient les lieux associés à une campagne
+ * Obtient les pièces associés à une campagne
  * 
  * @param int $campaignId ID de la campagne
- * @return array Liste des lieux
+ * @return array Liste des pièces
  */
 if (!function_exists('getPlacesForCampaign')) {
     function getPlacesForCampaign($campaignId) {
@@ -106,10 +106,10 @@ if (!function_exists('getPlacesForCampaign')) {
 }
 
 /**
- * Obtient les lieux disponibles pour une campagne
+ * Obtient les pièces disponibles pour une campagne
  * 
  * @param int $campaignId ID de la campagne
- * @return array Liste des lieux disponibles
+ * @return array Liste des pièces disponibles
  */
 if (!function_exists('getAvailablePlacesForCampaign')) {
     function getAvailablePlacesForCampaign($campaignId) {
@@ -123,9 +123,9 @@ if (!function_exists('getAvailablePlacesForCampaign')) {
 }
 
 /**
- * Obtient les campagnes disponibles pour un lieu
+ * Obtient les campagnes disponibles pour une pièce
  * 
- * @param int $placeId ID du lieu
+ * @param int $placeId ID de la pièce
  * @return array Liste des campagnes disponibles
  */
 if (!function_exists('getAvailableCampaignsForPlace')) {
@@ -151,10 +151,10 @@ if (!function_exists('getAvailableCampaignsForPlace')) {
 }
 
 /**
- * Met à jour les associations de lieux pour une campagne
+ * Met à jour les associations de pièces pour une campagne
  * 
  * @param int $campaignId ID de la campagne
- * @param array $placeIds Liste des IDs de lieux
+ * @param array $placeIds Liste des IDs de pièces
  * @return bool True si mis à jour avec succès
  */
 if (!function_exists('updateCampaignPlaceAssociations')) {
@@ -193,9 +193,9 @@ if (!function_exists('updateCampaignPlaceAssociations')) {
 }
 
 /**
- * Met à jour les associations de campagnes pour un lieu
+ * Met à jour les associations de campagnes pour une pièce
  * 
- * @param int $placeId ID du lieu
+ * @param int $placeId ID de la pièce
  * @param array $campaignIds Liste des IDs de campagnes
  * @return bool True si mis à jour avec succès
  */

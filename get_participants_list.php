@@ -1,6 +1,6 @@
 <?php
 /**
- * API pour récupérer la liste des participants (PNJ et monstres) d'un lieu
+ * API pour récupérer la liste des participants (PNJ et monstres) d'une pièce
  * Utilisé par view_scene_player.php pour la mise à jour automatique
  */
 
@@ -16,7 +16,7 @@ if (!isLoggedIn()) {
 
 if (!isset($_GET['place_id'])) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'error' => 'ID du lieu manquant']);
+    echo json_encode(['success' => false, 'error' => 'ID de la pièce manquant']);
     exit;
 }
 
@@ -26,19 +26,19 @@ $user_id = $_SESSION['user_id'];
 try {
     require_once 'classes/init.php';
     
-    // Vérifier que le lieu existe et récupérer la campagne associée
-    $lieu = Lieu::findById($place_id);
+    // Vérifier que la pièce existe et récupérer la campagne associée
+    $lieu = Room::findById($place_id);
     if (!$lieu) {
         http_response_code(404);
-        echo json_encode(['success' => false, 'error' => 'Lieu introuvable']);
+        echo json_encode(['success' => false, 'error' => 'Pièce introuvable']);
         exit;
     }
     
-    // Récupérer les campagnes associées au lieu
+    // Récupérer les campagnes associées à la pièce
     $campaigns = $lieu->getCampaigns();
     if (empty($campaigns)) {
         http_response_code(403);
-        echo json_encode(['success' => false, 'error' => 'Lieu non associé à une campagne']);
+        echo json_encode(['success' => false, 'error' => 'Pièce non associé à une campagne']);
         exit;
     }
     

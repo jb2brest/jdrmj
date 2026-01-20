@@ -430,9 +430,9 @@ $external_countries = $monde->getExternalCountries();
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <label for="locationFilter" class="form-label">Filtrer par lieu :</label>
+                                <label for="locationFilter" class="form-label">Filtrer par pièce :</label>
                                 <select class="form-select" id="locationFilter">
-                                    <option value="">Tous les lieux</option>
+                                    <option value="">Tous les pièces</option>
                                     <?php
                                     $unique_places = [];
                                     foreach (array_merge($world_npcs, $world_monsters) as $entity) {
@@ -482,7 +482,7 @@ $external_countries = $monde->getExternalCountries();
                                             Race <i class="fas fa-sort ms-1"></i>
                                         </th>
                                         <th class="sortable" data-column="location">
-                                            Lieu <i class="fas fa-sort ms-1"></i>
+                                            Pièce <i class="fas fa-sort ms-1"></i>
                                         </th>
                                         <th>Actions</th>
                                     </tr>
@@ -495,7 +495,7 @@ $external_countries = $monde->getExternalCountries();
                                             <td colspan="6" class="text-center py-4">
                                                 <i class="fas fa-users fa-3x text-muted mb-3"></i>
                                                 <h5 class="text-muted">Aucun PNJ ou monstre trouvé</h5>
-                                                <p class="text-muted">Les PNJs et monstres apparaîtront ici une fois qu'ils seront ajoutés aux lieux de ce monde.</p>
+                                                <p class="text-muted">Les PNJs et monstres apparaîtront ici une fois qu'ils seront ajoutés aux pièces de ce monde.</p>
                                             </td>
                                         </tr>
                                     <?php else: ?>
@@ -960,7 +960,7 @@ $external_countries = $monde->getExternalCountries();
                     show = false;
                 }
                 
-                // Filtre par lieu
+                // Filtre par pièce
                 if (locationFilter && row.dataset.placeKey !== locationFilter) {
                     show = false;
                 }

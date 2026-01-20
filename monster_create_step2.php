@@ -129,9 +129,9 @@ $current_page = "manage_npcs";
                                     </div>
                                     <div class="col-md-4">
                                         <div class="mb-3">
-                                            <label for="place_id" class="form-label">Lieu *</label>
+                                            <label for="place_id" class="form-label">Pièce *</label>
                                             <select class="form-select" id="place_id" name="place_id" required>
-                                                <option value="">Sélectionnez un lieu</option>
+                                                <option value="">Sélectionnez une pièce</option>
                                             </select>
                                         </div>
                                     </div>
@@ -173,7 +173,7 @@ $current_page = "manage_npcs";
                                     <strong>2</strong>
                                 </div>
                                 <h6>Localisation</h6>
-                                <small class="text-muted">Pays, région, lieu</small>
+                                <small class="text-muted">Pays, région, pièce</small>
                             </div>
                             <div class="col-md-3 text-center">
                                 <div class="border rounded-circle d-inline-flex align-items-center justify-content-center mb-2" 
@@ -205,11 +205,11 @@ $current_page = "manage_npcs";
             const regionSelect = document.getElementById('region_id');
             const placeSelect = document.getElementById('place_id');
             
-            // Données des régions et lieux (récupérées via AJAX)
+            // Données des régions et pièces (récupérées via AJAX)
             let regionsData = [];
             let placesData = [];
             
-            // Charger les régions et lieux pour tous les pays
+            // Charger les régions et pièces pour tous les pays
             fetch('get_regions_by_country.php')
                 .then(response => response.json())
                 .then(data => {
@@ -222,11 +222,11 @@ $current_page = "manage_npcs";
                 .then(data => {
                     placesData = data;
                 })
-                .catch(error => console.error('Erreur lors du chargement des lieux:', error));
+                .catch(error => console.error('Erreur lors du chargement des pièces:', error));
             
             function updateRegions(countryId) {
                 regionSelect.innerHTML = '<option value="">Aucune région</option>';
-                placeSelect.innerHTML = '<option value="">Sélectionnez un lieu</option>';
+                placeSelect.innerHTML = '<option value="">Sélectionnez une pièce</option>';
                 
                 if (countryId) {
                     const countryRegions = regionsData.filter(region => region.country_id == countryId);
@@ -240,7 +240,7 @@ $current_page = "manage_npcs";
             }
             
             function updatePlaces(countryId, regionId) {
-                placeSelect.innerHTML = '<option value="">Sélectionnez un lieu</option>';
+                placeSelect.innerHTML = '<option value="">Sélectionnez une pièce</option>';
                 
                 if (countryId) {
                     let filteredPlaces = placesData.filter(place => place.country_id == countryId);

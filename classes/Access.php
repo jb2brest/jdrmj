@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Classe Access - Gestion des accès entre lieux
+ * Classe Access - Gestion des accès entre pièces
  * 
  * Cette classe encapsule toutes les fonctionnalités liées aux accès :
  * - Création, lecture, mise à jour, suppression
@@ -30,7 +30,7 @@ class Access
     public $created_at;
     public $updated_at;
     
-    // Propriétés des lieux (chargées à la demande)
+    // Propriétés des pièces (chargées à la demande)
     public $from_place_name;
     public $to_place_name;
     
@@ -170,7 +170,7 @@ class Access
     }
     
     /**
-     * Récupérer tous les accès d'un lieu (sortants)
+     * Récupérer tous les accès d'une pièce (sortants)
      */
     public static function getFromPlace($place_id, PDO $pdo = null)
     {
@@ -203,7 +203,7 @@ class Access
     }
     
     /**
-     * Récupérer tous les accès vers un lieu (entrants)
+     * Récupérer tous les accès vers une pièce (entrants)
      */
     public static function getToPlace($place_id, PDO $pdo = null)
     {
@@ -236,7 +236,7 @@ class Access
     }
     
     /**
-     * Récupérer tous les accès d'un lieu (sortants et entrants)
+     * Récupérer tous les accès d'une pièce (sortants et entrants)
      */
     public static function getAllForPlace($place_id, PDO $pdo = null)
     {
@@ -269,7 +269,7 @@ class Access
     }
     
     /**
-     * Récupérer tous les lieux accessibles depuis un lieu donné
+     * Récupérer tous les pièces accessibles depuis une pièce donné
      */
     public static function getAccessiblePlaces($place_id, PDO $pdo = null)
     {
@@ -289,13 +289,13 @@ class Access
             $stmt->execute([$place_id]);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            error_log("Erreur lors du chargement des lieux accessibles: " . $e->getMessage());
+            error_log("Erreur lors du chargement des pièces accessibles: " . $e->getMessage());
             return [];
         }
     }
     
     /**
-     * Récupérer tous les lieux disponibles pour créer un accès
+     * Récupérer tous les pièces disponibles pour créer un accès
      */
     public static function getAvailablePlaces($exclude_place_id = null, PDO $pdo = null)
     {
@@ -314,13 +314,13 @@ class Access
             $stmt->execute($params);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            error_log("Erreur lors du chargement des lieux disponibles: " . $e->getMessage());
+            error_log("Erreur lors du chargement des pièces disponibles: " . $e->getMessage());
             return [];
         }
     }
     
     /**
-     * Vérifier si un accès existe déjà entre deux lieux
+     * Vérifier si un accès existe déjà entre deux pièces
      */
     public static function existsBetween($from_place_id, $to_place_id, $name = null, PDO $pdo = null)
     {

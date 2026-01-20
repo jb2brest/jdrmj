@@ -21,13 +21,13 @@ try {
     $placeId = (int)($_GET['place_id'] ?? 0);
     
     if (!$placeId) {
-        throw new Exception('ID du lieu requis');
+        throw new Exception('ID de la pièce requis');
     }
     
     $pdo = getPDO();
     $targets = [];
     
-    // Récupérer tous les personnages joueurs présents dans le lieu
+    // Récupérer tous les personnages joueurs présents dans la pièce
     $stmt = $pdo->prepare("
         SELECT c.id, c.name, u.username, 'player' as type
         FROM characters c 
@@ -47,7 +47,7 @@ try {
         ];
     }
     
-    // Récupérer tous les PNJ présents dans le lieu
+    // Récupérer tous les PNJ présents dans la pièce
     $stmt = $pdo->prepare("
         SELECT pn.id, pn.name, 'npc' as type
         FROM place_npcs pn
@@ -65,7 +65,7 @@ try {
         ];
     }
     
-    // Récupérer tous les monstres présents dans le lieu
+    // Récupérer tous les monstres présents dans la pièce
     $stmt = $pdo->prepare("
         SELECT pm.id, m.name, 'monster' as type
         FROM place_monsters pm

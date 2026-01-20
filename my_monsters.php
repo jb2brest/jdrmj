@@ -263,11 +263,11 @@ $types = $stmt->fetchAll(PDO::FETCH_COLUMN);
                                     </div>
                                     
                                     <div class="mb-3">
-                                        <label class="form-label">Lieu où l'ajouter</label>
+                                        <label class="form-label">Pièce où l'ajouter</label>
                                         <select class="form-select" name="place_id" required>
-                                            <option value="">Sélectionner un lieu</option>
+                                            <option value="">Sélectionner une pièce</option>
                                             <?php
-                                            // Récupérer les lieux du MJ
+                                            // Récupérer les pièces du MJ
                                             $stmt = $pdo->prepare("SELECT p.id, p.name, c.title AS campaign_title FROM places p JOIN campaigns c ON p.campaign_id = c.id WHERE c.dm_id = ? ORDER BY c.title, p.name");
                                             $stmt->execute([$_SESSION['user_id']]);
                                             $places = $stmt->fetchAll();

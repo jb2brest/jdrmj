@@ -1,6 +1,6 @@
 <?php
 /**
- * Script pour déposer un objet d'équipement dans le lieu actuel
+ * Script pour déposer un objet d'équipement dans la pièce actuelle
  */
 
 require_once 'config/database.php';
@@ -51,9 +51,9 @@ try {
         throw new Exception('Objet non trouvé ou non autorisé');
     }
     
-    // Vérifier que le personnage est dans un lieu
+    // Vérifier que le personnage est dans une pièce
     if (!$item['place_id']) {
-        throw new Exception('Le personnage n\'est dans aucun lieu');
+        throw new Exception('Le personnage n\'est dans aucune pièce');
     }
     
     // Insérer l'objet dans items
@@ -83,8 +83,8 @@ try {
         0, // position_x
         0, // position_y
         0, // is_on_map (pas sur la carte par défaut)
-        'place', // owner_type (appartient au lieu)
-        $item['place_id'] // owner_id (ID du lieu)
+        'place', // owner_type (appartient à la pièce)
+        $item['place_id'] // owner_id (ID de la pièce)
     ]);
     
     // Supprimer l'objet de l'inventaire du personnage
@@ -95,7 +95,7 @@ try {
     
     echo json_encode([
         'success' => true, 
-        'message' => "L'objet '{$item_name}' a été déposé dans le lieu actuel"
+        'message' => "L'objet '{$item_name}' a été déposé dans la pièce actuelle"
     ]);
     
 } catch (Exception $e) {

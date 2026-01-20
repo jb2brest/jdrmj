@@ -345,7 +345,7 @@ $charismaModifier = $abilityModifiers['charisma'];
 $characterAttacks = $npc->calculateMyCharacterAttacks();
 $armorClass = $npc->getCA();
 
-// Récupérer le lieu du PNJ
+// Récupérer la pièce du PNJ
 $npc_place_id = null;
 $npc_place_name = null;
 try {
@@ -377,7 +377,7 @@ try {
         }
     }
 } catch (PDOException $e) {
-    error_log("Erreur lors de la récupération du lieu du PNJ: " . $e->getMessage());
+    error_log("Erreur lors de la récupération de la pièce du PNJ: " . $e->getMessage());
 }
 
 // Contrôle d'accès: propriétaire OU MJ
@@ -508,7 +508,7 @@ $flaws = $npc->flaws;
 $target_id = $npc->id;
 $target_type = 'PNJ';
 
-// Passer le nom et l'ID du lieu au template (peuvent être null)
+// Passer le nom et l'ID de la pièce au template (peuvent être null)
 $npc_place_name_for_template = $npc_place_name ?? null;
 $npc_place_id_for_template = $npc_place_id ?? null;
 
@@ -564,8 +564,8 @@ $npc_place_id_for_template = $npc_place_id ?? null;
                     <i class="fas fa-arrow-left me-2"></i>Retour
                 </a>
                 <?php if ($npc_place_id): ?>
-                    <a href="view_place.php?id=<?php echo $npc_place_id; ?>" class="btn-txt ms-2" title="Voir le lieu : <?php echo htmlspecialchars($npc_place_name); ?>">
-                        <i class="fas fa-map-marker-alt me-2"></i>Voir le lieu
+                    <a href="view_place.php?id=<?php echo $npc_place_id; ?>" class="btn-txt ms-2" title="Voir la pièce : <?php echo htmlspecialchars($npc_place_name); ?>">
+                        <i class="fas fa-map-marker-alt me-2"></i>Voir la pièce
                     </a>
                 <?php endif; ?>
                 </div>

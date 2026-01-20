@@ -1,12 +1,12 @@
 <?php
 /**
- * API Endpoint: Créer un accès entre deux lieux
+ * API Endpoint: Créer un accès entre deux pièces
  */
 
 require_once dirname(__DIR__) . '/includes/functions.php';
 require_once dirname(__DIR__) . '/classes/init.php';
 require_once dirname(__DIR__) . '/classes/Access.php';
-require_once dirname(__DIR__) . '/classes/Lieu.php';
+require_once dirname(__DIR__) . '/classes/Room.php';
 
 header('Content-Type: application/json');
 header('X-Requested-With: XMLHttpRequest');
@@ -48,26 +48,26 @@ try {
     }
     
     if ($to_place_id === 0) {
-        throw new Exception('Le lieu de destination est requis.');
+        throw new Exception('La pièce de destination est requis.');
     }
     
     if ($from_place_id === 0) {
-        throw new Exception('Le lieu d\'origine est requis.');
+        throw new Exception('La pièce d\'origine est requis.');
     }
     
     if ($from_place_id === $to_place_id) {
-        throw new Exception('Un lieu ne peut pas avoir d\'accès vers lui-même.');
+        throw new Exception('Une pièce ne peut pas avoir d\'accès vers lui-même.');
     }
     
     // Vérifier que l'accès n'existe pas déjà
     if (Access::existsBetween($from_place_id, $to_place_id, $name)) {
-        throw new Exception('Un accès avec ce nom existe déjà vers ce lieu de destination.');
+        throw new Exception('Un accès avec ce nom existe déjà vers cette pièce de destination.');
     }
     
-    // Vérifier que l'utilisateur a les permissions sur le lieu d'origine
-    $lieu = Lieu::findById($from_place_id);
+    // Vérifier que l'utilisateur a les permissions sur la pièce d'origine
+    $lieu = Room::findById($from_place_id);
     if (!$lieu) {
-        throw new Exception('Lieu d\'origine non trouvé.');
+        throw new Exception('Pièce d\'origine non trouvé.');
     }
     
     $place = $lieu->toArray();
@@ -83,7 +83,7 @@ try {
     $isOwnerDM = User::isDMOrAdmin() && ($place['dm_id'] === null || $user_id === (int)$place['dm_id']);
     
     if (!User::isAdmin() && !$isOwnerDM) {
-        throw new Exception('Vous n\'avez pas les permissions pour créer un accès depuis ce lieu.');
+        throw new Exception('Vous n\'avez pas les permissions pour créer un accès depuis cette pièce.');
     }
     
     // Créer l'accès

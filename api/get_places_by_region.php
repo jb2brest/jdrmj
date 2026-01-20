@@ -1,6 +1,6 @@
 <?php
 /**
- * API Endpoint: Récupérer les lieux d'une région
+ * API Endpoint: Récupérer les pièces d'une région
  */
 
 require_once '../includes/functions.php';

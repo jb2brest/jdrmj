@@ -47,7 +47,7 @@ try {
             $target_id = $placeNpc['id'];
         } else {
             // Si pas trouvé dans place_npcs, erreur
-             echo json_encode(['success' => false, 'message' => 'PNJ non trouvé dans un lieu (place_npcs)']);
+             echo json_encode(['success' => false, 'message' => 'PNJ non trouvé dans une pièce (place_npcs)']);
              exit;
         }
     }

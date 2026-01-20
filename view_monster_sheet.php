@@ -57,7 +57,7 @@ if ($campaign_id > 0) {
     }
 }
 
-// Récupérer les informations du monstre dans le lieu via la classe Monstre
+// Récupérer les informations du monstre dans la pièce via la classe Monstre
 $monster = Monstre::getMonsterInPlace($monster_npc_id);
 
 if (!$monster) {
@@ -65,8 +65,8 @@ if (!$monster) {
     exit();
 }
 
-// Récupérer le lieu via la classe Lieu
-$lieu = Lieu::findById($monster['place_id']);
+// Récupérer la pièce via la classe Pièce
+$lieu = Room::findById($monster['place_id']);
 if (!$lieu) {
     header('Location: index.php');
     exit();
@@ -99,7 +99,7 @@ $magicalEquipment = Monstre::getMonsterMagicalEquipment($monster_npc_id, $campai
 // Récupérer les poisons du monstre via la classe Monstre
 $monsterPoisons = Monstre::getMonsterPoisons($monster_npc_id, $campaign_id);
 
-// Vérifier que l'utilisateur est le MJ de cette lieu
+// Vérifier que l'utilisateur est le MJ de cette pièce
 if ($monster['dm_id'] != $_SESSION['user_id']) {
     header('Location: index.php');
     exit();
@@ -1063,7 +1063,7 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
                             <div class="text-center py-4">
                                 <i class="fas fa-gem fa-3x text-muted mb-3"></i>
                                 <p class="text-muted">Aucun objet magique attribué à ce monstre</p>
-                                <p class="text-muted">Les objets magiques peuvent être attribués depuis la page du lieu</p>
+                                <p class="text-muted">Les objets magiques peuvent être attribués depuis la page de la pièce</p>
                             </div>
                         <?php endif; ?>
                         

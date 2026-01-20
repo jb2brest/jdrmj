@@ -817,7 +817,7 @@
                                         <?php if (!$item['equipped']): ?>
                                             <button type="button" class="btn btn-outline-warning btn-sm ms-1" 
                                                     onclick="dropItem(<?php echo $item['id']; ?>, '<?php echo addslashes($item['item_name']); ?>')"
-                                                    title="Déposer l'objet dans le lieu actuel"
+                                                    title="Déposer l'objet dans la pièce actuelle"
                                                     style="white-space: nowrap; min-width: 80px;">
                                                 <i class="fas fa-hand-holding me-1"></i>Déposer
                                             </button>

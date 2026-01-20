@@ -28,7 +28,7 @@ try {
         throw new Exception('Données manquantes ou invalides');
     }
     
-    // Vérifier que l'objet existe et appartient au lieu (non attribué)
+    // Vérifier que l'objet existe et appartient à la pièce (non attribué)
     $pdo = getPDO();
     $stmt = $pdo->prepare("
         SELECT * FROM items 
@@ -107,9 +107,9 @@ try {
             // L'objet est maintenant dans l'inventaire de la cible
             $newObjectData['owner_type'] = $targetType;
             $newObjectData['owner_id'] = $targetId;
-            // L'objet n'est plus dans un lieu spécifique
+            // L'objet n'est plus dans une pièce spécifique
             $newObjectData['place_id'] = null;
-            // L'objet n'est plus visible sur la carte du lieu
+            // L'objet n'est plus visible sur la carte de la pièce
             $newObjectData['is_visible'] = 0;
             $newObjectData['is_on_map'] = 0;
             $newObjectData['position_x'] = 0;
@@ -157,7 +157,7 @@ try {
             ]);
         }
         
-        // Supprimer l'objet original du lieu
+        // Supprimer l'objet original de la pièce
         $stmt = $pdo->prepare("DELETE FROM items WHERE id = ?");
         $stmt->execute([$objectId]);
         

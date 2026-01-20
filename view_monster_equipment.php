@@ -15,7 +15,7 @@ if (!isset($_GET['id']) || !isset($_GET['place_id'])) {
 $monster_id = (int)$_GET['id'];
 $place_id = (int)$_GET['place_id'];
 
-// Vérifier que le MJ a accès à cette lieu
+// Vérifier que le MJ a accès à cette pièce
 $stmt = $pdo->prepare("SELECT s.*, gs.dm_id FROM places s JOIN game_sessions gs ON s.session_id = gs.id WHERE s.id = ?");
 $stmt->execute([$place_id]);
 $scene = $stmt->fetch();

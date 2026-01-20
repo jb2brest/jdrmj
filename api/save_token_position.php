@@ -30,7 +30,7 @@ try {
         throw new Exception('Non authentifié');
     }
     
-    // Vérifier que l'utilisateur a accès à ce lieu
+    // Vérifier que l'utilisateur a accès à cette pièce
     $pdo = getPDO();
     $stmt = $pdo->prepare("
         SELECT p.id, pc.campaign_id 
@@ -42,10 +42,10 @@ try {
     $place = $stmt->fetch();
     
     if (!$place) {
-        throw new Exception('Lieu non trouvé');
+        throw new Exception('Pièce non trouvé');
     }
     
-    // Si le lieu est associé à une campagne, vérifier les permissions
+    // Si la pièce est associé à une campagne, vérifier les permissions
     if ($place['campaign_id']) {
         // Vérifier que l'utilisateur est membre de la campagne ou est le DM
         $stmt = $pdo->prepare("
@@ -69,9 +69,9 @@ try {
             }
         }
     } else {
-        // Si le lieu n'est pas associé à une campagne, vérifier si l'utilisateur est admin
+        // Si la pièce n'est pas associé à une campagne, vérifier si l'utilisateur est admin
         if (!User::isAdmin()) {
-            throw new Exception('Accès refusé - Ce lieu n\'est pas associé à une campagne');
+            throw new Exception('Accès refusé - Cette pièce n\'est pas associé à une campagne');
         }
     }
     

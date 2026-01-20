@@ -85,11 +85,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
             // 3. Supprimer les entrées du journal de campagne via la classe CampaignEvent
             CampaignEvent::deleteByCampaignId($campaign_id);
             
-            // 4. Dissocier les lieux de la campagne (ne pas les supprimer)
+            // 4. Dissocier les pièces de la campagne (ne pas les supprimer)
             $stmt = $pdo->prepare("DELETE FROM place_campaigns WHERE campaign_id = ?");
             $stmt->execute([$campaign_id]);
             
-            // 5. Retirer les joueurs des lieux de cette campagne
+            // 5. Retirer les joueurs des pièces de cette campagne
             $stmt = $pdo->prepare("
                 DELETE pp FROM place_players pp
                 INNER JOIN place_campaigns pc ON pp.place_id = pc.place_id
@@ -97,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
             ");
             $stmt->execute([$campaign_id]);
             
-            // 6. Retirer les PNJ des lieux de cette campagne
+            // 6. Retirer les PNJ des pièces de cette campagne
             $stmt = $pdo->prepare("
                 DELETE pn FROM place_npcs pn
                 INNER JOIN place_campaigns pc ON pn.place_id = pc.place_id
@@ -105,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
             ");
             $stmt->execute([$campaign_id]);
             
-            // 7. Retirer les monstres des lieux de cette campagne
+            // 7. Retirer les monstres des pièces de cette campagne
             $stmt = $pdo->prepare("
                 DELETE pm FROM place_monsters pm
                 INNER JOIN place_campaigns pc ON pm.place_id = pc.place_id

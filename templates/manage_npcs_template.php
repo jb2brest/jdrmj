@@ -122,7 +122,7 @@ extract($template_vars ?? []);
                                 </select>
                             </div>
                             <div class="col-md-2">
-                                <label for="place" class="form-label">Lieu</label>
+                                <label for="place" class="form-label">Pièce</label>
                                 <select class="form-select" id="place" name="place">
                                     <option value="">Tous</option>
                                     <?php foreach ($places as $place): ?>
@@ -299,7 +299,7 @@ extract($template_vars ?? []);
                                             <button class="btn btn-outline-danger" 
                                                     data-entity-id="<?php 
                                                         // Pour les PNJ dans place_npcs, utiliser pn.id
-                                                        // Pour les PNJ sans lieu (id NULL), utiliser npc_character_id
+                                                        // Pour les PNJ sans pièce (id NULL), utiliser npc_character_id
                                                         // Pour les monstres, utiliser m.id
                                                         if (isset($entity['id']) && $entity['id'] > 0) {
                                                             echo (int)$entity['id'];

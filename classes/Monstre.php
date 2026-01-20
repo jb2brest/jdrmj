@@ -625,11 +625,11 @@ class Monstre
     }
 
     /**
-     * Récupère les informations d'un monstre dans un lieu spécifique
+     * Récupère les informations d'un monstre dans une pièce spécifique
      * 
-     * @param int $npcId ID du NPC monstre dans le lieu
+     * @param int $npcId ID du NPC monstre dans la pièce
      * @param PDO $pdo Instance PDO (optionnel)
-     * @return array|null Informations du monstre dans le lieu ou null
+     * @return array|null Informations du monstre dans la pièce ou null
      */
     public static function getMonsterInPlace($npcId, $pdo = null)
     {
@@ -649,14 +649,14 @@ class Monstre
             $stmt->execute([$npcId]);
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            throw new Exception("Erreur lors de la récupération du monstre dans le lieu: " . $e->getMessage());
+            throw new Exception("Erreur lors de la récupération du monstre dans la pièce: " . $e->getMessage());
         }
     }
 
     /**
      * Récupère l'équipement magique d'un monstre (excluant les poisons)
      * 
-     * @param int $npcId ID du NPC monstre dans le lieu
+     * @param int $npcId ID du NPC monstre dans la pièce
      * @param int $campaignId ID de la campagne
      * @param PDO $pdo Instance PDO (optionnel)
      * @return array Liste de l'équipement magique
@@ -684,7 +684,7 @@ class Monstre
     /**
      * Récupère les poisons d'un monstre
      * 
-     * @param int $npcId ID du NPC monstre dans le lieu
+     * @param int $npcId ID du NPC monstre dans la pièce
      * @param int $campaignId ID de la campagne
      * @param PDO $pdo Instance PDO (optionnel)
      * @return array Liste des poisons
@@ -712,7 +712,7 @@ class Monstre
      * Récupérer un équipement spécifique d'un monstre
      * 
      * @param int $itemId ID de l'équipement
-     * @param int $npcId ID du PNJ monstre dans le lieu
+     * @param int $npcId ID du PNJ monstre dans la pièce
      * @param int $campaignId ID de la campagne
      * @param PDO|null $pdo Instance PDO (optionnelle)
      * @return array|null Données de l'équipement ou null si non trouvé
@@ -731,9 +731,9 @@ class Monstre
     }
 
     /**
-     * Récupérer les informations d'un monstre dans un lieu
+     * Récupérer les informations d'un monstre dans une pièce
      * 
-     * @param int $npcId ID du PNJ monstre dans le lieu
+     * @param int $npcId ID du PNJ monstre dans la pièce
      * @param PDO|null $pdo Instance PDO (optionnelle)
      * @return array|null Données du monstre ou null si non trouvé
      * @throws Exception En cas d'erreur
@@ -805,9 +805,9 @@ class Monstre
     }
 
     /**
-     * Mettre à jour les points de vie actuels d'un monstre dans un lieu
+     * Mettre à jour les points de vie actuels d'un monstre dans une pièce
      * 
-     * @param int $npcId ID du PNJ monstre dans le lieu
+     * @param int $npcId ID du PNJ monstre dans la pièce
      * @param int $currentHp Nouveaux points de vie actuels
      * @param PDO|null $pdo Instance PDO (optionnelle)
      * @return bool Succès de la mise à jour

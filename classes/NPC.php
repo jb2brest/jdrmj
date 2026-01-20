@@ -7,9 +7,9 @@ require_once __DIR__ . '/Item.php';
  * 
  * Cette classe gère tous les aspects des NPCs :
  * - Données de base des NPCs (table npcs)
- * - Gestion de la visibilité et identification dans les lieux
+ * - Gestion de la visibilité et identification dans les pièces
  * - Gestion de l'équipement spécifique aux NPCs
- * - Gestion des lieux d'apparition
+ * - Gestion des pièces d'apparition
  * - Gestion des relations avec les campagnes
  */
 class NPC
@@ -437,7 +437,7 @@ class NPC
             $stmt = $this->pdo->prepare("DELETE FROM npc_spell_slots_usage WHERE npc_id = ?");
             $stmt->execute([$this->id]);
             
-            // 5. Retirer le NPC de tous les lieux (place_npcs)
+            // 5. Retirer le NPC de tous les pièces (place_npcs)
             $stmt = $this->pdo->prepare("DELETE FROM place_npcs WHERE npc_character_id = ?");
             $stmt->execute([$this->id]);
             
@@ -496,9 +496,9 @@ class NPC
     }
     
     /**
-     * Trouver des NPCs par lieu
+     * Trouver des NPCs par pièce
      * 
-     * @param int $placeId ID du lieu
+     * @param int $placeId ID de la pièce
      * @param PDO $pdo Instance PDO
      * @return array Liste des NPCs
      */
@@ -525,13 +525,13 @@ class NPC
             }
             return $npcs;
         } catch (PDOException $e) {
-            error_log("Erreur lors de la récupération des NPCs par lieu: " . $e->getMessage());
+            error_log("Erreur lors de la récupération des NPCs par pièce: " . $e->getMessage());
             return [];
         }
     }
 
     /**
-     * Obtenir les informations d'un NPC dans un lieu
+     * Obtenir les informations d'un NPC dans une pièce
      * 
      * @param int $npcId ID du NPC
      * @param PDO $pdo Instance PDO

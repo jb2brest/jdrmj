@@ -1,10 +1,10 @@
 <?php
 /**
- * API Endpoint: Ajouter un objet à un lieu
+ * API Endpoint: Ajouter un objet à une pièce
  */
 
 require_once dirname(__DIR__) . '/includes/functions.php';
-require_once dirname(__DIR__) . '/classes/Lieu.php';
+require_once dirname(__DIR__) . '/classes/Room.php';
 require_once dirname(__DIR__) . '/classes/Item.php';
 
 header('Content-Type: application/json');
@@ -41,10 +41,10 @@ try {
         throw new Exception('Données manquantes');
     }
     
-    // Vérifier que le lieu existe
-    $lieu = Lieu::findById($placeId);
+    // Vérifier que la pièce existe
+    $lieu = Room::findById($placeId);
     if (!$lieu) {
-        throw new Exception('Lieu non trouvé');
+        throw new Exception('Pièce non trouvé');
     }
     
     // Vérifier les permissions (seuls les DM et admins peuvent ajouter des objets)
@@ -65,7 +65,7 @@ try {
         'position_x' => 0,
         'position_y' => 0,
         'is_on_map' => 0, // Par défaut pas sur la carte
-        'owner_type' => 'place', // Appartient au lieu
+        'owner_type' => 'place', // Appartient à la pièce
         'owner_id' => null,
         'poison_id' => null,
         'weapon_id' => null,

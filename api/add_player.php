@@ -1,10 +1,10 @@
 <?php
 /**
- * API Endpoint: Ajouter un joueur à un lieu
+ * API Endpoint: Ajouter un joueur à une pièce
  */
 
 require_once '../includes/functions.php';
-require_once '../classes/Lieu.php';
+require_once '../classes/Room.php';
 
 // Ne pas définir Content-Type JSON car on va rediriger
 
@@ -28,10 +28,10 @@ try {
         throw new Exception('Données manquantes');
     }
     
-    // Créer l'instance du lieu
-    $lieu = Lieu::findById($placeId);
+    // Créer l'instance de la pièce
+    $lieu = Room::findById($placeId);
     if (!$lieu) {
-        throw new Exception('Lieu non trouvé');
+        throw new Exception('Pièce non trouvé');
     }
     
     // Vérifier que le personnage est accepté dans la campagne
@@ -49,7 +49,7 @@ try {
     $result = $lieu->addPlayer($playerId, $characterId, $campaignId);
     
     if ($result['success']) {
-        // Rediriger vers la page du lieu pour recharger
+        // Rediriger vers la page de la pièce pour recharger
         header('Location: ../view_place.php?id=' . $placeId . '&player_added=1');
         exit();
     } else {
@@ -58,7 +58,7 @@ try {
     
 } catch (Exception $e) {
     error_log("Erreur add_player.php: " . $e->getMessage());
-    // Rediriger vers la page du lieu avec un message d'erreur
+    // Rediriger vers la page de la pièce avec un message d'erreur
     $placeId = isset($_POST['place_id']) ? (int)$_POST['place_id'] : 0;
     if ($placeId) {
         $_SESSION['error_message'] = $e->getMessage();

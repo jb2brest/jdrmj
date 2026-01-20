@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_monsters'])) {
         } elseif ($country_id <= 0) {
             $error_message = "Veuillez sélectionner un pays.";
         } elseif ($place_id <= 0) {
-            $error_message = "Veuillez sélectionner un lieu.";
+            $error_message = "Veuillez sélectionner une pièce.";
         } elseif ($count <= 0 || $count > 10) {
             $error_message = "Le nombre de monstres doit être entre 1 et 10.";
         } else {
@@ -70,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_monsters'])) {
                         $place = $stmt->fetch(PDO::FETCH_ASSOC);
                         
                         if (!$place) {
-                            $error_message = "Lieu invalide.";
+                            $error_message = "Pièce invalide.";
                         } else {
                             // Créer les monstres automatiquement
                             $result = createAutomaticMonsters($world_id, $country_id, $place_id, $count, $monster_type, $is_visible, $is_identified, $challenge_rating);
@@ -213,7 +213,7 @@ $current_page = "manage_npcs";
                                         </div>
                                         <div class="col-md-6">
                                             <div class="mb-3">
-                                                <label for="place_id" class="form-label">Lieu *</label>
+                                                <label for="place_id" class="form-label">Pièce *</label>
                                                 <select class="form-select" id="place_id" name="place_id" required>
                                                     <option value="">Sélectionnez d'abord un pays</option>
                                                 </select>
@@ -350,7 +350,7 @@ $current_page = "manage_npcs";
             function updateCountries(worldId) {
                 countrySelect.innerHTML = '<option value="">Sélectionnez un pays</option>';
                 regionSelect.innerHTML = '<option value="">Aucune région</option>';
-                placeSelect.innerHTML = '<option value="">Sélectionnez un lieu</option>';
+                placeSelect.innerHTML = '<option value="">Sélectionnez une pièce</option>';
                 
                 if (worldId) {
                     fetch(`get_countries_by_world.php?world_id=${worldId}`)
@@ -370,7 +370,7 @@ $current_page = "manage_npcs";
             
             function updateRegions(countryId) {
                 regionSelect.innerHTML = '<option value="">Aucune région</option>';
-                placeSelect.innerHTML = '<option value="">Sélectionnez un lieu</option>';
+                placeSelect.innerHTML = '<option value="">Sélectionnez une pièce</option>';
                 
                 if (countryId) {
                     fetch(`get_regions_by_country.php?country_id=${countryId}`)
@@ -389,7 +389,7 @@ $current_page = "manage_npcs";
             }
             
             function updatePlaces(countryId, regionId) {
-                placeSelect.innerHTML = '<option value="">Sélectionnez un lieu</option>';
+                placeSelect.innerHTML = '<option value="">Sélectionnez une pièce</option>';
                 
                 if (countryId) {
                     fetch(`get_places_by_region.php?region_id=${regionId}&country_id=${countryId}`)
@@ -403,7 +403,7 @@ $current_page = "manage_npcs";
                                 placeSelect.appendChild(option);
                             });
                         })
-                        .catch(error => console.error('Erreur lors du chargement des lieux:', error));
+                        .catch(error => console.error('Erreur lors du chargement des pièces:', error));
                 }
             }
             

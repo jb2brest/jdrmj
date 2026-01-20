@@ -1,6 +1,6 @@
 <?php
 /**
- * API Endpoint: Uploader un plan de lieu
+ * API Endpoint: Uploader un plan de pièce
  */
 
 // Configurer error_log pour écrire dans un fichier accessible
@@ -21,7 +21,7 @@ header('Content-Type: application/json');
 
 require_once dirname(__DIR__) . '/includes/functions.php';
 require_once dirname(__DIR__) . '/classes/init.php';
-require_once dirname(__DIR__) . '/classes/Lieu.php';
+require_once dirname(__DIR__) . '/classes/Room.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -33,7 +33,7 @@ try {
     $place_id = (int)($_POST['place_id'] ?? 0);
     
     if (!$place_id) {
-        throw new Exception('ID du lieu manquant');
+        throw new Exception('ID de la pièce manquant');
     }
     
     // Vérifier les permissions
@@ -41,10 +41,10 @@ try {
         throw new Exception('Non authentifié');
     }
     
-    // Récupérer le lieu
-    $lieu = Lieu::findById($place_id);
+    // Récupérer la pièce
+    $lieu = Room::findById($place_id);
     if (!$lieu) {
-        throw new Exception('Lieu non trouvé');
+        throw new Exception('Pièce non trouvé');
     }
     
     // Vérifier les permissions
@@ -60,7 +60,7 @@ try {
     $isOwnerDM = User::isDMOrAdmin() && ($dm_id === null || $user_id === (int)$dm_id);
     
     if (!User::isAdmin() && !$isOwnerDM) {
-        throw new Exception('Vous n\'avez pas les droits pour modifier ce lieu');
+        throw new Exception('Vous n\'avez pas les droits pour modifier cette pièce');
     }
     
     if (!isset($_FILES['plan_file']) || $_FILES['plan_file']['error'] !== UPLOAD_ERR_OK) {
@@ -134,7 +134,7 @@ try {
     
     echo json_encode([
         'success' => true,
-        'message' => 'Plan du lieu mis à jour avec succès',
+        'message' => 'Plan de la pièce mis à jour avec succès',
         'map_url' => $web_path
     ]);
     

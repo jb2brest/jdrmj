@@ -30,7 +30,7 @@ $user_id = $_SESSION['user_id'];
 
 try {
     // Utiliser la méthode de classe
-    $entities = Lieu::getEntitiesByUser($user_id, $filters);
+    $entities = Room::getEntitiesByUser($user_id, $filters);
     
     echo json_encode([
         'success' => true,

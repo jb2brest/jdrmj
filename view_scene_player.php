@@ -1,7 +1,7 @@
 <?php
 require_once 'classes/init.php';
 require_once 'includes/functions.php';
-$page_title = "Lieu - Vue Joueur";
+$page_title = "Pièce - Vue Joueur";
 $current_page = "view_scene_player";
 
 requireLogin();
@@ -19,8 +19,8 @@ switch ($localization['status']) {
         break;
         
     case 'member_no_place':
-        // Le joueur est membre mais pas assigné à un lieu dans cette campagne
-        $page_title = "Aucun lieu assigné dans cette campagne";
+        // Le joueur est membre mais pas assigné à une pièce dans cette campagne
+        $page_title = "Aucune pièce assignée dans cette campagne";
         include_once 'includes/layout.php';
         ?>
         <div class="container mt-4">
@@ -29,10 +29,10 @@ switch ($localization['status']) {
                     <div class="card">
                         <div class="card-body text-center">
                             <i class="fas fa-map-marker-alt fa-3x text-muted mb-3"></i>
-                            <h4 class="card-title">Aucun lieu assigné</h4>
+                            <h4 class="card-title">Aucune pièce assignée</h4>
                             <p class="card-text text-muted">
                                 <?php echo htmlspecialchars($localization['message']); ?>
-                                Le maître du jeu doit vous ajouter à un lieu pour que vous puissiez y accéder.
+                                Le maître du jeu doit vous ajouter à une pièce pour que vous puissiez y accéder.
                             </p>
                             <a href="view_campaign.php?id=<?php echo $localization['campaign_id']; ?>" class="btn btn-primary">
                                 <i class="fas fa-arrow-left me-2"></i>Retour à la campagne
@@ -51,8 +51,8 @@ switch ($localization['status']) {
         exit();
         
     case 'member_no_place_any':
-        // Le joueur est membre d'une campagne mais pas assigné à un lieu
-        $page_title = "Aucun lieu assigné";
+        // Le joueur est membre d'une campagne mais pas assigné à une pièce
+        $page_title = "Aucune pièce assignée";
         include_once 'includes/layout.php';
         ?>
         <div class="container mt-4">
@@ -61,10 +61,10 @@ switch ($localization['status']) {
                     <div class="card">
                         <div class="card-body text-center">
                             <i class="fas fa-map-marker-alt fa-3x text-muted mb-3"></i>
-                            <h4 class="card-title">Aucun lieu assigné</h4>
+                            <h4 class="card-title">Aucune pièce assignée</h4>
                             <p class="card-text text-muted">
                                 <?php echo htmlspecialchars($localization['message']); ?>
-                                Le maître du jeu doit vous ajouter à un lieu pour que vous puissiez y accéder.
+                                Le maître du jeu doit vous ajouter à une pièce pour que vous puissiez y accéder.
                             </p>
                             <a href="campaigns.php" class="btn btn-primary">
                                 <i class="fas fa-list me-2"></i>Voir mes campagnes
@@ -142,8 +142,8 @@ if (!$membership) {
     exit();
 }
 
-// Récupérer les personnages du joueur présents dans ce lieu
-$lieu = Lieu::findById($place_id);
+// Récupérer les personnages du joueur présents dans cette pièce
+$lieu = Room::findById($place_id);
 $player_characters = $lieu ? $lieu->getPlayerCharacters($user_id) : [];
 
 // Récupérer les positions de tous les pions (comme dans view_scene.php)
@@ -172,7 +172,7 @@ if ($lieu) {
     }
 }
 
-// Récupérer TOUS les joueurs présents dans le lieu (comme dans view_scene.php)
+// Récupérer TOUS les joueurs présents dans la pièce (comme dans view_scene.php)
 $placePlayers = $lieu ? $lieu->getAllPlayers() : [];
 
 // Récupérer les autres joueurs (pour l'affichage séparé)
@@ -180,13 +180,13 @@ $other_players = array_filter($placePlayers, function($player) use ($user_id) {
     return $player['player_id'] != $user_id;
 });
 
-// Récupérer les PNJ présents dans le lieu (seulement ceux visibles)
+// Récupérer les PNJ présents dans la pièce (seulement ceux visibles)
 $placeNpcs = $lieu ? $lieu->getVisibleNpcs() : [];
 
-// Récupérer les monstres présents dans le lieu (seulement ceux visibles)
+// Récupérer les monstres présents dans la pièce (seulement ceux visibles)
 $placeMonsters = $lieu ? $lieu->getVisibleMonsters() : [];
 
-// Récupérer les objets présents dans le lieu (seulement ceux visibles et non attribués)
+// Récupérer les objets présents dans la pièce (seulement ceux visibles et non attribués)
 $placeObjects = $lieu ? $lieu->getVisibleObjects() : [];
 
 // Les positions des objets sont maintenant gérées par place_tokens

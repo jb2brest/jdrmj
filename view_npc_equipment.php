@@ -19,7 +19,7 @@ $place_id = (int)$_GET['place_id'];
 error_log("DEBUG view_npc_equipment.php - Accès avec NPC ID: $npc_id, Scene ID: $place_id");
 error_log("DEBUG view_npc_equipment.php - User ID: " . ($_SESSION['user_id'] ?? 'NOT_SET'));
 
-// Vérifier que le MJ a accès à cette lieu
+// Vérifier que le MJ a accès à cette pièce
 $stmt = $pdo->prepare("SELECT s.*, gs.dm_id FROM places s JOIN game_sessions gs ON s.session_id = gs.id WHERE s.id = ?");
 $stmt->execute([$place_id]);
 $scene = $stmt->fetch();

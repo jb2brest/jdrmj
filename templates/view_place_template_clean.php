@@ -1,6 +1,6 @@
 <?php
 /**
- * Template pour la vue d'un lieu
+ * Template pour la vue d'une pièce
  * Version refactorisée avec séparation HTML/PHP
  */
 
@@ -151,7 +151,7 @@ extract($template_vars ?? []);
 <?php endif; ?>
 
 <div class="container-fluid">
-    <!-- En-tête du lieu -->
+    <!-- En-tête de la pièce -->
     <div class="place-header">
         <div class="container">
             <div class="row align-items-center">
@@ -164,7 +164,7 @@ extract($template_vars ?? []);
                 <div class="col-md-4 text-end">
                     <?php if ($canEdit): ?>
                         <button class="btn btn-light btn-lg" data-bs-toggle="modal" data-bs-target="#editSceneModal">
-                            <i class="fas fa-edit me-2"></i>Modifier le lieu
+                            <i class="fas fa-edit me-2"></i>Modifier la pièce
                         </button>
                     <?php endif; ?>
                 </div>
@@ -176,7 +176,7 @@ extract($template_vars ?? []);
         <div class="row">
             <!-- Colonne principale -->
             <div class="col-lg-8">
-                <!-- Description du lieu -->
+                <!-- Description de la pièce -->
                 <?php if (!empty($place['description'])): ?>
                 <div class="section-card">
                     <div class="section-header">
@@ -188,15 +188,15 @@ extract($template_vars ?? []);
                 </div>
                 <?php endif; ?>
 
-                <!-- Plan du lieu -->
+                <!-- Plan de la pièce -->
                 <?php if (!empty($place['map_url'])): ?>
                 <div class="section-card">
                     <div class="section-header">
-                        <i class="fas fa-map me-2"></i>Plan du lieu
+                        <i class="fas fa-map me-2"></i>Plan de la pièce
                     </div>
                     <div class="section-body">
                         <img src="<?php echo htmlspecialchars($place['map_url']); ?>" 
-                             alt="Plan du lieu" 
+                             alt="Plan de la pièce" 
                              class="img-fluid rounded">
                     </div>
                 </div>

@@ -1,7 +1,7 @@
 <?php
 /**
  * API pour vérifier la localisation actuelle d'un joueur
- * Utilisé par view_scene_player.php pour détecter les changements de lieu
+ * Utilisé par view_scene_player.php pour détecter les changements de pièce
  */
 
 require_once 'config/database.php';
@@ -17,7 +17,7 @@ if (!isLoggedIn()) {
 $user_id = $_SESSION['user_id'];
 
 try {
-    // Trouver le lieu où se trouve actuellement le joueur
+    // Trouver la pièce où se trouve actuellement le joueur
     $stmt = $pdo->prepare("
         SELECT p.id as place_id, p.title as place_title
         FROM places p 
@@ -29,7 +29,7 @@ try {
     $location = $stmt->fetch();
     
     if ($location) {
-        // Le joueur est dans un lieu
+        // Le joueur est dans une pièce
         echo json_encode([
             'success' => true,
             'place_id' => (int)$location['place_id'],
@@ -37,7 +37,7 @@ try {
             'has_location' => true
         ]);
     } else {
-        // Le joueur n'est dans aucun lieu
+        // Le joueur n'est dans aucune pièce
         echo json_encode([
             'success' => true,
             'place_id' => null,

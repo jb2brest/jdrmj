@@ -1,6 +1,6 @@
 <?php
 /**
- * Template pour la vue d'un lieu
+ * Template pour la vue d'une pièce
  * Version restaurée
  */
 
@@ -121,7 +121,24 @@ extract($template_vars ?? []);
         </div>
     <?php endif; ?>
 
-    <!-- En-tête du lieu -->
+    <!-- Fil d'ariane -->
+    <?php if (!empty($breadcrumbs)): ?>
+        <nav aria-label="breadcrumb" class="mb-2">
+            <ol class="breadcrumb">
+                <?php foreach ($breadcrumbs as $crumb): ?>
+                    <?php if (!empty($crumb['active'])): ?>
+                        <li class="breadcrumb-item active" aria-current="page"><?php echo htmlspecialchars($crumb['name']); ?></li>
+                    <?php elseif (!empty($crumb['url'])): ?>
+                        <li class="breadcrumb-item"><a href="<?php echo htmlspecialchars($crumb['url']); ?>" class="text-decoration-none"><?php echo htmlspecialchars($crumb['name']); ?></a></li>
+                    <?php else: ?>
+                        <li class="breadcrumb-item text-muted"><?php echo htmlspecialchars($crumb['name']); ?></li>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+            </ol>
+        </nav>
+    <?php endif; ?>
+
+    <!-- En-tête de la pièce -->
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
             <div class="d-flex align-items-center">
@@ -137,7 +154,7 @@ extract($template_vars ?? []);
         <div class="d-flex gap-2">
             <?php if ($canEdit): ?>
                 <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editSceneModal">
-                    <i class="fas fa-edit me-1"></i>Modifier le lieu
+                    <i class="fas fa-edit me-1"></i>Modifier la pièce
                 </button>
             <?php endif; ?>
             <?php if (!empty($place['region_id'])): ?>
@@ -257,13 +274,13 @@ extract($template_vars ?? []);
 
     <!-- Contenu principal -->
     <div class="row">
-        <!-- Colonne gauche - Plan du lieu -->
+        <!-- Colonne gauche - Plan de la pièce -->
         <div class="col-lg-8">
 
-            <!-- Plan du lieu -->
+            <!-- Plan de la pièce -->
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <span>Plan du lieu</span>
+                    <span>Plan de la pièce</span>
                     <?php if ($isOwnerDM): ?>
                         <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#editMapForm">
                             <i class="fas fa-edit me-1"></i>Modifier le plan
@@ -274,7 +291,7 @@ extract($template_vars ?? []);
                     <?php if ($isOwnerDM): ?>
                         <div class="collapse mb-3" id="editMapForm">
                             <div class="card card-body">
-                                <h6>Modifier le plan du lieu</h6>
+                                <h6>Modifier le plan de la pièce</h6>
                                 <form enctype="multipart/form-data" class="row g-3" id="uploadMapForm">
                                     <input type="hidden" name="place_id" value="<?php echo $place_id; ?>">
                                     <div class="col-12">
@@ -284,7 +301,7 @@ extract($template_vars ?? []);
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label">Notes du MJ</label>
-                                        <textarea class="form-control" name="notes" id="placeNotes" rows="3" placeholder="Notes internes sur cette lieu..."><?php echo htmlspecialchars($place['notes'] ?? ''); ?></textarea>
+                                        <textarea class="form-control" name="notes" id="placeNotes" rows="3" placeholder="Notes internes sur cette pièce..."><?php echo htmlspecialchars($place['notes'] ?? ''); ?></textarea>
                                     </div>
                                     <div class="col-12">
                                         <button type="submit" class="btn btn-primary" id="uploadMapButton">
@@ -300,7 +317,7 @@ extract($template_vars ?? []);
                         <div class="position-relative" style="overflow: visible;">
                             <!-- Zone du plan avec pions -->
                             <div id="mapContainer" class="position-relative" style="display: inline-block; overflow: visible;">
-                                <img id="mapImage" src="<?php echo htmlspecialchars($place['map_url']); ?>" class="img-fluid rounded" alt="Plan du lieu" style="max-height: 500px; cursor: crosshair;">
+                                <img id="mapImage" src="<?php echo htmlspecialchars($place['map_url']); ?>" class="img-fluid rounded" alt="Plan de la pièce" style="max-height: 500px; cursor: crosshair;">
                                 
                                 <!-- Zone des pions sur le côté -->
                                 <div id="tokenSidebar" class="position-absolute" style="right: -120px; top: 0; width: 100px; height: 500px; border: 2px dashed #ccc; border-radius: 8px; background: rgba(248, 249, 250, 0.8); padding: 10px; overflow-y: auto; z-index: 10;">
@@ -507,7 +524,7 @@ extract($template_vars ?? []);
                     <?php else: ?>
                         <div class="text-center text-muted py-5">
                             <i class="fas fa-map fa-3x mb-3"></i>
-                            <p>Aucun plan disponible pour ce lieu</p>
+                            <p>Aucun plan disponible pour cette pièce</p>
                             <?php if ($isOwnerDM): ?>
                                 <p class="small">Utilisez le bouton "Modifier le plan" pour ajouter une carte</p>
                             <?php endif; ?>
@@ -516,11 +533,11 @@ extract($template_vars ?? []);
                 </div>
             </div>
 
-            <!-- Notes du lieu -->
+            <!-- Notes de la pièce -->
             <?php if (!empty($place['notes'])): ?>
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-sticky-note me-2"></i>Notes du lieu</h5>
+                        <h5 class="mb-0"><i class="fas fa-sticky-note me-2"></i>Notes de la pièce</h5>
                     </div>
                     <div class="card-body">
                         <div class="notes-content"><?php echo nl2br(htmlspecialchars($place['notes'])); ?></div>
@@ -530,7 +547,7 @@ extract($template_vars ?? []);
 
         </div>
 
-        <!-- Colonne droite - Entités du lieu -->
+        <!-- Colonne droite - Entités de la pièce -->
         <div class="col-lg-4">
 
             <!-- Joueurs présents -->
@@ -810,7 +827,7 @@ extract($template_vars ?? []);
                     <?php if (empty($placeAccesses)): ?>
                         <div class="text-center py-3">
                             <i class="fas fa-door-closed fa-2x text-muted mb-2"></i>
-                            <p class="text-muted mb-0">Aucun accès configuré pour ce lieu</p>
+                            <p class="text-muted mb-0">Aucun accès configuré pour cette pièce</p>
                             <?php if ($canEdit): ?>
                                 <button class="btn btn-sm btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#createAccessModal">
                                     <i class="fas fa-plus me-1"></i>Créer le premier accès
@@ -875,11 +892,11 @@ extract($template_vars ?? []);
                                                 <div class="mt-3 d-flex gap-2">
                                                     <?php if ($access->from_place_id == $place_id): ?>
                                                         <a href="view_place.php?id=<?= $access->to_place_id ?>" class="btn btn-sm btn-outline-primary">
-                                                            <i class="fas fa-external-link-alt me-1"></i>Aller vers ce lieu
+                                                            <i class="fas fa-external-link-alt me-1"></i>Aller vers cette pièce
                                                         </a>
                                                     <?php else: ?>
                                                         <a href="view_place.php?id=<?= $access->from_place_id ?>" class="btn btn-sm btn-outline-primary">
-                                                            <i class="fas fa-external-link-alt me-1"></i>Aller vers ce lieu
+                                                            <i class="fas fa-external-link-alt me-1"></i>Aller vers cette pièce
                                                         </a>
                                                     <?php endif; ?>
                                                     <?php if ($access->from_place_id == $place_id): ?>
@@ -1105,10 +1122,10 @@ extract($template_vars ?? []);
             createAccessCountry.addEventListener('change', function() {
                 const countryId = this.value;
                 
-                // Réinitialiser la liste des régions et des lieux
+                // Réinitialiser la liste des régions et des pièces
                 createAccessRegion.innerHTML = '<option value="">Sélectionner une région</option>';
                 if (createAccessToPlace) {
-                    createAccessToPlace.innerHTML = '<option value="">Sélectionner un lieu</option>';
+                    createAccessToPlace.innerHTML = '<option value="">Sélectionner une pièce</option>';
                 }
                 
                 if (!countryId) {
@@ -1134,19 +1151,19 @@ extract($template_vars ?? []);
             });
         }
         
-        // Gestion du chargement des lieux selon la région sélectionnée dans le modal de création d'accès
+        // Gestion du chargement des pièces selon la région sélectionnée dans le modal de création d'accès
         if (createAccessRegion && createAccessToPlace) {
             createAccessRegion.addEventListener('change', function() {
                 const regionId = this.value;
                 
-                // Réinitialiser la liste des lieux
-                createAccessToPlace.innerHTML = '<option value="">Sélectionner un lieu</option>';
+                // Réinitialiser la liste des pièces
+                createAccessToPlace.innerHTML = '<option value="">Sélectionner une pièce</option>';
                 
                 if (!regionId) {
                     return;
                 }
                 
-                // Charger les lieux via l'API (exclure le lieu actuel)
+                // Charger les pièces via l'API (exclure la pièce actuelle)
                 const placeId = window.placeId;
                 fetch('api/get_places_by_region.php?region_id=' + regionId + '&exclude_place_id=' + placeId)
                     .then(response => response.json())
@@ -1161,7 +1178,7 @@ extract($template_vars ?? []);
                         }
                     })
                     .catch(error => {
-                        console.error('Erreur lors du chargement des lieux:', error);
+                        console.error('Erreur lors du chargement des pièces:', error);
                     });
             });
         }
@@ -1273,7 +1290,7 @@ extract($template_vars ?? []);
                         editTrapDetails.style.display = isTrapped ? 'block' : 'none';
                     }
                     
-                    // Charger les informations du lieu de destination pour pré-remplir pays/région/lieu
+                    // Charger les informations de la pièce de destination pour pré-remplir pays/région/pièce
                     if (toPlaceId) {
                         fetch('api/get_place_info.php?place_id=' + toPlaceId)
                             .then(response => response.json())
@@ -1296,10 +1313,10 @@ extract($template_vars ?? []);
                                             if (place.region_id && editAccessRegion) {
                                                 editAccessRegion.value = place.region_id;
                                                 
-                                                // Déclencher le changement pour charger les lieux
+                                                // Déclencher le changement pour charger les pièces
                                                 editAccessRegion.dispatchEvent(new Event('change'));
                                                 
-                                                // Attendre que les lieux soient chargés, puis sélectionner le lieu
+                                                // Attendre que les pièces soient chargés, puis sélectionner la pièce
                                                 setTimeout(function() {
                                                     if (editAccessToPlace) {
                                                         editAccessToPlace.value = toPlaceId;
@@ -1311,7 +1328,7 @@ extract($template_vars ?? []);
                                 }
                             })
                             .catch(error => {
-                                console.error('Erreur lors du chargement des informations du lieu:', error);
+                                console.error('Erreur lors du chargement des informations de la pièce:', error);
                             });
                     }
                 }
@@ -1355,13 +1372,13 @@ extract($template_vars ?? []);
             });
         }
         
-        // Gestion du chargement des lieux pour le modal d'édition
+        // Gestion du chargement des pièces pour le modal d'édition
         const editAccessRegionSelect = document.getElementById('editAccessRegion');
         const editAccessToPlace = document.getElementById('editAccessToPlace');
         if (editAccessRegionSelect && editAccessToPlace) {
             editAccessRegionSelect.addEventListener('change', function() {
                 const regionId = this.value;
-                editAccessToPlace.innerHTML = '<option value="">Sélectionner un lieu</option>';
+                editAccessToPlace.innerHTML = '<option value="">Sélectionner une pièce</option>';
                 if (!regionId) {
                     return;
                 }
@@ -1379,7 +1396,7 @@ extract($template_vars ?? []);
                         }
                     })
                     .catch(error => {
-                        console.error('Erreur lors du chargement des lieux:', error);
+                        console.error('Erreur lors du chargement des pièces:', error);
                     });
             });
         }
@@ -1484,7 +1501,7 @@ extract($template_vars ?? []);
             });
         }
         
-        // Gestion de l'upload de plan de lieu (comme pour les photos de profil NPC)
+        // Gestion de l'upload de plan de pièce (comme pour les photos de profil NPC)
         function initUploadMapForm() {
             const uploadMapForm = document.getElementById('uploadMapForm');
             if (uploadMapForm) {
@@ -1608,7 +1625,7 @@ extract($template_vars ?? []);
                 moveEntitiesSubmitBtn.disabled = !hasPlace || !hasEntities;
             }
             
-            // Écouter les changements sur le sélecteur de lieu
+            // Écouter les changements sur le sélecteur de pièce
             moveToPlace.addEventListener('change', checkFormValidity);
             
             // Écouter les changements sur les checkboxes d'entités
@@ -1632,7 +1649,7 @@ extract($template_vars ?? []);
                 
                 if (!moveToPlace.value) {
                     e.preventDefault();
-                    alert('Veuillez sélectionner un lieu de destination.');
+                    alert('Veuillez sélectionner une pièce de destination.');
                     return false;
                 }
                 
@@ -1727,7 +1744,7 @@ extract($template_vars ?? []);
                 teleportEntitiesSubmitBtn.disabled = !hasPlace || !hasEntities;
             }
             
-            // Écouter les changements sur le sélecteur de lieu
+            // Écouter les changements sur le sélecteur de pièce
             teleportToPlace.addEventListener('change', checkTeleportFormValidity);
             
             // Écouter les changements sur les checkboxes d'entités
@@ -1751,7 +1768,7 @@ extract($template_vars ?? []);
                 
                 if (!teleportToPlace.value) {
                     e.preventDefault();
-                    alert('Veuillez sélectionner un lieu de destination.');
+                    alert('Veuillez sélectionner une pièce de destination.');
                     return false;
                 }
                 
@@ -1953,7 +1970,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <script>
     // Fonction pour supprimer un PNJ
     function removeNpc(npcId) {
-        if (confirm('Êtes-vous sûr de vouloir supprimer ce PNJ du lieu ?')) {
+        if (confirm('Êtes-vous sûr de vouloir supprimer ce PNJ de la pièce ?')) {
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = 'view_place.php?id=<?php echo $place_id; ?>';

@@ -4,7 +4,7 @@
  */
 
 require_once '../includes/functions.php';
-require_once '../classes/Lieu.php';
+require_once '../classes/Room.php';
 
 header('Content-Type: application/json');
 header('X-Requested-With: XMLHttpRequest');
@@ -34,10 +34,10 @@ try {
         throw new Exception('Non authentifié');
     }
     
-    // Créer l'instance du lieu
-    $lieu = Lieu::findById($placeId);
+    // Créer l'instance de la pièce
+    $lieu = Room::findById($placeId);
     if (!$lieu) {
-        throw new Exception('Lieu non trouvé');
+        throw new Exception('Pièce non trouvé');
     }
     
     // Mettre à jour la position du token

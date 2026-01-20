@@ -1,6 +1,6 @@
 <?php
 /**
- * Script pour vérifier les personnages acceptés dans une campagne mais non présents dans un lieu
+ * Script pour vérifier les personnages acceptés dans une campagne mais non présents dans une pièce
  */
 
 require_once 'includes/functions.php';
@@ -33,7 +33,7 @@ if ($campaign_id) {
     $campaign = $stmt->fetch(PDO::FETCH_ASSOC);
     $campaign_title = $campaign ? $campaign['title'] : 'Inconnue';
     
-    // Trouver les personnages acceptés dans la campagne mais non présents dans un lieu
+    // Trouver les personnages acceptés dans la campagne mais non présents dans une pièce
     $stmt = $pdo->prepare("
         SELECT 
             ca.character_id,
@@ -78,7 +78,7 @@ if ($campaign_id) {
             
             foreach ($orphan_characters as $char) {
                 try {
-                    // Vérifier si le joueur n'est pas déjà dans un lieu de la campagne
+                    // Vérifier si le joueur n'est pas déjà dans une pièce de la campagne
                     $stmt = $pdo->prepare("
                         SELECT 1 FROM place_players pp
                         INNER JOIN place_campaigns pc ON pp.place_id = pc.place_id
@@ -87,7 +87,7 @@ if ($campaign_id) {
                     $stmt->execute([$char['player_id'], $campaign_id]);
                     
                     if (!$stmt->fetch()) {
-                        // Ajouter le joueur au premier lieu
+                        // Ajouter le joueur au premier pièce
                         $stmt = $pdo->prepare("
                             INSERT INTO place_players (place_id, player_id, character_id)
                             VALUES (?, ?, ?)
@@ -101,7 +101,7 @@ if ($campaign_id) {
                 }
             }
             
-            $success_message = "$added_count personnage(s) ajouté(s) au lieu '{$first_place['title']}'.";
+            $success_message = "$added_count personnage(s) ajouté(s) à la pièce '{$first_place['title']}'.";
             if (!empty($errors)) {
                 $error_message = "Erreurs: " . implode(', ', $errors);
             }
@@ -110,7 +110,7 @@ if ($campaign_id) {
             header('Location: check_orphan_characters.php?campaign_id=' . $campaign_id);
             exit();
         } else {
-            $error_message = "Aucun lieu trouvé dans cette campagne. Veuillez d'abord créer un lieu.";
+            $error_message = "Aucune pièce trouvé dans cette campagne. Veuillez d'abord créer une pièce.";
         }
     }
 }
@@ -132,7 +132,7 @@ $current_page = "admin";
     
     <div class="container mt-4">
         <h1><i class="fas fa-search me-2"></i>Vérification des personnages orphelins</h1>
-        <p class="text-muted">Personnages acceptés dans une campagne mais non présents dans un lieu</p>
+        <p class="text-muted">Personnages acceptés dans une campagne mais non présents dans une pièce</p>
         
         <?php if (isset($success_message)): ?>
             <div class="alert alert-success"><?php echo htmlspecialchars($success_message); ?></div>
@@ -169,7 +169,7 @@ $current_page = "admin";
                     <div class="alert alert-warning">
                         <i class="fas fa-exclamation-triangle me-2"></i>
                         <strong><?php echo count($orphan_characters); ?> personnage(s)</strong> accepté(s) dans la campagne 
-                        <strong>"<?php echo htmlspecialchars($campaign_title); ?>"</strong> mais non présent(s) dans un lieu.
+                        <strong>"<?php echo htmlspecialchars($campaign_title); ?>"</strong> mais non présent(s) dans une pièce.
                     </div>
                     
                     <table class="table table-striped">

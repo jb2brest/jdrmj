@@ -120,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if ($member_id > 0 && $member_type === 'pj') {
                 if ($groupe->deleteMemberCompletely($member_id, $user_id)) {
-                    $success_message = "Personnage joueur supprimé complètement avec succès ! (Équipement, appartenances aux groupes et lieux supprimés)";
+                    $success_message = "Personnage joueur supprimé complètement avec succès ! (Équipement, appartenances aux groupes et pièces supprimés)";
                 } else {
                     $error_message = "Erreur lors de la suppression complète du personnage.";
                 }
@@ -545,7 +545,7 @@ try {
                                                                 <?php if ($member['member_type'] === 'pj'): ?>
                                                                     <button class="btn btn-outline-danger" 
                                                                             onclick="deleteMemberCompletely(<?php echo $member['member_id']; ?>, '<?php echo $member['member_type']; ?>', '<?php echo htmlspecialchars($member['member_name']); ?>')"
-                                                                            title="Supprimer complètement (équipement, groupes, lieux)">
+                                                                            title="Supprimer complètement (équipement, groupes, pièces)">
                                                                         <i class="fas fa-trash"></i>
                                                                     </button>
                                                                 <?php endif; ?>
@@ -1066,7 +1066,7 @@ try {
         }
         
         function deleteMemberCompletely(memberId, memberType, memberName) {
-            if (confirm('⚠️ ATTENTION ⚠️\n\nÊtes-vous sûr de vouloir supprimer COMPLÈTEMENT "' + memberName + '" ?\n\nCette action supprimera :\n• Le personnage et tout son équipement\n• Ses appartenances à tous les groupes\n• Sa présence dans tous les lieux\n• Toutes ses données associées\n\nCette action est IRRÉVERSIBLE !')) {
+            if (confirm('⚠️ ATTENTION ⚠️\n\nÊtes-vous sûr de vouloir supprimer COMPLÈTEMENT "' + memberName + '" ?\n\nCette action supprimera :\n• Le personnage et tout son équipement\n• Ses appartenances à tous les groupes\n• Sa présence dans tous les pièces\n• Toutes ses données associées\n\nCette action est IRRÉVERSIBLE !')) {
                 document.getElementById('deleteMemberCompletelyId').value = memberId;
                 document.getElementById('deleteMemberCompletelyType').value = memberType;
                 document.getElementById('deleteMemberCompletelyForm').submit();

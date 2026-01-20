@@ -1,10 +1,10 @@
 <?php
 /**
- * API Endpoint: Ajouter un monstre à un lieu
+ * API Endpoint: Ajouter un monstre à une pièce
  */
 
 require_once '../includes/functions.php';
-require_once '../classes/Lieu.php';
+require_once '../classes/Room.php';
 require_once '../classes/Monster.php';
 
 header('Content-Type: application/json');
@@ -29,17 +29,17 @@ try {
         throw new Exception('Données manquantes');
     }
     
-    // Créer l'instance du lieu
-    $lieu = Lieu::findById($placeId);
+    // Créer l'instance de la pièce
+    $lieu = Room::findById($placeId);
     if (!$lieu) {
-        throw new Exception('Lieu non trouvé');
+        throw new Exception('Pièce non trouvé');
     }
     
     // Ajouter le monstre
     $result = $lieu->addMonster($monsterTypeId, $quantity);
     
     if ($result['success']) {
-        // Rediriger vers la page du lieu pour recharger
+        // Rediriger vers la page de la pièce pour recharger
         header('Location: ../view_place.php?id=' . $placeId . '&monster_added=1');
         exit();
     } else {

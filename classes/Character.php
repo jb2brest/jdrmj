@@ -401,7 +401,7 @@ class Character
             $stmt = $this->pdo->prepare("DELETE FROM campaign_applications WHERE character_id = ?");
             $stmt->execute([$this->id]);
             
-            // 12. Retirer le personnage de tous les lieux
+            // 12. Retirer le personnage de tous les pièces
             $stmt = $this->pdo->prepare("DELETE FROM place_players WHERE character_id = ?");
             $stmt->execute([$this->id]);
             

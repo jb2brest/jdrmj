@@ -31,7 +31,7 @@ if (!isset($_POST['npc_id']) || empty($_POST['npc_id'])) {
 // Vérifier que place_id est fourni
 if (!isset($_POST['place_id']) || empty($_POST['place_id'])) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'ID du lieu manquant']);
+    echo json_encode(['success' => false, 'message' => 'ID de la pièce manquant']);
     exit;
 }
 
@@ -39,19 +39,19 @@ try {
     $npc_id = (int)$_POST['npc_id'];
     $place_id = (int)$_POST['place_id'];
     
-    // Créer l'objet Lieu
-    $lieu = Lieu::findById($place_id);
+    // Créer l'objet Pièce
+    $lieu = Room::findById($place_id);
     
     if (!$lieu) {
         http_response_code(404);
-        echo json_encode(['success' => false, 'message' => 'Lieu non trouvé']);
+        echo json_encode(['success' => false, 'message' => 'Pièce non trouvé']);
         exit;
     }
     
-    // Récupérer les informations du lieu
+    // Récupérer les informations de la pièce
     $place = $lieu->toArray();
     
-    // Récupérer les campagnes associées à ce lieu
+    // Récupérer les campagnes associées à cette pièce
     $campaigns = $lieu->getCampaigns();
     if (!empty($campaigns)) {
         $campaign = $campaigns[0];
@@ -60,7 +60,7 @@ try {
         $place['dm_id'] = null;
     }
     
-    // Vérifier que l'utilisateur a le droit de modifier ce lieu
+    // Vérifier que l'utilisateur a le droit de modifier cette pièce
     $dm_id = (int)$place['dm_id'];
     $isOwnerDM = User::isDMOrAdmin() && ($dm_id === 0 || $_SESSION['user_id'] === $dm_id);
     

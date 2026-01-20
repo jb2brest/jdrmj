@@ -24,9 +24,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $campaign_id = (int)$_POST['campaign_id'];
                 
                 if (associatePlaceToCampaign($place_id, $campaign_id)) {
-                    $success_message = "Lieu associé à la campagne avec succès.";
+                    $success_message = "Pièce associé à la campagne avec succès.";
                 } else {
-                    $error_message = "Erreur lors de l'association du lieu à la campagne.";
+                    $error_message = "Erreur lors de l'association de la pièce à la campagne.";
                 }
                 break;
                 
@@ -35,9 +35,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $campaign_id = (int)$_POST['campaign_id'];
                 
                 if (dissociatePlaceFromCampaign($place_id, $campaign_id)) {
-                    $success_message = "Lieu dissocié de la campagne avec succès.";
+                    $success_message = "Pièce dissocié de la campagne avec succès.";
                 } else {
-                    $error_message = "Erreur lors de la dissociation du lieu de la campagne.";
+                    $error_message = "Erreur lors de la dissociation de la pièce de la campagne.";
                 }
                 break;
                 
@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $campaign_ids = isset($_POST['campaign_ids']) ? array_map('intval', $_POST['campaign_ids']) : [];
                 
                 if (updatePlaceCampaignAssociations($place_id, $campaign_ids)) {
-                    $success_message = "Associations du lieu mises à jour avec succès.";
+                    $success_message = "Associations de la pièce mises à jour avec succès.";
                 } else {
                     $error_message = "Erreur lors de la mise à jour des associations.";
                 }
@@ -68,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 // Récupérer les données selon le contexte
 if ($place_id > 0) {
-    // Mode gestion d'un lieu spécifique
+    // Mode gestion d'une pièce spécifique
     $stmt = $pdo->prepare("SELECT * FROM places WHERE id = ?");
     $stmt->execute([$place_id]);
     $place = $stmt->fetch();
@@ -128,7 +128,7 @@ if ($place_id > 0) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion des associations Lieu-Campagne</title>
+    <title>Gestion des associations Pièce-Campagne</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -156,8 +156,8 @@ if ($place_id > 0) {
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-md-8">
-                    <h1><i class="fas fa-link me-3"></i>Gestion des associations Lieu-Campagne</h1>
-                    <p class="mb-0">Associez des lieux à plusieurs campagnes</p>
+                    <h1><i class="fas fa-link me-3"></i>Gestion des associations Pièce-Campagne</h1>
+                    <p class="mb-0">Associez des pièces à plusieurs campagnes</p>
                 </div>
                 <div class="col-md-4 text-end">
                     <a href="campaigns.php" class="btn btn-light">
@@ -184,12 +184,12 @@ if ($place_id > 0) {
         <?php endif; ?>
 
         <?php if ($place_id > 0): ?>
-            <!-- Mode gestion d'un lieu spécifique -->
+            <!-- Mode gestion d'une pièce spécifique -->
             <div class="row">
                 <div class="col-md-6">
                     <div class="card">
                         <div class="card-header">
-                            <h5><i class="fas fa-map-marker-alt me-2"></i>Lieu : <?php echo htmlspecialchars($place['title']); ?></h5>
+                            <h5><i class="fas fa-map-marker-alt me-2"></i>Pièce : <?php echo htmlspecialchars($place['title']); ?></h5>
                         </div>
                         <div class="card-body">
                             <form method="POST">
@@ -240,7 +240,7 @@ if ($place_id > 0) {
                 <div class="col-md-6">
                     <div class="card">
                         <div class="card-header">
-                            <h5><i class="fas fa-info-circle me-2"></i>Informations du lieu</h5>
+                            <h5><i class="fas fa-info-circle me-2"></i>Informations de la pièce</h5>
                         </div>
                         <div class="card-body">
                             <p><strong>Titre :</strong> <?php echo htmlspecialchars($place['title']); ?></p>
@@ -269,7 +269,7 @@ if ($place_id > 0) {
                                 <input type="hidden" name="action" value="update_campaign_places">
                                 <input type="hidden" name="campaign_id" value="<?php echo $campaign_id; ?>">
                                 
-                                <h6>Lieux associés :</h6>
+                                <h6>Pièces associés :</h6>
                                 <?php if (!empty($associated_places)): ?>
                                     <?php foreach ($associated_places as $place): ?>
                                         <div class="form-check">
@@ -282,10 +282,10 @@ if ($place_id > 0) {
                                         </div>
                                     <?php endforeach; ?>
                                 <?php else: ?>
-                                    <p class="text-muted">Aucun lieu associé</p>
+                                    <p class="text-muted">Aucune pièce associé</p>
                                 <?php endif; ?>
                                 
-                                <h6 class="mt-3">Lieux disponibles :</h6>
+                                <h6 class="mt-3">Pièces disponibles :</h6>
                                 <?php if (!empty($available_places)): ?>
                                     <?php foreach ($available_places as $place): ?>
                                         <div class="form-check">
@@ -297,7 +297,7 @@ if ($place_id > 0) {
                                         </div>
                                     <?php endforeach; ?>
                                 <?php else: ?>
-                                    <p class="text-muted">Tous les lieux sont déjà associés</p>
+                                    <p class="text-muted">Tous les pièces sont déjà associés</p>
                                 <?php endif; ?>
                                 
                                 <div class="mt-3">
@@ -333,7 +333,7 @@ if ($place_id > 0) {
                 <div class="col-md-6">
                     <div class="card">
                         <div class="card-header">
-                            <h5><i class="fas fa-map-marker-alt me-2"></i>Lieux</h5>
+                            <h5><i class="fas fa-map-marker-alt me-2"></i>Pièces</h5>
                         </div>
                         <div class="card-body">
                             <?php if (!empty($all_places)): ?>
@@ -359,7 +359,7 @@ if ($place_id > 0) {
                                     </div>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <p class="text-muted">Aucun lieu trouvé</p>
+                                <p class="text-muted">Aucune pièce trouvé</p>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -378,7 +378,7 @@ if ($place_id > 0) {
                                             <div>
                                                 <h6 class="mb-1"><?php echo htmlspecialchars($campaign['title']); ?></h6>
                                                 <small class="text-info">
-                                                    <i class="fas fa-map-marker-alt me-1"></i><?php echo $campaign['place_count']; ?> lieu(x) associé(s)
+                                                    <i class="fas fa-map-marker-alt me-1"></i><?php echo $campaign['place_count']; ?> pièce(x) associé(s)
                                                 </small>
                                             </div>
                                             <a href="?campaign_id=<?php echo $campaign['id']; ?>" class="btn btn-sm btn-outline-primary">

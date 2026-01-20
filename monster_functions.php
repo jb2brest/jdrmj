@@ -7,7 +7,7 @@ require_once 'classes/init.php';
  * 
  * @param int $world_id ID du monde
  * @param int $country_id ID du pays
- * @param int $place_id ID du lieu
+ * @param int $place_id ID de la pièce
  * @param int $count Nombre de monstres à créer
  * @param string|null $monster_type Type de monstre (optionnel)
  * @param int $is_visible Visibilité pour les joueurs

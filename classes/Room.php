@@ -1,16 +1,16 @@
 <?php
 
 /**
- * Classe Lieu - Gestion des lieux D&D
+ * Classe Room - Gestion des pièces (anciennement Lieux) D&D
  * 
- * Cette classe encapsule toutes les fonctionnalités liées aux lieux :
+ * Cette classe encapsule toutes les fonctionnalités liées aux pièces :
  * - Création, lecture, mise à jour, suppression
  * - Gestion de la hiérarchie géographique (monde, pays, région)
- * - Gestion des objets dans les lieux
+ * - Gestion des objets dans les pièces
  * - Gestion des tokens (pions) sur les plans
  * - Gestion des associations avec les campagnes
  */
-class Lieu
+class Room
 {
     private $pdo;
     
@@ -22,12 +22,14 @@ class Lieu
     public $position;
     public $country_id;
     public $region_id;
+    public $location_id; // Nouvelle propriété: ID du Lieu
     public $created_at;
     public $updated_at;
     
     // Propriétés géographiques (chargées à la demande)
     public $country_name;
     public $region_name;
+    public $location_name; // Nom du Lieu
     public $world_name;
     public $world_id;
     
@@ -66,7 +68,7 @@ class Lieu
                 $stmt = $this->pdo->prepare("
                     UPDATE places 
                     SET title = ?, map_url = ?, notes = ?, position = ?, 
-                        country_id = ?, region_id = ?, updated_at = NOW()
+                        country_id = ?, region_id = ?, location_id = ?, updated_at = NOW()
                     WHERE id = ?
                 ");
                 $stmt->execute([
@@ -76,13 +78,14 @@ class Lieu
                     $this->position,
                     $this->country_id,
                     $this->region_id,
+                    $this->location_id,
                     $this->id
                 ]);
             } else {
                 // Création
                 $stmt = $this->pdo->prepare("
-                    INSERT INTO places (title, map_url, notes, position, country_id, region_id, created_at, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
+                    INSERT INTO places (title, map_url, notes, position, country_id, region_id, location_id, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
                 ");
                 $stmt->execute([
                     $this->title,
@@ -90,7 +93,8 @@ class Lieu
                     $this->notes,
                     $this->position,
                     $this->country_id,
-                    $this->region_id
+                    $this->region_id,
+                    $this->location_id
                 ]);
                 $this->id = $this->pdo->lastInsertId();
             }
@@ -239,10 +243,11 @@ class Lieu
     {
         try {
             $stmt = $this->pdo->prepare("
-                SELECT c.name as country_name, r.name as region_name, w.name as world_name, w.id as world_id
+                SELECT c.name as country_name, r.name as region_name, l.name as location_name, w.name as world_name, w.id as world_id
                 FROM places p
                 LEFT JOIN countries c ON p.country_id = c.id
                 LEFT JOIN regions r ON p.region_id = r.id
+                LEFT JOIN locations l ON p.location_id = l.id
                 LEFT JOIN worlds w ON c.world_id = w.id
                 WHERE p.id = ?
             ");
@@ -252,6 +257,7 @@ class Lieu
             if ($data) {
                 $this->country_name = $data['country_name'];
                 $this->region_name = $data['region_name'];
+                $this->location_name = $data['location_name'];
                 $this->world_name = $data['world_name'];
                 $this->world_id = $data['world_id'];
             }
@@ -273,9 +279,21 @@ class Lieu
         if ($this->world_name) $path[] = $this->world_name;
         if ($this->country_name) $path[] = $this->country_name;
         if ($this->region_name) $path[] = $this->region_name;
+        if ($this->location_name) $path[] = $this->location_name;
         $path[] = $this->title;
         
         return implode(' > ', $path);
+    }
+
+    /**
+     * Obtenir le Lieu parent
+     */
+    public function getLocation()
+    {
+        if ($this->location_id) {
+            return Location::findById($this->location_id, $this->pdo);
+        }
+        return null;
     }
     
     /**
@@ -1789,7 +1807,7 @@ class Lieu
      * @param int $position Position recherchée
      * @param int $excludePlaceId ID du lieu à exclure de la recherche
      * @param PDO|null $pdo Instance PDO (optionnelle)
-     * @return Lieu|null Lieu trouvé ou null
+     * @return Room|null Lieu trouvé ou null
      */
     public static function findByPositionInCampaign($campaignId, $position, $excludePlaceId = null, PDO $pdo = null)
     {

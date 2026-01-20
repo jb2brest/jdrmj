@@ -109,29 +109,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-    // Gestion de l'association d'un lieu à la campagne (MJ/Admin uniquement)
+    // Gestion de l'association d'une pièce à la campagne (MJ/Admin uniquement)
     if (isset($_POST['action']) && $_POST['action'] === 'associate_place' && User::isDMOrAdmin()) {
         $place_id = (int)($_POST['place_id'] ?? 0);
         
         if ($place_id > 0) {
-            // Vérifier que le lieu appartient au monde de la campagne et n'est pas déjà associé
+            // Vérifier que la pièce appartient au monde de la campagne et n'est pas déjà associé
             $campaign = Campaign::findById($campaign_id);
             if ($campaign && $campaign->canAssociatePlace($place_id)) {
-                // Associer le lieu à la campagne
+                // Associer la pièce à la campagne
                 if (associatePlaceToCampaign($place_id, $campaign_id)) {
-                    $success_message = "Lieu associé à la campagne avec succès.";
+                    $success_message = "Pièce associé à la campagne avec succès.";
                 } else {
-                    $error_message = "Erreur lors de l'association du lieu à la campagne.";
+                    $error_message = "Erreur lors de l'association de la pièce à la campagne.";
                 }
                 
-                // Recharger les lieux de la campagne
+                // Recharger les pièces de la campagne
                 $campaign = Campaign::findById($campaign_id);
                 $places = $campaign ? $campaign->getAssociatedPlacesWithGeography() : [];
             } else {
-                $error_message = "Ce lieu ne peut pas être associé à cette campagne.";
+                $error_message = "Cette pièce ne peut pas être associé à cette campagne.";
             }
         } else {
-            $error_message = "Lieu invalide sélectionné.";
+            $error_message = "Pièce invalide sélectionné.";
         }
     }
     if (isset($_POST['action']) && $_POST['action'] === 'apply_to_campaign') {
@@ -212,7 +212,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
         // Vérifier que la candidature correspond à cette campagne du MJ via la classe CandidatureCampagne
         $candidature = CandidatureCampagne::findById($application_id);
         if ($candidature && $candidature->belongsToDM($dm_id) && $candidature->getCampaignId() == $campaign_id) {
-            // Approuver la candidature avec assignation de lieu via la classe CandidatureCampagne
+            // Approuver la candidature avec assignation de pièce via la classe CandidatureCampagne
             $result = $candidature->approveWithPlaceAssignment($campaign, $campaign_data, $place_id, $character_id);
             if ($result['success']) {
                 $success_message = $result['message'];
@@ -404,7 +404,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
         }
     }
 
-    // Gestion des lieux
+    // Gestion des pièces
     if (isset($_POST['action']) && $_POST['action'] === 'create_scene') {
         $title = sanitizeInput($_POST['title'] ?? '');
         $notes = sanitizeInput($_POST['notes'] ?? '');
@@ -446,32 +446,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
                 $country_id = isset($_POST['country_id']) && $_POST['country_id'] ? (int)$_POST['country_id'] : null;
                 $region_id = isset($_POST['region_id']) && $_POST['region_id'] ? (int)$_POST['region_id'] : null;
                 
-                $place_id = Lieu::create($title, $map_url, $notes, 0, $country_id, $region_id);
+                $place_id = Room::create($title, $map_url, $notes, 0, $country_id, $region_id);
                 
-                // Associer le lieu à la campagne
+                // Associer la pièce à la campagne
                 if (associatePlaceToCampaign($place_id, $campaign_id)) {
-                    $success_message = "Lieu créé avec succès.";
+                    $success_message = "Pièce créé avec succès.";
                 } else {
-                    $error_message = "Lieu créé mais erreur lors de l'association à la campagne.";
+                    $error_message = "Pièce créé mais erreur lors de l'association à la campagne.";
                 }
             }
         } else {
-            $error_message = "Le titre du lieu est requis.";
+            $error_message = "Le titre de la pièce est requis.";
         }
     }
 
     if (isset($_POST['action']) && $_POST['action'] === 'delete_scene' && isset($_POST['place_id'])) {
         $place_id = (int)$_POST['place_id'];
-        // Vérifier que le lieu appartient à cette campagne via la classe Lieu
-        if (Lieu::belongsToCampaign($place_id, $campaign_id)) {
-            // Dissocier le lieu de la campagne
+        // Vérifier que la pièce appartient à cette campagne via la classe Pièce
+        if (Room::belongsToCampaign($place_id, $campaign_id)) {
+            // Dissocier la pièce de la campagne
             if (dissociatePlaceFromCampaign($place_id, $campaign_id)) {
-                $success_message = "Lieu dissocié de la campagne avec succès.";
+                $success_message = "Pièce dissocié de la campagne avec succès.";
             } else {
-                $error_message = "Erreur lors de la dissociation du lieu.";
+                $error_message = "Erreur lors de la dissociation de la pièce.";
             }
         } else {
-            $error_message = "Ce lieu n'appartient pas à cette campagne.";
+            $error_message = "Cette pièce n'appartient pas à cette campagne.";
         }
     }
 
@@ -479,19 +479,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
         $place_id = (int)$_POST['place_id'];
         $direction = $_POST['direction'];
         
-        // Récupérer la position actuelle via la classe Lieu
-        $current_position = Lieu::getPositionInCampaign($place_id, $campaign_id);
+        // Récupérer la position actuelle via la classe Pièce
+        $current_position = Room::getPositionInCampaign($place_id, $campaign_id);
         
         if ($current_position !== null) {
             $new_position = $current_position + ($direction === 'up' ? -1 : 1);
             $new_position = max(0, $new_position);
             
-            // Trouver le lieu adjacent via la classe Lieu
-            $adjacentLieu = Lieu::findByPositionInCampaign($campaign_id, $new_position, $place_id);
+            // Trouver la pièce adjacent via la classe Pièce
+            $adjacentLieu = Room::findByPositionInCampaign($campaign_id, $new_position, $place_id);
             
             if ($adjacentLieu) {
-                // Échanger les positions via la classe Lieu
-                $currentLieu = Lieu::findById($place_id);
+                // Échanger les positions via la classe Pièce
+                $currentLieu = Room::findById($place_id);
                 if ($currentLieu) {
                     $adjacentLieu->setPosition($current_position);
                     $currentLieu->setPosition($new_position);
@@ -502,7 +502,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
         }
     }
 
-    // Transfert d'entités entre lieux
+    // Transfert d'entités entre pièces
     if (isset($_POST['action']) && $_POST['action'] === 'transfer_entity' && $isOwnerDM) {
         $entity_type = $_POST['entity_type'] ?? '';
         $entity_id = (int)($_POST['entity_id'] ?? 0);
@@ -510,17 +510,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && User::isDMOrAdmin()) {
         $to_place_id = (int)($_POST['to_place_id'] ?? 0);
         
         if ($entity_type && $entity_id && $from_place_id && $to_place_id && $from_place_id !== $to_place_id) {
-            // Vérifier que les lieux appartiennent à la campagne via la classe Lieu
-            if (Lieu::allBelongToCampaign([$from_place_id, $to_place_id], $campaign_id)) {
-                // Transférer l'entité via la classe Lieu
-                $result = Lieu::transferEntity($entity_type, $from_place_id, $to_place_id, $entity_id);
+            // Vérifier que les pièces appartiennent à la campagne via la classe Pièce
+            if (Room::allBelongToCampaign([$from_place_id, $to_place_id], $campaign_id)) {
+                // Transférer l'entité via la classe Pièce
+                $result = Room::transferEntity($entity_type, $from_place_id, $to_place_id, $entity_id);
                 if ($result['success']) {
                     $success_message = $result['message'];
                 } else {
                     $error_message = $result['message'];
                 }
             } else {
-                $error_message = "Lieux invalides.";
+                $error_message = "Pièces invalides.";
             }
         } else {
             $error_message = "Paramètres de transfert invalides.";
@@ -537,10 +537,10 @@ if (User::isDMOrAdmin()) {
     $worlds = Monde::getSimpleListByUser($user_id);
 }
 
-// Récupérer les lieux disponibles dans le monde de la campagne (pour l'association) via la classe Lieu
+// Récupérer les pièces disponibles dans le monde de la campagne (pour l'association) via la classe Pièce
 $available_places = [];
 if (User::isDMOrAdmin() && !empty($campaign_data['world_id'])) {
-    $available_places = Lieu::getAvailablePlacesInWorld($campaign_data['world_id'], $campaign_id);
+    $available_places = Room::getAvailablePlacesInWorld($campaign_data['world_id'], $campaign_id);
 }
 
 // Vérifier si l'utilisateur actuel est membre de la campagne
@@ -591,20 +591,20 @@ $applications = CandidatureCampagne::getByCampaignId($campaign_id);
 // Récupérer les statistiques des candidatures via la classe CandidatureCampagne
 $application_stats = CandidatureCampagne::getStatistics($campaign_id);
 
-// Récupérer lieux avec hiérarchie géographique
+// Récupérer pièces avec hiérarchie géographique
 $places = $campaign->getAssociatedPlacesWithGeography();
 
 // Récupérer les événements du journal via la classe CampaignEvent
 $journalEntries = CampaignEvent::getByCampaignId($campaign_id);
 
-// Récupérer les joueurs, PNJ et monstres pour chaque lieu via la classe Lieu
+// Récupérer les joueurs, PNJ et monstres pour chaque pièce via la classe Pièce
 $placePlayers = [];
 $placeNpcs = [];
 $placeMonsters = [];
 
 if (!empty($places)) {
     $placeIds = array_column($places, 'id');
-    $entities = Lieu::getAllEntitiesForPlaces($placeIds);
+    $entities = Room::getAllEntitiesForPlaces($placeIds);
     $placePlayers = $entities['players'];
     $placeNpcs = $entities['npcs'];
     $placeMonsters = $entities['monsters'];
@@ -892,16 +892,16 @@ if (!empty($places)) {
 
         </div>
 
-        <!-- Section Lieux - Visible uniquement pour les DM et Admin -->
+        <!-- Section Pièces - Visible uniquement pour les DM et Admin -->
         <?php if (User::isDMOrAdmin()): ?>
         <div class="row g-4 mt-1">
             <div class="col-12">
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="fas fa-photo-video me-2"></i>Lieux de la campagne</h5>
+                        <h5 class="mb-0"><i class="fas fa-photo-video me-2"></i>Pièces de la campagne</h5>
                         <div class="btn-group" role="group">
                             <button class="btn btn-brown btn-sm" data-bs-toggle="modal" data-bs-target="#associatePlaceModal">
-                                <i class="fas fa-link"></i> Associer un lieu
+                                <i class="fas fa-link"></i> Associer une pièce
                             </button>
                             <a href="manage_place_campaigns.php?campaign_id=<?php echo $campaign_id; ?>" class="btn btn-outline-primary btn-sm">
                                 <i class="fas fa-cogs"></i> Gérer les associations
@@ -910,7 +910,7 @@ if (!empty($places)) {
                     </div>
                     <div class="card-body">
                         <?php if (empty($places)): ?>
-                            <p class="text-muted">Aucun lieu créé.</p>
+                            <p class="text-muted">Aucune pièce créé.</p>
                         <?php else: ?>
                             <!-- Filtres -->
                             <div class="row mb-3">
@@ -934,18 +934,18 @@ if (!empty($places)) {
                                 <div class="col-md-3">
                                     <label for="filterPlayers" class="form-label">Filtrer par présence</label>
                                     <select class="form-select" id="filterPlayers">
-                                        <option value="">Tous les lieux</option>
+                                        <option value="">Tous les pièces</option>
                                         <option value="with-players">Avec joueurs</option>
                                         <option value="without-players">Sans joueurs</option>
                                     </select>
                                 </div>
                                 <div class="col-md-3">
                                     <label for="searchPlace" class="form-label">Rechercher</label>
-                                    <input type="text" class="form-control" id="searchPlace" placeholder="Nom du lieu...">
+                                    <input type="text" class="form-control" id="searchPlace" placeholder="Nom de la pièce...">
                                 </div>
                             </div>
                             
-                            <!-- Tableau des lieux -->
+                            <!-- Tableau des pièces -->
                             <div class="table-responsive">
                                 <table class="table table-hover" id="placesTable">
                                     <thead class="table-light">
@@ -963,7 +963,7 @@ if (!empty($places)) {
                                                 <i class="fas fa-sort ms-1"></i>
                                             </th>
                                             <th class="sortable" data-column="title">
-                                                <i class="fas fa-photo-video me-1"></i>Lieu
+                                                <i class="fas fa-photo-video me-1"></i>Pièce
                                                 <i class="fas fa-sort ms-1"></i>
                                             </th>
                                             <th class="sortable" data-column="players">
@@ -975,7 +975,7 @@ if (!empty($places)) {
                                     </thead>
                                     <tbody>
                                         <?php foreach ($places as $place): ?>
-                                            <?php $hasPlayers = Lieu::hasPlayersInPlace($place['id']); ?>
+                                            <?php $hasPlayers = Room::hasPlayersInPlace($place['id']); ?>
                                             <tr data-world="<?php echo htmlspecialchars($place['world_name'] ?? ''); ?>"
                                                 data-country="<?php echo htmlspecialchars($place['country_name'] ?? ''); ?>" 
                                                 data-region="<?php echo htmlspecialchars($place['region_name'] ?? ''); ?>"
@@ -1023,7 +1023,7 @@ if (!empty($places)) {
                                                 </td>
                                                 <td>
                                                     <div class="btn-group btn-group-sm" role="group">
-                                                        <a href="view_place.php?id=<?php echo (int)$place['id']; ?>" class="btn btn-outline-primary" title="Voir le lieu">
+                                                        <a href="view_place.php?id=<?php echo (int)$place['id']; ?>" class="btn btn-outline-primary" title="Voir la pièce">
                                                             <i class="fas fa-eye"></i>
                                                         </a>
                                                         <div class="btn-group btn-group-sm" role="group">
@@ -1049,7 +1049,7 @@ if (!empty($places)) {
                                                                 </li>
                                                                 <li><hr class="dropdown-divider"></li>
                                                                 <li>
-                                                                    <form method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce lieu ?')">
+                                                                    <form method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette pièce ?')">
                                                                         <input type="hidden" name="action" value="delete_scene">
                                                                         <input type="hidden" name="place_id" value="<?php echo (int)$place['id']; ?>">
                                                                         <button class="dropdown-item text-danger" type="submit"><i class="fas fa-trash me-2"></i>Supprimer</button>
@@ -1246,12 +1246,12 @@ if (!empty($places)) {
     </div>
 
 
-    <!-- Modal Associer un lieu -->
+    <!-- Modal Associer une pièce -->
     <div class="modal fade" id="associatePlaceModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Associer un lieu à la campagne</h5>
+                    <h5 class="modal-title">Associer une pièce à la campagne</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
                 </div>
                 <form method="POST">
@@ -1262,18 +1262,18 @@ if (!empty($places)) {
                             <div class="alert alert-warning">
                                 <i class="fas fa-exclamation-triangle me-2"></i>
                                 <strong>Attention :</strong> Aucun monde n'est défini pour cette campagne. 
-                                Veuillez d'abord sélectionner un monde dans la zone "Monde" pour pouvoir associer des lieux.
+                                Veuillez d'abord sélectionner un monde dans la zone "Monde" pour pouvoir associer des pièces.
                             </div>
                         <?php elseif (empty($available_places)): ?>
                             <div class="alert alert-info">
                                 <i class="fas fa-info-circle me-2"></i>
-                                <strong>Information :</strong> Aucun lieu disponible dans le monde "<?php echo htmlspecialchars($campaign_data['world_name']); ?>".
-                                Tous les lieux de ce monde sont déjà associés à des campagnes ou il n'y a pas encore de lieux créés.
+                                <strong>Information :</strong> Aucune pièce disponible dans le monde "<?php echo htmlspecialchars($campaign_data['world_name']); ?>".
+                                Tous les pièces de ce monde sont déjà associés à des campagnes ou il n'y a pas encore de pièces créés.
                             </div>
                         <?php else: ?>
                             <div class="mb-3">
-                                <label class="form-label">Lieux disponibles dans le monde "<?php echo htmlspecialchars($campaign_data['world_name']); ?>"</label>
-                                <div class="form-text mb-3">Sélectionnez un lieu à associer à cette campagne :</div>
+                                <label class="form-label">Pièces disponibles dans le monde "<?php echo htmlspecialchars($campaign_data['world_name']); ?>"</label>
+                                <div class="form-text mb-3">Sélectionnez une pièce à associer à cette campagne :</div>
                                 
                                 <div class="row g-3">
                                     <?php foreach ($available_places as $place): ?>
@@ -1306,7 +1306,7 @@ if (!empty($places)) {
                                                                     <div class="ms-2">
                                                                         <img src="<?php echo htmlspecialchars($place['map_url']); ?>" 
                                                                              class="img-thumbnail" style="width: 60px; height: 60px; object-fit: cover;"
-                                                                             alt="Plan du lieu">
+                                                                             alt="Plan de la pièce">
                                                                     </div>
                                                                 <?php endif; ?>
                                                             </div>
@@ -1324,7 +1324,7 @@ if (!empty($places)) {
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
                         <?php if (!empty($campaign_data['world_id']) && !empty($available_places)): ?>
                             <button type="submit" class="btn btn-brown">
-                                <i class="fas fa-link me-2"></i>Associer le lieu
+                                <i class="fas fa-link me-2"></i>Associer la pièce
                             </button>
                         <?php endif; ?>
                     </div>
@@ -1351,7 +1351,7 @@ if (!empty($places)) {
                         <div class="mb-3">
                             <label for="transferToPlace" class="form-label">Transférer vers :</label>
                             <select class="form-select" name="to_place_id" id="transferToPlace" required>
-                                <option value="">Sélectionner un lieu</option>
+                                <option value="">Sélectionner une pièce</option>
                                 <?php foreach ($places as $place): ?>
                                     <option value="<?php echo (int)$place['id']; ?>"><?php echo htmlspecialchars($place['title']); ?></option>
                                 <?php endforeach; ?>
@@ -1465,21 +1465,21 @@ if (!empty($places)) {
             switch(entityType) {
                 case 'player':
                     typeText = 'Joueur';
-                    infoText = 'Ce joueur sera transféré vers le lieu sélectionné.';
+                    infoText = 'Ce joueur sera transféré vers la pièce sélectionné.';
                     break;
                 case 'npc':
                     typeText = 'PNJ';
-                    infoText = 'Ce PNJ sera transféré vers le lieu sélectionné.';
+                    infoText = 'Ce PNJ sera transféré vers la pièce sélectionné.';
                     break;
                 case 'monster':
                     typeText = 'Monstre';
-                    infoText = 'Ce monstre sera transféré vers le lieu sélectionné.';
+                    infoText = 'Ce monstre sera transféré vers la pièce sélectionné.';
                     break;
             }
             
             document.getElementById('transferInfo').textContent = infoText;
             
-            // Exclure le lieu d'origine de la liste
+            // Exclure la pièce d'origine de la liste
             var select = document.getElementById('transferToPlace');
             for (var i = 0; i < select.options.length; i++) {
                 if (select.options[i].value == fromPlaceId) {
@@ -1549,7 +1549,7 @@ if (!empty($places)) {
             }
         });
         
-        // Gestion du tableau des lieux - Tri et filtres
+        // Gestion du tableau des pièces - Tri et filtres
         let currentSort = { column: null, direction: 'asc' };
         
         // Fonction de tri
@@ -1743,10 +1743,10 @@ if (!empty($places)) {
                                 
                                 <div class="mb-3">
                                     <label for="place_id_<?php echo $a['id']; ?>" class="form-label">
-                                        <i class="fas fa-map-marker-alt me-1"></i>Assigner à un lieu <span class="text-muted">(optionnel)</span>
+                                        <i class="fas fa-map-marker-alt me-1"></i>Assigner à une pièce <span class="text-muted">(optionnel)</span>
                                     </label>
                                     <select name="place_id" id="place_id_<?php echo $a['id']; ?>" class="form-select">
-                                        <option value="">Aucun lieu spécifique</option>
+                                        <option value="">Aucune pièce spécifique</option>
                                         <?php foreach ($places as $place): ?>
                                             <option value="<?php echo (int)$place['id']; ?>">
                                                 <?php echo htmlspecialchars($place['title']); ?>
@@ -1757,8 +1757,8 @@ if (!empty($places)) {
                                         <?php endforeach; ?>
                                     </select>
                                     <div class="form-text">
-                                        Si vous sélectionnez un lieu, le joueur sera automatiquement assigné à ce lieu.
-                                        Sinon, il pourra être assigné plus tard via la gestion des lieux.
+                                        Si vous sélectionnez une pièce, le joueur sera automatiquement assigné à cette pièce.
+                                        Sinon, il pourra être assigné plus tard via la gestion des pièces.
                                     </div>
                                 </div>
                                 

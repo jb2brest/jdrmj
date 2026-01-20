@@ -48,7 +48,7 @@ try {
         exit();
     }
     
-    // Vérifier le lieu
+    // Vérifier la pièce
     $stmt = $pdo->prepare("SELECT id, title FROM places WHERE id = ? AND country_id = ?");
     $stmt->execute([$place_id, $country_id]);
     $place = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -147,7 +147,7 @@ $current_page = "manage_npcs";
                                 
                                 <div class="mb-4">
                                     <h5><i class="fas fa-dragon me-2"></i>Sélection du Monstre</h5>
-                                    <p class="text-muted">Choisissez le type de monstre que vous souhaitez placer dans ce lieu.</p>
+                                    <p class="text-muted">Choisissez le type de monstre que vous souhaitez placer dans cette pièce.</p>
                                     
                                     <div class="row">
                                         <?php foreach ($monsters as $monster): ?>
@@ -272,7 +272,7 @@ $current_page = "manage_npcs";
                                     <i class="fas fa-check"></i>
                                 </div>
                                 <h6>Localisation</h6>
-                                <small class="text-muted">Pays, région, lieu</small>
+                                <small class="text-muted">Pays, région, pièce</small>
                             </div>
                             <div class="col-md-3 text-center">
                                 <div class="border rounded-circle d-inline-flex align-items-center justify-content-center mb-2" 

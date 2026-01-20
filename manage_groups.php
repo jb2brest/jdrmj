@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (empty($name)) {
                 $error_message = "Le nom du groupe est obligatoire.";
             } elseif ($headquarters_place_id <= 0) {
-                $error_message = "Veuillez sélectionner un lieu pour le QG.";
+                $error_message = "Veuillez sélectionner une pièce pour le QG.";
             } else {
                 $groupe = new Groupe([
                     'name' => $name,
@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Récupérer tous les groupes de l'utilisateur
 $groupes = Groupe::findByUser($user_id);
 
-// Récupérer tous les lieux pour le formulaire de création
+// Récupérer tous les pièces pour le formulaire de création
 try {
     $pdo = getPdo();
     $stmt = $pdo->prepare("
@@ -104,7 +104,7 @@ try {
     $places = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
     $places = [];
-    $error_message = "Erreur lors de la récupération des lieux.";
+    $error_message = "Erreur lors de la récupération des pièces.";
 }
 ?>
 
@@ -315,7 +315,7 @@ try {
                         <div class="mb-3">
                             <label for="headquarters_place_id" class="form-label">Quartier Général *</label>
                             <select class="form-select" id="headquarters_place_id" name="headquarters_place_id" required>
-                                <option value="">Sélectionner un lieu</option>
+                                <option value="">Sélectionner une pièce</option>
                                 <?php foreach ($places as $place): ?>
                                     <option value="<?php echo $place['id']; ?>">
                                         <?php echo htmlspecialchars($place['title']); ?>

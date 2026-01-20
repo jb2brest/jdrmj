@@ -124,7 +124,7 @@
 </style>
 
 <div class="container mt-4">
-    <!-- En-tête du lieu -->
+    <!-- En-tête de la pièce -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-start">
@@ -226,20 +226,20 @@
         </div>
     </div>
 
-    <!-- Plan du lieu et Participants -->
+    <!-- Plan de la pièce et Participants -->
     <div class="row mb-4">
-        <!-- Plan du lieu -->
+        <!-- Plan de la pièce -->
         <div class="col-lg-8">
             <?php if (!empty($place['map_url']) && file_exists($place['map_url'])): ?>
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-map me-2"></i>Plan du lieu</h5>
+                        <h5 class="mb-0"><i class="fas fa-map me-2"></i>Plan de la pièce</h5>
                     </div>
                     <div class="card-body">
                         <div class="position-relative">
                             <!-- Zone du plan avec pions -->
                             <div id="mapContainer" class="position-relative" style="display: inline-block; position: relative;">
-                                <img id="mapImage" src="<?php echo htmlspecialchars($place['map_url']); ?>" class="img-fluid rounded" alt="Plan du lieu" style="max-height: 500px; cursor: crosshair; display: block;">
+                                <img id="mapImage" src="<?php echo htmlspecialchars($place['map_url']); ?>" class="img-fluid rounded" alt="Plan de la pièce" style="max-height: 500px; cursor: crosshair; display: block;">
                                 
                                 <!-- Zone des pions sur le côté -->
                                 <div id="tokenSidebar" class="position-absolute" style="right: -120px; top: 0; width: 100px; height: 500px; border: 2px dashed #ccc; border-radius: 8px; background: rgba(248, 249, 250, 0.8); padding: 10px; overflow-y: auto;">
@@ -446,7 +446,7 @@
                     <div class="card-body text-center">
                         <i class="fas fa-map fa-3x text-muted mb-3"></i>
                         <h5>Aucun plan disponible</h5>
-                        <p class="text-muted">Le MJ n'a pas encore ajouté de plan pour ce lieu.</p>
+                        <p class="text-muted">Le MJ n'a pas encore ajouté de plan pour cette pièce.</p>
                     </div>
                 </div>
             <?php endif; ?>
@@ -508,7 +508,7 @@
                             <h6 class="text-primary mb-3"><i class="fas fa-user-circle me-2"></i>Personnages Joueurs</h6>
                             <div class="text-center text-muted py-3">
                                 <i class="fas fa-user-slash fa-2x mb-2"></i>
-                                <p class="mb-0">Aucun personnage joueur dans ce lieu.</p>
+                                <p class="mb-0">Aucun personnage joueur dans cette pièce.</p>
                             </div>
                         </div>
                     <?php endif; ?>
@@ -717,7 +717,7 @@
                     <?php if (empty($placePlayers) && empty($placeNpcs) && empty($placeMonsters) && empty($placeObjects)): ?>
                         <div class="text-center text-muted">
                             <i class="fas fa-users fa-2x mb-3"></i>
-                            <p>Aucun participant dans ce lieu.</p>
+                            <p>Aucun participant dans cette pièce.</p>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -726,13 +726,13 @@
     </div>
 
 
-    <!-- Notes du lieu -->
+    <!-- Notes de la pièce -->
     <?php if (!empty($place['notes'])): ?>
     <div class="row mt-4">
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-sticky-note me-2"></i>Notes du lieu</h5>
+                    <h5 class="mb-0"><i class="fas fa-sticky-note me-2"></i>Notes de la pièce</h5>
                 </div>
                 <div class="card-body">
                     <p class="mb-0"><?php echo nl2br(htmlspecialchars($place['notes'])); ?></p>
@@ -1434,22 +1434,22 @@ function updateObjectsList(objects) {
     // Pour l'instant, on se contente de la mise à jour des pions
 }
 
-// Variable pour stocker l'ID du lieu actuel
+// Variable pour stocker l'ID de la pièce actuelle
 let currentPlaceId = <?php echo (int)$place_id; ?>;
 
-// Fonction pour vérifier si le joueur a changé de lieu
+// Fonction pour vérifier si le joueur a changé de pièce
 function checkPlayerLocationChange() {
     fetch('check_player_location.php')
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 if (!data.has_location) {
-                    // Le joueur n'est plus dans aucun lieu
-                    console.log('Joueur retiré de tous les lieux, redirection...');
+                    // Le joueur n'est plus dans aucune pièce
+                    console.log('Joueur retiré de tous les pièces, redirection...');
                     window.location.href = 'campaigns.php';
                 } else if (data.place_id !== currentPlaceId) {
-                    // Le joueur a changé de lieu
-                    console.log('Joueur déplacé vers un nouveau lieu, rechargement de la page...');
+                    // Le joueur a changé de pièce
+                    console.log('Joueur déplacé vers un nouvelle pièce, rechargement de la page...');
                     window.location.reload();
                 }
             }
@@ -1617,7 +1617,7 @@ function createMonsterItem(monster) {
     return div;
 }
 
-// Vérifier le changement de lieu toutes les 3 secondes
+// Vérifier le changement de pièce toutes les 3 secondes
 let locationCheckInterval = setInterval(checkPlayerLocationChange, 3000);
 
 // Mettre à jour la liste des participants toutes les 2 secondes

@@ -152,7 +152,7 @@ class Univers
             $stmt = $this->pdo->query("SELECT COUNT(*) FROM regions");
             $this->stats['regions_created'] = (int)$stmt->fetchColumn();
 
-            // Compter les lieux
+            // Compter les pièces
             $stmt = $this->pdo->query("SELECT COUNT(*) FROM places");
             $this->stats['places_created'] = (int)$stmt->fetchColumn();
 

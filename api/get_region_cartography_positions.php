@@ -1,6 +1,6 @@
 <?php
 /**
- * API Endpoint: Récupérer les positions des lieux dans la cartographie de la région
+ * API Endpoint: Récupérer les positions des pièces dans la cartographie de la région
  */
 
 require_once __DIR__ . '/../includes/functions.php';

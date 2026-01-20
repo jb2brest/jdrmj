@@ -1,12 +1,12 @@
 <?php
 /**
- * API Endpoint: Supprimer un accès entre deux lieux
+ * API Endpoint: Supprimer un accès entre deux pièces
  */
 
 require_once dirname(__DIR__) . '/includes/functions.php';
 require_once dirname(__DIR__) . '/classes/init.php';
 require_once dirname(__DIR__) . '/classes/Access.php';
-require_once dirname(__DIR__) . '/classes/Lieu.php';
+require_once dirname(__DIR__) . '/classes/Room.php';
 
 header('Content-Type: application/json');
 header('X-Requested-With: XMLHttpRequest');
@@ -37,7 +37,7 @@ try {
     }
     
     if ($from_place_id === 0) {
-        throw new Exception('ID du lieu d\'origine manquant.');
+        throw new Exception('ID de la pièce d\'origine manquant.');
     }
     
     // Récupérer l'accès existant
@@ -46,15 +46,15 @@ try {
         throw new Exception('Accès non trouvé.');
     }
     
-    // Vérifier que l'accès appartient au lieu d'origine
+    // Vérifier que l'accès appartient à la pièce d'origine
     if ($access->from_place_id !== $from_place_id) {
-        throw new Exception('L\'accès n\'appartient pas au lieu d\'origine spécifié.');
+        throw new Exception('L\'accès n\'appartient pas à la pièce d\'origine spécifié.');
     }
     
-    // Vérifier que l'utilisateur a les permissions sur le lieu d'origine
-    $lieu = Lieu::findById($from_place_id);
+    // Vérifier que l'utilisateur a les permissions sur la pièce d'origine
+    $lieu = Room::findById($from_place_id);
     if (!$lieu) {
-        throw new Exception('Lieu d\'origine non trouvé.');
+        throw new Exception('Pièce d\'origine non trouvé.');
     }
     
     $place = $lieu->toArray();

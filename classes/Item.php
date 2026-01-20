@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Classe Item - Gestion des objets dans les lieux
+ * Classe Item - Gestion des objets dans les pièces
  * 
  * Cette classe encapsule toutes les fonctionnalités liées aux objets
  * du système JDR MJ, incluant la création, gestion et manipulation des objets.
@@ -165,9 +165,9 @@ class Item
     }
 
     /**
-     * Trouver tous les objets d'un lieu
+     * Trouver tous les objets d'une pièce
      * 
-     * @param int $placeId ID du lieu
+     * @param int $placeId ID de la pièce
      * @param PDO $pdo Instance PDO (optionnel)
      * @return array Liste des objets
      */
@@ -188,7 +188,7 @@ class Item
             return $objects;
             
         } catch (PDOException $e) {
-            error_log("Erreur lors de la recherche des objets du lieu: " . $e->getMessage());
+            error_log("Erreur lors de la recherche des objets de la pièce: " . $e->getMessage());
             return [];
         }
     }
@@ -552,7 +552,7 @@ class Item
     public function getOwnerTypeLabel()
     {
         $labels = [
-            'place' => 'Lieu',
+            'place' => 'Pièce',
             'player' => 'Joueur',
             'npc' => 'PNJ',
             'monster' => 'Monstre'

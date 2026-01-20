@@ -123,7 +123,7 @@ if ($pt_id) {
     try {
         // Récupérer les choix distincts avec leur source, no_choix et option_letter
         // Pour chaque no_choix, prendre le starting_equipment_choix_id le plus fréquent
-        // Utiliser directement pt.src au lieu du JOIN
+        // Utiliser directement pt.src à la pièce du JOIN
         $stmt = $pdo->prepare("
             SELECT 
                 pt.no_choix, 

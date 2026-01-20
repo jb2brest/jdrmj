@@ -37,7 +37,7 @@ if ($entity_id <= 0) {
 
 try {
     // Utiliser la méthode de classe avec le type d'entité
-    $success = Lieu::deleteEntity($entity_id, $user_id, $entity_type);
+    $success = Room::deleteEntity($entity_id, $user_id, $entity_type);
     
     if ($success) {
         echo json_encode(['success' => true, 'message' => 'Entité supprimée avec succès']);

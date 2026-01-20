@@ -148,9 +148,9 @@ class Monster
     }
 
     /**
-     * Ajoute cette instance de monstre à un lieu spécifique dans place_monsters.
+     * Ajoute cette instance de monstre à une pièce spécifique dans place_monsters.
      *
-     * @param int $placeId L'ID du lieu.
+     * @param int $placeId L'ID de la pièce.
      * @return bool True en cas de succès, false en cas d'échec.
      */
     public function addToPlace($placeId)
@@ -163,7 +163,7 @@ class Monster
             $stmt->execute([$placeId, $this->id, $this->is_visible, $this->is_identified]);
             return true;
         } catch (PDOException $e) {
-            error_log("Erreur lors de l'ajout du monstre au lieu (place_monsters): " . $e->getMessage());
+            error_log("Erreur lors de l'ajout du monstre à la pièce (place_monsters): " . $e->getMessage());
             return false;
         }
     }

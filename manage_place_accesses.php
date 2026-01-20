@@ -1,7 +1,7 @@
 <?php
 require_once 'config/database.php';
 require_once 'includes/functions.php';
-require_once 'classes/Lieu.php';
+require_once 'classes/Room.php';
 require_once 'classes/Access.php';
 
 // Vérifier l'authentification
@@ -14,12 +14,12 @@ $place_id = isset($_GET['place_id']) ? (int)$_GET['place_id'] : 0;
 $error_message = '';
 $success_message = '';
 
-// Charger le lieu
-$place = Lieu::findById($place_id);
+// Charger la pièce
+$place = Room::findById($place_id);
 if (!$place) {
-    $error_message = "Lieu non trouvé.";
+    $error_message = "Pièce non trouvé.";
 } else {
-    // Charger les accès du lieu
+    // Charger les accès de la pièce
     $accesses_from = Access::getFromPlace($place_id);
     $accesses_to = Access::getToPlace($place_id);
     $all_accesses = array_merge($accesses_from, $accesses_to);
@@ -44,11 +44,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $place) {
             if (empty($name)) {
                 $error_message = "Le nom de l'accès est requis.";
             } elseif ($to_place_id <= 0) {
-                $error_message = "Veuillez sélectionner un lieu de destination.";
+                $error_message = "Veuillez sélectionner une pièce de destination.";
             } elseif ($to_place_id == $place_id) {
-                $error_message = "Un lieu ne peut pas avoir d'accès vers lui-même.";
+                $error_message = "Une pièce ne peut pas avoir d'accès vers lui-même.";
             } elseif (Access::existsBetween($place_id, $to_place_id, $name)) {
-                $error_message = "Un accès avec ce nom existe déjà vers ce lieu.";
+                $error_message = "Un accès avec ce nom existe déjà vers cette pièce.";
             } else {
                 $access_id = Access::create(
                     $place_id, $to_place_id, $name, $description,
@@ -128,7 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $place) {
     }
 }
 
-// Charger les lieux disponibles pour créer des accès
+// Charger les pièces disponibles pour créer des accès
 $available_places = Access::getAvailablePlaces($place_id);
 ?>
 
@@ -137,7 +137,7 @@ $available_places = Access::getAvailablePlaces($place_id);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion des Accès - <?= htmlspecialchars($place->title ?? 'Lieu') ?></title>
+    <title>Gestion des Accès - <?= htmlspecialchars($place->title ?? 'Pièce') ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
@@ -166,11 +166,11 @@ $available_places = Access::getAvailablePlaces($place_id);
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <div>
                             <h1><i class="fas fa-door-open me-2"></i>Gestion des Accès</h1>
-                            <p class="text-muted mb-0">Lieu: <strong><?= htmlspecialchars($place->title) ?></strong></p>
+                            <p class="text-muted mb-0">Pièce: <strong><?= htmlspecialchars($place->title) ?></strong></p>
                         </div>
                         <div>
                             <a href="view_place.php?place_id=<?= $place_id ?>" class="btn btn-outline-secondary me-2">
-                                <i class="fas fa-arrow-left me-1"></i>Retour au lieu
+                                <i class="fas fa-arrow-left me-1"></i>Retour à la pièce
                             </a>
                             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createAccessModal">
                                 <i class="fas fa-plus me-1"></i>Ajouter un accès
@@ -181,13 +181,13 @@ $available_places = Access::getAvailablePlaces($place_id);
                     <!-- Liste des accès -->
                     <div class="card">
                         <div class="card-header">
-                            <h5 class="mb-0"><i class="fas fa-list me-2"></i>Accès du lieu</h5>
+                            <h5 class="mb-0"><i class="fas fa-list me-2"></i>Accès de la pièce</h5>
                         </div>
                         <div class="card-body">
                             <?php if (empty($all_accesses)): ?>
                                 <div class="text-center py-4">
                                     <i class="fas fa-door-closed fa-3x text-muted mb-3"></i>
-                                    <p class="text-muted">Aucun accès configuré pour ce lieu.</p>
+                                    <p class="text-muted">Aucun accès configuré pour cette pièce.</p>
                                     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createAccessModal">
                                         <i class="fas fa-plus me-1"></i>Créer le premier accès
                                     </button>
@@ -294,9 +294,9 @@ $available_places = Access::getAvailablePlaces($place_id);
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="createAccessToPlace" class="form-label">Lieu de destination *</label>
+                                    <label for="createAccessToPlace" class="form-label">Pièce de destination *</label>
                                     <select class="form-select" id="createAccessToPlace" name="to_place_id" required>
-                                        <option value="">Sélectionner un lieu...</option>
+                                        <option value="">Sélectionner une pièce...</option>
                                         <?php foreach ($available_places as $available_place): ?>
                                             <option value="<?= $available_place['id'] ?>">
                                                 <?= htmlspecialchars($available_place['title']) ?>

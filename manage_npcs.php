@@ -51,13 +51,13 @@ $filters = [
 // Utiliser les méthodes de classe pour récupérer les données
 try {
     // Récupérer les entités avec filtres
-    $entities = Lieu::getEntitiesByUser($user_id, $filters);
+    $entities = Room::getEntitiesByUser($user_id, $filters);
     
     // Récupérer les données pour les filtres
-    $worlds = Lieu::getAllWorlds();
+    $worlds = Room::getAllWorlds();
     $countries = Pays::getAllCountries();
     $regions = Region::getAllRegions();
-    $places = Lieu::getAllPlaces();
+    $places = Room::getAllPlaces();
     
     // Filtrer les données selon les sélections
     $filtered_countries = [];

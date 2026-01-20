@@ -44,9 +44,9 @@ class DiceRoll
     }
     
     /**
-     * Récupérer les lancers de dés d'un lieu
+     * Récupérer les lancers de dés d'une pièce
      * 
-     * @param int $placeId ID du lieu
+     * @param int $placeId ID de la pièce
      * @param PDO|null $pdo Instance PDO (optionnelle)
      * @return array Liste des lancers de dés
      */
@@ -74,7 +74,7 @@ class DiceRoll
                 ");
                 $stmt->execute();
             } else {
-                // Si colonne place_id existe, filtrer par lieu
+                // Si colonne place_id existe, filtrer par pièce
                 $stmt = $pdo->prepare("
                     SELECT dr.*, u.username 
                     FROM dice_rolls dr 

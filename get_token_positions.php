@@ -29,7 +29,7 @@ $place_id = (int)$input['place_id'];
 $last_update = $input['last_update'] ?? null;
 
 try {
-    // Vérifier que l'utilisateur a accès à ce lieu
+    // Vérifier que l'utilisateur a accès à cette pièce
     $stmt = $pdo->prepare("
         SELECT p.id, pc.campaign_id 
         FROM places p 
@@ -41,7 +41,7 @@ try {
     
     if (!$place) {
         http_response_code(404);
-        echo json_encode(['error' => 'Lieu non trouvé']);
+        echo json_encode(['error' => 'Pièce non trouvé']);
         exit();
     }
     

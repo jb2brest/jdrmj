@@ -1,6 +1,6 @@
 <?php
 /**
- * Modals pour la vue d'un lieu
+ * Modals pour la vue d'une pièce
  * Version refactorisée avec séparation HTML/PHP
  */
 ?>
@@ -242,21 +242,34 @@
 </div>
 <?php endif; ?>
 
-<!-- Modal pour éditer le lieu -->
+<!-- Modal pour éditer la pièce -->
 <?php if ($canEdit): ?>
 <div class="modal fade" id="editSceneModal" tabindex="-1" aria-labelledby="editSceneModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="editSceneModalLabel">Modifier le lieu</h5>
+                <h5 class="modal-title" id="editSceneModalLabel">Modifier la pièce</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="POST" action="api/update_place.php">
                 <div class="modal-body">
                     <input type="hidden" name="place_id" value="<?php echo $place_id; ?>">
                     <div class="mb-3">
-                        <label for="placeTitle" class="form-label">Nom du lieu</label>
+                        <label for="placeTitle" class="form-label">Nom de la pièce</label>
                         <input type="text" class="form-control" id="placeTitle" name="title" value="<?php echo htmlspecialchars($place['title']); ?>" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="placeLocation" class="form-label">Lieu parent</label>
+                        <select class="form-select" id="placeLocation" name="location_id">
+                            <option value="">Aucun (Pièce orpheline)</option>
+                            <?php if (isset($availableLocations) && is_array($availableLocations)): ?>
+                                <?php foreach ($availableLocations as $location): ?>
+                                    <option value="<?php echo $location->getId(); ?>" <?php echo (isset($place['location_id']) && $place['location_id'] == $location->getId()) ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($location->getName()); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
                     </div>
                     <div class="mb-3">
                         <label for="placeNotes" class="form-label">Notes</label>
@@ -315,9 +328,9 @@
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="createAccessToPlace" class="form-label">Lieu de destination</label>
+                                <label for="createAccessToPlace" class="form-label">Pièce de destination</label>
                                 <select class="form-control" id="createAccessToPlace" name="to_place_id" required>
-                                    <option value="">Sélectionner un lieu</option>
+                                    <option value="">Sélectionner une pièce</option>
                                 </select>
                             </div>
                         </div>
@@ -422,9 +435,9 @@
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="editAccessToPlace" class="form-label">Lieu de destination</label>
+                                <label for="editAccessToPlace" class="form-label">Pièce de destination</label>
                                 <select class="form-control" id="editAccessToPlace" name="to_place_id" required>
-                                    <option value="">Sélectionner un lieu</option>
+                                    <option value="">Sélectionner une pièce</option>
                                 </select>
                             </div>
                         </div>
@@ -556,7 +569,7 @@
 
 <!-- Modal pour déplacer des entités -->
 <?php if ($canEdit && !empty($placeAccesses)): 
-    // Récupérer les lieux accessibles (uniquement ceux avec un accès direct)
+    // Récupérer les pièces accessibles (uniquement ceux avec un accès direct)
     $accessiblePlaces = [];
     foreach ($placeAccesses as $access) {
         if ($access->from_place_id == $place_id) {
@@ -582,18 +595,18 @@
                     <input type="hidden" name="action" value="move_entities">
                     <input type="hidden" name="from_place_id" value="<?php echo $place_id; ?>">
                     
-                    <!-- Sélection du lieu de destination -->
+                    <!-- Sélection de la pièce de destination -->
                     <div class="mb-4">
                         <label for="moveToPlace" class="form-label">
-                            <i class="fas fa-map-marker-alt me-1"></i>Lieu de destination
+                            <i class="fas fa-map-marker-alt me-1"></i>Pièce de destination
                         </label>
                         <select class="form-select" id="moveToPlace" name="to_place_id" required>
-                            <option value="">Sélectionner un lieu accessible...</option>
+                            <option value="">Sélectionner une pièce accessible...</option>
                             <?php foreach ($accessiblePlaces as $placeId => $placeName): ?>
                                 <option value="<?php echo $placeId; ?>"><?php echo htmlspecialchars($placeName); ?></option>
                             <?php endforeach; ?>
                         </select>
-                        <small class="form-text text-muted">Seuls les lieux avec un accès direct sont disponibles</small>
+                        <small class="form-text text-muted">Seuls les pièces avec un accès direct sont disponibles</small>
                     </div>
                     
                     <hr>
@@ -692,7 +705,7 @@
                         <?php if (empty($placePlayers) && empty($placeNpcs) && empty($placeMonsters)): ?>
                             <div class="alert alert-info">
                                 <i class="fas fa-info-circle me-2"></i>
-                                Aucune entité présente dans ce lieu.
+                                Aucune entité présente dans cette pièce.
                             </div>
                         <?php endif; ?>
                     </div>
@@ -725,13 +738,13 @@
                     <input type="hidden" name="action" value="teleport_entities">
                     <input type="hidden" name="from_place_id" value="<?php echo $place_id; ?>">
                     
-                    <!-- Sélection du lieu de destination -->
+                    <!-- Sélection de la pièce de destination -->
                     <div class="mb-4">
                         <label for="teleportToPlace" class="form-label">
-                            <i class="fas fa-map-marker-alt me-1"></i>Lieu de destination
+                            <i class="fas fa-map-marker-alt me-1"></i>Pièce de destination
                         </label>
                         <select class="form-select" id="teleportToPlace" name="to_place_id" required>
-                            <option value="">Sélectionner un lieu du monde...</option>
+                            <option value="">Sélectionner une pièce du monde...</option>
                             <?php 
                             $currentCountry = '';
                             $firstItem = true;
@@ -761,7 +774,7 @@
                                 </optgroup>
                             <?php endif; ?>
                         </select>
-                        <small class="form-text text-muted">Tous les lieux du monde sont disponibles pour la téléportation</small>
+                        <small class="form-text text-muted">Tous les pièces du monde sont disponibles pour la téléportation</small>
                     </div>
                     
                     <hr>
@@ -860,7 +873,7 @@
                         <?php if (empty($placePlayers) && empty($placeNpcs) && empty($placeMonsters)): ?>
                             <div class="alert alert-info">
                                 <i class="fas fa-info-circle me-2"></i>
-                                Aucune entité présente dans ce lieu.
+                                Aucune entité présente dans cette pièce.
                             </div>
                         <?php endif; ?>
                     </div>

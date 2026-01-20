@@ -22,7 +22,7 @@ require_once __DIR__ . '/Character.php';
 require_once __DIR__ . '/NPC.php';
 require_once __DIR__ . '/Sort.php';
 require_once __DIR__ . '/Item.php';
-require_once __DIR__ . '/Lieu.php';
+require_once __DIR__ . '/Room.php';
 require_once __DIR__ . '/Monstre.php';
 require_once __DIR__ . '/Groupe.php';
 require_once __DIR__ . '/StartingEquipment.php';

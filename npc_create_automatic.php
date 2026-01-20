@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_npc'])) {
         } elseif ($country_id <= 0) {
             $error_message = "Veuillez sélectionner un pays.";
         } elseif ($place_id <= 0) {
-            $error_message = "Veuillez sélectionner un lieu.";
+            $error_message = "Veuillez sélectionner une pièce.";
         } elseif ($race_id <= 0) {
             $error_message = "Veuillez sélectionner une race.";
         } elseif ($level < 1 || $level > 20) {
@@ -75,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_npc'])) {
                     $place = $stmt->fetch(PDO::FETCH_ASSOC);
                     
                     if (!$place) {
-                        $error_message = "Lieu invalide.";
+                        $error_message = "Pièce invalide.";
                     } else {
                         // Créer le PNJ automatiquement
                         $npc = createAutomaticNPC($race_id, $class_id, $level, $user_id, $custom_name, $place_id, $is_visible, $is_identified, $world_id, $country_id);
@@ -188,9 +188,9 @@ try {
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label for="place_id" class="form-label">Lieu *</label>
+                                        <label for="place_id" class="form-label">Pièce *</label>
                                         <select class="form-select" id="place_id" name="place_id" required>
-                                            <option value="">Sélectionnez un lieu</option>
+                                            <option value="">Sélectionnez une pièce</option>
                                         </select>
                                     </div>
                                 </div>
@@ -298,7 +298,7 @@ try {
             function updateCountries(worldId) {
                 countrySelect.innerHTML = '<option value="">Sélectionnez un pays</option>';
                 regionSelect.innerHTML = '<option value="">Aucune région</option>';
-                placeSelect.innerHTML = '<option value="">Sélectionnez un lieu</option>';
+                placeSelect.innerHTML = '<option value="">Sélectionnez une pièce</option>';
                 
                 if (worldId) {
                     fetch(`get_countries_by_world.php?world_id=${worldId}`)
@@ -318,7 +318,7 @@ try {
             
             function updateRegions(countryId) {
                 regionSelect.innerHTML = '<option value="">Aucune région</option>';
-                placeSelect.innerHTML = '<option value="">Sélectionnez un lieu</option>';
+                placeSelect.innerHTML = '<option value="">Sélectionnez une pièce</option>';
                 
                 if (countryId) {
                     fetch(`get_regions_by_country.php?country_id=${countryId}`)
@@ -337,7 +337,7 @@ try {
             }
             
             function updatePlaces(countryId, regionId) {
-                placeSelect.innerHTML = '<option value="">Sélectionnez un lieu</option>';
+                placeSelect.innerHTML = '<option value="">Sélectionnez une pièce</option>';
                 
                 if (countryId) {
                     fetch(`get_places_by_region.php?region_id=${regionId}&country_id=${countryId}`)
@@ -351,7 +351,7 @@ try {
                                 placeSelect.appendChild(option);
                             });
                         })
-                        .catch(error => console.error('Erreur lors du chargement des lieux:', error));
+                        .catch(error => console.error('Erreur lors du chargement des pièces:', error));
                 }
             }
             

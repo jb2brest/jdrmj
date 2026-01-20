@@ -29,8 +29,8 @@ if (!empty($characters)) {
         echo "  Niveau: " . $character['level'] . "\n";
         echo "  Créé le: " . $character['created_at'] . "\n";
         
-        // Vérifier si ce personnage est dans le lieu 154
-        echo "\n2. Vérification de la présence dans le lieu 154 :\n";
+        // Vérifier si ce personnage est dans la pièce 154
+        echo "\n2. Vérification de la présence dans la pièce 154 :\n";
         $stmt2 = $pdo->prepare("
             SELECT pc.*, p.title as place_name
             FROM place_characters pc
@@ -41,14 +41,14 @@ if (!empty($characters)) {
         $place_character = $stmt2->fetch(PDO::FETCH_ASSOC);
         
         if ($place_character) {
-            echo "  SUCCÈS: Dara est dans le lieu " . $place_character['place_name'] . "\n";
+            echo "  SUCCÈS: Dara est dans la pièce " . $place_character['place_name'] . "\n";
             echo "  Ajouté le: " . $place_character['created_at'] . "\n";
         } else {
-            echo "  PROBLÈME: Dara n'est pas dans le lieu 154\n";
+            echo "  PROBLÈME: Dara n'est pas dans la pièce 154\n";
         }
         
-        // Vérifier dans quels lieux Dara se trouve
-        echo "\n3. Lieux où se trouve Dara :\n";
+        // Vérifier dans quels pièces Dara se trouve
+        echo "\n3. Pièces où se trouve Dara :\n";
         $stmt3 = $pdo->prepare("
             SELECT pc.*, p.title as place_name
             FROM place_characters pc
@@ -61,10 +61,10 @@ if (!empty($characters)) {
         
         if (!empty($places)) {
             foreach ($places as $place) {
-                echo "  - Lieu ID: " . $place['place_id'] . " (" . $place['place_name'] . ")\n";
+                echo "  - Pièce ID: " . $place['place_id'] . " (" . $place['place_name'] . ")\n";
             }
         } else {
-            echo "  Aucun lieu trouvé\n";
+            echo "  Aucune pièce trouvé\n";
         }
         
         echo "\n" . str_repeat("-", 50) . "\n";

@@ -3,14 +3,14 @@
  * Exemple de refactorisation de view_scene_player.php avec le singleton Database
  * 
  * Ce fichier montre comment view_scene_player.php pourrait être refactorisé
- * pour utiliser le singleton Database au lieu de la variable $pdo globale
+ * pour utiliser le singleton Database à la pièce de la variable $pdo globale
  */
 
 // Option 1: Utiliser le singleton Database directement
 require_once 'classes/init.php'; // Inclut Database et User
 require_once 'includes/functions.php';
 
-$page_title = "Lieu - Vue Joueur";
+$page_title = "Pièce - Vue Joueur";
 $current_page = "view_scene_player";
 
 requireLogin();
@@ -18,7 +18,7 @@ requireLogin();
 $user_id = $_SESSION['user_id'];
 $requested_campaign_id = isset($_GET['campaign_id']) ? (int)$_GET['campaign_id'] : null;
 
-// Trouver le lieu où se trouve le joueur
+// Trouver la pièce où se trouve le joueur
 if ($requested_campaign_id) {
     // Si un campaign_id est spécifié, chercher dans cette campagne
     // AVANT (avec $pdo global) :
@@ -37,7 +37,7 @@ if ($requested_campaign_id) {
         LIMIT 1
     ", [$user_id, $requested_campaign_id]);
     
-    // Si aucun lieu trouvé dans cette campagne, vérifier si le joueur est membre de la campagne
+    // Si aucune pièce trouvé dans cette campagne, vérifier si le joueur est membre de la campagne
     if (!$place) {
         // AVANT (avec $pdo global) :
         // $stmt = $pdo->prepare("SELECT cm.role FROM campaign_members cm WHERE cm.campaign_id = ? AND cm.user_id = ?");
@@ -51,8 +51,8 @@ if ($requested_campaign_id) {
         );
         
         if ($membership) {
-            // Le joueur est membre mais pas assigné à un lieu, afficher un message spécifique
-            $page_title = "Aucun lieu assigné dans cette campagne";
+            // Le joueur est membre mais pas assigné à une pièce, afficher un message spécifique
+            $page_title = "Aucune pièce assignée dans cette campagne";
             include_once 'includes/layout.php';
             ?>
             <div class="container mt-4">
@@ -61,10 +61,10 @@ if ($requested_campaign_id) {
                         <div class="card">
                             <div class="card-body text-center">
                                 <i class="fas fa-map-marker-alt fa-3x text-muted mb-3"></i>
-                                <h4 class="card-title">Aucun lieu assigné</h4>
+                                <h4 class="card-title">Aucune pièce assignée</h4>
                                 <p class="card-text text-muted">
-                                    Vous êtes membre de cette campagne mais n'êtes pas encore assigné à un lieu spécifique. 
-                                    Le maître du jeu doit vous ajouter à un lieu pour que vous puissiez y accéder.
+                                    Vous êtes membre de cette campagne mais n'êtes pas encore assigné à une pièce spécifique. 
+                                    Le maître du jeu doit vous ajouter à une pièce pour que vous puissiez y accéder.
                                 </p>
                                 <a href="view_campaign.php?id=<?php echo $requested_campaign_id; ?>" class="btn btn-primary">
                                     <i class="fas fa-arrow-left me-2"></i>Retour à la campagne
@@ -83,7 +83,7 @@ if ($requested_campaign_id) {
         }
     }
 } else {
-    // Comportement original : chercher n'importe quel lieu où se trouve le joueur
+    // Comportement original : chercher n'importe quelle pièce où se trouve le joueur
     // AVANT (avec $pdo global) :
     // $stmt = $pdo->prepare("SELECT ...");
     // $stmt->execute([$user_id]);
@@ -114,8 +114,8 @@ if ($requested_campaign_id) {
         );
         
         if ($membership) {
-            // Le joueur est membre mais pas assigné à un lieu
-            $page_title = "Aucun lieu assigné";
+            // Le joueur est membre mais pas assigné à une pièce
+            $page_title = "Aucune pièce assignée";
             include_once 'includes/layout.php';
             ?>
             <div class="container mt-4">
@@ -124,10 +124,10 @@ if ($requested_campaign_id) {
                         <div class="card">
                             <div class="card-body text-center">
                                 <i class="fas fa-map-marker-alt fa-3x text-muted mb-3"></i>
-                                <h4 class="card-title">Aucun lieu assigné</h4>
+                                <h4 class="card-title">Aucune pièce assignée</h4>
                                 <p class="card-text text-muted">
-                                    Vous êtes membre d'une campagne mais n'êtes pas encore assigné à un lieu spécifique. 
-                                    Le maître du jeu doit vous ajouter à un lieu pour que vous puissiez y accéder.
+                                    Vous êtes membre d'une campagne mais n'êtes pas encore assigné à une pièce spécifique. 
+                                    Le maître du jeu doit vous ajouter à une pièce pour que vous puissiez y accéder.
                                 </p>
                                 <a href="campaigns.php" class="btn btn-primary">
                                     <i class="fas fa-list me-2"></i>Voir mes campagnes
@@ -147,12 +147,12 @@ if ($requested_campaign_id) {
     }
 }
 
-// Si on arrive ici, le joueur a un lieu assigné
-// Récupérer les informations du lieu et de la campagne
+// Si on arrive ici, le joueur a une pièce assignée
+// Récupérer les informations de la pièce et de la campagne
 $place_id = $place['id'];
 $campaign_id = $place['campaign_id'];
 
-// Récupérer les autres joueurs présents dans ce lieu
+// Récupérer les autres joueurs présents dans cette pièce
 // AVANT (avec $pdo global) :
 // $stmt = $pdo->prepare("SELECT ...");
 // $stmt->execute([$place_id]);
@@ -167,7 +167,7 @@ $players = Database::fetchAll("
     ORDER BY pp.arrival_time ASC
 ", [$place_id]);
 
-// Récupérer les objets présents dans ce lieu
+// Récupérer les objets présents dans cette pièce
 // AVANT (avec $pdo global) :
 // $stmt = $pdo->prepare("SELECT ...");
 // $stmt->execute([$place_id]);
@@ -182,7 +182,7 @@ $objects = Database::fetchAll("
     ORDER BY o.name ASC
 ", [$place_id]);
 
-// Récupérer les PNJ présents dans ce lieu
+// Récupérer les PNJ présents dans cette pièce
 // AVANT (avec $pdo global) :
 // $stmt = $pdo->prepare("SELECT ...");
 // $stmt->execute([$place_id]);
@@ -290,7 +290,7 @@ include_once 'includes/layout.php';
 
 <?php
 // Option 2: Utiliser les fonctions de compatibilité
-// Au lieu de Database::fetch(), on pourrait utiliser :
+// À la pièce de Database::fetch(), on pourrait utiliser :
 // $place = fetchQuery("SELECT ...", [$user_id, $requested_campaign_id]);
 
 // Option 3: Utiliser la variable $pdo globale (compatibilité)

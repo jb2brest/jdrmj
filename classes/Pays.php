@@ -517,7 +517,7 @@ class Pays
     /**
      * Récupère les accès interrégionaux pour ce pays
      * 
-     * Cette méthode retourne la liste des accès entre deux lieux de deux régions différentes,
+     * Cette méthode retourne la liste des accès entre deux pièces de deux régions différentes,
      * dont au moins une des régions est à l'intérieur du pays concerné.
      * 
      * @return array Tableau des accès interrégionaux avec informations détaillées
@@ -532,7 +532,7 @@ class Pays
         try {
             $pdo = $this->getPdo();
             
-            // Récupérer les accès entre lieux de régions différentes
+            // Récupérer les accès entre pièces de régions différentes
             // où au moins une des régions appartient à ce pays
             $sql = "
                 SELECT 
@@ -568,12 +568,12 @@ class Pays
     }
 
     /**
-     * Récupère les lieux externes connectés à ce pays
+     * Récupère les pièces externes connectés à ce pays
      * 
-     * Cette méthode retourne les lieux qui sont dans d'autres pays/régions
-     * mais qui ont des accès avec des lieux de ce pays.
+     * Cette méthode retourne les pièces qui sont dans d'autres pays/régions
+     * mais qui ont des accès avec des pièces de ce pays.
      * 
-     * @return array Tableau des lieux externes avec informations détaillées
+     * @return array Tableau des pièces externes avec informations détaillées
      * @throws Exception En cas d'erreur de base de données
      */
     public function getExternalPlaces()
@@ -585,8 +585,8 @@ class Pays
         try {
             $pdo = $this->getPdo();
             
-            // Récupérer les lieux externes (dans d'autres pays/régions)
-            // qui ont des accès avec des lieux de ce pays
+            // Récupérer les pièces externes (dans d'autres pays/régions)
+            // qui ont des accès avec des pièces de ce pays
             $sql = "
                 SELECT DISTINCT
                     p.*,
@@ -620,7 +620,7 @@ class Pays
             
             return $externalPlaces;
         } catch (PDOException $e) {
-            throw new Exception("Erreur lors de la récupération des lieux externes: " . $e->getMessage());
+            throw new Exception("Erreur lors de la récupération des pièces externes: " . $e->getMessage());
         }
     }
 

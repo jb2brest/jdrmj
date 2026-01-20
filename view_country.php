@@ -429,7 +429,7 @@ $country_monsters = array_filter($all_monsters, function($monster) use ($pays) {
                                                     onclick="editRegion(<?php echo htmlspecialchars(json_encode($region)); ?>)">
                                                 <i class="fas fa-edit"></i>
                                             </button>
-                                            <form method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer la région <?php echo htmlspecialchars($region['name']); ?> ? Tous les lieux associés seront également supprimés.');">
+                                            <form method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer la région <?php echo htmlspecialchars($region['name']); ?> ? Tous les pièces associés seront également supprimés.');">
                                                 <input type="hidden" name="action" value="delete_region">
                                                 <input type="hidden" name="region_id" value="<?php echo (int)$region['id']; ?>">
                                                 <button type="submit" class="btn btn-sm btn-outline-danger">
@@ -466,9 +466,9 @@ $country_monsters = array_filter($all_monsters, function($monster) use ($pays) {
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <label for="locationFilter" class="form-label">Filtrer par lieu :</label>
+                            <label for="locationFilter" class="form-label">Filtrer par pièce :</label>
                             <select class="form-select" id="locationFilter">
-                                <option value="">Tous les lieux</option>
+                                <option value="">Tous les pièces</option>
                                 <?php
                                 $unique_places = [];
                                 foreach (array_merge($country_npcs, $country_monsters) as $entity) {
@@ -514,7 +514,7 @@ $country_monsters = array_filter($all_monsters, function($monster) use ($pays) {
                                         Race <i class="fas fa-sort ms-1"></i>
                                     </th>
                                     <th class="sortable" data-column="location">
-                                        Lieu <i class="fas fa-sort ms-1"></i>
+                                        Pièce <i class="fas fa-sort ms-1"></i>
                                     </th>
                                     <th>Actions</th>
                                 </tr>
@@ -527,7 +527,7 @@ $country_monsters = array_filter($all_monsters, function($monster) use ($pays) {
                                         <td colspan="6" class="text-center py-4">
                                             <i class="fas fa-users fa-3x text-muted mb-3"></i>
                                             <h5 class="text-muted">Aucun PNJ ou monstre trouvé</h5>
-                                            <p class="text-muted">Les PNJs et monstres apparaîtront ici une fois qu'ils seront ajoutés aux lieux de ce pays.</p>
+                                            <p class="text-muted">Les PNJs et monstres apparaîtront ici une fois qu'ils seront ajoutés aux pièces de ce pays.</p>
                                         </td>
                                     </tr>
                                 <?php else: ?>
@@ -880,7 +880,7 @@ $country_monsters = array_filter($all_monsters, function($monster) use ($pays) {
                 show = false;
             }
             
-            // Filtre par lieu
+            // Filtre par pièce
             if (locationFilter && row.dataset.placeKey !== locationFilter) {
                 show = false;
             }
@@ -1010,7 +1010,7 @@ $country_monsters = array_filter($all_monsters, function($monster) use ($pays) {
         // Dessiner les connexions
         redrawConnections();
         
-        // Dessiner les lieux
+        // Dessiner les pièces
         console.log('Final place positions:', Object.keys(placePositions));
         Object.values(placePositions).forEach(({ x, y, place, isExternal }) => {
             const placeElement = document.createElement('div');
@@ -1028,7 +1028,7 @@ $country_monsters = array_filter($all_monsters, function($monster) use ($pays) {
             placeElement.title = place.title + (isExternal ? ' (Autre région)' : '') + ' - Cliquer et glisser pour déplacer';
             placeElement.dataset.placeId = place.id;
             
-            // Ajouter le nom du lieu
+            // Ajouter le nom de la pièce
             const label = document.createElement('div');
             label.style.position = 'absolute';
             label.style.left = '35px';
@@ -1044,7 +1044,7 @@ $country_monsters = array_filter($all_monsters, function($monster) use ($pays) {
             label.style.zIndex = '11';
             label.textContent = place.title;
             
-            // Ajouter un indicateur pour les lieux externes
+            // Ajouter un indicateur pour les pièces externes
             if (isExternal && place.regionName) {
                 const regionLabel = document.createElement('div');
                 regionLabel.style.position = 'absolute';
@@ -1412,7 +1412,7 @@ $country_monsters = array_filter($all_monsters, function($monster) use ($pays) {
                         
                         <div class="alert alert-info small">
                             <i class="fas fa-mouse-pointer me-2"></i>
-                            <strong>Interaction :</strong> Vous pouvez déplacer les lieux en les faisant glisser pour une meilleure visibilité.
+                            <strong>Interaction :</strong> Vous pouvez déplacer les pièces en les faisant glisser pour une meilleure visibilité.
                         </div>
                         
                         <?php if (!empty($country_accesses)): ?>

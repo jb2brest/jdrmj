@@ -55,7 +55,7 @@ if (!$isOwner && !$isDM && !$isAdmin) {
     exit();
 }
 
-// Récupérer le lieu du personnage pour déposer l'objet
+// Récupérer la pièce du personnage pour déposer l'objet
 $stmt = $pdo->prepare("
     SELECT pp.place_id 
     FROM place_players pp 
@@ -67,11 +67,11 @@ $place = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$place || !$place['place_id']) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Le personnage n\'est dans aucun lieu']);
+    echo json_encode(['success' => false, 'message' => 'Le personnage n\'est dans aucune pièce']);
     exit();
 }
 
-// Déposer l'objet dans le lieu (mettre à jour place_id et owner_type)
+// Déposer l'objet dans la pièce (mettre à jour place_id et owner_type)
 $stmt = $pdo->prepare("
     UPDATE items 
     SET place_id = ?, 
@@ -90,7 +90,7 @@ $success = $stmt->execute([$place['place_id'], $place['place_id'], $itemId]);
 if ($success) {
     echo json_encode([
         'success' => true, 
-        'message' => 'Objet déposé dans le lieu avec succès'
+        'message' => 'Objet déposé dans la pièce avec succès'
     ]);
 } else {
     http_response_code(500);

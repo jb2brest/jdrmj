@@ -4,7 +4,7 @@
  */
 
 require_once __DIR__ . '/../includes/functions.php';
-require_once __DIR__ . '/../classes/Lieu.php';
+require_once __DIR__ . '/../classes/Room.php';
 
 header('Content-Type: application/json');
 header('X-Requested-With: XMLHttpRequest');

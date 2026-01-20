@@ -343,11 +343,11 @@ class CandidatureCampagne
     }
 
     /**
-     * Approuver la candidature avec assignation de lieu et ajout comme membre
+     * Approuver la candidature avec assignation de pièce et ajout comme membre
      * 
      * @param object $campaign Objet Campaign
      * @param array $campaignData Données de la campagne
-     * @param int|null $placeId ID du lieu (optionnel)
+     * @param int|null $placeId ID de la pièce (optionnel)
      * @param int|null $characterId ID du personnage (optionnel)
      * @param PDO|null $pdo Instance PDO (optionnelle)
      * @return array Résultat de l'opération ['success' => bool, 'message' => string]
@@ -382,12 +382,12 @@ class CandidatureCampagne
                 throw new Exception("Erreur lors de l'ajout du membre à la campagne");
             }
             
-            // Si un lieu est spécifié, assigner le joueur au lieu
+            // Si une pièce est spécifié, assigner le joueur à la pièce
             if ($placeId) {
-                // Vérifier que le lieu appartient à cette campagne
-                if (Lieu::belongsToCampaign($placeId, $this->getCampaignId())) {
-                    // Retirer le joueur de tous les autres lieux de la campagne
-                    $campaignPlaceIds = Lieu::getPlaceIdsByCampaign($this->getCampaignId());
+                // Vérifier que la pièce appartient à cette campagne
+                if (Room::belongsToCampaign($placeId, $this->getCampaignId())) {
+                    // Retirer le joueur de tous les autres pièces de la campagne
+                    $campaignPlaceIds = Room::getPlaceIdsByCampaign($this->getCampaignId());
                     if (!empty($campaignPlaceIds)) {
                         $placeholders = str_repeat('?,', count($campaignPlaceIds) - 1) . '?';
                         $stmt = $pdo->prepare("
@@ -398,9 +398,9 @@ class CandidatureCampagne
                         $stmt->execute($params);
                     }
                     
-                    // Ajouter le joueur au nouveau lieu
-                    if (!Lieu::addPlayerToPlace($placeId, $playerId, $characterId)) {
-                        throw new Exception("Erreur lors de l'assignation du joueur au lieu");
+                    // Ajouter le joueur au nouvelle pièce
+                    if (!Room::addPlayerToPlace($placeId, $playerId, $characterId)) {
+                        throw new Exception("Erreur lors de l'assignation du joueur à la pièce");
                     }
                 }
             }
@@ -409,10 +409,10 @@ class CandidatureCampagne
             $title = 'Candidature acceptée';
             $message = 'Votre candidature à la campagne "' . $campaignData['title'] . '" a été acceptée.';
             if ($placeId) {
-                $placeObj = Lieu::findById($placeId);
+                $placeObj = Room::findById($placeId);
                 $place = $placeObj ? ['title' => $placeObj->getTitle()] : null;
                 if ($place) {
-                    $message .= ' Vous avez été assigné au lieu "' . $place['title'] . '".';
+                    $message .= ' Vous avez été assigné à la pièce "' . $place['title'] . '".';
                 }
             }
             if (!Notification::create($playerId, 'system', $title, $message, $this->getCampaignId())) {
@@ -423,7 +423,7 @@ class CandidatureCampagne
             
             $successMessage = "Candidature approuvée et joueur ajouté à la campagne.";
             if ($placeId) {
-                $successMessage .= " Le joueur a été assigné au lieu sélectionné.";
+                $successMessage .= " Le joueur a été assigné à la pièce sélectionné.";
             }
             
             return ['success' => true, 'message' => $successMessage];

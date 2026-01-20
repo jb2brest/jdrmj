@@ -432,9 +432,9 @@ class Campaign
     // =====================================================
 
     /**
-     * Associe un lieu à la campagne
+     * Associe une pièce à la campagne
      * 
-     * @param int $placeId ID du lieu
+     * @param int $placeId ID de la pièce
      * @return bool True si associé avec succès
      */
     public function associatePlace($placeId)
@@ -446,15 +446,15 @@ class Campaign
             ");
             return $stmt->execute([$placeId, $this->id]);
         } catch (PDOException $e) {
-            // Lieu déjà associé
+            // Pièce déjà associé
             return false;
         }
     }
 
     /**
-     * Dissocie un lieu de la campagne
+     * Dissocie une pièce de la campagne
      * 
-     * @param int $placeId ID du lieu
+     * @param int $placeId ID de la pièce
      * @return bool True si dissocié avec succès
      */
     public function dissociatePlace($placeId)
@@ -467,9 +467,9 @@ class Campaign
     }
 
     /**
-     * Obtient les lieux associés à la campagne
+     * Obtient les pièces associés à la campagne
      * 
-     * @return array Liste des lieux
+     * @return array Liste des pièces
      */
     public function getAssociatedPlaces()
     {
@@ -485,9 +485,9 @@ class Campaign
     }
     
     /**
-     * Obtient les lieux associés avec la hiérarchie géographique
+     * Obtient les pièces associés avec la hiérarchie géographique
      * 
-     * @return array Liste des lieux avec hiérarchie géographique
+     * @return array Liste des pièces avec hiérarchie géographique
      */
     public function getAssociatedPlacesWithGeography()
     {
@@ -509,9 +509,9 @@ class Campaign
     }
 
     /**
-     * Obtient les lieux disponibles pour la campagne
+     * Obtient les pièces disponibles pour la campagne
      * 
-     * @return array Liste des lieux disponibles
+     * @return array Liste des pièces disponibles
      */
     public function getAvailablePlaces()
     {
@@ -694,9 +694,9 @@ class Campaign
     }
 
     /**
-     * Obtient le nombre de lieux associés
+     * Obtient le nombre de pièces associés
      * 
-     * @return int Nombre de lieux
+     * @return int Nombre de pièces
      */
     public function getPlaceCount()
     {
@@ -736,7 +736,7 @@ class Campaign
     }
     
     /**
-     * Vérifier si un lieu peut être associé à cette campagne
+     * Vérifier si une pièce peut être associé à cette campagne
      */
     public function canAssociatePlace($placeId)
     {
@@ -754,7 +754,7 @@ class Campaign
             return $place !== false;
             
         } catch (PDOException $e) {
-            error_log("Erreur lors de la vérification de l'association du lieu: " . $e->getMessage());
+            error_log("Erreur lors de la vérification de l'association de la pièce: " . $e->getMessage());
             return false;
         }
     }

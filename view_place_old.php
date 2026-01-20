@@ -21,8 +21,8 @@ if (isset($_GET['success'])) {
     $success_message = $_GET['success'];
 }
 
-// Charger le lieu et sa campagne avec hiérarchie géographique
-$lieu = Lieu::findById($place_id);
+// Charger la pièce et sa campagne avec hiérarchie géographique
+$lieu = Room::findById($place_id);
 if (!$lieu) {
     header('Location: index.php');
     exit();
@@ -30,7 +30,7 @@ if (!$lieu) {
 
 $place = $lieu->toArray();
 
-// Récupérer les campagnes associées à ce lieu
+// Récupérer les campagnes associées à cette pièce
 $campaigns = $lieu->getCampaigns();
 if (!empty($campaigns)) {
     // Pour l'instant, on prend la première campagne (on pourrait améliorer cela plus tard)
@@ -43,7 +43,7 @@ if (!empty($campaigns)) {
     $dm_user = User::findById($campaign['dm_id']);
     $place['dm_username'] = $dm_user ? $dm_user->getUsername() : 'Inconnu';
 } else {
-    // Le lieu n'est associé à aucune campagne
+    // La pièce n'est associé à aucune campagne
     $place['campaign_id'] = null;
     $place['campaign_title'] = null;
     $place['dm_id'] = null;
@@ -56,7 +56,7 @@ function hasCampaignId($place) {
 }
 
 $dm_id = (int)$place['dm_id'];
-// Un DM peut gérer un lieu s'il est le DM de la campagne associée, ou s'il n'y a pas de campagne associée (lieu libre)
+// Un DM peut gérer une pièce s'il est le DM de la campagne associée, ou s'il n'y a pas de campagne associée (pièce libre)
 $isOwnerDM = User::isDMOrAdmin() && ($dm_id === 0 || $_SESSION['user_id'] === $dm_id);
 
 // DEBUG: Logs pour déboguer les permissions
@@ -69,17 +69,17 @@ error_log("DEBUG view_place.php - isAdmin(): " . (User::isAdmin() ? 'true' : 'fa
 error_log("DEBUG view_place.php - isDMOrAdmin(): " . (User::isDMOrAdmin() ? 'true' : 'false'));
 error_log("DEBUG view_place.php - isOwnerDM: " . ($isOwnerDM ? 'true' : 'false'));
 
-// Autoriser les admins, les DM propriétaires et les membres de la campagne à voir le lieu
+// Autoriser les admins, les DM propriétaires et les membres de la campagne à voir la pièce
 $canView = User::isAdmin() || $isOwnerDM;
 if (!$canView && isset($place['campaign_id']) && $place['campaign_id']) {
     $campaign = Campaign::findById($place['campaign_id']);
     $canView = $campaign ? $campaign->isMember($_SESSION['user_id']) : false;
 } elseif (!$canView && (!isset($place['campaign_id']) || !$place['campaign_id'])) {
-    // Si le lieu n'est associé à aucune campagne, permettre la visualisation
+    // Si la pièce n'est associé à aucune campagne, permettre la visualisation
     $canView = true;
 }
 
-// Seuls les admins et les DM propriétaires peuvent éditer le lieu
+// Seuls les admins et les DM propriétaires peuvent éditer la pièce
 $canEdit = User::isAdmin() || $isOwnerDM;
 
 if (!$canView) {
@@ -109,9 +109,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
             $is_on_map = isset($_POST['is_on_map']) ? 1 : 0;
 
             if (empty($name) || $to_place_id === 0) {
-                $_SESSION['error_message'] = "Le nom de l'accès et le lieu de destination sont requis.";
+                $_SESSION['error_message'] = "Le nom de l'accès et la pièce de destination sont requis.";
             } elseif (Access::existsBetween($place_id, $to_place_id, $name)) {
-                $_SESSION['error_message'] = "Un accès avec ce nom existe déjà vers ce lieu de destination.";
+                $_SESSION['error_message'] = "Un accès avec ce nom existe déjà vers cette pièce de destination.";
             } else {
                 $access = ($action === 'update_access' && $access_id) ? Access::findById($access_id) : new Access();
                 if (!$access || ($action === 'update_access' && $access->from_place_id !== $place_id)) {
@@ -160,7 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $canEdit) {
     exit();
 }
 
-// Récupérer tous les lieux pour le sélecteur "vers quel lieu"
+// Récupérer tous les pièces pour le sélecteur "vers quelle pièce"
 $stmt = $pdo->query("SELECT id, title, region_id FROM places ORDER BY title");
 $all_places = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $other_places = array_filter($all_places, function($place) use ($place_id) {
@@ -174,7 +174,7 @@ $countries = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $stmt = $pdo->query("SELECT id, name, country_id FROM regions ORDER BY name");
 $regions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Récupérer le pays et la région du lieu actuel
+// Récupérer le pays et la région de la pièce actuelle
 $current_region = null;
 $current_country = null;
 if ($place['region_id']) {
@@ -188,22 +188,22 @@ if ($place['region_id']) {
     }
 }
 
-// Récupérer les accès du lieu
+// Récupérer les accès de la pièce
 $placeAccesses = Access::getFromPlace($place_id);
 
-// Récupérer les joueurs présents dans cette lieu
+// Récupérer les joueurs présents dans cette pièce
 $placePlayers = $lieu ? $lieu->getAllPlayersDetailed() : [];
 
-// Récupérer les PNJ de cette lieu
+// Récupérer les PNJ de cette pièce
 $placeNpcs = $lieu ? $lieu->getAllNpcsDetailed() : [];
 
-// Récupérer les monstres de cette lieu
+// Récupérer les monstres de cette pièce
 $placeMonsters = $lieu ? $lieu->getVisibleMonsters() : [];
 
 // Récupérer les positions des pions
 $tokenPositions = $lieu ? $lieu->getTokenPositions() : [];
 
-// Récupérer les objets du lieu (seulement ceux non attribués pour l'affichage normal)
+// Récupérer les objets de la pièce (seulement ceux non attribués pour l'affichage normal)
 $placeObjects = $lieu ? $lieu->getVisibleObjects() : [];
 
 // Récupérer les positions des objets depuis items (seulement les non attribués)
@@ -216,13 +216,13 @@ foreach ($placeObjects as $object) {
     ];
 }
 
-// Récupérer TOUS les objets du lieu (y compris ceux attribués) pour le MJ
+// Récupérer TOUS les objets de la pièce (y compris ceux attribués) pour le MJ
 $allPlaceObjects = [];
 if ($isOwnerDM && $lieu) {
     $allPlaceObjects = $lieu->getAllObjects();
 }
 
-// Récupérer les accès du lieu
+// Récupérer les accès de la pièce
 $placeAccesses = [];
 if ($lieu) {
     require_once 'classes/Access.php';
@@ -268,7 +268,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         }
     }
     
-    // Ajouter un joueur au lieu
+    // Ajouter un joueur à la pièce
     if (isset($_POST['action']) && $_POST['action'] === 'add_player' && isset($_POST['player_id'])) {
         $player_id = (int)$_POST['player_id'];
         $character_id = !empty($_POST['character_id']) ? (int)$_POST['character_id'] : null;
@@ -293,7 +293,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         }
     }
     
-    // Exclure un joueur du lieu
+    // Exclure un joueur de la pièce
     if (isset($_POST['action']) && $_POST['action'] === 'remove_player' && isset($_POST['player_id'])) {
         $player_id = (int)$_POST['player_id'];
         $result = $lieu->removePlayer($player_id);
@@ -306,7 +306,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         }
     }
     
-    // Exclure un PNJ du lieu
+    // Exclure un PNJ de la pièce
     if (isset($_POST['action']) && $_POST['action'] === 'remove_npc' && isset($_POST['npc_name'])) {
         $npc_name = $_POST['npc_name'];
         $result = $lieu->removeNpc($npc_name);
@@ -338,7 +338,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         }
     }
     
-    // Retirer un monstre du lieu
+    // Retirer un monstre de la pièce
     if (isset($_POST['action']) && $_POST['action'] === 'remove_monster' && isset($_POST['npc_id'])) {
         $npc_id = (int)$_POST['npc_id'];
         $result = $lieu->removeMonster($npc_id);
@@ -411,14 +411,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         }
     }
     
-    // Mettre à jour le nom du lieu
+    // Mettre à jour le nom de la pièce
     if (isset($_POST['action']) && $_POST['action'] === 'update_title') {
         $new_title = trim($_POST['scene_title'] ?? '');
         
         if ($new_title === '') {
-            $error_message = "Le nom du lieu ne peut pas être vide.";
+            $error_message = "Le nom de la pièce ne peut pas être vide.";
         } else {
-            // Vérifier que le lieu existe et appartient à la bonne campagne
+            // Vérifier que la pièce existe et appartient à la bonne campagne
             $campaign = Campaign::findById($place['campaign_id']);
             $associatedPlaces = $campaign ? $campaign->getAssociatedPlaces() : [];
             $current_scene = null;
@@ -433,15 +433,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
             }
             
             if (!$current_scene) {
-                $error_message = "Lieu introuvable ou accès refusé.";
+                $error_message = "Pièce introuvable ou accès refusé.";
             } else {
                 $result = $lieu->updateTitle($new_title);
                 
                 if ($result['success']) {
                     $success_message = $result['message'];
                     
-                    // Recharger les données du lieu
-                    $lieu = Lieu::findById($place_id);
+                    // Recharger les données de la pièce
+                    $lieu = Room::findById($place_id);
                     if ($lieu) {
                         $place = $lieu->toArray();
                         $campaigns = $lieu->getCampaigns();
@@ -457,7 +457,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                     }
                     
                     if (!$place) {
-                        $error_message = "Erreur lors du rechargement des données du lieu.";
+                        $error_message = "Erreur lors du rechargement des données de la pièce.";
                     }
                 } else {
                     $error_message = $result['message'];
@@ -466,7 +466,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         }
     }
     
-    // Mettre à jour le plan du lieu
+    // Mettre à jour le plan de la pièce
     if (isset($_POST['action']) && $_POST['action'] === 'update_map') {
         $notes = trim($_POST['notes'] ?? '');
         
@@ -542,7 +542,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
             if ($result['success']) {
                 $success_message = $result['message'];
                 
-                // Recharger les données du lieu
+                // Recharger les données de la pièce
                 $place = $lieu->toArray();
                 $campaigns = $lieu->getCampaigns();
                 if (!empty($campaigns)) {
@@ -560,16 +560,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         }
     }
     
-    // Éditer le lieu (titre, description, notes)
+    // Éditer la pièce (titre, description, notes)
     if (isset($_POST['action']) && $_POST['action'] === 'edit_scene') {
         if (!$canEdit) {
-            $error_message = "Vous n'avez pas les droits pour éditer ce lieu.";
+            $error_message = "Vous n'avez pas les droits pour éditer cette pièce.";
         } else {
             $title = trim($_POST['scene_title'] ?? '');
             $notes = trim($_POST['scene_notes'] ?? '');
             
             if ($title === '') {
-                $error_message = "Le titre du lieu est obligatoire.";
+                $error_message = "Le titre de la pièce est obligatoire.";
             } else {
                 $country_id = isset($_POST['country_id']) && $_POST['country_id'] ? (int)$_POST['country_id'] : null;
                 $region_id = isset($_POST['region_id']) && $_POST['region_id'] ? (int)$_POST['region_id'] : null;
@@ -578,7 +578,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                 if ($result['success']) {
                     $success_message = $result['message'];
                     
-                    // Recharger les données du lieu
+                    // Recharger les données de la pièce
                     $place = $lieu->toArray();
                     $campaigns = $lieu->getCampaigns();
                     if (!empty($campaigns)) {
@@ -611,7 +611,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
             $target_id = (int)$target_parts[1];
             
             // Récupérer les informations de l'objet magique depuis la base de données
-            $item_info = Lieu::getMagicalItemInfoByCsvId($item_id);
+            $item_info = Room::getMagicalItemInfoByCsvId($item_id);
             
             if (!$item_info) {
                 $error_message = "Objet magique introuvable.";
@@ -769,7 +769,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
             $target_id = (int)$target_parts[1];
             
             // Récupérer les informations du poison depuis la base de données
-            $poison_info = Lieu::getPoisonInfoByCsvId($poison_id);
+            $poison_info = Room::getPoisonInfoByCsvId($poison_id);
             
             if (!$poison_info) {
                 $error_message = "Poison introuvable.";
@@ -913,7 +913,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
         }
     }
     
-    // Gestion des objets du lieu
+    // Gestion des objets de la pièce
     if (isset($_POST['action']) && $_POST['action'] === 'add_object') {
         $object_name = sanitizeInput($_POST['object_name'] ?? '');
         $object_description = sanitizeInput($_POST['object_description'] ?? '');
@@ -959,7 +959,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
             if (!empty($selected_item) && in_array($object_type, ['poison', 'magical_item', 'weapon', 'armor'])) {
                 switch ($object_type) {
                     case 'poison':
-                        $item = Lieu::getPoisonInfo($selected_item);
+                        $item = Room::getPoisonInfo($selected_item);
                         if ($item) {
                             $item_id = $item['id'];
                             $item_name = $item['nom'];
@@ -972,7 +972,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         break;
                         
                     case 'magical_item':
-                        $item = Lieu::getMagicalItemInfo($selected_item);
+                        $item = Room::getMagicalItemInfo($selected_item);
                         if ($item) {
                             $item_id = $item['id'];
                             $item_name = $item['nom'];
@@ -984,7 +984,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         break;
                         
                     case 'weapon':
-                        $item = Lieu::getWeaponInfo($selected_item);
+                        $item = Room::getWeaponInfo($selected_item);
                         if ($item) {
                             $item_id = $item['id'];
                             $item_name = $item['nom'];
@@ -996,7 +996,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         break;
                         
                     case 'armor':
-                        $item = Lieu::getArmorInfo($selected_item);
+                        $item = Room::getArmorInfo($selected_item);
                         if ($item) {
                             $item_id = $item['id'];
                             $item_name = $item['nom'];
@@ -1036,7 +1036,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
             
             $item = Item::create($itemData);
             
-            $success_message = "Objet '$object_name' ajouté au lieu.";
+            $success_message = "Objet '$object_name' ajouté à la pièce.";
             
             // Recharger les objets
             $items = Item::findByPlaceId($place_id);
@@ -1073,7 +1073,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                 $item = Item::findById($object_id);
                 if ($item && $item->getPlaceId() == $place_id) {
                     if ($item->delete()) {
-                        $success_message = "Objet supprimé du lieu.";
+                        $success_message = "Objet supprimé de la pièce.";
                         
                         // Recharger les objets
                         $placeObjects = $lieu->reloadAllObjects();
@@ -1161,15 +1161,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isOwnerDM) {
                         // Vérifier que le propriétaire existe
                         if ($owner_type === 'player') {
                             if (!$lieu->isPlayerPresent($owner_id)) {
-                                $error_message = "Joueur non trouvé dans ce lieu.";
+                                $error_message = "Joueur non trouvé dans cette pièce.";
                             }
                         } elseif ($owner_type === 'npc') {
                             if (!$lieu->npcExists($owner_id)) {
-                                $error_message = "PNJ non trouvé dans ce lieu.";
+                                $error_message = "PNJ non trouvé dans cette pièce.";
                             }
                         } elseif ($owner_type === 'monster') {
                             if (!$lieu->monsterExists($owner_id)) {
-                                $error_message = "Monstre non trouvé dans ce lieu.";
+                                $error_message = "Monstre non trouvé dans cette pièce.";
                             }
                         }
                     }
@@ -1300,7 +1300,7 @@ if ($isOwnerDM) {
     $dmCharacters = Character::findSimpleByUserId($dm_id);
 }
 
-// Récupérer les autres lieux de la campagne pour navigation
+// Récupérer les autres pièces de la campagne pour navigation
 if (hasCampaignId($place)) {
     $campaign = Campaign::findById($place['campaign_id']);
     $associatedPlaces = $campaign ? $campaign->getAssociatedPlaces() : [];
@@ -1338,7 +1338,7 @@ foreach ($allScenes as $s) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lieu: <?php echo htmlspecialchars($place['title']); ?> - JDR 4 MJ</title>
+    <title>Pièce: <?php echo htmlspecialchars($place['title']); ?> - JDR 4 MJ</title>
     <link rel="icon" type="image/png" href="images/logo.png">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -1645,7 +1645,7 @@ foreach ($allScenes as $s) {
     <?php if (!empty($error_message)) echo displayMessage($error_message, 'error'); ?>
     
     <?php
-    // Vérifier si le joueur connecté est présent dans ce lieu
+    // Vérifier si le joueur connecté est présent dans cette pièce
     $currentPlayer = null;
     foreach ($placePlayers as $player) {
         if ($player['player_id'] == $_SESSION['user_id']) {
@@ -1661,7 +1661,7 @@ foreach ($allScenes as $s) {
             <div class="d-flex align-items-center">
                 <i class="fas fa-user-circle me-2"></i>
                 <div>
-                    <strong>Vous êtes présent dans ce lieu</strong>
+                    <strong>Vous êtes présent dans cette pièce</strong>
                     <br>
                     <small>Personnage: <?php echo htmlspecialchars($currentPlayer['character_name']); ?></small>
                 </div>
@@ -1702,7 +1702,7 @@ foreach ($allScenes as $s) {
                             <i class="fas fa-edit me-1"></i>Modifier le nom
                         </button>
                         <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#editSceneModal">
-                            <i class="fas fa-edit me-1"></i>Éditer le lieu
+                            <i class="fas fa-edit me-1"></i>Éditer la pièce
                         </button>
                     </div>
                 </div>
@@ -1859,7 +1859,7 @@ foreach ($allScenes as $s) {
         <div class="col-lg-8">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <span>Plan du lieu</span>
+                    <span>Plan de la pièce</span>
                     <?php if ($isOwnerDM): ?>
                         <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#editMapForm">
                             <i class="fas fa-edit me-1"></i>Modifier le plan
@@ -1870,7 +1870,7 @@ foreach ($allScenes as $s) {
                     <?php if ($isOwnerDM): ?>
                         <div class="collapse mb-3" id="editMapForm">
                             <div class="card card-body">
-                                <h6>Modifier le plan du lieu</h6>
+                                <h6>Modifier le plan de la pièce</h6>
                                 <form method="POST" enctype="multipart/form-data" class="row g-3">
                                     <input type="hidden" name="action" value="update_map">
                                     <div class="col-12">
@@ -1880,7 +1880,7 @@ foreach ($allScenes as $s) {
                                     </div>
                                     <div class="col-12">
                                         <label class="form-label">Notes du MJ</label>
-                                        <textarea class="form-control" name="notes" rows="3" placeholder="Notes internes sur cette lieu..."><?php echo htmlspecialchars($place['notes'] ?? ''); ?></textarea>
+                                        <textarea class="form-control" name="notes" rows="3" placeholder="Notes internes sur cette pièce..."><?php echo htmlspecialchars($place['notes'] ?? ''); ?></textarea>
                                     </div>
                                     <div class="col-12">
                                         <button type="submit" class="btn btn-primary">
@@ -1896,7 +1896,7 @@ foreach ($allScenes as $s) {
                         <div class="position-relative">
                             <!-- Zone du plan avec pions -->
                             <div id="mapContainer" class="position-relative" style="display: inline-block;">
-                                <img id="mapImage" src="<?php echo htmlspecialchars($place['map_url']); ?>" class="img-fluid rounded" alt="Plan du lieu" style="max-height: 500px; cursor: crosshair;">
+                                <img id="mapImage" src="<?php echo htmlspecialchars($place['map_url']); ?>" class="img-fluid rounded" alt="Plan de la pièce" style="max-height: 500px; cursor: crosshair;">
                                 
                                 <!-- Zone des pions sur le côté -->
                                 <div id="tokenSidebar" class="position-absolute" style="right: -120px; top: 0; width: 100px; height: 500px; border: 2px dashed #ccc; border-radius: 8px; background: rgba(248, 249, 250, 0.8); padding: 10px; overflow-y: auto;">
@@ -2013,7 +2013,7 @@ foreach ($allScenes as $s) {
                                     <p class="small">Cliquez sur "Modifier le plan" pour téléverser un nouveau plan.</p>
                                 <?php endif; ?>
                             <?php else: ?>
-                                <p>Aucun plan disponible pour ce lieu.</p>
+                                <p>Aucun plan disponible pour cette pièce.</p>
                                 <?php if ($isOwnerDM): ?>
                                     <p class="small">Cliquez sur "Modifier le plan" pour ajouter un plan.</p>
                                 <?php endif; ?>
@@ -2056,7 +2056,7 @@ foreach ($allScenes as $s) {
                                             <option value="">Choisir un joueur...</option>
                                             <?php foreach ($campaignMembers as $member): ?>
                                                 <?php
-                                                // Vérifier si le joueur est déjà dans le lieu
+                                                // Vérifier si le joueur est déjà dans la pièce
                                                 $alreadyPresent = false;
                                                 foreach ($placePlayers as $player) {
                                                     if ($player['player_id'] == $member['user_id']) {
@@ -2078,7 +2078,7 @@ foreach ($allScenes as $s) {
                                     </div>
                                     <div class="col-12">
                                         <button type="submit" class="btn btn-primary">
-                                            <i class="fas fa-user-plus me-1"></i>Ajouter au lieu
+                                            <i class="fas fa-user-plus me-1"></i>Ajouter à la pièce
                                         </button>
                                     </div>
                                 </form>
@@ -2087,7 +2087,7 @@ foreach ($allScenes as $s) {
                     <?php endif; ?>
                     
                     <?php if (empty($placePlayers)): ?>
-                        <p class="text-muted">Aucun joueur présent dans cette lieu.</p>
+                        <p class="text-muted">Aucun joueur présent dans cette pièce.</p>
                     <?php else: ?>
                         <ul class="list-group list-group-flush">
                             <?php foreach ($placePlayers as $player): ?>
@@ -2156,10 +2156,10 @@ foreach ($allScenes as $s) {
                                         <?php endif; ?>
                                     </div>
                                     <?php if ($isOwnerDM): ?>
-                                        <form method="POST" class="d-inline" onsubmit="return confirm('Retirer <?php echo htmlspecialchars($player['username']); ?> de cette lieu ?');">
+                                        <form method="POST" class="d-inline" onsubmit="return confirm('Retirer <?php echo htmlspecialchars($player['username']); ?> de cette pièce ?');">
                                             <input type="hidden" name="action" value="remove_player">
                                             <input type="hidden" name="player_id" value="<?php echo (int)$player['player_id']; ?>">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Retirer du lieu">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Retirer de la pièce">
                                                 <i class="fas fa-user-minus"></i>
                                             </button>
                                         </form>
@@ -2219,7 +2219,7 @@ foreach ($allScenes as $s) {
                     <?php endif; ?>
                     
                     <?php if (empty($placeNpcs)): ?>
-                        <p class="text-muted">Aucun PNJ dans cette lieu.</p>
+                        <p class="text-muted">Aucun PNJ dans cette pièce.</p>
                     <?php else: ?>
                         <ul class="list-group list-group-flush">
                             <?php foreach ($placeNpcs as $npc): ?>
@@ -2305,10 +2305,10 @@ foreach ($allScenes as $s) {
                                                         <i class="fas <?php echo $npc['is_visible'] ? 'fa-eye-slash' : 'fa-eye'; ?>"></i>
                                                     </button>
                                                 </form>
-                                                <form method="POST" class="d-inline" onsubmit="return confirm('Retirer <?php echo htmlspecialchars($npc['name']); ?> de cette lieu ?');">
+                                                <form method="POST" class="d-inline" onsubmit="return confirm('Retirer <?php echo htmlspecialchars($npc['name']); ?> de cette pièce ?');">
                                                     <input type="hidden" name="action" value="remove_npc">
                                                     <input type="hidden" name="npc_name" value="<?php echo htmlspecialchars($npc['name']); ?>">
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Retirer du lieu">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Retirer de la pièce">
                                                         <i class="fas fa-user-minus"></i>
                                                     </button>
                                                 </form>
@@ -2333,7 +2333,7 @@ foreach ($allScenes as $s) {
                 </div>
                 <div class="card-body">
                     <?php if (empty($placeMonsters)): ?>
-                        <p class="text-muted">Aucun monstre dans cette lieu.</p>
+                        <p class="text-muted">Aucun monstre dans cette pièce.</p>
                     <?php else: ?>
                         <ul class="list-group list-group-flush">
                             <?php foreach ($placeMonsters as $monster): ?>
@@ -2421,10 +2421,10 @@ foreach ($allScenes as $s) {
                                                         <i class="fas <?php echo $monster['is_visible'] ? 'fa-eye-slash' : 'fa-eye'; ?>"></i>
                                                     </button>
                                                 </form>
-                                                <form method="POST" class="d-inline" onsubmit="return confirm('Retirer <?php echo htmlspecialchars($monster['name']); ?> de cette lieu ?');">
+                                                <form method="POST" class="d-inline" onsubmit="return confirm('Retirer <?php echo htmlspecialchars($monster['name']); ?> de cette pièce ?');">
                                                     <input type="hidden" name="action" value="remove_monster">
                                                     <input type="hidden" name="npc_id" value="<?php echo (int)$monster['id']; ?>">
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Retirer du lieu">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Retirer de la pièce">
                                                         <i class="fas fa-user-minus"></i>
                                                     </button>
                                                 </form>
@@ -2438,10 +2438,10 @@ foreach ($allScenes as $s) {
                 </div>
             </div>
             
-            <!-- Section Objets du lieu -->
+            <!-- Section Objets de la pièce -->
             <div class="card mt-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <span>Objets du lieu</span>
+                    <span>Objets de la pièce</span>
                     <?php if ($isOwnerDM): ?>
                         <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#addObjectModal">
                             <i class="fas fa-plus me-1"></i>Ajouter objet
@@ -2452,7 +2452,7 @@ foreach ($allScenes as $s) {
                     <?php if (empty($placeObjects)): ?>
                         <div class="text-center py-3">
                             <i class="fas fa-box-open fa-2x text-muted mb-2"></i>
-                            <p class="text-muted mb-0">Aucun objet dans ce lieu</p>
+                            <p class="text-muted mb-0">Aucun objet dans cette pièce</p>
                         </div>
                     <?php else: ?>
                      <ul class="list-group list-group-flush">
@@ -2687,7 +2687,7 @@ foreach ($allScenes as $s) {
                                          <button type="button" class="btn btn-sm btn-outline-info" title="Attribuer l'objet" onclick="showAssignObjectModal(<?php echo $object['id']; ?>, '<?php echo htmlspecialchars($object['display_name']); ?>', '<?php echo $object['owner_type']; ?>', <?php echo $object['owner_id'] ?: 'null'; ?>)">
                                              <i class="fas fa-user-plus"></i>
                                          </button>
-                                         <form method="POST" class="d-inline" onsubmit="return confirm('Supprimer <?php echo htmlspecialchars($object['display_name']); ?> de ce lieu ?');">
+                                         <form method="POST" class="d-inline" onsubmit="return confirm('Supprimer <?php echo htmlspecialchars($object['display_name']); ?> de cette pièce ?');">
                                              <input type="hidden" name="action" value="remove_object">
                                              <input type="hidden" name="object_id" value="<?php echo (int)$object['id']; ?>">
                                              <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer l'objet">
@@ -2703,7 +2703,7 @@ foreach ($allScenes as $s) {
                 </div>
             </div>
             
-            <!-- Section Accès du lieu -->
+            <!-- Section Accès de la pièce -->
             <div class="card mt-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <span><i class="fas fa-door-open me-2"></i>Accès disponibles</span>
@@ -2717,7 +2717,7 @@ foreach ($allScenes as $s) {
                     <?php if (empty($placeAccesses)): ?>
                         <div class="text-center py-3">
                             <i class="fas fa-door-closed fa-2x text-muted mb-2"></i>
-                            <p class="text-muted mb-0">Aucun accès configuré pour ce lieu</p>
+                            <p class="text-muted mb-0">Aucun accès configuré pour cette pièce</p>
                             <?php if ($canEdit): ?>
                                 <button class="btn btn-sm btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#createAccessModal">
                                     <i class="fas fa-plus me-1"></i>Créer le premier accès
@@ -2777,7 +2777,7 @@ foreach ($allScenes as $s) {
                                             <?php if ($canEdit): ?>
                                                 <div class="mt-3 d-flex gap-2">
                                                     <a href="view_place.php?id=<?= $access->to_place_id ?>" class="btn btn-sm btn-outline-primary">
-                                                        <i class="fas fa-external-link-alt me-1"></i>Aller vers ce lieu
+                                                        <i class="fas fa-external-link-alt me-1"></i>Aller vers cette pièce
                                                     </a>
                                                     <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#editAccessModal"
                                                             data-access-id="<?= $access->id ?>"
@@ -2911,7 +2911,7 @@ foreach ($allScenes as $s) {
                 
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle me-2"></i>
-                    <strong>Astuce :</strong> Cliquez sur le bouton "Attribuer" à côté d'un objet pour l'assigner à un PNJ ou un personnage joueur de cette lieu.
+                    <strong>Astuce :</strong> Cliquez sur le bouton "Attribuer" à côté d'un objet pour l'assigner à un PNJ ou un personnage joueur de cette pièce.
                 </div>
             </div>
             <div class="modal-footer">
@@ -4122,7 +4122,7 @@ foreach ($allScenes as $s) {
         loadDiceHistory();
         
         // Mettre à jour l'historique des jets automatiquement toutes les 3 secondes
-        // Seulement si une campagne est associée au lieu
+        // Seulement si une campagne est associée à la pièce
         if (currentCampaignId && currentCampaignId !== 0) {
             diceHistoryInterval = setInterval(loadDiceHistory, 3000);
         }
@@ -4314,13 +4314,13 @@ foreach ($allScenes as $s) {
 
     // Fonction pour charger l'historique des jets de dés
     function loadDiceHistory() {
-        // Vérifier si une campagne est associée au lieu
+        // Vérifier si une campagne est associée à la pièce
         if (!currentCampaignId || currentCampaignId === 0) {
-            console.log('Aucune campagne associée à ce lieu - historique des dés non disponible');
+            console.log('Aucune campagne associée à cette pièce - historique des dés non disponible');
             document.getElementById('dice-history').innerHTML = `
                 <div class="text-muted text-center py-3">
                     <i class="fas fa-info-circle fa-lg mb-2"></i>
-                    <p class="mb-0 small">Aucune campagne associée à ce lieu</p>
+                    <p class="mb-0 small">Aucune campagne associée à cette pièce</p>
                 </div>
             `;
             return;
@@ -4450,10 +4450,10 @@ foreach ($allScenes as $s) {
 
     // Fonction pour sauvegarder un jet de dés
     function saveDiceRoll(results, total, maxResult, minResult) {
-        // Vérifier si une campagne est associée au lieu
+        // Vérifier si une campagne est associée à la pièce
         if (!currentCampaignId || currentCampaignId === 0) {
-            console.error('Impossible de sauvegarder le jet de dés : aucune campagne associée à ce lieu');
-            alert('Impossible de sauvegarder le jet de dés : aucune campagne associée à ce lieu');
+            console.error('Impossible de sauvegarder le jet de dés : aucune campagne associée à cette pièce');
+            alert('Impossible de sauvegarder le jet de dés : aucune campagne associée à cette pièce');
             return;
         }
         
@@ -4617,14 +4617,14 @@ foreach ($allScenes as $s) {
     }
     </script>
 
-<!-- Modal pour éditer le lieu -->
+<!-- Modal pour éditer la pièce -->
 <?php if ($canEdit): ?>
 <div class="modal fade" id="editSceneModal" tabindex="-1" aria-labelledby="editSceneModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="editSceneModalLabel">
-                    <i class="fas fa-edit me-2"></i>Éditer le lieu
+                    <i class="fas fa-edit me-2"></i>Éditer la pièce
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -4633,7 +4633,7 @@ foreach ($allScenes as $s) {
                     <input type="hidden" name="action" value="edit_scene">
                     
                     <div class="mb-3">
-                        <label for="editSceneTitle" class="form-label">Titre du lieu *</label>
+                        <label for="editSceneTitle" class="form-label">Titre de la pièce *</label>
                         <input type="text" class="form-control" id="editSceneTitle" name="scene_title" 
                                value="<?php echo htmlspecialchars($place['title']); ?>" required maxlength="255">
                     </div>
@@ -4906,9 +4906,9 @@ foreach ($allScenes as $s) {
                                </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="createAccessToPlace" class="form-label">Vers quel lieu *</label>
+                                <label for="createAccessToPlace" class="form-label">Vers quelle pièce *</label>
                                 <select class="form-select" id="createAccessToPlace" name="to_place_id" required>
-                                    <option value="">Sélectionner un lieu</option>
+                                    <option value="">Sélectionner une pièce</option>
                                 </select>
                             </div>
                         </div>
@@ -5006,9 +5006,9 @@ foreach ($allScenes as $s) {
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="editAccessToPlace" class="form-label">Vers quel lieu *</label>
+                                <label for="editAccessToPlace" class="form-label">Vers quelle pièce *</label>
                                 <select class="form-select" id="editAccessToPlace" name="to_place_id" required>
-                                    <option value="">Sélectionner un lieu</option>
+                                    <option value="">Sélectionner une pièce</option>
                                     <?php foreach ($other_places as $place): ?>
                                         <option value="<?= $place['id'] ?>"><?= htmlspecialchars($place['title']) ?></option>
                                     <?php endforeach; ?>
@@ -5205,7 +5205,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!countryId) {
                 // Réinitialiser les régions
                 regionSelect.innerHTML = '<option value="">Sélectionner une région</option>';
-                loadPlacesByRegion(''); // Réinitialiser les lieux aussi
+                loadPlacesByRegion(''); // Réinitialiser les pièces aussi
                 return;
             }
             
@@ -5224,7 +5224,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             regionSelect.appendChild(option);
                         });
                         
-                        // Réinitialiser la sélection de région et lieu
+                        // Réinitialiser la sélection de région et pièce
                         regionSelect.value = '';
                         placeSelect.value = '';
                         
@@ -5238,13 +5238,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
         }
         
-        // Fonction pour charger les lieux d'une région via AJAX
+        // Fonction pour charger les pièces d'une région via AJAX
         function loadPlacesByRegion(regionId) {
-            console.log('🔄 Chargement des lieux pour la région:', regionId);
+            console.log('🔄 Chargement des pièces pour la région:', regionId);
             
             if (!regionId) {
-                // Réinitialiser les lieux
-                placeSelect.innerHTML = '<option value="">Sélectionner un lieu</option>';
+                // Réinitialiser les pièces
+                placeSelect.innerHTML = '<option value="">Sélectionner une pièce</option>';
                 return;
             }
             
@@ -5253,10 +5253,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        console.log('✅ Lieux chargés:', data.places.length);
+                        console.log('✅ Pièces chargés:', data.places.length);
                         
-                        // Vider et remplir le select des lieux
-                        placeSelect.innerHTML = '<option value="">Sélectionner un lieu</option>';
+                        // Vider et remplir le select des pièces
+                        placeSelect.innerHTML = '<option value="">Sélectionner une pièce</option>';
                         data.places.forEach(place => {
                             const option = document.createElement('option');
                             option.value = place.id;
@@ -5264,16 +5264,16 @@ document.addEventListener('DOMContentLoaded', function() {
                             placeSelect.appendChild(option);
                         });
                         
-                        // Réinitialiser la sélection de lieu
+                        // Réinitialiser la sélection de pièce
                         placeSelect.value = '';
                         
-                        console.log('🔄 Lieux mis à jour, sélection réinitialisée');
+                        console.log('🔄 Pièces mis à jour, sélection réinitialisée');
                     } else {
-                        console.error('❌ Erreur lors du chargement des lieux:', data.error);
+                        console.error('❌ Erreur lors du chargement des pièces:', data.error);
                     }
                 })
                 .catch(error => {
-                    console.error('❌ Erreur AJAX lors du chargement des lieux:', error);
+                    console.error('❌ Erreur AJAX lors du chargement des pièces:', error);
                 });
         }
         
@@ -5291,7 +5291,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const selectedRegionId = this.value;
             console.log('🏘️ Région sélectionnée:', selectedRegionId);
             
-            // Charger les lieux de la région sélectionnée
+            // Charger les pièces de la région sélectionnée
             loadPlacesByRegion(selectedRegionId);
         });
         

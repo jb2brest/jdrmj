@@ -202,7 +202,7 @@ function handleCharacterXp($character_id, $action, $amount, $new_xp) {
     switch ($action) {
         case 'update':
             if ($new_xp < 0) $new_xp = 0;
-            $final_xp = $current_xp + $new_xp; // Ajouter au lieu de remplacer
+            $final_xp = $current_xp + $new_xp; // Ajouter à la pièce de remplacer
             break;
 
         case 'add':

@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
     
-    // Vérifier que le lieu existe et appartient au MJ
+    // Vérifier que la pièce existe et appartient au MJ
     $stmt = $pdo->prepare("SELECT p.id, p.name, c.title AS campaign_title FROM places p 
                           JOIN campaigns c ON p.campaign_id = c.id 
                           WHERE p.id = ? AND c.dm_id = ?");
@@ -99,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
     
-    // Rediriger vers la lieu avec un message de succès
+    // Rediriger vers la pièce avec un message de succès
     header('Location: view_place.php?id=' . $place_id . '&success=monster_npc_created');
     exit();
 }

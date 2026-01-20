@@ -1,11 +1,11 @@
 <?php
 /**
- * API Endpoint: Récupérer les informations d'un lieu (country_id, region_id)
+ * API Endpoint: Récupérer les informations d'une pièce (country_id, region_id)
  */
 
 require_once dirname(__DIR__) . '/includes/functions.php';
 require_once dirname(__DIR__) . '/classes/init.php';
-require_once dirname(__DIR__) . '/classes/Lieu.php';
+require_once dirname(__DIR__) . '/classes/Room.php';
 
 header('Content-Type: application/json');
 header('X-Requested-With: XMLHttpRequest');
@@ -24,12 +24,12 @@ try {
     $placeId = (int)($_GET['place_id'] ?? 0);
     
     if (!$placeId) {
-        throw new Exception('ID du lieu requis');
+        throw new Exception('ID de la pièce requis');
     }
     
-    $lieu = Lieu::findById($placeId);
+    $lieu = Room::findById($placeId);
     if (!$lieu) {
-        throw new Exception('Lieu non trouvé');
+        throw new Exception('Pièce non trouvé');
     }
     
     $place = $lieu->toArray();

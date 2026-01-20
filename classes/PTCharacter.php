@@ -57,7 +57,7 @@ class PTCharacter
     public $is_equipped;
     public $equipment_locked;
     public $character_locked;
-    public $place_id; // Pour les NPCs uniquement : ID du lieu où le PNJ sera ajouté
+    public $place_id; // Pour les NPCs uniquement : ID de la pièce où le PNJ sera ajouté
     public $created_at;
     public $updated_at;
     

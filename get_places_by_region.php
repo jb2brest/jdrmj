@@ -21,6 +21,6 @@ try {
     echo json_encode($places);
 } catch (Exception $e) {
     http_response_code(500);
-    echo json_encode(['error' => 'Erreur lors de la récupération des lieux']);
+    echo json_encode(['error' => 'Erreur lors de la récupération des pièces']);
 }
 ?>

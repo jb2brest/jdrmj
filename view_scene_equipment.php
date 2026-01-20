@@ -14,7 +14,7 @@ if (!isset($_GET['id'])) {
 
 $place_id = (int)$_GET['id'];
 
-// Charger la lieu et vérifier les permissions
+// Charger la pièce et vérifier les permissions
 $stmt = $pdo->prepare("SELECT s.*, gs.title AS session_title, gs.id AS session_id, gs.dm_id, gs.campaign_id, u.username AS dm_username FROM places s JOIN game_sessions gs ON s.session_id = gs.id JOIN users u ON gs.dm_id = u.id WHERE s.id = ?");
 $stmt->execute([$place_id]);
 $scene = $stmt->fetch();
@@ -32,7 +32,7 @@ if (!$isOwnerDM) {
     exit();
 }
 
-// Récupérer les joueurs présents dans cette lieu avec leur équipement
+// Récupérer les joueurs présents dans cette pièce avec leur équipement
 $stmt = $pdo->prepare("
     SELECT sp.player_id, u.username, ch.id AS character_id, ch.name AS character_name, ch.profile_photo,
            COUNT(ce.id) as equipment_count
@@ -47,7 +47,7 @@ $stmt = $pdo->prepare("
 $stmt->execute([$place_id]);
 $scenePlayers = $stmt->fetchAll();
 
-// Récupérer les PNJ de cette lieu avec leur équipement
+// Récupérer les PNJ de cette pièce avec leur équipement
 $stmt = $pdo->prepare("
     SELECT sn.id, sn.name, sn.description, sn.npc_character_id, sn.profile_photo, c.profile_photo AS character_profile_photo,
            COUNT(ne.id) as equipment_count
@@ -61,7 +61,7 @@ $stmt = $pdo->prepare("
 $stmt->execute([$place_id]);
 $sceneNpcs = $stmt->fetchAll();
 
-// Récupérer les monstres de cette lieu avec leur équipement
+// Récupérer les monstres de cette pièce avec leur équipement
 $stmt = $pdo->prepare("
     SELECT sn.id, sn.name, sn.description, sn.monster_id, m.type, m.size, m.challenge_rating, m.hit_points, m.armor_class,
            COUNT(me.id) as equipment_count
@@ -81,7 +81,7 @@ $sceneMonsters = $stmt->fetchAll();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Équipement de la Lieu: <?php echo htmlspecialchars($scene['title']); ?> - JDR 4 MJ</title>
+    <title>Équipement de la Pièce: <?php echo htmlspecialchars($scene['title']); ?> - JDR 4 MJ</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -93,12 +93,12 @@ $sceneMonsters = $stmt->fetchAll();
             <div class="col-12">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <div>
-                        <h1><i class="fas fa-gem me-2"></i>Équipement de la Lieu</h1>
+                        <h1><i class="fas fa-gem me-2"></i>Équipement de la Pièce</h1>
                         <p class="text-muted mb-0"><?php echo htmlspecialchars($scene['title']); ?> - <?php echo htmlspecialchars($scene['session_title']); ?></p>
                     </div>
                     <div class="text-end">
                         <a href="view_place.php?id=<?php echo (int)$place_id; ?>" class="btn btn-outline-primary">
-                            <i class="fas fa-arrow-left me-1"></i>Retour à la Lieu
+                            <i class="fas fa-arrow-left me-1"></i>Retour à la Pièce
                         </a>
                     </div>
                 </div>
@@ -242,10 +242,10 @@ $sceneMonsters = $stmt->fetchAll();
                 <div class="card">
                     <div class="card-body text-center py-5">
                         <i class="fas fa-gem fa-3x text-muted mb-3"></i>
-                        <h5 class="text-muted">Aucun participant dans cette lieu</h5>
-                        <p class="text-muted">Ajoutez des joueurs, PNJ ou monstres à la lieu pour voir leur équipement.</p>
+                        <h5 class="text-muted">Aucun participant dans cette pièce</h5>
+                        <p class="text-muted">Ajoutez des joueurs, PNJ ou monstres à la pièce pour voir leur équipement.</p>
                         <a href="view_place.php?id=<?php echo (int)$place_id; ?>" class="btn btn-primary">
-                            <i class="fas fa-arrow-left me-1"></i>Retour à la Lieu
+                            <i class="fas fa-arrow-left me-1"></i>Retour à la Pièce
                         </a>
                     </div>
                 </div>

@@ -45,7 +45,7 @@ try {
     // S'assurer que $pdo est global pour que npc_functions.php puisse l'utiliser
     global $pdo;
 
-    // Récupérer le monde et le pays associés au lieu
+    // Récupérer le monde et le pays associés à la pièce
     $place_id = (int)$data['place_id'];
     $stmt = $pdo->prepare("
         SELECT p.country_id, c.world_id 
@@ -57,7 +57,7 @@ try {
     $placeInfo = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if (!$placeInfo) {
-        throw new Exception("Lieu non trouvé");
+        throw new Exception("Pièce non trouvé");
     }
     
     $country_id = $placeInfo['country_id'];

@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header("Location: npc_create_step12.php?session_id=$session_id");
             exit();
         } else {
-            $message = displayMessage("Veuillez sélectionner un monde et un lieu.", "error");
+            $message = displayMessage("Veuillez sélectionner un monde et une pièce.", "error");
         }
     } elseif ($action === 'previous') {
         header("Location: npc_create_step9.php?session_id=$session_id");
@@ -147,7 +147,7 @@ $locationData = $sessionData['step_11'] ?? [];
         <!-- Indicateur d'étape -->
         <div class="step-indicator text-center">
             <h2><i class="fas fa-map-marker-alt"></i> Positionnement dans le Monde</h2>
-            <p class="mb-0">Étape 10 sur 11 - Choisissez le lieu d'affectation initiale de votre PNJ</p>
+            <p class="mb-0">Étape 10 sur 11 - Choisissez la pièce d'affectation initiale de votre PNJ</p>
         </div>
 
         <?php if ($message): ?>
@@ -158,7 +158,7 @@ $locationData = $sessionData['step_11'] ?? [];
 
         <!-- Formulaire de positionnement -->
         <div class="form-section">
-            <h3 class="mb-4"><i class="fas fa-globe"></i> Sélection du Lieu d'Affectation</h3>
+            <h3 class="mb-4"><i class="fas fa-globe"></i> Sélection du Pièce d'Affectation</h3>
             
             <form method="POST" id="locationForm">
                 <input type="hidden" name="action" value="next">
@@ -199,16 +199,16 @@ $locationData = $sessionData['step_11'] ?? [];
                     </select>
                 </div>
 
-                <!-- Sélection du Lieu -->
+                <!-- Sélection du Pièce -->
                 <div class="location-selector">
                     <label for="place_id" class="form-label fw-bold">
-                        <i class="fas fa-map-marker-alt"></i> Lieu d'Affectation
+                        <i class="fas fa-map-marker-alt"></i> Pièce d'Affectation
                     </label>
                     <select class="form-select" id="place_id" name="place_id" required>
                         <option value="">Sélectionnez d'abord une région</option>
                     </select>
                     <div class="form-text">
-                        <i class="fas fa-info-circle"></i> Ce lieu sera l'emplacement initial de votre PNJ dans le monde.
+                        <i class="fas fa-info-circle"></i> Cette pièce sera l'emplacement initial de votre PNJ dans le monde.
                     </div>
                 </div>
 
@@ -280,7 +280,7 @@ $locationData = $sessionData['step_11'] ?? [];
             }
         }
 
-        // Charger les lieux quand une région est sélectionnée
+        // Charger les pièces quand une région est sélectionnée
         function loadPlaces() {
             const regionId = document.getElementById('region_id').value;
             const placeSelect = document.getElementById('place_id');
@@ -292,7 +292,7 @@ $locationData = $sessionData['step_11'] ?? [];
                 fetch(`get_places_by_region.php?region_id=${regionId}`)
                     .then(response => response.json())
                     .then(data => {
-                        placeSelect.innerHTML = '<option value="">Sélectionnez un lieu</option>';
+                        placeSelect.innerHTML = '<option value="">Sélectionnez une pièce</option>';
                         data.forEach(place => {
                             const option = document.createElement('option');
                             option.value = place.id;

@@ -423,7 +423,7 @@ class Monde
     }
     
     /**
-     * Récupère tous les PNJs du monde (via la hiérarchie pays → régions → lieux)
+     * Récupère tous les PNJs du monde (via la hiérarchie pays → régions → pièces)
      * 
      * @return array Tableau des PNJs avec leurs informations
      */
@@ -470,7 +470,7 @@ class Monde
     }
     
     /**
-     * Récupère tous les monstres du monde (via la hiérarchie pays → régions → lieux)
+     * Récupère tous les monstres du monde (via la hiérarchie pays → régions → pièces)
      * 
      * @return array Tableau des monstres avec leurs informations
      */
@@ -656,7 +656,7 @@ class Monde
      * 
      * @param int $user_id ID de l'utilisateur
      * @param int|null $campaign_id ID de la campagne (optionnel)
-     * @return array|null Informations sur le lieu où se trouve le personnage
+     * @return array|null Informations sur la pièce où se trouve le personnage
      */
     public static function localizeCharacter(int $user_id, ?int $campaign_id = null)
     {
@@ -683,11 +683,11 @@ class Monde
                     );
                     
                     if ($membership) {
-                        // Le joueur est membre mais pas assigné à un lieu
+                        // Le joueur est membre mais pas assigné à une pièce
                         return [
                             'status' => 'member_no_place',
                             'campaign_id' => $campaign_id,
-                            'message' => 'Vous êtes membre de cette campagne mais n\'êtes pas encore assigné à un lieu spécifique.'
+                            'message' => 'Vous êtes membre de cette campagne mais n\'êtes pas encore assigné à une pièce spécifique.'
                         ];
                     } else {
                         // Le joueur n'est pas membre de cette campagne
@@ -706,7 +706,7 @@ class Monde
                 ];
                 
             } else {
-                // Comportement original : chercher n'importe quel lieu où se trouve le joueur
+                // Comportement original : chercher n'importe quelle pièce où se trouve le joueur
                 $place = Database::fetch("
                     SELECT p.*, c.title as campaign_title, c.dm_id, c.id as campaign_id
                     FROM places p 
@@ -725,10 +725,10 @@ class Monde
                     );
                     
                     if ($membership) {
-                        // Le joueur est membre mais pas assigné à un lieu
+                        // Le joueur est membre mais pas assigné à une pièce
                         return [
                             'status' => 'member_no_place_any',
-                            'message' => 'Vous êtes membre d\'une campagne mais n\'êtes pas encore assigné à un lieu spécifique.'
+                            'message' => 'Vous êtes membre d\'une campagne mais n\'êtes pas encore assigné à une pièce spécifique.'
                         ];
                     } else {
                         // Le joueur n'est membre d'aucune campagne

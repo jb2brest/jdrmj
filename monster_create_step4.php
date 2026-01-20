@@ -58,7 +58,7 @@ if ($quantity <= 0 || $quantity > 100) {
             exit();
         }
         
-        // Vérifier le lieu
+        // Vérifier la pièce
         $stmt = $pdo->prepare("SELECT id, title FROM places WHERE id = ? AND country_id = ?");
         $stmt->execute([$place_id, $country_id]);
         $place = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -273,7 +273,7 @@ $current_page = "manage_npcs";
                                     <i class="fas fa-check"></i>
                                 </div>
                                 <h6>Localisation</h6>
-                                <small class="text-muted">Pays, région, lieu</small>
+                                <small class="text-muted">Pays, région, pièce</small>
                             </div>
                             <div class="col-md-3 text-center">
                                 <div class="border rounded-circle d-inline-flex align-items-center justify-content-center mb-2" 

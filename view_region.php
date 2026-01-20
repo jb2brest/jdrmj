@@ -9,6 +9,8 @@ $current_page = "manage_worlds"; // Pour garder le bouton "Mondes" actif dans la
 requireLogin();
 User::requireDMOrAdmin();
 
+require_once 'classes/Location.php';
+
 $region_id = (int)($_GET['id'] ?? 0);
 if ($region_id === 0) {
     header('Location: manage_worlds.php');
@@ -43,7 +45,7 @@ function truncateText($text, $length = 100) {
     return substr($text, 0, $length) . '...';
 }
 
-// Fonction helper pour l'upload d'image de lieu
+// Fonction helper pour l'upload d'image de pièce
 function uploadPlaceImage($file) {
     // Vérifier qu'un fichier a été uploadé
     if (!isset($file) || $file['error'] !== UPLOAD_ERR_OK) {
@@ -90,13 +92,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     
     switch ($action) {
+        case 'create_location':
+            $name = sanitizeInput($_POST['name'] ?? '');
+            $description = sanitizeInput($_POST['description'] ?? '');
+            
+            if (empty($name)) {
+                $error_message = "Le nom du lieu est requis.";
+            } else {
+                try {
+                    $location = Location::create($name, $region_id, $description);
+                    if ($location) {
+                        $success_message = "Lieu '$name' créé avec succès.";
+                    } else {
+                        $error_message = "Erreur lors de la création du lieu.";
+                    }
+                } catch (Exception $e) {
+                    $error_message = $e->getMessage();
+                }
+            }
+            break;
+
         case 'create_place':
             $title = sanitizeInput($_POST['title'] ?? '');
             $notes = sanitizeInput($_POST['notes'] ?? '');
+            $location_id = (int)($_POST['location_id'] ?? 0);
             $map_url = '';
             
             if (empty($title)) {
-                $error_message = "Le nom du lieu est requis.";
+                $error_message = "Le nom de la pièce est requis.";
             } else {
                 // Gérer l'upload de la carte si un fichier est fourni
                 if (isset($_FILES['map_image']) && $_FILES['map_image']['error'] === UPLOAD_ERR_OK) {
@@ -110,15 +133,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 if (empty($error_message)) {
                     try {
-                        $lieu = new Lieu(null, [
+                        $lieu = new Room(null, [
                             'title' => $title,
                             'notes' => $notes,
                             'map_url' => $map_url,
                             'region_id' => $region_id,
+                            'location_id' => !empty($location_id) ? $location_id : null,
                             'country_id' => $region->getCountryId()
                         ]);
                         $lieu->save();
-                        $success_message = "Lieu '$title' créé avec succès.";
+                        $success_message = "Pièce '$title' créé avec succès.";
                     } catch (Exception $e) {
                         $error_message = $e->getMessage();
                     }
@@ -130,14 +154,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $place_id = (int)($_POST['place_id'] ?? 0);
             $title = sanitizeInput($_POST['title'] ?? '');
             $notes = sanitizeInput($_POST['notes'] ?? '');
+            $location_id = (int)($_POST['location_id'] ?? 0); // Nouveau champ
             
             if (empty($title)) {
-                $error_message = "Le nom du lieu est requis.";
+                $error_message = "Le nom de la pièce est requis.";
             } else {
-                // Récupérer le lieu via la classe Lieu
-                $lieu = Lieu::findById($place_id);
+                // Récupérer la pièce via la classe Pièce
+                $lieu = Room::findById($place_id);
                 if (!$lieu || $lieu->getRegionId() != $region_id) {
-                    $error_message = "Lieu non trouvé.";
+                    $error_message = "Pièce non trouvé.";
                 } else {
                     $map_url = $lieu->getMapUrl() ?? '';
                 
@@ -160,8 +185,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $lieu->setTitle($title);
                             $lieu->setNotes($notes);
                             $lieu->setMapUrl($map_url);
+                            $lieu->location_id = $location_id ? $location_id : null; // Mise à jour location
                             $lieu->save();
-                            $success_message = "Lieu '$title' mis à jour avec succès.";
+                            $success_message = "Pièce '$title' mis à jour avec succès.";
                         } catch (Exception $e) {
                             $error_message = $e->getMessage();
                         }
@@ -174,12 +200,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $place_id = (int)($_POST['place_id'] ?? 0);
             
             try {
-                $lieu = Lieu::findById($place_id);
+                $lieu = Room::findById($place_id);
                 if ($lieu && $lieu->getRegionId() == $region_id) {
                     $lieu->delete();
-                    $success_message = "Lieu supprimé avec succès.";
+                    $success_message = "Pièce supprimé avec succès.";
                 } else {
-                    $error_message = "Lieu non trouvé.";
+                    $error_message = "Pièce non trouvé.";
                 }
             } catch (Exception $e) {
                 $error_message = $e->getMessage();
@@ -188,10 +214,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Récupérer les lieux de la région via la classe Region
+// Récupérer les lieux (Locations) de la région
+$locations = $region->getLocations();
+
+// Récupérer les pièces de la région via la classe Region
+// Note: getPlaces() a été mis à jour pour trier par location_id
 $places = $region->getPlaces();
 
-// Récupérer les accès entre les lieux de la région (y compris vers d'autres régions)
+// Organiser les pièces par Location ID
+// Key 0 will hold orphaned rooms (location_id IS NULL or 0)
+$placesByLocation = [];
+$placesByLocation[0] = []; 
+foreach ($locations as $loc) {
+    // Note: $loc is an object of class Location
+    $placesByLocation[$loc->getId()] = [];
+}
+
+foreach ($places as $place) {
+    $locId = $place['location_id'] ? (int)$place['location_id'] : 0;
+    if (!isset($placesByLocation[$locId])) {
+        // Fallback for foreign keys that might point to deleted locations, though DB constraints should prevent this
+        $locId = 0; 
+    }
+    $placesByLocation[$locId][] = $place;
+}
+
+// Récupérer les accès entre les pièces de la région (y compris vers d'autres régions)
 $region_accesses = [];
 $external_places = [];
 if (!empty($places)) {
@@ -217,7 +265,7 @@ if (!empty($places)) {
     $stmt->execute();
     $region_accesses = $stmt->fetchAll(PDO::FETCH_OBJ);
     
-    // Récupérer les lieux externes (d'autres régions) connectés à cette région
+    // Récupérer les pièces externes (d'autres régions) connectés à cette région
     $external_place_ids = [];
     foreach ($region_accesses as $access) {
         if ($access->from_place_id && !in_array($access->from_place_id, $place_ids)) {
@@ -368,74 +416,83 @@ $region_monsters = $region->getMonsters();
         </div>
     </div>
 
-    <!-- Lieux de la région -->
+    <!-- Pièces de la région (Groupées par Lieu) -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="fas fa-map-pin me-2"></i>Lieux de cette région</h5>
+            <h5 class="mb-0"><i class="fas fa-map-pin me-2"></i>Lieux et Pièces</h5>
             <div class="btn-group">
                 <?php if (!empty($places) && (!empty($region_accesses) || !empty($external_places))): ?>
                     <button class="btn btn-info" data-bs-toggle="modal" data-bs-target="#cartographyModal">
                         <i class="fas fa-project-diagram me-2"></i>Cartographie
                     </button>
                 <?php endif; ?>
+                <!-- Bouton Créer Lieu -->
+                <button class="btn btn-secondary me-1" data-bs-toggle="modal" data-bs-target="#createLocationModal">
+                    <i class="fas fa-map-signs me-2"></i>Nouveau Lieu
+                </button>
+                <!-- Bouton Créer Pièce -->
                 <button class="btn btn-brown" data-bs-toggle="modal" data-bs-target="#createPlaceModal">
-                    <i class="fas fa-plus me-2"></i>Nouveau Lieu
+                    <i class="fas fa-plus me-2"></i>Nouvelle Pièce
                 </button>
             </div>
         </div>
         <div class="card-body">
-            <?php if (empty($places)): ?>
+            <?php if (empty($places) && empty($locations)): ?>
                 <div class="alert alert-info text-center" role="alert">
-                    Aucun lieu n'a encore été créé dans cette région.
+                    Aucun lieu ni pièce n'a encore été créé dans cette région.
                 </div>
             <?php else: ?>
-                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-                    <?php foreach ($places as $place): ?>
-                        <div class="col">
-                            <div class="card h-100">
-                                <?php if (!empty($place['map_url'])): ?>
-                                    <img src="<?php echo htmlspecialchars($place['map_url']); ?>" 
-                                         alt="Carte de <?php echo htmlspecialchars($place['title']); ?>" 
-                                         class="card-img-top cursor-pointer" 
-                                         style="height: 200px; object-fit: cover;"
-                                         onclick="openMapFullscreen('<?php echo htmlspecialchars($place['map_url']); ?>', '<?php echo htmlspecialchars($place['title']); ?>')"
-                                         title="Cliquer pour voir en plein écran">
-                                <?php else: ?>
-                                    <div class="card-img-top d-flex align-items-center justify-content-center" style="height: 200px; background-color: #f8f9fa;">
-                                        <i class="fas fa-map-pin fa-3x text-muted"></i>
-                                    </div>
+                
+                <!-- 1. Affichage des Lieux (Locations) -->
+                <?php foreach ($locations as $location): ?>
+                    <?php 
+                        $locId = $location->getId();
+                        $locRooms = $placesByLocation[$locId] ?? []; 
+                    ?>
+                    <div class="card mb-3 border-secondary">
+                        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-0 fw-bold">
+                                    <i class="fas fa-map-marker-alt me-2 text-primary"></i>
+                                    <?php echo htmlspecialchars($location->getName()); ?>
+                                </h6>
+                                <?php if ($location->getDescription()): ?>
+                                    <small class="text-muted"><?php echo htmlspecialchars(truncateText($location->getDescription(), 80)); ?></small>
                                 <?php endif; ?>
-                                
-                                <div class="card-body d-flex flex-column">
-                                    <h5 class="card-title"><?php echo htmlspecialchars($place['title']); ?></h5>
-                                    
-                                    <?php if (!empty($place['notes'])): ?>
-                                        <p class="card-text text-muted small flex-grow-1"><?php echo nl2br(htmlspecialchars(truncateText($place['notes'], 100))); ?></p>
-                                    <?php endif; ?>
-                                    
-                                    <div class="d-flex justify-content-between align-items-center mt-2">
-                                        <a href="view_place.php?id=<?php echo (int)$place['id']; ?>" class="btn btn-sm btn-outline-primary">
-                                            <i class="fas fa-eye me-1"></i>Voir le Lieu
-                                        </a>
-                                        <div class="btn-group">
-                                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editPlaceModal"
-                                                    onclick="editPlace(<?php echo htmlspecialchars(json_encode($place)); ?>)">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <form method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer le lieu <?php echo htmlspecialchars($place['title']); ?> ?');">
-                                                <input type="hidden" name="action" value="delete_place">
-                                                <input type="hidden" name="place_id" value="<?php echo (int)$place['id']; ?>">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </div>
+                            </div>
+                            <!-- Actions sur le Lieu (Edit/Delete - Optionnel pour l'instant) -->
+                             <span class="badge bg-secondary"><?php echo count($locRooms); ?> pièce(s)</span>
+                        </div>
+                        <div class="card-body p-3">
+                            <?php if (empty($locRooms)): ?>
+                                <p class="text-muted small mb-0">Aucune pièce dans ce lieu.</p>
+                            <?php else: ?>
+                                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+                                    <?php foreach ($locRooms as $place): ?>
+                                        <?php include 'templates/place_card.php'; // On peut extraire la carte pièce pour éviter la duplication code ?>
+                                    <?php endforeach; ?>
                                 </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+
+                <!-- 2. Affichage des Pièces Orphelines (Hors Lieu) -->
+                <?php if (!empty($placesByLocation[0])): ?>
+                    <div class="card mb-3 border-warning">
+                        <div class="card-header bg-warning bg-opacity-10">
+                            <h6 class="mb-0 text-dark"><i class="fas fa-question-circle me-2"></i>Pièces hors lieux (Région directe)</h6>
+                        </div>
+                        <div class="card-body p-3">
+                            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
+                                <?php foreach ($placesByLocation[0] as $place): ?>
+                                    <?php include 'templates/place_card.php'; ?>
+                                <?php endforeach; ?>
                             </div>
                         </div>
-                    <?php endforeach; ?>
-                </div>
+                    </div>
+                <?php endif; ?>
+
             <?php endif; ?>
         </div>
     </div>
@@ -459,9 +516,9 @@ $region_monsters = $region->getMonsters();
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <label for="locationFilter" class="form-label">Filtrer par lieu :</label>
+                            <label for="locationFilter" class="form-label">Filtrer par pièce :</label>
                             <select class="form-select" id="locationFilter">
-                                <option value="">Tous les lieux</option>
+                                <option value="">Tous les pièces</option>
                                 <?php
                                 $unique_places = [];
                                 foreach (array_merge($region_npcs, $region_monsters) as $entity) {
@@ -503,7 +560,7 @@ $region_monsters = $region->getMonsters();
                                         Race <i class="fas fa-sort ms-1"></i>
                                     </th>
                                     <th class="sortable" data-column="location">
-                                        Lieu <i class="fas fa-sort ms-1"></i>
+                                        Pièce <i class="fas fa-sort ms-1"></i>
                                     </th>
                                     <th>Actions</th>
                                 </tr>
@@ -516,7 +573,7 @@ $region_monsters = $region->getMonsters();
                                         <td colspan="6" class="text-center py-4">
                                             <i class="fas fa-users fa-3x text-muted mb-3"></i>
                                             <h5 class="text-muted">Aucun PNJ ou monstre trouvé</h5>
-                                            <p class="text-muted">Les PNJs et monstres apparaîtront ici une fois qu'ils seront ajoutés aux lieux de cette région.</p>
+                                            <p class="text-muted">Les PNJs et monstres apparaîtront ici une fois qu'ils seront ajoutés aux pièces de cette région.</p>
                                         </td>
                                     </tr>
                                 <?php else: ?>
@@ -602,11 +659,40 @@ $region_monsters = $region->getMonsters();
 </div>
 
 <!-- Modal Création Lieu -->
+<div class="modal fade" id="createLocationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-map-signs me-2"></i>Nouveau Lieu</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="create_location">
+                    <div class="mb-3">
+                        <label class="form-label">Nom du Lieu *</label>
+                        <input type="text" class="form-control" name="name" required placeholder="ex: Cité de Port-Réal">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-secondary">Créer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Création Pièce -->
 <div class="modal fade" id="createPlaceModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-plus me-2"></i>Créer un nouveau lieu</h5>
+                <h5 class="modal-title"><i class="fas fa-plus me-2"></i>Créer un nouvelle pièce</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
             <form method="POST" enctype="multipart/form-data">
@@ -614,17 +700,27 @@ $region_monsters = $region->getMonsters();
                     <input type="hidden" name="action" value="create_place">
                     
                     <div class="mb-3">
-                        <label for="createPlaceTitle" class="form-label">Nom du lieu *</label>
+                        <label for="createPlaceTitle" class="form-label">Nom de la pièce *</label>
                         <input type="text" class="form-control" id="createPlaceTitle" name="title" required placeholder="Ex: Taverne du Dragon, Château de la Montagne...">
                     </div>
                     
                     <div class="mb-3">
+                        <label for="createPlaceLocation" class="form-label">Lieu (Optionnel)</label>
+                        <select class="form-select" id="createPlaceLocation" name="location_id">
+                            <option value="">-- Aucun (Pièce orpheline) --</option>
+                            <?php foreach ($locations as $loc): ?>
+                                <option value="<?php echo $loc->getId(); ?>"><?php echo htmlspecialchars($loc->getName()); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
                         <label for="createPlaceNotes" class="form-label">Description</label>
-                        <textarea class="form-control" id="createPlaceNotes" name="notes" rows="3" placeholder="Décrivez ce lieu..."></textarea>
+                        <textarea class="form-control" id="createPlaceNotes" name="notes" rows="3" placeholder="Décrivez cette pièce..."></textarea>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="createPlaceMap" class="form-label">Carte du lieu</label>
+                        <label for="createPlaceMap" class="form-label">Carte de la pièce</label>
                         <input type="file" class="form-control" id="createPlaceMap" name="map_image" accept="image/*">
                         <div class="form-text">Formats acceptés: JPG, PNG, GIF, WebP (max 5MB)</div>
                         <div id="createPlaceMapPreview" class="mt-2" style="display: none;">
@@ -634,19 +730,19 @@ $region_monsters = $region->getMonsters();
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-brown">Créer le lieu</button>
+                    <button type="submit" class="btn btn-brown">Créer la pièce</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- Modal Édition Lieu -->
+<!-- Modal Édition Pièce -->
 <div class="modal fade" id="editPlaceModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Modifier le lieu</h5>
+                <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Modifier la pièce</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
             <form method="POST" enctype="multipart/form-data">
@@ -655,17 +751,27 @@ $region_monsters = $region->getMonsters();
                     <input type="hidden" name="place_id" id="editPlaceId">
                     
                     <div class="mb-3">
-                        <label for="editPlaceTitle" class="form-label">Nom du lieu *</label>
+                        <label for="editPlaceTitle" class="form-label">Nom de la pièce *</label>
                         <input type="text" class="form-control" id="editPlaceTitle" name="title" required>
                     </div>
                     
+                    <div class="mb-3">
+                        <label for="editPlaceLocation" class="form-label">Lieu (Optionnel)</label>
+                        <select class="form-select" id="editPlaceLocation" name="location_id">
+                            <option value="">-- Aucun (Pièce orpheline) --</option>
+                            <?php foreach ($locations as $loc): ?>
+                                <option value="<?php echo $loc->getId(); ?>"><?php echo htmlspecialchars($loc->getName()); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
                     <div class="mb-3">
                         <label for="editPlaceNotes" class="form-label">Description</label>
                         <textarea class="form-control" id="editPlaceNotes" name="notes" rows="3"></textarea>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="editPlaceMap" class="form-label">Carte du lieu</label>
+                        <label for="editPlaceMap" class="form-label">Carte de la pièce</label>
                         <input type="file" class="form-control" id="editPlaceMap" name="map_image" accept="image/*">
                         <div class="form-text">Formats acceptés: JPG, PNG, GIF, WebP (max 5MB)</div>
                         <div id="editPlaceMapPreview" class="mt-2" style="display: none;">
@@ -687,7 +793,7 @@ $region_monsters = $region->getMonsters();
 </div>
 
 <script>
-    // Gestion de l'aperçu d'image pour la création de lieu
+    // Gestion de l'aperçu d'image pour la création de pièce
     document.getElementById('createPlaceMap').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (file) {
@@ -702,7 +808,7 @@ $region_monsters = $region->getMonsters();
         }
     });
 
-    // Gestion de l'aperçu d'image pour l'édition de lieu
+    // Gestion de l'aperçu d'image pour l'édition de pièce
     document.getElementById('editPlaceMap').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (file) {
@@ -721,6 +827,7 @@ $region_monsters = $region->getMonsters();
         document.getElementById('editPlaceId').value = place.id;
         document.getElementById('editPlaceTitle').value = place.title;
         document.getElementById('editPlaceNotes').value = place.notes || '';
+        document.getElementById('editPlaceLocation').value = place.location_id || ''; // Pre-select location
         
         // Afficher l'image actuelle si elle existe
         if (place.map_url) {
@@ -862,7 +969,7 @@ $region_monsters = $region->getMonsters();
                 show = false;
             }
             
-            // Filtre par lieu
+            // Filtre par pièce
             if (locationFilter && row.dataset.placeKey !== locationFilter) {
                 show = false;
             }
@@ -897,7 +1004,7 @@ $region_monsters = $region->getMonsters();
         <div class="modal-content bg-dark">
             <div class="modal-header border-secondary">
                 <h5 class="modal-title text-white" id="fullscreenMapTitle">
-                    <i class="fas fa-map me-2"></i>Carte du Lieu
+                    <i class="fas fa-map me-2"></i>Carte du Pièce
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
@@ -938,16 +1045,16 @@ $region_monsters = $region->getMonsters();
                         <h6><i class="fas fa-info-circle me-2"></i>Légende</h6>
                         <div class="alert alert-info small mb-3">
                             <i class="fas fa-hand-paper me-1"></i>
-                            <strong>Astuce :</strong> Cliquez et glissez les lieux pour les déplacer et éviter les superpositions.
+                            <strong>Astuce :</strong> Cliquez et glissez les pièces pour les déplacer et éviter les superpositions.
                         </div>
                         <div class="mb-3">
                             <div class="d-flex align-items-center mb-2">
                                 <div class="me-2" style="width: 20px; height: 20px; background: #007bff; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"></div>
-                                <small>Lieu de cette région</small>
+                                <small>Pièce de cette région</small>
                             </div>
                             <div class="d-flex align-items-center mb-2">
                                 <div class="me-2" style="width: 20px; height: 20px; background: #6c757d; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"></div>
-                                <small>Lieu d'une autre région</small>
+                                <small>Pièce d'une autre région</small>
                             </div>
                             <div class="d-flex align-items-center mb-2">
                                 <div class="me-2" style="width: 20px; height: 2px; background: #28a745;"></div>
@@ -970,7 +1077,7 @@ $region_monsters = $region->getMonsters();
                         <h6><i class="fas fa-list me-2"></i>Accès de la région</h6>
                         <div style="max-height: 300px; overflow-y: auto;">
                             <?php if (empty($region_accesses)): ?>
-                                <p class="text-muted small">Aucun accès configuré entre les lieux de cette région.</p>
+                                <p class="text-muted small">Aucun accès configuré entre les pièces de cette région.</p>
                             <?php else: ?>
                                 <?php foreach ($region_accesses as $access): ?>
                                     <div class="card mb-2">
@@ -1102,7 +1209,7 @@ async function loadSavedPositions() {
     return {};
 }
 
-// Fonction pour sauvegarder la position d'un lieu
+// Fonction pour sauvegarder la position d'une pièce
 async function savePlacePosition(placeId, x, y) {
     try {
         const response = await fetch('api/save_region_cartography_position.php', {
@@ -1129,7 +1236,7 @@ async function savePlacePosition(placeId, x, y) {
 
 // Fonction pour réinitialiser les positions (réorganiser)
 async function resetCartographyPositions() {
-    if (!confirm('Voulez-vous vraiment réinitialiser toutes les positions ? Les positions actuelles seront perdues et les lieux seront réorganisés automatiquement.')) {
+    if (!confirm('Voulez-vous vraiment réinitialiser toutes les positions ? Les positions actuelles seront perdues et les pièces seront réorganisés automatiquement.')) {
         return;
     }
     
@@ -1178,7 +1285,7 @@ async function generateCartography() {
     // Réinitialiser les positions
     placePositions = {};
     
-    // Calculer les positions des lieux de la région en cercle
+    // Calculer les positions des pièces de la région en cercle
     const regionPlaces = cartographyData.places;
     regionPlaces.forEach((place, index) => {
         let x, y;
@@ -1206,7 +1313,7 @@ async function generateCartography() {
         };
     });
     
-    // Calculer les positions des lieux externes autour du cercle principal
+    // Calculer les positions des pièces externes autour du cercle principal
     const externalPlaces = cartographyData.externalPlaces;
     externalPlaces.forEach((place, index) => {
         let x, y;
@@ -1237,7 +1344,7 @@ async function generateCartography() {
     // Dessiner les connexions
     redrawConnections();
     
-    // Dessiner les lieux
+    // Dessiner les pièces
     Object.values(placePositions).forEach(({ x, y, place, isExternal }) => {
         const placeElement = document.createElement('div');
         placeElement.style.position = 'absolute';
@@ -1254,7 +1361,7 @@ async function generateCartography() {
         placeElement.title = place.title + (isExternal ? ' (Autre région)' : '') + ' - Cliquer et glisser pour déplacer';
         placeElement.dataset.placeId = place.id;
         
-        // Ajouter le nom du lieu
+        // Ajouter le nom de la pièce
         const label = document.createElement('div');
         label.style.position = 'absolute';
         label.style.left = '35px';
@@ -1270,7 +1377,7 @@ async function generateCartography() {
         label.style.zIndex = '11';
         label.textContent = place.title;
         
-        // Ajouter un indicateur pour les lieux externes
+        // Ajouter un indicateur pour les pièces externes
         if (isExternal && place.region_name) {
             const regionLabel = document.createElement('div');
             regionLabel.style.position = 'absolute';
