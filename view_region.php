@@ -37,14 +37,6 @@ if (!$monde || $monde['created_by'] != $user_id) { // Access as array
 $success_message = '';
 $error_message = '';
 
-// Fonction helper pour tronquer le texte
-function truncateText($text, $length = 100) {
-    if (strlen($text) <= $length) {
-        return $text;
-    }
-    return substr($text, 0, $length) . '...';
-}
-
 // Fonction helper pour l'upload d'image de pièce
 function uploadPlaceImage($file) {
     // Vérifier qu'un fichier a été uploadé
@@ -363,7 +355,151 @@ $region_monsters = $region->getMonsters();
             transition: opacity 0.3s ease;
             opacity: 1;
         }
+
+        /* Drag and Drop Styles */
+        .draggable-place {
+            cursor: move;
+        }
+        
+        .droppable-area {
+            transition: all 0.2s ease;
+        }
+        
+        .droppable-area.drag-over {
+            background-color: rgba(40, 167, 69, 0.1) !important;
+            border: 2px dashed #28a745 !important;
+            border-radius: 8px;
+        }
+
+        .droppable-orphan.drag-over {
+            background-color: rgba(255, 193, 7, 0.2) !important;
+            border: 2px dashed #ffc107 !important;
+        }
     </style>
+    <script>
+        // Global state
+        let draggedPlaceId = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Attach dragstart event to all draggable places
+            const draggables = document.querySelectorAll('.draggable-place');
+            console.log("Found " + draggables.length + " draggable elements.");
+            
+            draggables.forEach(elem => {
+                elem.addEventListener('dragstart', function(ev) {
+                    var placeId = this.getAttribute('data-place-id');
+                    console.log("Event: dragstart, PlaceID:", placeId);
+                    
+                    if (!placeId) {
+                        console.error("Error: No data-place-id found on element", this);
+                        return;
+                    }
+                    
+                    draggedPlaceId = placeId;
+                    
+                    // Set dataTransfer
+                    ev.dataTransfer.effectAllowed = "move";
+                    ev.dataTransfer.setData("text/plain", placeId);
+                    // Required for Firefox
+                    ev.dataTransfer.dropEffect = "move";
+                });
+                
+                // Optional: visual feedback
+                elem.addEventListener('dragend', function(ev) {
+                   console.log("Event: dragend");
+                   draggedPlaceId = null; 
+                });
+            });
+        });
+
+        function allowDrop(ev) {
+            ev.preventDefault();
+            ev.dataTransfer.dropEffect = "move"; // Visual feedback
+            const locationCard = ev.target.closest('.card-body');
+            if (locationCard) {
+                locationCard.classList.add('drag-over');
+            }
+        }
+
+        function dragLeave(ev) {
+            const locationCard = ev.target.closest('.card-body');
+            if (locationCard) {
+                locationCard.classList.remove('drag-over');
+            }
+        }
+
+        function drop(ev, locationId) {
+            ev.preventDefault();
+            console.log("Event: drop, LocationID:", locationId);
+            
+            const locationCard = ev.target.closest('.card-body');
+            if (locationCard) {
+                locationCard.classList.remove('drag-over');
+            }
+            
+            // Try getting data from dataTransfer
+            var placeId = ev.dataTransfer.getData("text/plain");
+            console.log("DataTransfer ID:", placeId);
+            
+            // Fallback to global
+            if (!placeId && draggedPlaceId) {
+                placeId = draggedPlaceId;
+                console.log("Fallback global ID:", placeId);
+            }
+
+            if (!placeId) {
+                console.error("CRITICAL: Failed to retrieve place ID.");
+                alert("Erreur: Impossible de récupérer l'ID de la pièce. (Debug: ID is empty)");
+                return;
+            }
+
+            // Call API
+            movePlaceToLocation(placeId, locationId);
+            
+            // Allow immediate next move logic if needed (page reload handles it anyway)
+            draggedPlaceId = null;
+        }
+
+        function movePlaceToLocation(placeId, locationId) {
+            console.log("Sending API Request:", {place_id: placeId, location_id: locationId});
+            
+            const formData = new FormData();
+            formData.append('place_id', placeId);
+            formData.append('location_id', locationId);
+
+            fetch('api/update_place_location.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok: ' + response.statusText);
+                }
+                return response.text().then(text => {
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error("Server API returned non-JSON:", text);
+                        throw new Error("Réponse serveur invalide (Non-JSON).");
+                    }
+                });
+            })
+            .then(data => {
+                if (data.success) {
+                    console.log("Success:", data);
+                    // Force a GET reload to avoid resubmitting forms if the user had just POSTed
+                    window.location.href = window.location.pathname + window.location.search;
+                } else {
+                    console.error("API Error:", data.error);
+                    alert('Erreur: ' + (data.error || 'Erreur inconnue'));
+                }
+            })
+            .catch(error => {
+                console.error('Fetch Error:', error);
+                alert('Une erreur est survenue lors du déplacement: ' + error.message);
+            });
+        }
+    </script>
 </head>
 <body>
     <?php include_once 'includes/navbar.php'; ?>
@@ -444,38 +580,19 @@ $region_monsters = $region->getMonsters();
             <?php else: ?>
                 
                 <!-- 1. Affichage des Lieux (Locations) -->
-                <?php foreach ($locations as $location): ?>
-                    <?php 
-                        $locId = $location->getId();
-                        $locRooms = $placesByLocation[$locId] ?? []; 
-                    ?>
-                    <div class="card mb-3 border-secondary">
-                        <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="mb-0 fw-bold">
-                                    <i class="fas fa-map-marker-alt me-2 text-primary"></i>
-                                    <?php echo htmlspecialchars($location->getName()); ?>
-                                </h6>
-                                <?php if ($location->getDescription()): ?>
-                                    <small class="text-muted"><?php echo htmlspecialchars(truncateText($location->getDescription(), 80)); ?></small>
-                                <?php endif; ?>
-                            </div>
-                            <!-- Actions sur le Lieu (Edit/Delete - Optionnel pour l'instant) -->
-                             <span class="badge bg-secondary"><?php echo count($locRooms); ?> pièce(s)</span>
-                        </div>
-                        <div class="card-body p-3">
-                            <?php if (empty($locRooms)): ?>
-                                <p class="text-muted small mb-0">Aucune pièce dans ce lieu.</p>
-                            <?php else: ?>
-                                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
-                                    <?php foreach ($locRooms as $place): ?>
-                                        <?php include 'templates/place_card.php'; // On peut extraire la carte pièce pour éviter la duplication code ?>
-                                    <?php endforeach; ?>
-                                </div>
-                            <?php endif; ?>
-                        </div>
+                <?php if (!empty($locations)): ?>
+                    <h5 class="mb-3 border-bottom pb-2">Lieux</h5>
+                    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3 mb-4">
+                        <?php foreach ($locations as $location): ?>
+                            <?php 
+                                $locId = $location->getId(); // Variables used by template
+                                // Get rooms for this location to display count
+                                $locRooms = isset($placesByLocation[$locId]) ? $placesByLocation[$locId] : [];
+                                include 'templates/location_card.php'; 
+                            ?>
+                        <?php endforeach; ?>
                     </div>
-                <?php endforeach; ?>
+                <?php endif; ?>
 
                 <!-- 2. Affichage des Pièces Orphelines (Hors Lieu) -->
                 <?php if (!empty($placesByLocation[0])): ?>
@@ -483,7 +600,10 @@ $region_monsters = $region->getMonsters();
                         <div class="card-header bg-warning bg-opacity-10">
                             <h6 class="mb-0 text-dark"><i class="fas fa-question-circle me-2"></i>Pièces hors lieux (Région directe)</h6>
                         </div>
-                        <div class="card-body p-3">
+                        <div class="card-body p-3 droppable-area droppable-orphan"
+                             ondrop="drop(event, 0)" 
+                             ondragover="allowDrop(event)"
+                             ondragleave="dragLeave(event)">
                             <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3">
                                 <?php foreach ($placesByLocation[0] as $place): ?>
                                     <?php include 'templates/place_card.php'; ?>

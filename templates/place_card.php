@@ -4,13 +4,14 @@
  * Variables attendues : $place (tableau associatif)
  */
 ?>
-<div class="col">
+<div class="col draggable-place" draggable="true" data-place-id="<?php echo (int)$place['id']; ?>">
     <div class="card h-100">
         <?php if (!empty($place['map_url'])): ?>
             <img src="<?php echo htmlspecialchars($place['map_url']); ?>" 
                     alt="Carte de <?php echo htmlspecialchars($place['title']); ?>" 
                     class="card-img-top cursor-pointer" 
                     style="height: 200px; object-fit: cover;"
+                    draggable="false"
                     onclick="openMapFullscreen('<?php echo htmlspecialchars($place['map_url']); ?>', '<?php echo htmlspecialchars($place['title']); ?>')"
                     title="Cliquer pour voir en plein écran">
         <?php else: ?>

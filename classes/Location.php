@@ -75,8 +75,16 @@ class Location
             return self::findById($id, $pdo);
             
         } catch (PDOException $e) {
-            error_log("Erreur création Location: " . $e->getMessage());
-            return null;
+            $msg = $e->getMessage();
+            // Check for duplicate entry (MySQL code 1062, SQLSTATE 23000)
+            if (strpos($msg, 'Duplicate entry') !== false || 
+                strpos($msg, 'unique_location_per_region') !== false ||
+                ($e->errorInfo[1] ?? 0) == 1062) {
+                 throw new Exception("Un lieu avec ce nom existe déjà dans cette région.");
+            }
+            
+            error_log("Erreur création Location: " . $msg);
+            throw new Exception("Erreur technique lors de la création du lieu.");
         }
     }
     

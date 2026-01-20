@@ -36,12 +36,7 @@ $error_message = '';
 
 
 // Fonction helper pour tronquer le texte
-function truncateText($text, $length = 100) {
-    if (strlen($text) <= $length) {
-        return $text;
-    }
-    return substr($text, 0, $length) . '...';
-}
+
 
 // Fonction helper pour l'upload d'image de région
 function uploadRegionImage($file, $type = 'map') {

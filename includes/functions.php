@@ -145,3 +145,12 @@ function getRegionsByCountry($countryId) {
 
 
 
+/**
+ * Tronque un texte s'il dépasse une certaine longueur
+ */
+function truncateText($text, $length = 100) {
+    if (mb_strlen($text) <= $length) {
+        return $text;
+    }
+    return mb_substr($text, 0, $length) . '...';
+}

@@ -12,12 +12,7 @@ require_once 'includes/functions.php';
  * @param int $length La longueur maximale
  * @return string Le texte tronqué
  */
-function truncateText($text, $length = 100) {
-    if (strlen($text) <= $length) {
-        return $text;
-    }
-    return substr($text, 0, $length) . '...';
-}
+
 
 $page_title = "Détails de Campagne";
 $current_page = "view_campaign";
