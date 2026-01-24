@@ -340,6 +340,9 @@ $country_monsters = array_filter($all_monsters, function($monster) use ($pays) {
                             <h1 class="mb-2">
                                 <i class="fas fa-flag me-2"></i>
                                 <?php echo htmlspecialchars($pays->getName()); ?>
+                                <a href="print_sheet.php?type=country&id=<?php echo $country_id; ?>" target="_blank" class="btn btn-sm btn-outline-secondary ms-2" title="Imprimer la carte">
+                                    <i class="fas fa-print"></i>
+                                </a>
                             </h1>
                             <p class="text-muted mb-1">
                                 <i class="fas fa-globe-americas me-1"></i>

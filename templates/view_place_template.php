@@ -142,7 +142,12 @@ extract($template_vars ?? []);
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
             <div class="d-flex align-items-center">
-                <h1 class="me-3"><i class="fas fa-photo-video me-2"></i><?php echo htmlspecialchars($place['title']); ?></h1>
+                <h1 class="me-3">
+                    <i class="fas fa-photo-video me-2"></i><?php echo htmlspecialchars($place['title']); ?>
+                    <a href="print_sheet.php?type=place&id=<?php echo $place['id']; ?>" target="_blank" class="btn btn-sm btn-outline-secondary ms-2" title="Imprimer le plan">
+                        <i class="fas fa-print"></i>
+                    </a>
+                </h1>
                 <?php if (hasCampaignId($place)): ?>
                     <p class="text-muted mb-0">
                         <i class="fas fa-dice-d20 me-1"></i>Campagne: <?php echo htmlspecialchars($place['campaign_title']); ?>

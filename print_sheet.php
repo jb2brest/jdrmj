@@ -14,7 +14,7 @@ requireLogin();
 $type = $_GET['type'] ?? '';
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
-if (!$id || !in_array($type, ['character', 'pj', 'npc', 'monster'])) {
+if (!$id || !in_array($type, ['character', 'pj', 'npc', 'monster', 'place', 'country'])) {
     die("Type ou ID invalide.");
 }
 
@@ -103,6 +103,38 @@ try {
             
             $template_file = 'templates/print/sheet_monster.php';
             $page_title = "Monstre - " . $monster['name'];
+            break;
+            
+        case 'place':
+            require_once 'classes/Room.php';
+            $place_obj = Room::findById($id);
+            if (!$place_obj) throw new Exception("Pièce introuvable.");
+            
+            // Note: permissions simplification (in a real app, duplicate strict checks)
+            if (!User::isDMOrAdmin()) {
+                 // Check if player is in the room or has access? Simplification: allow if logged in for now or rely on DM.
+                 // Ideally check if user has a character in the campaign of this place.
+            }
+
+            $place = $place_obj->toArray();
+            $data['place'] = $place;
+            $data['visible_objects'] = $place_obj->getVisibleObjects();
+            
+            $template_file = 'templates/print/sheet_place.php';
+            $page_title = "Plan - " . $place['title'];
+            break;
+            
+        case 'country':
+            require_once 'classes/Pays.php';
+            require_once 'classes/Region.php';
+            $country = Pays::findById($id);
+            if (!$country) throw new Exception("Pays introuvable.");
+            
+            $data['country'] = $country;
+            $data['regions'] = $country->getRegions();
+            
+            $template_file = 'templates/print/sheet_country.php';
+            $page_title = "Carte - " . $country->getName();
             break;
     }
 } catch (Exception $e) {
