@@ -2,7 +2,7 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.27.0
+VERSION=2.28.0
 
 # Date de déploiement
 DEPLOY_DATE=2026-01-24
@@ -11,10 +11,10 @@ DEPLOY_DATE=2026-01-24
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=daa2e4b4e8992ab39f9eba0fc92faa8e9bff4331
+GIT_COMMIT=f1bee3509b22dcc26ee6b481a0b71bf2d6af2142
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20260124-132157
+BUILD_ID=20260124-205644
 
 # Notes de version
-RELEASE_NOTES="Impression Lieu"
+RELEASE_NOTES="Carte Pays"
