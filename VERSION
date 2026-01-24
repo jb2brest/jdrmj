@@ -2,19 +2,19 @@
 # Format: MAJOR.MINOR.PATCH
 
 # Version actuelle
-VERSION=2.25.57
+VERSION=2.26.0
 
 # Date de déploiement
-DEPLOY_DATE=2026-01-20
+DEPLOY_DATE=2026-01-24
 
 # Environnement
 ENVIRONMENT=production
 
 # Commit Git (sera mis à jour automatiquement)
-GIT_COMMIT=0a40e32048716947216cff7b07a8f7da328418f1
+GIT_COMMIT=6080599a24743a70cb57f0185444475cd5dbafda
 
 # Build ID (sera généré automatiquement)
-BUILD_ID=20260120-210620
+BUILD_ID=20260124-131211
 
 # Notes de version
-RELEASE_NOTES="lieux 3"
+RELEASE_NOTES="Impression feuille de personnage"
