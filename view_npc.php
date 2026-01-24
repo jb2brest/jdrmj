@@ -553,6 +553,9 @@ $npc_place_id_for_template = $npc_place_id ?? null;
             <div class="zone-titre-container">
                 <h1 class="titre-zone">
                 <i class="fas fa-user-ninja me-2"></i><span id="npcNameDisplay"><?php echo htmlspecialchars($npc->name); ?></span>
+                <a href="print_sheet.php?type=npc&id=<?php echo $npc->id; ?>" target="_blank" class="btn btn-sm btn-outline-light ms-2" title="Imprimer la fiche">
+                    <i class="fas fa-print"></i>
+                </a>
                 <?php if ($isOwner || $isDM): ?>
                     <button type="button" class="btn btn-sm btn-outline-light ms-2" data-bs-toggle="modal" data-bs-target="#renameNpcModal" title="Renommer le PNJ">
                         <i class="fas fa-edit"></i>

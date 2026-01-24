@@ -320,6 +320,9 @@ $error_message = null;
             <div class="zone-titre-container">
                 <h1 class="titre-zone">
                 <i class="fas fa-user-ninja me-2"></i><span id="characterNameDisplay"><?php echo htmlspecialchars($character->name); ?></span>
+                <a href="print_sheet.php?type=character&id=<?php echo $character->id; ?>" target="_blank" class="btn btn-sm btn-outline-light ms-2" title="Imprimer la fiche">
+                    <i class="fas fa-print"></i>
+                </a>
                 <?php if ($isOwner || $isDM || $isAdmin): ?>
                     <button type="button" class="btn btn-sm btn-outline-light ms-2" data-bs-toggle="modal" data-bs-target="#renameCharacterModal" title="Renommer le personnage">
                         <i class="fas fa-edit"></i>

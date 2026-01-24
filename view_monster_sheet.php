@@ -525,6 +525,9 @@ $page_title = "Feuille de Monstre - " . $monster['name'];
                     </p>
                 </div>
                 <div class="col-md-4 text-end">
+                    <a href="print_sheet.php?type=monster&id=<?php echo $monster_npc_id; ?>" target="_blank" class="btn btn-light me-2">
+                        <i class="fas fa-print me-2"></i>Imprimer
+                    </a>
                     <?php if ($campaign_id > 0): ?>
                         <a href="view_campaign.php?id=<?php echo (int)$campaign_id; ?>" class="btn btn-light">
                             <i class="fas fa-arrow-left me-2"></i>Retour à la Campagne
