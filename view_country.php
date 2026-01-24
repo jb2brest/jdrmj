@@ -80,6 +80,48 @@ function uploadRegionImage($file, $type = 'map') {
     return ['success' => true, 'file_path' => $filePath];
 }
 
+// Fonction helper pour l'upload d'image de pays
+function uploadCountryImage($file, $type = 'map') {
+    // Vérifier qu'un fichier a été uploadé
+    if (!isset($file) || $file['error'] !== UPLOAD_ERR_OK) {
+        return ['success' => false, 'error' => 'Aucun fichier uploadé ou erreur d\'upload'];
+    }
+
+    // Vérifier la taille du fichier (max 5MB)
+    $maxSize = 5 * 1024 * 1024; // 5MB
+    if ($file['size'] > $maxSize) {
+        return ['success' => false, 'error' => 'Fichier trop volumineux (max 5MB)'];
+    }
+
+    // Vérifier le type de fichier
+    $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mimeType = finfo_file($finfo, $file['tmp_name']);
+    finfo_close($finfo);
+
+    if (!in_array($mimeType, $allowedTypes)) {
+        return ['success' => false, 'error' => 'Type de fichier non autorisé. Formats acceptés: JPG, PNG, GIF, WebP'];
+    }
+
+    // Créer le dossier d'upload s'il n'existe pas
+    $uploadDir = 'uploads/countries/';
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+
+    // Générer un nom de fichier unique
+    $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+    $fileName = 'country_' . $type . '_' . time() . '_' . uniqid() . '.' . $extension;
+    $filePath = $uploadDir . $fileName;
+
+    // Déplacer le fichier uploadé
+    if (!move_uploaded_file($file['tmp_name'], $filePath)) {
+        return ['success' => false, 'error' => 'Erreur lors de l\'enregistrement du fichier'];
+    }
+
+    return ['success' => true, 'file_path' => $filePath];
+}
+
 // Traitement des actions POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
@@ -167,6 +209,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             break;
             
+        case 'update_country':
+            $name = sanitizeInput($_POST['name'] ?? '');
+            $description = sanitizeInput($_POST['description'] ?? '');
+            
+            if (empty($name)) {
+                $error_message = "Le nom du pays est requis.";
+            } else {
+                // Récupérer l'URL actuelle
+                $current_map_url = $pays->getMapUrl();
+                $map_url = $current_map_url;
+                
+                // Gérer l'upload de la nouvelle carte si un fichier est fourni
+                if (isset($_FILES['map_image']) && $_FILES['map_image']['error'] === UPLOAD_ERR_OK) {
+                    $uploadResult = uploadCountryImage($_FILES['map_image'], 'map');
+                    if (!$uploadResult['success']) {
+                        $error_message = $uploadResult['error'];
+                    } else {
+                        // Supprimer l'ancienne carte si elle existe
+                        if (!empty($current_map_url) && file_exists($current_map_url)) {
+                            unlink($current_map_url);
+                        }
+                        $map_url = $uploadResult['file_path'];
+                    }
+                }
+                
+                if (empty($error_message)) {
+                    try {
+                        $pays->setName($name);
+                        $pays->setDescription($description);
+                        $pays->setMapUrl($map_url);
+                        // Pas de changement de world_id ici, on garde le même
+                        
+                        if ($pays->save()) {
+                            $success_message = "Pays mis à jour avec succès.";
+                            // Recharger l'objet pays pour afficher les nouvelles données
+                            $pays = Pays::findById($country_id);
+                        } else {
+                            $error_message = "Erreur lors de la mise à jour du pays.";
+                        }
+                    } catch (Exception $e) {
+                        $error_message = $e->getMessage();
+                    }
+                }
+            }
+            break;
+
         case 'delete_region':
             $region_id = (int)($_POST['region_id'] ?? 0);
             
@@ -355,6 +443,9 @@ $country_monsters = array_filter($all_monsters, function($monster) use ($pays) {
                                 <a href="view_world.php?id=<?php echo (int)$pays->getWorldId(); ?>" class="btn btn-outline-secondary">
                                     <i class="fas fa-arrow-left me-1"></i>Retour au monde
                                 </a>
+                                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editCountryModal">
+                                    <i class="fas fa-edit me-1"></i>Modifier le pays
+                                </button>
                             </div>
                         </div>
                         <?php if (!empty($pays->getMapUrl())): ?>
@@ -700,61 +791,79 @@ $country_monsters = array_filter($all_monsters, function($monster) use ($pays) {
     </div>
 </div>
 
+<!-- Modal Modifier Pays -->
+<div class="modal fade" id="editCountryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Modifier le pays</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <form method="POST" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="update_country">
+                    
+                    <div class="mb-3">
+                        <label for="editCountryName" class="form-label">Nom du pays *</label>
+                        <input type="text" class="form-control" id="editCountryName" name="name" value="<?php echo htmlspecialchars($pays->getName()); ?>" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="editCountryDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="editCountryDescription" name="description" rows="5"><?php echo htmlspecialchars($pays->getDescription()); ?></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="editCountryMap" class="form-label">Carte du pays</label>
+                        <input type="file" class="form-control" id="editCountryMap" name="map_image" accept="image/*">
+                        <div class="form-text">Formats acceptés: JPG, PNG, GIF, WebP (max 5MB)</div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <?php if ($pays->getMapUrl()): ?>
+                                    <label class="form-label">Carte actuelle:</label>
+                                    <div class="mb-2">
+                                        <img src="<?php echo htmlspecialchars($pays->getMapUrl()); ?>" class="img-fluid rounded" style="max-height: 150px;">
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                            <div class="col-md-6">
+                                <div id="editCountryMapPreview" style="display: none;">
+                                    <label class="form-label">Nouvelle carte:</label>
+                                    <div>
+                                        <img id="editCountryMapPreviewImg" src="" class="img-fluid rounded" style="max-height: 150px;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
+    // Gestion de l'aperçu d'image pour l'édition du pays
+    document.getElementById('editCountryMap').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('editCountryMapPreviewImg').src = e.target.result;
+                document.getElementById('editCountryMapPreview').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        } else {
+            document.getElementById('editCountryMapPreview').style.display = 'none';
+        }
+    });
+
     // Gestion de l'aperçu d'image pour la création de région
-    document.getElementById('createRegionMap').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                document.getElementById('createRegionMapPreviewImg').src = e.target.result;
-                document.getElementById('createRegionMapPreview').style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-        } else {
-            document.getElementById('createRegionMapPreview').style.display = 'none';
-        }
-    });
-
-
-    // Gestion de l'aperçu d'image pour l'édition de région
-    document.getElementById('editRegionMap').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                document.getElementById('editRegionMapPreviewImg').src = e.target.result;
-                document.getElementById('editRegionMapPreview').style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-        } else {
-            document.getElementById('editRegionMapPreview').style.display = 'none';
-        }
-    });
-
-
-    function editRegion(region) {
-        document.getElementById('editRegionId').value = region.id;
-        document.getElementById('editRegionName').value = region.name;
-        document.getElementById('editRegionDescription').value = region.description || '';
-        
-        // Afficher l'image actuelle si elle existe
-        if (region.map_url) {
-            document.getElementById('editRegionCurrentMapImg').src = region.map_url;
-            document.getElementById('editRegionCurrentMap').style.display = 'block';
-        } else {
-            document.getElementById('editRegionCurrentMap').style.display = 'none';
-        }
-        
-        // Réinitialiser l'aperçu de nouvelle image
-        document.getElementById('editRegionMap').value = '';
-        document.getElementById('editRegionMapPreview').style.display = 'none';
-        
-        var editModal = new bootstrap.Modal(document.getElementById('editRegionModal'));
-        editModal.show();
-    }
-    
-    // Fonction pour ouvrir la carte en plein écran
     function openMapFullscreen(mapUrl, regionName) {
         document.getElementById('fullscreenMapImg').src = mapUrl;
         document.getElementById('fullscreenMapTitle').textContent = 'Carte de ' + regionName;
@@ -762,6 +871,8 @@ $country_monsters = array_filter($all_monsters, function($monster) use ($pays) {
         var fullscreenModal = new bootstrap.Modal(document.getElementById('fullscreenMapModal'));
         fullscreenModal.show();
     }
+
+    // Gestion de l'aperçu d'image pour la création de région
 
     // Gestion du tri et filtrage des entités
     let currentSort = { column: null, direction: 'asc' };
